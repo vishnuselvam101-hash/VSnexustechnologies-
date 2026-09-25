@@ -7,10 +7,11 @@ def analyze(sequence:str, settings:ConstraintSettings=ConstraintSettings())->dic
     for base in seq: run=run+1 if base==previous else 1; best=max(best,run); previous=base
     gc=100*(counts['G']+counts['C'])/length if length else 0.0; violations=[]
     if invalid: violations.append('invalid alphabet: '+''.join(invalid))
-    if length>settings.max_strand_length: violations.append('strand exceeds configured maximum length')
-    if not settings.min_gc<=gc<=settings.max_gc: violations.append('GC percentage outside configured range')
-    if settings.max_homopolymer_length is not None and best>settings.max_homopolymer_length: violations.append('homopolymer exceeds configured maximum')
-    violations.extend(f'forbidden motif: {motif}' for motif in settings.forbidden_motifs if motif.upper() in seq)
+    if length<settings.min_strand_length: violations.append('invalid_length: below configured minimum')
+    if length>settings.max_strand_length: violations.append('invalid_length: exceeds configured maximum')
+    if length and not settings.min_gc<=gc<=settings.max_gc: violations.append('invalid_gc_content')
+    if settings.max_homopolymer_length is not None and best>settings.max_homopolymer_length: violations.append('invalid_homopolymer')
+    violations.extend(f'forbidden_motif:{motif}' for motif in settings.forbidden_motifs if motif.upper() in seq)
     return {'length':length,'counts':counts,'gc_percent':gc,'longest_homopolymer':best,'violations':violations,'valid':not violations}
 def require_valid(sequence:str, settings:ConstraintSettings)->None:
     report=analyze(sequence,settings)

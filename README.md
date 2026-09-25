@@ -40,3 +40,7 @@ Set `VNXDNA_KEY` only when operating on encrypted datasets. Keys are never put i
 ## Reed–Solomon recovery (VNX-DNA-2)
 
 Use `vnx-dna encode input.bin dataset/ --ecc reed_solomon --data-shards 8 --parity-shards 4`. VNX-DNA-2 creates a new, explicitly versioned strand format. Per stripe, it recovers up to four **known missing or checksum-invalid shards** from 8 data + 4 parity shards. It does not correct nucleotide insertions/deletions and does not reinterpret VNX-DNA-1 datasets. See [ECC](docs/ECC.md).
+
+## Constrained encoding research
+
+`--encoding constrained_v1` selects a deterministic lossless 256-codeword encoder. Each input byte maps to eight bases with exactly 50% GC, fixed opposite word boundaries, and a configured homopolymer limit. It is a computational constraint mechanism, not biological validation. One complete nucleotide-damaged shard can be recovered only as a checksum-detected Reed–Solomon erasure when parity capacity remains; indel alignment itself is not corrected.

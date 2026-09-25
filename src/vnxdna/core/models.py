@@ -6,13 +6,14 @@ FORMAT_MAGIC='VNX-DNA'; FORMAT_VERSION=1; STRAND_MAGIC='VNX1'
 class StrandStatus(StrEnum): VALID='VALID'; CORRUPTED='CORRUPTED'; RECOVERED='RECOVERED'; UNRECOVERABLE='UNRECOVERABLE'; DUPLICATE='DUPLICATE'; UNKNOWN='UNKNOWN'
 @dataclass(frozen=True)
 class ConstraintSettings:
-    min_gc: float=0.0; max_gc: float=100.0; max_homopolymer_length: int|None=None; forbidden_motifs: tuple[str,...]=(); max_strand_length: int=4096
+    min_gc: float=0.0; max_gc: float=100.0; min_strand_length: int=0; max_homopolymer_length: int|None=None; forbidden_motifs: tuple[str,...]=(); max_strand_length: int=4096
 @dataclass(frozen=True)
 class DatasetConfig:
-    strand_payload_bytes: int=512; compression: str='zlib'; compression_level: int=6; encryption: bool=False; ecc: str='none'; data_shards: int=8; parity_shards: int=4; constraints: ConstraintSettings=field(default_factory=ConstraintSettings)
+    strand_payload_bytes: int=512; compression: str='zlib'; compression_level: int=6; encryption: bool=False; ecc: str='none'; data_shards: int=8; parity_shards: int=4; encoding: str='baseline_binary_2bit'; constraints: ConstraintSettings=field(default_factory=ConstraintSettings)
     def __post_init__(self):
         if not 1 <= self.strand_payload_bytes <= 1_000_000: raise ValueError('strand_payload_bytes must be between 1 and 1,000,000')
         if self.compression not in ('none','zlib','zstandard'): raise ValueError('unsupported compression codec')
+        if self.encoding not in ('baseline_binary_2bit','constrained_v1'): raise ValueError('unsupported encoding')
         if self.ecc not in ('none','reed_solomon'): raise ValueError('unsupported ECC algorithm')
         if self.ecc == 'reed_solomon' and (self.data_shards < 1 or self.parity_shards < 1 or self.data_shards + self.parity_shards > 255): raise ValueError('invalid Reed-Solomon shard configuration')
 @dataclass(frozen=True)

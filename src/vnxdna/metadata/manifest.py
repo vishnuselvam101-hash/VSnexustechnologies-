@@ -10,5 +10,5 @@ def read(path:Path)->dict:
     try: manifest=json.loads(path.read_text(encoding='utf-8'))
     except (OSError,json.JSONDecodeError) as error: raise MetadataError('Cannot read dataset manifest.') from error
     if not REQUIRED.issubset(manifest): raise MetadataError('Dataset manifest is missing required fields.')
-    if manifest['format']!=FORMAT_MAGIC or manifest['format_version'] not in (1, 2): raise UnsupportedFormatError('Unsupported VNX-DNA dataset format.')
+    if manifest['format']!=FORMAT_MAGIC or manifest['format_version'] not in (1, 2, 3): raise UnsupportedFormatError('Unsupported VNX-DNA dataset format.')
     return manifest
