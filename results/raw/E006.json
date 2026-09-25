@@ -1,0 +1,82 @@
+{
+  "experiment_id": "E006",
+  "timestamp": 1790325191.416098,
+  "environment": {
+    "python": "3.14.4 (main, May  1 2026, 05:51:55) [GCC 13.3.0]",
+    "os": "Linux-6.18.44-x86_64-with-glibc2.39",
+    "cpu": "x86_64",
+    "git_commit": "49defd31060839b451b6b8eb025a22c89a39649e"
+  },
+  "cases": [
+    {
+      "size": 1024,
+      "ecc": "none",
+      "rate": 0,
+      "chunk_size": 128,
+      "case": 0,
+      "success": true,
+      "runtime_seconds": 0.0019332760000452254,
+      "error": null,
+      "seed": 20260908
+    },
+    {
+      "size": 1024,
+      "ecc": "none",
+      "rate": 0,
+      "chunk_size": 256,
+      "case": 1,
+      "success": true,
+      "runtime_seconds": 0.0017726870000274175,
+      "error": null,
+      "seed": 20260908
+    },
+    {
+      "size": 1024,
+      "ecc": "none",
+      "rate": 0,
+      "chunk_size": 512,
+      "case": 2,
+      "success": true,
+      "runtime_seconds": 0.001883246000033978,
+      "error": null,
+      "seed": 20260908
+    },
+    {
+      "size": 1024,
+      "ecc": "none",
+      "rate": 0,
+      "chunk_size": 1024,
+      "case": 3,
+      "success": true,
+      "runtime_seconds": 0.0017514099999971222,
+      "error": null,
+      "seed": 20260908
+    },
+    {
+      "size": 1024,
+      "ecc": "none",
+      "rate": 0,
+      "chunk_size": 2048,
+      "case": 4,
+      "success": true,
+      "runtime_seconds": 0.003625817999989067,
+      "error": null,
+      "seed": 20260908
+    },
+    {
+      "size": 1024,
+      "ecc": "none",
+      "rate": 0,
+      "chunk_size": 4096,
+      "case": 5,
+      "success": true,
+      "runtime_seconds": 0.0025272059999679186,
+      "error": null,
+      "seed": 20260908
+    }
+  ],
+  "summary": {
+    "successful_cases": 6,
+    "total_cases": 6
+  }
+}

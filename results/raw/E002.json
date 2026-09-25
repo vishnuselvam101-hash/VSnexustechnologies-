@@ -1,0 +1,76 @@
+{
+  "experiment_id": "E002",
+  "timestamp": 1790325191.3184445,
+  "environment": {
+    "python": "3.14.4 (main, May  1 2026, 05:51:55) [GCC 13.3.0]",
+    "os": "Linux-6.18.44-x86_64-with-glibc2.39",
+    "cpu": "x86_64",
+    "git_commit": "49defd31060839b451b6b8eb025a22c89a39649e"
+  },
+  "cases": [
+    {
+      "size": 1024,
+      "ecc": "none",
+      "rate": 0,
+      "case": 0,
+      "success": true,
+      "runtime_seconds": 0.0019548579999764115,
+      "error": null,
+      "seed": 20260908
+    },
+    {
+      "size": 1024,
+      "ecc": "none",
+      "rate": 0.001,
+      "case": 1,
+      "success": true,
+      "runtime_seconds": 0.006199487999992925,
+      "error": null,
+      "seed": 20260908
+    },
+    {
+      "size": 1024,
+      "ecc": "none",
+      "rate": 0.005,
+      "case": 2,
+      "success": false,
+      "runtime_seconds": 0.002849151000020811,
+      "error": "Recovery failed: {\"failed_chunks\": [{\"chunk_id\": 0, \"reason\": \"Chunk checksum failed.\"}, {\"chunk_id\": 1, \"reason\": \"Chunk checksum failed.\"}]}",
+      "seed": 20260908
+    },
+    {
+      "size": 1024,
+      "ecc": "none",
+      "rate": 0.01,
+      "case": 3,
+      "success": false,
+      "runtime_seconds": 0.0025614639999957944,
+      "error": "Recovery failed: {\"failed_chunks\": [{\"chunk_id\": 0, \"reason\": \"Chunk checksum failed.\"}, {\"chunk_id\": 1, \"reason\": \"Chunk checksum failed.\"}, {\"chunk_id\": 2, \"reason\": \"Chunk checksum failed.\"}]}",
+      "seed": 20260908
+    },
+    {
+      "size": 1024,
+      "ecc": "none",
+      "rate": 0.02,
+      "case": 4,
+      "success": false,
+      "runtime_seconds": 0.0025310519999948156,
+      "error": "Recovery failed: {\"failed_chunks\": [{\"chunk_id\": 0, \"reason\": \"Chunk checksum failed.\"}, {\"chunk_id\": 1, \"reason\": \"Chunk checksum failed.\"}, {\"chunk_id\": 2, \"reason\": \"Chunk checksum failed.\"}]}",
+      "seed": 20260908
+    },
+    {
+      "size": 1024,
+      "ecc": "none",
+      "rate": 0.05,
+      "case": 5,
+      "success": false,
+      "runtime_seconds": 0.0025121670000203267,
+      "error": "Recovery failed: {\"failed_chunks\": [{\"chunk_id\": 0, \"reason\": \"Chunk checksum failed.\"}, {\"chunk_id\": 1, \"reason\": \"Chunk checksum failed.\"}, {\"chunk_id\": 2, \"reason\": \"Chunk checksum failed.\"}]}",
+      "seed": 20260908
+    }
+  ],
+  "summary": {
+    "successful_cases": 2,
+    "total_cases": 6
+  }
+}

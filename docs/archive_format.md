@@ -1,0 +1,2 @@
+# Archive format
+`VNXDNA-0.1` is a JSON container with a versioned manifest and file records. The manifest includes archive identifier, format/codec versions, timestamp, compression, encryption (non-secret algorithm metadata only), ECC settings, chunk size, and optional seed. Each chunk records its decoded payload length, SHA-256 checksum, ECC metadata, and encoded DNA symbols. Unsupported format versions fail closed.

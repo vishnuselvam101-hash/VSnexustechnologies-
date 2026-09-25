@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vnx-dna"
+version = "0.1.0"
+description = "Computational DNA data storage research platform (R&D-1)"
+readme = "README.md"
+requires-python = ">=3.12"
+license = {text = "MIT"}
+authors = [{name = "VS Nexus Technologies"}]
+dependencies = ["typer>=0.15,<1", "cryptography>=44,<47", "zstandard>=0.23,<1", "reedsolo>=1.7,<2", "fastapi>=0.115,<1", "uvicorn>=0.32,<1", "pydantic>=2.10,<3", "numpy>=2.0,<3", "pandas>=2.2,<4", "matplotlib>=3.9,<4"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<9", "pytest-cov>=6,<8", "httpx>=0.28,<1"]
+[project.scripts]
+vnxdna = "vnxdna.cli:app"
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+addopts = "-q"
+[tool.coverage.run]
+source = ["vnxdna"]

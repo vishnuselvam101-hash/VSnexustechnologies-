@@ -1,0 +1,32 @@
+[
+  {
+    "file": "random.bin",
+    "size": 1024,
+    "seed": 20260908,
+    "sha256": "2ce5aaa350d7cef6affbfdd43c7fe2f5b71dd33647615033cc2655f7c5082675"
+  },
+  {
+    "file": "repetitive.txt",
+    "size": 2048,
+    "seed": 20260908,
+    "sha256": "978493de24c2e321e74254d9e1dcf7575201d35c16c2c07ae1b131438cba7053"
+  },
+  {
+    "file": "sample.json",
+    "size": 2703,
+    "seed": 20260908,
+    "sha256": "34ce3ad5b732c411bc0843c7fd8486d40fcec93f46285c4c3f68e08f48fc9d63"
+  },
+  {
+    "file": "sample.csv",
+    "size": 753,
+    "seed": 20260908,
+    "sha256": "67764446d559ca216030431a39d39b79fbc905c7974c0875baf4210cf81d9b22"
+  },
+  {
+    "file": "video_like.bin",
+    "size": 2048,
+    "seed": 20260908,
+    "sha256": "4cc82819dba9f201683a00a3fc5c453e092b1ffa74c7ce1bc7575870e1fdb018"
+  }
+]
