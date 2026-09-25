@@ -1,47 +1,38 @@
-# VNX-DNA R&D-1
+# VNX-DNA
 
-VNX-DNA 0.1.0 is an **offline, computational** research platform for evaluating a reproducible digital-data-to-DNA-symbol archive pipeline. It implements an intentionally simple 2-bit mapping (`00 A`, `01 C`, `10 G`, `11 T`), diagnostics, simulated errors, authenticated encryption, Zstandard compression, chunk-level Reed–Solomon coding, a versioned JSON archive, a CLI, and a local FastAPI service.
+VNX-DNA-1 is a **computational DNA data-storage research system** for byte-for-byte archival round trips. It accepts arbitrary binary files, applies optional compression and authenticated encryption, splits the transformed byte stream into self-describing DNA strands, stores them as FASTA plus a deterministic JSON manifest, and reconstructs the original only when per-strand and final SHA-256 checks pass.
 
-## What it is—and is not
-
-It is a software simulator and archive-format research prototype. **R&D-1 uses configurable synthetic error models and does not constitute experimental validation of a biological DNA-storage channel.** The baseline mapping is diagnostic only, not constrained/biologically optimized encoding. No claims are made about physical density, longevity, cost, or commercial readiness.
-
-## Install
-
-```bash
-python3 -m venv .venv
-. .venv/bin/activate
-pip install -e '.[dev]'
-```
+> **Scientific scope:** VNX-DNA models DNA symbols and synthetic error channels in software. It is **not** a wet-lab system and makes no claim about synthesis/sequencing compatibility, physical density, longevity, cost, or commercial readiness.
 
 ## Quick start
 
 ```bash
-vnxdna encode test.bin test.vnxdna
-vnxdna inspect test.vnxdna
-vnxdna decode test.vnxdna recovered.bin
-vnxdna verify test.bin recovered.bin
-vnxdna experiment run E001
-vnxdna benchmark
-uvicorn vnxdna.api.app:app --host 127.0.0.1 --port 8000
+python3 -m venv .venv && . .venv/bin/activate
+pip install -e '.[dev]'
+vnx-dna encode input.bin dataset/
+vnx-dna inspect dataset/ --json
+vnx-dna decode dataset/ recovered.bin
+vnx-dna verify dataset/
+python scripts/acceptance_test.py
 ```
 
-The API is intended for local binding only. Visit `/docs` on the local server for its interactive dashboard-like API interface.
+The output dataset contains `manifest.json` and `strands.fasta`; see [the format specification](docs/FORMAT.md). The FASTA headers are self-describing and payloads use a lossless two-bit A/C/G/T baseline encoding.
 
-## Archive format
+## Operations
 
-`VNXDNA-0.1` is JSON, not pickle. It stores manifest metadata, per-file identities and hashes, plus DNA payload strings. It never stores encryption keys. See [archive format](docs/archive_format.md).
+* `encode INPUT DATASET` creates a new dataset directory.
+* `decode DATASET OUTPUT` reconstructs output only after strand and final digest checks.
+* `simulate DATASET NOISY` deterministically models substitutions, insertions, deletions, dropout, duplicates, and reordering.
+* `inspect DATASET`, `verify DATASET`, and `benchmark INPUT` provide inspection, full integrity verification, and measured local benchmark output.
 
-## Reproducibility and experiments
-
-`python scripts/generate_datasets.py` creates seeded synthetic datasets. `python scripts/run_all_experiments.py` runs E001–E008 safely at deliberately modest sizes and writes actual results under `results/`. E001–E008 are software experiments; generated results must be consulted rather than assumed.
-
-## Limitations and roadmap
-
-See [limitations](docs/limitations.md), [error models](docs/error_models.md), and [experimental protocol](docs/experimental_protocol.md). The next justified milestone is validation against a measured, independently characterized DNA channel—not biological claims based solely on this simulator.
+Set `VNXDNA_KEY` only when operating on encrypted datasets. Keys are never put in manifests or logs.
 
 ## Deployment
 
-For a local container deployment, run `docker compose up --build`. The supplied compose mapping exposes the API only on `127.0.0.1:8000`. API callers must be trusted local users because file-operation endpoints work on paths available inside the container. Mount only a dedicated working directory (the supplied `local-data` volume) rather than sensitive host paths.
+`docker compose up --build` provides a loopback-only FastAPI process. It is a trusted-local-user service, **not** a public or multi-user deployment boundary. See [security](docs/SECURITY.md).
 
-When `zstandard` is unavailable, development/test archives explicitly record a `zlib` fallback; they never claim to be Zstandard archives. Production installations should install the pinned dependencies and use Zstandard and Reed–Solomon as configured.
+## Documentation
+
+* [Architecture](docs/architecture.md), [format](docs/FORMAT.md), [CLI](docs/CLI.md), and [configuration](docs/CONFIGURATION.md)
+* [Error model](docs/error_models.md), [ECC scope](docs/ECC.md), and [benchmarks](docs/BENCHMARKS.md)
+* [Research scope](docs/RESEARCH.md), [development](docs/DEVELOPMENT.md), and [limitations](docs/limitations.md)
