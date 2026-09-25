@@ -35,3 +35,14 @@ def test_corruption_fails_safely(tmp_path):
  with pytest.raises(ValueError):decode_file(arc,out)
 def test_multiple_file_index(tmp_path):
  arc=tmp_path/'a';create_archive(arc,ecc='none');one=tmp_path/'one';two=tmp_path/'two';one.write_bytes(b'1');two.write_bytes(b'2');add_file(arc,one,'ONE');add_file(arc,two,'TWO');data,m=retrieve_file(arc,'TWO');assert data==b'2' and m['chunks_selected']==1
+def test_missing_chunk_fails_safely(tmp_path):
+    src=tmp_path/'in'; arc=tmp_path/'a'; out=tmp_path/'out'; src.write_bytes(b'v'*300)
+    encode_file(src,arc,ecc='none')
+    simulate_errors(arc,arc,dropout_rate=1.0,seed=4)
+    with pytest.raises(ValueError, match='missing'):
+        decode_file(arc,out)
+def test_registry(tmp_path):
+    from vnxdna.storage.database import ArchiveRegistry
+    registry=ArchiveRegistry(tmp_path/'metadata.sqlite')
+    registry.upsert({'archive_id':'id','created_at':'now','files':[{'original_size':3}]}, tmp_path/'a')
+    assert registry.get('id')['logical_bytes']==3

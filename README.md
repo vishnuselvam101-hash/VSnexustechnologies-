@@ -39,3 +39,9 @@ The API is intended for local binding only. Visit `/docs` on the local server fo
 ## Limitations and roadmap
 
 See [limitations](docs/limitations.md), [error models](docs/error_models.md), and [experimental protocol](docs/experimental_protocol.md). The next justified milestone is validation against a measured, independently characterized DNA channel—not biological claims based solely on this simulator.
+
+## Deployment
+
+For a local container deployment, run `docker compose up --build`. The supplied compose mapping exposes the API only on `127.0.0.1:8000`. API callers must be trusted local users because file-operation endpoints work on paths available inside the container. Mount only a dedicated working directory (the supplied `local-data` volume) rather than sensitive host paths.
+
+When `zstandard` is unavailable, development/test archives explicitly record a `zlib` fallback; they never claim to be Zstandard archives. Production installations should install the pinned dependencies and use Zstandard and Reed–Solomon as configured.
