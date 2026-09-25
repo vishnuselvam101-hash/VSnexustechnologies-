@@ -1,6 +1,6 @@
 from __future__ import annotations
 import random
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from ..core.pipeline import copy_dataset
 from ..storage.fasta import read_strands,write_strands
@@ -22,7 +22,7 @@ def simulate(source:str|Path,destination:str|Path,config:ChannelConfig)->dict:
             if rng.random()<config.substitution_probability: base=rng.choice([x for x in 'ACGT' if x!=base]);counts['substitutions']+=1
             bases.append(base)
             if rng.random()<config.insertion_probability: bases.append(rng.choice('ACGT'));counts['insertions']+=1
-        changed=Strand(strand.dataset_id,strand.index,strand.total,strand.payload_length,strand.checksum,''.join(bases));output.append(changed)
+        changed=replace(strand, sequence=''.join(bases));output.append(changed)
         if rng.random()<config.duplicate_probability: output.append(changed);counts['duplicates']+=1
     if config.reorder:rng.shuffle(output)
     write_strands(Path(destination)/'strands.fasta',output);return {**counts,'seed':config.seed,'reordered':config.reorder}

@@ -36,3 +36,7 @@ Set `VNXDNA_KEY` only when operating on encrypted datasets. Keys are never put i
 * [Architecture](docs/architecture.md), [format](docs/FORMAT.md), [CLI](docs/CLI.md), and [configuration](docs/CONFIGURATION.md)
 * [Error model](docs/error_models.md), [ECC scope](docs/ECC.md), and [benchmarks](docs/BENCHMARKS.md)
 * [Research scope](docs/RESEARCH.md), [development](docs/DEVELOPMENT.md), and [limitations](docs/limitations.md)
+
+## Reed–Solomon recovery (VNX-DNA-2)
+
+Use `vnx-dna encode input.bin dataset/ --ecc reed_solomon --data-shards 8 --parity-shards 4`. VNX-DNA-2 creates a new, explicitly versioned strand format. Per stripe, it recovers up to four **known missing or checksum-invalid shards** from 8 data + 4 parity shards. It does not correct nucleotide insertions/deletions and does not reinterpret VNX-DNA-1 datasets. See [ECC](docs/ECC.md).

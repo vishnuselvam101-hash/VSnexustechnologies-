@@ -12,9 +12,9 @@ app=typer.Typer(no_args_is_help=True,help='VNX-DNA-1 computational DNA data stor
 def emit(result, as_json:bool): typer.echo(json.dumps(result.to_dict() if hasattr(result,'to_dict') else result,indent=2,sort_keys=True) if as_json else result)
 def fail(error:Exception): raise typer.BadParameter(str(error)) from error
 @app.command()
-def encode(input:Path, output:Path, strand_bytes:int=512, compression:str='zlib', encryption_key:str|None=typer.Option(None,envvar='VNXDNA_KEY'), json_output:bool=typer.Option(False,'--json')):
+def encode(input:Path, output:Path, strand_bytes:int=512, compression:str='zlib', ecc:str='none', data_shards:int=8, parity_shards:int=4, encryption_key:str|None=typer.Option(None,envvar='VNXDNA_KEY'), json_output:bool=typer.Option(False,'--json')):
     """Encode arbitrary bytes into a self-describing manifest plus FASTA strands."""
-    try: emit(encode_file(input,output,DatasetConfig(strand_payload_bytes=strand_bytes,compression=compression,encryption=bool(encryption_key)),encryption_key),json_output)
+    try: emit(encode_file(input,output,DatasetConfig(strand_payload_bytes=strand_bytes,compression=compression,ecc=ecc,data_shards=data_shards,parity_shards=parity_shards,encryption=bool(encryption_key)),encryption_key),json_output)
     except Exception as error: fail(error)
 @app.command()
 def decode(dataset:Path, output:Path, encryption_key:str|None=typer.Option(None,envvar='VNXDNA_KEY'), json_output:bool=typer.Option(False,'--json')):
