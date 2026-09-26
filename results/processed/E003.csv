@@ -1,0 +1,4 @@
+size,ecc,rate,indel,case,success,runtime_seconds,error,seed
+1024,none,0.001,insertion,0,True,0.0028172130000143625,,20260908
+1024,none,0.001,deletion,1,False,0.002572324999960074,"Recovery failed: {""failed_chunks"": [{""chunk_id"": 1, ""reason"": ""Bit length must be divisible by 8.""}]}",20260908
+1024,none,0.001,mixed,2,False,0.0010975120000011884,simulate_errors() got an unexpected keyword argument 'mixed_rate',20260908

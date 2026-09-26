@@ -1,0 +1,46 @@
+{
+  "experiment_id": "E001",
+  "timestamp": 1790325191.2794185,
+  "environment": {
+    "python": "3.14.4 (main, May  1 2026, 05:51:55) [GCC 13.3.0]",
+    "os": "Linux-6.18.44-x86_64-with-glibc2.39",
+    "cpu": "x86_64",
+    "git_commit": "49defd31060839b451b6b8eb025a22c89a39649e"
+  },
+  "cases": [
+    {
+      "size": 1024,
+      "ecc": "none",
+      "rate": 0,
+      "case": 0,
+      "success": true,
+      "runtime_seconds": 0.004257565000045815,
+      "error": null,
+      "seed": 20260908
+    },
+    {
+      "size": 10240,
+      "ecc": "none",
+      "rate": 0,
+      "case": 1,
+      "success": true,
+      "runtime_seconds": 0.0027544619999844144,
+      "error": null,
+      "seed": 20260908
+    },
+    {
+      "size": 102400,
+      "ecc": "none",
+      "rate": 0,
+      "case": 2,
+      "success": true,
+      "runtime_seconds": 0.007006477000004452,
+      "error": null,
+      "seed": 20260908
+    }
+  ],
+  "summary": {
+    "successful_cases": 3,
+    "total_cases": 3
+  }
+}

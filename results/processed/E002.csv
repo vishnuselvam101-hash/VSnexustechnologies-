@@ -1,0 +1,7 @@
+size,ecc,rate,case,success,runtime_seconds,error,seed
+1024,none,0,0,True,0.0019548579999764115,,20260908
+1024,none,0.001,1,True,0.006199487999992925,,20260908
+1024,none,0.005,2,False,0.002849151000020811,"Recovery failed: {""failed_chunks"": [{""chunk_id"": 0, ""reason"": ""Chunk checksum failed.""}, {""chunk_id"": 1, ""reason"": ""Chunk checksum failed.""}]}",20260908
+1024,none,0.01,3,False,0.0025614639999957944,"Recovery failed: {""failed_chunks"": [{""chunk_id"": 0, ""reason"": ""Chunk checksum failed.""}, {""chunk_id"": 1, ""reason"": ""Chunk checksum failed.""}, {""chunk_id"": 2, ""reason"": ""Chunk checksum failed.""}]}",20260908
+1024,none,0.02,4,False,0.0025310519999948156,"Recovery failed: {""failed_chunks"": [{""chunk_id"": 0, ""reason"": ""Chunk checksum failed.""}, {""chunk_id"": 1, ""reason"": ""Chunk checksum failed.""}, {""chunk_id"": 2, ""reason"": ""Chunk checksum failed.""}]}",20260908
+1024,none,0.05,5,False,0.0025121670000203267,"Recovery failed: {""failed_chunks"": [{""chunk_id"": 0, ""reason"": ""Chunk checksum failed.""}, {""chunk_id"": 1, ""reason"": ""Chunk checksum failed.""}, {""chunk_id"": 2, ""reason"": ""Chunk checksum failed.""}]}",20260908

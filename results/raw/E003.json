@@ -1,0 +1,49 @@
+{
+  "experiment_id": "E003",
+  "timestamp": 1790325191.3367593,
+  "environment": {
+    "python": "3.14.4 (main, May  1 2026, 05:51:55) [GCC 13.3.0]",
+    "os": "Linux-6.18.44-x86_64-with-glibc2.39",
+    "cpu": "x86_64",
+    "git_commit": "49defd31060839b451b6b8eb025a22c89a39649e"
+  },
+  "cases": [
+    {
+      "size": 1024,
+      "ecc": "none",
+      "rate": 0.001,
+      "indel": "insertion",
+      "case": 0,
+      "success": true,
+      "runtime_seconds": 0.0028172130000143625,
+      "error": null,
+      "seed": 20260908
+    },
+    {
+      "size": 1024,
+      "ecc": "none",
+      "rate": 0.001,
+      "indel": "deletion",
+      "case": 1,
+      "success": false,
+      "runtime_seconds": 0.002572324999960074,
+      "error": "Recovery failed: {\"failed_chunks\": [{\"chunk_id\": 1, \"reason\": \"Bit length must be divisible by 8.\"}]}",
+      "seed": 20260908
+    },
+    {
+      "size": 1024,
+      "ecc": "none",
+      "rate": 0.001,
+      "indel": "mixed",
+      "case": 2,
+      "success": false,
+      "runtime_seconds": 0.0010975120000011884,
+      "error": "simulate_errors() got an unexpected keyword argument 'mixed_rate'",
+      "seed": 20260908
+    }
+  ],
+  "summary": {
+    "successful_cases": 1,
+    "total_cases": 3
+  }
+}

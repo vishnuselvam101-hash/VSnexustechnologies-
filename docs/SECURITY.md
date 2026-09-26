@@ -1,0 +1,2 @@
+# Security
+Fernet authenticated encryption is optional and supplied with `VNXDNA_KEY`; keys are never serialized or logged. Dataset paths are operator controlled. The local API is not an authentication boundary and must remain loopback-only unless wrapped by an authenticated service. Decode untrusted datasets within OS resource limits because malformed metadata and compressed payloads may consume resources.

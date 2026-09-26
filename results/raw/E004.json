@@ -1,0 +1,82 @@
+{
+  "experiment_id": "E004",
+  "timestamp": 1790325191.3654902,
+  "environment": {
+    "python": "3.14.4 (main, May  1 2026, 05:51:55) [GCC 13.3.0]",
+    "os": "Linux-6.18.44-x86_64-with-glibc2.39",
+    "cpu": "x86_64",
+    "git_commit": "49defd31060839b451b6b8eb025a22c89a39649e"
+  },
+  "cases": [
+    {
+      "size": 1024,
+      "ecc": "none",
+      "rate": 0,
+      "dropout": true,
+      "case": 0,
+      "success": true,
+      "runtime_seconds": 0.0028402280000250357,
+      "error": null,
+      "seed": 20260908
+    },
+    {
+      "size": 1024,
+      "ecc": "none",
+      "rate": 0.01,
+      "dropout": true,
+      "case": 1,
+      "success": true,
+      "runtime_seconds": 0.0029161630000089644,
+      "error": null,
+      "seed": 20260908
+    },
+    {
+      "size": 1024,
+      "ecc": "none",
+      "rate": 0.02,
+      "dropout": true,
+      "case": 2,
+      "success": true,
+      "runtime_seconds": 0.002708799000004092,
+      "error": null,
+      "seed": 20260908
+    },
+    {
+      "size": 1024,
+      "ecc": "none",
+      "rate": 0.05,
+      "dropout": true,
+      "case": 3,
+      "success": true,
+      "runtime_seconds": 0.0026944260000050235,
+      "error": null,
+      "seed": 20260908
+    },
+    {
+      "size": 1024,
+      "ecc": "none",
+      "rate": 0.1,
+      "dropout": true,
+      "case": 4,
+      "success": true,
+      "runtime_seconds": 0.002675818000000163,
+      "error": null,
+      "seed": 20260908
+    },
+    {
+      "size": 1024,
+      "ecc": "none",
+      "rate": 0.2,
+      "dropout": true,
+      "case": 5,
+      "success": true,
+      "runtime_seconds": 0.002623595999978079,
+      "error": null,
+      "seed": 20260908
+    }
+  ],
+  "summary": {
+    "successful_cases": 6,
+    "total_cases": 6
+  }
+}
