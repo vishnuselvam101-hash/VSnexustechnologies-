@@ -11,3 +11,4 @@ results/raw/*.json
 results/processed/*.csv
 results/figures/*.png
 results/tables/*.csv
+*.egg-info/
