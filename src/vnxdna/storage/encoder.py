@@ -33,6 +33,7 @@ from ..ecc.cauchy import CauchyErasureCode
 META_DATA_SHARDS = 8
 META_PARITY_SHARDS = 8
 META_MAGIC = b"VNXM"
+SCREEN_BATCH = 8192
 
 
 @dataclass
@@ -103,8 +104,15 @@ def encode_container(manifest: mf.Manifest, manifest_bytes: bytes, stored_chunks
     meta_strands = int(r.shape[0])
     tag = manifest.archive_tag
     all_kinds, all_stripes, all_shards = np.concatenate(kinds), np.concatenate(stripes), np.concatenate(shards)
-    codes, variants = build_strands(geometry, spec, tag, all_kinds, all_stripes, all_shards, np.concatenate(rows))
-    sequences = [to_string(row) for row in codes]
+    all_rows = np.concatenate(rows)
+    sequences: list[str] = []
+    variant_parts = []
+    for start in range(0, all_rows.shape[0], SCREEN_BATCH):  # batched screening bounds peak memory
+        sl = slice(start, start + SCREEN_BATCH)
+        codes, variants = build_strands(geometry, spec, tag, all_kinds[sl], all_stripes[sl], all_shards[sl], all_rows[sl])
+        sequences.extend(to_string(row) for row in codes)
+        variant_parts.append(variants)
+    variants = np.concatenate(variant_parts) if variant_parts else np.zeros(0, dtype=np.uint8)
     labels = [f"vnx4:{tag:06x}:{'d' if k == KIND_DATA else 'm'}:{st}:{sh}"
               for k, st, sh in zip(all_kinds.tolist(), all_stripes.tolist(), all_shards.tolist())]
     stats = efficiency(manifest, data_strands, meta_strands)

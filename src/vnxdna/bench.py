@@ -126,7 +126,8 @@ def run_one(size: int, repeats: int, seed: int, options: StoreOptions = StoreOpt
     stats = encoded.stats
     return {"input_bytes": len(data), "input_sha256": hashlib.sha256(data).hexdigest(), "stored_bytes": container.manifest.stored_size,
             "compressed_bytes": len(compressed), "strands": len(encoded.sequences), "strand_nt": stats["strand_nt"],
-            "dna_bases": stats["dna_bases_total"], "bases_per_input_byte": stats["bases_per_original_byte"],
+            "dna_bases": stats["dna_bases_total"], "bases_per_input_byte": stats["dna_bases_total"] / len(data),
+            "net_bits_per_base": 8 * len(data) / stats["dna_bases_total"],
             "outer_parity_bytes": stats["outer_parity_bytes"], "redundancy_overhead_percent": stats.get("redundancy_overhead_percent"),
             "frame_overhead_bytes": stats["frame_overhead_bytes"],
             "channel_observed": {k: sim_report[k] for k in ("strands_dropped", "substitutions", "reads_out")},

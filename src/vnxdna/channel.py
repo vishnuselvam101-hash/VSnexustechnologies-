@@ -34,6 +34,8 @@ import numpy as np
 from .dna.mapping import INVALID, _ASCII_TO_CODE, _CODE_TO_ASCII, _COMPLEMENT
 from .errors import ConfigurationError, InvalidDNAError
 
+BLOCK_BASES = 1 << 20
+
 
 @dataclass(frozen=True)
 class ChannelConfig:
@@ -142,44 +144,56 @@ def simulate(sequences: list[str], config: ChannelConfig, *, record_events: bool
                 reads_codes[r] = np.delete(seq, start + np.flatnonzero(kinds))
                 counts["substitutions"] += int((~kinds).sum())
                 counts["deletions"] += int(kinds.sum())
-    # 3. per-base substitution → deletion → insertion, vectorized over the whole pool
-    lengths = np.array([c.size for c in reads_codes], dtype=np.int64)
-    flat = np.concatenate(reads_codes) if reads_codes else np.zeros(0, dtype=np.uint8)
-    total = flat.size
-    read_id = np.repeat(np.arange(len(reads_codes)), lengths)
-    starts = np.cumsum(lengths) - lengths
+    # 3. per-base substitution → deletion → insertion, vectorized within blocks of reads (bounded memory).
+    #    Blocks are consecutive reads totalling at most BLOCK_BASES bases; randomness is drawn block by block
+    #    in a fixed order, so results depend only on (input, config, seed).
     bases = "ACGTN"
-    if config.substitution_rate:
-        sub = rng.random(total) < config.substitution_rate
-        flat = flat.copy()
-        before = flat[sub].copy()
-        flat[sub] = (flat[sub] + rng.integers(1, 4, int(sub.sum()))) % 4
-        counts["substitutions"] += int(sub.sum())
+    lengths_all = np.array([c.size for c in reads_codes], dtype=np.int64)
+    total = int(lengths_all.sum())
+    ends = np.cumsum(lengths_all)
+    pieces: list[np.ndarray] = []
+    first = 0
+    while first < len(reads_codes):
+        base = int(ends[first - 1]) if first else 0
+        last = max(first + 1, int(np.searchsorted(ends, base + BLOCK_BASES, side="right")))
+        block = reads_codes[first:last]
+        lengths = lengths_all[first:last]
+        flat = np.concatenate(block) if block else np.zeros(0, dtype=np.uint8)
+        size = flat.size
+        read_id = np.repeat(np.arange(len(block)), lengths)
+        starts = np.cumsum(lengths) - lengths
+        if config.substitution_rate:
+            sub = rng.random(size) < config.substitution_rate
+            flat = flat.copy()
+            before = flat[sub].copy()
+            flat[sub] = (flat[sub] + rng.integers(1, 4, int(sub.sum()))) % 4
+            counts["substitutions"] += int(sub.sum())
+            if record_events:
+                for pos, old, new in zip(np.flatnonzero(sub).tolist(), before.tolist(), flat[sub].tolist()):
+                    r = int(read_id[pos])
+                    events.append({"type": "substitution", "read": first + r, "source_strand": int(source[first + r]),
+                                   "position": pos - int(starts[r]), "original": bases[old], "replacement": bases[new]})
+        keep = rng.random(size) >= config.deletion_rate if config.deletion_rate else np.ones(size, dtype=bool)
+        counts["deletions"] += int((~keep).sum())
+        ins = rng.random(size) < config.insertion_rate if config.insertion_rate else np.zeros(size, dtype=bool)
+        ins_bases = rng.integers(0, 4, size).astype(np.uint8) if config.insertion_rate else np.zeros(size, dtype=np.uint8)
+        counts["insertions"] += int(ins.sum())
         if record_events:
-            for pos, old, new in zip(np.flatnonzero(sub).tolist(), before.tolist(), flat[sub].tolist()):
+            for pos in np.flatnonzero(~keep).tolist():
                 r = int(read_id[pos])
-                events.append({"type": "substitution", "read": r, "source_strand": int(source[r]), "position": pos - int(starts[r]),
-                               "original": bases[old], "replacement": bases[new]})
-    keep = rng.random(total) >= config.deletion_rate if config.deletion_rate else np.ones(total, dtype=bool)
-    counts["deletions"] += int((~keep).sum())
-    ins = rng.random(total) < config.insertion_rate if config.insertion_rate else np.zeros(total, dtype=bool)
-    ins_bases = rng.integers(0, 4, total).astype(np.uint8) if config.insertion_rate else np.zeros(total, dtype=np.uint8)
-    counts["insertions"] += int(ins.sum())
-    if record_events:
-        for pos in np.flatnonzero(~keep).tolist():
-            r = int(read_id[pos])
-            events.append({"type": "deletion", "read": r, "source_strand": int(source[r]), "position": pos - int(starts[r]),
-                           "original": bases[int(flat[pos])]})
-        for pos in np.flatnonzero(ins).tolist():
-            r = int(read_id[pos])
-            events.append({"type": "insertion", "read": r, "source_strand": int(source[r]), "after_position": pos - int(starts[r]),
-                           "inserted": bases[int(ins_bases[pos])]})
-    pairs = np.stack([np.where(keep, flat, 255), np.where(ins, ins_bases, 255)], axis=1).reshape(-1)
-    pair_ids = np.repeat(read_id, 2)
-    mask = pairs != 255
-    out_codes, out_ids = pairs[mask].astype(np.uint8), pair_ids[mask]
-    out_lengths = np.bincount(out_ids, minlength=len(reads_codes)) if len(reads_codes) else np.zeros(0, dtype=np.int64)
-    pieces = np.split(out_codes, np.cumsum(out_lengths)[:-1]) if len(reads_codes) else []
+                events.append({"type": "deletion", "read": first + r, "source_strand": int(source[first + r]),
+                               "position": pos - int(starts[r]), "original": bases[int(flat[pos])]})
+            for pos in np.flatnonzero(ins).tolist():
+                r = int(read_id[pos])
+                events.append({"type": "insertion", "read": first + r, "source_strand": int(source[first + r]),
+                               "after_position": pos - int(starts[r]), "inserted": bases[int(ins_bases[pos])]})
+        pairs = np.stack([np.where(keep, flat, 255), np.where(ins, ins_bases, 255)], axis=1).reshape(-1)
+        pair_ids = np.repeat(read_id, 2)
+        mask = pairs != 255
+        out_codes, out_ids = pairs[mask].astype(np.uint8), pair_ids[mask]
+        out_lengths = np.bincount(out_ids, minlength=len(block))
+        pieces.extend(np.split(out_codes, np.cumsum(out_lengths)[:-1]))
+        first = last
     # 5. orientation
     rc = rng.random(len(pieces)) < config.reverse_complement_rate if config.reverse_complement_rate else np.zeros(len(pieces), dtype=bool)
     reads = []
