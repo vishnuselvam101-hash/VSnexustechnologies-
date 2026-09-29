@@ -3,8 +3,10 @@
     python research/experiments/extended_fuzz.py [--mutations 3000]
 
 1. Byte-level mutations (bit flips, deletions, insertions, truncation) of a
-   plaintext and an encrypted .vxdna container. Each outcome must be the exact
-   original data or a VNXDNAError.
+   plaintext and an encrypted .vxdna container, in three modes: raw file bytes,
+   body mutated (any edit, or length-preserving bit flips) with a re-sealed file trailer, and manifest mutated with a
+   re-sealed trailer. Each outcome must be the exact original data or a
+   VNXDNAError.
 2. Every manifest field replaced by each of 16 hostile values (or deleted).
    Each must be rejected with a VNXDNAError or leave the manifest unchanged.
 
@@ -51,6 +53,26 @@ def mutate(blob: bytes, rng: random.Random) -> bytes:
     return bytes(b)
 
 
+MODES = ("raw", "body-resealed", "body-bitflip-resealed", "manifest-resealed")
+
+
+def apply_mode(blob: bytes, rng: random.Random, mode: str) -> bytes:
+    """raw: mutate the file bytes (the trailer usually catches it).
+    body-resealed / manifest-resealed: mutate one part, then rebuild the header and trailer,
+    so the mutation reaches the manifest, chunk hash, AEAD and decompression layers."""
+    if mode == "raw":
+        return mutate(blob, rng)
+    cf = vxdna.parse(blob)
+    if mode == "body-resealed":
+        return vxdna.serialize(cf.manifest_bytes, mutate(cf.body, rng))
+    if mode == "body-bitflip-resealed":  # length-preserving: reaches chunk SHA-256 / AEAD / decompression
+        body = bytearray(cf.body)
+        for _ in range(rng.randint(1, 4)):
+            body[rng.randrange(len(body))] ^= 1 << rng.randrange(8)
+        return vxdna.serialize(cf.manifest_bytes, bytes(body))
+    return vxdna.serialize(mutate(cf.manifest_bytes, rng), cf.body)
+
+
 def paths(node, path):
     yield path
     if isinstance(node, dict):
@@ -71,9 +93,9 @@ def main() -> int:
     outcomes: collections.Counter = collections.Counter()
     for seed in range(args.mutations):
         rng = random.Random(seed)
-        for blob, key in targets:
+        for (blob, key), mode in [(t, m) for t in targets for m in MODES]:
             try:
-                out = restore(mutate(blob, rng), key)
+                out = restore(apply_mode(blob, rng, mode), key)
                 outcomes["exact" if out == data else "WRONG"] += 1
                 if out != data:
                     bad["wrong output"] += 1
@@ -104,7 +126,7 @@ def main() -> int:
                 pass
             except Exception as error:  # noqa: BLE001
                 bad[f"{path}={value!r}: {type(error).__name__}"] += 1
-    print(json.dumps({"container_mutations": 2 * args.mutations, "outcomes": dict(outcomes), "manifest_field_cases": field_cases,
+    print(json.dumps({"container_mutations": len(targets) * len(MODES) * args.mutations, "outcomes": dict(outcomes), "manifest_field_cases": field_cases,
                       "problems": dict(bad)}, indent=2, sort_keys=True))
     return 1 if bad else 0
 

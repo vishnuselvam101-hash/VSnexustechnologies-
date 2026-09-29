@@ -46,12 +46,21 @@ def _mutate(blob: bytes, rng: random.Random, n: int) -> bytes:
 
 
 @FUZZ
-@given(seed=st.integers(0, 2 ** 32), n=st.integers(1, 6), sealed=st.booleans())
-def test_mutated_containers_never_yield_wrong_data(seed, n, sealed):
+@given(seed=st.integers(0, 2 ** 32), n=st.integers(1, 6), sealed=st.booleans(),
+       mode=st.sampled_from(["raw", "body-resealed", "manifest-resealed"]))
+def test_mutated_containers_never_yield_wrong_data(seed, n, sealed, mode):
+    """Resealed modes rebuild the file trailer so mutations reach the inner verification layers."""
     blob = SEALED if sealed else PLAIN
     key = TEST_KEY if sealed else None
+    rng = random.Random(seed)
+    if mode == "raw":
+        candidate = _mutate(blob, rng, n)
+    else:
+        cf = vxdna.parse(blob)
+        candidate = (vxdna.serialize(cf.manifest_bytes, _mutate(cf.body, rng, n)) if mode == "body-resealed"
+                     else vxdna.serialize(_mutate(cf.manifest_bytes, rng, n), cf.body))
     try:
-        out = _restore(_mutate(blob, random.Random(seed), n), key)
+        out = _restore(candidate, key)
     except VNXDNAError:
         return
     assert out == DATA  # a mutation that happens to be harmless must still give the exact bytes
