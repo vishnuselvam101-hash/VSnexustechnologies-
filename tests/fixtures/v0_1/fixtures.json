@@ -1,0 +1,108 @@
+{
+  "generator": "tests/fixtures/v0_1/generate_fixtures.py",
+  "baseline_commit": "cf7d1f5b171cf56171a9ed72b17c20795c64ca1b",
+  "python": "3.12.3",
+  "test_only_fernet_key": "dm54LWRuYS10ZXN0LW9ubHktZml4dHVyZS1rZXkhISE=",
+  "fixtures": [
+    {
+      "name": "dataset_v1_zlib",
+      "kind": "v0.1-dataset",
+      "input": "dataset_v1_zlib.input.bin",
+      "input_sha256": "0f75c21f6a75170423676219888a544faedf4a357f9d34b346091bc77a308a0d",
+      "input_size": 3000,
+      "seed": 1,
+      "strand_count": 12,
+      "key": null
+    },
+    {
+      "name": "dataset_v1_empty",
+      "kind": "v0.1-dataset",
+      "input": "dataset_v1_empty.input.bin",
+      "input_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "input_size": 0,
+      "seed": 2,
+      "strand_count": 1,
+      "key": null
+    },
+    {
+      "name": "dataset_v1_zstd_encrypted",
+      "kind": "v0.1-dataset",
+      "input": "dataset_v1_zstd_encrypted.input.bin",
+      "input_sha256": "42c917bc99758cf0c11f3871ad0a86df470fe6836b1519d5b83952c1911257f1",
+      "input_size": 2500,
+      "seed": 3,
+      "strand_count": 18,
+      "key": "TEST_ONLY_FERNET_KEY"
+    },
+    {
+      "name": "dataset_v2_rs_4_2",
+      "kind": "v0.1-dataset",
+      "input": "dataset_v2_rs_4_2.input.bin",
+      "input_sha256": "454cfc43a73ff6ed15133871a335abcfa2d0cbf265cfe8e8fd45d09016e7a8ea",
+      "input_size": 2000,
+      "seed": 4,
+      "strand_count": 24,
+      "key": null
+    },
+    {
+      "name": "dataset_v2_rs_8_4",
+      "kind": "v0.1-dataset",
+      "input": "dataset_v2_rs_8_4.input.bin",
+      "input_sha256": "9d209e10bfe932dd02335af25c48d83954cccc5a873c04bd172934a1374acb36",
+      "input_size": 3500,
+      "seed": 5,
+      "strand_count": 60,
+      "key": null
+    },
+    {
+      "name": "dataset_v3_constrained",
+      "kind": "v0.1-dataset",
+      "input": "dataset_v3_constrained.input.bin",
+      "input_sha256": "c54095055c7c42e47a87aa9c709158ad9559cf41ff01f6ac59a301e71c90458d",
+      "input_size": 900,
+      "seed": 6,
+      "strand_count": 8,
+      "key": null
+    },
+    {
+      "name": "dataset_v3_constrained_rs",
+      "kind": "v0.1-dataset",
+      "input": "dataset_v3_constrained_rs.input.bin",
+      "input_sha256": "2727724de72c4770066623515795ce6fef1ce3beb0b258af287e5ecfbd694074",
+      "input_size": 1500,
+      "seed": 7,
+      "strand_count": 18,
+      "key": null
+    },
+    {
+      "name": "rd1_archive_plain",
+      "kind": "rd1-archive",
+      "archive": "rd1_archive_plain.vnxdna.json",
+      "input": "rd1_archive_plain.input.bin",
+      "input_sha256": "3df539d4aac309c72a6012b42b7c7ae1b482460f69bda49333b8c60f165a1c74",
+      "input_size": 1200,
+      "seed": 11,
+      "key": null
+    },
+    {
+      "name": "rd1_archive_rs16",
+      "kind": "rd1-archive",
+      "archive": "rd1_archive_rs16.vnxdna.json",
+      "input": "rd1_archive_rs16.input.bin",
+      "input_sha256": "c4b8ad58ebe02dc8157e4b44d6f76cc4c06b7e8fadf4780dc299ca3df09f3181",
+      "input_size": 1200,
+      "seed": 12,
+      "key": null
+    },
+    {
+      "name": "rd1_archive_encrypted",
+      "kind": "rd1-archive",
+      "archive": "rd1_archive_encrypted.vnxdna.json",
+      "input": "rd1_archive_encrypted.input.bin",
+      "input_sha256": "74d8f7190e3e112b7dc21b31572f7510488b9eaf003f746bcf841af7532b9b99",
+      "input_size": 1200,
+      "seed": 13,
+      "key": "TEST_ONLY_FERNET_KEY"
+    }
+  ]
+}
