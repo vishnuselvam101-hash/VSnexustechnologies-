@@ -37,12 +37,12 @@ code, tests, docs and results are archived unchanged under `research/legacy/`.
 
 ## Test status (fresh clone, fresh venv, Python 3.12.3)
 
-- `pytest`: **269 tests, 0 failures** (163 unit, 62 integration, 5 property with Hypothesis, 11 adversarial/fuzz,
+- `pytest` at `df2da03`: **269 passed, 0 failed** (163 unit, 62 integration, 5 property with Hypothesis, 11 adversarial/fuzz,
   28 CLI including the clean-room §35 test and the README-executes test). About 60 s wall time on 8 CPUs.
 - ECC exhaustive: 8+4 (794 patterns) and 16 other configurations; sampled up to 200+56; 192+64 worst case.
 - Extended fuzz (`research/experiments/extended_fuzz.py`, 3,000 seeds): 24,000 container mutations in raw,
   body-resealed, bit-flip and manifest-resealed modes, and 1,586 manifest-field cases. Result: **0 unstructured
-  exceptions, 0 wrong outputs** (`research/results/extended_fuzz.json`).
+  exceptions, 0 wrong outputs** (`research/results/extended_fuzz.json`, run at `df2da03`).
 - Package install: `pip install -e '.[dev]'` from a fresh clone succeeds, and `vnx-dna` is on PATH.
 
 ## Measured results (simulation only; [CHANNEL_MODEL.md](CHANNEL_MODEL.md), `research/results/`)
