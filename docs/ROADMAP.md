@@ -13,7 +13,7 @@ The capabilities each milestone named are present, and their evidence is listed 
 
 ## V1.x (compatible with format 4)
 
-- Streaming encode/decode, so memory is no longer about 20× the input for large files (see BENCHMARKS.md). The format
+- Streaming encode/decode (peak traced memory is ≈27× the input end to end at 10 MB; BENCHMARKS.md); the format
   already permits it.
 - Faster inner decoding: a vectorized Berlekamp–Massey instead of the per-read `reedsolo` call. This is the dominant
   cost at high error rates.

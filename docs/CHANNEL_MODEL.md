@@ -80,3 +80,94 @@ seeds on a 60 kB half-random/half-text dataset with default settings unless stat
 came back, verified by SHA-256. *Wrong data* counts runs that returned incorrect bytes. **It is 0 in every run**: every
 failure was an explicit error, and the runs are reproducible from the commit and seeds recorded in
 `research/results/channel_experiments.json`.
+
+
+Commit `bb33372cedf018e26013e9e2a10cca6eaffe9d01` (dirty=False), vnx-dna 1.0.0, Python 3.12.3, Linux-6.8.0-139-generic-x86_64-with-glibc2.39, 8 CPUs.
+
+Dataset: 60,000 B (sha256 `35a8b45340c47ff3…`), default profile (64+16 outer, 40 B payload, 8 B inner parity, 244 nt strands), 1063 strands. 10 seeds per point.
+
+Outcome counts are real decode attempts; *wrong* counts runs that returned incorrect bytes (must be 0).
+
+### X1-dropout (64+16 outer code; varying `dropout_rate`; base {}; indel repair off)
+
+| value | recovered | wrong data | mean observed dropped strands | mean observed events (sub/ins/del) |
+|---|---|---|---|---|
+| 0.0 | 10/10 | 0 | 0.0 | 0 / 0 / 0 |
+| 0.01 | 10/10 | 0 | 9.9 | 0 / 0 / 0 |
+| 0.05 | 10/10 | 0 | 48.2 | 0 / 0 / 0 |
+| 0.1 | 9/10 | 0 | 100.9 | 0 / 0 / 0 |
+| 0.15 | 2/10 | 0 | 154.0 | 0 / 0 / 0 |
+| 0.2 | 0/10 | 0 | 211.1 | 0 / 0 / 0 |
+| 0.25 | 0/10 | 0 | 262.8 | 0 / 0 / 0 |
+| 0.3 | 0/10 | 0 | 314.7 | 0 / 0 / 0 |
+
+### X2-substitution (64+16 outer code; varying `substitution_rate`; base {}; indel repair off)
+
+| value | recovered | wrong data | mean observed dropped strands | mean observed events (sub/ins/del) |
+|---|---|---|---|---|
+| 0.0 | 10/10 | 0 | 0.0 | 0 / 0 / 0 |
+| 0.001 | 10/10 | 0 | 0.0 | 256 / 0 / 0 |
+| 0.005 | 10/10 | 0 | 0.0 | 1293 / 0 / 0 |
+| 0.01 | 10/10 | 0 | 0.0 | 2575 / 0 / 0 |
+| 0.015 | 0/10 | 0 | 0.0 | 3849 / 0 / 0 |
+| 0.02 | 0/10 | 0 | 0.0 | 5135 / 0 / 0 |
+| 0.03 | 0/10 | 0 | 0.0 | 7725 / 0 / 0 |
+
+### X3-sub+dropout (64+16 outer code; varying `substitution_rate`; base {'dropout_rate': 0.1}; indel repair off)
+
+| value | recovered | wrong data | mean observed dropped strands | mean observed events (sub/ins/del) |
+|---|---|---|---|---|
+| 0.001 | 9/10 | 0 | 100.9 | 233 / 0 / 0 |
+| 0.005 | 9/10 | 0 | 100.9 | 1172 / 0 / 0 |
+| 0.01 | 0/10 | 0 | 100.9 | 2333 / 0 / 0 |
+
+### X4-indel-no-repair (64+16 outer code; varying `deletion_rate`; base {'insertion_rate': 0.0}; indel repair off)
+
+| value | recovered | wrong data | mean observed dropped strands | mean observed events (sub/ins/del) |
+|---|---|---|---|---|
+| 0.0002 | 10/10 | 0 | 0.0 | 0 / 0 / 54 |
+| 0.0005 | 7/10 | 0 | 0.0 | 0 / 0 / 134 |
+| 0.001 | 0/10 | 0 | 0.0 | 0 / 0 / 256 |
+| 0.002 | 0/10 | 0 | 0.0 | 0 / 0 / 516 |
+
+### X5-indel-with-repair (64+16 outer code; varying `deletion_rate`; base {'insertion_rate': 0.0}; indel repair on)
+
+| value | recovered | wrong data | mean observed dropped strands | mean observed events (sub/ins/del) |
+|---|---|---|---|---|
+| 0.0002 | 10/10 | 0 | 0.0 | 0 / 0 / 54 |
+| 0.0005 | 10/10 | 0 | 0.0 | 0 / 0 / 134 |
+| 0.001 | 10/10 | 0 | 0.0 | 0 / 0 / 256 |
+| 0.002 | 10/10 | 0 | 0.0 | 0 / 0 / 516 |
+
+### X6-mixed-indel-repair (64+16 outer code; varying `insertion_rate`; base {'deletion_rate': 0.0005, 'substitution_rate': 0.002}; indel repair on)
+
+| value | recovered | wrong data | mean observed dropped strands | mean observed events (sub/ins/del) |
+|---|---|---|---|---|
+| 0.0005 | 10/10 | 0 | 0.0 | 516 / 135 / 125 |
+| 0.001 | 10/10 | 0 | 0.0 | 516 / 263 / 125 |
+
+### X7-dropout-96+48 (96+48 outer code; varying `dropout_rate`; base {}; indel repair off)
+
+| value | recovered | wrong data | mean observed dropped strands | mean observed events (sub/ins/del) |
+|---|---|---|---|---|
+| 0.1 | 10/10 | 0 | 123.3 | 0 / 0 / 0 |
+| 0.15 | 10/10 | 0 | 187.3 | 0 / 0 / 0 |
+| 0.2 | 10/10 | 0 | 254.9 | 0 / 0 / 0 |
+| 0.25 | 10/10 | 0 | 316.2 | 0 / 0 / 0 |
+| 0.3 | 4/10 | 0 | 379.6 | 0 / 0 / 0 |
+
+## Interpretation
+
+These are simulated results on one dataset (60 kB, 1,063 strands, 10 seeds per point). They are not a statistical
+characterisation, and none of them says anything about real DNA.
+
+- **Dropout.** The default 64+16 profile (20 % parity) recovered every trial up to 5 % dropout, 9/10 at 10 % and 2/10
+  at 15 %. The 96+48 profile (33 % parity) recovered every trial up to 25 %. Pick `--parity-shards` for the expected
+  loss.
+- **Substitutions.** Up to 1 % per base, every trial recovered (4 correctable byte errors per 244-nt strand). At
+  1.5 %, too many strands exceed the inner capacity at once, and every trial failed explicitly.
+- **Indels without repair.** Every read with an indel becomes an erasure, so recovery collapses at about 0.05–0.1 %
+  deletions per base.
+- **Indels with the experimental repair.** 10/10 at 0.2 % deletions, and with mixed insertions, deletions and
+  substitutions at the tested rates. It is slow (a per-read search) and validated only for single indels per read.
+- **Wrong data: 0 in all 33 settings × 10 seeds.** Every unrecoverable trial ended in an explicit error.
