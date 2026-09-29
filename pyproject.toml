@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vnx-dna"
-version = "1.0.0"
+dynamic = ["version"]
 description = "Computational DNA data storage research platform (R&D-1)"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -17,6 +17,8 @@ dev = ["pytest>=8,<9", "pytest-cov>=6,<8", "httpx>=0.28,<1"]
 [project.scripts]
 vnxdna = "vnxdna.cli:app"
 "vnx-dna" = "vnxdna.cli:app"
+[tool.setuptools.dynamic]
+version = {attr = "vnxdna._version.__version__"}
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 addopts = "-q"

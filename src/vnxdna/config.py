@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-VERSION="0.1.0"; CODEC_VERSION="VNX-CODEC-0.1"; ARCHIVE_FORMAT="VNXDNA"; ARCHIVE_VERSION="0.1"
+CODEC_VERSION="VNX-CODEC-0.1"; ARCHIVE_FORMAT="VNXDNA"; ARCHIVE_VERSION="0.1"
 @dataclass(frozen=True)
 class Settings:
     chunk_size: int = 128

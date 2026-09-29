@@ -2,7 +2,7 @@
 from .core.models import DatasetConfig, Strand, ConstraintSettings
 from .core.pipeline import decode_dataset, encode_file, inspect_dataset
 from .simulation.channel import ChannelConfig, simulate
-__version__='1.0.0'
+from ._version import __version__
 class Encoder:
     def encode(self,input_path,output_directory,config=DatasetConfig(),key=None): return encode_file(input_path,output_directory,config,key)
 class Decoder:
