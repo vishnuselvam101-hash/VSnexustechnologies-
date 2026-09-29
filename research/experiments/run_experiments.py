@@ -65,7 +65,9 @@ def sweep(name: str, parameter: str, values, base: dict, decode: DecodeOptions, 
         wrong = sum(t["outcome"] == "WRONG-DATA" for t in trials)
         rows.append({"value": value, "recovered": ok, "trials": len(trials), "wrong_data": wrong, "trials_detail": trials})
         print(f"  {name:28s} {parameter}={value:<8} recovered {ok}/{len(trials)} wrong={wrong}", file=sys.stderr)
-    return {"experiment_id": name, "parameter": parameter, "base_channel": base, "decode_options": decode.__dict__, "rows": rows}
+    profile = f"{container.manifest.erasure_code.data_shards}+{container.manifest.erasure_code.parity_shards} outer code"
+    return {"experiment_id": name, "profile": profile, "parameter": parameter, "base_channel": base,
+            "decode_options": decode.__dict__, "rows": rows}
 
 
 def main() -> None:
@@ -80,6 +82,9 @@ def main() -> None:
     pool = encode_container(container.manifest, container.manifest_bytes, container.stored_chunks).sequences
     plain = DecodeOptions()
     repair = DecodeOptions(indel_repair=True, max_indel=1)
+    strong = StoreOptions(data_shards=96, parity_shards=48)
+    strong_container = build_container(data, strong, None, "experiment.bin")
+    strong_pool = encode_container(strong_container.manifest, strong_container.manifest_bytes, strong_container.stored_chunks).sequences
     experiments = [
         sweep("X1-dropout", "dropout_rate", [0.0, 0.01, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30], {}, plain, container, pool, data),
         sweep("X2-substitution", "substitution_rate", [0.0, 0.001, 0.005, 0.01, 0.015, 0.02, 0.03], {}, plain, container, pool, data),
@@ -90,6 +95,7 @@ def main() -> None:
               {"insertion_rate": 0.0}, repair, container, pool, data),
         sweep("X6-mixed-indel-repair", "insertion_rate", [0.0005, 0.001],
               {"deletion_rate": 0.0005, "substitution_rate": 0.002}, repair, container, pool, data),
+        sweep("X7-dropout-96+48", "dropout_rate", [0.10, 0.15, 0.20, 0.25, 0.30], {}, plain, strong_container, strong_pool, data),
     ]
     record = {"suite": "VNX-DNA V1 channel experiments", "environment": environment(),
               "dataset": {"size": len(data), "sha256": hashlib.sha256(data).hexdigest(), "generator": "dataset() in this script"},
@@ -105,7 +111,7 @@ def main() -> None:
              f"{container.manifest.strand.strand_nt} nt strands), {len(pool)} strands. {len(SEEDS)} seeds per point.", "",
              "Outcome counts are real decode attempts; *wrong* counts runs that returned incorrect bytes (must be 0).", ""]
     for e in experiments:
-        lines += [f"## {e['experiment_id']} (varying `{e['parameter']}`; base {e['base_channel'] or '{}'}; "
+        lines += [f"## {e['experiment_id']} ({e.get('profile', 'default profile')}; varying `{e['parameter']}`; base {e['base_channel'] or '{}'}; "
                   f"indel repair {'on' if e['decode_options']['indel_repair'] else 'off'})", "",
                   "| value | recovered | wrong data | mean observed dropped strands | mean observed events (sub/ins/del) |",
                   "|---|---|---|---|---|"]
