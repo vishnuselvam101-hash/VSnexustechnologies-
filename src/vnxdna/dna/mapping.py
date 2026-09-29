@@ -19,6 +19,7 @@ can correct twice as many flagged erasures as unknown errors.
 """
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from functools import lru_cache
 from itertools import product
 
@@ -63,15 +64,19 @@ def reverse_complement(sequence: str) -> str:
     return to_string(reverse_complement_codes(to_codes(sequence)))
 
 
-class Mapping:
+class Mapping(ABC):
+    """A format-defined bijection between bytes and nucleotide codes."""
+
     name: str
     nt_per_byte: int
 
-    def encode(self, frames: np.ndarray) -> np.ndarray:  # (N,B) uint8 -> (N, B*r) codes
-        raise NotImplementedError
+    @abstractmethod
+    def encode(self, frames: np.ndarray) -> np.ndarray:
+        """(N, B) uint8 bytes → (N, B·nt_per_byte) nucleotide codes."""
 
-    def decode(self, codes: np.ndarray) -> tuple[np.ndarray, np.ndarray]:  # (N,L) -> (bytes (N,B), erasures (N,B))
-        raise NotImplementedError
+    @abstractmethod
+    def decode(self, codes: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        """(N, L) codes → (bytes (N, B), erasure mask (N, B))."""
 
     def _check_shape(self, codes: np.ndarray) -> int:
         if codes.ndim != 2 or codes.shape[1] % self.nt_per_byte:

@@ -2,7 +2,7 @@
 
 | format | written by | read by current code | how |
 |---|---|---|---|
-| **archive format 4** + container file v1 (`.vxdna`) + frame format 4 | V0.2.0 and later | yes | `restore`, `decode`, `verify`, `info`, `extract` |
+| **archive format 4** + container file v1 (`.vxdna`) + frame format 4 | VNX-DNA 1.0.0 (and 0.2.x development builds) | yes | `restore`, `decode`, `verify`, `info`, `extract` |
 | V0.1 dataset, `format_version` 1 (VNX1 FASTA headers, no ECC) | V0.1 | yes, read-only | `vnx-dna legacy restore DIR -o FILE` |
 | V0.1 dataset, `format_version` 2 (VNX2 headers, Vandermonde shards) | V0.1 | yes, read-only | same |
 | V0.1 dataset, `format_version` 3 (constrained-v1 codebook, optional shards) | V0.1 | yes, read-only | same |
