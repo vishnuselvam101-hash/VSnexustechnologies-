@@ -360,7 +360,7 @@ S += bullets([
     "reordered, duplicated, missing, truncated or spliced chunks are all detected. Format version labels in the key "
     "derivation prevent downgrade attacks.",
     "<b>Crash safety.</b> Every output is written to a temporary file, flushed to disk and renamed into place atomically. A "
-    "killed process can never leave behind a file that looks valid. An interrupted store resumes with <font face="Mono">--resume</font> and produces a "
+    "killed process can never leave behind a file that looks valid. An interrupted store resumes with <font face='Mono'>--resume</font> and produces a "
     "byte-identical archive (tested with SIGKILL).",
     "<b>No silent failure.</b> Errors are one line with a stable exit code (0–8, 70). A bug shows as exit code 70, never as a "
     "wrong file.",
@@ -569,7 +569,7 @@ for batch in iter_batches("reads.fastq", batch_reads=65536):
       P("Programmer questions", "h2")]
 devq = [
     ("Does it load the whole file into memory?", "No. Every stage processes bounded blocks: at most about 2 × workers chunks are "
-     "in flight. What grows with the file is disk (output, decoder spill, shuffle buckets) — point <font face="Mono">--temp-dir</font> at a big volume."),
+     "in flight. What grows with the file is disk (output, decoder spill, shuffle buckets) — point <font face='Mono'>--temp-dir</font> at a big volume."),
     ("Is output deterministic?", "Yes for unencrypted archives (content-derived archive ID) and for every simulation (seeded). "
      "Experiments give identical results regardless of worker count (tested)."),
     ("Can old archives still be read?", "Yes. V1 (format 4) containers and reads are read by every command using the exact V1 code; "

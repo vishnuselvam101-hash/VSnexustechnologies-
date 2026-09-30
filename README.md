@@ -159,6 +159,7 @@ them with verification before and after. `vnx-dna v1 …` is the unchanged V1 CL
 | CLI reference and exit codes | [docs/CLI.md](docs/CLI.md) |
 | tests | [docs/TESTING.md](docs/TESTING.md) |
 | project state and release readiness | [docs/PROJECT_STATE.md](docs/PROJECT_STATE.md) |
+| illustrated overview for investors and programmers (PDF) | [docs/VNX-DNA-v2-overview.pdf](docs/VNX-DNA-v2-overview.pdf) |
 
 ## Limitations
 
