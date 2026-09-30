@@ -1,4 +1,7 @@
-"""VNX-DNA command-line interface (a thin layer over :mod:`vnxdna.api`).
+"""VNX-DNA V1 command-line interface (archive format 4), kept unchanged and mounted as ``vnx-dna v1``.
+
+The V2 CLI is :mod:`vnxdna.cli`. This module is the V1 CLI exactly as released in 1.0.0; it writes format-4
+archives for users who need them. V2 reads format 4 through the main commands as well.
 
 Workflow::
 
