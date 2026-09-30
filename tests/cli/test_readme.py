@@ -1,5 +1,4 @@
-"""The README quick start is executable exactly as written (documentation must match the implementation)."""
-import os
+"""The README's command blocks run verbatim with the installed CLI (documentation must match the implementation)."""
 import re
 import shutil
 import subprocess
@@ -8,31 +7,33 @@ from pathlib import Path
 import pytest
 
 README = Path(__file__).resolve().parents[2] / "README.md"
+NEEDS_CLI = pytest.mark.skipif(shutil.which("vnx-dna") is None or shutil.which("bash") is None,
+                               reason="needs the installed vnx-dna on PATH and bash")
 
 
-def _block(heading: str) -> str:
+def _blocks(heading: str, count: int = 1) -> str:
     text = README.read_text(encoding="utf-8")
     section = text[text.index(heading):]
-    return re.search(r"```bash\n(.*?)```", section, re.S).group(1)
+    return "\n".join(re.findall(r"```bash\n(.*?)```", section, re.S)[:count])
 
 
-@pytest.mark.skipif(shutil.which("vnx-dna") is None or shutil.which("bash") is None, reason="needs installed vnx-dna and bash")
-def test_readme_quick_start_runs_verbatim(tmp_path):
-    script = "set -euo pipefail\n" + _block("## Quick start")
-    proc = subprocess.run(["bash", "-c", script], cwd=tmp_path, capture_output=True, text=True, timeout=600, env=os.environ)
-    assert proc.returncode == 0, proc.stdout + proc.stderr
-    assert (tmp_path / "recovered.txt").read_bytes() == b"Hello VNX-DNA\n"
-    lines = [l.split()[0] for l in proc.stdout.splitlines() if l.endswith(("input.txt", "recovered.txt")) and len(l.split()[0]) == 64]
-    assert len(lines) == 2 and lines[0] == lines[1]
+def _bash(script: str, cwd: Path) -> subprocess.CompletedProcess:
+    return subprocess.run(["bash", "-euo", "pipefail", "-c", script], cwd=cwd, capture_output=True, text=True, timeout=900)
 
 
-@pytest.mark.skipif(shutil.which("vnx-dna") is None or shutil.which("bash") is None, reason="needs installed vnx-dna and bash")
-def test_readme_encryption_example_runs(tmp_path):
-    (tmp_path / "secret.pdf").write_bytes(os.urandom(1_300_000))
-    script = "set -euo pipefail\n" + _block("### Encrypted archives") + "\n" + _block("### Random access")
-    proc = subprocess.run(["bash", "-c", script], cwd=tmp_path, capture_output=True, text=True, timeout=600, env=os.environ)
-    assert proc.returncode == 0, proc.stdout + proc.stderr
-    data = (tmp_path / "secret.pdf").read_bytes()
-    assert (tmp_path / "secret-restored.pdf").read_bytes() == data
-    assert (tmp_path / "part3.bin").read_bytes() == data[3 * 262144:4 * 262144]
-    assert (tmp_path / "slice.bin").read_bytes() == data[1_000_000:1_200_000]
+@NEEDS_CLI
+def test_readme_basic_example_runs_verbatim(tmp_path):
+    proc = _bash(_blocks("## Basic example"), tmp_path)
+    assert proc.returncode == 0, proc.stderr
+    assert "identical" in proc.stdout
+
+
+@NEEDS_CLI
+def test_readme_complete_workflow_damage_recovery_and_encryption_run_verbatim(tmp_path):
+    script = "\n".join([_blocks("## Complete DNA workflow", 2), _blocks("## Damage simulation, recovery and verification"),
+                        _blocks("### Encrypted archives")])
+    proc = _bash(script, tmp_path)
+    assert proc.returncode == 0, proc.stdout[-3000:] + proc.stderr[-3000:]
+    assert "container rebuilt byte for byte" in proc.stdout and proc.stdout.count("identical") >= 1
+    assert (tmp_path / "recovered.bin").read_bytes() == (tmp_path / "input.bin").read_bytes()
+    assert (tmp_path / "from-consensus.bin").read_bytes() == (tmp_path / "input.bin").read_bytes()

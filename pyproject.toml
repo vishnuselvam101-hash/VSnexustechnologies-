@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "vnx-dna"
 dynamic = ["version"]
-description = "VNX-DNA: computational DNA data storage (compression, AES-256-GCM, MDS erasure coding, DNA encoding, channel simulation, recovery)"
+description = "VNX-DNA: scalable computational DNA data storage (streaming archives, AES-256-GCM, MDS erasure coding, DNA encoding, sequencing simulation, clustering, consensus, recovery)"
 readme = "README.md"
 requires-python = ">=3.12"
 license = {text = "MIT"}

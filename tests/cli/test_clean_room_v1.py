@@ -1,4 +1,4 @@
-"""Clean-room acceptance test (directive §35): the installed CLI on a real mixed binary file.
+"""V1 clean-room acceptance test: the installed V1 CLI (``vnx-dna v1``) on a real mixed binary file.
 
 Runs the exact documented command sequence in a fresh temporary directory, then
 compares bytes with ``cmp``-equivalent equality and SHA-256 computed
@@ -12,7 +12,7 @@ import subprocess
 
 import pytest
 
-from test_cli import cli
+from test_cli_v1 import cli
 
 
 def _sh(args, cwd):

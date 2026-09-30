@@ -1,4 +1,4 @@
-"""The real CLI, run as a subprocess: help, exit codes, error contract, JSON reports."""
+"""The V1 CLI (``vnx-dna v1 ...``, unchanged from 1.0.0), run as a subprocess: help, exit codes, error contract, JSON reports."""
 import json
 import os
 import shutil
@@ -15,7 +15,7 @@ FIX = Path(__file__).resolve().parents[1] / "fixtures" / "v0_1"
 
 def cli() -> list[str]:
     exe = shutil.which("vnx-dna")
-    return [exe] if exe else [sys.executable, "-m", "vnxdna"]
+    return ([exe] if exe else [sys.executable, "-m", "vnxdna"]) + ["v1"]
 
 
 def run(*args, cwd=None, env=None, check=None):
