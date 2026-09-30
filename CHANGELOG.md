@@ -1,6 +1,6 @@
 # Changelog
 
-## 3.0.0 — 2026-10-01
+## 3.0.0 — 2026-09-30
 
 Audit of V2 and an architectural upgrade on the same format. Computational only: no wet-lab validation. Archive
 format 5 is kept: V2 archives are read, and V2 reads V3 archives, with one exception (see Compatibility). The full

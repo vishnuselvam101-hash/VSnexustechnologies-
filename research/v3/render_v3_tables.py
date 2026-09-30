@@ -187,6 +187,91 @@ def sweep_table(d: dict | None, compare: dict | None = None) -> str:
     return "\n".join(lines)
 
 
+# ---------------------------------------------------------------- headline summaries (README, V3_AUDIT)
+def headline_rows(r: Path) -> list[tuple[str, str, str]]:
+    """(measurement, result, source) rows from whatever result files exist."""
+    rows: list[tuple[str, str, str]] = []
+    s2, s3 = load(r, "scale-v2"), load(r, "scale-v3")
+    if s3:
+        v2runs = {x["size"]: x for x in (s2 or {}).get("runs", []) if x.get("stages")}
+        for run in [x for x in s3["runs"] if x.get("stages")]:
+            if run["size"] < 10**9:
+                continue
+            stages = run["stages"]
+            wall = sum(st["wall_s"] for st in stages.values())
+            peak = max(st["peak_rss_tree_bytes"] for st in stages.values()) / MiB
+            ok = all(run.get(k) for k in ("sha256_match", "recovered_cmp_identical", "restore_container_cmp",
+                                          "random_access_container_match", "random_access_dna_match"))
+            text = f"{run.get('status')}; all stages {wall / 60:.1f} min, peak RAM {peak:.0f} MiB; SHA-256, `cmp` and random access equal: {ok}"
+            old = v2runs.get(run["size"])
+            if old:
+                old_wall = sum(st["wall_s"] for st in old["stages"].values())
+                old_peak = max(st["peak_rss_tree_bytes"] for st in old["stages"].values()) / MiB
+                text += f" (V2: {old_wall / 60:.1f} min, {old_peak:.0f} MiB)"
+            rows.append((f"{size(run['size'])}: store → restore → encode (VXS) → random access → recover from DNA (V3)", text,
+                         "scale-v3.json, scale-v2.json"))
+    noisy = load(r, "noisy-decode")
+    if noisy:
+        best = [x for x in noisy["rows"] if x.get("speedup_wall") and x["current"].get("exact") and x["baseline"].get("exact")]
+        if best:
+            top = max(best, key=lambda x: x["substitution_rate"])
+            rows.append((f"restore {noisy['size']} from coverage-1 reads with {top['substitution_rate']:g} substitutions per base",
+                         f"V3 {top['current']['wall_s']:.1f} s vs V2 {top['baseline']['wall_s']:.1f} s ({top['speedup_wall']}× faster), "
+                         "both exact", "noisy-decode.json"))
+    on, off = load(r, "sweep-cov1-repairs-on"), load(r, "sweep-cov1-repairs-off")
+    if on and off:
+        offp = {p["point"]: p for p in off["points"]}
+        bursts = [p for p in on["points"] if p["error_type"].startswith("burst-deletion") or p["error_type"] == "burst-insertion"]
+        gained = [(p, offp[p["point"]]) for p in bursts if p["point"] in offp]
+        if gained:
+            e_on = sum(p["exact"] for p, _ in gained)
+            e_off = sum(o["exact"] for _, o in gained)
+            n = sum(p["trials"] for p, _ in gained)
+            rows.append(("coverage 1, lost/extra-base bursts (all burst-deletion and burst-insertion points)",
+                         f"exact {e_off}/{n} with V2 decoding options → {e_on}/{n} with V3 burst + indel repair", "sweep-cov1-*.json"))
+    sweeps = [x for x in (on, off, load(r, "sweep-cov5-consensus")) if x]
+    if sweeps:
+        trials = sum(p["trials"] for x in sweeps for p in x["points"])
+        undetected = sum(x["undetected_corruption_total"] for x in sweeps)
+        internal = sum(x["internal_errors_total"] for x in sweeps)
+        rows.append(("error sweeps, every error type (coverage 1 and 5)",
+                     f"{trials:,} trials: undetected corruption {undetected}, internal errors {internal}", "sweep-*.json"))
+    i2, i3 = load(r, "indel-v2"), load(r, "indel-v3")
+    if i2 and i3:
+        for a, b in zip(i2["rows"], i3["rows"]):
+            if a["indels"] == 2 and a["substitutions"] == 0 and a.get("directions") == "same":
+                rows.append(("single-read repair of 2 indels", f"{b['correct']}/{b['attempted']} correct in {b['ms_per_read']} ms per read "
+                             f"(V2: {a['correct']}/{a['attempted']} in {a['ms_per_read']} ms)", "indel-*.json"))
+    compat = load(r, "v2-reads-v3")
+    if compat:
+        cells = ", ".join(f"{x['file']}: exit {x['exit']}{' (identical)' if x['identical'] else ''}" for x in compat["rows"])
+        rows.append(("VNX-DNA 2.0.0 reading V3 output", cells, "v2-reads-v3.json"))
+    return rows
+
+
+def headline_table(r: Path) -> str:
+    rows = headline_rows(r)
+    if not rows:
+        return "*Not measured yet.*"
+    meta = load(r, "run-meta") or {}
+    lines = [f"Measured on this project's machine ({meta.get('machine', {}).get('cpus', '?')} logical CPUs, "
+             f"{meta.get('machine', {}).get('platform', '?')}); software simulation only. Versions: "
+             f"{meta.get('versions', {}).get('v3', '?')} vs {meta.get('versions', {}).get('v2', '?')}.", "",
+             "| measurement | result | source (`research/results/v3/`) |", "|---|---|---|"]
+    lines += [f"| {a} | {b} | `{c}` |" for a, b, c in rows]
+    return "\n".join(lines)
+
+
+
+def tests_table(r: Path) -> str:
+    t = load(r, "test-summary")
+    if not t:
+        return "*Test summary not recorded yet.*"
+    return (f"Full test suite at commit `{t['commit'][:12]}` (dirty={t['dirty']}): **{t['tests']} tests, {t['passed']} passed, "
+            f"{t['failed']} failed, {t['errors']} errors, {t['skipped']} skipped** in {t['seconds']:.0f} s "
+            f"(`{t['command']}`). VNX-DNA 2.0.0 collected 406 tests.")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--results", type=Path, default=Path("research/results/v3"))
@@ -204,6 +289,8 @@ def main() -> None:
     replace(docs / "ERROR_MODEL.md", "v3-sweep-cov1",
             sweep_table(load(r, "sweep-cov1-repairs-on"), load(r, "sweep-cov1-repairs-off")), f"{src}/sweep-cov1-*.json")
     replace(docs / "ERROR_MODEL.md", "v3-sweep-cov5", sweep_table(load(r, "sweep-cov5-consensus")), f"{src}/sweep-cov5-consensus.json")
+    replace(docs.parent / "README.md", "readme-v3-results", headline_table(r), f"{src}/*.json")
+    replace(docs / "V3_AUDIT.md", "v3-audit-results", headline_table(r) + "\n\n" + tests_table(r), f"{src}/*.json")
 
 
 if __name__ == "__main__":

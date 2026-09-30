@@ -1,0 +1,82 @@
+{
+  "vnxdna_version": "3.0.0",
+  "geometry": "2bit P=40 r=8 (balanced)",
+  "reads": 40,
+  "seed": 7,
+  "max_candidates": 100000,
+  "note": "software simulation; exactly k random single-base indels per read",
+  "rows": [
+    {
+      "indels": 1,
+      "substitutions": 0,
+      "directions": "same",
+      "attempted": 40,
+      "correct": 40,
+      "wrong": 0,
+      "failed": 0,
+      "skipped_net_zero": 0,
+      "seconds": 0.358,
+      "ms_per_read": 8.94
+    },
+    {
+      "indels": 1,
+      "substitutions": 3,
+      "directions": "same",
+      "attempted": 40,
+      "correct": 40,
+      "wrong": 0,
+      "failed": 0,
+      "skipped_net_zero": 0,
+      "seconds": 0.352,
+      "ms_per_read": 8.81
+    },
+    {
+      "indels": 2,
+      "substitutions": 0,
+      "directions": "same",
+      "attempted": 40,
+      "correct": 40,
+      "wrong": 0,
+      "failed": 0,
+      "skipped_net_zero": 0,
+      "seconds": 5.828,
+      "ms_per_read": 145.69
+    },
+    {
+      "indels": 2,
+      "substitutions": 2,
+      "directions": "same",
+      "attempted": 40,
+      "correct": 40,
+      "wrong": 0,
+      "failed": 0,
+      "skipped_net_zero": 0,
+      "seconds": 5.818,
+      "ms_per_read": 145.45
+    },
+    {
+      "indels": 3,
+      "substitutions": 0,
+      "directions": "same",
+      "attempted": 40,
+      "correct": 40,
+      "wrong": 0,
+      "failed": 0,
+      "skipped_net_zero": 0,
+      "seconds": 68.304,
+      "ms_per_read": 1707.6
+    },
+    {
+      "indels": 2,
+      "substitutions": 0,
+      "directions": "mixed",
+      "attempted": 14,
+      "correct": 14,
+      "wrong": 0,
+      "failed": 0,
+      "skipped_net_zero": 26,
+      "seconds": 1.953,
+      "ms_per_read": 139.49
+    }
+  ]
+}

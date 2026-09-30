@@ -1,0 +1,41 @@
+{
+  "note": "software check; VNX-DNA 3 writes, VNX-DNA 2.0.0 reads",
+  "rows": [
+    {
+      "file": "plain.vxdna",
+      "written_by": "3.0.0",
+      "read_by": "vnx-dna 2.0.0 (writes archive format 5 / container v2 / frame 5; reads formats 5 and 4 and legacy V0.1)",
+      "command": "restore",
+      "exit": 0,
+      "identical": true,
+      "stderr": ""
+    },
+    {
+      "file": "encrypted.vxdna",
+      "written_by": "3.0.0",
+      "read_by": "vnx-dna 2.0.0 (writes archive format 5 / container v2 / frame 5; reads formats 5 and 4 and legacy V0.1)",
+      "command": "restore",
+      "exit": 0,
+      "identical": true,
+      "stderr": ""
+    },
+    {
+      "file": "resumed.vxdna",
+      "written_by": "3.0.0",
+      "read_by": "vnx-dna 2.0.0 (writes archive format 5 / container v2 / frame 5; reads formats 5 and 4 and legacy V0.1)",
+      "command": "restore",
+      "exit": 6,
+      "identical": false,
+      "stderr": "vnx-dna: error [UNSUPPORTED_FORMAT]: archive requires unsupported feature(s): ['final-seal-epoch-v3']"
+    },
+    {
+      "file": "plain.fasta",
+      "written_by": "3.0.0",
+      "read_by": "vnx-dna 2.0.0 (writes archive format 5 / container v2 / frame 5; reads formats 5 and 4 and legacy V0.1)",
+      "command": "recover",
+      "exit": 0,
+      "identical": true,
+      "stderr": ""
+    }
+  ]
+}

@@ -9,7 +9,7 @@ sequencing channel, and recovers the exact original bytes, verified by SHA-256 a
 > software-generated DNA through a simulated channel. See [LIMITATIONS.md](LIMITATIONS.md).
 
 V3 is an upgrade of the V2 codebase, not a rewrite: the V2 audit ([V3_AUDIT.md](V3_AUDIT.md)) found the format-5
-design sound and 50+ implementation defects, which V3 fixes. The architectural additions are a vectorised ECC
+design sound, and found 48 implementation defects and 13 documentation errors, which V3 fixes. The architectural additions are a vectorised ECC
 engine behind an explicit interface, single-read burst resynchronisation, a burst-capable channel simulator with an
 error-sweep engine, multi-archive pools, and hardening of every input path. Archives stay format 5, so V2 and V3
 read each other's archives (one documented exception, [COMPATIBILITY.md](COMPATIBILITY.md)).

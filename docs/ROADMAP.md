@@ -6,7 +6,7 @@
 |---|---|---|
 | V0.1 | R&D prototype: two parallel pipelines and a non-MDS shard code; `simulate` was broken; unauthenticated manifest | baseline, tagged `v0.1-baseline`, archived under `research/legacy/` |
 | V0.2 → V1.0 | Cauchy MDS outer code; authenticated format 4; in-band strand frame; `.vxdna` container; channel simulator; explicit legacy decoder; CLI/API; property, fuzz, adversarial and clean-room tests; benchmarks and experiments | tagged `v1.0.0` |
-| V3.0 | V2 audit (60+ defects fixed, incl. two AES-GCM nonce-reuse paths on resume), vectorised bounded-distance RS decoder behind an ECC engine interface, single-read burst resynchronisation, burst channel + `simulate-errors` sweeps, multi-archive pools, bounded input parsing, V2↔V3 compatibility fixtures; format 5 kept | see [V3_AUDIT.md](V3_AUDIT.md) |
+| V3.0 | V2 audit (48 code/test defects and 13 documentation errors fixed, incl. two AES-GCM nonce-reuse paths on resume), vectorised bounded-distance RS decoder behind an ECC engine interface, single-read burst resynchronisation, burst channel + `simulate-errors` sweeps, multi-archive pools, bounded input parsing, V2↔V3 compatibility fixtures; format 5 kept | see [V3_AUDIT.md](V3_AUDIT.md) |
 | V2.0 | streaming format 5 (footer index, chunked AEAD, resumable store), frame format 5 (32-bit addresses), packed VXS strands, chunk-parallel encoder, two-pass disk-backed decoder, sequencing simulator with coverage and qualities, clustering, consensus, experiment engine, 1–10 GB scalability and corruption acceptance, V1 read compatibility and migration | see [PROJECT_STATE.md](PROJECT_STATE.md) |
 
 The intermediate milestones of the original plan (V0.3 channel, V0.4 sync, V0.5 random access, V0.6 security/CLI,

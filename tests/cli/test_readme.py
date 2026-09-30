@@ -37,3 +37,10 @@ def test_readme_complete_workflow_damage_recovery_and_encryption_run_verbatim(tm
     assert "container rebuilt byte for byte" in proc.stdout and proc.stdout.count("identical") >= 1
     assert (tmp_path / "recovered.bin").read_bytes() == (tmp_path / "input.bin").read_bytes()
     assert (tmp_path / "from-consensus.bin").read_bytes() == (tmp_path / "input.bin").read_bytes()
+
+
+@NEEDS_CLI
+def test_readme_v3_error_sweep_and_burst_repair_run_verbatim(tmp_path):
+    proc = _bash(_blocks("## V3: error sweeps and coverage-1 repair"), tmp_path)
+    assert proc.returncode == 0, proc.stdout[-3000:] + proc.stderr[-3000:]
+    assert "| substitution:0 |" in proc.stdout and "identical" in proc.stdout

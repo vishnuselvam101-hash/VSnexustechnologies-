@@ -1,6 +1,6 @@
 # Streaming and bounded memory
 
-No V2 command loads a whole input into memory. Every stage reads bounded blocks, processes them, emits bounded
+No command loads a whole input into memory (V2 and V3). Every stage reads bounded blocks, processes them, emits bounded
 blocks and continues. This page lists the memory model of each command and the streaming Python API. Measured
 values are in [LARGE_FILES.md](LARGE_FILES.md).
 
@@ -79,3 +79,14 @@ temporary files have no valid trailer (containers, VXS) or end record (cluster f
 interrupted store from its last validated checkpoint ([V2_FORMAT.md §4.4](V2_FORMAT.md#44-store-checkpoint)).
 The other commands restart from the beginning. They are pure functions of their inputs, so a rerun is safe.
 `pipeline --resume` skips stages whose outputs are complete.
+
+## V3 changes to the memory model
+
+* Text read files are read line by line with a per-line cap of 100,002 bytes. VNX-DNA 2.0 read each whole line
+  first, so one unwrapped multi-gigabyte line could exhaust memory.
+* The sequencing simulator sizes its batches by expected read bases (at most 8,192 × 4,096 bases per batch) and
+  derives its shuffle buckets from the pool, so memory no longer grows with coverage or depends on the input file
+  format.
+* Metadata streams rebuilt from DNA may not allocate more than the decodable metadata groups present.
+* The vectorised inner RS decoder works on blocks of at most 4,096 reads, and indel repair decodes hypotheses in
+  blocks of 2,048, so both stay bounded.
