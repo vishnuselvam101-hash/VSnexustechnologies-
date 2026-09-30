@@ -195,10 +195,12 @@ The components and modules are listed in [ARCHITECTURE.md](ARCHITECTURE.md). The
 | suite | result |
 |---|---|
 | full suite, V3 (`PATH=.venv/bin:$PATH pytest`) | see the generated block below |
-| new V3 tests (`tests/v3/`, 8 files) | 165, all pass |
+| new V3 tests | 166 (165 in `tests/v3/`, 8 files, and the README's V3 block in `tests/cli/test_readme.py`), all pass |
 | regression tests run against `v2.0.0` | container/security 15 of 16 fail on 2.0.0 (the 16th is a guard that must pass on both); decoder 7 of 7 fail; channel/CLI 19 targeted tests fail; review regressions R1–R8 target V3-only code |
 | lint (`ruff check src tests research`, pyflakes rules) | PASS (V1 modules exempt from unused-import fixes: they are byte-identical to 1.0.0) |
 | `compileall` | PASS |
+| CLI smoke test (`research/v3/cli_smoke.sh`) | PASS: all 27 commands, all recovered files identical; the documented exit codes for a missing file (3), a usage error (2), a missing or wrong key (4), a truncated container (3), an existing output (8), bad parameters (7), unwritable paths (8), and redundancy exceeded (5, no output written); no traceback |
+| permission-denied directory (`chmod 555`) | NOT TESTABLE IN CURRENT ENVIRONMENT: the tests run as root, which ignores mode bits. Unwritable paths (`/sys`, a path below a file) were tested instead and exit 8 |
 | type checker | NOT IMPLEMENTED (none configured in the project) |
 | formatter | NOT IMPLEMENTED (none configured; the existing style was kept) |
 
@@ -217,7 +219,7 @@ Measured on this project's machine (8 logical CPUs, Linux-6.8.0-139-generic-x86_
 | single-read repair of 2 indels | 40/40 correct in 145.69 ms per read (V2: 40/40 in 422.25 ms) | `indel-*.json` |
 | VNX-DNA 2.0.0 reading V3 output | plain.vxdna: exit 0 (identical), encrypted.vxdna: exit 0 (identical), resumed.vxdna: exit 6, plain.fasta: exit 0 (identical) | `v2-reads-v3.json` |
 
-*Test summary not recorded yet.*
+Full test suite at commit `88be250020b1` (dirty=False): **572 tests, 572 passed, 0 failed, 0 errors, 0 skipped** in 232 s (`pytest (full suite, vnx-dna on PATH)`). VNX-DNA 2.0.0 collected 406 tests.
 <!-- END GENERATED: v3-audit-results -->
 
 ## 7. Security summary

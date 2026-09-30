@@ -1,0 +1,33 @@
+{
+  "command": "pytest (full suite, vnx-dna on PATH)",
+  "commit": "88be250020b1a02b17854acfd714b792de33055d",
+  "dirty": false,
+  "environment": {
+    "cpu_count": 8,
+    "git": {
+      "commit": "88be250020b1a02b17854acfd714b792de33055d",
+      "dirty": false
+    },
+    "implementation": "CPython",
+    "libraries": {
+      "cryptography": "46.0.7",
+      "numpy": "2.5.3",
+      "reedsolo": "unknown",
+      "zstandard": "0.25.0"
+    },
+    "machine": "x86_64",
+    "platform": "Linux-6.8.0-139-generic-x86_64-with-glibc2.39",
+    "processor": "x86_64",
+    "python": "3.12.3",
+    "vnxdna_version": "3.0.0"
+  },
+  "errors": 0,
+  "exit_code": 0,
+  "failed": 0,
+  "failed_tests": [],
+  "passed": 572,
+  "recorded_at": "2026-09-30T23:45:08+0530",
+  "seconds": 232.1,
+  "skipped": 0,
+  "tests": 572
+}
