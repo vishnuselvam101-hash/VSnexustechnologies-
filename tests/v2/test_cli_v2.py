@@ -174,3 +174,15 @@ def test_pipeline_resume_reuses_only_matching_intermediates(tmp_path):
     changed = api.pipeline(src, tmp_path / "o3.bin", work_dir=tmp_path / "w", options=FAST, workers=1, resume=True)
     assert changed["steps"]["store"]["status"] == "SUCCESS" and changed["steps"]["encode"]["status"] == "SUCCESS"
     assert (tmp_path / "o3.bin").read_bytes() == src.read_bytes()
+
+
+def test_experiment_counts_a_clustering_refusal_as_a_detected_failure(tmp_path):
+    from vnxdna.v2.experiment import run_experiment
+    from vnxdna.v2.sequencing import SequencingConfig
+    from v2_support import FAST
+    (tmp_path / "in.bin").write_bytes(mixed_bytes(6000, seed=46))
+    channel = SequencingConfig(seed=11, coverage=4, substitution_rate=0.2, insertion_rate=0.0, deletion_rate=0.0)
+    summary = run_experiment(tmp_path / "in.bin", tmp_path / "exp", channel=channel, trials=2, options=FAST,
+                             use_consensus=True, workers=1)["summary"]
+    assert summary["internal_errors"] == 0 and summary["undetected_corruption"] == 0
+    assert summary["failures_by_category"] == {"UNRECOVERABLE_CORRUPTION": 2}

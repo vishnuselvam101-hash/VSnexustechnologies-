@@ -87,18 +87,18 @@ def _trial(args: tuple) -> dict[str, Any]:
                        "deletions": seq["errors"]["sequencing_deletions"] + seq["errors"]["synthesis_deletions"],
                        "coverage_distribution": seq["coverage_distribution"]})
         source = reads
-        if use_consensus:
-            from .cluster import cluster_file
-            from .consensus import consensus_file
-            clusters = work / "clusters.jsonl"
-            cons = work / "consensus.fasta"
-            cluster_file(reads, clusters, workers=1, temp_dir=work)
-            c = consensus_file(clusters, cons)
-            record["consensus_valid"] = c["stats"].get("consensus_crc_valid", 0) + c["stats"].get("consensus_valid_after_inner_rs", 0)
-            record["consensus_fallback"] = c["stats"].get("fallback_to_verified_read", 0)
-            source = cons
         out = work / "recovered.bin"
-        try:
+        try:  # clustering refuses (a VNX-DNA error) when no read passes a frame CRC: a detected failure, not a bug
+            if use_consensus:
+                from .cluster import cluster_file
+                from .consensus import consensus_file
+                clusters = work / "clusters.jsonl"
+                cons = work / "consensus.fasta"
+                cluster_file(reads, clusters, workers=1, temp_dir=work)
+                c = consensus_file(clusters, cons)
+                record["consensus_valid"] = c["stats"].get("consensus_crc_valid", 0) + c["stats"].get("consensus_valid_after_inner_rs", 0)
+                record["consensus_fallback"] = c["stats"].get("fallback_to_verified_read", 0)
+                source = cons
             rep = _recover_v2(source, out, key=key, options=DecodeOptionsV2(), workers=1, overwrite=True, temp_dir=work)
             record.update({"reads_valid": rep["reads"].get("reads_valid", 0),
                            "groups_repaired": rep["recovery"].get("stripes_outer_recovered", 0),
