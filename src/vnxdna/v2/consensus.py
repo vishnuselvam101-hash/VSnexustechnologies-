@@ -39,7 +39,7 @@ import numpy as np
 
 from ..dna.mapping import _ASCII_TO_CODE, _CODE_TO_ASCII, get_mapping
 from ..errors import InvalidInputError, OutputError
-from .align import GAP, align_batch
+from .align import GAP, align_reads
 from .cluster import iter_clusters
 from .frame import FrameGeometry, parse_batch, parse_one_corrected
 from .strandio import StrandWriter
@@ -57,9 +57,32 @@ def _quals(text: str) -> np.ndarray:
     return (np.frombuffer(text.encode("ascii"), dtype=np.uint8).astype(np.int16) - 33).clip(0, 93).astype(np.uint8)
 
 
-def _vote(block: list[dict], length: int, band: int, max_edit_fraction: float, min_winner_share: float,
-          single_read_min_quality: int, stats: Counter) -> list[np.ndarray]:
-    """Consensus for a block of clusters. Returns one code array per cluster (4 = N)."""
+def _correct_read(codes: np.ndarray, geometry: FrameGeometry) -> np.ndarray | None:
+    """The corrected strand for a full-length read that the inner RS can fix (verified by the CRC), else None."""
+    mapping = get_mapping(geometry.mapping)
+    frames, erasures = mapping.decode(codes[None, :])
+    flagged = np.flatnonzero(erasures[0]).tolist()
+    for erase in ([flagged] if 0 < len(flagged) <= geometry.inner_parity_bytes else []) + [[]]:
+        corrected = geometry.inner.correct_codeword(frames[0].tobytes(), erase)
+        if corrected is None:
+            continue
+        frame = np.frombuffer(corrected[0], dtype=np.uint8)[None, :]
+        if parse_batch(geometry, frame).ok[0]:
+            return mapping.encode(frame)[0]
+    return None
+
+
+def _vote(block: list[dict], geometry: FrameGeometry, band: int, max_edit_fraction: float, min_winner_share: float,
+          single_read_min_quality: int, stats: Counter, rounds: int = 2) -> list[np.ndarray]:
+    """Consensus for a block of clusters. Returns one code array per cluster (4 = N).
+
+    1. A read that passes the frame CRC is the strand (a wrong one needs a CRC collision): it is used as is.
+    2. Otherwise a full-length read that the inner RS corrects (and the CRC then verifies) gives the strand.
+    3. Otherwise iterative alignment: all reads are aligned to a draft (first a seed read), positions and
+       insertion slots are voted, and the vote becomes the next draft; ambiguous positions become N.
+    """
+    length = geometry.strand_nt
+    mapping = get_mapping(geometry.mapping)
     reads: list[np.ndarray] = []
     quals: list[np.ndarray] = []
     owner: list[int] = []
@@ -72,61 +95,109 @@ def _vote(block: list[dict], length: int, band: int, max_edit_fraction: float, m
             owner.append(ci)
     owner_arr = np.asarray(owner, dtype=np.int64)
     n_clusters = len(block)
-    exact = np.array([r.size == length for r in reads], dtype=bool)
-    weights = np.zeros((n_clusters, length, 6), dtype=np.float64)  # A C G T N(unused) GAP
+    out: list[np.ndarray | None] = [None] * n_clusters
+    exact = np.flatnonzero(np.array([r.size == length for r in reads], dtype=bool))
+    if exact.size:
+        frames, erasures = mapping.decode(np.stack([reads[i] for i in exact]))
+        verified = exact[parse_batch(geometry, frames, erasures).ok]
+        for i in sorted(verified.tolist(), key=lambda i: reads[i].tobytes()):  # CRC-valid reads of one strand are identical
+            if out[owner[i]] is None:
+                out[owner[i]] = reads[i]
+                stats["consensus_from_verified_read"] += 1
+    by_cluster: dict[int, list[int]] = {}
+    for i, ci in enumerate(owner):
+        by_cluster.setdefault(ci, []).append(i)
+    for ci in range(n_clusters):
+        if out[ci] is not None:
+            continue
+        candidates = sorted((i for i in by_cluster.get(ci, []) if reads[i].size == length and not (reads[i] == 4).all()),
+                            key=lambda i: (-float(quals[i].mean()) if quals[i].size else 0.0, reads[i].tobytes()))[:3]
+        for i in candidates:
+            fixed = _correct_read(reads[i], geometry)
+            if fixed is not None:
+                out[ci] = fixed
+                stats["consensus_from_corrected_read"] += 1
+                break
+    pending = [ci for ci in range(n_clusters) if out[ci] is None]
+    if pending:
+        consensus = _align_consensus(pending, by_cluster, reads, quals, length, band, max_edit_fraction, min_winner_share,
+                                     single_read_min_quality, stats, rounds)
+        for ci, seq in zip(pending, consensus):
+            out[ci] = seq
+            stats["consensus_by_alignment"] += 1
+    return out  # type: ignore[return-value]
 
-    def add_votes(owners: np.ndarray, proj: np.ndarray, q: np.ndarray) -> None:
-        sym = proj.astype(np.int64)
-        w = np.where(sym == 4, 0.0, np.maximum(q.astype(np.float64), 1.0))
-        w = np.where(sym == GAP, 20.0, w)
-        flat_index = (owners[:, None] * length + np.arange(length)[None, :]) * 6 + np.minimum(sym, 5)
-        weights.reshape(-1)[:] += np.bincount(flat_index.reshape(-1), weights=w.reshape(-1), minlength=weights.size)
 
-    # 1. draft from exact-length reads
-    ex = np.flatnonzero(exact)
-    if ex.size:
-        add_votes(owner_arr[ex], np.stack([reads[i] for i in ex]), np.stack([quals[i] for i in ex]))
-    has_exact = np.zeros(n_clusters, dtype=bool)
-    has_exact[owner_arr[ex]] = True
-    draft = np.argmax(weights[:, :, :4], axis=2).astype(np.uint8)
-    for ci in np.flatnonzero(~has_exact).tolist():
-        members = [i for i in range(len(reads)) if owner[i] == ci]
-        best = min(members, key=lambda i: abs(reads[i].size - length))
-        r = reads[best]
-        draft[ci] = r[:length] if r.size >= length else np.concatenate([r, np.full(length - r.size, 4, np.uint8)])
-        stats["clusters_without_full_length_read"] += 1
-    # 2. align the other reads to their draft
-    other = np.flatnonzero(~exact)
-    if other.size:
-        proj, cost, inserted, ok = align_batch([reads[i] for i in other], draft[owner_arr[other]], band)
+def _align_consensus(pending: list[int], by_cluster: dict[int, list[int]], reads: list[np.ndarray], quals: list[np.ndarray],
+                     length: int, band: int, max_edit_fraction: float, min_winner_share: float, single_read_min_quality: int,
+                     stats: Counter, rounds: int) -> list[np.ndarray]:
+    members = [by_cluster.get(ci, []) for ci in pending]
+    row_reads = [reads[i] for m in members for i in m]
+    row_quals = [quals[i] for m in members for i in m]
+    row_owner = np.array([k for k, m in enumerate(members) for _ in m], dtype=np.int64)
+    drafts = []
+    for m in members:  # seed: the read closest to the strand length, best mean quality first
+        best = min(m, key=lambda i: (abs(reads[i].size - length), -float(quals[i].mean()) if quals[i].size else 0.0,
+                                     reads[i].tobytes()))
+        drafts.append(reads[best].copy())
+    k = len(pending)
+    final: list[np.ndarray] = drafts
+    for round_index in range(rounds):
+        last = round_index == rounds - 1
+        a = align_reads(row_reads, [drafts[o] for o in row_owner], band, row_quals)
         limit = 2 * max_edit_fraction * length
-        use = ok & (cost <= limit)
-        stats["reads_aligned"] += int(use.sum())
-        stats["reads_excluded_unalignable"] += int((~use).sum())
-        stats["inserted_bases_dropped"] += int(inserted[use].sum())
-        if use.any():
-            q_proj = np.full((int(use.sum()), length), 30, dtype=np.uint8)
-            for row, i in enumerate(other[use].tolist()):
-                q = quals[i]
-                mean_q = int(q.mean()) if q.size else 30
-                q_proj[row] = mean_q
-            add_votes(owner_arr[other[use]], proj[use], q_proj)
-    stats["reads_voted_full_length"] += int(ex.size)
-    # 3. call (vectorised over the block)
-    support = np.bincount(owner_arr, minlength=n_clusters)
-    w = weights[:, :, [0, 1, 2, 3, 5]]
-    order = np.argsort(-w, axis=2, kind="stable")
-    top = np.take_along_axis(w, order[:, :, :1], axis=2)[:, :, 0]
-    second = np.take_along_axis(w, order[:, :, 1:2], axis=2)[:, :, 0]
-    winner = order[:, :, 0]
-    total = top + second
-    ambiguous = (top <= 0) | (top < min_winner_share * np.where(total > 0, total, 1))
-    ambiguous |= (support[:, None] == 1) & (top < single_read_min_quality)
-    symbols = np.where(winner == 4, GAP, winner).astype(np.uint8)
-    symbols[ambiguous] = 4
-    stats["ambiguous_positions"] += int(ambiguous.sum())
-    stats["deleted_positions"] += int((symbols == GAP).sum())
-    return [row[row != GAP] for row in symbols]
+        use = a.ok & (a.cost <= limit)
+        if last:
+            stats["reads_aligned"] += int(use.sum())
+            stats["reads_excluded_unalignable"] += int((~use).sum())
+        width = a.projection.shape[1]
+        sym = a.projection.astype(np.int64)
+        w = np.where(sym == 4, 0.0, np.maximum(a.proj_quality.astype(np.float64), 1.0))
+        w = np.where(sym == GAP, 20.0, w)
+        w[~use] = 0.0
+        index = (row_owner[:, None] * width + np.arange(width)[None, :]) * 6 + np.minimum(sym, 5)
+        votes = np.bincount(index.reshape(-1), weights=w.reshape(-1), minlength=k * width * 6).reshape(k, width, 6)
+        used_reads = np.bincount(row_owner[use], minlength=k)
+        has_ins = (a.ins_count > 0) & use[:, None]
+        ins_n = np.zeros((k, width + 1), dtype=np.int64)
+        np.add.at(ins_n, row_owner, has_ins.astype(np.int64))
+        ins_votes = np.zeros((k, width + 1, 4), dtype=np.int64)
+        rr, jj = np.nonzero(has_ins & (a.ins_base < 4))
+        np.add.at(ins_votes, (row_owner[rr], jj, a.ins_base[rr, jj].astype(np.int64)), 1)
+        new_drafts = []
+        for c in range(k):
+            dlen = drafts[c].size
+            v = votes[c, :dlen][:, [0, 1, 2, 3, 5]]
+            order = np.argsort(-v, axis=1, kind="stable")
+            top = v[np.arange(dlen), order[:, 0]]
+            second = v[np.arange(dlen), order[:, 1]]
+            total = top + second
+            winner = order[:, 0]
+            ambiguous = (top <= 0) | (top < min_winner_share * np.where(total > 0, total, 1))
+            if used_reads[c] <= 1:
+                ambiguous |= top < single_read_min_quality
+            symbols: list[int] = []
+            for j in range(dlen + 1):
+                if used_reads[c] and ins_n[c, j] * 2 > used_reads[c]:
+                    symbols.append(int(np.argmax(ins_votes[c, j])))
+                    if last:
+                        stats["inserted_positions"] += 1
+                if j == dlen:
+                    break
+                if winner[j] == 4 and not ambiguous[j]:
+                    if last:
+                        stats["deleted_positions"] += 1
+                    continue
+                if last and ambiguous[j]:
+                    symbols.append(4)
+                    stats["ambiguous_positions"] += 1
+                else:
+                    best_base = int(np.argmax(v[j, :4])) if winner[j] == 4 else int(winner[j])
+                    symbols.append(best_base)
+            new_drafts.append(np.array(symbols, dtype=np.uint8) if symbols else drafts[c])
+        drafts = new_drafts
+        final = drafts
+    return final
 
 
 def consensus_file(clusters_path: str | os.PathLike, output_path: str | os.PathLike, *, overwrite: bool = False, band: int = 12,
@@ -152,7 +223,7 @@ def consensus_file(clusters_path: str | os.PathLike, output_path: str | os.PathL
             nonlocal block, block_reads
             if not block:
                 return
-            seqs = _vote(block, length, band, max_edit_fraction, min_winner_share, single_read_min_quality, stats)
+            seqs = _vote(block, geometry, band, max_edit_fraction, min_winner_share, single_read_min_quality, stats)
             lines = []
             for cluster, seq in zip(block, seqs):
                 verdict = "consensus"
