@@ -39,7 +39,8 @@ def test_every_command_has_help(command):
 
 
 def test_version():
-    assert "vnx-dna 0." in run("version", check=0).stdout or "vnx-dna 1." in run("version").stdout
+    from vnxdna import __version__
+    assert f"vnx-dna {__version__}" in run("version", check=0).stdout  # the V1 CLI reports the installed package version
     assert json.loads(run("version", "--json", check=0).stdout)["archive_format"] == 4
 
 

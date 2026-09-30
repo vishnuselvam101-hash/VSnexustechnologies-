@@ -49,7 +49,8 @@ def _experiment(src: Path, work: Path, name: str, channel: SequencingConfig, tri
             "summary": summary}
 
 
-def run(out: Path, only: set[str] | None, workers: int) -> None:
+def run(out: Path, only: set[str] | None, workers: int, quick: bool = False) -> None:
+    scale = (lambda n: max(2, n // 20)) if quick else (lambda n: n)
     out.mkdir(parents=True, exist_ok=True)
     work = Path(tempfile.mkdtemp(prefix="vnxdna-research-"))
     try:
@@ -70,7 +71,7 @@ def run(out: Path, only: set[str] | None, workers: int) -> None:
 
         if want("stages"):
             t = time.perf_counter()
-            save("stages", {"results": run_stages([100_000, 1_000_000, 10_000_000], seed=1, workers=workers),
+            save("stages", {"results": run_stages([100_000] if quick else [100_000, 1_000_000, 10_000_000], seed=1, workers=workers),
                             "runtime_s": time.perf_counter() - t})
 
         if want("profiles"):
@@ -79,10 +80,10 @@ def run(out: Path, only: set[str] | None, workers: int) -> None:
             from vnxdna.v2.api import _recover_v2
             from vnxdna.v2.decoder import DecodeOptionsV2
             medium = work / "medium.bin"
-            generate_file(medium, 4_000_000, "mixed", 9)
+            generate_file(medium, 400_000 if quick else 4_000_000, "mixed", 9)
             rows = []
-            harsh = SequencingConfig(seed=100, coverage=5, substitution_rate=0.005, insertion_rate=0.0005, deletion_rate=0.0005,
-                                     dropout_rate=0.05)
+            harsh = SequencingConfig(seed=100, coverage=3, substitution_rate=0.005, insertion_rate=0.0005, deletion_rate=0.0005,
+                                     dropout_rate=0.08)
             for name in PROFILES:
                 opts = PROFILES[name]
                 t = time.perf_counter()
@@ -95,7 +96,7 @@ def run(out: Path, only: set[str] | None, workers: int) -> None:
                 _recover_v2(work / f"{name}.vxs", work / f"{name}.out", key=None, options=DecodeOptionsV2(), workers=workers,
                             overwrite=True, temp_dir=work)
                 t_decode = time.perf_counter() - t
-                robust = _experiment(small, work, f"profile-{name}", harsh, 100, replace(opts, chunk_size=min(opts.chunk_size, 8192)),
+                robust = _experiment(small, work, f"profile-{name}", harsh, scale(100), replace(opts, chunk_size=min(opts.chunk_size, 8192)),
                                      True, workers)
                 rows.append({"profile": name, "options": opts.public_dict(), "expected_overhead": opts.overhead(),
                              "input_bytes": st["original_bytes"], "stored_bytes": st["stored_bytes"], "strands": enc["strands"],
@@ -112,45 +113,45 @@ def run(out: Path, only: set[str] | None, workers: int) -> None:
             rows = []
             for cov in (1, 2, 5, 10, 20, 50):
                 ch = replace(CANONICAL, coverage=float(cov), seed=1000 + cov)
-                rows.append(_experiment(small, work, f"cov-{cov}", ch, 40, options, cov > 1, workers))
-                rows.append(_experiment(small, work, f"cov-{cov}-direct", ch, 40, options, False, workers)) if cov > 1 else None
+                rows.append(_experiment(small, work, f"cov-{cov}", ch, scale(40), options, cov > 1, workers))
+                rows.append(_experiment(small, work, f"cov-{cov}-direct", ch, scale(40), options, False, workers)) if cov > 1 else None
             save("coverage", {"input": "20,000 B mixed (seed 7), profile balanced (8 KiB chunks), 40 trials per point",
                               "rows": [r for r in rows if r]})
 
         if want("errors"):
             rows = []
-            for sub in (0.001, 0.005, 0.01, 0.02):
+            for sub in (0.001, 0.005, 0.01, 0.02, 0.04, 0.06):
                 ch = replace(CANONICAL, substitution_rate=sub, insertion_rate=0.0, deletion_rate=0.0, seed=2000 + int(sub * 1e4))
-                rows.append({"axis": "substitution", "rate": sub, **_experiment(small, work, f"sub-{sub}", ch, 30, options, True, workers)})
+                rows.append({"axis": "substitution", "rate": sub, **_experiment(small, work, f"sub-{sub}", ch, scale(30), options, True, workers)})
                 rows.append({"axis": "substitution", "rate": sub,
-                             **_experiment(small, work, f"sub-{sub}-direct", ch, 30, options, False, workers)})
-            for indel in (0.0001, 0.0005, 0.001, 0.003):
+                             **_experiment(small, work, f"sub-{sub}-direct", ch, scale(30), options, False, workers)})
+            for indel in (0.0001, 0.0005, 0.001, 0.003, 0.005, 0.01):
                 ch = replace(CANONICAL, insertion_rate=indel, deletion_rate=indel, seed=3000 + int(indel * 1e5))
-                rows.append({"axis": "indel", "rate": indel, **_experiment(small, work, f"indel-{indel}", ch, 30, options, True, workers)})
+                rows.append({"axis": "indel", "rate": indel, **_experiment(small, work, f"indel-{indel}", ch, scale(30), options, True, workers)})
                 rows.append({"axis": "indel", "rate": indel,
-                             **_experiment(small, work, f"indel-{indel}-direct", ch, 30, options, False, workers)})
+                             **_experiment(small, work, f"indel-{indel}-direct", ch, scale(30), options, False, workers)})
             save("errors", {"input": "20,000 B mixed (seed 7), coverage 10 (poisson), dropout 2 %, 30 trials per point", "rows": rows})
 
         if want("abundance"):
             rows = []
             for sigma in (0.0, 0.5, 1.0, 1.5):
                 ch = replace(CANONICAL, coverage=5.0, coverage_model="lognormal", abundance_sigma=sigma, seed=4000 + int(sigma * 10))
-                rows.append({"sigma": sigma, **_experiment(small, work, f"abundance-{sigma}", ch, 40, options, True, workers)})
+                rows.append({"sigma": sigma, **_experiment(small, work, f"abundance-{sigma}", ch, scale(40), options, True, workers)})
             save("abundance", {"input": "20,000 B mixed (seed 7), mean coverage 5 with log-normal abundance, 40 trials per point",
                                "rows": rows})
 
         if want("chunks"):
             from vnxdna.v2.scale import _cli, run_measured
             big = work / "chunks.bin"
-            generate_file(big, 200_000_000, "mixed", 11)
+            generate_file(big, 20_000_000 if quick else 200_000_000, "mixed", 11)
             rows = []
             for chunk in (64 << 10, 256 << 10, 1 << 20, 4 << 20, 16 << 20):
                 row = {"chunk_size": chunk, "stages": {}}
                 for name, args in (("store", ["store", str(big), "-o", str(work / "c.vxdna"), "--chunk-size", str(chunk), "--force", "--json"]),
                                    ("encode", ["encode", str(work / "c.vxdna"), "-o", str(work / "c.vxs"), "--force", "--json"]),
-                                   ("extract_container", ["extract", str(work / "c.vxdna"), "--offset", "100000000", "--length", "4096",
+                                   ("extract_container", ["extract", str(work / "c.vxdna"), "--offset", str(big.stat().st_size // 2), "--length", "4096",
                                                           "-o", str(work / "x.bin"), "--force", "--json"]),
-                                   ("extract_dna", ["extract", str(work / "c.vxs"), "--offset", "100000000", "--length", "4096",
+                                   ("extract_dna", ["extract", str(work / "c.vxs"), "--offset", str(big.stat().st_size // 2), "--length", "4096",
                                                     "-o", str(work / "y.bin"), "--force", "--temp-dir", str(work), "--json"]),
                                    ("recover", ["recover", str(work / "c.vxs"), "-o", str(work / "c.out"), "--force", "--temp-dir",
                                                 str(work), "--json"])):
@@ -170,9 +171,9 @@ def run(out: Path, only: set[str] | None, workers: int) -> None:
 
         if want("montecarlo"):
             t = time.perf_counter()
-            canonical = _experiment(small, work, "mc-canonical", CANONICAL, 1000, options, True, workers)
+            canonical = _experiment(small, work, "mc-canonical", CANONICAL, scale(1000), options, True, workers)
             direct_channel = replace(CANONICAL, seed=50_000, insertion_rate=0.0, deletion_rate=0.0, coverage=5.0)
-            direct = _experiment(tiny, work, "mc-direct", direct_channel, 10_000, options_for("balanced", chunk_size=4096), False, workers)
+            direct = _experiment(tiny, work, "mc-direct", direct_channel, scale(10_000), options_for("balanced", chunk_size=4096), False, workers)
             save("montecarlo", {"canonical": canonical, "direct": direct, "runtime_s": time.perf_counter() - t,
                                 "inputs": {"canonical": "20,000 B mixed (seed 7)", "direct": "4,000 B mixed (seed 8)"}})
     finally:
@@ -184,8 +185,9 @@ def main() -> None:
     parser.add_argument("--out", default="research/results/v2")
     parser.add_argument("--only", nargs="*")
     parser.add_argument("--workers", type=int, default=0)
+    parser.add_argument("--quick", action="store_true", help="smoke test: tiny trial counts and inputs (results are not for the docs)")
     args = parser.parse_args()
-    run(Path(args.out), set(args.only) if args.only else None, args.workers)
+    run(Path(args.out), set(args.only) if args.only else None, args.workers, args.quick)
 
 
 if __name__ == "__main__":

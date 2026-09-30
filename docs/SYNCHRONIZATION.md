@@ -28,11 +28,14 @@ raw reads ─▶ [ multi-read synchronization: cluster → align → vote ] ─�
    whose CRC passes is anchored exactly. A read that fails (typically because of an indel *after* the header) is
    anchored tentatively by descrambling its header. The tentative anchor must carry an archive tag that verified
    reads also carry.
-2. **Alignment.** Reads of the cluster that do not have the strand length are aligned to the draft consensus with
-   banded global edit distance (band 12 by default, so a net indel of up to 12 bases). The alignment projects each read
-   onto the strand's L positions: a base, or a gap (deletion). Inserted bases have no strand position and are dropped.
-3. **Voting** at each position over {A, C, G, T, deleted}, weighted by base quality; the winner needs at least 60 %
-   of the top-two weight, otherwise the position becomes `N`.
+   Reads whose header is damaged get a second chance by minimizer similarity to the cluster representatives.
+2. **Alignment.** Every read of the cluster is aligned to the current draft with banded global edit distance (band 12
+   by default, so a net indel of up to 12 bases). The alignment projects each read onto the draft's positions (a base
+   with its quality, or a gap for a deletion) and records the bases it inserts between positions.
+3. **Voting** at each position over {A, C, G, T, deleted}, weighted by base quality, and at each insertion slot (a
+   base is inserted when most reads insert there). The vote becomes the next draft, and all reads are realigned to it
+   once more. In the final round the winner needs at least 60 % of the top-two weight, otherwise the position becomes
+   `N`. Clusters that contain a read passing the CRC (directly or after inner RS) skip alignment entirely.
 
 Why this works: independent indels hit different positions in different reads, so after alignment each strand position
 has a majority of correct evidence. Measured recovery rates versus indel rate, with and without this layer, are in

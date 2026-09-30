@@ -150,14 +150,40 @@ def test_align_batch_equals_reference_edit_distance():
 
 
 def test_consensus_writes_n_for_ambiguous_positions_instead_of_guessing():
-    length = 20
-    a = "ACGT" * 5
+    from vnxdna.v2.frame import FrameGeometry
+    geometry = FrameGeometry("2bit", 1, 0)  # 16-byte frames = 64 nt; random reads are not valid frames
+    length = geometry.strand_nt
+    rng = random.Random(3)
+    a = "".join(rng.choice("ACGT") for _ in range(length))
     b = a[:10] + ("T" if a[10] != "T" else "A") + a[11:]
     block = [{"id": 0, "reads": [a, b], "quals": ["I" * length, "I" * length], "verified": 0}]
-    seq = _vote(block, length, 8, 0.15, 0.6, 10, Counter())[0]
-    assert seq[10] == 4 and (np.delete(seq, 10) != 4).all()
+    seq = _vote(block, geometry, 8, 0.15, 0.6, 10, Counter())[0]
+    assert seq.size == length and seq[10] == 4 and (np.delete(seq, 10) != 4).all()
     block = [{"id": 0, "reads": [a, a, b], "quals": ["I" * length] * 3, "verified": 0}]
-    assert (_vote(block, length, 8, 0.15, 0.6, 10, Counter())[0] != 4).all()
+    assert (_vote(block, geometry, 8, 0.15, 0.6, 10, Counter())[0] != 4).all()
+
+
+def test_iterative_consensus_repairs_indels_including_insertions():
+    from vnxdna.v2.frame import FrameGeometry
+    geometry = FrameGeometry("2bit", 1, 0)
+    length = geometry.strand_nt
+    rng = random.Random(4)
+    truth = "".join(rng.choice("ACGT") for _ in range(length))
+    reads = []
+    for k in range(9):
+        r = list(truth)
+        pos = rng.randrange(5, length - 5)
+        if k % 3 == 0:
+            del r[pos]
+        elif k % 3 == 1:
+            r.insert(pos, rng.choice("ACGT"))
+        else:
+            r[pos] = "ACGT"[("ACGT".index(r[pos]) + 1) % 4]
+        reads.append("".join(r))
+    seed_is_wrong = [reads[1]] + reads  # a seed with an insertion must still converge to the truth
+    block = [{"id": 0, "reads": seed_is_wrong, "quals": ["I" * len(r) for r in seed_is_wrong], "verified": 0}]
+    seq = _vote(block, geometry, 8, 0.15, 0.6, 10, Counter())[0]
+    assert "".join("ACGTN"[c] for c in seq) == truth
 
 
 def test_cluster_and_consensus_recover_under_indels_and_read_order_does_not_matter(pool):
