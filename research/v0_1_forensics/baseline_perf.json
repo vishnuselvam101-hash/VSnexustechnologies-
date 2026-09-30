@@ -1,0 +1,110 @@
+[
+ {
+  "config": "baseline_none",
+  "bytes": 1000,
+  "encode_s": 0.002,
+  "decode_s": 0.0021,
+  "strands": 2,
+  "nt": 4000,
+  "nt_per_byte": 4.0
+ },
+ {
+  "config": "baseline_none",
+  "bytes": 10000,
+  "encode_s": 0.0118,
+  "decode_s": 0.0185,
+  "strands": 20,
+  "nt": 40000,
+  "nt_per_byte": 4.0
+ },
+ {
+  "config": "baseline_none",
+  "bytes": 100000,
+  "encode_s": 0.1159,
+  "decode_s": 0.1906,
+  "strands": 196,
+  "nt": 400000,
+  "nt_per_byte": 4.0
+ },
+ {
+  "config": "baseline_none",
+  "bytes": 1000000,
+  "encode_s": 1.1783,
+  "decode_s": 1.8135,
+  "strands": 1954,
+  "nt": 4000000,
+  "nt_per_byte": 4.0
+ },
+ {
+  "config": "rs_8_4",
+  "bytes": 1000,
+  "encode_s": 0.0151,
+  "decode_s": 0.0143,
+  "strands": 12,
+  "nt": 24576,
+  "nt_per_byte": 24.576
+ },
+ {
+  "config": "rs_8_4",
+  "bytes": 10000,
+  "encode_s": 0.0445,
+  "decode_s": 0.0456,
+  "strands": 36,
+  "nt": 73728,
+  "nt_per_byte": 7.373
+ },
+ {
+  "config": "rs_8_4",
+  "bytes": 100000,
+  "encode_s": 0.3923,
+  "decode_s": 0.3771,
+  "strands": 300,
+  "nt": 614400,
+  "nt_per_byte": 6.144
+ },
+ {
+  "config": "rs_8_4",
+  "bytes": 1000000,
+  "encode_s": 3.7308,
+  "decode_s": 3.7669,
+  "strands": 2940,
+  "nt": 6021120,
+  "nt_per_byte": 6.021
+ },
+ {
+  "config": "constrained_rs_8_4",
+  "bytes": 1000,
+  "encode_s": 0.016,
+  "decode_s": 0.0077,
+  "strands": 12,
+  "nt": 24576,
+  "nt_per_byte": 24.576
+ },
+ {
+  "config": "constrained_rs_8_4",
+  "bytes": 10000,
+  "encode_s": 0.0592,
+  "decode_s": 0.0384,
+  "strands": 60,
+  "nt": 122880,
+  "nt_per_byte": 12.288
+ },
+ {
+  "config": "constrained_rs_8_4",
+  "bytes": 100000,
+  "encode_s": 0.572,
+  "decode_s": 0.3719,
+  "strands": 588,
+  "nt": 1204224,
+  "nt_per_byte": 12.042
+ },
+ {
+  "config": "constrained_rs_8_4",
+  "bytes": 1000000,
+  "encode_s": 5.5868,
+  "decode_s": 3.6164,
+  "strands": 5868,
+  "nt": 12017664,
+  "nt_per_byte": 12.018
+ }
+]

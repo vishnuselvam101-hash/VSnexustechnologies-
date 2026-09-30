@@ -1,0 +1,11 @@
+# Captured 2026-09-29 at v0.1-baseline (cf7d1f5), Python 3.12.3, x86_64. Sampled rows use random.Random(1).
+K= 4 M= 2 exhaustive patterns=    15 singular=    0 example_erased=None
+K= 8 M= 4 exhaustive patterns=   495 singular=   10 example_erased=[4, 5, 7, 11]
+K=10 M= 4 exhaustive patterns=  1001 singular=   20 example_erased=[6, 7, 9, 13]
+K=16 M= 4 exhaustive patterns=  4845 singular=   72 example_erased=[12, 13, 15, 19]
+K=16 M= 8 sampled    patterns=  3000 singular=   83 example_erased=[1, 4, 5, 6, 7, 19, 20, 22]
+K=20 M=10 sampled    patterns=  3000 singular=   51 example_erased=[2, 3, 5, 7, 9, 10, 13, 14, 17, 22]
+K=32 M= 8 sampled    patterns=  3000 singular=   56 example_erased=[0, 3, 7, 18, 25, 31, 34, 39]
+K=32 M=16 sampled    patterns=  3000 singular=   69 example_erased=[5, 6, 8, 9, 12, 13, 14, 16, 17, 19, 20, 24, 26, 36, 38, 47]
+K=64 M=16 sampled    patterns=  3000 singular=   31 example_erased=[3, 9, 11, 12, 20, 31, 34, 42, 46, 47, 50, 60, 63, 64, 75, 78]
+K=64 M=64 sampled    patterns=  3000 singular=   23 (example omitted)

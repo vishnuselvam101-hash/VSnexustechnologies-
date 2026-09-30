@@ -1,0 +1,736 @@
+{
+  "benchmark": "vnx-dna stage benchmark v1",
+  "environment": {
+    "cpu_count": 8,
+    "git": {
+      "commit": "bb33372cedf018e26013e9e2a10cca6eaffe9d01",
+      "dirty": false
+    },
+    "implementation": "CPython",
+    "libraries": {
+      "cryptography": "46.0.7",
+      "numpy": "2.5.3",
+      "reedsolo": "unknown",
+      "zstandard": "0.25.0"
+    },
+    "machine": "x86_64",
+    "platform": "Linux-6.8.0-139-generic-x86_64-with-glibc2.39",
+    "processor": "x86_64",
+    "python": "3.12.3",
+    "vnxdna_version": "1.0.0"
+  },
+  "repeats": 3,
+  "results": [
+    {
+      "bases_per_input_byte": 31.232,
+      "channel_observed": {
+        "reads_out": 126,
+        "strands_dropped": 2,
+        "substitutions": 56
+      },
+      "compressed_bytes": 596,
+      "dna_bases": 31232,
+      "frame_overhead_bytes": 2688,
+      "input_bytes": 1000,
+      "input_sha256": "1c74f7810e8f25cd81b96ec0089da9c34cd41879ae80ce8528130ae271e5b6c8",
+      "net_bits_per_base": 0.25614754098360654,
+      "outer_parity_bytes": 640,
+      "redundancy_overhead_percent": 104.57516339869281,
+      "stages": {
+        "compression_zstd9": {
+          "cpu_s_median": 4.9533000000101524e-05,
+          "peak_traced_bytes": 1147,
+          "repeats": 3,
+          "throughput_MBps": 20.814698322695705,
+          "wall_s_max": 0.00015513296239078045,
+          "wall_s_median": 4.804297350347042e-05,
+          "wall_s_min": 2.6428955607116222e-05
+        },
+        "dna_decode_clean": {
+          "cpu_s_median": 0.0011300759999999244,
+          "peak_traced_bytes": 150952,
+          "repeats": 3,
+          "throughput_MBps": 0.5428207641875252,
+          "wall_s_max": 0.0011540569830685854,
+          "wall_s_median": 0.0011274439748376608,
+          "wall_s_min": 0.0010379389859735966
+        },
+        "dna_decode_damaged": {
+          "cpu_s_median": 0.012784303999999969,
+          "peak_traced_bytes": 168779,
+          "repeats": 3,
+          "throughput_MBps": 0.04788418780594935,
+          "wall_s_max": 0.01295895001385361,
+          "wall_s_median": 0.012780837016180158,
+          "wall_s_min": 0.012437524041160941
+        },
+        "dna_encode": {
+          "cpu_s_median": 0.013446864999999919,
+          "peak_traced_bytes": 593503,
+          "repeats": 3,
+          "throughput_MBps": 0.04553006010202848,
+          "wall_s_max": 0.016114920959807932,
+          "wall_s_median": 0.01344166905619204,
+          "wall_s_min": 0.013303622021339834
+        },
+        "ecc_outer_decode_max_erasures": {
+          "cpu_s_median": 0.000829397000000176,
+          "peak_traced_bytes": 415298,
+          "repeats": 3,
+          "throughput_MBps": 3.0216113077585063,
+          "wall_s_max": 0.00104556605219841,
+          "wall_s_median": 0.000847230083309114,
+          "wall_s_min": 0.0008161549922078848
+        },
+        "ecc_outer_encode": {
+          "cpu_s_median": 0.000577513000000085,
+          "peak_traced_bytes": 503552,
+          "repeats": 3,
+          "throughput_MBps": 4.450022777141007,
+          "wall_s_max": 0.0008604399627074599,
+          "wall_s_median": 0.0005752779543399811,
+          "wall_s_min": 0.0003903270699083805
+        },
+        "encryption_aes256gcm": {
+          "cpu_s_median": 1.0250999999961152e-05,
+          "peak_traced_bytes": 870,
+          "repeats": 3,
+          "throughput_MBps": 64.15540121343358,
+          "wall_s_max": 0.0006524480413645506,
+          "wall_s_median": 9.289942681789398e-06,
+          "wall_s_min": 5.123903974890709e-06
+        },
+        "end_to_end_store_encode_simulate_recover": {
+          "cpu_s_median": 0.030352893999999964,
+          "peak_traced_bytes": 1468673,
+          "repeats": 3,
+          "throughput_MBps": 0.03294863277475706,
+          "wall_s_max": 0.0308058790396899,
+          "wall_s_median": 0.03035027300938964,
+          "wall_s_min": 0.02992195193655789
+        },
+        "random_access_one_chunk_from_reads": {
+          "cpu_s_median": 0.00044083300000008485,
+          "peak_traced_bytes": 17637,
+          "repeats": 3,
+          "throughput_MBps": 2.280735627007939,
+          "wall_s_max": 0.00047427695244550705,
+          "wall_s_median": 0.0004384550265967846,
+          "wall_s_min": 0.0004308139905333519
+        },
+        "recovery_outer_decrypt_decompress_verify": {
+          "cpu_s_median": 0.00048195499999992286,
+          "peak_traced_bytes": 17893,
+          "repeats": 3,
+          "throughput_MBps": 2.084266794004448,
+          "wall_s_max": 0.0006288910517469049,
+          "wall_s_median": 0.00047978502698242664,
+          "wall_s_min": 0.0004684280138462782
+        },
+        "restore_from_container": {
+          "cpu_s_median": 5.222800000015404e-05,
+          "peak_traced_bytes": 3266,
+          "repeats": 3,
+          "throughput_MBps": 19.612081024310946,
+          "wall_s_max": 7.664295844733715e-05,
+          "wall_s_median": 5.098897963762283e-05,
+          "wall_s_min": 4.3775071389973164e-05
+        },
+        "simulate_channel": {
+          "cpu_s_median": 0.003360360999999923,
+          "peak_traced_bytes": 1406532,
+          "repeats": 3,
+          "throughput_MBps": 0.18221758993659107,
+          "wall_s_max": 0.003959747962653637,
+          "wall_s_median": 0.003358621965162456,
+          "wall_s_min": 0.00324753497261554
+        },
+        "store_container": {
+          "cpu_s_median": 0.0009752699999998615,
+          "peak_traced_bytes": 27013,
+          "repeats": 3,
+          "throughput_MBps": 1.0274177413071603,
+          "wall_s_max": 0.0012826689053326845,
+          "wall_s_median": 0.0009733139304444194,
+          "wall_s_min": 0.0006909460062161088
+        }
+      },
+      "stored_bytes": 612,
+      "strand_nt": 244,
+      "strands": 128
+    },
+    {
+      "bases_per_input_byte": 6.2464,
+      "channel_observed": {
+        "reads_out": 249,
+        "strands_dropped": 7,
+        "substitutions": 120
+      },
+      "compressed_bytes": 5100,
+      "dna_bases": 62464,
+      "frame_overhead_bytes": 5376,
+      "input_bytes": 10000,
+      "input_sha256": "744f95c6dcefaf8c53b387e189e38eb3e5f1d01d6444548dc0e44455ef2ac97a",
+      "net_bits_per_base": 1.2807377049180328,
+      "outer_parity_bytes": 1280,
+      "redundancy_overhead_percent": 25.019546520719313,
+      "stages": {
+        "compression_zstd9": {
+          "cpu_s_median": 4.476799999997283e-05,
+          "peak_traced_bytes": 10179,
+          "repeats": 3,
+          "throughput_MBps": 227.13878555185363,
+          "wall_s_max": 0.00010856194421648979,
+          "wall_s_median": 4.402594640851021e-05,
+          "wall_s_min": 4.071206785738468e-05
+        },
+        "dna_decode_clean": {
+          "cpu_s_median": 0.0018657360000000622,
+          "peak_traced_bytes": 300440,
+          "repeats": 3,
+          "throughput_MBps": 2.750678005054811,
+          "wall_s_max": 0.0034986580722033978,
+          "wall_s_median": 0.0018599050818011165,
+          "wall_s_min": 0.0017789960838854313
+        },
+        "dna_decode_damaged": {
+          "cpu_s_median": 0.026395029999999986,
+          "peak_traced_bytes": 292464,
+          "repeats": 3,
+          "throughput_MBps": 0.19384784699334023,
+          "wall_s_max": 0.030382449040189385,
+          "wall_s_median": 0.026391832972876728,
+          "wall_s_min": 0.026184941991232336
+        },
+        "dna_encode": {
+          "cpu_s_median": 0.01574666300000005,
+          "peak_traced_bytes": 1104007,
+          "repeats": 3,
+          "throughput_MBps": 0.3249425824570659,
+          "wall_s_max": 0.01579493097960949,
+          "wall_s_median": 0.01574432000052184,
+          "wall_s_min": 0.015620035002939403
+        },
+        "ecc_outer_decode_max_erasures": {
+          "cpu_s_median": 0.0013279820000000608,
+          "peak_traced_bytes": 418019,
+          "repeats": 3,
+          "throughput_MBps": 3.8612396055607237,
+          "wall_s_max": 0.0014381019864231348,
+          "wall_s_median": 0.0013259990373626351,
+          "wall_s_min": 0.0012338830856606364
+        },
+        "ecc_outer_encode": {
+          "cpu_s_median": 0.0006141870000000438,
+          "peak_traced_bytes": 545152,
+          "repeats": 3,
+          "throughput_MBps": 8.35132960211975,
+          "wall_s_max": 0.000658258912153542,
+          "wall_s_median": 0.0006130760302767158,
+          "wall_s_min": 0.0006122320191934705
+        },
+        "encryption_aes256gcm": {
+          "cpu_s_median": 7.890000000010389e-06,
+          "peak_traced_bytes": 5374,
+          "repeats": 3,
+          "throughput_MBps": 721.0590957140037,
+          "wall_s_max": 1.9202008843421936e-05,
+          "wall_s_median": 7.072929292917252e-06,
+          "wall_s_min": 5.910056643188e-06
+        },
+        "end_to_end_store_encode_simulate_recover": {
+          "cpu_s_median": 0.051299274000000006,
+          "peak_traced_bytes": 2884904,
+          "repeats": 3,
+          "throughput_MBps": 0.1949516336746756,
+          "wall_s_max": 0.051983854034915566,
+          "wall_s_median": 0.05129477404989302,
+          "wall_s_min": 0.05117686605080962
+        },
+        "random_access_one_chunk_from_reads": {
+          "cpu_s_median": 0.0013033199999998857,
+          "peak_traced_bytes": 278587,
+          "repeats": 3,
+          "throughput_MBps": 7.688250430867513,
+          "wall_s_max": 0.0013213529018685222,
+          "wall_s_median": 0.001300686039030552,
+          "wall_s_min": 0.0012997820740565658
+        },
+        "recovery_outer_decrypt_decompress_verify": {
+          "cpu_s_median": 0.0014206769999998148,
+          "peak_traced_bytes": 278771,
+          "repeats": 3,
+          "throughput_MBps": 7.049208190635019,
+          "wall_s_max": 0.001584031037054956,
+          "wall_s_median": 0.0014185990439727902,
+          "wall_s_min": 0.0013571069575846195
+        },
+        "restore_from_container": {
+          "cpu_s_median": 9.740900000010377e-05,
+          "peak_traced_bytes": 16535,
+          "repeats": 3,
+          "throughput_MBps": 103.69145090673372,
+          "wall_s_max": 0.00011553394142538309,
+          "wall_s_median": 9.643996600061655e-05,
+          "wall_s_min": 9.100697934627533e-05
+        },
+        "simulate_channel": {
+          "cpu_s_median": 0.006131925000000038,
+          "peak_traced_bytes": 2772195,
+          "repeats": 3,
+          "throughput_MBps": 0.8346128770409992,
+          "wall_s_max": 0.006452260073274374,
+          "wall_s_median": 0.006129788001999259,
+          "wall_s_min": 0.0057412529131397605
+        },
+        "store_container": {
+          "cpu_s_median": 0.00077517100000013,
+          "peak_traced_bytes": 30885,
+          "repeats": 3,
+          "throughput_MBps": 12.932811488157881,
+          "wall_s_max": 0.0008611329831182957,
+          "wall_s_median": 0.0007732270751148462,
+          "wall_s_min": 0.0007227639434859157
+        }
+      },
+      "stored_bytes": 5116,
+      "strand_nt": 244,
+      "strands": 256
+    },
+    {
+      "bases_per_input_byte": 4.09188,
+      "channel_observed": {
+        "reads_out": 1637,
+        "strands_dropped": 40,
+        "substitutions": 819
+      },
+      "compressed_bytes": 50419,
+      "dna_bases": 409188,
+      "frame_overhead_bytes": 35217,
+      "input_bytes": 100000,
+      "input_sha256": "d4848ddc5873ccafd9ca0c48eba8a6a6c264a7db45b9187fb9b73bc64fdfdbbe",
+      "net_bits_per_base": 1.9550915471616959,
+      "outer_parity_bytes": 12800,
+      "redundancy_overhead_percent": 25.379200951720037,
+      "stages": {
+        "compression_zstd9": {
+          "cpu_s_median": 0.0001088519999998816,
+          "peak_traced_bytes": 100486,
+          "repeats": 3,
+          "throughput_MBps": 929.3418491555259,
+          "wall_s_max": 0.0002860880922526121,
+          "wall_s_median": 0.00010760303121060133,
+          "wall_s_min": 9.808002505451441e-05
+        },
+        "dna_decode_clean": {
+          "cpu_s_median": 0.01149640300000021,
+          "peak_traced_bytes": 1960900,
+          "repeats": 3,
+          "throughput_MBps": 4.388863655346985,
+          "wall_s_max": 0.014191442052833736,
+          "wall_s_median": 0.011491585057228804,
+          "wall_s_min": 0.010851684957742691
+        },
+        "dna_decode_damaged": {
+          "cpu_s_median": 0.17681562699999986,
+          "peak_traced_bytes": 1914644,
+          "repeats": 3,
+          "throughput_MBps": 0.2851868750582833,
+          "wall_s_max": 0.178958136937581,
+          "wall_s_median": 0.17684895207639784,
+          "wall_s_min": 0.1748515539802611
+        },
+        "dna_encode": {
+          "cpu_s_median": 0.05603339300000032,
+          "peak_traced_bytes": 7115617,
+          "repeats": 3,
+          "throughput_MBps": 0.8999531527508752,
+          "wall_s_max": 0.059482207987457514,
+          "wall_s_median": 0.056041806004941463,
+          "wall_s_min": 0.05556742800399661
+        },
+        "ecc_outer_decode_max_erasures": {
+          "cpu_s_median": 0.013095972000000344,
+          "peak_traced_bytes": 474797,
+          "repeats": 3,
+          "throughput_MBps": 3.9111637297416224,
+          "wall_s_max": 0.013678014976903796,
+          "wall_s_median": 0.013090732973068953,
+          "wall_s_min": 0.012661134009249508
+        },
+        "ecc_outer_encode": {
+          "cpu_s_median": 0.005600217000000018,
+          "peak_traced_bytes": 1293952,
+          "repeats": 3,
+          "throughput_MBps": 9.148807167929323,
+          "wall_s_max": 0.0062752950470894575,
+          "wall_s_median": 0.005596357979811728,
+          "wall_s_min": 0.005442360998131335
+        },
+        "encryption_aes256gcm": {
+          "cpu_s_median": 2.543399999987983e-05,
+          "peak_traced_bytes": 50693,
+          "repeats": 3,
+          "throughput_MBps": 2069.9908816019424,
+          "wall_s_max": 3.9606005884706974e-05,
+          "wall_s_median": 2.4357112124562263e-05,
+          "wall_s_min": 2.0381994545459747e-05
+        },
+        "end_to_end_store_encode_simulate_recover": {
+          "cpu_s_median": 0.2841061319999998,
+          "peak_traced_bytes": 18865003,
+          "repeats": 3,
+          "throughput_MBps": 0.35198778233974537,
+          "wall_s_max": 0.2882964180316776,
+          "wall_s_median": 0.2841007700189948,
+          "wall_s_min": 0.2791086739161983
+        },
+        "random_access_one_chunk_from_reads": {
+          "cpu_s_median": 0.010867430000000233,
+          "peak_traced_bytes": 402099,
+          "repeats": 3,
+          "throughput_MBps": 9.204862780651197,
+          "wall_s_max": 0.010899515938945115,
+          "wall_s_median": 0.010863823001272976,
+          "wall_s_min": 0.010755156050436199
+        },
+        "recovery_outer_decrypt_decompress_verify": {
+          "cpu_s_median": 0.01069897200000014,
+          "peak_traced_bytes": 402203,
+          "repeats": 3,
+          "throughput_MBps": 9.350328861407446,
+          "wall_s_max": 0.011231923941522837,
+          "wall_s_median": 0.010694811004213989,
+          "wall_s_min": 0.010610651108436286
+        },
+        "restore_from_container": {
+          "cpu_s_median": 0.0007017330000005373,
+          "peak_traced_bytes": 151937,
+          "repeats": 3,
+          "throughput_MBps": 143.08954828667703,
+          "wall_s_max": 0.0007601820398122072,
+          "wall_s_median": 0.0006988630630075932,
+          "wall_s_min": 0.0006803859723731875
+        },
+        "simulate_channel": {
+          "cpu_s_median": 0.04180848000000026,
+          "peak_traced_bytes": 18192960,
+          "repeats": 3,
+          "throughput_MBps": 1.2064430918599016,
+          "wall_s_max": 0.04290023795329034,
+          "wall_s_median": 0.04180470702704042,
+          "wall_s_min": 0.03962955588940531
+        },
+        "store_container": {
+          "cpu_s_median": 0.001580553000000151,
+          "peak_traced_bytes": 161215,
+          "repeats": 3,
+          "throughput_MBps": 63.402535072608266,
+          "wall_s_max": 0.0018277839990332723,
+          "wall_s_median": 0.0015772240003570914,
+          "wall_s_min": 0.0015233739977702498
+        }
+      },
+      "stored_bytes": 50435,
+      "strand_nt": 244,
+      "strands": 1677
+    },
+    {
+      "bases_per_input_byte": 3.875696,
+      "channel_observed": {
+        "reads_out": 15553,
+        "strands_dropped": 331,
+        "substitutions": 7630
+      },
+      "compressed_bytes": 501899,
+      "dna_bases": 3875696,
+      "frame_overhead_bytes": 333564,
+      "input_bytes": 1000000,
+      "input_sha256": "71eb1a0bbdfa462d4443489acf1d037a41a69e2b68102e8a55e4d10edd69b05f",
+      "net_bits_per_base": 2.064145381887537,
+      "outer_parity_bytes": 127360,
+      "redundancy_overhead_percent": 25.363040378533817,
+      "stages": {
+        "compression_zstd9": {
+          "cpu_s_median": 0.005958978999999864,
+          "peak_traced_bytes": 1003987,
+          "repeats": 3,
+          "throughput_MBps": 167.91548176696676,
+          "wall_s_max": 0.011175152962096035,
+          "wall_s_median": 0.005955377011559904,
+          "wall_s_min": 0.003486512927338481
+        },
+        "dna_decode_clean": {
+          "cpu_s_median": 0.12661263000000034,
+          "peak_traced_bytes": 16626878,
+          "repeats": 3,
+          "throughput_MBps": 3.9663043735261914,
+          "wall_s_max": 0.13377672294154763,
+          "wall_s_median": 0.12660349602811038,
+          "wall_s_min": 0.11126637295819819
+        },
+        "dna_decode_damaged": {
+          "cpu_s_median": 1.6041386810000002,
+          "peak_traced_bytes": 16813334,
+          "repeats": 3,
+          "throughput_MBps": 0.3130217520648432,
+          "wall_s_max": 1.6131830919766799,
+          "wall_s_median": 1.6041952250525355,
+          "wall_s_min": 1.6033858549781144
+        },
+        "dna_encode": {
+          "cpu_s_median": 0.3334708690000001,
+          "peak_traced_bytes": 37927874,
+          "repeats": 3,
+          "throughput_MBps": 1.5055664883502573,
+          "wall_s_max": 0.3365996249485761,
+          "wall_s_median": 0.33352761494461447,
+          "wall_s_min": 0.3192184950457886
+        },
+        "ecc_outer_decode_max_erasures": {
+          "cpu_s_median": 0.1454432059999995,
+          "peak_traced_bytes": 977894,
+          "repeats": 3,
+          "throughput_MBps": 3.4672346476857663,
+          "wall_s_max": 0.14563775702845305,
+          "wall_s_median": 0.14545309194363654,
+          "wall_s_min": 0.1445344239473343
+        },
+        "ecc_outer_encode": {
+          "cpu_s_median": 0.05363136199999996,
+          "peak_traced_bytes": 8657248,
+          "repeats": 3,
+          "throughput_MBps": 9.396249589132621,
+          "wall_s_max": 0.054167507914826274,
+          "wall_s_median": 0.053672478068619967,
+          "wall_s_min": 0.05288397101685405
+        },
+        "encryption_aes256gcm": {
+          "cpu_s_median": 0.00027728600000020975,
+          "peak_traced_bytes": 502173,
+          "repeats": 3,
+          "throughput_MBps": 1832.8049457400816,
+          "wall_s_max": 0.0002806279808282852,
+          "wall_s_median": 0.00027384201530367136,
+          "wall_s_min": 0.0001888620899990201
+        },
+        "end_to_end_store_encode_simulate_recover": {
+          "cpu_s_median": 2.3198216650000028,
+          "peak_traced_bytes": 75597808,
+          "repeats": 3,
+          "throughput_MBps": 0.43104638112572796,
+          "wall_s_max": 2.5153757830848917,
+          "wall_s_median": 2.3199359599966556,
+          "wall_s_min": 2.2867822530679405
+        },
+        "random_access_one_chunk_from_reads": {
+          "cpu_s_median": 0.0011779119999992815,
+          "peak_traced_bytes": 272985,
+          "repeats": 3,
+          "throughput_MBps": 222.87743459175735,
+          "wall_s_max": 0.0012656389735639095,
+          "wall_s_median": 0.0011761800851672888,
+          "wall_s_min": 0.001126679009757936
+        },
+        "recovery_outer_decrypt_decompress_verify": {
+          "cpu_s_median": 0.09880114899999981,
+          "peak_traced_bytes": 2012741,
+          "repeats": 3,
+          "throughput_MBps": 10.121788909748116,
+          "wall_s_max": 0.09994756104424596,
+          "wall_s_median": 0.09879676497075707,
+          "wall_s_min": 0.09745435195509344
+        },
+        "restore_from_container": {
+          "cpu_s_median": 0.006749397000000101,
+          "peak_traced_bytes": 2504270,
+          "repeats": 3,
+          "throughput_MBps": 148.20762973856526,
+          "wall_s_max": 0.006816628039814532,
+          "wall_s_median": 0.006747290957719088,
+          "wall_s_min": 0.006528450991027057
+        },
+        "simulate_channel": {
+          "cpu_s_median": 0.34942988699999944,
+          "peak_traced_bytes": 69313523,
+          "repeats": 3,
+          "throughput_MBps": 1.4370948344016738,
+          "wall_s_max": 0.3609433420933783,
+          "wall_s_median": 0.349418833036907,
+          "wall_s_min": 0.32266849698498845
+        },
+        "store_container": {
+          "cpu_s_median": 0.009736450999999313,
+          "peak_traced_bytes": 1250530,
+          "repeats": 3,
+          "throughput_MBps": 102.73132860927475,
+          "wall_s_max": 0.010240743984468281,
+          "wall_s_median": 0.009734128951095045,
+          "wall_s_min": 0.00970161403529346
+        }
+      },
+      "stored_bytes": 502148,
+      "strand_nt": 244,
+      "strands": 15884
+    },
+    {
+      "bases_per_input_byte": 3.8439028,
+      "channel_observed": {
+        "reads_out": 154376,
+        "strands_dropped": 3161,
+        "substitutions": 75526
+      },
+      "compressed_bytes": 5000674,
+      "dna_bases": 38439028,
+      "frame_overhead_bytes": 3308277,
+      "input_bytes": 10000000,
+      "input_sha256": "f5df64f7a1185f74cf7898d2c7d18da1014b3641ddc407f5414ef0f42a1d95d5",
+      "net_bits_per_base": 2.0812180786673378,
+      "outer_parity_bytes": 1269760,
+      "redundancy_overhead_percent": 25.379373422733583,
+      "stages": {
+        "compression_zstd9": {
+          "cpu_s_median": 0.012576178999999854,
+          "peak_traced_bytes": 10039143,
+          "repeats": 3,
+          "throughput_MBps": 795.4591946791282,
+          "wall_s_max": 0.01905805803835392,
+          "wall_s_median": 0.012571355095133185,
+          "wall_s_min": 0.012287536053918302
+        },
+        "dna_decode_clean": {
+          "cpu_s_median": 1.7025774909999996,
+          "peak_traced_bytes": 164809220,
+          "repeats": 3,
+          "throughput_MBps": 2.938294566688268,
+          "wall_s_max": 1.759427328943275,
+          "wall_s_median": 1.7027285340009257,
+          "wall_s_min": 1.689283441985026
+        },
+        "dna_decode_damaged": {
+          "cpu_s_median": 16.82006905899999,
+          "peak_traced_bytes": 173783858,
+          "repeats": 3,
+          "throughput_MBps": 0.29740957937437357,
+          "wall_s_max": 16.841596254962496,
+          "wall_s_median": 16.822316249948926,
+          "wall_s_min": 16.22719622508157
+        },
+        "dna_encode": {
+          "cpu_s_median": 2.6569197230000015,
+          "peak_traced_bytes": 97201376,
+          "repeats": 3,
+          "throughput_MBps": 1.88289426854295,
+          "wall_s_max": 2.6854671289911494,
+          "wall_s_median": 2.657142296084203,
+          "wall_s_min": 2.6287696020444855
+        },
+        "ecc_outer_decode_max_erasures": {
+          "cpu_s_median": 1.2209305860000015,
+          "peak_traced_bytes": 5978740,
+          "repeats": 3,
+          "throughput_MBps": 4.098919346072146,
+          "wall_s_max": 1.229157763067633,
+          "wall_s_median": 1.2210047520929947,
+          "wall_s_min": 1.2151539790211245
+        },
+        "ecc_outer_encode": {
+          "cpu_s_median": 0.5125303000000017,
+          "peak_traced_bytes": 10069152,
+          "repeats": 3,
+          "throughput_MBps": 9.763509416881117,
+          "wall_s_max": 0.5270473329583183,
+          "wall_s_median": 0.5126025680219755,
+          "wall_s_min": 0.5096810939721763
+        },
+        "encryption_aes256gcm": {
+          "cpu_s_median": 0.0023598579999983826,
+          "peak_traced_bytes": 5000948,
+          "repeats": 3,
+          "throughput_MBps": 2127.5688836490654,
+          "wall_s_max": 0.0023584169102832675,
+          "wall_s_median": 0.0023504169657826424,
+          "wall_s_min": 0.0017729440005496144
+        },
+        "end_to_end_store_encode_simulate_recover": {
+          "cpu_s_median": 24.03192182699999,
+          "peak_traced_bytes": 281271826,
+          "repeats": 3,
+          "throughput_MBps": 0.4160603925796289,
+          "wall_s_max": 24.043277104967274,
+          "wall_s_median": 24.03497227409389,
+          "wall_s_min": 23.42637461598497
+        },
+        "random_access_one_chunk_from_reads": {
+          "cpu_s_median": 0.0053688819999990756,
+          "peak_traced_bytes": 311934,
+          "repeats": 3,
+          "throughput_MBps": 48.84909826538282,
+          "wall_s_max": 0.006566605996340513,
+          "wall_s_median": 0.005366404075175524,
+          "wall_s_min": 0.004918449907563627
+        },
+        "recovery_outer_decrypt_decompress_verify": {
+          "cpu_s_median": 1.0453491560000145,
+          "peak_traced_bytes": 20018686,
+          "repeats": 3,
+          "throughput_MBps": 9.564832937089333,
+          "wall_s_max": 1.0758294629631564,
+          "wall_s_median": 1.0454965670360252,
+          "wall_s_min": 1.038902127998881
+        },
+        "restore_from_container": {
+          "cpu_s_median": 0.06915286800000331,
+          "peak_traced_bytes": 25011724,
+          "repeats": 3,
+          "throughput_MBps": 144.61670879495148,
+          "wall_s_max": 0.0706795280566439,
+          "wall_s_median": 0.06914830300956964,
+          "wall_s_min": 0.06869602901861072
+        },
+        "simulate_channel": {
+          "cpu_s_median": 3.226694402999996,
+          "peak_traced_bytes": 206692729,
+          "repeats": 3,
+          "throughput_MBps": 1.5501563236898528,
+          "wall_s_max": 3.2632862388854846,
+          "wall_s_median": 3.2274925590027124,
+          "wall_s_min": 3.1117180469445884
+        },
+        "store_container": {
+          "cpu_s_median": 0.09227397399999404,
+          "peak_traced_bytes": 10171542,
+          "repeats": 3,
+          "throughput_MBps": 108.37878327474779,
+          "wall_s_max": 0.09255885798484087,
+          "wall_s_median": 0.09226898197084665,
+          "wall_s_min": 0.0915999780409038
+        }
+      },
+      "stored_bytes": 5003118,
+      "strand_nt": 244,
+      "strands": 157537
+    }
+  ],
+  "seed": 1,
+  "store_options": {
+    "chunk_size": 262144,
+    "compression": "zstd",
+    "compression_level": 9,
+    "constraints": {
+      "check_reverse_complement": true,
+      "forbidden_motifs": [],
+      "gc_max_percent": 60,
+      "gc_min_percent": 40,
+      "gc_window_nt": 0,
+      "max_homopolymer": 4
+    },
+    "data_shards": 64,
+    "inner_parity_bytes": 8,
+    "mapping": "2bit",
+    "parity_shards": 16,
+    "payload_bytes": 40,
+    "store_name": true,
+    "timestamp": null
+  }
+}

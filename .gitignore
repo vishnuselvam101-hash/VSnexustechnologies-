@@ -2,12 +2,16 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.hypothesis/
 .coverage
 htmlcov/
-*.vnxdna
-*.bin
+*.egg-info/
+build/
+dist/
 .env
-results/raw/*.json
-results/processed/*.csv
-results/figures/*.png
-results/tables/*.csv
+# generated archives and keys in the working tree
+*.vxdna
+key.txt
+*.bin
+# V0.1 compatibility fixtures are intentional binary test inputs
+!tests/fixtures/**/*.bin

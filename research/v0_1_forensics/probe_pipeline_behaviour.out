@@ -1,0 +1,15 @@
+1 non-MDS 4 erasures K8M4: ECCRecoveryError: Stripe 0 is unrecoverable: Available shards are not linearly independent.
+2 deterministic strands.fasta: False | sequences equal: True
+3 dupv1 corrupt-first-then-valid duplicate: IntegrityError: Strand 0 payload checksum mismatch.
+3 dupv2 corrupt-first-then-valid duplicate: ECCRecoveryError: Stripe 0 is unrecoverable: Insufficient shards: need 4, received 3.
+4 foreign strand shadows valid one (V1): MetadataError: Strand 0 dataset metadata mismatch.
+5 manifest drop constraints: KeyError: 'constraints'
+5 manifest unknown config key: TypeError: DatasetConfig.__init__() got an unexpected keyword argument 'evil'
+5 manifest format_version=99: UnsupportedFormatError: Unsupported VNX-DNA dataset format.
+5 manifest strand_count str: TypeError: '<' not supported between instances of 'int' and 'str'
+5 manifest config not dict: TypeError: 'int' object is not iterable
+5 manifest manifest is list: MetadataError: Dataset manifest is missing required fields.
+6 header index out of range: MissingStrandError: Missing 1 required strand(s): [0]
+7 encrypted manifest exposes: name='secret.txt' size=3 sha256==sha256(b"yes"): True
+7b wrong key: ValueError: Authenticated decryption failed.
+8 default strand length (nt): {2048, 44}

@@ -1,11 +1,7 @@
-"""Stable public API for VNX-DNA-1 computational datasets."""
-from .core.models import DatasetConfig, Strand, ConstraintSettings
-from .core.pipeline import decode_dataset, encode_file, inspect_dataset
-from .simulation.channel import ChannelConfig, simulate
-__version__='1.0.0'
-class Encoder:
-    def encode(self,input_path,output_directory,config=DatasetConfig(),key=None): return encode_file(input_path,output_directory,config,key)
-class Decoder:
-    def decode(self,directory,output_path,key=None): return decode_dataset(directory,output_path,key)
-class ChannelSimulator:
-    def simulate(self,source,destination,config): return simulate(source,destination,config)
+"""VNX-DNA: computational DNA data-storage research platform.
+
+The supported entry points are the ``vnx-dna`` CLI and :mod:`vnxdna.api`.
+"""
+from ._version import __version__
+
+__all__ = ["__version__"]

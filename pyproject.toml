@@ -4,21 +4,39 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vnx-dna"
-version = "1.0.0"
-description = "Computational DNA data storage research platform (R&D-1)"
+dynamic = ["version"]
+description = "VNX-DNA: computational DNA data storage (compression, AES-256-GCM, MDS erasure coding, DNA encoding, channel simulation, recovery)"
 readme = "README.md"
 requires-python = ">=3.12"
 license = {text = "MIT"}
 authors = [{name = "VS Nexus Technologies"}]
-dependencies = ["typer>=0.15,<1", "cryptography>=44,<47", "zstandard>=0.23,<1", "reedsolo>=1.7,<2", "fastapi>=0.115,<1", "uvicorn>=0.32,<1", "pydantic>=2.10,<3", "numpy>=2.0,<3", "pandas>=2.2,<4", "matplotlib>=3.9,<4"]
+dependencies = [
+    "numpy>=2.0,<3",
+    "cryptography>=44,<47",
+    "zstandard>=0.23,<1",
+    "reedsolo>=1.7,<2",
+    "pydantic>=2.10,<3",
+    "typer>=0.15,<1",
+]
 
 [project.optional-dependencies]
-dev = ["pytest>=8,<9", "pytest-cov>=6,<8", "httpx>=0.28,<1"]
+dev = ["pytest>=8,<9", "pytest-cov>=6,<8", "hypothesis>=6.100,<7"]
+
 [project.scripts]
+vnx-dna = "vnxdna.cli:app"
 vnxdna = "vnxdna.cli:app"
-"vnx-dna" = "vnxdna.cli:app"
+
+[tool.setuptools.dynamic]
+version = {attr = "vnxdna._version.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+pythonpath = ["src", "tests"]
+testpaths = ["tests"]
 addopts = "-q"
+markers = ["slow: long-running exhaustive/statistical tests (run by default; deselect with -m 'not slow')"]
+
 [tool.coverage.run]
 source = ["vnxdna"]

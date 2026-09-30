@@ -1,0 +1,12 @@
+{
+  "container_mutations": 24000,
+  "manifest_field_cases": 1586,
+  "outcomes": {
+    "AUTHENTICATION_FAILED": 67,
+    "INVALID_INPUT": 17600,
+    "UNSUPPORTED_FORMAT": 80,
+    "VERIFICATION_FAILED": 6251,
+    "exact": 2
+  },
+  "problems": {}
+}
