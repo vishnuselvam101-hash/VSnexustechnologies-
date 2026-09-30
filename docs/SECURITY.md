@@ -16,8 +16,8 @@ exit 1/3 (unencrypted). In every case nothing is written under the output name.
   derived from a password.
 * **Key separation**: HKDF-SHA256 with a fresh random 16-byte salt per archive → AEAD key, manifest MAC key, 64-bit
   key-check value. Labels start with `VNX-DNA/5`, so V1 and V2 keys differ even for the same master key and salt.
-* **Streaming authenticated encryption**: AES-256-GCM per chunk, nonce = `domain(4) ‖ chunk index(8)`, associated
-  data = `"VNX-DNA/5 aead" ‖ archive_id ‖ domain ‖ index ‖ chunk_count`. This is the standard chunked-AEAD
+* **Streaming authenticated encryption**: AES-256-GCM per chunk, nonce = `(epoch·256 + domain)(4) ‖ chunk index(8)`,
+  associated data = `"VNX-DNA/5 aead" ‖ archive_id ‖ (epoch·256 + domain) ‖ index ‖ chunk_count`. This is the standard chunked-AEAD
   construction: memory stays bounded by one chunk, and each chunk is independently authenticated.
 
 | attack on the stream | detected by |
@@ -29,10 +29,13 @@ exit 1/3 (unencrypted). In every case nothing is written under the output name.
 | chunk spliced from another archive | archive ID in the AD (and a different key via the salt) |
 
   All five are exercised in `tests/v2/test_container_v2.py`.
-* **Nonce management**: every encrypted archive has a new random salt (so a new AEAD key) and a random archive ID;
-  within an archive each (domain, index) is used once. A **resumed** store reuses the salt and archive ID recorded in
-  its checkpoint, but only for chunks that were never written. Chunks already written are verified, not re-encrypted,
-  so no (key, nonce) pair is ever used for two different plaintexts.
+* **Nonce management**: every encrypted archive has a new random salt (so a new AEAD key) and a random archive ID.
+  Within an archive each (epoch, domain, index) is used once. A **resumed** store keeps the salt and archive ID of its
+  checkpoint (all chunks must share them), verifies the completed chunks instead of re-encrypting them, and seals
+  every chunk it writes in a **new epoch** (1 byte per chunk in the HMAC-authenticated chunk index, at most 255
+  resumes). Some chunks may have been sealed and written after the last checkpoint and then cut off. When they are
+  sealed again they get a different nonce, even if the input changed in between. So no (key, nonce) pair is ever
+  used for two plaintexts (tested with `SIGKILL` + `--resume`).
 * **Authenticated metadata**: HMAC-SHA256 over the canonical manifest (without `seal`), verified in constant time
   before anything else is trusted. The manifest records the SHA-256 of the chunk index and of the sealed plaintext
   index, so the HMAC covers both tables. Name, size and object SHA-256 are sealed with AES-GCM (domain 1), per-chunk

@@ -216,3 +216,39 @@ def test_resume_refuses_a_changed_input(tmp_path):
                         "--compression", "zlib", "--level", "9", "--resume"], capture_output=True, text=True)
     assert r.returncode == 3 and "cannot resume" in r.stderr
     assert not out.exists()
+
+
+def test_aead_epochs_give_distinct_nonces_and_bind_the_chunk():
+    keys = crypto.ArchiveKeys.derive(KEY, bytes(16))
+    cipher = crypto.ChunkCipher(keys, b"\x03" * 16, chunk_count=2)
+    a = cipher.seal(crypto.DOMAIN_CHUNK, 1, b"same plaintext", epoch=0)
+    b = cipher.seal(crypto.DOMAIN_CHUNK, 1, b"same plaintext", epoch=1)
+    assert a != b  # a different nonce: re-sealing after a resume never reuses (key, nonce)
+    assert cipher.open(crypto.DOMAIN_CHUNK, 1, b, epoch=1) == b"same plaintext"
+    with pytest.raises(AuthenticationError):
+        cipher.open(crypto.DOMAIN_CHUNK, 1, b, epoch=0)
+
+
+def test_killed_encrypted_store_resumes_with_a_new_aead_epoch(tmp_path):
+    data = os.urandom(30 << 20)
+    src = write(tmp_path / "in.bin", data)
+    key_file = tmp_path / "k"
+    subprocess.run([sys.executable, "-m", "vnxdna", "keygen", "-o", str(key_file)], check=True, capture_output=True)
+    out = tmp_path / "a.vxdna"
+    ckpt = out.with_name(out.name + ".partial.ckpt")
+    proc = _store_process(src, out, "--compression", "zlib", "--level", "9", "--key-file", str(key_file))
+    while not ckpt.exists() and proc.poll() is None:
+        time.sleep(0.02)
+    if proc.poll() is not None:
+        pytest.skip("store finished before it could be interrupted on this machine")
+    proc.send_signal(signal.SIGKILL)
+    proc.wait()
+    r = subprocess.run([sys.executable, "-m", "vnxdna", "store", str(src), "-o", str(out), "--chunk-size", "65536", "--compression",
+                        "zlib", "--level", "9", "--key-file", str(key_file), "--resume", "--json"], capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    key = crypto.parse_key(key_file.read_text())
+    _, loaded = open_container(out, key)
+    epochs = loaded.index["epoch"]
+    assert epochs[0] == 0 and epochs[-1] == 1 and set(np.unique(epochs).tolist()) == {0, 1}
+    restore_file(out, tmp_path / "o.bin", key=key)
+    assert (tmp_path / "o.bin").read_bytes() == data

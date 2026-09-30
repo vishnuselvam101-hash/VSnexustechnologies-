@@ -11,11 +11,16 @@ construction is the V1 one with format-5 domain labels:
 * **Chunked AEAD (streaming)**: each chunk is sealed independently with
   AES-256-GCM, so memory is bounded by the chunk size whatever the file size.
 
-  - nonce = domain (4 bytes) ‖ chunk index (8 bytes). The AEAD key is unique
-    per archive (random salt), and each (domain, index) pair is used once, so
-    nonces never repeat under one key.
-  - associated data = ``"VNX-DNA/5 aead"`` ‖ archive ID ‖ domain ‖ index ‖
-    chunk count.
+  - nonce = (epoch ≪ 8 | domain) (4 bytes) ‖ chunk index (8 bytes). The AEAD
+    key is unique per archive (random salt). Within an archive each (epoch,
+    domain, index) is used once: a fresh store seals every chunk in epoch 0,
+    and each ``store --resume`` seals the chunks it (re)writes in the next
+    epoch, recorded per chunk in the authenticated chunk index. A chunk that
+    was sealed and written just before an interruption and is sealed again
+    after the resume therefore never reuses a nonce, even if the input
+    changed in between.
+  - associated data = ``"VNX-DNA/5 aead"`` ‖ archive ID ‖ (epoch ≪ 8 | domain)
+    ‖ index ‖ chunk count.
 
   This detects a **modified** chunk (GCM tag), a **reordered** or **duplicated**
   chunk (the index is bound into the nonce and AD, so a chunk decrypts only at
@@ -75,6 +80,15 @@ def new_salt() -> bytes:
     return os.urandom(SALT_BYTES)
 
 
+MAX_EPOCH = 255
+
+
+def _tagged(domain: int, epoch: int) -> int:
+    if not 0 <= epoch <= MAX_EPOCH:
+        raise ConfigurationError(f"AEAD epoch must be in 0..{MAX_EPOCH}")
+    return (epoch << 8) | domain
+
+
 def _nonce(domain: int, index: int) -> bytes:
     return domain.to_bytes(4, "big") + index.to_bytes(8, "big")
 
@@ -92,16 +106,18 @@ class ChunkCipher:
         self.chunk_count = chunk_count
         self._aead = AESGCM(keys.aead)
 
-    def seal(self, domain: int, index: int, plaintext: bytes, count: int | None = None) -> bytes:
+    def seal(self, domain: int, index: int, plaintext: bytes, count: int | None = None, epoch: int = 0) -> bytes:
         count = self.chunk_count if count is None else count
-        return self._aead.encrypt(_nonce(domain, index), plaintext, _ad(self.archive_id, domain, index, count))
+        tagged = _tagged(domain, epoch)
+        return self._aead.encrypt(_nonce(tagged, index), plaintext, _ad(self.archive_id, tagged, index, count))
 
-    def open(self, domain: int, index: int, ciphertext: bytes, count: int | None = None) -> bytes:
+    def open(self, domain: int, index: int, ciphertext: bytes, count: int | None = None, epoch: int = 0) -> bytes:
         count = self.chunk_count if count is None else count
         if len(ciphertext) < TAG_BYTES:
             raise AuthenticationError("ciphertext is shorter than the authentication tag")
+        tagged = _tagged(domain, epoch)
         try:
-            return self._aead.decrypt(_nonce(domain, index), ciphertext, _ad(self.archive_id, domain, index, count))
+            return self._aead.decrypt(_nonce(tagged, index), ciphertext, _ad(self.archive_id, tagged, index, count))
         except InvalidTag as error:
             what = {DOMAIN_CHUNK: "chunk", DOMAIN_CONTENT: "sealed content", DOMAIN_PLAIN_INDEX: "sealed plaintext index"}[domain]
             raise AuthenticationError(f"AES-GCM authentication failed for {what} {index} (tampered ciphertext or wrong key)",

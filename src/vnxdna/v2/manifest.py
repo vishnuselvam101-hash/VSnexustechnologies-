@@ -7,8 +7,8 @@ Why a binary index
     records into two fixed-width binary tables, written after the body:
 
     * the **chunk index** (clear, 56 bytes per chunk): where each stored chunk
-      is, its size, codec, ECC stripes and stored SHA-256. Decoding, ECC and
-      verification of ciphertext need nothing else, and no key;
+      is, its size, codec, AEAD epoch, ECC stripes and stored SHA-256. Decoding,
+      ECC and verification of ciphertext need nothing else, and no key;
     * the **plaintext index** (36 bytes per chunk): plaintext size and SHA-256
       per chunk. Clear for unencrypted archives, AES-256-GCM sealed for
       encrypted ones.
@@ -46,7 +46,7 @@ CODECS = {"none": CODEC_NONE, "zstd": CODEC_ZSTD, "zlib": CODEC_ZLIB}
 CODEC_NAMES = {v: k for k, v in CODECS.items()}
 
 INDEX_DTYPE = np.dtype([("offset", ">u8"), ("stored_size", ">u4"), ("first_stripe", ">u4"), ("stripe_count", ">u4"),
-                        ("codec", "u1"), ("reserved", "u1", (3,)), ("stored_sha256", "u1", (32,))])
+                        ("codec", "u1"), ("epoch", "u1"), ("reserved", "u1", (2,)), ("stored_sha256", "u1", (32,))])
 PLAIN_DTYPE = np.dtype([("size", ">u4"), ("sha256", "u1", (32,))])
 assert INDEX_DTYPE.itemsize == 56 and PLAIN_DTYPE.itemsize == 36
 
@@ -320,6 +320,8 @@ def parse_chunk_index(m: Manifest, data: bytes) -> np.ndarray:
         fail("a chunk uses a codec the manifest does not allow")
     if index["reserved"].any():
         fail("reserved bytes are not zero")
+    if not m.encrypted and index["epoch"].any():
+        fail("an unencrypted archive records an AEAD epoch")
     return index
 
 

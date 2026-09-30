@@ -79,13 +79,14 @@ must equal their own canonical re-serialisation.
 | 12 | 4 | first ECC group (stripe) |
 | 16 | 4 | number of ECC groups |
 | 20 | 1 | codec: 0 none, 1 zstd, 2 zlib |
-| 21 | 3 | reserved = 0 |
+| 21 | 1 | AEAD epoch (0 for a fresh store; the n-th `store --resume` seals the chunks it writes in epoch n; always 0 when unencrypted) |
+| 22 | 2 | reserved = 0 |
 | 24 | 32 | SHA-256 of the stored chunk |
 
 Validated vectorised: contiguous offsets from 0, sizes summing to `stored_size`, `stored_size ≤ chunk_size + 16`
 (the auto policy never expands a chunk), `stripe_count = ⌈stored_size / (K·P)⌉`, contiguous stripes summing to
-`erasure_code.stripe_count`, codecs allowed by `compression`, reserved bytes zero, SHA-256 of the table equal to
-`chunk_index.sha256`.
+`erasure_code.stripe_count`, codecs allowed by `compression`, reserved bytes zero, epochs zero when unencrypted,
+SHA-256 of the table equal to `chunk_index.sha256`.
 
 ### 2.2 Plaintext index (36 bytes per chunk)
 
@@ -95,9 +96,9 @@ For encrypted archives the whole table is sealed with AES-256-GCM (domain 2, ind
 ### 2.3 Encryption (see [SECURITY.md](SECURITY.md))
 
 HKDF-SHA256(master key, salt) → AEAD key (`"VNX-DNA/5 aead key"`), MAC key (`"VNX-DNA/5 manifest mac key"`), 8-byte key
-check (`"VNX-DNA/5 key check"`). Chunk *i* is AES-256-GCM with nonce `domain(4) ‖ i(8)` and associated data
-`"VNX-DNA/5 aead" ‖ archive_id ‖ domain(4) ‖ i(8) ‖ chunk_count(8)`. Domains: 0 chunk, 1 sealed content, 2 sealed
-plaintext index.
+check (`"VNX-DNA/5 key check"`). Chunk *i* is AES-256-GCM with nonce `t(4) ‖ i(8)` and associated data
+`"VNX-DNA/5 aead" ‖ archive_id ‖ t(4) ‖ i(8) ‖ chunk_count(8)`, where `t = epoch · 256 + domain` and the epoch is the
+chunk's index entry. Domains: 0 chunk, 1 sealed content, 2 sealed plaintext index (both epoch 0).
 
 ## 3. Strand frame format 5
 
@@ -176,6 +177,7 @@ is rejected.
 ### 4.4 Store checkpoint
 
 `<output>.partial.ckpt`: JSON (`format: "vnx-store-checkpoint-1"`) with the input's resolved path, size and mtime,
-the SHA-256 of the options, encryption state, archive ID/salt/key check (encrypted), chunk count, completed chunks,
+the SHA-256 of the options, encryption state, archive ID/salt/key check (encrypted), the AEAD epoch in use, chunk
+count, completed chunks,
 body bytes, the SHA-256 of the index sidecar prefix, and `checkpoint_sha256` over all of that.
 `<output>.partial.idx` holds 92 bytes per completed chunk (chunk-index entry + plaintext-index entry).

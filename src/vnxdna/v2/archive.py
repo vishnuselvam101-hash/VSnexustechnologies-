@@ -135,7 +135,8 @@ def _compressor(algorithm: str, level: int):
     return cache[(algorithm, level)]
 
 
-def seal_chunk(plain: bytes, index: int, algorithm: str, level: int, cipher: crypto.ChunkCipher | None) -> tuple[bytes, int, bytes, bytes]:
+def seal_chunk(plain: bytes, index: int, algorithm: str, level: int, cipher: crypto.ChunkCipher | None,
+               epoch: int = 0) -> tuple[bytes, int, bytes, bytes]:
     """plaintext → (stored bytes, codec, plaintext SHA-256, stored SHA-256). Compression is kept only if it helps."""
     plain_sha = hashlib.sha256(plain).digest()
     data, codec = plain, mf.CODEC_NONE
@@ -148,7 +149,7 @@ def seal_chunk(plain: bytes, index: int, algorithm: str, level: int, cipher: cry
         if len(packed) < len(plain):
             data, codec = packed, mf.CODEC_ZLIB
     if cipher is not None:
-        data = cipher.seal(crypto.DOMAIN_CHUNK, index, data)
+        data = cipher.seal(crypto.DOMAIN_CHUNK, index, data, epoch=epoch)
     return data, codec, plain_sha, hashlib.sha256(data).digest()
 
 
@@ -164,7 +165,7 @@ def open_chunk(loaded: LoadedV2, c: int, stored: bytes, *, stored_checked: bool 
         raise KeyRequiredError("archive is encrypted; a key is required to recover plaintext")
     if not stored_checked:
         check_stored(loaded, c, stored)
-    data = loaded.cipher.open(crypto.DOMAIN_CHUNK, c, stored) if loaded.cipher is not None else stored
+    data = loaded.cipher.open(crypto.DOMAIN_CHUNK, c, stored, epoch=int(loaded.index[c]["epoch"])) if loaded.cipher is not None else stored
     size = int(loaded.plain[c]["size"])
     codec = int(loaded.index[c]["codec"])
     plain = data if codec == mf.CODEC_NONE else decompress(data, mf.CODEC_NAMES[codec], size)
@@ -338,6 +339,7 @@ def store_file(input_path: str | os.PathLike, output_path: str | os.PathLike, *,
     discarded_partial = False
     plain_hash = hashlib.sha256()
     next_stripe = 0
+    epoch = 0  # AEAD epoch of the chunks this run seals; every resume uses a new one (see vnxdna.v2.crypto)
 
     if resume and ckpt_path.exists():
         state = _read_checkpoint(ckpt_path)
@@ -358,6 +360,9 @@ def store_file(input_path: str | os.PathLike, output_path: str | os.PathLike, *,
             keys = crypto.ArchiveKeys.derive(key, salt)
             if keys.check.hex() != state["key_check"]:
                 raise WrongKeyError("cannot resume: the key differs from the interrupted run")
+            epoch = int(state.get("epoch", 0)) + 1
+            if epoch > crypto.MAX_EPOCH:
+                raise InvalidInputError(f"cannot resume: this archive was resumed {crypto.MAX_EPOCH} times; run without --resume")
         done, body_bytes = state["chunks_done"], state["body_bytes"]
         if not sidecar_path.exists() or sidecar_path.stat().st_size < done * SIDECAR_ENTRY \
                 or _sha_prefix(sidecar_path, done * SIDECAR_ENTRY) != state["sidecar_sha256"]:
@@ -401,7 +406,7 @@ def store_file(input_path: str | os.PathLike, output_path: str | os.PathLike, *,
                   "options_sha256": options_sha, "encrypted": key is not None, "chunk_count": n,
                   "archive_id": archive_id.hex() if key is not None else None,
                   "salt": salt.hex() if key is not None else None,
-                  "key_check": keys.check.hex() if key is not None else None}
+                  "key_check": keys.check.hex() if key is not None else None, "epoch": epoch}
     sidecar = sidecar_path.open("ab")
     compressed_chunks = 0
 
@@ -425,14 +430,15 @@ def store_file(input_path: str | os.PathLike, output_path: str | os.PathLike, *,
 
     try:
         done = start_chunk
-        work = ordered_map(lambda item: (item[0], seal_chunk(item[1], item[0], options.compression, options.compression_level, cipher)),
-                           chunks(), workers)
+        work = ordered_map(lambda item: (item[0], seal_chunk(item[1], item[0], options.compression, options.compression_level, cipher,
+                                                             epoch)), chunks(), workers)
         for c, (stored, codec, plain_sha, stored_sha) in work:
             offset = writer.write_chunk(stored)
             stripes = -(-len(stored) // stripe_bytes)
             entry = np.zeros(1, dtype=mf.INDEX_DTYPE)
             entry["offset"], entry["stored_size"], entry["first_stripe"], entry["stripe_count"] = offset, len(stored), next_stripe, stripes
             entry["codec"] = codec
+            entry["epoch"] = epoch if cipher is not None else 0
             entry["stored_sha256"] = np.frombuffer(stored_sha, dtype=np.uint8)
             plain_entry = np.zeros(1, dtype=mf.PLAIN_DTYPE)
             plain_entry["size"] = min(cs, size - c * cs) if size else 0
