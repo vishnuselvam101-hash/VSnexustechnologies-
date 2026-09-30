@@ -1,5 +1,7 @@
 # VNX-DNA formats (archive format 4)
 
+> **V1 reference (archive format 4).** This document describes VNX-DNA 1.0.0, which V2 still reads. For V2 see [V2_FORMAT.md](V2_FORMAT.md).
+
 Three layers are specified here. All integers are big-endian.
 
 1. the **`.vxdna` container file** (container file version 1), produced by `store` and `decode`;

@@ -1,5 +1,7 @@
 # VNX-DNA architecture
 
+> **V1 reference (archive format 4).** This document describes VNX-DNA 1.0.0, which V2 still reads. For V2 see [V2_ARCHITECTURE.md](V2_ARCHITECTURE.md).
+
 VNX-DNA is a CPU-only Python reference implementation of the digital side of DNA data storage. It turns a file
 into DNA strand sequences, lets you damage those sequences in a controlled channel model, and recovers the exact
 original bytes. Every step is verified. **It is software only**: no sequence it produces has been synthesised or

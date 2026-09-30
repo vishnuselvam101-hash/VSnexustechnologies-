@@ -1,5 +1,52 @@
 # Changelog
 
+## 2.0.0 — 2026-09-30
+
+Streaming, scalable V2. Computational only: no wet-lab validation. V1 archives stay readable.
+
+### Added
+- **Archive format 5 / container file v2**: body first, then a canonical manifest, a binary chunk index (56 B per
+  chunk) and a plaintext index (36 B per chunk, sealed when encrypted), and a trailer with a SHA-256 of the file.
+  Written to `<output>.partial`, fsynced, renamed atomically.
+- **Streaming store/restore/verify/extract** with bounded memory (≤ 2 × workers chunks in flight) and parallel
+  compression/encryption/hashing. Per-chunk compression decision (zstd kept only if smaller).
+- **Chunked AES-256-GCM** with the chunk count in the associated data (detects modified, reordered, duplicated,
+  missing, truncated and spliced chunks). HKDF labels and AD carry `VNX-DNA/5` (downgrade protection).
+- **Resumable store** (`--resume`): validated checkpoints; SIGKILL-tested; byte-identical to an uninterrupted run.
+- **Frame format 5**: 32-bit stripe index and archive tag (V1 capped at 2²⁴ stripes). Vectorised CRC-32; linear
+  scrambler screening (parity and 2bit mapping are XOR-linear); table-driven inner RS and outer Cauchy encoders.
+  All byte-identical to the reference computations.
+- **Chunk-parallel encoder** (process pool) writing FASTA or the new **packed VXS** strand file (2 bits per nt),
+  plus a **DNA index** (`.vxidx`) for random access from DNA.
+- **Two-pass decoder** with a disk spill and external bucket sort: memory independent of the pool size, any read
+  order, any multiplicity. Geometry discovery falls back to inner-RS correction when no read is error-free.
+  Quality-based erasures (`--quality-erasure-below`).
+- **Sequencing simulator** (`sequence`, `simulate`): coverage models including log-normal abundance, synthesis and
+  sequencing errors, duplication, truncation, N calls, junk and contamination reads, reverse complements, out-of-core
+  shuffle, informative quality scores, FASTQ/FASTA/VXS output, event counts that actually happened.
+- **Read processing**: `reads` (validation/filtering), `cluster` (address indexing + minimizer index), `consensus`
+  (batched banded alignment, quality-weighted vote, `N` for ambiguity), single-read RS-assisted realignment for V2 frames.
+- **Profiles**: compact, balanced, resilient, archival. **Tandem-repeat** constraint.
+- **Random access** by byte range on containers and on DNA (via the DNA index).
+- **`migrate`**: V1 → V2 with full verification before and after (optional key rotation).
+- **Experiment engine** (`experiment run`, Monte Carlo, Wilson intervals, configuration/results JSON, CSV, summary)
+  and research scripts that generate every table in the docs.
+- **Benchmarks**: `benchmark generate` (reproducible 1 MB–10 GB test data), `benchmark scale` (the real CLI measured
+  per stage: time, CPU, peak RAM of the process tree, swap, disk), `benchmark corruption`, `benchmark stages`.
+- 1–10 GB acceptance runs, 1 GB corruption acceptance, and the V2 test suite (container, crypto, resume, DNA
+  guarantees, channel, clustering, consensus, alignment, CLI, properties, fuzzing, bounded memory).
+- Documentation: V2_ARCHITECTURE, V2_FORMAT, LARGE_FILES, STREAMING, SYNCHRONIZATION, CONSENSUS, EXPERIMENTS; ECC,
+  CHANNEL_MODEL, RANDOM_ACCESS, BENCHMARKS, SECURITY, COMPATIBILITY, CLI and TESTING rewritten for V2.
+
+### Changed
+- The main CLI is V2 (writes format 5). The V1 CLI is unchanged and available as `vnx-dna v1 …`. Every reading
+  command accepts V1 inputs and dispatches them to the unchanged V1 modules.
+- `benchmark` is now a command group (`generate`, `scale`, `corruption`, `stages`, `v1`).
+
+### Compatibility
+- Reads archive formats 5 and 4 and the legacy V0.1 formats. Writes format 5 (format 4 via `vnx-dna v1`).
+- The V1 test suite still runs; the V1 CLI tests now invoke `vnx-dna v1`.
+
 ## 1.0.0 — 2026-09-29
 
 First stable research-grade release. Computational only: no wet-lab validation.

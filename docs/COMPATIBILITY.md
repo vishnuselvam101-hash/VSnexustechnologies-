@@ -2,14 +2,43 @@
 
 | format | written by | read by current code | how |
 |---|---|---|---|
-| **archive format 4** + container file v1 (`.vxdna`) + frame format 4 | VNX-DNA 1.0.0 (and 0.2.x development builds) | yes | `restore`, `decode`, `verify`, `info`, `extract` |
+| **archive format 5** + container file v2 + frame format 5 + VXS 1 | VNX-DNA 2.x (`vnx-dna store/encode`) | yes | every command |
+| **archive format 4** + container file v1 (`.vxdna`) + frame format 4 | VNX-DNA 1.0.0 (still written by `vnx-dna v1 store/encode`) | yes | `restore`, `recover`, `decode`, `verify`, `info`, `extract` (dispatched to the unchanged V1 code), `migrate` |
 | V0.1 dataset, `format_version` 1 (VNX1 FASTA headers, no ECC) | V0.1 | yes, read-only | `vnx-dna legacy restore DIR -o FILE` |
 | V0.1 dataset, `format_version` 2 (VNX2 headers, Vandermonde shards) | V0.1 | yes, read-only | same |
 | V0.1 dataset, `format_version` 3 (constrained-v1 codebook, optional shards) | V0.1 | yes, read-only | same |
 | RD-1 JSON archive `VNXDNA` / `0.1` | V0.1 R&D-1 | yes, read-only | `vnx-dna legacy restore FILE.json -o FILE` |
 | anything else | – | no | `UNSUPPORTED_FORMAT` (6) or `INVALID_INPUT` (3) |
 
-## Rules
+## V1 (format 4) inside V2
+
+* **Detection.** Containers are recognised by the container file version (1 = V1, 2 = V2); strand/read files by
+  geometry discovery (frame format 4 or 5). V1 inputs go to the V1 modules (`vnxdna.api` and friends), which are
+  byte-for-byte the 1.0.0 code, so V1 archives are read by exactly the code that wrote them. Reports carry
+  `"format_version": 4`.
+* **Writing V1** is still possible for anyone who needs it: `vnx-dna v1 store …` is the unchanged 1.0.0 CLI.
+* **V1 limits apply to V1 archives**: in-memory processing (4 GiB input cap), 24-bit stripe index.
+* The V1 test suite (unit, integration, property, adversarial, CLI via `vnx-dna v1`) still runs unchanged.
+
+## Migration: `vnx-dna migrate`
+
+```bash
+vnx-dna migrate old.vxdna -o new.vxdna                      # V1 container → V2 container
+vnx-dna migrate old.fasta -o new.vxdna                      # V1 DNA reads → V2 container
+vnx-dna migrate old.vxdna -o new.vxdna -k key.txt           # encrypted: same key
+vnx-dna migrate old.vxdna -o new.vxdna -k old.key --new-key-file new.key   # and rotate the key
+```
+
+1. **Before**: the V1 archive is restored through the complete V1 verification chain (manifest digest/HMAC, every
+   stored-chunk SHA-256, AES-GCM, every plaintext-chunk SHA-256, whole-object SHA-256) into a private temporary
+   file. Any failure aborts the migration before anything is written.
+2. The V2 archive is built from that file (streaming; the original file name is kept).
+3. **After**: the V2 archive is verified independently (trailer, manifest, indexes, every chunk, object SHA-256), and
+   its object SHA-256 must equal the V1 one. Otherwise the V2 output is deleted and the command fails.
+
+A corrupted V1 archive is never silently converted (`tests/v2/test_compat_v2.py`).
+
+## Rules for legacy V0.1
 
 - **Explicit dispatch.** Legacy archives are identified only by their own magic and version values
   (`format == "VNX-DNA"` with an integer `format_version` in 1–3, or `manifest.format == "VNXDNA"` with
@@ -37,13 +66,13 @@ All of these are strictly safer:
 - V0.1 `inspect`/`simulate` workflows. The V0.1 `simulate` command never worked (infinite recursion).
 - The V0.1 HTTP API (archived under `research/legacy/v0_1_src/vnxdna/api`).
 
-## Forward compatibility of format 4
+## Forward compatibility (formats 4 and 5)
 
 A decoder rejects:
-- an unknown `format_version`;
+- an unknown `format_version` (it reads 4 and 5);
 - an unknown `required_features` entry;
-- a nonzero container `flags` value;
-- a container file version other than 1.
+- nonzero container flags or reserved fields;
+- a container file version other than 1 or 2, a VXS version other than 1, an unknown frame format nibble.
 
 A future format must change one of these rather than reinterpret an existing field. `extensions` is the only place
 where optional, ignorable data may be added, and it is still covered by the digest and HMAC.

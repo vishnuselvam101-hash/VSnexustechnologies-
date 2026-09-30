@@ -1,5 +1,7 @@
 # DNA codec and sequence constraints
 
+> **V1 reference (archive format 4).** This document describes VNX-DNA 1.0.0, which V2 still reads. For V2 see [V2_FORMAT.md](V2_FORMAT.md) §3 and V2_ARCHITECTURE.md.
+
 VNX-DNA separates three concerns:
 
 1. **Binary→DNA mapping** (`vnxdna.dna.mapping`): a deterministic, reversible, versioned bijection from bytes to

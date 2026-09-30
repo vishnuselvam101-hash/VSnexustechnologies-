@@ -5,33 +5,30 @@
 | version | content | status |
 |---|---|---|
 | V0.1 | R&D prototype: two parallel pipelines and a non-MDS shard code; `simulate` was broken; unauthenticated manifest | baseline, tagged `v0.1-baseline`, archived under `research/legacy/` |
-| V0.2 → V1.0 | Cauchy MDS outer code; authenticated format 4; in-band strand frame; `.vxdna` container; channel simulator; explicit legacy decoder; CLI/API; property, fuzz, adversarial and clean-room tests; benchmarks and experiments | see [PROJECT_STATE.md](PROJECT_STATE.md) |
+| V0.2 → V1.0 | Cauchy MDS outer code; authenticated format 4; in-band strand frame; `.vxdna` container; channel simulator; explicit legacy decoder; CLI/API; property, fuzz, adversarial and clean-room tests; benchmarks and experiments | tagged `v1.0.0` |
+| V2.0 | streaming format 5 (footer index, chunked AEAD, resumable store), frame format 5 (32-bit addresses), packed VXS strands, chunk-parallel encoder, two-pass disk-backed decoder, sequencing simulator with coverage and qualities, clustering, consensus, experiment engine, 1–10 GB scalability and corruption acceptance, V1 read compatibility and migration | see [PROJECT_STATE.md](PROJECT_STATE.md) |
 
 The intermediate milestones of the original plan (V0.3 channel, V0.4 sync, V0.5 random access, V0.6 security/CLI,
 V0.7 performance, V0.8 fuzzing, V0.9 freeze) were developed in one consolidation. They were not released separately.
 The capabilities each milestone named are present, and their evidence is listed in PROJECT_STATE.md.
 
-## V1.x (compatible with format 4)
+## Next (compatible with format 5)
 
-- Streaming encode/decode (peak traced memory is ≈27× the input end to end at 10 MB; BENCHMARKS.md); the format
-  already permits it.
-- Faster inner decoding: a vectorized Berlekamp–Massey instead of the per-read `reedsolo` call. This is the dominant
-  cost at high error rates.
-- Optional input padding to hide size and compressibility in encrypted archives.
-- A `--manifest` option to decode reads with a known container when every metadata stripe is lost.
+- **Vectorised inner RS decoding** (batched syndromes and Berlekamp–Massey). The per-read `reedsolo` decoder is
+  the dominant cost for heavily damaged read sets.
+- **Faster clustering and consensus**: the address scan and the per-cluster JSON are Python-bound (measured in
+  BENCHMARKS.md). A compiled or batched path would let the full sequencing chain run at multi-gigabyte scale.
+- **Resume for `encode` and `decode`** (only `store` checkpoints today; the others restart and are pure functions).
+- **Optional padding** to hide size and compressibility in encrypted archives.
+- **Parallel pass 2** in the decoder (chunk assembly is single-process; it is not the bottleneck today).
 
-## V2 research (a new format version, or new required features)
+## Research (new format version or new required features)
 
-- **Synchronization:** marker- or watermark-based codes, and edit-distance decoding of consensus reads (multiple
-  alignment across coverage), to replace the experimental RS-assisted realignment, which handles single indels
-  reliably.
-- **Consensus:** combine noisy copies before inner decoding instead of voting on validated payloads.
-- **Secondary structure:** hairpin/self-complementarity screening, primer/adapter design and melting-temperature
-  constraints.
-- **Channel models** fitted to published synthesis/sequencing error profiles, such as position-dependent errors and
-  truncated synthesis.
-- **Fountain / LT outer codes** for very large archives, and interleaving across chunks for correlated dropout.
+- **Synchronization markers / watermark or VT codes** inside strands, for coverage-1 indel channels.
+- **Secondary structure** screening, primer/adapter design, melting temperature.
+- **Channel models fitted to published data** (position-dependent errors, truncated synthesis, GC-dependent dropout).
+- **Fountain / LT outer codes** and cross-chunk interleaving for correlated dropout.
 - **Wet-lab validation.** Only physical experiments can support any claim about real DNA. None have been done.
 
-GPU acceleration is not planned until profiling shows a bottleneck that vectorized CPU code cannot address. CPU
+GPU acceleration is not planned until profiling shows a bottleneck vectorised CPU code cannot address. The CPU path
 remains the reference implementation.

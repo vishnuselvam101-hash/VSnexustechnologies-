@@ -1,19 +1,24 @@
 # VNX-DNA
 
-**Computational DNA data storage, end to end, on a CPU.** VNX-DNA turns any file into DNA strand sequences and back:
+**Scalable computational DNA data storage, end to end, on a CPU.** Give VNX-DNA a real file, including a
+multi-gigabyte one. It processes the file in bounded memory, turns it into a structured DNA-storage representation,
+can pass that through a reproducible simulated storage and sequencing channel, recovers the data, and proves
+with SHA-256 that the result is byte-for-byte identical to the original.
 
-- compression and authenticated encryption (AES-256-GCM);
-- chunking and a provably MDS erasure code across strands (Cauchy Reed–Solomon);
-- per-strand CRC-32 and inner Reed–Solomon;
-- constraint-screened A/C/G/T encoding;
-- a seeded DNA-channel simulator;
-- recovery, and independent SHA-256 verification of the original bytes.
+- streaming store: per-chunk zstd, **AES-256-GCM chunked authenticated encryption**, footer-indexed container, resumable;
+- ECC: **Cauchy Reed–Solomon** (provably MDS) across strands, inner Reed–Solomon + CRC-32 per strand;
+- constraint-screened DNA strands (GC, homopolymers, tandem repeats, motifs), FASTA or packed 2-bit VXS;
+- simulated sequencing (coverage 1×–50×+, uneven abundance, substitutions, indels, duplicates, N, junk,
+  contamination, quality scores), **clustering**, **consensus** with honest `N`s, and **synchronization** for indels;
+- two-pass disk-backed decoder, random access through a DNA index, experiments with Monte Carlo statistics;
+- tested from 1 MB to **10 GB** with measured peak RAM ([docs/LARGE_FILES.md](docs/LARGE_FILES.md)).
 
-> **Scope.** This is software. Every result in this repository comes from computation and simulation. No sequence
-> has been synthesised or sequenced, and the constraint checks are heuristics, not wet-lab validation. See
-> [docs/DNA_CODEC.md](docs/DNA_CODEC.md).
+> **Scope.** This is software. Every result in this repository comes from computation and **simulation**. No
+> sequence has been synthesised or sequenced. Software-generated DNA is not synthesised DNA, and simulated
+> sequencing is not real sequencing. Nothing here demonstrates physical DNA storage or commercial archival
+> readiness. See [Limitations](#limitations).
 
-## Install (Ubuntu, Python ≥ 3.12, CPU only)
+## Installation (Linux, Python ≥ 3.12, CPU only)
 
 ```bash
 git clone https://github.com/vishnuselvam101-hash/VSnexustechnologies-.git
@@ -23,130 +28,142 @@ pip install -e .            # add '.[dev]' to run the tests
 vnx-dna --help
 ```
 
-## Quick start: file → DNA → damaged DNA → file
+## Basic example
 
 ```bash
 echo "Hello VNX-DNA" > input.txt
-
-# 1. store: compress + chunk + authenticated manifest -> self-describing container
-vnx-dna store input.txt --output hello.vxdna
-vnx-dna info hello.vxdna
-
-# 2. encode: redundancy + ECC + DNA mapping -> strand pool (FASTA; headers are labels only)
-vnx-dna encode hello.vxdna --output hello.fasta
-
-# 3. (optional) simulate a damaging DNA channel: 5 % strand dropout, 0.1 % substitutions
-vnx-dna simulate hello.fasta --dropout-rate 0.05 --substitution-rate 0.001 --seed 12345 --output damaged.fasta
-
-# 4. decode: DNA reads -> the container, byte-identical to hello.vxdna
-vnx-dna decode damaged.fasta --output decoded.vxdna
-
-# 5. restore: container -> original file (SHA-256 recomputed and compared)
-vnx-dna restore decoded.vxdna --output recovered.txt
-vnx-dna verify decoded.vxdna
-
-sha256sum input.txt recovered.txt     # identical
-cmp hello.vxdna decoded.vxdna         # identical
+vnx-dna store input.txt --output hello.vxdna          # streaming container (format 5)
+vnx-dna encode hello.vxdna --output hello.fasta       # DNA strands (+ hello.fasta.vxidx)
+vnx-dna recover hello.fasta --output recovered.txt    # DNA -> verified original
+cmp input.txt recovered.txt && echo identical
 ```
 
-`vnx-dna recover damaged.fasta -o recovered.txt` does steps 4 and 5 at once. `vnx-dna pipeline input.bin -o out.bin
---dropout-rate 0.02 --substitution-rate 0.001 --seed 42` runs the whole lifecycle with real intermediate files.
+## Complete DNA workflow
 
-### Encrypted archives (recommended for real data)
+Every stage is its own command with its own verifiable output file:
 
 ```bash
-vnx-dna keygen --output key.txt                          # 256-bit key, file mode 0600; keep it safe
-vnx-dna store secret.pdf -o secret.vxdna --key-file key.txt
-vnx-dna encode secret.vxdna -o secret.fasta              # no key needed to encode or decode DNA
-vnx-dna recover secret.fasta -o secret-restored.pdf --key-file key.txt
+vnx-dna benchmark generate --size 200KB --pattern mixed --seed 42 --output input.bin
+vnx-dna store input.bin --output archive.v2.vxdna
+vnx-dna encode archive.v2.vxdna --output strands.fasta
+vnx-dna sequence strands.fasta --coverage 10 --substitution-rate 0.001 --insertion-rate 0.0001 --deletion-rate 0.0001 --dropout-rate 0.02 --seed 42 --output reads.fastq
+vnx-dna cluster reads.fastq --output clusters.jsonl
+vnx-dna consensus clusters.jsonl --output consensus.fasta
+vnx-dna decode consensus.fasta --output recovered.vxdna
+vnx-dna restore recovered.vxdna --output recovered.bin
+vnx-dna verify recovered.vxdna --file recovered.bin
+cmp input.bin recovered.bin && sha256sum input.bin recovered.bin
+cmp archive.v2.vxdna recovered.vxdna && echo "container rebuilt byte for byte"
 ```
 
-Without the key, name, size and hashes are sealed and the content is unreadable. A wrong key or any tampering exits
-with code 4 and writes nothing. [docs/SECURITY.md](docs/SECURITY.md) lists exactly what stays visible.
-
-### Random access
+The same in one command, with a machine-readable report:
 
 ```bash
-vnx-dna extract secret.fasta --chunk 3 -o part3.bin --key-file key.txt           # one 256 KiB chunk
-vnx-dna extract secret.vxdna --start 1000000 --end 1200000 -o slice.bin -k key.txt  # a byte range
+vnx-dna pipeline input.bin --output recovered2.bin --coverage 10 --substitution-rate 0.001 --insertion-rate 0.0001 --deletion-rate 0.0001 --dropout-rate 0.02 --seed 42 --report pipeline.json
 ```
 
-Only the stripes of the selected chunks are decoded ([docs/RANDOM_ACCESS.md](docs/RANDOM_ACCESS.md)).
+## Large files
 
-## What is guaranteed
+Memory depends on the chunk size and the worker count, not on the file size ([docs/STREAMING.md](docs/STREAMING.md)).
+Use the packed `.vxs` strand format and put the decoder's spill on a large disk:
 
-With the default profile (64 data + 16 parity strands per stripe, 244-nt strands, inner RS with 8 parity bytes):
+```bash
+# 1 GB example
+vnx-dna benchmark generate --size 1GB --pattern mixed --seed 42 --output big.bin
+vnx-dna store big.bin --output big.vxdna
+vnx-dna encode big.vxdna --output big.vxs
+vnx-dna recover big.vxs --output big.out --temp-dir /path/to/scratch
+cmp big.bin big.out
 
-- **Erasures:** any 16 missing or rejected strands of any stripe are recovered. This is proven (MDS) and tested
-  exhaustively on small codes, including the V0.1 counterexample {4,5,7,11} for 8+4.
-- **Substitutions:** up to 4 byte errors per strand are corrected by the inner code. A strand with more errors becomes
-  an erasure.
-- **Order, orientation and duplicates don't matter.** Every read is validated on its own, duplicates are resolved by
-  validated majority, and reverse complements are recognised.
-- **No silent corruption.** Output is written only after the recomputed SHA-256 matches. Beyond capacity, the
-  decoder exits 5 (`INSUFFICIENT_REDUNDANCY`) and writes nothing.
-- **Indels:** Reed–Solomon does not correct insertions or deletions. `--experimental-indel-repair` realigns reads with
-  one indel. It is opt-in and experimental; see [docs/CHANNEL_MODEL.md](docs/CHANNEL_MODEL.md).
-
-The measured recovery rates under random damage (dropout, substitutions, indels) are in
-[docs/CHANNEL_MODEL.md](docs/CHANNEL_MODEL.md), and speed, memory and density are in
-[docs/BENCHMARKS.md](docs/BENCHMARKS.md). Stronger redundancy is a flag away, e.g.
-`--data-shards 96 --parity-shards 48`.
-
-## Commands
-
-| command | purpose |
-|---|---|
-| `store` / `pack` | file → `.vxdna` container |
-| `encode` | container → DNA strands (FASTA) |
-| `simulate` | seeded channel damage with an event log |
-| `decode` | DNA reads → container |
-| `restore` / `recover` | container or reads → original file, verified |
-| `verify` | independent PASS/FAIL integrity report |
-| `info` | how an archive was built and how much DNA it uses |
-| `extract` | random access to a chunk or byte range |
-| `pipeline` | the whole lifecycle in one command |
-| `keygen`, `benchmark`, `version` | utilities |
-| `legacy info\|restore` | read V0.1 archives |
-
-Exit codes are stable: 0 ok, 1 verification failed, 2 usage, 3 invalid input, 4 authentication, 5 insufficient
-redundancy, 6 unsupported format, 7 configuration, 8 output, 70 internal. See [docs/CLI.md](docs/CLI.md).
-
-## Python API
-
-```python
-from vnxdna import api
-api.store("input.bin", "a.vxdna")
-api.encode("a.vxdna", "pool.fasta")
-api.simulate("pool.fasta", "reads.fasta", api.ChannelConfig(seed=1, dropout_rate=0.05))
-report = api.recover("reads.fasta", "out.bin")   # dict: status, recovery statistics, recomputed SHA-256
+# 10 GB scalability run (the real CLI, measuring time, CPU, peak RAM, swap and disk per stage)
+vnx-dna benchmark scale --sizes 1GB,2GB,5GB,10GB --work-dir /path/to/scratch --output scale.json
 ```
+
+An interrupted `store` continues with `--resume` and produces a byte-identical archive.
+
+<!-- BEGIN GENERATED: readme-results -->
+*(not yet measured)*
+<!-- END GENERATED: readme-results -->
+
+## Random access
+
+```bash
+vnx-dna extract big.vxdna --offset 500000000 --length 1048576 --output section.bin   # container: reads ~1 chunk
+vnx-dna extract big.vxs   --offset 500000000 --length 1048576 --output section.bin   # DNA: via big.vxs.vxidx
+```
+
+## Damage simulation, recovery and verification
+
+```bash
+# damage: 5 % strand dropout, 0.5 % substitutions, indels, duplicates, reverse complements, uneven abundance
+vnx-dna sequence strands.fasta --coverage 8 --coverage-model lognormal --abundance-sigma 0.5 --dropout-rate 0.05 --substitution-rate 0.005 --insertion-rate 0.0005 --deletion-rate 0.0005 --duplication-rate 0.05 --reverse-complement-rate 0.5 --seed 7 --output damaged.fastq
+
+# recovery: through consensus, or directly from the reads
+vnx-dna cluster damaged.fastq --output damaged.jsonl
+vnx-dna consensus damaged.jsonl --output damaged.cons.fasta
+vnx-dna recover damaged.cons.fasta --output from-consensus.bin
+
+# verification: every layer, and a recovered file against the archive
+vnx-dna verify damaged.cons.fasta
+vnx-dna verify archive.v2.vxdna --file from-consensus.bin
+```
+
+If damage exceeds what the ECC guarantees (more than M lost strands in one ECC group), VNX-DNA exits with code 5,
+names the damaged chunk, and writes nothing. It never outputs corrupted data.
+
+### Encrypted archives
+
+```bash
+vnx-dna keygen --output key.txt                         # 256-bit key, mode 0600; keep it safe
+vnx-dna store input.bin --output secret.vxdna --key-file key.txt
+vnx-dna encode secret.vxdna --output secret.vxs         # no key needed to encode or decode DNA
+vnx-dna recover secret.vxs --output secret.bin --key-file key.txt
+cmp input.bin secret.bin && echo identical
+```
+
+### V1 archives
+
+V1 (format 4) containers and reads are read by every command. `vnx-dna migrate old.vxdna -o new.vxdna` converts
+them with verification before and after. `vnx-dna v1 …` is the unchanged V1 CLI.
 
 ## Documentation
 
-| | |
+| topic | document |
 |---|---|
-| [ARCHITECTURE](docs/ARCHITECTURE.md) | layers, modules, decisions |
-| [FORMAT](docs/FORMAT.md) | `.vxdna`, manifest, strand frame, metadata strands |
-| [ECC](docs/ECC.md) | Cauchy MDS proof, inner RS, verification boundary, guarantees |
-| [DNA_CODEC](docs/DNA_CODEC.md) | mappings, constraints, what is *not* validated |
-| [SECURITY](docs/SECURITY.md) | crypto design, visible metadata, limits |
-| [CHANNEL_MODEL](docs/CHANNEL_MODEL.md) | simulator, indel research, measured thresholds |
-| [RANDOM_ACCESS](docs/RANDOM_ACCESS.md) | what chunk access does and does not mean |
-| [BENCHMARKS](docs/BENCHMARKS.md) | measured speed, memory, density |
-| [COMPATIBILITY](docs/COMPATIBILITY.md) | V0.1 support and migration |
-| [TESTING](docs/TESTING.md), [RELEASE_PROCESS](docs/RELEASE_PROCESS.md) | test suites, release gates |
-| [ROADMAP](docs/ROADMAP.md), [PROJECT_STATE](docs/PROJECT_STATE.md) | limitations, future work, current status |
-| [V0.1_BASELINE](docs/V0.1_BASELINE.md) | forensic record of the V0.1 prototype |
+| architecture, design decisions, guarantees | [docs/V2_ARCHITECTURE.md](docs/V2_ARCHITECTURE.md) |
+| byte formats (container v2, manifest, indexes, frame 5, VXS, DNA index) | [docs/V2_FORMAT.md](docs/V2_FORMAT.md) |
+| large files, 10 GB acceptance, memory scaling, corruption at scale | [docs/LARGE_FILES.md](docs/LARGE_FILES.md) |
+| streaming model and Python API | [docs/STREAMING.md](docs/STREAMING.md) |
+| channel model and measured recovery | [docs/CHANNEL_MODEL.md](docs/CHANNEL_MODEL.md) |
+| synchronization (indels) | [docs/SYNCHRONIZATION.md](docs/SYNCHRONIZATION.md) |
+| clustering and consensus | [docs/CONSENSUS.md](docs/CONSENSUS.md) |
+| ECC layers and guarantees | [docs/ECC.md](docs/ECC.md) |
+| random access | [docs/RANDOM_ACCESS.md](docs/RANDOM_ACCESS.md) |
+| experiments and Monte Carlo | [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) |
+| benchmarks | [docs/BENCHMARKS.md](docs/BENCHMARKS.md) |
+| security | [docs/SECURITY.md](docs/SECURITY.md) |
+| compatibility and migration | [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md) |
+| CLI reference and exit codes | [docs/CLI.md](docs/CLI.md) |
+| tests | [docs/TESTING.md](docs/TESTING.md) |
+| project state and release readiness | [docs/PROJECT_STATE.md](docs/PROJECT_STATE.md) |
 
 ## Limitations
 
-- Everything is in memory, so the input is limited to 4 GiB, and peak memory is several times the input size.
-- Pure Python/numpy: throughput is on the order of MB/s (measured in BENCHMARKS.md).
-- The channel model is simple (i.i.d. errors, bursts, dropout, coverage). It is not fitted to any sequencing platform.
-- No primer design and no secondary-structure screening. There is no physical validation.
-- Unencrypted archives detect corruption but cannot detect deliberate tampering.
+- **Software only.** No wet-lab synthesis or sequencing. The channel is a stress model, not a platform model.
+  Constraint rules are common heuristics, not a synthesis vendor's specification. Secondary structure and primer design
+  are not modelled.
+- **Guarantees are per ECC group.** Any M of K+M strands per group may be lost. Beyond that, success under random
+  damage is a measured probability, not a promise.
+- **Indels** need coverage > 1 (consensus alignment) or the opt-in single-read realignment (one indel per read).
+  Frame format 5 has no in-strand sync markers.
+- **Scale of the sequencing chain.** Store, encode, decode, restore and random access are tested at 10 GB. The full
+  simulated sequencing → clustering → consensus chain is measured on representative inputs up to 10 MB, because
+  10× coverage of 10 GB means ~10¹² sequenced bases ([docs/LARGE_FILES.md](docs/LARGE_FILES.md#where-the-computational-boundary-is)).
+- **Throughput** is CPU-bound Python/numpy (no GPU). The inner-RS decoder and consensus alignment are the slowest
+  stages for damaged reads.
+- **Encrypted archives reveal** the approximate size and per-chunk compressibility ([docs/SECURITY.md](docs/SECURITY.md)).
+- **Random access** reads only the needed records of a strand *file*. It is not molecular (PCR-based) random access.
 
 ## License
 
-MIT, see [LICENSE](LICENSE). V0.1 research material is preserved under [research/legacy](research/legacy/README.md).
+See [LICENSE](LICENSE).

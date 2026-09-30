@@ -1,75 +1,84 @@
-# Security
+# Security (V2)
 
 ## Modes
 
 | mode | how | provides | does not provide |
 |---|---|---|---|
-| **encrypted (recommended)** | `vnx-dna keygen -o key.txt`, then `--key-file key.txt` (or `VNXDNA_KEY`) on `store` | confidentiality of content, name, size and hashes; authentication of all metadata and data; tamper and wrong-key detection | anonymity; hiding the approximate size (see below); protection if the key leaks |
-| unencrypted (research / deterministic) | no key | corruption detection (SHA-256 digests at every level) and deterministic output | **any** protection against deliberate modification. An attacker can rewrite the data and recompute every unkeyed digest consistently. |
+| **encrypted (recommended)** | `vnx-dna keygen -o key.txt`, then `--key-file key.txt` (or `VNXDNA_KEY`) | confidentiality of content, name, exact size and plaintext hashes; authentication of the manifest, both index tables and every chunk; tamper and wrong-key detection | hiding the approximate size and per-chunk compressibility; protection if the key leaks |
+| unencrypted | no key | corruption detection at every layer (SHA-256), deterministic archives | any protection against deliberate modification: unkeyed digests can be recomputed by an attacker |
 
-The archive fails closed. A key-check mismatch is reported as *wrong key*, an HMAC or GCM failure as
-*authentication failed* (exit 4), and nothing is written.
+Everything fails closed. Wrong key → `WRONG_KEY`/`AUTHENTICATION_FAILED` (exit 4). Tampering → exit 4 (encrypted) or
+exit 1/3 (unencrypted). In every case nothing is written under the output name.
 
-## Primitives (all from the maintained `cryptography` package / OpenSSL)
+## Primitives (all from `cryptography` / OpenSSL; nothing invented)
 
-- **Master key:** 32 random bytes from `os.urandom` (`vnx-dna keygen`), given as base64url or hex. VNX-DNA never
-  stores keys in archives and never derives keys from passwords.
-- **Key separation:** HKDF-SHA256 with a fresh random 16-byte salt per archive derives three subkeys: `aead`
-  (AES-256-GCM), `mac` (HMAC-SHA256 over the manifest) and `check` (a 64-bit key-check value).
-- **Chunk encryption:** AES-256-GCM, 96-bit nonce = `domain(4) ‖ index(8)`, and associated data
-  `"VNX-DNA/4 aead" ‖ archive_id ‖ domain ‖ index ‖ chunk_count`. The AD binds each ciphertext to its archive,
-  position and count, so swapping, reordering, truncating or cross-archive splicing is detected.
-- **Nonce uniqueness:** every encrypted archive gets a new random salt, and therefore a new AEAD key, plus a random
-  archive ID. Within an archive, each (domain, index) pair is used once. The encoder never lets a caller choose the ID
-  or salt for encrypted archives.
-- **Sealed content:** name, size, SHA-256 and per-chunk plaintext hashes are sealed with AES-GCM (domain 1).
-- **Manifest authentication:** HMAC-SHA256 over the canonical manifest minus the `seal`. It is verified in constant
-  time before any content is used.
-- **Key commitment / wrong-key reporting:** the key-check value (HKDF output) lets the decoder distinguish a wrong key
-  from a tampered manifest. It reveals no more than the MAC already allows, which is testing a candidate key.
+* **Master key**: 32 bytes from `os.urandom` (`vnx-dna keygen`, file mode 0600). Never stored in archives, never
+  derived from a password.
+* **Key separation**: HKDF-SHA256 with a fresh random 16-byte salt per archive → AEAD key, manifest MAC key, 64-bit
+  key-check value. Labels start with `VNX-DNA/5`, so V1 and V2 keys differ even for the same master key and salt.
+* **Streaming authenticated encryption**: AES-256-GCM per chunk, nonce = `domain(4) ‖ chunk index(8)`, associated
+  data = `"VNX-DNA/5 aead" ‖ archive_id ‖ domain ‖ index ‖ chunk_count`. This is the standard chunked-AEAD
+  construction: memory stays bounded by one chunk, and each chunk is independently authenticated.
 
-Error correction is applied **after** encryption. Decoding DNA therefore never needs the key, and the recovered
-ciphertext is authenticated before decryption.
+| attack on the stream | detected by |
+|---|---|
+| modified ciphertext | GCM tag |
+| reordered chunks | index in the nonce and AD |
+| duplicated chunk | index in the nonce and AD (a copy decrypts only at its own position) |
+| missing chunk / truncated archive | chunk count in every chunk's AD and in the HMAC-authenticated manifest; the index must list exactly `chunk_count` chunks |
+| chunk spliced from another archive | archive ID in the AD (and a different key via the salt) |
 
-## What remains visible in an encrypted archive
+  All five are exercised in `tests/v2/test_container_v2.py`.
+* **Nonce management**: every encrypted archive has a new random salt (so a new AEAD key) and a random archive ID;
+  within an archive each (domain, index) is used once. A **resumed** store reuses the salt and archive ID recorded in
+  its checkpoint, but only for chunks that were never written. Chunks already written are verified, not re-encrypted,
+  so no (key, nonce) pair is ever used for two different plaintexts.
+* **Authenticated metadata**: HMAC-SHA256 over the canonical manifest (without `seal`), verified in constant time
+  before anything else is trusted. The manifest records the SHA-256 of the chunk index and of the sealed plaintext
+  index, so the HMAC covers both tables. Name, size and object SHA-256 are sealed with AES-GCM (domain 1), per-chunk
+  plaintext sizes and hashes with domain 2.
+* **Downgrade protection**: `format_version` and `required_features` are inside the HMAC. V2 labels and AD differ from
+  V1's, so format-5 ciphertext cannot be decrypted as format 4 or the other way round. An unknown required feature
+  or a newer container version is refused (exit 6), never guessed.
+* **Wrong-key detection**: the HKDF key-check value distinguishes a wrong key from a tampered manifest. It allows no
+  more than the MAC already does, which is testing a candidate key.
 
-Anyone holding the container or the DNA can read:
-- the format and encoder version;
-- the archive ID and `created_at` (if you set it);
-- the chunk size and chunk count (so the plaintext size, to within one chunk);
-- each chunk's stored size (which reveals per-chunk compressibility), and the stored SHA-256 of each chunk;
-- the compression algorithm and level;
-- the ECC, strand and constraint parameters;
-- the salt and the key-check value.
+ECC is applied after encryption. Decoding DNA never needs the key, and recovered ciphertext is authenticated before
+decryption.
 
-Hidden: the file name, the exact size, the plaintext SHA-256 values, and the content itself.
+## Visible in an encrypted archive
 
-If the size or compressibility must be hidden, pad the input and use `--compression none`. There is no built-in
-padding.
+Format and encoder version, archive ID, profile, `created_at` if set, chunk size and count (so the size to within
+one chunk), each chunk's stored size and codec (per-chunk compressibility), stored SHA-256 per chunk, compression
+settings, ECC/strand/constraint parameters, salt and key-check value. **Hidden:** file name, exact size, plaintext
+hashes, content. To hide compressibility use `--compression none`. To hide the size, pad the input (no built-in
+padding).
 
-## Hardening measures in the code
+## Hardening
 
-- Every parser has size limits: 64 MiB manifest, ≤ 2⁴⁰ container, 100 kb reads, 8 GiB read files and 4 GiB input.
-  JSON is parsed strictly (duplicate keys, NaN and floats are rejected), and a pydantic strict schema forbids extra
-  fields.
-- Decompression is bounded by the authenticated plaintext size (no decompression bombs).
-- Outputs are written atomically (a temp file in the same directory, then `os.replace`) and **only after** all
-  verification. Existing files are never overwritten without `--force`.
-- The stored file name is metadata only. `restore` always writes to the path the user gives, so a name like
-  `../../x` cannot cause path traversal (such names are also rejected in the manifest).
-- There is no `pickle`, `eval` or shell use. The only subprocess is `git rev-parse` / `git status` with an argument
-  list, used for provenance.
-- Key files written by `keygen` are created with mode 0600, and keys never appear in reports or errors.
-- Test keys in `tests/` are derived from public strings and protect nothing.
+* **Malicious input**: strict canonical JSON (duplicate keys, floats, NaN rejected) and a strict schema. Manifest
+  ≤ 1 MiB. Index lengths are checked against the file size and a 2²⁸-chunk limit. All index invariants are checked
+  vectorised before use. Every stored chunk is SHA-256-checked before decompression. Decompression is bounded by the
+  authenticated plaintext size (no bombs). Reads are truncated at 100 kb. Metadata streams with implausible lengths
+  are rejected. Pools containing metadata of several archives are refused. The fuzz tests mutate bytes, fields and
+  index entries (with valid digests and trailer resealed, to reach the inner layers).
+* **Path safety**: output paths come only from the command line. The stored name is metadata (plain file name,
+  control characters and separators rejected), never a path.
+* **Temporary files**: created with `mkstemp` or `O_CREAT|O_TRUNC` mode 0600 in the output's directory (or
+  `--temp-dir`), removed on failure, and never readable under the final name before verification. Decoder,
+  cluster and sequence work directories are private `mkdtemp` directories, removed on exit.
+* **Checkpoints** carry their own SHA-256. `--resume` refuses a changed input (path, size, mtime, and every
+  completed chunk's plaintext hash), changed options, a different key, or a corrupted partial file.
+* **No** `pickle`, `eval`, `exec` or `shell=True`. Subprocesses: `git` (provenance), and `sha256sum`/`cmp` in the
+  benchmark harness, all with argument lists.
+* Keys never appear in reports, errors or logs.
 
 ## Known limitations
 
-- Unencrypted archives have no authenticity. Use a key when tampering matters.
-- Python cannot reliably erase key material from memory.
-- A lost key makes an encrypted archive unrecoverable. There is no key escrow.
-- The simulated DNA channel is not an adversary model. Physical DNA has its own security questions (contamination,
-  forensic recovery) that are out of scope.
+* Unencrypted archives have integrity against accidents only.
+* Python cannot reliably erase key material from memory.
+* A lost key means a lost archive (no escrow).
+* The simulated channel is not an adversary model. A malicious strand pool can make decoding *fail*, which is
+  denial of service, but it cannot make it output wrong bytes without breaking SHA-256 or, with a key, AES-GCM/HMAC.
 
-## Reporting
-
-Report vulnerabilities privately to the repository owner rather than in a public issue.
+Report vulnerabilities privately to the repository owner.

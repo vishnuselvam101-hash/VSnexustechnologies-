@@ -15,3 +15,11 @@ key.txt
 *.bin
 # V0.1 compatibility fixtures are intentional binary test inputs
 !tests/fixtures/**/*.bin
+# V2 generated data: packed strands, DNA indexes, partial outputs and checkpoints, benchmark scratch
+*.vxs
+*.vxidx
+*.partial
+*.partial.ckpt
+*.partial.idx
+*.fastq
+clusters.jsonl
