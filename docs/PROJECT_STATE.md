@@ -62,7 +62,7 @@ At 10 MB (encrypted, 50 % compressible, 8-CPU x86-64, single-threaded):
 
 ## Security review (at release)
 
-- **Secret scan** of all tracked files (AWS/GitHub/Slack/OpenAI-style tokens, private keys, password/api_key/secret
+- **Secret scan** of all tracked files (AWS/GitHub/Slack/API-key-style tokens, private keys, password/api_key/secret
   assignments; no gitleaks available): no findings. No `.env` or key files are tracked. The test keys are derived
   from public strings, and the V0.1 fixture Fernet key is labelled test-only.
 - **Unsafe code:** no `eval`, `exec`, `pickle`, `shell=True` or `os.system`. The only subprocess is `git` with an
