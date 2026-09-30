@@ -211,6 +211,20 @@ def _best_cluster(codes: np.ndarray, hashes: np.ndarray, owners: np.ndarray, min
     return (best[0], best[1]) if best is not None else None
 
 
+def _stream_records(path: Path):
+    """Like :func:`_iter_records` but reads the file incrementally (memory: one record)."""
+    hsize = _HEAD_DTYPE.itemsize
+    with path.open("rb", buffering=1 << 20) as handle:
+        while True:
+            raw = handle.read(hsize)
+            if len(raw) < hsize:
+                return
+            head = np.frombuffer(raw, dtype=_HEAD_DTYPE)[0]
+            length = int(head["length"])
+            body = handle.read(2 * length)
+            yield head, np.frombuffer(body[:length], dtype=np.uint8), np.frombuffer(body[length:], dtype=np.uint8)
+
+
 def _minimizers(codes: np.ndarray, k: int = 12, w: int = 8) -> set[int]:
     clean = np.where(codes > 3, 0, codes).astype(np.int64)
     if clean.size < k + w:
@@ -324,7 +338,8 @@ def cluster_file(reads_path: str | os.PathLike, output_path: str | os.PathLike, 
                     else:
                         weak.write(b"".join(_record(m[0], m[1], m[2]) for m in members))
                 path.write_bytes(b"".join(strong_records))
-            weak.write((workdir / "orphans").read_bytes())
+            with (workdir / "orphans").open("rb") as orphans:
+                shutil.copyfileobj(orphans, weak, 1 << 20)
         (workdir / "orphans").unlink()
         stats["clusters_strong"] = len(strong_keys)
         # pass B: sorted numpy minimizer index over strong representatives (hash -> cluster)
@@ -334,9 +349,9 @@ def cluster_file(reads_path: str | os.PathLike, output_path: str | os.PathLike, 
         hashes, owners = hashes[order], owners[order]
         # pass C: second chance for weak reads: join the strong cluster that shares enough minimizers (either orientation)
         re_handles = [(workdir / f"r{b:05d}").open("wb", buffering=1 << 16) for b in range(buckets)]
-        leftover = (workdir / "leftover").open("wb", buffering=1 << 16)
+        left_handles = [(workdir / f"l{b:05d}").open("wb", buffering=1 << 16) for b in range(buckets)]
         orphan_out = (workdir / "orphans2").open("wb", buffering=1 << 16)
-        for head, codes, quals in _iter_records(weak_path.read_bytes()):
+        for head, codes, quals in _stream_records(weak_path):
             target = _best_cluster(codes, hashes, owners, reassign_min_shared) if hashes.size else None
             if target is not None:
                 cluster, flipped = target
@@ -348,12 +363,12 @@ def cluster_file(reads_path: str | os.PathLike, output_path: str | os.PathLike, 
                 re_handles[key].write(_record(new, seq, q))
                 stats["reads_reassigned_to_strong_cluster"] += 1
             elif head["status"] == STATUS_TENTATIVE:
-                leftover.write(_record(head, codes, quals))
+                key = (int(head["stripe"]) * 1_000_003 + int(head["shard"]) * 31 + int(head["kind"])) % buckets
+                left_handles[key].write(_record(head, codes, quals))
             else:
                 orphan_out.write(_record(head, codes, quals))
-        for h in re_handles:
+        for h in re_handles + left_handles:
             h.close()
-        leftover.close()
         orphan_out.close()
         weak_path.unlink()
         # pass D: emit strong clusters (with reassigned reads), then leftover tentative groups, then orphan clusters
@@ -383,12 +398,17 @@ def cluster_file(reads_path: str | os.PathLike, output_path: str | os.PathLike, 
                     path.unlink()
                 for address in sorted(groups):
                     emit(handle, address, sorted(groups[address], key=_canonical))
-            groups = defaultdict(list)
-            for head, codes, quals in _iter_records((workdir / "leftover").read_bytes()):
-                groups[(int(head["kind"]), int(head["tag"]), int(head["stripe"]), int(head["shard"]))].append((head["status"], codes, quals))
-            for address in sorted(groups):
-                emit(handle, address, sorted(groups[address], key=_canonical))
-            stats["clusters_tentative_only"] = len(groups)
+            tentative_only = 0
+            for b in range(buckets):  # leftover tentative reads, bucketed by address like everything else
+                path = workdir / f"l{b:05d}"
+                groups = defaultdict(list)
+                for head, codes, quals in _iter_records(path.read_bytes()):
+                    groups[(int(head["kind"]), int(head["tag"]), int(head["stripe"]), int(head["shard"]))].append((head["status"], codes, quals))
+                path.unlink()
+                for address in sorted(groups):
+                    emit(handle, address, sorted(groups[address], key=_canonical))
+                tentative_only += len(groups)
+            stats["clusters_tentative_only"] = tentative_only
             orphan_clusters = _cluster_orphans(workdir / "orphans2", geometry, max_orphans, orphan_min_shared, stats)
             for members in orphan_clusters:
                 emit(handle, None, [(STATUS_ORPHAN, c, q) for c, q in members])
@@ -410,7 +430,13 @@ def _cluster_orphans(path: Path, geometry: FrameGeometry, max_orphans: int, min_
     index: dict[int, list[int]] = defaultdict(list)
     count = 0
     length = geometry.strand_nt
-    records = sorted(_iter_records(path.read_bytes()), key=lambda r: (r[1].tobytes(), r[2].tobytes()))  # order-independent
+    records = []
+    for record in _stream_records(path):
+        if len(records) >= max_orphans:
+            stats["orphans_dropped_over_limit"] += 1
+            continue
+        records.append(record)
+    records.sort(key=lambda r: (r[1].tobytes(), r[2].tobytes()))  # order-independent
     for head, codes, quals in records:
         if count >= max_orphans:
             stats["orphans_dropped_over_limit"] += 1
