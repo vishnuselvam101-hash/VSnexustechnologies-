@@ -43,6 +43,15 @@ Streaming, scalable V2. Computational only: no wet-lab validation. V1 archives s
   command accepts V1 inputs and dispatches them to the unchanged V1 modules.
 - `benchmark` is now a command group (`generate`, `scale`, `corruption`, `stages`, `v1`).
 
+### Fixed during the release candidates (rc1 → rc4)
+- A resumed store could re-seal chunks with a nonce it had already used; chunks now carry an AEAD epoch in the
+  authenticated chunk index, so no (key, nonce) pair repeats.
+- Clustering memory grew at high error rates; weak-read and orphan files are now streamed.
+- Geometry discovery failed on pools where only a few percent of reads are correctable; `pipeline --resume` now
+  validates a container before reusing it.
+- Experiments counted a correct refusal (no read passed a frame CRC) as an internal error; it is now a detected
+  failure.
+
 ### Compatibility
 - Reads archive formats 5 and 4 and the legacy V0.1 formats. Writes format 5 (format 4 via `vnx-dna v1`).
 - The V1 test suite still runs; the V1 CLI tests now invoke `vnx-dna v1`.

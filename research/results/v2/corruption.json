@@ -1,0 +1,1082 @@
+{
+  "benchmark": "vnx-dna corruption acceptance",
+  "beyond_error": "vnx-dna: error [INSUFFICIENT_REDUNDANCY]: chunk 590: 1 ECC group(s) lost more than 16 strands (worst lost 17); the outer code guarantees recovery of at most 16 per group",
+  "beyond_exit_code": 5,
+  "beyond_output_written": false,
+  "damage_beyond": {
+    "damaged_groups": [
+      {
+        "chunk": 205,
+        "ecc_group": 37514,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 363,
+        "ecc_group": 66113,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 881,
+        "ecc_group": 160463,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 950,
+        "ecc_group": 172922,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 3,
+        "ecc_group": 638,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 386,
+        "ecc_group": 70340,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 259,
+        "ecc_group": 47198,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 780,
+        "ecc_group": 141863,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 289,
+        "ecc_group": 52795,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 426,
+        "ecc_group": 77612,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 258,
+        "ecc_group": 47061,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 826,
+        "ecc_group": 150365,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 896,
+        "ecc_group": 162963,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 919,
+        "ecc_group": 167237,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 395,
+        "ecc_group": 71931,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 136,
+        "ecc_group": 24733,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 788,
+        "ecc_group": 143317,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 443,
+        "ecc_group": 80658,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 13,
+        "ecc_group": 2593,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 251,
+        "ecc_group": 45742,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 423,
+        "ecc_group": 77022,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 938,
+        "ecc_group": 170738,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 504,
+        "ecc_group": 91662,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 722,
+        "ecc_group": 131449,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 764,
+        "ecc_group": 138954,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 456,
+        "ecc_group": 82931,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 689,
+        "ecc_group": 125540,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 376,
+        "ecc_group": 68386,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 536,
+        "ecc_group": 97483,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 513,
+        "ecc_group": 93527,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 39,
+        "ecc_group": 7186,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 416,
+        "ecc_group": 75658,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 589,
+        "ecc_group": 107351,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 895,
+        "ecc_group": 162873,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 242,
+        "ecc_group": 44150,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 175,
+        "ecc_group": 31917,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 44,
+        "ecc_group": 8003,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 360,
+        "ecc_group": 65476,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 883,
+        "ecc_group": 160690,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 834,
+        "ecc_group": 151822,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 775,
+        "ecc_group": 141045,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 665,
+        "ecc_group": 121174,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 348,
+        "ecc_group": 63294,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 524,
+        "ecc_group": 95300,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 562,
+        "ecc_group": 102349,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 888,
+        "ecc_group": 161507,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 893,
+        "ecc_group": 162645,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 458,
+        "ecc_group": 83431,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 18,
+        "ecc_group": 3411,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 393,
+        "ecc_group": 71704,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 590,
+        "ecc_group": 107441,
+        "strands_deleted": 17,
+        "substituted_strands": 5,
+        "within_guarantee": false
+      }
+    ],
+    "strands_deleted": 817,
+    "strands_substituted": 255
+  },
+  "damage_within": {
+    "damaged_groups": [
+      {
+        "chunk": 374,
+        "ecc_group": 68159,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 472,
+        "ecc_group": 85840,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 416,
+        "ecc_group": 75658,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 80,
+        "ecc_group": 14548,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 742,
+        "ecc_group": 135085,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 922,
+        "ecc_group": 167827,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 598,
+        "ecc_group": 108895,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 663,
+        "ecc_group": 120674,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 260,
+        "ecc_group": 47289,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 423,
+        "ecc_group": 77022,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 336,
+        "ecc_group": 61113,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 646,
+        "ecc_group": 117626,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 393,
+        "ecc_group": 71704,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 64,
+        "ecc_group": 11638,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 723,
+        "ecc_group": 131586,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 481,
+        "ecc_group": 87706,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 462,
+        "ecc_group": 84158,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 717,
+        "ecc_group": 130631,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 183,
+        "ecc_group": 33374,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 775,
+        "ecc_group": 141045,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 520,
+        "ecc_group": 94572,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 766,
+        "ecc_group": 139454,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 156,
+        "ecc_group": 28370,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 635,
+        "ecc_group": 115581,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 833,
+        "ecc_group": 151731,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 850,
+        "ecc_group": 154733,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 398,
+        "ecc_group": 72522,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 936,
+        "ecc_group": 170238,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 781,
+        "ecc_group": 142273,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 860,
+        "ecc_group": 156414,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 596,
+        "ecc_group": 108395,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 593,
+        "ecc_group": 108078,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 674,
+        "ecc_group": 122719,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 421,
+        "ecc_group": 76795,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 893,
+        "ecc_group": 162645,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 659,
+        "ecc_group": 119945,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 59,
+        "ecc_group": 10821,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 698,
+        "ecc_group": 127084,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 414,
+        "ecc_group": 75430,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 807,
+        "ecc_group": 146864,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 508,
+        "ecc_group": 92390,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 212,
+        "ecc_group": 38559,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 78,
+        "ecc_group": 14321,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 726,
+        "ecc_group": 132176,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 701,
+        "ecc_group": 127721,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 169,
+        "ecc_group": 30962,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 343,
+        "ecc_group": 62477,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 118,
+        "ecc_group": 21595,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 86,
+        "ecc_group": 15775,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      },
+      {
+        "chunk": 779,
+        "ecc_group": 141772,
+        "strands_deleted": 16,
+        "substituted_strands": 5,
+        "within_guarantee": true
+      }
+    ],
+    "strands_deleted": 800,
+    "strands_substituted": 250
+  },
+  "environment": {
+    "cpu_count": 8,
+    "git": {
+      "commit": "9f255985304c78e267c0fb8027cb3240d444095b",
+      "dirty": false
+    },
+    "implementation": "CPython",
+    "libraries": {
+      "cryptography": "46.0.7",
+      "numpy": "2.5.3",
+      "reedsolo": "unknown",
+      "zstandard": "0.25.0"
+    },
+    "machine": "x86_64",
+    "platform": "Linux-6.8.0-139-generic-x86_64-with-glibc2.39",
+    "processor": "x86_64",
+    "python": "3.12.3",
+    "vnxdna_version": "2.0.0rc4"
+  },
+  "generate": {
+    "block_bytes": 4194304,
+    "elapsed_s": 48.545014609000646,
+    "operation": "generate",
+    "output": "<work-dir>/corr/corruption-1000000000/input.bin",
+    "pattern": "mixed",
+    "seed": 42,
+    "sha256": "2371d02578ee59e1c23623d268d6e8aeb919b8620c5b7e2ae722d06010c23e24",
+    "size": 1000000000,
+    "status": "SUCCESS"
+  },
+  "pattern": "mixed",
+  "profile": "balanced",
+  "seed": 42,
+  "size": 1000000000,
+  "stages": {
+    "encode": {
+      "command": [
+        "-m",
+        "vnxdna",
+        "encode",
+        "<work-dir>/corr/corruption-1000000000/a.vxdna",
+        "-o",
+        "<work-dir>/corr/corruption-1000000000/s.vxs",
+        "--json"
+      ],
+      "cpu_system_s": 14.78788,
+      "cpu_user_s": 89.882624,
+      "cpu_utilisation": 6.099181197150974,
+      "largest_single_process_maxrss_bytes": 109580288,
+      "max_processes": 8,
+      "peak_rss_tree_bytes": 524419072,
+      "peak_swap_tree_bytes": 0,
+      "peak_workdir_bytes": 2316072353,
+      "report": {
+        "archive_id": "c54cc5d5b432caac19496654db7ea29d",
+        "average_strand_nt": 252.0,
+        "dna_bases": 3491678232,
+        "dna_index": "<work-dir>/corr/corruption-1000000000/s.vxs.vxidx",
+        "efficiency": {
+          "bases_per_original_byte": 3.491678232,
+          "bases_per_stored_byte": 7.881506315781091,
+          "chunks": 954,
+          "data_and_parity_strands": 13851386,
+          "dna_bases_total": 3491678232,
+          "ecc_groups": 173460,
+          "frame_overhead_bytes_per_strand": 23,
+          "guaranteed_erasures_per_group": 16,
+          "metadata_strands": 4480,
+          "net_bits_per_base": 2.2911618621334635,
+          "outer_code": "64+16 Cauchy RS",
+          "parity_strands": 2775360,
+          "screening_max_variant": 24,
+          "stored_bytes": 443021688,
+          "strand_nt": 252,
+          "strands_total": 13855866
+        },
+        "elapsed_s": 16.714097133022733,
+        "format_version": 5,
+        "input": "<work-dir>/corr/corruption-1000000000/a.vxdna",
+        "operation": "encode",
+        "output": "<work-dir>/corr/corruption-1000000000/s.vxs",
+        "output_bytes": 872919646,
+        "output_format": "vxs",
+        "output_sha256": "bfd3f43ad6c9e49db9217d0659ded267cfed528c28ca4ee6b1c379b91f6e8667",
+        "status": "SUCCESS",
+        "strands": 13855866,
+        "throughput_mb_s": 26.505870133104807,
+        "workers": 7
+      },
+      "returncode": 0,
+      "stderr_tail": "",
+      "wall_s": 17.161402591038495
+    },
+    "recover_beyond": {
+      "command": [
+        "-m",
+        "vnxdna",
+        "recover",
+        "<work-dir>/corr/corruption-1000000000/beyond.vxs",
+        "-o",
+        "<work-dir>/corr/corruption-1000000000/beyond.bin",
+        "--temp-dir",
+        "<work-dir>/corr/corruption-1000000000",
+        "--json"
+      ],
+      "cpu_system_s": 10.646956,
+      "cpu_user_s": 58.287042,
+      "cpu_utilisation": 3.5793002461376457,
+      "largest_single_process_maxrss_bytes": 445034496,
+      "max_processes": 8,
+      "peak_rss_tree_bytes": 608124928,
+      "peak_swap_tree_bytes": 0,
+      "peak_workdir_bytes": 4028181693,
+      "report": null,
+      "returncode": 5,
+      "stderr_tail": "vnx-dna: error [INSUFFICIENT_REDUNDANCY]: chunk 590: 1 ECC group(s) lost more than 16 strands (worst lost 17); the outer code guarantees recovery of at most 16 per group\n",
+      "wall_s": 19.259071119944565
+    },
+    "recover_within": {
+      "command": [
+        "-m",
+        "vnxdna",
+        "recover",
+        "<work-dir>/corr/corruption-1000000000/within.vxs",
+        "-o",
+        "<work-dir>/corr/corruption-1000000000/within.bin",
+        "--temp-dir",
+        "<work-dir>/corr/corruption-1000000000",
+        "--json"
+      ],
+      "cpu_system_s": 11.535588,
+      "cpu_user_s": 65.434956,
+      "cpu_utilisation": 3.03992057275383,
+      "largest_single_process_maxrss_bytes": 446017536,
+      "max_processes": 8,
+      "peak_rss_tree_bytes": 618930176,
+      "peak_swap_tree_bytes": 0,
+      "peak_workdir_bytes": 4015076414,
+      "report": {
+        "archive_id": "c54cc5d5b432caac19496654db7ea29d",
+        "elapsed_s": 24.89874743297696,
+        "encrypted": false,
+        "expected_sha256": "2371d02578ee59e1c23623d268d6e8aeb919b8620c5b7e2ae722d06010c23e24",
+        "format_version": 5,
+        "frame_format": 5,
+        "geometry": {
+          "frame_bytes": 63,
+          "frame_format": 5,
+          "header_bytes": 11,
+          "inner_parity_bytes": 8,
+          "mapping": "2bit",
+          "payload_bytes": 40,
+          "strand_nt": 252
+        },
+        "input": "<work-dir>/corr/corruption-1000000000/within.vxs",
+        "input_kind": "dna-reads",
+        "manifest_authentication": "digest-only",
+        "manifest_source": "dna-metadata-strands",
+        "name": "input.bin",
+        "operation": "recover",
+        "output": "<work-dir>/corr/corruption-1000000000/within.bin",
+        "output_sha256": "2371d02578ee59e1c23623d268d6e8aeb919b8620c5b7e2ae722d06010c23e24",
+        "reads": {
+          "inner_symbols_corrected": 223,
+          "reads_foreign_archive": 0,
+          "reads_inner_corrected": 223,
+          "reads_invalid_symbols": 0,
+          "reads_reverse_complement": 0,
+          "reads_total": 13855066,
+          "reads_valid": 13855066
+        },
+        "records_in_stripe_order": false,
+        "recovered_sha256": "2371d02578ee59e1c23623d268d6e8aeb919b8620c5b7e2ae722d06010c23e24",
+        "recovery": {
+          "chunks_assembled": 954,
+          "max_erasures_in_a_group": 16,
+          "pass2_mode": "bucket-sort (11 buckets)",
+          "records_foreign_or_out_of_range": 0,
+          "shards_conflict_majority": 0,
+          "shards_conflict_tie": 0,
+          "shards_duplicates_consistent": 0,
+          "shards_erased": 800,
+          "shards_unique": 13850586,
+          "stored_chunks_verified": 954,
+          "stripes_decoded": 173460,
+          "stripes_outer_recovered": 50
+        },
+        "sha256_match": true,
+        "size": 1000000000,
+        "status": "RECOVERED",
+        "validated_records_spilled": 13850586
+      },
+      "returncode": 0,
+      "stderr_tail": "",
+      "wall_s": 25.319919437984936
+    },
+    "store": {
+      "command": [
+        "-m",
+        "vnxdna",
+        "store",
+        "<work-dir>/corr/corruption-1000000000/input.bin",
+        "-o",
+        "<work-dir>/corr/corruption-1000000000/a.vxdna",
+        "--profile",
+        "balanced",
+        "--json"
+      ],
+      "cpu_system_s": 1.1148,
+      "cpu_user_s": 14.160187,
+      "cpu_utilisation": 2.4117600671177915,
+      "largest_single_process_maxrss_bytes": 109580288,
+      "max_processes": 1,
+      "peak_rss_tree_bytes": 83566592,
+      "peak_swap_tree_bytes": 0,
+      "peak_workdir_bytes": 1443111285,
+      "report": {
+        "archive_id": "c54cc5d5b432caac19496654db7ea29d",
+        "chunk_size": 1048576,
+        "chunks": 954,
+        "chunks_compressed": 716,
+        "compression": "zstd",
+        "compression_ratio": 0.443021688,
+        "container_bytes": 443111285,
+        "discarded_stale_partial": false,
+        "ecc_stripes": 173460,
+        "elapsed_s": 5.89601757901255,
+        "encrypted": false,
+        "format_version": 5,
+        "operation": "store",
+        "original_bytes": 1000000000,
+        "original_sha256": "2371d02578ee59e1c23623d268d6e8aeb919b8620c5b7e2ae722d06010c23e24",
+        "output": "<work-dir>/corr/corruption-1000000000/a.vxdna",
+        "profile": "balanced",
+        "resumed_from_chunk": 0,
+        "status": "SUCCESS",
+        "stored_bytes": 443021688,
+        "throughput_mb_s": 169.6060072072372,
+        "workers": 7
+      },
+      "returncode": 0,
+      "stderr_tail": "",
+      "wall_s": 6.333543376997113
+    },
+    "verify_beyond": {
+      "command": [
+        "-m",
+        "vnxdna",
+        "verify",
+        "<work-dir>/corr/corruption-1000000000/beyond.vxs",
+        "--temp-dir",
+        "<work-dir>/corr/corruption-1000000000",
+        "--json"
+      ],
+      "cpu_system_s": 10.542614,
+      "cpu_user_s": 65.273699,
+      "cpu_utilisation": 2.5929927285467262,
+      "largest_single_process_maxrss_bytes": 422100992,
+      "max_processes": 8,
+      "peak_rss_tree_bytes": 626987008,
+      "peak_swap_tree_bytes": 0,
+      "peak_workdir_bytes": 3988860093,
+      "report": {
+        "archive_id": "c54cc5d5b432caac19496654db7ea29d",
+        "checks": [
+          {
+            "check": "vxs-file-checksum",
+            "detail": "record SHA-256 matches the trailer",
+            "result": "PASS"
+          },
+          {
+            "check": "strand-validation",
+            "detail": "13855049 of 13855049 reads/strands passed the frame CRC",
+            "result": "PASS"
+          },
+          {
+            "check": "manifest-from-dna",
+            "detail": "manifest and both index tables rebuilt from metadata strands and validated",
+            "result": "PASS"
+          },
+          {
+            "check": "manifest-authentication",
+            "detail": "unencrypted archive: SHA-256 digest only",
+            "result": "PASS"
+          },
+          {
+            "check": "ecc-recovery-and-stored-chunks",
+            "detail": "953/954 chunks recovered by the ECC layers and SHA-256 verified; damaged beyond recovery: chunks [590]",
+            "result": "FAIL"
+          },
+          {
+            "check": "plaintext-chunks",
+            "detail": "953/954 chunks authenticated and SHA-256 verified",
+            "result": "FAIL"
+          }
+        ],
+        "damaged_chunks": [
+          {
+            "chunk": 590,
+            "error": "INSUFFICIENT_REDUNDANCY",
+            "message": "chunk 590: 1 ECC group(s) lost more than 16 strands (worst lost 17); the outer code guarantees recovery of at most 16 per group",
+            "parity_shards": 16,
+            "stripes": [
+              107441
+            ],
+            "worst_group_erasures": 17
+          }
+        ],
+        "encrypted": false,
+        "exit_code": 5,
+        "format_version": 5,
+        "input": "<work-dir>/corr/corruption-1000000000/beyond.vxs",
+        "input_kind": "dna-reads",
+        "operation": "verify",
+        "plaintext_failures": [],
+        "reads": {
+          "inner_symbols_corrected": 225,
+          "reads_foreign_archive": 0,
+          "reads_inner_corrected": 225,
+          "reads_invalid_symbols": 0,
+          "reads_reverse_complement": 0,
+          "reads_total": 13855049,
+          "reads_valid": 13855049
+        },
+        "recovery": {
+          "chunks_assembled": 954,
+          "max_erasures_in_a_group": 17,
+          "pass2_mode": "bucket-sort (11 buckets)",
+          "records_foreign_or_out_of_range": 0,
+          "shards_conflict_majority": 0,
+          "shards_conflict_tie": 0,
+          "shards_duplicates_consistent": 0,
+          "shards_erased": 817,
+          "shards_unique": 13850569,
+          "stored_chunks_verified": 953,
+          "stripes_decoded": 173460,
+          "stripes_outer_recovered": 51,
+          "stripes_unrecoverable": 1
+        },
+        "recovery_status": "FAILED",
+        "status": "FAIL"
+      },
+      "returncode": 5,
+      "stderr_tail": "",
+      "wall_s": 29.23892233299557
+    }
+  },
+  "status": "PASS",
+  "verify_expected_damaged_chunks": [
+    590
+  ],
+  "verify_reported_damaged_chunks": [
+    590
+  ],
+  "within_cmp_identical": true,
+  "within_exit_code": 0,
+  "within_sha256_match": true
+}
