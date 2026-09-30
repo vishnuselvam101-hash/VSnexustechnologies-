@@ -143,34 +143,47 @@ def discover(path: str | os.PathLike, sample: int = 2000, quality_erasure_below:
                                        "(no read passed a frame CRC under any supported geometry)")
 
 
-def _discover_with_correction(batch: ReadBatch, lengths: Counter, sample: int = 12) -> Counter:
-    """Fallback when no read is error-free: accept a geometry if at least two sampled reads pass the CRC after inner RS."""
-    votes: Counter = Counter()
+PRIORITY_PARITY = (8, 6, 12, 16, 10, 4, 14)
+
+
+def _discover_with_correction(batch: ReadBatch, lengths: Counter, sample: int = 12, priority_sample: int = 200) -> Counter:
+    """Fallback when no read is error-free: accept a geometry if at least two sampled reads pass the CRC after inner RS.
+
+    The profiles' geometries (2bit mapping, common inner parity sizes) are tried first on up to 200 reads, which
+    finds the geometry even when only a few percent of reads are correctable; then every geometry on 12 reads.
+    """
     offsets = batch.offsets
     for length, _ in lengths.most_common(2):
         rows = [batch.codes[offsets[i]:offsets[i + 1]] for i in range(batch.count) if batch.lengths[i] == length]
-        rows = rows[:sample]
         if len(rows) < 2:
             continue
-        codes = np.stack(rows)
-        for name in ("2bit", "rotation3", "codebook8"):
-            mapping = get_mapping(name)
-            if length % mapping.nt_per_byte:
-                continue
-            frame_len = length // mapping.nt_per_byte
-            for oriented in (codes, reverse_complement_codes(codes)):
-                frames, erasures = mapping.decode(oriented)
-                for r in range(2, min(64, frame_len - 16) + 1, 2):
-                    p = frame_len - 15 - r
-                    if p < 1:
-                        continue
-                    geometry = FrameGeometry(name, p, r)
-                    hits = sum(1 for i in range(frames.shape[0]) if parse_one_corrected(geometry, frames[i], erasures[i]) is not None)
-                    if hits >= 2:
-                        votes[(name, p, r)] += hits
-        if votes:
-            break
-    return votes
+        for names, parities, limit in ((("2bit",), PRIORITY_PARITY, priority_sample), (("2bit", "rotation3", "codebook8"), None, sample)):
+            votes: Counter = Counter()
+            codes = np.stack(rows[:limit])
+            for name in names:
+                mapping = get_mapping(name)
+                if length % mapping.nt_per_byte:
+                    continue
+                frame_len = length // mapping.nt_per_byte
+                candidates = parities if parities is not None else range(2, min(64, frame_len - 16) + 1, 2)
+                for oriented in (codes, reverse_complement_codes(codes)):
+                    frames, erasures = mapping.decode(oriented)
+                    for r in candidates:
+                        p = frame_len - 15 - r
+                        if p < 1:
+                            continue
+                        geometry = FrameGeometry(name, p, r)
+                        hits = 0
+                        for i in range(frames.shape[0]):
+                            if parse_one_corrected(geometry, frames[i], erasures[i]) is not None:
+                                hits += 1
+                                if hits >= 2:
+                                    break
+                        if hits >= 2:
+                            votes[(name, p, r)] += hits
+            if votes:
+                return votes
+    return Counter()
 
 
 # ======================================================================= pass 1: scan
