@@ -3,7 +3,7 @@ from collections import Counter
 
 import numpy as np
 
-from conftest import FAST
+from v1_support import FAST
 from vnxdna.container.builder import build_container
 from vnxdna.container.reader import ContainerReader, load_manifest
 from vnxdna.dna.mapping import to_codes, to_string
@@ -31,7 +31,6 @@ def _corrupt(seq, n=20, seed=0):
 def _restore(c, reads):
     scan = scan_reads(reads, geometry_of(c.manifest))
     loaded = load_manifest(c.manifest_bytes, None)
-    stats = Counter()
     reader = ContainerReader(loaded, ReadsSource(scan, c.manifest))
     return reader.read_all()[0], scan, reader
 

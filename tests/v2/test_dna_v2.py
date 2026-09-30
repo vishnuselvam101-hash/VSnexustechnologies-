@@ -6,7 +6,6 @@ import numpy as np
 import pytest
 
 from v2_support import FAST, KEY, mixed_bytes, write
-from vnxdna.dna.mapping import get_mapping
 from vnxdna.errors import InsufficientRedundancyError, InvalidInputError, MetadataError, UnrecoverableCorruptionError
 from vnxdna.v2 import api
 from vnxdna.v2.archive import store_file

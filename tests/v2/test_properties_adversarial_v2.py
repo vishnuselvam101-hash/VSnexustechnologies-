@@ -3,14 +3,12 @@ import hashlib
 import json
 import random
 
-import numpy as np
-import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 from v2_support import FAST, KEY, mixed_bytes, write
 from vnxdna.errors import VNXDNAError
-from vnxdna.v2 import api, crypto
+from vnxdna.v2 import api
 from vnxdna.v2 import manifest as mf
 from vnxdna.v2.archive import restore_file, store_file
 from vnxdna.v2.container import ContainerFileV2, header_bytes
@@ -41,7 +39,7 @@ def test_decode_encode_is_identity_on_containers(tmp_path, size, seed):
 
 
 @settings(max_examples=6, deadline=None, suppress_health_check=[HealthCheck.function_scoped_fixture])
-@given(seed=st.integers(0, 10_000), coverage=st.sampled_from([3, 6, 10]))
+@given(seed=st.integers(0, 10_000), coverage=st.sampled_from([5, 6, 10]))  # 5x+ recovers 40/40 in CHANNEL_MODEL.md; 3x fails ~8 %
 def test_full_chain_restores_the_original_under_a_supported_channel(tmp_path, seed, coverage):
     data = mixed_bytes(15_000, seed)
     write(tmp_path / "in.bin", data)

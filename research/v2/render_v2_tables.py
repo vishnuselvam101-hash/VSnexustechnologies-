@@ -42,6 +42,14 @@ def _replace(doc: Path, name: str, body: str, source: str) -> None:
     doc.write_text(text, encoding="utf-8")
 
 
+def ecc_cells(s: dict) -> str:
+    """ECC statistics of an experiment summary. VNX-DNA 2.0 took them from successful trials only (audit B10), so a
+    point where every trial failed recorded 0; render that as n/a instead of a misleading 0."""
+    if not s.get("successful_recovery"):
+        return "n/a (no successful trial) | n/a"
+    return f"{s['mean_groups_repaired'] or 0:.1f} | {s['max_erasures_in_any_group']}"
+
+
 def _env_line(env: dict) -> str:
     git = env.get("git", {})
     return (f"Machine: {env.get('platform')}, {env.get('cpu_count')} logical CPUs, Python {env.get('python')}; "
@@ -120,7 +128,7 @@ def scale_tables(data: dict) -> dict[str, str]:
         store = st["store"]["report"] or {}
         rec = st["recover_dna"]
         total_time = sum(s["wall_s"] for s in st.values())
-        lines = [f"| item | value |", "|---|---|",
+        lines = ["| item | value |", "|---|---|",
                  f"| input | {r['size']:,} bytes, generated locally (`benchmark generate --size 10GB --pattern {data['pattern']} --seed {data['seed']}`), not committed |",
                  f"| input SHA-256 (`sha256sum`) | `{r.get('input_sha256_sha256sum')}` |",
                  f"| stored (compressed) | {store.get('stored_bytes', 0):,} bytes in {store.get('chunks', 0):,} chunks ({store.get('chunks_compressed', 0):,} compressed) |",
@@ -157,7 +165,7 @@ def readme_table(scale: dict | None, corruption: dict | None, montecarlo: dict |
         s = montecarlo["canonical"]["summary"]
         lo, hi = s["success_ci95"]
         lines.append(f"| Monte Carlo, canonical channel (10×, 0.1 % sub, 0.01 % ins/del, 2 % dropout), consensus | "
-                     f"{s['successful_recovery']}/{s['trials']} exact (95 % CI [{lo:.3f}, {hi:.3f}]) | – | – | "
+                     f"{s['successful_recovery']}/{s['trials']} exact (95 % CI [{lo:.4f}, {hi:.4f}]) | – | – | "
                      f"undetected corruption: {s['undetected_corruption']} |")
     lines += ["", "See [docs/LARGE_FILES.md](docs/LARGE_FILES.md), [docs/BENCHMARKS.md](docs/BENCHMARKS.md) and "
               "[docs/EXPERIMENTS.md](docs/EXPERIMENTS.md). All figures are software measurements; the channel is simulated."]
@@ -167,7 +175,6 @@ def readme_table(scale: dict | None, corruption: dict | None, montecarlo: dict |
 def corruption_table(data: dict) -> str:
     st = data["stages"]
     within = data.get("damage_within", {})
-    beyond = data.get("damage_beyond", {})
     return "\n".join([
         _env_line(data["environment"]), "",
         "| step | result |", "|---|---|",
@@ -176,7 +183,7 @@ def corruption_table(data: dict) -> str:
         f"{within.get('strands_substituted', 0)} other strands of those groups got a substitution ({within.get('strands_deleted', 0)} strands deleted in total) |",
         f"| recover | exit {data.get('within_exit_code')}, {st['recover_within']['wall_s']:.1f} s, peak RAM {st['recover_within']['peak_rss_tree_bytes'] / MiB:.0f} MiB |",
         f"| independent check | `cmp`: {'identical' if data.get('within_cmp_identical') else 'DIFFERENT'}; `sha256sum` match: {data.get('within_sha256_match')} |",
-        f"| damage beyond the guarantee | the same plus one more group losing M + 1 = 17 strands |",
+        "| damage beyond the guarantee | the same plus one more group losing M + 1 = 17 strands |",
         f"| recover | exit {data.get('beyond_exit_code')} (5 = insufficient redundancy), output written: {data.get('beyond_output_written')} |",
         f"| error message | `{data.get('beyond_error')}` |",
         f"| verify | reports damaged chunk(s) {data.get('verify_reported_damaged_chunks')}; ground truth {data.get('verify_expected_damaged_chunks')} |",
@@ -215,7 +222,7 @@ def profiles_table(data: dict) -> str:
         lo, hi = s["success_ci95"]
         lines.append(f"| {r['profile']} | {o['data_shards']}+{o['parity_shards']} | {r['strand_nt']} nt | {r['stored_bytes'] / r['input_bytes']:.3f} | "
                      f"{r['bases_per_original_byte']:.3f} | {r['bases_per_stored_byte']:.3f} | {r['store_s']:.2f} s | {r['encode_s']:.2f} s | "
-                     f"{r['decode_s']:.2f} s | {s['successful_recovery']}/{s['trials']} | [{lo:.3f}, {hi:.3f}] |")
+                     f"{r['decode_s']:.2f} s | {s['successful_recovery']}/{s['trials']} | [{lo:.4f}, {hi:.4f}] |")
     return "\n".join(lines)
 
 
@@ -224,8 +231,8 @@ def _row(r: dict, label: str) -> str:
     s = r["summary"]
     lo, hi = s["success_ci95"]
     return (f"| {label} | {'cluster + consensus' if r['consensus'] else 'direct'} | {s['successful_recovery']}/{s['trials']} | "
-            f"[{lo:.3f}, {hi:.3f}] | {s['detected_failures']} | {s['undetected_corruption']} | "
-            f"{(s['mean_reads_per_strand'] or 0):.2f} | {s['mean_groups_repaired'] or 0:.1f} | {s['max_erasures_in_any_group']} |")
+            f"[{lo:.4f}, {hi:.4f}] | {s['detected_failures']} | {s['undetected_corruption']} | "
+            f"{(s['mean_reads_per_strand'] or 0):.2f} | {ecc_cells(s)} |")
 
 
 HEADER = ("| point | read processing | exact recovery | 95 % Wilson CI | failed (detected) | undetected corruption | "

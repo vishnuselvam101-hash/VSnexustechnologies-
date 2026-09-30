@@ -44,8 +44,8 @@ Machine: Linux-6.8.0-139-generic-x86_64-with-glibc2.39, 8 logical CPUs, Python 3
 
 | point | read processing | exact recovery | 95 % Wilson CI | failed (detected) | undetected corruption | mean reads/strand | mean groups repaired | worst group erasures |
 |---|---|---|---|---|---|---|---|---|
-| canonical channel, 20,000 B mixed (seed 7) | cluster + consensus | 1000/1000 | [0.996, 1.000] | 0 | 0 | 9.80 | 3.6 | 7 |
-| coverage 5, substitution 0.001, dropout 0.02, 4,000 B mixed (seed 8) | direct | 10000/10000 | [1.000, 1.000] | 0 | 0 | 4.90 | 0.8 | 10 |
+| canonical channel, 20,000 B mixed (seed 7) | cluster + consensus | 1000/1000 | [0.9962, 1.0000] | 0 | 0 | 9.80 | 3.6 | 7 |
+| coverage 5, substitution 0.001, dropout 0.02, 4,000 B mixed (seed 8) | direct | 10000/10000 | [0.9996, 1.0000] | 0 | 0 | 4.90 | 0.8 | 10 |
 
 Runtime: 420 s for 11,000 trials. Failure categories (canonical): none; (direct): none.
 <!-- END GENERATED: montecarlo -->
@@ -63,17 +63,17 @@ The sweeps behind [CHANNEL_MODEL.md](CHANNEL_MODEL.md#measured-recovery), render
 
 | point | read processing | exact recovery | 95 % Wilson CI | failed (detected) | undetected corruption | mean reads/strand | mean groups repaired | worst group erasures |
 |---|---|---|---|---|---|---|---|---|
-| coverage 1x | direct | 0/40 | [0.000, 0.088] | 40 | 0 | 0.98 | 0.0 | 0 |
-| coverage 2x | cluster + consensus | 24/40 | [0.446, 0.737] | 16 | 0 | 1.97 | 6.0 | 16 |
-| coverage 2x | direct | 23/40 | [0.422, 0.715] | 17 | 0 | 1.97 | 6.0 | 16 |
-| coverage 5x | cluster + consensus | 40/40 | [0.912, 1.000] | 0 | 0 | 4.93 | 4.4 | 6 |
-| coverage 5x | direct | 40/40 | [0.912, 1.000] | 0 | 0 | 4.93 | 4.4 | 6 |
-| coverage 10x | cluster + consensus | 40/40 | [0.912, 1.000] | 0 | 0 | 9.77 | 3.8 | 6 |
-| coverage 10x | direct | 40/40 | [0.912, 1.000] | 0 | 0 | 9.77 | 3.8 | 6 |
-| coverage 20x | cluster + consensus | 40/40 | [0.912, 1.000] | 0 | 0 | 19.57 | 3.9 | 6 |
-| coverage 20x | direct | 40/40 | [0.912, 1.000] | 0 | 0 | 19.57 | 3.9 | 6 |
-| coverage 50x | cluster + consensus | 40/40 | [0.912, 1.000] | 0 | 0 | 49.05 | 3.6 | 5 |
-| coverage 50x | direct | 40/40 | [0.912, 1.000] | 0 | 0 | 49.05 | 3.6 | 5 |
+| coverage 1x | direct | 0/40 | [0.0000, 0.0876] | 40 | 0 | 0.98 | n/a (no successful trial) | n/a |
+| coverage 2x | cluster + consensus | 24/40 | [0.4460, 0.7365] | 16 | 0 | 1.97 | 6.0 | 16 |
+| coverage 2x | direct | 23/40 | [0.4220, 0.7149] | 17 | 0 | 1.97 | 6.0 | 16 |
+| coverage 5x | cluster + consensus | 40/40 | [0.9124, 1.0000] | 0 | 0 | 4.93 | 4.4 | 6 |
+| coverage 5x | direct | 40/40 | [0.9124, 1.0000] | 0 | 0 | 4.93 | 4.4 | 6 |
+| coverage 10x | cluster + consensus | 40/40 | [0.9124, 1.0000] | 0 | 0 | 9.77 | 3.8 | 6 |
+| coverage 10x | direct | 40/40 | [0.9124, 1.0000] | 0 | 0 | 9.77 | 3.8 | 6 |
+| coverage 20x | cluster + consensus | 40/40 | [0.9124, 1.0000] | 0 | 0 | 19.57 | 3.9 | 6 |
+| coverage 20x | direct | 40/40 | [0.9124, 1.0000] | 0 | 0 | 19.57 | 3.9 | 6 |
+| coverage 50x | cluster + consensus | 40/40 | [0.9124, 1.0000] | 0 | 0 | 49.05 | 3.6 | 5 |
+| coverage 50x | direct | 40/40 | [0.9124, 1.0000] | 0 | 0 | 49.05 | 3.6 | 5 |
 <!-- END GENERATED: coverage -->
 
 ### Error rates
@@ -85,30 +85,30 @@ The sweeps behind [CHANNEL_MODEL.md](CHANNEL_MODEL.md#measured-recovery), render
 
 | point | read processing | exact recovery | 95 % Wilson CI | failed (detected) | undetected corruption | mean reads/strand | mean groups repaired | worst group erasures |
 |---|---|---|---|---|---|---|---|---|
-| substitution 0.001 | cluster + consensus | 30/30 | [0.886, 1.000] | 0 | 0 | 9.80 | 3.6 | 4 |
-| substitution 0.001 | direct | 30/30 | [0.886, 1.000] | 0 | 0 | 9.80 | 3.6 | 4 |
-| substitution 0.005 | cluster + consensus | 30/30 | [0.886, 1.000] | 0 | 0 | 9.80 | 3.7 | 6 |
-| substitution 0.005 | direct | 30/30 | [0.886, 1.000] | 0 | 0 | 9.80 | 3.7 | 6 |
-| substitution 0.01 | cluster + consensus | 30/30 | [0.886, 1.000] | 0 | 0 | 9.81 | 3.5 | 6 |
-| substitution 0.01 | direct | 30/30 | [0.886, 1.000] | 0 | 0 | 9.81 | 3.5 | 6 |
-| substitution 0.02 | cluster + consensus | 30/30 | [0.886, 1.000] | 0 | 0 | 9.84 | 3.7 | 5 |
-| substitution 0.02 | direct | 30/30 | [0.886, 1.000] | 0 | 0 | 9.84 | 4.5 | 6 |
-| substitution 0.04 | cluster + consensus | 20/30 | [0.488, 0.808] | 10 | 0 | 9.85 | 6.0 | 16 |
-| substitution 0.04 | direct | 0/30 | [0.000, 0.114] | 30 | 0 | 9.85 | 0.0 | 0 |
-| substitution 0.06 | cluster + consensus | 0/30 | [0.000, 0.114] | 30 | 0 | 9.79 | 0.0 | 0 |
-| substitution 0.06 | direct | 0/30 | [0.000, 0.114] | 30 | 0 | 9.79 | 0.0 | 0 |
-| insertion = deletion = 0.0001 | cluster + consensus | 30/30 | [0.886, 1.000] | 0 | 0 | 9.79 | 3.8 | 6 |
-| insertion = deletion = 0.0001 | direct | 30/30 | [0.886, 1.000] | 0 | 0 | 9.79 | 3.8 | 6 |
-| insertion = deletion = 0.0005 | cluster + consensus | 30/30 | [0.886, 1.000] | 0 | 0 | 9.82 | 3.6 | 5 |
-| insertion = deletion = 0.0005 | direct | 30/30 | [0.886, 1.000] | 0 | 0 | 9.82 | 3.6 | 5 |
-| insertion = deletion = 0.001 | cluster + consensus | 30/30 | [0.886, 1.000] | 0 | 0 | 9.81 | 3.9 | 5 |
-| insertion = deletion = 0.001 | direct | 30/30 | [0.886, 1.000] | 0 | 0 | 9.81 | 3.9 | 5 |
-| insertion = deletion = 0.003 | cluster + consensus | 30/30 | [0.886, 1.000] | 0 | 0 | 9.82 | 4.3 | 6 |
-| insertion = deletion = 0.003 | direct | 30/30 | [0.886, 1.000] | 0 | 0 | 9.82 | 5.9 | 15 |
-| insertion = deletion = 0.005 | cluster + consensus | 30/30 | [0.886, 1.000] | 0 | 0 | 9.79 | 5.5 | 12 |
-| insertion = deletion = 0.005 | direct | 0/30 | [0.000, 0.114] | 30 | 0 | 9.79 | 0.0 | 0 |
-| insertion = deletion = 0.01 | cluster + consensus | 2/30 | [0.018, 0.213] | 28 | 0 | 9.82 | 6.0 | 16 |
-| insertion = deletion = 0.01 | direct | 0/30 | [0.000, 0.114] | 30 | 0 | 9.82 | 0.0 | 0 |
+| substitution 0.001 | cluster + consensus | 30/30 | [0.8865, 1.0000] | 0 | 0 | 9.80 | 3.6 | 4 |
+| substitution 0.001 | direct | 30/30 | [0.8865, 1.0000] | 0 | 0 | 9.80 | 3.6 | 4 |
+| substitution 0.005 | cluster + consensus | 30/30 | [0.8865, 1.0000] | 0 | 0 | 9.80 | 3.7 | 6 |
+| substitution 0.005 | direct | 30/30 | [0.8865, 1.0000] | 0 | 0 | 9.80 | 3.7 | 6 |
+| substitution 0.01 | cluster + consensus | 30/30 | [0.8865, 1.0000] | 0 | 0 | 9.81 | 3.5 | 6 |
+| substitution 0.01 | direct | 30/30 | [0.8865, 1.0000] | 0 | 0 | 9.81 | 3.5 | 6 |
+| substitution 0.02 | cluster + consensus | 30/30 | [0.8865, 1.0000] | 0 | 0 | 9.84 | 3.7 | 5 |
+| substitution 0.02 | direct | 30/30 | [0.8865, 1.0000] | 0 | 0 | 9.84 | 4.5 | 6 |
+| substitution 0.04 | cluster + consensus | 20/30 | [0.4878, 0.8077] | 10 | 0 | 9.85 | 6.0 | 16 |
+| substitution 0.04 | direct | 0/30 | [0.0000, 0.1135] | 30 | 0 | 9.85 | n/a (no successful trial) | n/a |
+| substitution 0.06 | cluster + consensus | 0/30 | [0.0000, 0.1135] | 30 | 0 | 9.79 | n/a (no successful trial) | n/a |
+| substitution 0.06 | direct | 0/30 | [0.0000, 0.1135] | 30 | 0 | 9.79 | n/a (no successful trial) | n/a |
+| insertion = deletion = 0.0001 | cluster + consensus | 30/30 | [0.8865, 1.0000] | 0 | 0 | 9.79 | 3.8 | 6 |
+| insertion = deletion = 0.0001 | direct | 30/30 | [0.8865, 1.0000] | 0 | 0 | 9.79 | 3.8 | 6 |
+| insertion = deletion = 0.0005 | cluster + consensus | 30/30 | [0.8865, 1.0000] | 0 | 0 | 9.82 | 3.6 | 5 |
+| insertion = deletion = 0.0005 | direct | 30/30 | [0.8865, 1.0000] | 0 | 0 | 9.82 | 3.6 | 5 |
+| insertion = deletion = 0.001 | cluster + consensus | 30/30 | [0.8865, 1.0000] | 0 | 0 | 9.81 | 3.9 | 5 |
+| insertion = deletion = 0.001 | direct | 30/30 | [0.8865, 1.0000] | 0 | 0 | 9.81 | 3.9 | 5 |
+| insertion = deletion = 0.003 | cluster + consensus | 30/30 | [0.8865, 1.0000] | 0 | 0 | 9.82 | 4.3 | 6 |
+| insertion = deletion = 0.003 | direct | 30/30 | [0.8865, 1.0000] | 0 | 0 | 9.82 | 5.9 | 15 |
+| insertion = deletion = 0.005 | cluster + consensus | 30/30 | [0.8865, 1.0000] | 0 | 0 | 9.79 | 5.5 | 12 |
+| insertion = deletion = 0.005 | direct | 0/30 | [0.0000, 0.1135] | 30 | 0 | 9.79 | n/a (no successful trial) | n/a |
+| insertion = deletion = 0.01 | cluster + consensus | 2/30 | [0.0185, 0.2132] | 28 | 0 | 9.82 | 6.0 | 16 |
+| insertion = deletion = 0.01 | direct | 0/30 | [0.0000, 0.1135] | 30 | 0 | 9.82 | n/a (no successful trial) | n/a |
 <!-- END GENERATED: errors -->
 
 ## Reproducing

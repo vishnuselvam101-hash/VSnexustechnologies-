@@ -93,7 +93,7 @@ Measured on this project's machine (8 logical CPUs; details and reproduction in 
 | 5 GB: store → restore → encode (VXS) → random access → recover from DNA | PASS | 3.9 min | 582 MiB | `sha256sum` match: True, `cmp`: identical |
 | 10 GB: store → restore → encode (VXS) → random access → recover from DNA | PASS | 7.7 min | 599 MiB | `sha256sum` match: True, `cmp`: identical |
 | 1 GB corruption: 50 ECC groups damaged inside the guarantee, then one beyond | PASS | – | – | inside: `cmp` identical; beyond: exit 5, no output |
-| Monte Carlo, canonical channel (10×, 0.1 % sub, 0.01 % ins/del, 2 % dropout), consensus | 1000/1000 exact (95 % CI [0.996, 1.000]) | – | – | undetected corruption: 0 |
+| Monte Carlo, canonical channel (10×, 0.1 % sub, 0.01 % ins/del, 2 % dropout), consensus | 1000/1000 exact (95 % CI [0.9962, 1.0000]) | – | – | undetected corruption: 0 |
 
 See [docs/LARGE_FILES.md](docs/LARGE_FILES.md), [docs/BENCHMARKS.md](docs/BENCHMARKS.md) and [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md). All figures are software measurements; the channel is simulated.
 <!-- END GENERATED: readme-results -->
@@ -172,7 +172,7 @@ them with verification before and after. `vnx-dna v1 …` is the unchanged V1 CL
   Frame format 5 has no in-strand sync markers.
 - **Scale of the sequencing chain.** Store, encode, decode, restore and random access are tested at 10 GB. The full
   simulated sequencing → clustering → consensus chain is measured on representative inputs up to 10 MB, because
-  10× coverage of 10 GB means ~10¹² sequenced bases ([docs/LARGE_FILES.md](docs/LARGE_FILES.md#where-the-computational-boundary-is)).
+  10× coverage of 10 GB means ~3.5 × 10¹¹ sequenced bases ([docs/LARGE_FILES.md](docs/LARGE_FILES.md#where-the-computational-boundary-is)).
 - **Throughput** is CPU-bound Python/numpy (no GPU). The inner-RS decoder and consensus alignment are the slowest
   stages for damaged reads.
 - **Encrypted archives reveal** the approximate size and per-chunk compressibility ([docs/SECURITY.md](docs/SECURITY.md)).

@@ -34,6 +34,8 @@ import numpy as np
 
 from ..errors import ConfigurationError, InvalidInputError
 from ..provenance import environment
+from .container import publish
+from .paths import check_output_file
 
 BLOCK = 4 << 20
 PATTERNS = ("random", "compressible", "mixed", "structured")
@@ -106,23 +108,25 @@ def generate_file(output: str | os.PathLike, size: int, pattern: str = "mixed", 
         raise ConfigurationError(f"unknown pattern {pattern!r}; choose from {PATTERNS}")
     if not isinstance(size, int) or size < 0:
         raise ConfigurationError("size must be a non-negative integer")
-    out = Path(output)
-    if out.exists() and not overwrite:
-        raise InvalidInputError(f"{out} exists (use --force to overwrite)")
+    out = check_output_file(output, overwrite=overwrite)  # existing output is OUTPUT_ERROR (8), as documented
     started = time.perf_counter()
     vocab = _vocabulary(seed)
     h = hashlib.sha256()
     tmp = out.with_name("." + out.name + ".partial")
     written = 0
-    with tmp.open("wb") as handle:
-        index = 0
-        while written < size:
-            data = _block(pattern, seed, index, min(BLOCK, size - written), vocab)
-            handle.write(data)
-            h.update(data)
-            written += len(data)
-            index += 1
-    os.replace(tmp, out)
+    try:
+        with tmp.open("wb") as handle:
+            index = 0
+            while written < size:
+                data = _block(pattern, seed, index, min(BLOCK, size - written), vocab)
+                handle.write(data)
+                h.update(data)
+                written += len(data)
+                index += 1
+        publish(tmp, out, overwrite=overwrite)
+    except BaseException:
+        tmp.unlink(missing_ok=True)
+        raise
     return {"status": "SUCCESS", "operation": "generate", "output": str(out), "pattern": pattern, "seed": seed, "size": written,
             "sha256": h.hexdigest(), "block_bytes": BLOCK, "elapsed_s": time.perf_counter() - started}
 
@@ -321,7 +325,7 @@ def scale_benchmark(sizes: list[int], work_dir: str | os.PathLike, *, pattern: s
             offset = max(0, size // 2 - random_access_length // 2)
             length = min(random_access_length, size - offset)
             section = run_dir / "section-container.bin"
-            ra = stage("extract_container", ["extract", str(container), "--offset", str(offset), "--length", str(length),
+            stage("extract_container", ["extract", str(container), "--offset", str(offset), "--length", str(length),
                                              "-o", str(section), "--json"] + key_args)
             entry["random_access_container_match"] = section.read_bytes() == _slice(src, offset, length)
             section.unlink()

@@ -1,6 +1,5 @@
 """Sequencing simulator, clustering, consensus and alignment."""
 import hashlib
-import json
 import random
 from collections import Counter
 

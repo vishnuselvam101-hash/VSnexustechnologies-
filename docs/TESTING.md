@@ -3,10 +3,31 @@
 ```bash
 python -m venv .venv && . .venv/bin/activate
 pip install -e '.[dev]'
-python -m pytest              # whole suite, V1 + V2 (≈ 3–4 min on 8 cores)
-python -m pytest tests/v2     # V2 only
+PATH=$PWD/.venv/bin:$PATH python -m pytest   # whole suite, V1 + V2 + V3 (≈ 4 min on 8 cores); the README tests need vnx-dna on PATH
+python -m pytest tests/v3     # V3 only
 python -m pytest -m "not slow" # skip the bounded-memory measurement
+ruff check src tests research # lint (pyflakes rules), also run in CI
 ```
+
+Test helpers are imported from `tests/v1_support.py` and `tests/v2_support.py`, never from `conftest` (since V3:
+`from conftest import …` was ambiguous when several suites were collected together, so `pytest tests/v2 tests/unit`
+failed at collection).
+
+## V3 suites (`tests/v3/`)
+
+Every test for a defect found in the V2 audit or in the review of V3 fails on the 2.0.0 release and passes on V3.
+This was checked by running the files against a checkout of tag `v2.0.0`.
+
+| suite | what it proves |
+|---|---|
+| `test_container_security_v3.py` | no AES-GCM nonce reuse across two resumes or at re-finalisation; checkpoint epoch cannot be rolled back; fresh archives stay V2-compatible; padded bodies rejected; `stored_sha256` verified; truncated bodies give FAIL reports; no descriptor leak; non-UTF-8 names; profile names validated up front; trailer chunk limit up front; no silent clobbering; CLI: `--compression none`, human `info`, `verify` exit 4 without a key, disk full → exit 8 with no unresumable partial |
+| `test_ecc_decoder_v3.py` | vectorised RS decoder at the `2e + f ≤ r` boundary for eight (r, n); agreement with `reedsolo` inside the bound and strictness beyond it (E1); CRC-gated batch correction; one/two-indel repair; repair of reads with `N`; long junk reads (D1); forged metadata lengths (D2); bounded line reads (D3); metadata repairs reported (D4); IUPAC reads decoded (D5); two-archive pools by tag (D6) |
+| `test_v3_features.py` | burst resynchronisation for L = 1…29, deletions and insertions, both orientations, and its bounds; a coverage-1 pool with deletion bursts fails without and recovers with `burst_repair`; sweep parsing and validation; sweeps reproducible across worker counts with 0 undetected corruption; `simulate-errors` CLI contract; ECC registry |
+| `test_compat_v3.py` | 2.0.0 fixtures intact; V2 plain, encrypted and resumed containers restore and verify; V2 strands decode; random access on V2 containers; fresh V3 stores equal V2 output except `encoder.version` |
+| `test_roundtrip_v3.py` | empty, 1-byte, tiny, Unicode, repetitive, incompressible and chunk-boundary inputs through container and DNA (FASTA and VXS, plain and encrypted) |
+| `test_channel_v3.py` | channel fixes B1–B3, B5, B11–B13 (truncation, format-independent shuffling, coverage-bounded batches, partial files, observed rates, orphan cap) and burst errors: contiguity, counts, determinism, zero-rate byte identity with v2.0.0 outputs, end-to-end recovery |
+| `test_cli_v3.py` | CLI fixes B4, B6–B10, B14, B15: reports never clobber, clean exit codes for every bad path, closed stdout, consensus option validation, pipeline checks and cleanup, experiment statistics, explicit DNA index, refused compressed output names |
+| `test_review_regressions_v3.py` | review findings R1–R8: replayed checkpoints, one-strand metadata bound bypass, `verify --report --force`, insertion and rotation3 burst spans, re-tagged metadata, hard-link fallback, sweep option validation |
 
 ## V2 suites (`tests/v2/`)
 

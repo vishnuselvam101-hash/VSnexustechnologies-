@@ -236,7 +236,7 @@ def encode_file(container_path: str | os.PathLike, output_path: str | os.PathLik
     if write_index:
         write_dna_index(index_path, loaded, out, fmt, geometry.strand_nt, meta_entry, chunk_entries, written)
     elapsed = time.perf_counter() - started
-    k, mpar, p = m.erasure_code.data_shards, m.erasure_code.parity_shards, geometry.payload_bytes
+    k, mpar = m.erasure_code.data_shards, m.erasure_code.parity_shards
     strands = written["records"]
     original = loaded.content.size if loaded.content is not None else None
     efficiency = {

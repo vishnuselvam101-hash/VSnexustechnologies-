@@ -1,4 +1,4 @@
-# Error correction, erasure recovery and their guarantees (V2)
+# Error correction, erasure recovery and their guarantees (V3)
 
 VNX-DNA separates detection, synchronization, correction and verification into distinct layers. They are not
 interchangeable, and none of them is claimed to do another's job:
@@ -11,6 +11,7 @@ nucleotide errors ─▶ synchronization ─▶ per-strand check/correction ─�
 | layer | handles | does **not** handle | where |
 |---|---|---|---|
 | consensus / synchronization | indels and substitutions in individual reads when coverage > 1; exposes ambiguity as `N` | errors common to all reads of a strand | [SYNCHRONIZATION.md](SYNCHRONIZATION.md), [CONSENSUS.md](CONSENSUS.md) |
+| single-read resynchronisation (opt-in) | coverage 1: one indel (or up to 3 same-length-shift indels within the search budget) per read, or **one contiguous burst** of lost/extra bases (V3, `--burst-repair`), by realigning and marking the affected bytes as erasures for the inner code | reads whose net length is unchanged (+1 −1); several bursts in one read | `vnxdna.v2.sync` |
 | inner Reed–Solomon (r bytes per strand) | `e` byte errors + `f` erasures (N, low-quality bases) inside one strand when `2e + f ≤ r` | indels; missing strands | `vnxdna.ecc.inner_rs`, `vnxdna.v2.frame` |
 | CRC-32 per strand | *detects* a still-corrupt strand after correction (≈ 2⁻³² undetected per corrupt read) → the strand becomes an erasure | correct anything; resist an attacker | `vnxdna.v2.crc` |
 | duplicate resolution | merges validated copies; strict majority wins; a tie becomes an erasure | count as parity | `vnxdna.v2.decoder.resolve_copies` |
@@ -25,7 +26,7 @@ The outer code never forms a large matrix. A stored chunk of `s` bytes is cut in
 into **ECC groups (stripes) of K data shards**. Each group gets M parity shards of its own:
 
 ```
-10 GB input ─▶ ~10,000 chunks (1 MiB) ─▶ each chunk: ⌈s / (K·P)⌉ groups of K+M strands ─▶ ~2.3 × 10⁸ strands (balanced, mixed data)
+10 GB input ─▶ 9,537 chunks (1 MiB) ─▶ each chunk: ⌈s / (K·P)⌉ groups of K+M strands ─▶ ~1.39 × 10⁸ strands (balanced, mixed data)
 ```
 
 Every group is decoded independently (only its K+M strands), which is what makes streaming decoding, random access
@@ -75,12 +76,47 @@ vectorised Gauss–Jordan inverse. Groups sharing an erasure pattern share the i
 
 ## Inner code and CRC
 
-Systematic RS(n, n − r) over the same field (fcr = 0) on the frame bytes (n ≤ 255). V2 computes parity with a
-per-column table gather, bit-identical to `reedsolo` (tested). Decoding uses reedsolo's Berlekamp–Massey/Forney
-errors-and-erasures decoder, only for reads whose CRC fails, and a result is accepted **only if the CRC-32 verifies
-afterwards**, which guards against miscorrection beyond r/2 errors. With the 2bit mapping one substitution corrupts one
-byte. `N` calls, and optionally low-quality bases (`--quality-erasure-below`), are passed as erasures, which doubles
-what the code can absorb per strand.
+Systematic RS(n, n − r) over the same field (fcr = 0, generator 2) on the frame bytes (n ≤ 255). Parity is computed
+with a per-column table gather, bit-identical to `reedsolo` (tested). With the 2bit mapping one substitution corrupts
+one byte. `N` calls, other non-ACGT symbols (since V3), and optionally low-quality bases (`--quality-erasure-below`)
+are passed as erasures, which doubles what the code can absorb per strand.
+
+**V3 decoder (`vnxdna.ecc.rs_batch`).** All reads whose CRC fails are decoded together: syndromes by Horner's rule,
+the erasure locator, Berlekamp–Massey initialised with it (errors-and-erasures form), a Chien search over the codeword
+positions and Forney's formula, all vectorised with NumPy over the batch (one GF(256) table lookup per coefficient
+per step). A result is accepted only if (a) the errata locator has exactly as many distinct roots among the codeword
+positions as its degree, (b) the corrected word has zero syndromes and (c) the frame CRC-32 then verifies.
+
+* **Guarantee:** every read with `2e + f ≤ r` is corrected. This is tested at the boundary for r ∈ {2, 4, 8, 12, 16,
+  32, 64} and several code lengths, and on 1,500 random words against `reedsolo`.
+* **Strictness (V2 audit E1):** the decoder is bounded-distance. It never returns a codeword further than
+  `2e + f ≤ r` from what was received. `reedsolo`, the V2 path, sometimes returned codewords at `2e + f = r + 1`
+  when the erasure count was odd. Those were miscorrections, and the CRC-32 rejected them in every case measured, so
+  V2 never produced wrong output. The V3 decoder does not produce them at all.
+  Test: `test_reedsolo_miscorrections_outside_the_radius_are_refused_by_the_batch_decoder`.
+* **Decision rule** (unchanged from V2): decode with the flagged erasures when there are at most r of them. If that
+  fails, and anything was flagged, decode again errors-only, because a flag can be wrong (for example with the
+  rotation code).
+* **Speed:** restoring a 10 MB archive from coverage-1 reads with 0.4 % substitutions is several times faster than V2
+  (measured in [BENCHMARKS.md](BENCHMARKS.md#v3-noisy-read-decoding)). Clean reads never reach the RS decoder, so
+  clean decoding is unchanged.
+
+## ECC engine interface (V3)
+
+`vnxdna.ecc.engine` defines the two layers as small protocols. An `OuterCode` has `encode(S×K×L) → S×M×L` and
+`decode(shards, present) → data`. An `InnerCode` has `encode_batch` and
+`decode_batch(codewords, erasures) → (corrected, ok, count)`. A registry is keyed by the names the authenticated
+manifest records:
+
+| manifest field | name | implementation |
+|---|---|---|
+| `erasure_code.algorithm` | `cauchy-rs-gf256` | `CauchyErasureCode` |
+| `strand.inner_ecc` | `reed-solomon-gf256` | `ReedSolomonInner` (the inner RS code with the vectorised decoder) |
+
+The decoder takes its outer code from the manifest's name, so it cannot apply a different code than the one an
+archive declares. Adding a code means one registration, a manifest name and a `required_features` entry, so older
+readers refuse it (exit 6) instead of misdecoding. **Fountain (LT/Raptor) codes are not implemented**: nothing is
+registered for them, because nothing untested is shipped. They are listed as research in [ROADMAP.md](ROADMAP.md).
 
 ## Verification boundary (tests that must stay)
 
@@ -95,8 +131,18 @@ The V1 ECC boundary tests are unchanged and still run (`tests/unit/test_ecc_cauc
 | random 1..20 + 0..8 | Hypothesis property test | 60 per run |
 | M + 1 losses | must raise, never miscorrect | tested |
 
-V2 adds, on the full pipeline with frame format 5: exactly M strands deleted in **every** group → exact recovery;
+V2 added, on the full pipeline with frame format 5: exactly M strands deleted in **every** group → exact recovery;
 M + 1 in one group → clean failure with exit 5, no output, and `verify` naming the chunk (`tests/v2/test_dna_v2.py`,
 `tests/v2/test_streaming_scale_v2.py`), and the same at 1 GB scale with 50 damaged groups
 ([LARGE_FILES.md](LARGE_FILES.md#large-file-corruption-acceptance)). The inner code is tested at 0–4 byte errors
 (corrected) and beyond (rejected by the CRC).
+
+V3 adds (`tests/v3/test_ecc_decoder_v3.py`, `tests/v3/test_v3_features.py`):
+
+* the batch RS decoder at `2e + f ≤ r` for eight (r, n) pairs, compared with `reedsolo` on 1,500 random words, and
+  checked to be strict beyond the bound;
+* CRC-gated batch correction: frames with 4 byte errors (r = 8) are corrected, frames with 9 are never accepted
+  wrongly;
+* single-read repair of one and two same-direction indels, of reads that also contain `N`, and of one contiguous
+  burst of 1–24 lost or extra bases (both orientations);
+* the ECC registry: declared codes returned, unknown names refused, a round trip through both protocols.

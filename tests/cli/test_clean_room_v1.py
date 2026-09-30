@@ -5,7 +5,6 @@ compares bytes with ``cmp``-equivalent equality and SHA-256 computed
 independently (``sha256sum`` when available, and hashlib).
 """
 import hashlib
-import os
 import random
 import shutil
 import subprocess

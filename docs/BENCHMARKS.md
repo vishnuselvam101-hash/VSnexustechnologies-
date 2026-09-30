@@ -1,7 +1,45 @@
-# Benchmarks (V2)
+# Benchmarks
 
 Every number on this page was measured on this project's machine and rendered from JSON by
-`research/v2/render_v2_tables.py`. Nothing is hard-coded. Absolute numbers depend on the hardware. Re-run:
+`research/v3/render_v3_tables.py` (V3 sections) or `research/v2/render_v2_tables.py` (V2 sections, kept as the
+2.0.0 record). Nothing is hard-coded. Absolute numbers depend on the hardware and its load. All results are
+**computational simulation results**: there are no physical DNA experimental results in this repository. Re-run:
+[REPRODUCIBILITY.md](REPRODUCIBILITY.md).
+
+## V3 vs V2: storage pipeline, 1 MB – 1 GB (the real CLI, same machine, same inputs)
+
+<!-- BEGIN GENERATED: v3-scale -->
+*Not measured yet.*
+<!-- END GENERATED: v3-scale -->
+
+## V3 density and overhead (balanced profile, mixed data)
+
+"nt per input byte" counts every nucleotide of every data, parity and metadata strand. "net bits per nt" is input
+bits divided by all nucleotides. Software strands; not a physical density.
+
+<!-- BEGIN GENERATED: v3-density -->
+*Not measured yet.*
+<!-- END GENERATED: v3-density -->
+
+## V3 noisy-read decoding
+
+Restore from coverage-1 reads with random substitutions. Here the inner RS decoder dominates, and V3's vectorised
+decoder replaces V2's per-read `reedsolo` call. Both versions decode identical read files.
+
+<!-- BEGIN GENERATED: v3-noisy -->
+*Not measured yet.*
+<!-- END GENERATED: v3-noisy -->
+
+## V3 vs V2: stage benchmark (A–H)
+
+<!-- BEGIN GENERATED: v3-stages -->
+*Not measured yet.*
+<!-- END GENERATED: v3-stages -->
+
+Single-read indel repair timings: [SYNCHRONIZATION.md](SYNCHRONIZATION.md#v3-measurements). Error-channel sweeps:
+[ERROR_MODEL.md](ERROR_MODEL.md). Peak memory, CPU and disk per stage: [LARGE_FILES.md](LARGE_FILES.md#v3-memory-cpu-and-disk).
+
+# V2 measurements (2.0.0 record)
 
 ```bash
 vnx-dna benchmark stages --sizes 100KB,1MB,10MB --output stages.json            # A–H, in-process
@@ -109,10 +147,10 @@ Harsh channel for the robustness column: coverage 3 (poisson), substitution 0.00
 
 | profile | outer code | strand | stored / input | nt / input byte | nt / stored byte | store | encode | decode | exact recovery (harsh channel) | 95 % CI |
 |---|---|---|---|---|---|---|---|---|---|---|
-| compact | 128+12 | 276 nt | 0.450 | 2.836 | 6.301 | 0.06 s | 0.46 s | 0.41 s | 0/100 | [0.000, 0.037] |
-| balanced | 64+16 | 252 nt | 0.452 | 3.567 | 7.896 | 0.03 s | 0.42 s | 0.39 s | 59/100 | [0.492, 0.681] |
-| resilient | 48+24 | 252 nt | 0.452 | 4.755 | 10.526 | 0.03 s | 0.50 s | 0.37 s | 100/100 | [0.963, 1.000] |
-| archival | 32+32 | 252 nt | 0.440 | 6.957 | 15.806 | 0.04 s | 0.37 s | 0.40 s | 99/100 | [0.946, 0.998] |
+| compact | 128+12 | 276 nt | 0.450 | 2.836 | 6.301 | 0.06 s | 0.46 s | 0.41 s | 0/100 | [0.0000, 0.0370] |
+| balanced | 64+16 | 252 nt | 0.452 | 3.567 | 7.896 | 0.03 s | 0.42 s | 0.39 s | 59/100 | [0.4920, 0.6813] |
+| resilient | 48+24 | 252 nt | 0.452 | 4.755 | 10.526 | 0.03 s | 0.50 s | 0.37 s | 100/100 | [0.9630, 1.0000] |
+| archival | 32+32 | 252 nt | 0.440 | 6.957 | 15.806 | 0.04 s | 0.37 s | 0.40 s | 99/100 | [0.9455, 0.9982] |
 <!-- END GENERATED: profiles -->
 
 ## Optimisation log (measured baseline first, then each change)
@@ -130,9 +168,10 @@ on 33,000 strands ≈ one 1 MiB chunk of incompressible stored data at the balan
 | frame CRC validation | per-strand `zlib.crc32` loop (V1) | vectorised over batches | column-wise table CRC; equal to `zlib.crc32` (tested) |
 | channel batch (8,192 strands × 10×, all error classes) | 6.2 s | 1.29 s | Bernoulli events via geometric gaps; vectorised ragged gathers |
 
-Bottlenecks that remain (measured, not fixed): the inner-RS *decoder* is pure Python (`reedsolo`) and runs per
-damaged read, so heavily damaged read sets decode at a few thousand reads per second per process. Consensus alignment
-runs at ~4,000 reads/s per process. Clustering is dominated by per-read Python work in the address scan.
+Bottlenecks at 2.0.0 (measured): the inner-RS *decoder* was pure Python (`reedsolo`) and ran per damaged read.
+**V3 replaced it with the vectorised decoder** (see the V3 sections at the top of this page). Consensus processed
+about 18,000 reads/s in the stage benchmark (F_consensus, 10 MB at 10×; VNX-DNA 2.0 quoted an unmeasured
+~4,000 reads/s). Clustering is dominated by per-read Python work in the address scan. Both remain V3 bottlenecks.
 
 ## V1 benchmarks
 

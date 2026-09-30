@@ -15,6 +15,8 @@ so decoding never depends on the profile table.
 """
 from __future__ import annotations
 
+import re
+
 from dataclasses import asdict, dataclass, field, replace
 from typing import Any
 
@@ -24,6 +26,9 @@ from ..errors import ConfigurationError
 from .constraints import ConstraintSpecV2
 from .frame import FrameGeometry
 from .manifest import MAX_CHUNK_SIZE
+
+
+_PROFILE_NAME = re.compile(r"[a-z0-9_-]{1,32}")
 
 
 @dataclass(frozen=True)
@@ -48,8 +53,9 @@ class StoreOptionsV2:
             raise ConfigurationError(f"chunk_size must be an integer in 1 .. {MAX_CHUNK_SIZE}")
         compression.validate(self.compression, self.compression_level)
         CauchyErasureCode(self.data_shards, self.parity_shards)
-        if not isinstance(self.profile, str) or not self.profile or len(self.profile) > 32:
-            raise ConfigurationError("profile must be a short name")
+        if not isinstance(self.profile, str) or not _PROFILE_NAME.fullmatch(self.profile):
+            # the same rule as the manifest schema, so a bad name fails here and not after the whole file was stored
+            raise ConfigurationError("profile must match [a-z0-9_-]{1,32}")
         if self.timestamp is not None and (not isinstance(self.timestamp, str) or len(self.timestamp) > 64):
             raise ConfigurationError("timestamp must be a string of at most 64 characters")
         if not isinstance(self.constraints, ConstraintSpecV2):
@@ -85,7 +91,13 @@ PROFILES: dict[str, StoreOptionsV2] = {
 
 
 def options_for(profile: str = "balanced", **overrides: Any) -> StoreOptionsV2:
-    """Profile defaults with explicit overrides (``None`` values are ignored)."""
+    """Profile defaults with explicit overrides (``None`` values are ignored).
+
+    A customised profile is recorded as ``<profile>-custom`` unless ``profile_name`` names it explicitly.
+    """
+    name = overrides.pop("profile_name", None)
+    if name is not None:
+        overrides["profile"] = name
     if profile not in PROFILES:
         raise ConfigurationError(f"unknown profile {profile!r}; available: {sorted(PROFILES)}")
     base = PROFILES[profile]

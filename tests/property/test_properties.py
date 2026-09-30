@@ -6,7 +6,7 @@ import numpy as np
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
-from conftest import TEST_KEY
+from v1_support import TEST_KEY
 from vnxdna.api import store_bytes
 from vnxdna.channel import ChannelConfig, simulate
 from vnxdna.container import vxdna

@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 
 from v2_support import FAST, KEY, OTHER_KEY, mixed_bytes, write
-from vnxdna.errors import (AuthenticationError, IntegrityError, InvalidInputError, KeyRequiredError, MetadataError, OutputError,
+from vnxdna.errors import (AuthenticationError, InvalidInputError, KeyRequiredError, OutputError,
                            VNXDNAError, WrongKeyError)
 from vnxdna.v2 import crypto
 from vnxdna.v2.archive import (extract_range, open_container, restore_file, store_file, verify_container)

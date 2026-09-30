@@ -80,7 +80,7 @@ def test_v0_1_legacy_archives_are_still_refused_by_the_main_decoder(fixtures_dir
     import os
     from vnxdna.errors import UnsupportedFormatError
     candidates = [os.path.join(fixtures_dir, name) for name in sorted(os.listdir(fixtures_dir))
-                  if os.path.isdir(os.path.join(fixtures_dir, name))]
+                  if os.path.isdir(os.path.join(fixtures_dir, name)) and not name.startswith("__")]
     legacy = [c for c in candidates if api.detect(c).startswith("legacy")]
     assert legacy
     with pytest.raises(UnsupportedFormatError):

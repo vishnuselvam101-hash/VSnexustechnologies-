@@ -34,7 +34,8 @@ import numpy as np
 
 from ..dna.constraints import ConstraintSpec
 from ..dna.mapping import get_mapping
-from ..ecc.inner_rs import MAX_CODEWORD, InnerReedSolomon
+from ..ecc.engine import ReedSolomonInner
+from ..ecc.inner_rs import MAX_CODEWORD
 from ..errors import ConfigurationError, ConstraintError
 from .constraints import satisfied_v2
 from .crc import crc32_bytes_be, crc32_rows
@@ -61,13 +62,13 @@ class FrameGeometry:
     mapping: str
     payload_bytes: int
     inner_parity_bytes: int
-    _inner: InnerReedSolomon = field(init=False, repr=False, compare=False)
+    _inner: ReedSolomonInner = field(init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         get_mapping(self.mapping)
         if not isinstance(self.payload_bytes, int) or isinstance(self.payload_bytes, bool) or self.payload_bytes < 1:
             raise ConfigurationError("payload_bytes must be a positive integer")
-        object.__setattr__(self, "_inner", InnerReedSolomon(self.inner_parity_bytes))
+        object.__setattr__(self, "_inner", ReedSolomonInner(self.inner_parity_bytes))
         if self.frame_bytes > MAX_CODEWORD:
             raise ConfigurationError(f"frame of {self.frame_bytes} bytes exceeds the {MAX_CODEWORD}-byte RS codeword limit")
 
@@ -88,7 +89,7 @@ class FrameGeometry:
         return self.frame_bytes * self.nt_per_byte
 
     @property
-    def inner(self) -> InnerReedSolomon:
+    def inner(self) -> ReedSolomonInner:
         return self._inner
 
     def to_dict(self) -> dict:
@@ -237,27 +238,76 @@ def parse_batch(geometry: FrameGeometry, frames: np.ndarray, erasures: np.ndarra
     return ParsedBatch(ok, kind.astype(np.uint8), tag, stripe, body[:, 9].copy(), body[:, 10:].copy())
 
 
+def correct_frames(geometry: FrameGeometry, frames: np.ndarray, erasures: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Inner RS errors-and-erasures decoding of N frames at once, accepted only if the CRC then verifies (V3).
+
+    Same decision rule as the V2 per-read path: decode with the flagged
+    erasures when there are at most ``r`` of them; if that fails (or there are
+    more), and some position was flagged, decode again errors-only, because
+    erasure flags can be wrong (for example with the rotation code). A frame is
+    accepted only if the corrected frame passes the CRC-32 and version checks.
+    Uses the bounded-distance decoder :func:`vnxdna.ecc.rs_batch.decode_batch`,
+    which never returns a codeword outside the ``2e + f ≤ r`` radius (V2's
+    ``reedsolo`` path sometimes did; the CRC rejected those).
+
+    Returns (frames (N, F) with accepted rows corrected, accepted (N,) bool, symbols corrected (N,), ≥ 1 where accepted).
+    """
+    frames = np.ascontiguousarray(frames, dtype=np.uint8)
+    erasures = np.asarray(erasures, dtype=bool)
+    n = frames.shape[0]
+    r = geometry.inner_parity_bytes
+    best = frames.copy()
+    counts = np.zeros(n, dtype=np.int64)
+    accepted = np.zeros(n, dtype=bool)
+    if n == 0 or r == 0:
+        return best, accepted, counts
+    flagged = erasures.sum(axis=1)
+    for use_flags in (True, False):
+        if use_flags:
+            rows = np.flatnonzero(flagged <= r)
+            masks = erasures[rows]
+        else:
+            rows = np.flatnonzero(~accepted & (flagged > 0))
+            masks = None
+        if rows.size == 0:
+            continue
+        corrected, ok, errata = geometry.inner.decode_batch(frames[rows], masks)
+        rows, corrected, errata = rows[ok], corrected[ok], errata[ok]
+        if rows.size == 0:
+            continue
+        good = parse_batch(geometry, corrected[:, : geometry.systematic_bytes]).ok
+        best[rows[good]] = corrected[good]
+        counts[rows[good]] = np.maximum(errata[good], 1)
+        accepted[rows[good]] = True
+    return best, accepted, counts
+
+
+def parse_many_corrected(geometry: FrameGeometry, frames: np.ndarray, erasures: np.ndarray) -> tuple[ParsedBatch, np.ndarray]:
+    """:func:`correct_frames`, then parse. Returns (parsed batch, ``ok`` only for accepted frames; symbols corrected)."""
+    if frames.shape[0] == 0:
+        return _empty_parsed(geometry), np.zeros(0, dtype=np.int64)
+    best, accepted, counts = correct_frames(geometry, frames, erasures)
+    result = parse_batch(geometry, best[:, : geometry.systematic_bytes])
+    result.ok &= accepted
+    return result, counts
+
+
+def _empty_parsed(geometry: FrameGeometry) -> ParsedBatch:
+    z = np.zeros(0, dtype=np.uint8)
+    return ParsedBatch(np.zeros(0, dtype=bool), z, np.zeros(0, np.uint32), np.zeros(0, np.uint32), z,
+                       np.zeros((0, geometry.payload_bytes), dtype=np.uint8))
+
+
 def parse_one_corrected(geometry: FrameGeometry, frame: np.ndarray, erasures: np.ndarray) -> tuple[tuple, int] | None:
-    """Slow path for one frame whose CRC failed: inner RS errors-and-erasures decoding, then the CRC again.
+    """One frame whose CRC failed: :func:`parse_many_corrected` for a single row.
 
     Returns ((kind, tag, stripe, shard, payload bytes), symbols corrected) or None.
     """
-    raw = frame.tobytes()
-    flagged = np.flatnonzero(erasures).tolist()
-    attempts = [flagged] if len(flagged) <= geometry.inner_parity_bytes else []
-    if flagged:
-        attempts.append([])  # erasure flags can be wrong (e.g. the rotation code); also try errors-only decoding
-    for erase in attempts or [[]]:
-        corrected = geometry.inner.correct(raw, erase)
-        if corrected is None:
-            continue
-        message, count = corrected
-        row = np.frombuffer(message[: geometry.systematic_bytes], dtype=np.uint8)[None, :]
-        parsed = parse_batch(geometry, row)
-        if parsed.ok[0]:
-            return ((int(parsed.kind[0]), int(parsed.tag[0]), int(parsed.stripe[0]), int(parsed.shard[0]),
-                     parsed.payload[0].tobytes()), max(count, 1))
-    return None
+    parsed, counts = parse_many_corrected(geometry, frame[None, :], erasures[None, :])
+    if not parsed.ok[0]:
+        return None
+    return ((int(parsed.kind[0]), int(parsed.tag[0]), int(parsed.stripe[0]), int(parsed.shard[0]),
+             parsed.payload[0].tobytes()), int(counts[0]))
 
 
 def tentative_address(geometry: FrameGeometry, frame: np.ndarray) -> tuple[int, int, int, int] | None:

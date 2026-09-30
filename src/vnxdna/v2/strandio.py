@@ -43,7 +43,7 @@ from pathlib import Path
 import numpy as np
 
 from ..dna.mapping import INVALID, _ASCII_TO_CODE, _CODE_TO_ASCII
-from ..errors import InvalidDNAError, InvalidInputError, OutputError, UnsupportedFormatError
+from ..errors import ConfigurationError, InvalidDNAError, InvalidInputError, OutputError, UnsupportedFormatError
 from .container import fsync_dir
 
 VXS_MAGIC = b"\x89VXSTRD\n"
@@ -110,7 +110,14 @@ def format_for_output(path: str | os.PathLike, explicit: str | None = None) -> s
             raise InvalidInputError(f"unknown strand format {explicit!r}; use fasta, fastq or vxs")
         return explicit
     suffix = Path(path).suffix.lower()
+    if suffix in _UNWRITABLE_SUFFIXES:
+        # VNX-DNA 2.0 silently wrote plain FASTA to e.g. reads.fastq.gz or reads.bam
+        raise ConfigurationError(f"cannot write {Path(path).name}: {suffix} output (compressed or alignment formats) is not "
+                                 "supported; use .fasta, .fastq or .vxs, or pass --format")
     return {".vxs": "vxs", ".fastq": "fastq", ".fq": "fastq"}.get(suffix, "fasta")
+
+
+_UNWRITABLE_SUFFIXES = {".gz", ".bgz", ".bz2", ".xz", ".zst", ".zstd", ".lz4", ".zip", ".bam", ".sam", ".cram", ".sra"}
 
 
 # ======================================================================= codes <-> text
@@ -176,6 +183,7 @@ class StrandWriter:
         except OSError as error:
             raise OutputError(f"cannot write {self.target}: {error.strerror or error}") from None
         self.tmp = Path(tmp)
+        self.overwrite = overwrite
         self.handle = os.fdopen(fd, "wb", buffering=1 << 20)
         self.count = 0
         self.bases = 0
@@ -212,7 +220,8 @@ class StrandWriter:
         self.handle.flush()
         os.fsync(self.handle.fileno())
         self.handle.close()
-        os.replace(self.tmp, self.target)
+        from .container import publish
+        publish(self.tmp, self.target, overwrite=self.overwrite)
         fsync_dir(self.target.parent)
         return {"output": str(self.target), "format": self.fmt, "records": self.count, "bases": self.bases,
                 "bytes": self.bytes_written, "file_sha256": self.file_hash.hexdigest()}
@@ -340,9 +349,9 @@ def _iter_text(p: Path, fmt: str, batch_reads: int, byte_range: tuple[int, int] 
     with p.open("rb") as handle:
         if byte_range is not None:
             handle.seek(byte_range[0])
-            lines = _limited_lines(handle, byte_range[1])
+            lines = _bounded_lines(handle, byte_range[1])
         else:
-            lines = iter(handle)
+            lines = _bounded_lines(handle)
         if fmt == "fastq":
             line_no = 0
             while True:
@@ -401,11 +410,33 @@ def _iter_text(p: Path, fmt: str, batch_reads: int, byte_range: tuple[int, int] 
         yield text_to_batch(seqs, quals)
 
 
-def _limited_lines(handle, length: int) -> Iterator[bytes]:
+MAX_LINE_BYTES = MAX_READ_NT + 2   # longer lines are cut here; the rest of the line is skipped in bounded blocks
+_SKIP_BLOCK = 1 << 20
+
+
+def _bounded_lines(handle, length: int | None = None) -> Iterator[bytes]:
+    """Lines of a text file, each cut to ``MAX_LINE_BYTES`` (memory bounded whatever the line length).
+
+    VNX-DNA 2.0 iterated the file object directly, which reads a whole line
+    into memory before any length check: one unwrapped multi-gigabyte FASTA
+    line (or junk without newlines) could exhaust RAM. A cut line is longer
+    than any read VNX-DNA accepts, so the cut never changes a decodable read.
+    ``length`` limits reading to that many bytes (a DNA-index byte range).
+    """
     remaining = length
-    while remaining > 0:
-        line = handle.readline(remaining)
+    while remaining is None or remaining > 0:
+        want = MAX_LINE_BYTES if remaining is None else min(MAX_LINE_BYTES, remaining)
+        line = handle.readline(want)
         if not line:
             return
-        remaining -= len(line)
+        if remaining is not None:
+            remaining -= len(line)
+        if len(line) == want and not line.endswith(b"\n") and (remaining is None or remaining > 0):
+            while remaining is None or remaining > 0:  # skip the rest of an over-long line
+                step = _SKIP_BLOCK if remaining is None else min(_SKIP_BLOCK, remaining)
+                rest = handle.readline(step)
+                if remaining is not None:
+                    remaining -= len(rest)
+                if not rest or rest.endswith(b"\n"):
+                    break
         yield line

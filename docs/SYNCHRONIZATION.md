@@ -9,7 +9,7 @@ VNX-DNA therefore handles indels in dedicated synchronization layers *before* er
 
 ```
 raw reads ─▶ [ multi-read synchronization: cluster → align → vote ] ─▶ strand-length consensus (N where unsure)
-          └▶ [ single-read synchronization: RS-assisted realignment (opt-in) ]
+          └▶ [ single-read synchronization: RS-assisted realignment / burst resynchronisation (opt-in) ]
                                    │
                                    ▼
              inner RS (substitutions + N erasures) ─▶ CRC-32 ─▶ outer erasure code ─▶ chunk SHA-256
@@ -19,7 +19,8 @@ raw reads ─▶ [ multi-read synchronization: cluster → align → vote ] ─�
 |---|---|---|---|
 | address anchoring | locating the strand a read belongs to, even when the read has indels after its 44-nt header | reads with indels inside the header (these become orphans, clustered by minimizers) | `vnxdna.v2.cluster` |
 | multi-read alignment | indels in individual reads when other reads of the same strand exist (coverage > 1) | indels shared by *every* read of a strand (for example a synthesis error in all molecules) | `vnxdna.v2.consensus`, `vnxdna.v2.align` |
-| single-read realignment | exactly one indel (or two, at quadratic cost) plus at most ⌊(r−1)/2⌋ other byte errors, in a read of length L ± 1 | more indels; indel pairs that keep the length (handled as byte errors by the inner code) | `vnxdna.v2.sync` |
+| single-read realignment | exactly one indel (or two or three of the same net direction, within the hypothesis budget) plus at most ⌊(r−1)/2⌋ other byte errors | indel pairs that keep the length (+1 −1: the read reaches the inner code as a full-length read with a shifted segment and is usually rejected) | `vnxdna.v2.sync.repair_read` |
+| burst resynchronisation (V3) | one contiguous run of L lost or extra bases, with ⌈(L + b − 1)/b⌉ + 2e ≤ r | several bursts in one read | `vnxdna.v2.sync.repair_burst` |
 | block boundaries | limiting any residual damage to one strand (fixed-length frames) and one ECC group | | frame format 5 |
 
 ## Multi-read synchronization (the main defence)
@@ -43,17 +44,51 @@ has a majority of correct evidence. Measured recovery rates versus indel rate, w
 
 ## Single-read realignment (opt-in: `--experimental-indel-repair`)
 
-For a read `d` bases off the strand length (1 ≤ |d| ≤ `--max-indel`), every hypothesis "the indels are in frame
-bytes j₁ ≤ … ≤ j|d|" restores the length at those bytes, flags them as erasures, and runs the inner RS decoder. It is
-accepted only if the CRC-32 passes. One hypothesis matches a single-indel read exactly, so recovery is guaranteed
-when the rest of the read has at most ⌊(r − 1)/2⌋ byte errors. Two indels cost O(F²) hypotheses and are capped by
-`max_candidates`. False acceptance requires an RS miscorrection *and* a CRC collision (≈ 2⁻³² per hypothesis), and
-chunk SHA-256 checks downstream catch it in any case. It is useful at coverage 1, where there is nothing to align
-against. It is slow (up to 2·F decodes per read), which is why it is opt-in.
+For a read `d` bases off the strand length (1 ≤ |d| ≤ `--max-indel`, at most 3), every hypothesis "the indels are in
+frame bytes j₁ ≤ … ≤ j|d|" restores the length at those bytes, flags them as erasures, and runs the inner RS decoder.
+It is accepted only if the CRC-32 passes. One hypothesis matches a single-indel read exactly, so recovery is
+guaranteed when the rest of the read has at most ⌊(r − 1)/2⌋ byte errors. Two indels cost O(F²) and three O(F³)
+hypotheses. The search stops after `max_indel_candidates` hypotheses per orientation (API parameter, default 4,096),
+so it is exhaustive only while the hypothesis count fits the budget. With the balanced profile, F = 63 frame bytes:
+63 hypotheses for one indel, 2,016 for two, 43,680 for three. False acceptance requires an RS miscorrection *and* a
+CRC collision (≈ 2⁻³² per hypothesis), and chunk SHA-256 checks downstream catch it in any case.
+
+Worst-case cost per read: every hypothesis is decoded in up to two passes (with the flagged erasures, then errors
+only) and in both orientations, so 4 × (number of hypotheses) decodes. VNX-DNA 2.0's documentation said "up to 2·F";
+that was an undercount (V2 audit D8). **V3** decodes each read's hypotheses in vectorised blocks of 2,048
+(`vnxdna.ecc.rs_batch`) instead of one `reedsolo` call each, and returns the first accepted hypothesis in the same
+enumeration order as V2, so results are unchanged. Reads that also contain `N` are now repaired too; VNX-DNA 2.0
+skipped them (audit D7).
+
+## Burst resynchronisation (V3, opt-in: `--burst-repair N`)
+
+A contiguous run of L lost bases (or L extra bases) shifts everything after it, exactly like L separate indels, but
+it needs only **F hypotheses**, whatever L is: "the run starts inside frame byte j". For each j, VNX-DNA inserts L
+erasure symbols at nucleotide j·b (or removes L bases there). That restores the alignment of everything after the
+run. The ⌈(L + b − 1)/b⌉ bytes starting at j, which can still be wrong, are flagged as erasures, and the inner RS
+decodes. A hypothesis is accepted only if the CRC-32 passes.
+
+**Guarantee:** one burst of L ≤ N bases in a read is recovered when ⌈(L + b − 1)/b⌉ + 2e ≤ r (e = other byte errors;
+b = nucleotides per byte, 4 for 2bit). For the balanced profile (r = 8) that means bursts of up to 29 nt with no
+other error. Tested for L = 1…29, deletions and insertions, both orientations (`tests/v3/test_v3_features.py`).
+Burst repair runs after indel repair, only for reads whose length is off by 1…N.
+
+## V3 measurements
+
+Single-read indel repair, V2 vs V3, on the same reads (exhaustive search budget of 100,000 hypotheses per
+orientation):
+
+<!-- BEGIN GENERATED: v3-indel -->
+*Not measured yet.*
+<!-- END GENERATED: v3-indel -->
+
+Burst and indel recovery through the whole decoder at coverage 1 (repairs off vs on) is in
+[ERROR_MODEL.md](ERROR_MODEL.md#v3-sweep-at-coverage-1-every-read-of-every-strand-once-shuffled).
 
 ## What is not implemented
 
-* **Periodic markers / watermark codes / VT codes.** Frame format 5 carries no in-strand sync markers. With coverage
+* **Periodic markers / watermark codes / VT codes.** Frame format 5 carries no in-strand sync markers. (V3's burst
+  resynchronisation needs none: it uses the CRC and the inner code as the synchronisation test.) With coverage
   > 1, alignment between reads resynchronizes more cheaply than markers would, and markers cost density at every
   coverage. A marker-based frame would be a new frame format (a new required feature), not a reinterpretation of format 5.
 * **Indels common to all reads of a strand.** If every molecule carries the same indel (a synthesis error in the

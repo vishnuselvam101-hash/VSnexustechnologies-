@@ -1,6 +1,9 @@
 # VNX-DNA V2 formats (archive format 5)
 
-All integers are big-endian unless stated otherwise. Format 4 (V1) is specified in [FORMAT.md](FORMAT.md) and
+> Archive format 5 is also the VNX-DNA 3 format. V3 adds one optional feature, a checkpoint version and stricter
+> reader rules; they are listed in [STORAGE_FORMAT.md](STORAGE_FORMAT.md), which takes precedence where the two differ.
+
+All integers are big-endian unless stated otherwise. Format 4 (V1) is specified in [V1_FORMAT.md](V1_FORMAT.md) and
 stays readable ([COMPATIBILITY.md](COMPATIBILITY.md)).
 
 1. the **container file** `.vxdna` version 2;
@@ -29,8 +32,11 @@ stays readable ([COMPATIBILITY.md](COMPATIBILITY.md)).
 | end−32 | 32 | SHA-256 of every preceding byte |
 
 A reader must reject bad magic, an unknown version, nonzero flags or reserved fields, a missing trailer magic
-(truncated file or unfinished `.partial`), and sizes that do not add up to the file size. The trailer SHA-256 is
-checked by `verify` and by full reads. Random access checks each chunk's SHA-256 instead.
+(truncated file or unfinished `.partial`), and sizes that do not add up to the file size. Since V3 a reader also
+rejects a body whose length differs from the manifest's `stored_size`. The trailer SHA-256 and `stored_sha256` are
+checked by `verify`. `restore` and random access check each chunk's SHA-256 instead; because the authenticated chunk
+index tiles the body exactly, that covers every body byte. (VNX-DNA 2.0's documentation said full reads checked the
+trailer; they did not.)
 
 **Writing.** `store` writes `<output>.partial` (mode 0600), fsyncs it, and publishes it with `os.replace`. A
 killed store leaves only the partial file and, if a checkpoint was reached, `<output>.partial.ckpt` and
@@ -48,7 +54,7 @@ must equal their own canonical re-serialisation.
 |---|---|---|
 | `format` / `format_version` | `"VNX-DNA"` / `5` | |
 | `encoder` | `{name: "vnxdna", version}` | |
-| `required_features` | list | exactly the set implied by mapping and encryption (below). Unknown → unsupported |
+| `required_features` | list | exactly the set implied by mapping and encryption (below), plus the optional V3 feature `final-seal-epoch-v3`. Unknown → unsupported |
 | `archive_id` | 32 hex | random when encrypted; `SHA-256("VNX-DNA/5 archive-id\0" ‖ canonical(options, name) ‖ SHA-256(data))[:16]` otherwise |
 | `created_at` | string \| null | recorded verbatim; null by default (determinism) |
 | `profile` | `[a-z0-9_-]{1,32}` | informational (`balanced`, `archival-custom`, …) |
@@ -136,9 +142,11 @@ Stream `"VNX5" ‖ L(4) ‖ I(4) ‖ J(4) ‖ manifest ‖ chunk index ‖ plain
 shards per stripe, Cauchy 8+8 (any 8 of 16 strands per stripe may be lost), frame kind 1, stripes 0, 1, … Written
 **first** in every strand file. A strand file alone is a complete archive.
 
-**Geometry discovery** (no container at hand): for the most common read lengths, every mapping and even r ∈ [0, 64]
-is tried on up to 400 reads; a hypothesis scores when reads pass the frame CRC. If no read is error-free, a fallback
-tries inner-RS correction on a sample and needs two verified reads.
+**Geometry discovery** (no container at hand): for the three most common read lengths whose frame fits one RS
+codeword (16–255 bytes; longer or shorter lengths are skipped since V3), every mapping and even r ∈ [0, 64] is tried
+on the first 100 erasure-free frames of each orientation (from up to 400 reads of that length); a hypothesis scores
+when reads pass the frame CRC. If no read is error-free, a fallback tries inner-RS correction on a sample (200 reads
+for the profiles' geometries, then 12 for all others) and needs two verified reads.
 
 ## 4. Other files
 
@@ -176,8 +184,10 @@ is rejected.
 
 ### 4.4 Store checkpoint
 
-`<output>.partial.ckpt`: JSON (`format: "vnx-store-checkpoint-1"`) with the input's resolved path, size and mtime,
-the SHA-256 of the options, encryption state, archive ID/salt/key check (encrypted), the AEAD epoch in use, chunk
-count, completed chunks,
-body bytes, the SHA-256 of the index sidecar prefix, and `checkpoint_sha256` over all of that.
+`<output>.partial.ckpt`: JSON (`format: "vnx-store-checkpoint-2"` since V3; V2 wrote `-1`) with the input's resolved
+path, size and mtime, the SHA-256 of the options, encryption state, archive ID/salt/key check (encrypted), the AEAD
+epoch in use, chunk count, completed chunks, body bytes, the SHA-256 of the index sidecar prefix,
+`checkpoint_sha256` over all of that and, for encrypted stores, `checkpoint_hmac` (HMAC-SHA256 under the archive MAC
+key, label `VNX-DNA/5 store checkpoint`). A resume refuses a checkpoint whose HMAC does not verify and any VNX-DNA 2.0
+checkpoint (start over without `--resume`), and writes a new checkpoint with the new epoch before sealing anything.
 `<output>.partial.idx` holds 92 bytes per completed chunk (chunk-index entry + plaintext-index entry).

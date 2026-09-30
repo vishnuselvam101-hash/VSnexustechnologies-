@@ -5,7 +5,7 @@ import json
 
 import pytest
 
-from conftest import FAST, OTHER_KEY, TEST_KEY
+from v1_support import FAST, OTHER_KEY, TEST_KEY
 from vnxdna.container import compression, crypto
 from vnxdna.container import manifest as mf
 from vnxdna.container.builder import build_container

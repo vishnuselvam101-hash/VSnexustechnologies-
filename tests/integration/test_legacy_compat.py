@@ -36,7 +36,6 @@ def test_encrypted_legacy_requires_key():
 
 def test_v0_1_generator_really_was_non_mds_and_the_new_one_is():
     """Regression evidence for the V0.1 defect: {4,5,7,11} erased from 8+4."""
-    import itertools
     from vnxdna.ecc import gf256
     from vnxdna.ecc.cauchy import CauchyErasureCode
     old = [[int(r == c) for c in range(8)] for r in range(8)] + [[gf256.power(p + 1, c) for c in range(8)] for p in range(4)]

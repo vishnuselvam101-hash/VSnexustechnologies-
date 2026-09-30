@@ -2,7 +2,7 @@
 
 | format | written by | read by current code | how |
 |---|---|---|---|
-| **archive format 5** + container file v2 + frame format 5 + VXS 1 | VNX-DNA 2.x (`vnx-dna store/encode`) | yes | every command |
+| **archive format 5** + container file v2 + frame format 5 + VXS 1 | VNX-DNA 3.x and 2.x (`vnx-dna store/encode`) | yes | every command |
 | **archive format 4** + container file v1 (`.vxdna`) + frame format 4 | VNX-DNA 1.0.0 (still written by `vnx-dna v1 store/encode`) | yes | `restore`, `recover`, `decode`, `verify`, `info`, `extract` (dispatched to the unchanged V1 code), `migrate` |
 | V0.1 dataset, `format_version` 1 (VNX1 FASTA headers, no ECC) | V0.1 | yes, read-only | `vnx-dna legacy restore DIR -o FILE` |
 | V0.1 dataset, `format_version` 2 (VNX2 headers, Vandermonde shards) | V0.1 | yes, read-only | same |
@@ -10,7 +10,21 @@
 | RD-1 JSON archive `VNXDNA` / `0.1` | V0.1 R&D-1 | yes, read-only | `vnx-dna legacy restore FILE.json -o FILE` |
 | anything else | – | no | `UNSUPPORTED_FORMAT` (6) or `INVALID_INPUT` (3) |
 
-## V1 (format 4) inside V2
+## VNX-DNA 2 ↔ 3
+
+**Decision: no new format, no migration needed.** VNX-DNA 3 writes archive format 5, as VNX-DNA 2 did
+([STORAGE_FORMAT.md](STORAGE_FORMAT.md)).
+
+| direction | result | evidence |
+|---|---|---|
+| V3 reads V2 containers (plain, encrypted, resumed-encrypted) and V2 strand files | **yes**: restore, verify, random access and DNA decoding | `tests/v3/test_compat_v3.py` on files written by the 2.0.0 release (`tests/fixtures/v2_0/`) |
+| V3 writes what V2 wrote | **yes** for fresh stores: same body, indexes and data strands; only `encoder.version` (and the metadata strands carrying the manifest) differ | `test_fresh_v3_stores_equal_v2_output_except_the_encoder_version` |
+| V2 reads V3 archives and strands | **yes**, except encrypted archives whose store was **resumed** by V3: they declare `final-seal-epoch-v3` and V2 refuses them cleanly (exit 6, `UNSUPPORTED_FORMAT`) | `research/results/v3/v2-reads-v3.json` (run with the 2.0.0 CLI) |
+| V2 store checkpoints resumed by V3 | **no**: refused with a clear message (they are not authenticated); start the store over | `src/vnxdna/v2/archive.py` |
+| simulated reads from V2 vs V3 for the same seed | identical for unshuffled output and ordinary channels; shuffled output can differ for large pools, VXS input and very high coverage (V3 fixes the format dependence) | `tests/v3/test_channel_v3.py` |
+| Python API | `vnxdna.v2.*` kept; additions only (new `DecodeOptionsV2` fields have defaults) | test suites |
+
+## V1 (format 4) inside V2 and V3
 
 * **Detection.** Containers are recognised by the container file version (1 = V1, 2 = V2); strand/read files by
   geometry discovery (frame format 4 or 5). V1 inputs go to the V1 modules (`vnxdna.api` and friends), which are
