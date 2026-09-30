@@ -105,7 +105,7 @@ def main() -> None:
             run(cli(sys.executable) + ["benchmark", "generate", "--size", "100KB", "--pattern", "mixed", "--seed", "7", "-o", str(src)])
             common = ["--trials", str(a.sweep_trials), "--seed", "1000", "--force", "--json"]
             if want("sweep1"):
-                for label, extra in (("off", []), ("on", ["--experimental-indel-repair", "--max-indel", "2", "--burst-repair", "24"])):
+                for label, extra in (("off", []), ("on", ["--indel-repair", "--max-indel", "2", "--burst-repair", "24"])):
                     args = sum((["--sweep", s] for s in SWEEP_COV1), [])
                     out = work / f"sweep1-{label}"
                     run(cli(sys.executable) + ["simulate-errors", str(src), "-o", str(out), "--coverage", "1", "--coverage-model", "fixed"]
@@ -120,10 +120,12 @@ def main() -> None:
                 shutil.copy(out / "sweep.json", a.out / "sweep-cov5-consensus.json")
     finally:
         shutil.rmtree(work, ignore_errors=True)
-    meta["finished"] = time.strftime("%Y-%m-%dT%H:%M:%S%z")
-    previous = json.loads((a.out / "run-meta.json").read_text()) if (a.out / "run-meta.json").exists() else {}
-    previous.update(meta)
-    (a.out / "run-meta.json").write_text(json.dumps(previous, indent=2, sort_keys=True) + "\n")
+        meta["finished"] = time.strftime("%Y-%m-%dT%H:%M:%S%z")
+        meta["only"] = a.only
+        previous = json.loads((a.out / "run-meta.json").read_text()) if (a.out / "run-meta.json").exists() else {}
+        runs = previous.pop("runs", [])
+        runs.append(meta)
+        (a.out / "run-meta.json").write_text(json.dumps({**meta, "runs": runs}, indent=2, sort_keys=True) + "\n")
 
 
 if __name__ == "__main__":
