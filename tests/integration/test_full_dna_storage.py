@@ -9,10 +9,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from conftest import FAST, TEST_KEY, mixed_bytes
+from v1_support import FAST, TEST_KEY, mixed_bytes
 from vnxdna import api
 from vnxdna.channel import ChannelConfig
-from vnxdna.container import vxdna
 from vnxdna.dna.constraints import analyze
 from vnxdna.dna.reads import read_sequences
 from vnxdna.dna.strand import KIND_DATA

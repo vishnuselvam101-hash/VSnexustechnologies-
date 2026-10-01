@@ -1,0 +1,11 @@
+{
+  "files": {
+    "encrypted.vxdna": "f003d894b3d77540884a28f3722c111326b90c192a60767db1fc9c1db466cee1",
+    "input.bin": "6d271df8e5bacc76cd38dd506db013c81a40b7f04be57138ba5cb648d2b2f543",
+    "key.hex": "483ca14c736b6e4a192dceec2a991c386e83a757faabd392b67a7ab4f32e0034",
+    "plain.fasta": "2dd677ec8ef8d62116deacde6837d16964b5721213b01a37e81434374f613e89",
+    "plain.vxdna": "50b8189b44a31ea0f996696bdb66080d4d56d4020e3e6f016c3bc8c3d4994bb4",
+    "resumed.vxdna": "0b67217d8cca74cafcdd6976a84c8fce309a05ea1d240b4fbe0d186032e21805"
+  },
+  "generator": "vnx-dna 2.0.0 (tag v2.0.0)"
+}

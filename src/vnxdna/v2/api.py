@@ -29,15 +29,16 @@ from typing import Any
 
 from .. import __version__
 from .. import api as v1
-from ..errors import (IntegrityError, InvalidInputError, OutputError, UnrecoverableCorruptionError, UnsupportedFormatError,
-                      VNXDNAError)
+from ..errors import (ConfigurationError, IntegrityError, InvalidInputError, OutputError, UnrecoverableCorruptionError,
+                      UnsupportedFormatError, VNXDNAError)
 from . import archive as arc
 from .container import container_version
 from .decoder import DecodeOptionsV2, ReadsArchive, discover
 from .encoder import encode_file, read_dna_index
+from .paths import atomic_write_text, check_output_dir, check_output_file, check_temp_dir, refuse_same_file, same_file
 from .profiles import StoreOptionsV2
 from .sequencing import SequencingConfig, sequence_file
-from .strandio import detect_format, iter_batches, StrandWriter, format_for_output, verify_vxs, vxs_info
+from .strandio import detect_format, iter_batches, StrandWriter, format_for_output, verify_vxs
 
 __all__ = ["detect", "store", "encode", "simulate", "sequence", "reads_filter", "cluster", "consensus", "decode", "recover",
            "restore", "verify", "info", "extract", "migrate", "pipeline"]
@@ -284,6 +285,8 @@ def extract(path, output_path, *, offset: int | None = None, length: int | None 
 def _extract_reads(path, output_path, *, offset, length, chunk, key, dna_index, options, workers, overwrite, temp_dir) -> dict[str, Any]:
     started = time.perf_counter()
     p = Path(path)
+    if dna_index is not None and not Path(dna_index).is_file():  # an explicit index must exist (2.0 ignored it silently)
+        raise InvalidInputError(f"DNA index not found: {dna_index}")
     index_path = Path(dna_index) if dna_index is not None else p.with_name(p.name + ".vxidx")
     index = None
     index_note = "no DNA index: every read was scanned, only the needed chunks were assembled"
@@ -296,7 +299,6 @@ def _extract_reads(path, output_path, *, offset, length, chunk, key, dna_index, 
     # first pass: metadata (from the index range when available) to learn the chunk layout
     wanted: list[int] | None = None
     if index is not None:
-        rows = index["chunks"]["rows"]
         with ReadsArchive(p, key, options=options, workers=workers, temp_dir=temp_dir, wanted_chunks=[], dna_index=index) as meta_only:
             loaded = meta_only.loaded
         if loaded.manifest.seal.manifest_sha256 != index["manifest_sha256"]:
@@ -457,7 +459,7 @@ def describe(loaded: arc.LoadedV2, source: dict[str, Any]) -> dict[str, Any]:
     total = strands + meta_strands
     original = loaded.content.size if loaded.content is not None else None
     codecs = np.bincount(loaded.index["codec"], minlength=3).tolist()
-    return {**source, "format": f"VNX-DNA archive format {m.format_version}", "encoder": f"{m.encoder.name} {m.encoder.version}",
+    return {**source, "format_version": m.format_version, "format": f"VNX-DNA archive format {m.format_version}", "encoder": f"{m.encoder.name} {m.encoder.version}",
             "archive_id": m.archive_id, "profile": m.profile, "created_at": m.created_at, "required_features": m.required_features,
             "manifest_authentication": loaded.authentication, "encryption": m.encryption.algorithm,
             "compression": f"{m.compression.algorithm} (level {m.compression.level}, per-chunk auto)",
@@ -524,23 +526,70 @@ def pipeline(input_path, output_path, *, work_dir=None, options: StoreOptionsV2 
              cleanup: str = "keep", overwrite: bool = False, temp_dir=None, report_path=None) -> dict[str, Any]:
     """store → encode → [sequence → cluster → consensus] → decode → restore → verify, with real files.
 
-    ``cleanup``: ``keep`` (all intermediates), ``outputs`` (keep the strand
-    file and reports, delete the rest) or ``all`` (keep only the recovered file
-    and the report). The recovered file is compared with the input by streaming
-    SHA-256 and a byte comparison, independently of the archive's own checks.
+    ``cleanup`` (for an explicit ``work_dir``): ``keep`` (all intermediates),
+    ``outputs`` (keep the strand file and reports, delete the rest) or ``all``
+    (keep only the recovered file and the report). Without ``work_dir`` the
+    intermediates go to a temporary directory that is always removed at the
+    end, on success or failure (VNX-DNA 2.0 left it behind). The recovered file
+    is compared with the input by streaming SHA-256 and a byte comparison,
+    independently of the archive's own checks.
     """
     started = time.perf_counter()
     src = Path(input_path)
-    work = Path(work_dir) if work_dir is not None else Path(tempfile.mkdtemp(prefix="vnxdna-pipeline-", dir=temp_dir))
-    work.mkdir(parents=True, exist_ok=True)
+    # everything that can be checked up front is checked before the first stage (VNX-DNA 2.0 found an existing
+    # output only at the restore step and an invalid strand format only after store)
+    if cleanup not in ("keep", "outputs", "all"):
+        raise ConfigurationError("cleanup must be keep, outputs or all")
+    if strand_format not in (None, "fasta", "vxs"):
+        raise ConfigurationError("strand_format must be fasta or vxs")
+    check_output_file(output_path, overwrite=overwrite)
+    if report_path is not None:
+        check_output_file(report_path, overwrite=overwrite, what="report")
+    check_temp_dir(temp_dir)
+    if work_dir is None:
+        work = Path(tempfile.mkdtemp(prefix="vnxdna-pipeline-", dir=temp_dir))
+        try:
+            return _pipeline(src, output_path, work, True, options=options, key=key, channel=channel, strand_format=strand_format,
+                             workers=workers, decode_options=decode_options, use_consensus=use_consensus, resume=resume,
+                             cleanup=cleanup, overwrite=overwrite, temp_dir=temp_dir, report_path=report_path, started=started)
+        finally:
+            shutil.rmtree(work, ignore_errors=True)
+    work = check_output_dir(work_dir, what="work directory")
+    return _pipeline(src, output_path, work, False, options=options, key=key, channel=channel, strand_format=strand_format,
+                     workers=workers, decode_options=decode_options, use_consensus=use_consensus, resume=resume, cleanup=cleanup,
+                     overwrite=overwrite, temp_dir=temp_dir, report_path=report_path, started=started)
+
+
+def _pipeline(src: Path, output_path, work: Path, temporary: bool, *, options, key, channel, strand_format, workers, decode_options,
+              use_consensus, resume, cleanup, overwrite, temp_dir, report_path, started) -> dict[str, Any]:
     stem = src.name
     big = src.stat().st_size > 256 * 1024 * 1024
     fmt = strand_format or ("vxs" if big and (channel is None or not channel.changes_length) else "fasta")
     container = work / f"{stem}.vxdna"
     strands = work / f"{stem}.{fmt}"
     decoded = work / f"{stem}.decoded.vxdna"
+    raw_reads = clusters = cons = None
+    need_consensus = False
+    if channel is not None:
+        reads_fmt = "vxs" if fmt == "vxs" and not (channel.changes_length or channel.n_rate or channel.contamination_rate) else "fastq"
+        raw_reads = work / f"{stem}.reads.{reads_fmt}"
+        need_consensus = use_consensus if use_consensus is not None else (channel.coverage > 1 and reads_fmt == "fastq")
+        if need_consensus:
+            clusters, cons = work / f"{stem}.clusters.jsonl", work / f"{stem}.consensus.fasta"
+    index = strands.with_name(strands.name + ".vxidx")
+    planned = [p for p in (container, strands, index, raw_reads, clusters, cons, decoded) if p is not None]
+    # Every intermediate is checked before the first stage (V3 release review: with --work-dir, existing files such as
+    # the user's own photo.jpg.vxdna were overwritten without --force, and --cleanup then deleted them).
+    for path in planned:
+        refuse_same_file(path, src, output_path, report_path, what="pipeline intermediate")
+    if not temporary and not overwrite and not resume:
+        existing = [p.name for p in planned if os.path.lexists(p)]
+        if existing:
+            raise OutputError(f"work directory {work} already holds {', '.join(existing)}; use --force to overwrite them, "
+                              "--resume to continue an earlier pipeline run, or another --work-dir")
     steps: dict[str, Any] = {}
     timings: dict[str, float] = {}
+    produced: list[Path] = []  # intermediates this run wrote or verified as its own; the only files cleanup may delete
 
     def run(name, fn, *args, **kwargs):
         t = time.perf_counter()
@@ -552,25 +601,26 @@ def pipeline(input_path, output_path, *, work_dir=None, options: StoreOptionsV2 
         steps["store"] = {"status": "SKIPPED", "reason": "resume: complete container for this exact input (size and SHA-256 checked)"}
     else:
         run("store", arc.store_file, src, container, options=options, key=key, overwrite=True, resume=resume, workers=workers)
+    produced.append(container)
     if resume and _strands_match(strands, container):
         steps["encode"] = {"status": "SKIPPED", "reason": "resume: complete strand file for this container (DNA index checked)"}
     else:
         run("encode", encode_file, container, strands, fmt=fmt, workers=workers, overwrite=True)
+    produced += [strands, index]
     reads = strands
     if channel is not None:
-        reads_fmt = "vxs" if fmt == "vxs" and not (channel.changes_length or channel.n_rate or channel.contamination_rate) else "fastq"
-        reads = work / f"{stem}.reads.{reads_fmt}"
-        run("sequence", sequence_file, strands, reads, channel, fmt=reads_fmt, overwrite=True, temp_dir=temp_dir)
-        need_consensus = use_consensus if use_consensus is not None else (channel.coverage > 1 and reads_fmt == "fastq")
+        run("sequence", sequence_file, strands, raw_reads, channel, fmt=reads_fmt, overwrite=True, temp_dir=temp_dir)
+        produced.append(raw_reads)
+        reads = raw_reads
         if need_consensus:
             from .cluster import cluster_file
             from .consensus import consensus_file
-            clusters = work / f"{stem}.clusters.jsonl"
-            cons = work / f"{stem}.consensus.fasta"
-            run("cluster", cluster_file, reads, clusters, workers=workers, overwrite=True, temp_dir=temp_dir)
+            run("cluster", cluster_file, raw_reads, clusters, workers=workers, overwrite=True, temp_dir=temp_dir)
             run("consensus", consensus_file, clusters, cons, overwrite=True)
+            produced += [clusters, cons]
             reads = cons
     run("decode", decode, reads, decoded, options=decode_options, workers=workers, overwrite=True, temp_dir=temp_dir)
+    produced.append(decoded)
     run("restore", arc.restore_file, decoded, output_path, key=key, workers=workers, overwrite=overwrite)
     run("verify", arc.verify_container, decoded, key=key, against=output_path, workers=workers)
     identical, in_sha, out_sha = _compare_files(src, Path(output_path))
@@ -578,19 +628,23 @@ def pipeline(input_path, output_path, *, work_dir=None, options: StoreOptionsV2 
         raise IntegrityError("pipeline output differs from the input despite passing verification")
     container_identical = _files_equal(container, decoded)
     removed = []
-    if cleanup in ("outputs", "all"):
-        for path in [container, decoded] + [work / f"{stem}.clusters.jsonl"] + ([] if cleanup == "outputs" else [strands, reads]):
-            if path.exists() and path != Path(output_path):
+    if cleanup in ("outputs", "all") and not temporary:
+        doomed = [container, decoded, clusters]
+        if cleanup == "all":  # every intermediate, including the raw reads and the DNA index (2.0 kept both)
+            doomed += [strands, index, raw_reads, cons]
+        for path in dict.fromkeys(p for p in doomed if p is not None and p in produced):
+            if path.exists() and not same_file(path, output_path):
                 path.unlink()
                 removed.append(path.name)
     report = {"status": "RECOVERED" if steps["decode"].get("status") == "RECOVERED" else "SUCCESS", "operation": "pipeline",
               "simulation": "SOFTWARE SIMULATION" if channel is not None else None, "input": str(src), "output": str(output_path),
-              "work_dir": str(work), "strand_format": fmt, "bytes_identical": identical, "input_sha256": in_sha, "output_sha256": out_sha,
+              "work_dir": str(work) + (" (temporary; removed)" if temporary else ""), "strand_format": fmt, "bytes_identical": identical, "input_sha256": in_sha, "output_sha256": out_sha,
               "container_roundtrip_identical": container_identical, "steps": steps, "timings_s": timings,
-              "cleanup": {"policy": cleanup, "removed": removed}, "version": __version__,
+              "cleanup": {"policy": "temporary work directory removed" if temporary else cleanup, "removed": removed},
+              "version": __version__,
               "elapsed_s": time.perf_counter() - started}
     if report_path is not None:
-        Path(report_path).write_text(json.dumps(report, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8")
+        atomic_write_text(report_path, json.dumps(report, indent=2, sort_keys=True, default=str) + "\n")
     return report
 
 

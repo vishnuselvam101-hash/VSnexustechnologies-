@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=75"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,7 +8,8 @@ dynamic = ["version"]
 description = "VNX-DNA: scalable computational DNA data storage (streaming archives, AES-256-GCM, MDS erasure coding, DNA encoding, sequencing simulation, clustering, consensus, recovery)"
 readme = "README.md"
 requires-python = ">=3.12"
-license = {text = "MIT"}
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [{name = "VS Nexus Technologies"}]
 dependencies = [
     "numpy>=2.0,<3",
@@ -20,11 +21,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8,<9", "pytest-cov>=6,<8", "hypothesis>=6.100,<7"]
+dev = ["pytest>=8,<9", "pytest-cov>=6,<8", "hypothesis>=6.100,<7", "ruff>=0.6,<1"]
 
 [project.scripts]
-vnx-dna = "vnxdna.cli:app"
-vnxdna = "vnxdna.cli:app"
+vnx-dna = "vnxdna._entry:main"
+vnxdna = "vnxdna._entry:main"
 
 [tool.setuptools.dynamic]
 version = {attr = "vnxdna._version.__version__"}
@@ -40,3 +41,21 @@ markers = ["slow: long-running exhaustive/statistical tests (run by default; des
 
 [tool.coverage.run]
 source = ["vnxdna"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 140
+# Archived historical code is kept exactly as it was found (see research/legacy/README.md).
+extend-exclude = ["research/legacy", "research/v0_1_forensics", "research/v2/overview_pdf"]
+
+[tool.ruff.lint]
+select = ["F"]  # pyflakes: undefined names, unused imports/variables, redefinitions
+
+[tool.ruff.lint.per-file-ignores]
+# The V1 (1.0.0) modules are kept byte-identical to the v1.0.0 release (V1 archives are read by the exact code that
+# wrote them); only their unused imports are reported here, which cannot affect behaviour.
+"src/vnxdna/api.py" = ["F401"]
+"src/vnxdna/bench.py" = ["F401"]
+"src/vnxdna/channel.py" = ["F401"]
+"src/vnxdna/cli_v1.py" = ["F401", "F541"]
+"tests/conftest.py" = ["F401"]  # re-exports for older imports

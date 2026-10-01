@@ -1,0 +1,15 @@
+# keep the build context to what the image needs (pyproject.toml, README.md, LICENSE, src/)
+.git
+.github
+.venv
+build
+dist
+docs
+research
+tests
+**/__pycache__
+**/*.egg-info
+.hypothesis
+.pytest_cache
+.ruff_cache
+.env*

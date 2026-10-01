@@ -35,7 +35,9 @@ from __future__ import annotations
 
 import hashlib
 import os
-from dataclasses import dataclass
+import tempfile
+import threading
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from ..errors import InvalidInputError, MetadataError, OutputError, UnsupportedFormatError
@@ -66,6 +68,31 @@ def header_bytes() -> bytes:
     return MAGIC + FILE_VERSION.to_bytes(2, "big") + (0).to_bytes(2, "big") + (0).to_bytes(4, "big")
 
 
+def publish(tmp: Path, target: Path, *, overwrite: bool) -> None:
+    """Rename a finished temporary file into place.
+
+    Without ``overwrite`` the file is hard-linked (fails if ``target`` appeared
+    meanwhile) instead of renamed, so a file created after the up-front
+    existence check is never replaced silently. File systems without hard
+    links fall back to the rename.
+    """
+    if overwrite:
+        os.replace(tmp, target)
+        return
+    try:
+        os.link(tmp, target)
+    except FileExistsError:
+        raise OutputError(f"output already exists: {target} (created while this command ran; use --force to overwrite)") from None
+    except OSError:
+        # hard links unsupported here (EPERM, EXDEV, ENOTSUP, ENOSYS, EINVAL, EACCES on some FUSE/SMB mounts ...):
+        # fall back to a checked rename (a file created in the instant between the check and the rename is replaced)
+        if target.exists():
+            raise OutputError(f"output already exists: {target} (created while this command ran; use --force to overwrite)") from None
+        os.replace(tmp, target)
+        return
+    os.unlink(tmp)
+
+
 def fsync_dir(path: Path) -> None:
     try:
         fd = os.open(path, os.O_RDONLY)
@@ -87,13 +114,19 @@ class ContainerWriter:
     caller re-feeds the existing prefix through :meth:`rehash_prefix`.
     """
 
-    def __init__(self, target: str | os.PathLike, *, overwrite: bool = False):
+    def __init__(self, target: str | os.PathLike, *, overwrite: bool = False, resumable: bool = False):
         self.target = Path(target)
         if self.target.exists() and self.target.is_dir():
             raise OutputError(f"output is a directory: {self.target}")
         if self.target.exists() and not overwrite:
             raise OutputError(f"output already exists: {self.target} (use --force to overwrite)")
-        self.partial = self.target.with_name(self.target.name + ".partial")
+        # A resumable store needs a predictable name (``<output>.partial``, next to its checkpoint); the caller removes a
+        # stale one first and the file is then created exclusively. Every other writer (decode) uses a private, uniquely
+        # named temporary file: a fixed name was opened with O_TRUNC through any symlink planted there, and an input
+        # that happened to be called ``<output>.partial`` was truncated (V3 release review).
+        self.resumable = resumable
+        self.partial = self.target.with_name(self.target.name + ".partial") if resumable else None
+        self.overwrite = overwrite
         self.file_hash = hashlib.sha256()
         self.body_hash = hashlib.sha256()
         self.body_bytes = 0
@@ -102,9 +135,13 @@ class ContainerWriter:
     def start_fresh(self) -> None:
         try:
             self.target.parent.mkdir(parents=True, exist_ok=True)
-            fd = os.open(self.partial, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            if self.resumable:
+                fd = os.open(self.partial, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0), 0o600)
+            else:
+                fd, tmp = tempfile.mkstemp(prefix="." + self.target.name + ".", suffix=".partial", dir=self.target.parent)
+                self.partial = Path(tmp)
         except OSError as error:
-            raise OutputError(f"cannot write {self.partial}: {error.strerror or error}") from None
+            raise OutputError(f"cannot write {self.partial or self.target}: {error.strerror or error}") from None
         self.handle = os.fdopen(fd, "wb")
         head = header_bytes()
         self.handle.write(head)
@@ -178,7 +215,9 @@ class ContainerWriter:
         self.handle.close()
         self.handle = None
         try:
-            os.replace(self.partial, self.target)
+            publish(self.partial, self.target, overwrite=self.overwrite)
+        except OutputError:
+            raise
         except OSError as error:
             raise OutputError(f"cannot publish {self.target}: {error.strerror or error}") from None
         fsync_dir(self.target.parent)
@@ -190,7 +229,7 @@ class ContainerWriter:
                 self.handle.close()
             finally:
                 self.handle = None
-        if remove:
+        if remove and self.partial is not None:
             self.partial.unlink(missing_ok=True)
 
 
@@ -245,32 +284,47 @@ class ContainerFileV2:
         return cls(p, size, body, footer[:m_len], footer[m_len:m_len + i_len], footer[m_len + i_len:], tail[32:])
 
     _fd: int | None = None
+    _fd_lock: threading.Lock = field(default_factory=threading.Lock, repr=False, compare=False)
 
     def read_stored(self, offset: int, size: int) -> bytes:
         """Read stored bytes with ``pread`` (thread-safe; one descriptor per opened container)."""
         if offset < 0 or size < 0 or offset + size > self.body_bytes:
             raise InvalidInputError("chunk lies outside the container body")
         if self._fd is None:
-            self._fd = os.open(self.path, os.O_RDONLY)
+            with self._fd_lock:  # worker threads race on the first read; open exactly one descriptor (VNX-DNA 2.0 leaked)
+                if self._fd is None:
+                    self._fd = os.open(self.path, os.O_RDONLY)
         data = os.pread(self._fd, size, HEADER_BYTES + offset)
         if len(data) != size:
             raise InvalidInputError("container body ended early")
         return data
 
     def close(self) -> None:
-        if self._fd is not None:
-            os.close(self._fd)
-            self._fd = None
+        with self._fd_lock:
+            if self._fd is not None:
+                os.close(self._fd)
+                self._fd = None
 
     def verify_trailer(self) -> bool:
         """Stream the whole file through SHA-256 and compare with the trailer (bounded memory)."""
+        return self.verify_trailer_and_body()[0]
+
+    def verify_trailer_and_body(self) -> tuple[bool, str | None]:
+        """One streaming pass: (whole-file SHA-256 equals the trailer, SHA-256 hex of the body or None if unreadable)."""
         h = hashlib.sha256()
+        body = hashlib.sha256()
         remaining = self.size - 32
+        position = 0
+        body_start, body_end = HEADER_BYTES, HEADER_BYTES + self.body_bytes
         with self.path.open("rb") as handle:
             while remaining:
                 block = handle.read(min(READ_BLOCK, remaining))
                 if not block:
-                    return False
+                    return False, None
                 h.update(block)
+                lo, hi = max(body_start - position, 0), min(body_end - position, len(block))
+                if lo < hi:
+                    body.update(block[lo:hi])
+                position += len(block)
                 remaining -= len(block)
-        return h.digest() == self.stored_trailer
+        return h.digest() == self.stored_trailer, body.hexdigest()

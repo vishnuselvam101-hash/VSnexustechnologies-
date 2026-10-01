@@ -51,11 +51,12 @@ from ..errors import (AuthenticationError, ConfigurationError, IntegrityError, I
                       OutputError, VNXDNAError, WrongKeyError)
 from . import crypto
 from . import manifest as mf
-from .container import ContainerFileV2, ContainerWriter, fsync_dir
+from .container import ContainerFileV2, ContainerWriter, fsync_dir, publish
+from .paths import atomic_write_text, refuse_same_file
 from .profiles import StoreOptionsV2
 
 SIDECAR_ENTRY = mf.INDEX_DTYPE.itemsize + mf.PLAIN_DTYPE.itemsize  # 92 bytes per chunk
-CHECKPOINT_FORMAT = "vnx-store-checkpoint-1"
+CHECKPOINT_FORMAT = "vnx-store-checkpoint-2"  # v2 (VNX-DNA 3): HMAC-bound when encrypted
 
 
 def default_workers() -> int:
@@ -111,15 +112,52 @@ def load(manifest_bytes: bytes, index_bytes: bytes, plain_stored: bytes, key: by
     if not crypto.mac_equal(manifest.seal.manifest_hmac_sha256 or "", crypto.mac(keys, payload)):
         raise AuthenticationError("manifest authentication failed: HMAC mismatch (manifest tampered or corrupted)")
     cipher = crypto.ChunkCipher(keys, bytes.fromhex(manifest.archive_id), manifest.chunk_count)
-    content = mf.parse_content(cipher.open(crypto.DOMAIN_CONTENT, 0, manifest.sealed_bytes(), count=1))
+    final_epoch = _final_epoch_of(manifest, index)
+    content = mf.parse_content(_open_final(cipher, crypto.DOMAIN_CONTENT, manifest.sealed_bytes(), final_epoch))
     mf.check_content(manifest, content)
-    plain = mf.parse_plain_index(manifest, cipher.open(crypto.DOMAIN_PLAIN_INDEX, 0, plain_stored, count=1), content)
+    plain = mf.parse_plain_index(manifest, _open_final(cipher, crypto.DOMAIN_PLAIN_INDEX, plain_stored, final_epoch), content)
     return LoadedV2(manifest, manifest_bytes, index, index_bytes, plain_stored, plain, content, cipher, "hmac-sha256")
+
+
+def final_seal_epoch(index: np.ndarray) -> int:
+    """The newest chunk AEAD epoch (0 for a store that was never resumed)."""
+    return int(index["epoch"].max()) if index.size else 0
+
+
+def _final_epoch_of(manifest: mf.Manifest, index: np.ndarray) -> int:
+    """AEAD epoch of the sealed content record and plaintext index.
+
+    Epoch 0 unless the manifest declares ``final-seal-epoch-v3`` (VNX-DNA 3, resumed encrypted stores), in which
+    case it is the newest chunk epoch from the authenticated chunk index. VNX-DNA 2.0 always used 0.
+    """
+    return final_seal_epoch(index) if mf.FEATURE_FINAL_SEAL_EPOCH in manifest.required_features else 0
+
+
+def _open_final(cipher: crypto.ChunkCipher, domain: int, ciphertext: bytes, epoch: int) -> bytes:
+    return cipher.open(domain, 0, ciphertext, count=1, epoch=epoch)
+
+
+def check_body_length(cf: ContainerFileV2, loaded: LoadedV2) -> None:
+    """The container body must be exactly the stored chunks the authenticated index describes.
+
+    The index tiles ``[0, stored_size)`` contiguously and every chunk carries a
+    SHA-256, so with this check every body byte is covered by a verified hash
+    (VNX-DNA 2.0 did not compare the lengths, so padding after the last chunk went unnoticed).
+    """
+    if cf.body_bytes != loaded.manifest.stored_size:
+        raise MetadataError(f"container body is {cf.body_bytes} bytes but the manifest records stored_size "
+                            f"{loaded.manifest.stored_size} (padded, truncated or spliced container)")
 
 
 def open_container(path: str | os.PathLike, key: bytes | None, *, require_key: bool = True) -> tuple[ContainerFileV2, LoadedV2]:
     cf = ContainerFileV2.open(path)
-    return cf, load(cf.manifest_bytes, cf.index_bytes, cf.plain_bytes, key, require_key=require_key)
+    try:
+        loaded = load(cf.manifest_bytes, cf.index_bytes, cf.plain_bytes, key, require_key=require_key)
+        check_body_length(cf, loaded)
+    except BaseException:
+        cf.close()
+        raise
+    return cf, loaded
 
 
 # ======================================================================= per-chunk transforms
@@ -211,6 +249,7 @@ class AtomicOutput:
         except OSError as error:
             raise OutputError(f"cannot write {self.target}: {error.strerror or error}") from None
         self.tmp = Path(tmp)
+        self.overwrite = overwrite
         self.handle = os.fdopen(fd, "wb")
         self.hash = hashlib.sha256()
         self.size = 0
@@ -224,7 +263,7 @@ class AtomicOutput:
         self.handle.flush()
         os.fsync(self.handle.fileno())
         self.handle.close()
-        os.replace(self.tmp, self.target)
+        publish(self.tmp, self.target, overwrite=self.overwrite)
         fsync_dir(self.target.parent)
 
     def abort(self) -> None:
@@ -286,15 +325,23 @@ def _sha_prefix(path: Path, length: int) -> str:
     return h.hexdigest()
 
 
-def _write_checkpoint(path: Path, state: dict[str, Any]) -> None:
-    body = {k: v for k, v in state.items() if k != "checkpoint_sha256"}
-    state = {**body, "checkpoint_sha256": hashlib.sha256(mf.canonical_bytes(body)).hexdigest()}
-    tmp = path.with_name(path.name + ".tmp")
-    with tmp.open("w", encoding="ascii") as handle:
-        handle.write(json.dumps(state, sort_keys=True))
-        handle.flush()
-        os.fsync(handle.fileno())
-    os.replace(tmp, path)
+_CHECKPOINT_MAC_LABEL = b"VNX-DNA/5 store checkpoint\x00"
+
+
+def _checkpoint_mac(keys: "crypto.ArchiveKeys | None", body: dict[str, Any]) -> str | None:
+    """HMAC-SHA256 of the checkpoint under the archive MAC key (encrypted stores only).
+
+    The checkpoint records the AEAD epoch; an unkeyed digest alone would let
+    anyone with write access roll the epoch back and make a resume reuse nonces.
+    """
+    return crypto.mac(keys, _CHECKPOINT_MAC_LABEL + mf.canonical_bytes(body)) if keys is not None else None
+
+
+def _write_checkpoint(path: Path, state: dict[str, Any], keys: "crypto.ArchiveKeys | None" = None) -> None:
+    body = {k: v for k, v in state.items() if k not in ("checkpoint_sha256", "checkpoint_hmac")}
+    state = {**body, "checkpoint_sha256": hashlib.sha256(mf.canonical_bytes(body)).hexdigest(),
+             "checkpoint_hmac": _checkpoint_mac(keys, body)}
+    atomic_write_text(path, json.dumps(state, sort_keys=True), encoding="ascii")
 
 
 def _read_checkpoint(path: Path) -> dict[str, Any]:
@@ -302,12 +349,25 @@ def _read_checkpoint(path: Path) -> dict[str, Any]:
         state = json.loads(path.read_text(encoding="ascii"))
     except (OSError, ValueError, UnicodeDecodeError) as error:
         raise InvalidInputError(f"checkpoint {path} is unreadable: {error}") from None
+    if isinstance(state, dict) and state.get("format") == "vnx-store-checkpoint-1":
+        raise InvalidInputError(f"{path} was written by VNX-DNA 2.0, whose checkpoints are not authenticated; "
+                                "run without --resume to start over")
     if not isinstance(state, dict) or state.get("format") != CHECKPOINT_FORMAT:
         raise InvalidInputError(f"{path} is not a VNX-DNA store checkpoint")
-    body = {k: v for k, v in state.items() if k != "checkpoint_sha256"}
+    body = {k: v for k, v in state.items() if k not in ("checkpoint_sha256", "checkpoint_hmac")}
     if hashlib.sha256(mf.canonical_bytes(body)).hexdigest() != state.get("checkpoint_sha256"):
         raise InvalidInputError(f"checkpoint {path} is corrupted (its SHA-256 does not match)")
     return state
+
+
+def _max_sidecar_epoch(path: Path) -> int:
+    """Largest AEAD epoch among all complete entries of an index sidecar (including those past the checkpoint)."""
+    data = path.read_bytes()
+    n = len(data) // SIDECAR_ENTRY
+    if not n:
+        return 0
+    entries = np.frombuffer(data[: n * SIDECAR_ENTRY], dtype=np.uint8).reshape(n, SIDECAR_ENTRY)
+    return int(entries[:, :mf.INDEX_DTYPE.itemsize].copy().view(mf.INDEX_DTYPE)["epoch"].max())
 
 
 def store_file(input_path: str | os.PathLike, output_path: str | os.PathLike, *, options: StoreOptionsV2 = StoreOptionsV2(),
@@ -326,20 +386,29 @@ def store_file(input_path: str | os.PathLike, output_path: str | os.PathLike, *,
     size = st.st_size
     cs = options.chunk_size
     n = max(1, -(-size // cs))
-    if n > mf.MAX_CHUNKS:
-        raise ConfigurationError(f"{n} chunks exceed the format limit of {mf.MAX_CHUNKS}; use a larger chunk size")
-    name = _safe_name(src.name) if options.store_name else None
+    # The container trailer stores the chunk-index length in 32 bits, which caps the chunk count below MAX_CHUNKS
+    # (VNX-DNA 2.0 found this out only in finish(), after the whole input had been processed).
+    limit = min(mf.MAX_CHUNKS, 0xFFFFFFFF // mf.INDEX_DTYPE.itemsize)
+    if n > limit:
+        raise ConfigurationError(f"{n} chunks exceed the format limit of {limit}; use a larger chunk size")
+    # a name that is not valid UTF-8 (surrogate escapes from the OS) is stored with U+FFFD replacements
+    name = _safe_name(src.name.encode("utf-8", "surrogateescape").decode("utf-8", "replace")) if options.store_name else None
     stripe_bytes = options.data_shards * options.payload_bytes
 
-    writer = ContainerWriter(output_path, overwrite=overwrite)
+    writer = ContainerWriter(output_path, overwrite=overwrite, resumable=True)
     ckpt_path = writer.partial.with_name(writer.partial.name + ".ckpt")
     sidecar_path = writer.partial.with_name(writer.partial.name + ".idx")
+    # the resumable work files have fixed names; an input that is one of them would be deleted as a stale partial
+    # (V3 release review: `store movie.mkv.partial -o movie.mkv` destroyed its input)
+    for work_file in (Path(output_path), writer.partial, ckpt_path, sidecar_path):
+        refuse_same_file(work_file, src, what="the store's work file")
     options_sha = _options_digest(options)
     start_chunk = 0
     discarded_partial = False
     plain_hash = hashlib.sha256()
     next_stripe = 0
     epoch = 0  # AEAD epoch of the chunks this run seals; every resume uses a new one (see vnxdna.v2.crypto)
+    resumed = False
 
     if resume and ckpt_path.exists():
         state = _read_checkpoint(ckpt_path)
@@ -360,13 +429,21 @@ def store_file(input_path: str | os.PathLike, output_path: str | os.PathLike, *,
             keys = crypto.ArchiveKeys.derive(key, salt)
             if keys.check.hex() != state["key_check"]:
                 raise WrongKeyError("cannot resume: the key differs from the interrupted run")
-            epoch = int(state.get("epoch", 0)) + 1
-            if epoch > crypto.MAX_EPOCH:
-                raise InvalidInputError(f"cannot resume: this archive was resumed {crypto.MAX_EPOCH} times; run without --resume")
+            body = {k: v for k, v in state.items() if k not in ("checkpoint_sha256", "checkpoint_hmac")}
+            if not crypto.mac_equal(str(state.get("checkpoint_hmac") or ""), _checkpoint_mac(keys, body) or ""):
+                raise InvalidInputError("cannot resume: the checkpoint is not authenticated by this key "
+                                        "(modified, or written by an older version). Run without --resume to start over.")
         done, body_bytes = state["chunks_done"], state["body_bytes"]
         if not sidecar_path.exists() or sidecar_path.stat().st_size < done * SIDECAR_ENTRY \
                 or _sha_prefix(sidecar_path, done * SIDECAR_ENTRY) != state["sidecar_sha256"]:
             raise InvalidInputError("cannot resume: the index sidecar does not match the checkpoint")
+        if key is not None:
+            # The new epoch must exceed every epoch already used, not only the checkpoint's: an older (still authentic)
+            # checkpoint may have been put back after a later resume sealed more chunks. Those chunks' sidecar entries
+            # lie beyond the checkpoint's prefix and are about to be truncated; their epochs are read first.
+            epoch = max(int(state.get("epoch", 0)), _max_sidecar_epoch(sidecar_path)) + 1
+            if epoch > crypto.MAX_EPOCH:
+                raise InvalidInputError(f"cannot resume: this archive was resumed {crypto.MAX_EPOCH} times; run without --resume")
         with sidecar_path.open("r+b") as handle:
             handle.truncate(done * SIDECAR_ENTRY)
             side = handle.read()
@@ -389,6 +466,7 @@ def store_file(input_path: str | os.PathLike, output_path: str | os.PathLike, *,
                     raise InvalidInputError(f"cannot resume: chunk {c} of the input no longer matches the partial archive")
                 plain_hash.update(plain)
         start_chunk = done
+        resumed = True
         next_stripe = int(index_part["first_stripe"][-1]) + int(index_part["stripe_count"][-1]) if done else 0
     else:
         if writer.partial.exists() or ckpt_path.exists():
@@ -399,7 +477,7 @@ def store_file(input_path: str | os.PathLike, output_path: str | os.PathLike, *,
             salt, archive_id = crypto.new_salt(), os.urandom(16)
             keys = crypto.ArchiveKeys.derive(key, salt)
         writer.start_fresh()
-        sidecar_path.write_bytes(b"")
+        os.close(os.open(sidecar_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0), 0o600))
 
     cipher = crypto.ChunkCipher(keys, archive_id, n) if key is not None else None
     base_state = {"format": CHECKPOINT_FORMAT, "input": {"path": str(src.resolve()), "size": size, "mtime_ns": st.st_mtime_ns},
@@ -415,7 +493,13 @@ def store_file(input_path: str | os.PathLike, output_path: str | os.PathLike, *,
         sidecar.flush()
         os.fsync(sidecar.fileno())
         _write_checkpoint(ckpt_path, {**base_state, "chunks_done": done, "body_bytes": writer.body_bytes,
-                                      "sidecar_sha256": _sha_prefix(sidecar_path, done * SIDECAR_ENTRY)})
+                                      "sidecar_sha256": _sha_prefix(sidecar_path, done * SIDECAR_ENTRY)},
+                          keys if key is not None else None)
+
+    if resumed:
+        # Persist the new AEAD epoch before anything is sealed with it. Otherwise an interruption before the next
+        # periodic checkpoint would leave the old epoch on disk, and a second resume would reuse this run's nonces.
+        checkpoint(start_chunk)
 
     def chunks() -> Iterator[tuple[int, bytes]]:
         with src.open("rb") as handle:
@@ -466,11 +550,15 @@ def store_file(input_path: str | os.PathLike, output_path: str | os.PathLike, *,
         if key is None:
             archive_id = _derive_archive_id(data_sha, options, name)
         content = {"name": name, "size": size, "sha256": data_sha.hex()}
-        plain_stored = cipher.seal(crypto.DOMAIN_PLAIN_INDEX, 0, plain_clear, count=1) if cipher is not None else plain_clear
+        # The sealed records use the newest chunk epoch, so a resume that re-finalises a changed input never
+        # reuses the nonce of an earlier finalisation (readers derive the same epoch from the authenticated index).
+        final_epoch = final_seal_epoch(entries[:, :mf.INDEX_DTYPE.itemsize].copy().view(mf.INDEX_DTYPE).reshape(n))
+        plain_stored = (cipher.seal(crypto.DOMAIN_PLAIN_INDEX, 0, plain_clear, count=1, epoch=final_epoch)
+                        if cipher is not None else plain_clear)
         raw: dict[str, Any] = {
             "format": mf.FORMAT_MAGIC, "format_version": mf.FORMAT_VERSION,
             "encoder": {"name": "vnxdna", "version": __version__},
-            "required_features": sorted(mf.required_features(options.mapping, key is not None)),
+            "required_features": sorted(mf.required_features(options.mapping, key is not None, final_epoch > 0)),
             "archive_id": archive_id.hex(), "created_at": options.timestamp, "profile": options.profile,
             "chunk_size": cs, "chunk_count": n,
             "compression": {"algorithm": options.compression, "level": options.compression_level, "policy": "auto"},
@@ -484,7 +572,8 @@ def store_file(input_path: str | os.PathLike, output_path: str | os.PathLike, *,
             "plain_index": {"format": "vnx-plain-index-1", "entry_bytes": 36, "sealed": key is not None,
                             "stored_bytes": len(plain_stored), "sha256": hashlib.sha256(plain_stored).hexdigest()},
             "content": None if key is not None else content,
-            "sealed_content": (base64.b64encode(cipher.seal(crypto.DOMAIN_CONTENT, 0, mf.canonical_bytes(content), count=1)).decode("ascii")
+            "sealed_content": (base64.b64encode(cipher.seal(crypto.DOMAIN_CONTENT, 0, mf.canonical_bytes(content), count=1,
+                                                             epoch=final_epoch)).decode("ascii")
                                if cipher is not None else None),
             "erasure_code": {"algorithm": "cauchy-rs-gf256", "data_shards": options.data_shards,
                              "parity_shards": options.parity_shards, "stripe_count": next_stripe},
@@ -510,9 +599,13 @@ def store_file(input_path: str | os.PathLike, output_path: str | os.PathLike, *,
         sidecar_path.unlink(missing_ok=True)
         raise
     except BaseException:
-        # interruption (Ctrl-C, disk error ...): keep the partial file and the last checkpoint for --resume
+        # interruption (Ctrl-C, disk error ...): keep the partial file and the last checkpoint for --resume;
+        # without a checkpoint nothing can be resumed, so the partial files are removed
         sidecar.close()
-        writer.close(remove=False)
+        resumable = ckpt_path.exists()
+        writer.close(remove=not resumable)
+        if not resumable:
+            sidecar_path.unlink(missing_ok=True)
         raise
     ckpt_path.unlink(missing_ok=True)
     sidecar_path.unlink(missing_ok=True)
@@ -608,15 +701,19 @@ def verify_container(path: str | os.PathLike, *, key: bytes | None = None, again
         check("container-structure", False, f"{error.category}: {error}")
         return {**report, "status": "FAIL", "error": error.category, "exit_code": error.exit_code, "message": str(error)}
     try:
-        trailer_ok = cf.verify_trailer()
+        trailer_ok, body_sha = cf.verify_trailer_and_body()
         check("container-structure", True, f"{cf.size} bytes, body {cf.body_bytes} bytes")
         check("container-checksum", trailer_ok, "file SHA-256 matches the trailer" if trailer_ok else "file trailer SHA-256 mismatch")
         try:
             loaded = load(cf.manifest_bytes, cf.index_bytes, cf.plain_bytes, key, require_key=False)
+            check_body_length(cf, loaded)
         except VNXDNAError as error:
             check("manifest-and-index", False, f"{error.category}: {error}")
             return {**report, "status": "FAIL", "error": error.category, "exit_code": error.exit_code, "message": str(error)}
         m = loaded.manifest
+        body_ok = body_sha == m.stored_sha256
+        check("stored-body-sha256", body_ok, "body SHA-256 matches the manifest's stored_sha256" if body_ok
+              else "body SHA-256 differs from the manifest's stored_sha256")
         report.update({"archive_id": m.archive_id, "format_version": 5, "encrypted": m.encrypted, "chunks": m.chunk_count})
         check("manifest-and-index", True, f"schema, canonical form and digest; chunk index ({m.chunk_count} entries) consistent")
         auth = loaded.authentication
@@ -632,8 +729,8 @@ def verify_container(path: str | os.PathLike, *, key: bytes | None = None, again
 
         def work(c: int) -> tuple[int, bytes | None, str | None, str | None]:
             record = loaded.index[c]
-            stored = cf.read_stored(int(record["offset"]), int(record["stored_size"]))
             try:
+                stored = cf.read_stored(int(record["offset"]), int(record["stored_size"]))
                 check_stored(loaded, c, stored)
             except VNXDNAError as error:
                 return c, None, "stored", f"{error.category}: {error}"
@@ -675,13 +772,25 @@ def verify_container(path: str | os.PathLike, *, key: bytes | None = None, again
                       f"{len(fc['mismatched_chunks'])} chunk(s) differ; size {fc['file_size']} vs {fc['expected_size']}")
         else:
             report["note"] = "encrypted archive verified at the ciphertext level only; supply the key to verify plaintext"
+            if against is not None:  # VNX-DNA 2.0 ignored --file here silently
+                check("file-matches-archive", False, "not checked: the plaintext index of an encrypted archive is sealed; supply the key")
         report["failures"] = failures[:100]
         report["failure_count"] = len(failures)
     finally:
         cf.close()
     ok = all(c["result"] == "PASS" for c in checks)
     report["status"] = "PASS" if ok else "FAIL"
-    report["exit_code"] = 0 if ok else (4 if any("AUTHENTICATION" in (f.get("message") or "") for f in failures) else 1)
+    key_missing = report.get("encrypted") and "note" in report
+    needs_key_only = {"manifest-authentication", "file-matches-archive"}
+    damaged = any(c["result"] == "FAIL" and c["check"] not in needs_key_only for c in checks)
+    if ok:
+        report["exit_code"] = 0
+    elif any("AUTHENTICATION" in (f.get("message") or "") for f in failures):
+        report["exit_code"] = 4
+    elif key_missing and not damaged:
+        report["exit_code"] = 4  # everything checkable without the key passed; authentication needs the key (KEY_REQUIRED)
+    else:
+        report["exit_code"] = 1
     return report
 
 

@@ -32,7 +32,7 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints, Validation
 from ..container.manifest import _format_validation_error, canonical_bytes, digest_payload, parse_json  # noqa: F401
 from ..dna.mapping import get_mapping
 from ..errors import MetadataError, UnsupportedFormatError
-from .frame import CRC_BYTES, FRAME_FORMAT, HEADER_BYTES
+from .frame import CRC_BYTES, HEADER_BYTES
 
 FORMAT_MAGIC = "VNX-DNA"
 FORMAT_VERSION = 5
@@ -50,6 +50,11 @@ INDEX_DTYPE = np.dtype([("offset", ">u8"), ("stored_size", ">u4"), ("first_strip
 PLAIN_DTYPE = np.dtype([("size", ">u4"), ("sha256", "u1", (32,))])
 assert INDEX_DTYPE.itemsize == 56 and PLAIN_DTYPE.itemsize == 36
 
+# Optional feature (VNX-DNA 3): written only by an encrypted store that was resumed, whose sealed content record and
+# plaintext index are sealed in the newest chunk epoch instead of epoch 0 (so a re-finalisation never reuses a nonce).
+# Every other archive is byte-identical to VNX-DNA 2.0 output; readers without the feature refuse such archives cleanly.
+FEATURE_FINAL_SEAL_EPOCH = "final-seal-epoch-v3"
+
 FEATURES = frozenset({
     "stream-chunked-v2",      # independent chunks, per-chunk codec, binary chunk index in a footer
     "outer-cauchy-rs-v1",     # outer Cauchy RS erasure code over GF(256), one ECC group = one stripe
@@ -58,6 +63,7 @@ FEATURES = frozenset({
     "scrambler-shake128-v2",  # variant-selected keystream screening, VNX-DNA/5 label
     "mapping-2bit", "mapping-rotation3", "mapping-codebook8",
     "aes-256-gcm-hkdf-v2",    # chunked AEAD and manifest MAC with VNX-DNA/5 labels
+    FEATURE_FINAL_SEAL_EPOCH,  # VNX-DNA 3: sealed content and plaintext index use the newest chunk AEAD epoch
 })
 
 Hex16 = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{16}$")]
@@ -192,11 +198,13 @@ class Manifest(_Model):
         return base64.b64decode(self.sealed_content, validate=True)
 
 
-def required_features(mapping: str, encrypted: bool) -> set[str]:
+def required_features(mapping: str, encrypted: bool, final_seal_epoch: bool = False) -> set[str]:
     features = {"stream-chunked-v2", "outer-cauchy-rs-v1", "inner-rs-v1", "frame5-crc32-v1", "scrambler-shake128-v2",
                 f"mapping-{mapping}"}
     if encrypted:
         features.add("aes-256-gcm-hkdf-v2")
+        if final_seal_epoch:
+            features.add(FEATURE_FINAL_SEAL_EPOCH)
     return features
 
 
@@ -234,7 +242,7 @@ def _semantic_checks(m: Manifest) -> None:
     def fail(message: str) -> None:
         raise MetadataError("manifest inconsistency: " + message)
 
-    required = required_features(m.strand.mapping, m.encrypted)
+    required = required_features(m.strand.mapping, m.encrypted, FEATURE_FINAL_SEAL_EPOCH in m.required_features)
     if set(m.required_features) != required or len(m.required_features) != len(required):
         fail(f"required_features must be exactly {sorted(required)}")
     enc = m.encryption

@@ -1,7 +1,7 @@
 """The .vxdna file layout and its failure modes."""
 import pytest
 
-from conftest import FAST
+from v1_support import FAST
 from vnxdna.api import store_bytes
 from vnxdna.container import vxdna
 from vnxdna.errors import InvalidInputError, MetadataError, OutputError, UnsupportedFormatError

@@ -1,0 +1,102 @@
+{
+  "note": "software simulation; coverage 1, fixed, no shuffle, seed 42; restore = decode + verify + write",
+  "size": "10MB",
+  "versions": {
+    "current": "vnx-dna 3.0.0 (writes archive format 5 / container v2 / frame 5; reads formats 5 and 4 and legacy V0.1)",
+    "baseline": "vnx-dna 2.0.0 (writes archive format 5 / container v2 / frame 5; reads formats 5 and 4 and legacy V0.1)"
+  },
+  "machine": {
+    "platform": "Linux-6.8.0-139-generic-x86_64-with-glibc2.39",
+    "python": "3.12.3"
+  },
+  "rows": [
+    {
+      "substitution_rate": 0.0,
+      "current": {
+        "exit": 0,
+        "user_s": 2.04,
+        "sys_s": 0.45,
+        "wall_s": 1.25,
+        "peak_rss_mib": 130.1,
+        "cpu_s": 2.49,
+        "exact": true
+      },
+      "baseline": {
+        "exit": 0,
+        "user_s": 2.02,
+        "sys_s": 0.44,
+        "wall_s": 1.23,
+        "peak_rss_mib": 129.9,
+        "cpu_s": 2.46,
+        "exact": true
+      },
+      "speedup_wall": 0.98
+    },
+    {
+      "substitution_rate": 0.002,
+      "current": {
+        "exit": 0,
+        "user_s": 3.55,
+        "sys_s": 0.44,
+        "wall_s": 1.62,
+        "peak_rss_mib": 141.5,
+        "cpu_s": 3.99,
+        "exact": true
+      },
+      "baseline": {
+        "exit": 0,
+        "user_s": 31.29,
+        "sys_s": 0.5,
+        "wall_s": 8.3,
+        "peak_rss_mib": 141.2,
+        "cpu_s": 31.79,
+        "exact": true
+      },
+      "speedup_wall": 5.12
+    },
+    {
+      "substitution_rate": 0.004,
+      "current": {
+        "exit": 0,
+        "user_s": 4.48,
+        "sys_s": 0.48,
+        "wall_s": 1.91,
+        "peak_rss_mib": 141.4,
+        "cpu_s": 4.96,
+        "exact": true
+      },
+      "baseline": {
+        "exit": 0,
+        "user_s": 50.88,
+        "sys_s": 0.58,
+        "wall_s": 12.8,
+        "peak_rss_mib": 141.2,
+        "cpu_s": 51.46,
+        "exact": true
+      },
+      "speedup_wall": 6.7
+    },
+    {
+      "substitution_rate": 0.006,
+      "current": {
+        "exit": 0,
+        "user_s": 5.31,
+        "sys_s": 0.48,
+        "wall_s": 2.17,
+        "peak_rss_mib": 141.5,
+        "cpu_s": 5.79,
+        "exact": true
+      },
+      "baseline": {
+        "exit": 0,
+        "user_s": 64.12,
+        "sys_s": 0.62,
+        "wall_s": 15.99,
+        "peak_rss_mib": 141.0,
+        "cpu_s": 64.74,
+        "exact": true
+      },
+      "speedup_wall": 7.37
+    }
+  ]
+}

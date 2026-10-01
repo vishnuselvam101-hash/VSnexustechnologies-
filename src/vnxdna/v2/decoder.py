@@ -35,7 +35,6 @@ import tempfile
 import time
 from collections import Counter, deque
 from collections.abc import Callable, Iterable, Iterator
-from concurrent.futures import ProcessPoolExecutor
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -44,13 +43,16 @@ import numpy as np
 
 from ..dna.mapping import get_mapping, reverse_complement_codes
 from ..ecc.cauchy import CauchyErasureCode
+from ..ecc.engine import outer_code
+from ..ecc.inner_rs import MAX_CODEWORD
 from ..errors import (ConfigurationError, InsufficientRedundancyError, IntegrityError, InvalidInputError, MetadataError,
                       UnrecoverableCorruptionError, VNXDNAError)
 from . import manifest as mf
 from .archive import LoadedV2, check_stored, default_workers, load
 from .encoder import META_DATA_SHARDS, META_MAGIC, META_PARITY_SHARDS, geometry_of, used_data_shards
-from .frame import FRAME_FORMAT, KIND_DATA, KIND_META, FrameGeometry, parse_batch, parse_one_corrected
+from .frame import (FRAME_FORMAT, KIND_META, FrameGeometry, parse_batch, parse_many_corrected)
 from .strandio import ReadBatch, detect_format, iter_batches, read_vxs_range, vxs_info
+from .workers import process_pool
 
 BUCKET_TARGET_BYTES = 64 << 20
 SPILL_BLOCK_RECORDS = 1 << 18
@@ -64,12 +66,19 @@ class DecodeOptionsV2:
     max_indel_candidates: int = 4096
     quality_erasure_below: int = 0  # FASTQ bases with Phred < this are treated as erasures (0 = off)
     inner_correction: bool = True   # run the inner RS decoder on reads whose CRC fails
+    archive_tag: str | None = None  # 8 hex digits: decode only this archive from a pool of several (V3)
+    burst_repair: int = 0           # V3: resynchronise reads that lost/gained one contiguous run of up to this many nt (0 = off)
 
     def __post_init__(self) -> None:
         if isinstance(self.max_indel, bool) or not isinstance(self.max_indel, int) or not 0 <= self.max_indel <= 3:
             raise ConfigurationError("max_indel must be an integer in 0..3")
         if not isinstance(self.quality_erasure_below, int) or not 0 <= self.quality_erasure_below <= 60:
             raise ConfigurationError("quality_erasure_below must be an integer in 0..60")
+        if self.archive_tag is not None and (not isinstance(self.archive_tag, str) or len(self.archive_tag) != 8
+                                             or any(c not in "0123456789abcdef" for c in self.archive_tag)):
+            raise ConfigurationError("archive_tag must be 8 lowercase hex digits (the first 4 bytes of the archive ID)")
+        if isinstance(self.burst_repair, bool) or not isinstance(self.burst_repair, int) or not 0 <= self.burst_repair <= 64:
+            raise ConfigurationError("burst_repair must be an integer in 0..64 (nucleotides)")
 
 
 def record_dtype(p: int) -> np.dtype:
@@ -112,6 +121,8 @@ def discover(path: str | os.PathLike, sample: int = 2000, quality_erasure_below:
             if length % mapping.nt_per_byte:
                 continue
             frame_len = length // mapping.nt_per_byte
+            if not _plausible_frame(frame_len):
+                continue
             for oriented in (codes, reverse_complement_codes(codes)):
                 frames, erasures = mapping.decode(oriented)
                 frames = frames[~erasures.any(axis=1)][:100]
@@ -143,6 +154,15 @@ def discover(path: str | os.PathLike, sample: int = 2000, quality_erasure_below:
                                        "(no read passed a frame CRC under any supported geometry)")
 
 
+def _plausible_frame(frame_len: int) -> bool:
+    """A read length can only be a frame-5 strand if its frame fits one RS codeword (header + payload + CRC ≥ 16 bytes).
+
+    VNX-DNA 2.0 built a geometry for any frequent read length, so a few junk reads longer than 1,020 nt aborted
+    the whole decode with a configuration error instead of being skipped.
+    """
+    return 16 <= frame_len <= MAX_CODEWORD
+
+
 PRIORITY_PARITY = (8, 6, 12, 16, 10, 4, 14)
 
 
@@ -165,6 +185,8 @@ def _discover_with_correction(batch: ReadBatch, lengths: Counter, sample: int = 
                 if length % mapping.nt_per_byte:
                     continue
                 frame_len = length // mapping.nt_per_byte
+                if not _plausible_frame(frame_len):
+                    continue
                 candidates = parities if parities is not None else range(2, min(64, frame_len - 16) + 1, 2)
                 for oriented in (codes, reverse_complement_codes(codes)):
                     frames, erasures = mapping.decode(oriented)
@@ -173,12 +195,7 @@ def _discover_with_correction(batch: ReadBatch, lengths: Counter, sample: int = 
                         if p < 1:
                             continue
                         geometry = FrameGeometry(name, p, r)
-                        hits = 0
-                        for i in range(frames.shape[0]):
-                            if parse_one_corrected(geometry, frames[i], erasures[i]) is not None:
-                                hits += 1
-                                if hits >= 2:
-                                    break
+                        hits = min(2, int(parse_many_corrected(geometry, frames, erasures)[0].ok.sum()))
                         if hits >= 2:
                             votes[(name, p, r)] += hits
             if votes:
@@ -205,7 +222,9 @@ def scan_batch(batch: ReadBatch, geometry: FrameGeometry, options: DecodeOptions
     mapping = get_mapping(geometry.mapping)
     invalid = batch.invalid if batch.invalid is not None else np.zeros(batch.count, dtype=bool)
     stats["reads_invalid_symbols"] += int(invalid.sum())
-    exact = (batch.lengths == length) & ~invalid
+    # Symbols other than ACGTN (IUPAC codes, '.', '-') are already erasures (code 4) in the batch; such reads are
+    # decoded like reads with N instead of being dropped (VNX-DNA 2.0 dropped them).
+    exact = batch.lengths == length
     offsets = batch.offsets
     out_parts: list[np.ndarray] = []
 
@@ -241,41 +260,46 @@ def scan_batch(batch: ReadBatch, geometry: FrameGeometry, options: DecodeOptions
             stats["reads_reverse_complement"] += int(pr.ok.sum())
             keep = ~pr.ok
             rest, rc_frames, rc_erasures = rest[keep], rc_frames[keep], rc_erasures[keep]
-        slow_rows = []
-        for j, i in enumerate(rest.tolist()):
-            parsed = None
-            orientation = "forward"
-            if options.inner_correction:
-                parsed = parse_one_corrected(geometry, frames[i], erasures[i])
-                if parsed is None and rc_frames is not None:
-                    parsed = parse_one_corrected(geometry, rc_frames[j], rc_erasures[j])
-                    orientation = "reverse_complement"
-            if parsed is None:
-                stats["reads_rejected"] += 1
-                continue
-            (kind, tag, stripe, shard, payload), count = parsed
-            slow_rows.append((kind, tag, stripe, shard, np.frombuffer(payload, dtype=np.uint8)))
-            stats["reads_valid"] += 1
-            stats["reads_inner_corrected"] += 1
-            stats["inner_symbols_corrected"] += count
-            if orientation == "reverse_complement":
-                stats["reads_reverse_complement"] += 1
-        if slow_rows:
-            emit(*[np.array([r[f] for r in slow_rows]) for f in range(4)], np.stack([r[4] for r in slow_rows]))
-    other = np.flatnonzero(~exact & ~invalid)
+        if rest.size and options.inner_correction:
+            # V3: all reads whose CRC failed are corrected in one vectorised RS pass per orientation.
+            fw, fw_counts = parse_many_corrected(geometry, frames[rest], erasures[rest])
+            emit(fw.kind[fw.ok], fw.tag[fw.ok], fw.stripe[fw.ok], fw.shard[fw.ok], fw.payload[fw.ok])
+            fixed = int(fw.ok.sum())
+            stats["inner_symbols_corrected"] += int(fw_counts[fw.ok].sum())
+            if rc_frames is not None and not fw.ok.all():
+                left = ~fw.ok
+                rc, rc_counts = parse_many_corrected(geometry, rc_frames[left], rc_erasures[left])
+                emit(rc.kind[rc.ok], rc.tag[rc.ok], rc.stripe[rc.ok], rc.shard[rc.ok], rc.payload[rc.ok])
+                fixed += int(rc.ok.sum())
+                stats["inner_symbols_corrected"] += int(rc_counts[rc.ok].sum())
+                stats["reads_reverse_complement"] += int(rc.ok.sum())
+            stats["reads_valid"] += fixed
+            stats["reads_inner_corrected"] += fixed
+            stats["reads_rejected"] += int(rest.size) - fixed
+        else:
+            stats["reads_rejected"] += int(rest.size)
+    other = np.flatnonzero(~exact)
     repaired = []
     for i in other.tolist():
         read = batch.codes[offsets[i]:offsets[i + 1]]
-        if options.indel_repair and 0 < abs(read.size - length) <= options.max_indel:
+        delta = abs(read.size - length)
+        result = None
+        if options.indel_repair and 0 < delta <= options.max_indel:
             from .sync import repair_read
             result = repair_read(read, geometry, max_indel=options.max_indel, max_candidates=options.max_indel_candidates,
                                  reverse_complement=options.reverse_complement)
             if result is not None:
-                (kind, tag, stripe, shard, payload), count, orientation = result
-                repaired.append((kind, tag, stripe, shard, np.frombuffer(payload, dtype=np.uint8)))
-                stats["reads_valid"] += 1
                 stats["reads_indel_repaired"] += 1
-                continue
+        if result is None and options.burst_repair and 0 < delta <= options.burst_repair:
+            from .sync import repair_burst
+            result = repair_burst(read, geometry, max_burst=options.burst_repair, reverse_complement=options.reverse_complement)
+            if result is not None:
+                stats["reads_burst_repaired"] += 1
+        if result is not None:
+            (kind, tag, stripe, shard, payload), count, orientation = result
+            repaired.append((kind, tag, stripe, shard, np.frombuffer(payload, dtype=np.uint8)))
+            stats["reads_valid"] += 1
+            continue
         stats["reads_length_mismatch"] += 1
     if repaired:
         emit(*[np.array([r[f] for r in repaired]) for f in range(4)], np.stack([r[4] for r in repaired]))
@@ -363,7 +387,7 @@ def scan_file(path: str | os.PathLike, geometry: FrameGeometry, options: DecodeO
             for task in tasks():
                 consume(_scan_task(task))
         else:
-            with ProcessPoolExecutor(workers, initializer=_scan_setup, initargs=init) as pool:
+            with process_pool(workers, initializer=_scan_setup, initargs=init) as pool:
                 pending: deque = deque()
                 for task in tasks():
                     pending.append(pool.submit(_scan_task, task))
@@ -411,18 +435,41 @@ def resolve_copies(records: np.ndarray, p: int) -> tuple[np.ndarray, np.ndarray,
     return stripe[first_winner], shard[first_winner], u[first_winner, 5:], stats
 
 
-def recover_metadata(meta: np.ndarray, geometry: FrameGeometry) -> tuple[bytes, bytes, bytes, int]:
-    """Rebuild (manifest, chunk index, plain index, tag) from metadata records."""
+def recover_metadata(meta: np.ndarray, geometry: FrameGeometry, stats: Counter | None = None,
+                     archive_tag: str | None = None) -> tuple[bytes, bytes, bytes, int]:
+    """Rebuild (manifest, chunk index, plain index, tag) from metadata records.
+
+    ``stats`` (optional) receives ``metadata_shards_erased``, ``metadata_groups_repaired`` and the copy-conflict
+    counts, so a decode that needed the outer code for its metadata reports RECOVERED, not SUCCESS.
+    """
+    if archive_tag is not None:
+        meta = meta[meta["tag"] == int(archive_tag, 16)]
+        if not meta.size:
+            raise UnrecoverableCorruptionError(f"no metadata strands of archive {archive_tag} in these reads")
     if not meta.size:
         raise UnrecoverableCorruptionError("no metadata strands survived; the manifest cannot be recovered from DNA")
     tags = np.unique(meta["tag"])
     if tags.size > 1:
-        counts = {int(t): int((meta["tag"] == t).sum()) for t in tags}
-        raise MetadataError(f"reads contain metadata for several archives (tags {[f'{t:08x}' for t in counts]}); separate the pools first",
-                            details={"archive_tags": [f"{t:08x}" for t in counts]})
-    tag = int(tags[0])
+        # Several archives in one pool (V3): use the only one whose metadata decodes; otherwise ask for --archive-tag.
+        # (VNX-DNA 2.0 always refused such pools.) The choice is safe: the manifest is authenticated afterwards and
+        # every data record is filtered by the chosen tag.
+        decodable = []
+        for t in tags.tolist():
+            try:
+                recover_metadata(meta[meta["tag"] == t], geometry, None)
+                decodable.append(t)
+            except VNXDNAError:
+                continue
+        names = [f"{t:08x}" for t in tags.tolist()]
+        if len(decodable) != 1:
+            raise MetadataError(f"reads contain metadata for several archives (tags {names}); choose one with --archive-tag",
+                                details={"archive_tags": names, "decodable": [f"{t:08x}" for t in decodable]})
+        meta = meta[meta["tag"] == decodable[0]]
+        if stats is not None:
+            stats["metadata_other_archives_ignored"] += len(names) - 1
+    tag = int(np.unique(meta["tag"])[0])
     p = geometry.payload_bytes
-    stripes, shards, payloads, _ = resolve_copies(meta, p)
+    stripes, shards, payloads, copy_stats = resolve_copies(meta, p)
     code = CauchyErasureCode(META_DATA_SHARDS, META_PARITY_SHARDS)
     lookup = {(int(s), int(h)): payloads[i] for i, (s, h) in enumerate(zip(stripes.tolist(), shards.tolist()))}
 
@@ -448,7 +495,28 @@ def recover_metadata(meta: np.ndarray, geometry: FrameGeometry) -> tuple[bytes, 
         raise MetadataError("DNA metadata stream declares implausible lengths")
     total = 16 + m_len + i_len + j_len
     stripes_needed = -(-total // (META_DATA_SHARDS * p))
+    # The header lengths are not authenticated yet (the manifest is checked only after it is rebuilt), so they must
+    # not drive allocation beyond what the reads actually contain: a 4 KB forged pool could otherwise demand
+    # gigabytes (VNX-DNA 2.0). Metadata stripes beyond the highest one seen cannot be decoded anyway.
+    # Every needed group must be decodable (at least 8 distinct shards) before anything proportional to
+    # stripes_needed is allocated; np.unique over the records present costs O(records), whatever the header claims.
+    groups, counts = np.unique(stripes[stripes < stripes_needed], return_counts=True)
+    decodable = int((counts >= META_DATA_SHARDS).sum())
+    if decodable < stripes_needed:
+        raise InsufficientRedundancyError(f"the DNA metadata stream needs {stripes_needed} metadata ECC groups but only "
+                                          f"{decodable} have at least {META_DATA_SHARDS} strands in these reads; "
+                                          "the manifest cannot be recovered from DNA",
+                                          details={"metadata_groups_needed": stripes_needed, "metadata_groups_decodable": decodable,
+                                                   "metadata_groups_seen": int(groups.size)})
     stream = head + (decode(list(range(1, stripes_needed))) if stripes_needed > 1 else b"")
+    if stats is not None:
+        used = stripes < stripes_needed
+        per_group = np.bincount(stripes[used], minlength=stripes_needed)
+        missing = code.total_shards - per_group
+        stats["metadata_shards_erased"] += int(missing.sum())
+        stats["metadata_groups_repaired"] += int((missing > 0).sum())
+        for k in ("shards_conflict_majority", "shards_conflict_tie"):
+            stats["metadata_" + k] += int(copy_stats.get(k, 0))
     body = stream[16:total]
     return body[:m_len], body[m_len:m_len + i_len], body[m_len + i_len:], tag
 
@@ -516,7 +584,7 @@ def assemble_chunks(scan: ScanResult, loaded: LoadedV2, workdir: Path, *, wanted
     p = m.strand.payload_bytes
     k = m.erasure_code.data_shards
     n = k + m.erasure_code.parity_shards
-    code = CauchyErasureCode(k, m.erasure_code.parity_shards)
+    code = outer_code(m.erasure_code.algorithm, k, m.erasure_code.parity_shards)  # the code the manifest declares
     first = loaded.index["first_stripe"].astype(np.int64)
     count = loaded.index["stripe_count"].astype(np.int64)
     sizes = loaded.index["stored_size"].astype(np.int64)
@@ -618,8 +686,15 @@ class ReadsArchive:
             if dna_index is not None and wanted_chunks is not None:
                 scan_kwargs.update(_index_ranges(dna_index, wanted_chunks))
             self.scan = scan_file(self.path, geometry, options, self.workdir, workers=self.workers, progress=progress, **scan_kwargs)
-            manifest_bytes, index_bytes, plain_bytes, tag = recover_metadata(self.scan.meta, geometry)
+            self.meta_stats: Counter = Counter()
+            manifest_bytes, index_bytes, plain_bytes, tag = recover_metadata(self.scan.meta, geometry, self.meta_stats,
+                                                                                options.archive_tag)
             self.loaded = load(manifest_bytes, index_bytes, plain_bytes, key, require_key=require_key)
+            if self.loaded.manifest.archive_tag != tag or (options.archive_tag is not None
+                                                            and self.loaded.manifest.archive_tag != int(options.archive_tag, 16)):
+                # the strand tag is covered only by the unkeyed CRC: re-tagged metadata must not select another archive
+                raise MetadataError(f"the metadata strands carry archive tag {tag:08x} but the manifest they encode belongs to "
+                                    f"archive {self.loaded.manifest.archive_id} (re-tagged or mixed metadata strands)")
             if geometry_of(self.loaded.manifest) != geometry:
                 raise MetadataError("the recovered manifest describes a different strand geometry than the reads")
             self.stats: Counter = Counter()
@@ -637,12 +712,14 @@ class ReadsArchive:
         tag = self.loaded.manifest.archive_tag
         reads["reads_foreign_archive"] = sum(c for t, c in self.scan.tags.items() if t != tag)
         repaired = any(self.stats.get(k, 0) for k in ("stripes_outer_recovered", "shards_conflict_majority", "shards_conflict_tie")) \
-            or any(reads.get(k, 0) for k in ("reads_inner_corrected", "reads_indel_repaired"))
+            or any(reads.get(k, 0) for k in ("reads_inner_corrected", "reads_indel_repaired", "reads_burst_repaired")) \
+            or any(self.meta_stats.get(k, 0) for k in ("metadata_groups_repaired", "metadata_shards_conflict_majority",
+                                                       "metadata_shards_conflict_tie"))
         return {"input": str(self.path), "input_kind": "dna-reads", "frame_format": FRAME_FORMAT,
                 "geometry": self.geometry.to_dict(), "archive_id": self.loaded.manifest.archive_id,
                 "encrypted": self.loaded.manifest.encrypted, "manifest_source": "dna-metadata-strands",
                 "manifest_authentication": self.loaded.authentication, "reads": reads,
-                "recovery": {k: v for k, v in self.stats.items()}, "validated_records_spilled": self.scan.records,
+                "recovery": {**{k: v for k, v in self.stats.items()}, **dict(self.meta_stats)}, "validated_records_spilled": self.scan.records,
                 "records_in_stripe_order": self.scan.sorted_by_stripe, "status": "RECOVERED" if repaired else "SUCCESS",
                 "elapsed_s": time.perf_counter() - self.started}
 

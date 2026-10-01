@@ -17,8 +17,16 @@ Model, per strand of the input pool (a designed strand = one molecule species):
    between reads. They are not reflected in quality scores.
 4. Per read, **sequencing errors**: substitution, then deletion, then
    insertion of a uniform random base after the position, per base.
-5. **Truncation**: with probability ``truncation_rate`` a read keeps only a
-   uniform prefix of 50–99 % of its length.
+5. **Burst errors** (VNX-DNA 3): with probability ``burst_rate`` a read
+   carries one burst: a contiguous run of Geometric(1/``burst_length_mean``)
+   bases (mean ``burst_length_mean``, at least 1) at a uniform position that is
+   substituted (each base by a different base), deleted, or preceded by an
+   inserted run of random bases (``burst_kind`` substitution | deletion |
+   insertion | mixed, mixed choosing uniformly per burst). Bursts model
+   localised molecule damage; they are not reflected in quality scores.
+   A substitution or deletion burst is clipped to the read length.
+5b. **Truncation**: with probability ``truncation_rate`` a read keeps only a
+   uniform prefix of 50–99 % of its length (never longer than the read).
 6. **Unreadable calls**: each base becomes ``N`` with probability ``n_rate``.
 7. **Orientation**: reverse-complemented with probability ``reverse_complement_rate``.
 8. **Duplication**: each read gets an identical extra copy (a PCR/optical
@@ -38,11 +46,22 @@ gives Phred 30 everywhere.
 
 All randomness comes from ``numpy.random.Generator(PCG64)`` seeded with
 ``(seed, batch index)``, so equal inputs, configuration and seed give
-byte-identical output. The report counts events that actually happened.
+byte-identical output. The report counts events that were applied to the
+simulated molecules (an error on a base that is later deleted or truncated
+away still counts; duplicates copy their original's errors and are not
+counted again).
+
+Batches: at most ``batch_strands`` (8192) strands per batch, fewer when
+coverage is high, so that one batch holds at most about ``BATCH_TARGET_BASES``
+simulated bases (VNX-DNA 3; 2.0 used 8192 strands whatever the coverage, so
+memory grew linearly with coverage). Channels with ``mean strand_nt ×
+max(coverage, 1) × (1 + duplication_rate) × (1 + invalid_read_rate +
+contamination_rate) ≤ 4096`` (for example 276-nt strands at coverage ≤ 14)
+keep 8192-strand batches and therefore produce exactly the 2.0 output for the
+same seed.
 """
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import shutil
@@ -57,12 +76,16 @@ import numpy as np
 
 from ..dna.mapping import _COMPLEMENT
 from ..errors import ConfigurationError, InvalidInputError, OutputError
+from .paths import atomic_write_text, check_output_file, check_temp_dir
 from .strandio import ReadBatch, StrandWriter, format_for_output, iter_batches
 
 BUCKET_TARGET_BYTES = 64 << 20
+BATCH_TARGET_BASES = 8192 * 4096  # simulated bases per batch (see the module docstring)
+BURST_KINDS = ("substitution", "deletion", "insertion", "mixed")
 _RATE_FIELDS = ("dropout_rate", "synthesis_substitution_rate", "synthesis_insertion_rate", "synthesis_deletion_rate",
                 "substitution_rate", "insertion_rate", "deletion_rate", "duplication_rate", "truncation_rate", "n_rate",
-                "invalid_read_rate", "contamination_rate", "reverse_complement_rate", "quality_informativeness")
+                "invalid_read_rate", "contamination_rate", "reverse_complement_rate", "quality_informativeness",
+                "burst_rate")
 
 
 @dataclass(frozen=True)
@@ -87,6 +110,9 @@ class SequencingConfig:
     shuffle: bool = True
     quality_model: str = "informative"  # informative | flat
     quality_informativeness: float = 0.8
+    burst_rate: float = 0.0             # per-read probability of one burst (VNX-DNA 3)
+    burst_length_mean: float = 4.0      # mean burst length in nt (geometric, >= 1)
+    burst_kind: str = "substitution"    # substitution | deletion | insertion | mixed
 
     def __post_init__(self) -> None:
         if not isinstance(self.seed, int) or isinstance(self.seed, bool) or self.seed < 0:
@@ -105,11 +131,23 @@ class SequencingConfig:
             raise ConfigurationError("abundance_sigma must be in [0, 3]")
         if self.quality_model not in ("informative", "flat"):
             raise ConfigurationError("quality_model must be informative or flat")
+        if isinstance(self.burst_length_mean, bool) or not isinstance(self.burst_length_mean, (int, float)) \
+                or not 1.0 <= float(self.burst_length_mean) <= 64.0:
+            raise ConfigurationError("burst_length_mean must be in [1, 64]")
+        if self.burst_kind not in BURST_KINDS:
+            raise ConfigurationError(f"burst_kind must be one of {', '.join(BURST_KINDS)}")
 
     @property
     def changes_length(self) -> bool:
         return any((self.synthesis_insertion_rate, self.synthesis_deletion_rate, self.insertion_rate, self.deletion_rate,
-                    self.truncation_rate, self.invalid_read_rate))
+                    self.truncation_rate, self.invalid_read_rate,
+                    self.burst_rate if self.burst_kind != "substitution" else 0.0))
+
+    @property
+    def expected_reads_per_strand(self) -> float:
+        """Upper-bound estimate of reads per designed strand (for batch and bucket sizing only)."""
+        return max(float(self.coverage), 1.0) * (1.0 + float(self.duplication_rate)) \
+            * (1.0 + float(self.invalid_read_rate) + float(self.contamination_rate))
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -188,6 +226,58 @@ def _edit(flat: np.ndarray, lengths: np.ndarray, sub: float, ins: float, dele: f
     return out, new_lengths, flags
 
 
+def _bursts(flat: np.ndarray, lengths: np.ndarray, config: SequencingConfig, rng: np.random.Generator,
+            counts: Counter, flags: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """At most one burst per read (see the module docstring). Draws nothing when ``burst_rate`` is 0."""
+    reads = lengths.size
+    hit = np.flatnonzero(rng.random(reads) < config.burst_rate)
+    if not hit.size:
+        return flat, lengths, flags
+    run = rng.geometric(1.0 / float(config.burst_length_mean), hit.size).astype(np.int64)
+    if config.burst_kind == "mixed":
+        kinds = rng.integers(0, 3, hit.size)
+    else:
+        kinds = np.full(hit.size, ("substitution", "deletion", "insertion").index(config.burst_kind))
+    lens = lengths[hit]
+    clipped = np.where(kinds == 2, run, np.minimum(run, lens))
+    starts_in_read = (rng.random(hit.size) * (np.where(kinds == 2, lens, lens - clipped) + 1)).astype(np.int64)
+    starts_in_read = np.minimum(starts_in_read, np.where(kinds == 2, lens, lens - clipped))
+    keep = clipped > 0
+    hit, kinds, clipped, starts_in_read = hit[keep], kinds[keep], clipped[keep], starts_in_read[keep]
+    read_start = np.cumsum(lengths) - lengths
+    flat = flat.copy()
+    flags = flags.copy()
+    lengths = lengths.copy()
+    sub = kinds == 0
+    if sub.any():
+        pos = ragged_index(read_start[hit[sub]] + starts_in_read[sub], clipped[sub])
+        flat[pos] = (flat[pos] + rng.integers(1, 4, pos.size)) % 4
+    ins = kinds == 2
+    inserted_at = np.zeros(0, dtype=np.int64)
+    if ins.any():
+        at = np.repeat(read_start[hit[ins]] + starts_in_read[ins], clipped[ins])
+        bases = rng.integers(0, 4, at.size).astype(np.uint8)
+        order = np.argsort(at, kind="stable")
+        at, bases = at[order], bases[order]
+        flat = np.insert(flat, at, bases)
+        flags = np.insert(flags, at, False)
+        inserted_at = at
+        np.add.at(lengths, hit[ins], clipped[ins])
+    dele = kinds == 1
+    if dele.any():
+        pos = ragged_index(read_start[hit[dele]] + starts_in_read[dele], clipped[dele])
+        pos = pos + np.searchsorted(inserted_at, pos, side="right")  # shift by insertions placed before each base
+        mask = np.ones(flat.size, dtype=bool)
+        mask[pos] = False
+        flat, flags = flat[mask], flags[mask]
+        np.subtract.at(lengths, hit[dele], clipped[dele])
+    for code, name in enumerate(("substitution", "deletion", "insertion")):
+        chosen = kinds == code
+        counts[f"bursts_{name}"] += int(chosen.sum())
+        counts[f"burst_bases_{name}"] += int(clipped[chosen].sum())
+    return flat, lengths, flags
+
+
 def simulate_batch(codes: np.ndarray, lengths: np.ndarray, config: SequencingConfig, batch_index: int,
                    strand_nt: int) -> tuple[ReadBatch, np.ndarray, Counter]:
     """Generate the reads of one batch of strands. Returns (reads, source strand per read (-1 = junk), counts)."""
@@ -217,11 +307,16 @@ def simulate_batch(codes: np.ndarray, lengths: np.ndarray, config: SequencingCon
     flat, read_lengths, flags = _edit(flat, read_lengths, config.substitution_rate, config.insertion_rate, config.deletion_rate,
                                       rng, counts, "sequencing_", flags)
     reads = source.size
+    if config.burst_rate and reads:
+        flat, read_lengths, flags = _bursts(flat, read_lengths, config, rng, counts, flags)
     if config.truncation_rate and reads:
         cut = np.flatnonzero(rng.random(reads) < config.truncation_rate)
         if cut.size:
             keep_len = read_lengths.copy()
-            keep_len[cut] = np.maximum(1, (read_lengths[cut] * rng.uniform(0.5, 0.99, cut.size)).astype(np.int64))
+            # never longer than the read: a read that indels shortened to 0 bases stays empty (VNX-DNA 2.0 kept 1
+            # base, reading past the read into the next one, and could index past the end of the batch)
+            keep_len[cut] = np.minimum(read_lengths[cut],
+                                       np.maximum(1, (read_lengths[cut] * rng.uniform(0.5, 0.99, cut.size)).astype(np.int64)))
             starts = np.cumsum(read_lengths) - read_lengths
             index = ragged_index(starts, keep_len)
             flat, flags = flat[index], flags[index]
@@ -252,6 +347,8 @@ def simulate_batch(codes: np.ndarray, lengths: np.ndarray, config: SequencingCon
         informative = error_bases[rng.random(error_bases.size) < config.quality_informativeness]
         quals[informative] = rng.integers(2, 21, informative.size, dtype=np.uint8)
     quals[flat == 4] = 2
+    # designed bases of the reads that carry independent errors (duplicates copy their original's errors)
+    counts["bases_designed_independent"] += int(lengths[source].sum()) if source.size else 0
     if config.duplication_rate and reads:
         dup = np.flatnonzero(rng.random(reads) < config.duplication_rate)
         if dup.size:
@@ -335,18 +432,31 @@ def sequence_file(strands_path: str | os.PathLike, output_path: str | os.PathLik
     if fmt == "vxs" and (config.changes_length or config.n_rate or config.contamination_rate):
         raise ConfigurationError("VXS output holds only equal-length A/C/G/T reads; use FASTQ for indels, truncation, N calls, "
                                  "junk or contamination")
+    check_temp_dir(temp_dir)
+    check_output_file(output_path, overwrite=overwrite)
     counts: Counter = Counter()
     coverage_hist: Counter = Counter()
     strand_nt = None
+    # Pool size in strands and bases, independent of the input file format (FASTA, FASTQ, plain or VXS), so the
+    # batch size and bucket count (and hence the output) depend only on the strands, the configuration and the seed.
+    pool_strands = pool_bases = 0
+    for batch in iter_batches(src, 65536):
+        pool_strands += batch.count
+        pool_bases += int(batch.lengths.sum())
+    if pool_strands == 0:
+        raise InvalidInputError(f"{src} contains no strands")
+    reads_per_strand = config.expected_reads_per_strand
+    mean_nt = max(1, pool_bases // pool_strands)
+    batch_size = max(1, min(batch_strands, int(BATCH_TARGET_BASES // (mean_nt * reads_per_strand))))
     workdir = Path(tempfile.mkdtemp(prefix="vnxdna-sequence-", dir=temp_dir))
+    writer = None
+    handles: list = []
     try:
-        src_size = src.stat().st_size
-        estimated = max(1, int(src_size * max(config.coverage, 1) * (2.2 if fmt == "fastq" else 1.1)))
+        estimated = max(1, int(pool_bases * reads_per_strand * 2))  # bucket records hold 1 code + 1 quality byte per base
         buckets = max(1, min(4096, -(-estimated // BUCKET_TARGET_BYTES))) if config.shuffle else 1
         shuffle_rng = np.random.default_rng([config.seed, 1 << 30])
         handles = [(workdir / f"b{b:05d}").open("wb", buffering=1 << 16) for b in range(buckets)] if config.shuffle else []
-        writer = None
-        for index, batch in enumerate(iter_batches(src, batch_strands)):
+        for index, batch in enumerate(iter_batches(src, batch_size)):
             if strand_nt is None:
                 strand_nt = int(np.bincount(batch.lengths).argmax())
                 writer = StrandWriter(output_path, fmt, strand_nt=strand_nt, overwrite=overwrite)
@@ -363,25 +473,28 @@ def sequence_file(strands_path: str | os.PathLike, output_path: str | os.PathLik
                 writer.write_batch(reads)
         if writer is None:
             raise InvalidInputError(f"{src} contains no strands")
-        try:
-            for handle in handles:
-                handle.close()
-            for b in range(buckets if config.shuffle else 0):
-                path = workdir / f"b{b:05d}"
-                bucket = _read_bucket(path)
-                path.unlink()
-                if bucket.count:
-                    writer.write_batch(_take(bucket, shuffle_rng.permutation(bucket.count)))
-            written = writer.commit()
-        except BaseException:
+        for handle in handles:
+            handle.close()
+        for b in range(buckets if config.shuffle else 0):
+            path = workdir / f"b{b:05d}"
+            bucket = _read_bucket(path)
+            path.unlink()
+            if bucket.count:
+                writer.write_batch(_take(bucket, shuffle_rng.permutation(bucket.count)))
+        written = writer.commit()
+    except BaseException:
+        # no .partial output is left behind on any failure or interruption (VNX-DNA 2.0 leaked it from the batch loop)
+        for handle in handles:
+            handle.close()
+        if writer is not None:
             writer.abort()
-            raise
+        raise
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
     hist = {int(k): int(v) for k, v in sorted(coverage_hist.items()) if v}
     strands = counts["strands_in"]
     reads_from_strands = sum(k * v for k, v in hist.items())
-    designed_bases = counts["bases_designed_sequenced"]
+    designed_bases = counts["bases_designed_independent"]
     report = {"status": "SUCCESS", "operation": "sequence", "simulation": "SOFTWARE SIMULATION (not a physical experiment)",
               "input": str(src), "output": str(output_path), "output_format": fmt, "config": config.to_dict(),
               "strands": strands, "reads": counts["reads_out"],
@@ -392,13 +505,23 @@ def sequence_file(strands_path: str | os.PathLike, output_path: str | os.PathLik
               "reads_reverse_complemented": counts["reads_reverse_complemented"],
               "invalid_reads_added": counts["invalid_reads_added"], "contamination_reads_added": counts["contamination_reads_added"],
               "errors": {k: counts[k] for k in ("synthesis_substitutions", "synthesis_insertions", "synthesis_deletions",
-                                                "sequencing_substitutions", "sequencing_insertions", "sequencing_deletions", "n_calls")},
+                                                "sequencing_substitutions", "sequencing_insertions", "sequencing_deletions", "n_calls",
+                                                "bursts_substitution", "bursts_deletion", "bursts_insertion",
+                                                "burst_bases_substitution", "burst_bases_deletion", "burst_bases_insertion")},
               "observed_rates_per_designed_base": {
                   k: (counts[k] / designed_bases if designed_bases else 0.0)
                   for k in ("synthesis_substitutions", "synthesis_insertions", "synthesis_deletions", "sequencing_substitutions",
                             "sequencing_insertions", "sequencing_deletions")},
+              "batch_strands": batch_size,
               "bases_out": counts["bases_out"], "output_bytes": written["bytes"], "output_sha256": written["file_sha256"],
               "elapsed_s": time.perf_counter() - started}
     if report_path is not None:
-        Path(report_path).write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        _write_report(Path(report_path), report)
     return report
+
+
+def _write_report(path: Path, report: dict[str, Any]) -> None:
+    try:
+        atomic_write_text(path, json.dumps(report, indent=2, sort_keys=True) + "\n")
+    except OSError as error:
+        raise OutputError(f"cannot write report {path}: {error.strerror or error}") from None

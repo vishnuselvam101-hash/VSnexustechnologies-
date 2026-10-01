@@ -29,7 +29,6 @@ import json
 import os
 import time
 from collections import deque
-from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 from typing import Any
 
@@ -42,6 +41,8 @@ from .archive import LoadedV2, default_workers, open_container
 from .constraints import ConstraintSpecV2
 from .frame import CRC_BYTES, HEADER_BYTES, KIND_DATA, KIND_META, FrameGeometry, build_strands
 from .strandio import ReadBatch, StrandWriter, format_for_output, serialize_batch
+from .paths import atomic_write_text
+from .workers import process_pool
 
 META_MAGIC = b"VNX5"
 META_DATA_SHARDS = 8
@@ -224,7 +225,7 @@ def encode_file(container_path: str | os.PathLike, output_path: str | os.PathLik
             for task in tasks:
                 consume(_encode_chunk(task))
         else:
-            with ProcessPoolExecutor(workers, initializer=_worker_setup, initargs=init) as pool:
+            with process_pool(workers, initializer=_worker_setup, initargs=init) as pool:
                 pending: deque = deque()
                 for task in tasks:
                     pending.append(pool.submit(_encode_chunk, task))
@@ -235,8 +236,12 @@ def encode_file(container_path: str | os.PathLike, output_path: str | os.PathLik
         written = writer.commit()
     if write_index:
         write_dna_index(index_path, loaded, out, fmt, geometry.strand_nt, meta_entry, chunk_entries, written)
+    elif overwrite and os.path.lexists(index_path):
+        # the strand file was replaced: an index left from the previous file describes a different archive and made
+        # random access fail instead of falling back to a scan (V3 release review)
+        index_path.unlink()
     elapsed = time.perf_counter() - started
-    k, mpar, p = m.erasure_code.data_shards, m.erasure_code.parity_shards, geometry.payload_bytes
+    k, mpar = m.erasure_code.data_shards, m.erasure_code.parity_shards
     strands = written["records"]
     original = loaded.content.size if loaded.content is not None else None
     efficiency = {
@@ -278,9 +283,7 @@ def write_dna_index(path: Path, loaded: LoadedV2, strands_path: Path, fmt: str, 
                        "rows": np.concatenate([chunk_entries, loaded.index["first_stripe"].astype(np.int64)[:, None],
                                                loaded.index["stripe_count"].astype(np.int64)[:, None]], axis=1).tolist()}}
     body["index_sha256"] = hashlib.sha256(mf.canonical_bytes(body)).hexdigest()
-    tmp = path.with_name("." + path.name + ".partial")
-    tmp.write_text(json.dumps(body, sort_keys=True, separators=(",", ":")), encoding="ascii")
-    os.replace(tmp, path)
+    atomic_write_text(path, json.dumps(body, sort_keys=True, separators=(",", ":")), encoding="ascii")
 
 
 def read_dna_index(path: str | os.PathLike) -> dict[str, Any]:

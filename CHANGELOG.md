@@ -1,5 +1,131 @@
 # Changelog
 
+## 3.0.0 — 2026-10-01
+
+### Release review (2026-10-01)
+A final pre-release review ran the full suite, an independent end-to-end and corruption harness (42 round trips of
+text, binary, random, empty, chunk-boundary and incompressible files; 300 container bit flips; truncations; exact-M
+and M+1 strand losses; coverage-1 error channels), a 4 GB encrypted run, and an adversarial review of data-loss,
+temporary-file and signal handling. Every finding below was reproduced, fixed, and has a regression test
+(`tests/v3/test_release_review_v3.py`, `tests/v3/test_cli_v3.py`) that fails on the previous commit.
+- **Data loss:** `pipeline --work-dir` overwrote existing intermediate-named files (e.g. the user's
+  `photo.jpg.vxdna`) without `--force`, and `--cleanup` then deleted them. Existing intermediates are now refused
+  unless `--force`/`--resume`, and cleanup deletes only files the run wrote.
+- **Data loss:** `--report` could replace the key file (`store … -k key.txt --report key.txt --force`), making the new
+  archive unrecoverable, or the DNA index. An output may now never be an input, not even with `--force` (this also
+  stops `extract a.vxdna -o a.vxdna --force`, `store f -o f --force` and `restore a -o a --force`).
+- **Data loss:** an input named `<output>.partial` was deleted by `store` and truncated by `decode`.
+- **Signals:** SIGTERM/SIGHUP left partial files, temporary directories and orphaned worker processes (7 per
+  command, ~90 MB each). They now clean up like Ctrl-C (exit 130), and workers exit when their parent dies. An
+  interrupt no longer waits for the worker pool: a worker killed while writing its result could leave the pool's
+  shutdown waiting forever (found while validating the fix: `recover` hung after SIGTERM in about 1 of 8 runs).
+  Workers ignore Ctrl-C (each printed a traceback) and an inherited pending SIGTERM (a worker forked at that moment
+  broke the pool: exit 70), and an interrupt during start-up ends quietly with exit 130.
+  Checked with 300 randomly timed SIGTERM/SIGINT runs: every one exited 130 with no partial files, no temporary
+  directories and no live workers.
+- **Temporary files:** reports, DNA indexes, cluster files, decoded containers and checkpoints used fixed
+  `.<name>.partial` names opened through symlinks; they now use private `mkstemp` files.
+- `encode` of an empty unencrypted archive wrote its outputs and then exited 70 (summary formatting of `None`).
+- `keygen` wrote through symlinks and truncated an existing key when the write failed; it is now atomic.
+- `encode --no-index --force` left a stale DNA index that broke `extract`; it is removed.
+- `extract` silently ignored conflicting selections (`--chunk 0 --length 5`, `--length` with `--end`); now exit 3.
+- A missing input to `store`, `pipeline`, `simulate-errors` and `experiment run` exited 2 with a usage box instead of
+  the documented exit 3.
+- Key files must be regular files of at most 4 KiB (`-k /dev/zero` read without limit); loose permissions warn.
+- `reads` printed Python reprs (`[{'length': …}]`, `mean None`); `pipeline --help` lost its optional stages to markup.
+- Packaging: SPDX `license = "MIT"` (the table form stops building with setuptools releases after 2027-02-18), the
+  wheel ships `LICENSE`, a `.dockerignore`, and the Docker example runs as the calling user.
+
+Audit of V2 and an architectural upgrade on the same format. Computational only: no wet-lab validation. Archive
+format 5 is kept: V2 archives are read, and V2 reads V3 archives, with one exception (see Compatibility). The full
+report is [docs/V3_AUDIT.md](docs/V3_AUDIT.md).
+
+### Security fixes
+- **AES-GCM nonce reuse on resumed stores (two paths).**
+  - A second interrupted resume could reuse the first resume's nonces, because the new AEAD epoch was persisted only
+    at the next periodic checkpoint. The epoch is now written before anything is sealed with it.
+  - The sealed content record and plaintext index were always sealed in epoch 0, so re-finalising a changed input
+    reused their nonces. They now use the newest chunk epoch, declared by the optional feature `final-seal-epoch-v3`.
+  - Checkpoints are now HMAC-authenticated (`vnx-store-checkpoint-2`).
+  - A resume's epoch also exceeds every epoch in the index sidecar, so replaying an older, still-authentic
+    checkpoint is harmless.
+- Containers padded after the last chunk passed `verify`. The body length must now equal `stored_size`, and `verify`
+  checks `stored_sha256`.
+- DNA metadata headers are not authenticated until the manifest is rebuilt, yet their lengths could drive
+  multi-gigabyte allocations from a few kilobytes of reads. They are now bounded by the metadata groups actually
+  decodable.
+- Whole read lines were loaded into memory before any check. Lines are now cut at 100,002 bytes while reading.
+- `--report` overwrote any file, including the command's own input. Reports now require `--force` and may never be
+  an input or output.
+- An output created while a command ran could be silently replaced. Outputs are now published by hard link.
+
+### Added
+- **Vectorised Reed–Solomon decoder** (`vnxdna.ecc.rs_batch`): batched Berlekamp–Massey/Chien/Forney over NumPy,
+  strictly bounded-distance, used by the decoder, clustering, consensus and indel repair.
+- **ECC engine interface** (`vnxdna.ecc.engine`): outer and inner code protocols and a registry keyed by the code
+  names the manifest declares.
+- **Single-read burst resynchronisation** (`--burst-repair N`): one contiguous run of up to N lost or extra bases per
+  read, recovered at coverage 1 with F hypotheses.
+- **Burst errors in the channel simulator** (`--burst-rate`, `--burst-length`, `--burst-kind`).
+- **`vnx-dna simulate-errors`**: seeded error-channel sweeps with recovery statistics (JSON, CSV, Markdown). It exits
+  70 on any undetected corruption.
+- **Multi-archive pools**: the only decodable archive is used, or `--archive-tag` picks one.
+- `verify --force` (for `--report`), exit code 141 for a closed standard output, `ruff` lint in CI, V2 compatibility
+  fixtures (`tests/fixtures/v2_0/`), the V3 research harness (`research/v3/`), and 195 new tests (194 in `tests/v3/`, 1 README test; 29 of them from the release review).
+- Docs: ARCHITECTURE (V3), STORAGE_FORMAT, ENCODING, ERROR_MODEL, LIMITATIONS, REPRODUCIBILITY and V3_AUDIT. The V1
+  documents were renamed V1_ARCHITECTURE and V1_FORMAT.
+
+### Changed
+- Single-read indel repair decodes its hypotheses in vectorised blocks: same results as V2, faster. It also repairs
+  reads that contain `N`.
+- Reads with IUPAC or other non-ACGTN symbols are decoded with those positions as erasures instead of being dropped.
+- The simulator's shuffle buckets now depend on the pool, not the input file's byte size, so FASTA and VXS inputs
+  give identical reads. This can change shuffled output relative to V2 for large pools and VXS inputs. Batches also
+  shrink at very high coverage, which bounds memory. Ordinary channels (e.g. 276-nt strands up to coverage 14.8) keep
+  V2's batches.
+- `verify` on an encrypted archive without a key exits 4 when everything checkable without the key passed (was 1).
+  `--file` without a key is now reported instead of being ignored silently.
+- Disk full, file too large, quota and read-only file-system errors exit 8 (were 70). An interrupted store without a
+  checkpoint removes its partial files.
+
+### Fixed
+- **Decoder**
+  - Long junk reads aborted decoding of pools that had no error-free read (exit 7).
+  - Metadata repaired by the outer code was reported as SUCCESS instead of RECOVERED.
+  - A descriptor leak in parallel `verify`, and a truncated body raising instead of producing a FAIL report.
+- **Store**
+  - `store --compression none` always failed.
+  - Non-UTF-8 file names crashed store (exit 70).
+  - Profile names were validated only after the whole file was stored.
+  - Chunk counts that the trailer cannot address crashed store after processing the whole input.
+  - `info` printed raw JSON.
+- **Simulator and read processing**
+  - Truncation could copy bases from the next read.
+  - Leaked `.partial` files.
+  - Exit 70 for many bad paths and malformed cluster files.
+  - Consensus accepted out-of-range parameters.
+  - The pipeline leaked its temporary directory and deleted too little with `--cleanup all`.
+  - Experiment ECC statistics ignored failed trials.
+  - Observed error rates were diluted by duplicates.
+  - The orphan cap made clustering depend on read order.
+  - An explicit missing `--dna-index` was ignored.
+  - Compressed output names were silently written as FASTA.
+- **Tests**
+  - `from conftest import …` made `pytest tests/v2 tests/unit` fail at collection.
+- **Docs.** Claims corrected where the V2 docs were contradicted by code or results:
+  - 10 GB at 10× (overstated about 1.7×);
+  - consensus throughput (unmeasured);
+  - trailer checks on restore;
+  - indel repair cost;
+  - geometry discovery sample size;
+  - the fixed-coverage integer requirement;
+  - Wilson intervals rendered as [1.000, 1.000].
+
+### Compatibility
+- Reads archive formats 5 and 4 and legacy V0.1. Writes format 5.
+- V2 cannot read encrypted archives whose store was resumed by V3: they declare `final-seal-epoch-v3`, and V2 exits
+  6. V3 does not resume V2 checkpoints.
+
 ## 2.0.0 — 2026-09-30
 
 Streaming, scalable V2. Computational only: no wet-lab validation. V1 archives stay readable.

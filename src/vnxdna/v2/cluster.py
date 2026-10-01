@@ -36,13 +36,13 @@ result does not change (see tests).
 """
 from __future__ import annotations
 
+import heapq
 import json
 import os
 import shutil
 import tempfile
 import time
 from collections import Counter, defaultdict, deque
-from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 from typing import Any
 
@@ -50,11 +50,14 @@ import numpy as np
 
 from .. import __version__
 from ..dna.mapping import _CODE_TO_ASCII, get_mapping, reverse_complement_codes
-from ..errors import InvalidInputError, OutputError
+from ..errors import InvalidInputError
 from .archive import default_workers
 from .decoder import discover
-from .frame import FRAME_FORMAT, HEADER_BYTES, KEYSTREAMS, KIND_META, FrameGeometry, parse_batch, parse_one_corrected
+from .frame import FRAME_FORMAT, HEADER_BYTES, KEYSTREAMS, KIND_META, FrameGeometry, parse_batch, parse_many_corrected
+from .container import publish
+from .paths import check_output_file, check_temp_dir, private_temp
 from .strandio import ReadBatch, iter_batches
+from .workers import process_pool
 
 CLUSTER_FORMAT = "vnx-clusters-1"
 BUCKET_TARGET_BYTES = 64 << 20
@@ -115,18 +118,20 @@ def address_batch(batch: ReadBatch, geometry: FrameGeometry, inner_correction: b
             if orientation == 1:
                 flipped[rows] = True
         if inner_correction:
-            for i in exact[~verified[exact]].tolist():
-                for orientation, seq in ((0, reads[i]), (1, reverse_complement_codes(reads[i]))):
-                    frames, erasures = mapping.decode(seq[None, :])
-                    parsed = parse_one_corrected(geometry, frames[0], erasures[0])
-                    if parsed is not None:
-                        kind, tag, stripe, shard, _ = parsed[0]
-                        heads[i]["status"], heads[i]["kind"], heads[i]["tag"] = STATUS_VERIFIED, kind, tag
-                        heads[i]["stripe"], heads[i]["shard"] = stripe, shard
-                        verified[i] = True
-                        flipped[i] = orientation == 1
-                        stats["reads_inner_corrected"] += 1
-                        break
+            # V3: vectorised inner-RS correction of every unverified read, forward first, then reverse complement.
+            for orientation, oriented_codes in ((0, codes), (1, reverse_complement_codes(codes))):
+                pending = ~verified[exact]
+                if not pending.any():
+                    break
+                frames, erasures = mapping.decode(oriented_codes[pending])
+                pb, _ = parse_many_corrected(geometry, frames, erasures)
+                rows = exact[pending][pb.ok]
+                heads["status"][rows] = STATUS_VERIFIED
+                heads["kind"][rows], heads["tag"][rows] = pb.kind[pb.ok], pb.tag[pb.ok]
+                heads["stripe"][rows], heads["shard"][rows] = pb.stripe[pb.ok], pb.shard[pb.ok]
+                verified[rows] = True
+                flipped[rows] = orientation == 1
+                stats["reads_inner_corrected"] += int(pb.ok.sum())
     rest = np.flatnonzero(~verified)
     if rest.size:
         fwd = _headers([reads[i] for i in rest], geometry)
@@ -250,14 +255,14 @@ def cluster_file(reads_path: str | os.PathLike, output_path: str | os.PathLike, 
     """Cluster reads by address. Streaming, bucketed on disk, parallel address scan."""
     started = time.perf_counter()
     workers = workers or default_workers()
-    out = Path(output_path)
-    if out.exists() and not overwrite:
-        raise OutputError(f"output already exists: {out} (use --force to overwrite)")
+    out = check_output_file(output_path, overwrite=overwrite)  # before any work (VNX-DNA 2.0 failed only at the end)
+    check_temp_dir(temp_dir)
     frame_format, geometry = discover(reads_path)
     if frame_format != FRAME_FORMAT:
         raise InvalidInputError("these are V1 (frame format 4) reads; clustering is a V2 feature")
     workdir = Path(tempfile.mkdtemp(prefix="vnxdna-cluster-", dir=temp_dir))
     stats: Counter = Counter()
+    tmp: Path | None = None  # private temporary output (mkstemp), created when the cluster file is written
     try:
         size = Path(reads_path).stat().st_size
         buckets = max(1, min(1024, -(-size * 2 // BUCKET_TARGET_BYTES)))
@@ -295,7 +300,7 @@ def cluster_file(reads_path: str | os.PathLike, output_path: str | os.PathLike, 
             for batch in batches:
                 consume(_cl_task(batch))
         else:
-            with ProcessPoolExecutor(workers, initializer=_cl_setup, initargs=init) as pool:
+            with process_pool(workers, initializer=_cl_setup, initargs=init) as pool:
                 pending: deque = deque()
                 for batch in batches:
                     pending.append(pool.submit(_cl_task, batch))
@@ -372,7 +377,6 @@ def cluster_file(reads_path: str | os.PathLike, output_path: str | os.PathLike, 
         orphan_out.close()
         weak_path.unlink()
         # pass D: emit strong clusters (with reassigned reads), then leftover tentative groups, then orphan clusters
-        tmp = out.with_name("." + out.name + ".partial")
         cluster_id = 0
         sizes: Counter = Counter()
 
@@ -386,7 +390,8 @@ def cluster_file(reads_path: str | os.PathLike, output_path: str | os.PathLike, 
             sizes[min(len(members), 50)] += 1
             cluster_id += 1
 
-        with tmp.open("w", encoding="ascii") as handle:
+        fd, tmp = private_temp(out)
+        with os.fdopen(fd, "w", encoding="ascii") as handle:
             handle.write(json.dumps({"format": CLUSTER_FORMAT, "encoder": f"vnxdna {__version__}", "source": str(reads_path),
                                      "geometry": geometry.to_dict(), "archive_tags": sorted(known_tags)}, sort_keys=True) + "\n")
             for b in range(buckets):
@@ -415,7 +420,11 @@ def cluster_file(reads_path: str | os.PathLike, output_path: str | os.PathLike, 
             stats["clusters_addressed"] = cluster_id - len(orphan_clusters)
             stats["clusters_orphan"] = len(orphan_clusters)
             handle.write(json.dumps({"end": True, "stats": dict(stats)}, sort_keys=True) + "\n")
-        os.replace(tmp, out)
+        publish(tmp, out, overwrite=overwrite)
+    except BaseException:
+        if tmp is not None:
+            tmp.unlink(missing_ok=True)  # never leave the partial cluster file behind (VNX-DNA 2.0 did)
+        raise
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
     return {"status": "SUCCESS", "operation": "cluster", "input": str(reads_path), "output": str(out),
@@ -430,13 +439,17 @@ def _cluster_orphans(path: Path, geometry: FrameGeometry, max_orphans: int, min_
     index: dict[int, list[int]] = defaultdict(list)
     count = 0
     length = geometry.strand_nt
-    records = []
-    for record in _stream_records(path):
-        if len(records) >= max_orphans:
-            stats["orphans_dropped_over_limit"] += 1
-            continue
-        records.append(record)
-    records.sort(key=lambda r: (r[1].tobytes(), r[2].tobytes()))  # order-independent
+    # Above the cap, keep the max_orphans smallest records by content (a bounded heap), so the kept set, like
+    # everything else, does not depend on the read order (VNX-DNA 2.0 kept the first max_orphans in file order).
+    total = 0
+
+    def counted():
+        nonlocal total
+        for record in _stream_records(path):
+            total += 1
+            yield record
+    records = heapq.nsmallest(max_orphans, counted(), key=lambda r: (r[1].tobytes(), r[2].tobytes()))
+    stats["orphans_dropped_over_limit"] += total - len(records)
     for head, codes, quals in records:
         if count >= max_orphans:
             stats["orphans_dropped_over_limit"] += 1
@@ -469,24 +482,74 @@ def _cluster_orphans(path: Path, geometry: FrameGeometry, max_orphans: int, min_
     return leaders
 
 
+MAX_CLUSTER_LINE = 1 << 30
+
+
+def _check_header(p: Path, header: Any) -> dict:
+    if not isinstance(header, dict) or header.get("format") != CLUSTER_FORMAT:
+        raise InvalidInputError(f"{p} is not a VNX-DNA cluster file ({CLUSTER_FORMAT})")
+    g = header.get("geometry")
+    if not isinstance(g, dict) or not all(isinstance(g.get(k), int) and not isinstance(g.get(k), bool)
+                                          for k in ("payload_bytes", "inner_parity_bytes")) or not isinstance(g.get("mapping"), str):
+        raise InvalidInputError(f"{p}: cluster file header has no valid geometry")
+    return header
+
+
+def _check_cluster(p: Path, number: int, item: Any) -> dict:
+    """Validate one cluster record; anything malformed is INVALID_INPUT, never an internal error."""
+    def bad(why: str) -> InvalidInputError:
+        return InvalidInputError(f"{p}: cluster record {number} is malformed ({why})")
+    if not isinstance(item, dict):
+        raise bad("not a JSON object")
+    reads = item.get("reads")
+    if not isinstance(reads, list) or not reads:
+        raise bad("'reads' must be a non-empty list")
+    if not all(isinstance(r, str) and r and r.isascii() for r in reads):
+        raise bad("every read must be a non-empty ASCII string")
+    quals = item.get("quals")
+    if quals is not None:
+        if not isinstance(quals, list) or len(quals) != len(reads):
+            raise bad("'quals' must list one quality string per read")
+        if not all(isinstance(q, str) and q.isascii() and len(q) == len(r) for q, r in zip(quals, reads)):
+            raise bad("each quality string must be ASCII and as long as its read")
+    return item
+
+
 def iter_clusters(path: str | os.PathLike):
-    """Yield (header, cluster dicts...) from a cluster file, validating its framing."""
+    """Yield (header, cluster dicts...) from a cluster file, validating its framing and every record."""
     p = Path(path)
-    with p.open("r", encoding="ascii") as handle:
-        first = handle.readline()
+    if not p.is_file():
+        raise InvalidInputError(f"cluster file not found (or not a regular file): {p}")
+    try:
+        handle = p.open("r", encoding="ascii", newline="\n")
+    except OSError as error:
+        raise InvalidInputError(f"cannot read {p}: {error.strerror or error}") from None
+    with handle:
         try:
-            header = json.loads(first)
-        except ValueError:
-            raise InvalidInputError(f"{p} is not a VNX-DNA cluster file") from None
-        if not isinstance(header, dict) or header.get("format") != CLUSTER_FORMAT:
-            raise InvalidInputError(f"{p} is not a VNX-DNA cluster file ({CLUSTER_FORMAT})")
-        yield header
-        ended = False
-        for line in handle:
-            item = json.loads(line)
-            if item.get("end"):
-                ended = True
-                break
-            yield item
+            first = handle.readline(MAX_CLUSTER_LINE)
+            try:
+                header = json.loads(first)
+            except ValueError:
+                raise InvalidInputError(f"{p} is not a VNX-DNA cluster file") from None
+            yield _check_header(p, header)
+            ended = False
+            number = 0
+            while True:
+                line = handle.readline(MAX_CLUSTER_LINE)
+                if not line:
+                    break
+                if not line.endswith("\n"):
+                    raise InvalidInputError(f"{p} is truncated or has an over-long line (record {number})")
+                try:
+                    item = json.loads(line)
+                except ValueError:
+                    raise InvalidInputError(f"{p}: cluster record {number} is not valid JSON") from None
+                if isinstance(item, dict) and item.get("end"):
+                    ended = True
+                    break
+                yield _check_cluster(p, number, item)
+                number += 1
+        except UnicodeDecodeError:
+            raise InvalidInputError(f"{p} is not a VNX-DNA cluster file (non-ASCII bytes)") from None
         if not ended:
             raise InvalidInputError(f"{p} is truncated (no end record)")

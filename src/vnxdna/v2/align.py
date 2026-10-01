@@ -74,7 +74,6 @@ def align_reads(reads: list[np.ndarray], refs: list[np.ndarray], band: int = 12,
     step = 2 * np.arange(width, dtype=np.int32)
     finals = np.full(n, _INF, dtype=np.int32)
     finals[ok & (lens == 0)] = (2 * ref_lens[ok & (lens == 0)]).astype(np.int32)
-    rows = np.arange(n)
     for i in range(1, max_m + 1):
         j = i + offs  # reference column of each band cell
         valid = (j[None, :] >= 0) & (j[None, :] <= ref_lens[:, None])

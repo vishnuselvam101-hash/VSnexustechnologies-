@@ -28,20 +28,20 @@ the frame CRC, the chunk SHA-256 and the object SHA-256 do.
 """
 from __future__ import annotations
 
-import json
+import math
 import os
 import time
 from collections import Counter
-from pathlib import Path
 from typing import Any
 
 import numpy as np
 
 from ..dna.mapping import _ASCII_TO_CODE, _CODE_TO_ASCII, get_mapping
-from ..errors import InvalidInputError, OutputError
+from ..errors import ConfigurationError, InvalidInputError
 from .align import GAP, align_reads
 from .cluster import iter_clusters
-from .frame import FrameGeometry, parse_batch, parse_one_corrected
+from .frame import FrameGeometry, correct_frames, parse_batch, parse_one_corrected
+from .paths import check_output_file
 from .strandio import StrandWriter
 
 BLOCK_READS = 16384
@@ -61,15 +61,8 @@ def _correct_read(codes: np.ndarray, geometry: FrameGeometry) -> np.ndarray | No
     """The corrected strand for a full-length read that the inner RS can fix (verified by the CRC), else None."""
     mapping = get_mapping(geometry.mapping)
     frames, erasures = mapping.decode(codes[None, :])
-    flagged = np.flatnonzero(erasures[0]).tolist()
-    for erase in ([flagged] if 0 < len(flagged) <= geometry.inner_parity_bytes else []) + [[]]:
-        corrected = geometry.inner.correct_codeword(frames[0].tobytes(), erase)
-        if corrected is None:
-            continue
-        frame = np.frombuffer(corrected[0], dtype=np.uint8)[None, :]
-        if parse_batch(geometry, frame).ok[0]:
-            return mapping.encode(frame)[0]
-    return None
+    corrected, accepted, _ = correct_frames(geometry, frames, erasures)
+    return mapping.encode(corrected)[0] if accepted[0] else None
 
 
 def _vote(block: list[dict], geometry: FrameGeometry, band: int, max_edit_fraction: float, min_winner_share: float,
@@ -93,7 +86,6 @@ def _vote(block: list[dict], geometry: FrameGeometry, band: int, max_edit_fracti
             reads.append(codes)
             quals.append(_quals(qtext) if qtext is not None else np.full(codes.size, 30, dtype=np.uint8))
             owner.append(ci)
-    owner_arr = np.asarray(owner, dtype=np.int64)
     n_clusters = len(block)
     out: list[np.ndarray | None] = [None] * n_clusters
     exact = np.flatnonzero(np.array([r.size == length for r in reads], dtype=bool))
@@ -205,13 +197,22 @@ def consensus_file(clusters_path: str | os.PathLike, output_path: str | os.PathL
                    fallback_to_verified: bool = True) -> dict[str, Any]:
     """Cluster file → one consensus sequence per cluster (FASTA). Ambiguous positions are ``N``."""
     started = time.perf_counter()
-    out = Path(output_path)
-    if out.exists() and not overwrite:
-        raise OutputError(f"output already exists: {out} (use --force to overwrite)")
+    # parameter ranges (VNX-DNA 2.0 accepted e.g. a negative edit fraction or a share of 5 and silently degraded)
+    if isinstance(band, bool) or not isinstance(band, int) or not 1 <= band <= 64:
+        raise ConfigurationError("band must be an integer in 1..64")
+    for name, value in (("max_edit_fraction", max_edit_fraction), ("min_winner_share", min_winner_share)):
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or not 0.0 <= value <= 1.0:
+            raise ConfigurationError(f"{name} must be a number in [0, 1]")
+    if isinstance(single_read_min_quality, bool) or not isinstance(single_read_min_quality, int) or not 0 <= single_read_min_quality <= 93:
+        raise ConfigurationError("single_read_min_quality must be an integer in 0..93")
+    out = check_output_file(output_path, overwrite=overwrite)
     items = iter_clusters(clusters_path)
     header = next(items)
     g = header["geometry"]
-    geometry = FrameGeometry(g["mapping"], g["payload_bytes"], g["inner_parity_bytes"])
+    try:
+        geometry = FrameGeometry(g["mapping"], g["payload_bytes"], g["inner_parity_bytes"])
+    except ConfigurationError as error:
+        raise InvalidInputError(f"{clusters_path}: cluster file header has an invalid geometry ({error})") from None
     length = geometry.strand_nt
     mapping = get_mapping(geometry.mapping)
     stats: Counter = Counter()
