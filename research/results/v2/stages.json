@@ -1,0 +1,261 @@
+{
+  "environment": {
+    "cpu_count": 8,
+    "git": {
+      "commit": "9f255985304c78e267c0fb8027cb3240d444095b",
+      "dirty": false
+    },
+    "implementation": "CPython",
+    "libraries": {
+      "cryptography": "46.0.7",
+      "numpy": "2.5.3",
+      "reedsolo": "unknown",
+      "zstandard": "0.25.0"
+    },
+    "machine": "x86_64",
+    "platform": "Linux-6.8.0-139-generic-x86_64-with-glibc2.39",
+    "processor": "x86_64",
+    "python": "3.12.3",
+    "vnxdna_version": "2.0.0rc4"
+  },
+  "generated_by": "research/v2/run_v2_research.py",
+  "results": {
+    "benchmark": "vnx-dna benchmark stages",
+    "environment": {
+      "cpu_count": 8,
+      "git": {
+        "commit": "9f255985304c78e267c0fb8027cb3240d444095b",
+        "dirty": false
+      },
+      "implementation": "CPython",
+      "libraries": {
+        "cryptography": "46.0.7",
+        "numpy": "2.5.3",
+        "reedsolo": "unknown",
+        "zstandard": "0.25.0"
+      },
+      "machine": "x86_64",
+      "platform": "Linux-6.8.0-139-generic-x86_64-with-glibc2.39",
+      "processor": "x86_64",
+      "python": "3.12.3",
+      "vnxdna_version": "2.0.0rc4"
+    },
+    "runs": [
+      {
+        "size": 100000,
+        "stages": {
+          "A_restore": {
+            "cpu_s": 0.0029957009999999062,
+            "mb_s": 20.71961680718646,
+            "wall_s": 0.004826344083994627
+          },
+          "A_store": {
+            "cpu_s": 0.013571569000000006,
+            "mb_s": 6.273285618121033,
+            "stored_bytes": 50708,
+            "wall_s": 0.015940610086545348
+          },
+          "B_dna_encode": {
+            "bases": 424368,
+            "cpu_s": 0.032756333000000026,
+            "mb_s": 1.6631297993785128,
+            "strands": 1684,
+            "wall_s": 0.06012759800069034
+          },
+          "C_dna_decode_clean": {
+            "cpu_s": 0.06372135299999981,
+            "mb_s": 1.2583293695290152,
+            "wall_s": 0.07947044901084155
+          },
+          "D_sequencing_10x": {
+            "bases": 4206416,
+            "cpu_s": 0.351432913,
+            "mb_s": 0.27438861041297624,
+            "reads": 16692,
+            "wall_s": 0.36444661405403167
+          },
+          "E_clustering": {
+            "clusters": 1653,
+            "cpu_s": 1.1932174229999999,
+            "mb_s": 0.031036046842395644,
+            "reads": 16692,
+            "wall_s": 3.222059836029075
+          },
+          "F_consensus": {
+            "cpu_s": 0.884440787,
+            "mb_s": 0.11256823157284042,
+            "sequences": 1653,
+            "wall_s": 0.8883501020027325
+          },
+          "G_ecc_outer_decode_16_erasures_per_group": {
+            "cpu_s": 0.020871701999999992,
+            "exact": true,
+            "mb_s": 2.3307505545180787,
+            "wall_s": 0.02086881408467889
+          },
+          "G_ecc_outer_encode": {
+            "cpu_s": 0.0030227229999999494,
+            "mb_s": 16.092537701568833,
+            "wall_s": 0.003022518940269947
+          },
+          "H_end_to_end_total": {
+            "cpu_s": null,
+            "identical": true,
+            "mb_s": 0.021459710429816384,
+            "wall_s": 4.65989512426313
+          },
+          "H_recover_from_consensus": {
+            "cpu_s": 0.08676755400000014,
+            "mb_s": 0.917680700023706,
+            "sha256_match": true,
+            "wall_s": 0.10897036409005523
+          }
+        }
+      },
+      {
+        "size": 1000000,
+        "stages": {
+          "A_restore": {
+            "cpu_s": 0.010924828999999914,
+            "mb_s": 77.68124573885957,
+            "wall_s": 0.012873120023868978
+          },
+          "A_store": {
+            "cpu_s": 0.017025324999999647,
+            "mb_s": 52.22988174304689,
+            "stored_bytes": 451110,
+            "wall_s": 0.019146127975545824
+          },
+          "B_dna_encode": {
+            "bases": 3579912,
+            "cpu_s": 0.05983369899999991,
+            "mb_s": 4.446412704073638,
+            "strands": 14206,
+            "wall_s": 0.22490040096454322
+          },
+          "C_dna_decode_clean": {
+            "cpu_s": 0.15076091999999974,
+            "mb_s": 4.54029188396159,
+            "wall_s": 0.22025015694089234
+          },
+          "D_sequencing_10x": {
+            "bases": 35221353,
+            "cpu_s": 2.964024643,
+            "mb_s": 0.3353261125969147,
+            "reads": 139767,
+            "wall_s": 2.9821715709986165
+          },
+          "E_clustering": {
+            "clusters": 13927,
+            "cpu_s": 8.995892845999998,
+            "mb_s": 0.08637188536298457,
+            "reads": 139767,
+            "wall_s": 11.57784151402302
+          },
+          "F_consensus": {
+            "cpu_s": 7.4765249900000015,
+            "mb_s": 0.13353961851610058,
+            "sequences": 13927,
+            "wall_s": 7.488414383027703
+          },
+          "G_ecc_outer_decode_16_erasures_per_group": {
+            "cpu_s": 0.10898706599999741,
+            "exact": true,
+            "mb_s": 4.1282983417710035,
+            "wall_s": 0.10913939902093261
+          },
+          "G_ecc_outer_encode": {
+            "cpu_s": 0.014193073000001277,
+            "mb_s": 31.746264357428263,
+            "wall_s": 0.014192536007612944
+          },
+          "H_end_to_end_total": {
+            "cpu_s": null,
+            "identical": true,
+            "mb_s": 0.04431185823051032,
+            "wall_s": 22.567322606919333
+          },
+          "H_recover_from_consensus": {
+            "cpu_s": 0.17749076900000205,
+            "mb_s": 3.638366591175534,
+            "sha256_match": true,
+            "wall_s": 0.27484860992990434
+          }
+        }
+      },
+      {
+        "size": 10000000,
+        "stages": {
+          "A_restore": {
+            "cpu_s": 0.10140020200000066,
+            "mb_s": 215.13421446767418,
+            "wall_s": 0.04648261098191142
+          },
+          "A_store": {
+            "cpu_s": 0.14029010599999836,
+            "mb_s": 159.16359166226275,
+            "stored_bytes": 4429933,
+            "wall_s": 0.06282843893859535
+          },
+          "B_dna_encode": {
+            "bases": 34945344,
+            "cpu_s": 0.30062550799999954,
+            "mb_s": 16.78527114015547,
+            "strands": 138672,
+            "wall_s": 0.5957604090217501
+          },
+          "C_dna_decode_clean": {
+            "cpu_s": 0.8028944780000025,
+            "mb_s": 11.463502146619778,
+            "wall_s": 0.8723337660776451
+          },
+          "D_sequencing_10x": {
+            "bases": 342474113,
+            "cpu_s": 25.828145819000003,
+            "mb_s": 0.38575941034805367,
+            "reads": 1359025,
+            "wall_s": 25.922893212060444
+          },
+          "E_clustering": {
+            "clusters": 135869,
+            "cpu_s": 97.996348775,
+            "mb_s": 0.0921924023025907,
+            "reads": 1359025,
+            "wall_s": 108.46880816901103
+          },
+          "F_consensus": {
+            "cpu_s": 75.087690939,
+            "mb_s": 0.13314718023408675,
+            "sequences": 135869,
+            "wall_s": 75.10485751496162
+          },
+          "G_ecc_outer_decode_16_erasures_per_group": {
+            "cpu_s": 1.0922624630000257,
+            "exact": true,
+            "mb_s": 4.054714293609815,
+            "wall_s": 1.0922594489529729
+          },
+          "G_ecc_outer_encode": {
+            "cpu_s": 0.16767590500001006,
+            "mb_s": 26.40772482373268,
+            "wall_s": 0.1677085030823946
+          },
+          "H_end_to_end_total": {
+            "cpu_s": null,
+            "identical": true,
+            "mb_s": 0.047297969780318104,
+            "wall_s": 211.42556533496827
+          },
+          "H_recover_from_consensus": {
+            "cpu_s": 1.0376564259999839,
+            "mb_s": 7.871427529846068,
+            "sha256_match": true,
+            "wall_s": 1.27041759097483
+          }
+        }
+      }
+    ]
+  },
+  "runtime_s": 242.42977147607598,
+  "simulation": "SOFTWARE SIMULATION"
+}

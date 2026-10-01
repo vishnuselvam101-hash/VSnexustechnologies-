@@ -1,173 +1,148 @@
-# Channel model, synchronization research and measured recovery
+# Channel model (simulated storage and sequencing) and measured recovery
 
-## Simulator (`vnxdna.channel`, `vnx-dna simulate`)
+> **SOFTWARE SIMULATION.** The channel below is a configurable, reproducible stress generator for the decoder. It is
+> not fitted to any synthesis chemistry or sequencing platform. Recovery rates measured with it describe *this
+> software under this model*. They are not evidence about physical DNA storage, and no physical experiment has been
+> performed.
 
-This is a software model of synthesis → storage → sequencing. It is **not fitted to any real platform**. The stages
-are applied in this order to the strand pool:
+## The simulator (`vnx-dna sequence`, `vnx-dna simulate`; `vnxdna.v2.sequencing`)
 
-1. **Dropout** (molecule loss): each strand is lost with probability `dropout_rate`. `--exact-dropout` instead removes
-   exactly `round(rate·N)` strands.
-2. **Coverage** (sequencing depth): each surviving strand yields `coverage` reads (`fixed`) or Poisson(`coverage`)
-   reads (`poisson`). Poisson coverage can give zero reads, which is *sequencing read loss* and is reported separately
-   as `strands_with_zero_reads`.
-3. **Burst** (per read, probability `burst_rate`): one contiguous run of U[min, max] bases is substituted, deleted, or
-   mixed.
-4. **Per-base errors**, independent: a substitution to one of the three other bases (uniform), a deletion, and an
-   insertion of a uniform base after the position.
-5. **Orientation:** a read is reverse-complemented with probability `reverse_complement_rate`.
-6. **Order:** reads are shuffled if `shuffle` is set. The CLI shuffles by default.
+The V3 error model, the error-sweep command and the V3 sweep results are in [ERROR_MODEL.md](ERROR_MODEL.md). This
+page keeps the V2 measurements, which were made with the V2 decoder.
 
-All randomness comes from `numpy.random.Generator(PCG64(seed))`, drawn in a fixed order: strand-level draws first,
-then per-base draws in blocks of ≤ 2²⁰ bases. The same input, configuration and seed produce byte-identical output
-(tested).
+Per designed strand (one molecule species), in this order:
 
-**The report counts what happened**, not the configured rates:
-- strands in, dropped and surviving; strands with zero reads;
-- reads out, reads altered, reads reverse-complemented;
-- substitutions, insertions, deletions, bursts and burst bases;
-- observed per-base and dropout rates;
-- a SHA-256 of the dropped strand indices.
-
-`--events FILE` logs every event as JSON lines, with its read, source strand, position, and original/replacement
-base. `simulate --report` adds provenance: version, git commit, Python, platform and library versions.
-
-The error classes are kept distinct:
-
-| class | where it arises | what handles it |
+| stage | parameter(s) | model |
 |---|---|---|
-| substitution | per-base / burst | inner RS (≤ r/2 byte errors per strand); beyond that the strand becomes an erasure |
-| insertion / deletion | per-base / burst | read-length mismatch → erasure; opt-in experimental realignment |
-| unreadable base (N) | read files | byte erasure for the inner RS |
-| molecular dropout / zero coverage | stages 1–2 | outer erasure code (≤ M per stripe) |
-| erased shard (rejected read) | decoder | outer erasure code |
-| duplicate / conflicting copies | coverage | validation + majority, tie → erasure |
-| reordering / reverse complement | stages 5–6 | in-band addressing and an RC attempt per read |
+| dropout | `--dropout-rate` | the species is lost (no molecule survives) |
+| abundance / coverage | `--coverage`, `--coverage-model fixed\|poisson\|lognormal`, `--abundance-sigma` | reads per species: exactly `coverage`; Poisson(`coverage`); or Poisson(`coverage × w`) with `w ~ LogNormal(−σ²/2, σ)` (mean 1): uneven abundance, as after PCR |
+| synthesis errors | `--synthesis-{substitution,insertion,deletion}-rate` | per base, independently for each read's molecule; not reflected in quality |
+| sequencing errors | `--{substitution,insertion,deletion}-rate` | per base per read: substitution → deletion → insertion after the base |
+| bursts (V3) | `--burst-rate`, `--burst-length`, `--burst-kind substitution\|deletion\|insertion\|mixed` | with probability `burst-rate` a read carries one contiguous run of Geometric(mean `burst-length`) bases, starting at a uniform position, that are substituted, deleted, or preceded by inserted random bases; not reflected in quality |
+| truncation | `--truncation-rate` | the read keeps a uniform 50–99 % prefix |
+| unreadable calls | `--n-rate` | a base becomes `N` (quality 2) |
+| orientation | `--reverse-complement-rate` | the read is reverse-complemented |
+| duplication | `--duplication-rate` | the read gets an identical copy, errors included (PCR/optical duplicate) |
+| invalid reads | `--invalid-read-rate` | extra junk reads (20–400 random bases including `N`) |
+| contamination | `--contamination-rate` | extra foreign reads (random A/C/G/T of strand length, from no archive) |
+| order | `--shuffle` (default) | a uniform random permutation of all reads, computed out of core (random bucket files, each permuted in memory) |
+| quality | `--quality-model informative\|flat`, `--quality-informativeness` | informative: correct bases Q30–40, sequencing-error bases Q2–20 with the given probability |
 
-## Synchronization and indels (research)
+**Coverage levels** 1×, 2×, 5×, 10×, 20×, 50× and any value in (0, 1000] are supported (the `fixed` model needs an
+integer). Zero-error mode
+(`--coverage-model fixed`, all rates 0, `--no-shuffle`) yields exact copies, which is the only case where strands
+are duplicated perfectly (tested).
 
-Reed–Solomon codes correct substitutions and erasures. **They do not correct insertions or deletions**, because an
-indel shifts every later symbol. By default, a read whose length is not the strand length is discarded, and the outer
-code treats its strand as an erasure. That is always safe.
+**Reproducibility.** All randomness comes from `numpy.random.Generator(PCG64)` seeded with `(seed, batch index)`. Events
+are drawn per batch of strands: 8,192 strands, or fewer when the expected read bases of a batch would exceed
+8,192 × 4,096 (V3; memory stays bounded at high coverage, and ordinary channels, e.g. 276-nt strands up to
+coverage 14.8, keep the V2 batches and therefore the V2 output bytes), and per-base events as Bernoulli processes via geometric gaps (exactly the same
+distribution as one uniform draw per base, at a cost proportional to the number of events). The same input,
+configuration and seed give a byte-identical output file (tested). Since V3 the number of shuffle buckets is derived
+from the pool's bases, not from the input file's byte size, so the same strands as FASTA or as VXS give the same
+reads (V2 differed); this changes shuffled output bytes relative to V2 for large pools and for VXS input. The report counts **events that happened**:
+strands, dropped strands, strands with zero reads, reads, reads per strand, the coverage distribution (histogram),
+duplicates, truncations, reverse complements, junk and foreign reads, every error class, and observed rates per
+designed base.
 
-`--experimental-indel-repair` (module `vnxdna.sync.indel`) adds **RS-assisted realignment**. For a read that is
-d = ±1…3 bases off:
-1. hypothesize that the indels fall in frame bytes j₁ ≤ … ≤ j_|d|;
-2. insert a placeholder base, or delete one, at the start of each hypothesized byte;
-3. mark those bytes as erasures and run the inner RS decoder;
-4. accept the result only if the frame CRC-32 verifies.
+**Output formats.** FASTQ (with qualities), FASTA, or VXS. VXS only for channels that keep every read at the strand
+length with A/C/G/T only: no indels, truncation, `N`, junk or contamination.
 
-If the true indel lies in byte j, only byte j is misaligned, so a single indel plus up to ⌊(r−1)/2⌋ substitutions is
-always repaired (tested at many positions). Cost: O(F) inner decodes per read for |d| = 1 and O(F²) for |d| = 2,
-where F = frame bytes. It is slow, so it is opt-in.
+`vnx-dna simulate` is the same engine with storage-channel defaults (coverage 1, fixed, flat quality): a damaged
+molecule pool rather than a read set.
 
-The experiment is honest about its limits:
-- net-zero indel pairs keep the length and look like byte errors;
-- two indels in different bytes need the O(F²) search;
-- per-read realignment cannot use consensus across copies.
+## Error classes and the layer that handles each
 
-Considered and not implemented:
-- **Synchronization markers / watermark codes:** they cost density and need a different frame format, which is a V2
-  research item.
-- **Consensus alignment across coverage:** needs multiple-sequence alignment, also V2.
+| class | handled by | beyond capacity |
+|---|---|---|
+| strand dropout, zero coverage | outer erasure code (any M per group) | `INSUFFICIENT_REDUNDANCY` |
+| substitutions | consensus vote (coverage > 1), inner RS (≤ r/2 byte errors, or r erasures) | strand → erasure |
+| insertions / deletions | consensus alignment (coverage > 1); single-read realignment (opt-in) | strand → erasure |
+| bursts (V3) | substitution bursts: inner RS; lost/extra runs: consensus (coverage > 1) or single-read burst resynchronisation (`--burst-repair`, V3) | strand → erasure |
+| `N` / low-quality bases | erasures for the inner RS | strand → erasure |
+| duplicates | duplicate resolution (identical copies merge) | – |
+| conflicting copies | strict majority; tie → erasure | – |
+| truncated, junk, foreign reads | rejected: wrong length or CRC failure; foreign tag → counted and ignored | – |
+| mixed archives in one pool | V3: the only archive whose metadata decodes is used; otherwise refused until `--archive-tag` picks one (V2 always refused) | – |
 
-The frame format (a fixed-length frame, a CRC check, and an erasure-tolerant outer code) lets any such method be added
-as a new decoder stage without changing format 4.
+## Measured recovery
 
-## Measured recovery (generated)
+All tables below were produced by `research/v2/run_v2_research.py` through the experiment engine
+([EXPERIMENTS.md](EXPERIMENTS.md)) and rendered by `research/v2/render_v2_tables.py`. "Exact recovery" means the
+recovered file's SHA-256 equals the input's, checked outside the decoder. "Failed (detected)" means the decoder
+refused (no output). "Undetected corruption" would be wrong output presented as success, and must be 0.
 
-The next section is written by `research/experiments/run_experiments.py` from real decode attempts. Each point is 10
-seeds on a 60 kB half-random/half-text dataset with default settings unless stated. *Recovered* means the exact bytes
-came back, verified by SHA-256. *Wrong data* counts runs that returned incorrect bytes. **It is 0 in every run**: every
-failure was an explicit error, and the runs are reproducible from the commit and seeds recorded in
-`research/results/channel_experiments.json`.
+### Coverage
 
+<!-- BEGIN GENERATED: coverage -->
+*(generated by `research/v2/render_v2_tables.py` from `research/results/v2/coverage.json`)*
 
-Commit `bb33372cedf018e26013e9e2a10cca6eaffe9d01` (dirty=False), vnx-dna 1.0.0, Python 3.12.3, Linux-6.8.0-139-generic-x86_64-with-glibc2.39, 8 CPUs.
+20,000 B mixed (seed 7), profile balanced (8 KiB chunks), 40 trials per point; channel: substitution 0.001, insertion 0.0001, deletion 0.0001, dropout 0.02, coverage model poisson.
 
-Dataset: 60,000 B (sha256 `35a8b45340c47ff3…`), default profile (64+16 outer, 40 B payload, 8 B inner parity, 244 nt strands), 1063 strands. 10 seeds per point.
+| point | read processing | exact recovery | 95 % Wilson CI | failed (detected) | undetected corruption | mean reads/strand | mean groups repaired | worst group erasures |
+|---|---|---|---|---|---|---|---|---|
+| coverage 1x | direct | 0/40 | [0.0000, 0.0876] | 40 | 0 | 0.98 | n/a (no successful trial) | n/a |
+| coverage 2x | cluster + consensus | 24/40 | [0.4460, 0.7365] | 16 | 0 | 1.97 | 6.0 | 16 |
+| coverage 2x | direct | 23/40 | [0.4220, 0.7149] | 17 | 0 | 1.97 | 6.0 | 16 |
+| coverage 5x | cluster + consensus | 40/40 | [0.9124, 1.0000] | 0 | 0 | 4.93 | 4.4 | 6 |
+| coverage 5x | direct | 40/40 | [0.9124, 1.0000] | 0 | 0 | 4.93 | 4.4 | 6 |
+| coverage 10x | cluster + consensus | 40/40 | [0.9124, 1.0000] | 0 | 0 | 9.77 | 3.8 | 6 |
+| coverage 10x | direct | 40/40 | [0.9124, 1.0000] | 0 | 0 | 9.77 | 3.8 | 6 |
+| coverage 20x | cluster + consensus | 40/40 | [0.9124, 1.0000] | 0 | 0 | 19.57 | 3.9 | 6 |
+| coverage 20x | direct | 40/40 | [0.9124, 1.0000] | 0 | 0 | 19.57 | 3.9 | 6 |
+| coverage 50x | cluster + consensus | 40/40 | [0.9124, 1.0000] | 0 | 0 | 49.05 | 3.6 | 5 |
+| coverage 50x | direct | 40/40 | [0.9124, 1.0000] | 0 | 0 | 49.05 | 3.6 | 5 |
+<!-- END GENERATED: coverage -->
 
-Outcome counts are real decode attempts; *wrong* counts runs that returned incorrect bytes (must be 0).
+### Substitution and indel rates
 
-### X1-dropout (64+16 outer code; varying `dropout_rate`; base {}; indel repair off)
+<!-- BEGIN GENERATED: errors -->
+*(generated by `research/v2/render_v2_tables.py` from `research/results/v2/errors.json`)*
 
-| value | recovered | wrong data | mean observed dropped strands | mean observed events (sub/ins/del) |
-|---|---|---|---|---|
-| 0.0 | 10/10 | 0 | 0.0 | 0 / 0 / 0 |
-| 0.01 | 10/10 | 0 | 9.9 | 0 / 0 / 0 |
-| 0.05 | 10/10 | 0 | 48.2 | 0 / 0 / 0 |
-| 0.1 | 9/10 | 0 | 100.9 | 0 / 0 / 0 |
-| 0.15 | 2/10 | 0 | 154.0 | 0 / 0 / 0 |
-| 0.2 | 0/10 | 0 | 211.1 | 0 / 0 / 0 |
-| 0.25 | 0/10 | 0 | 262.8 | 0 / 0 / 0 |
-| 0.3 | 0/10 | 0 | 314.7 | 0 / 0 / 0 |
+20,000 B mixed (seed 7), coverage 10 (poisson), dropout 2 %, 30 trials per point.
 
-### X2-substitution (64+16 outer code; varying `substitution_rate`; base {}; indel repair off)
+| point | read processing | exact recovery | 95 % Wilson CI | failed (detected) | undetected corruption | mean reads/strand | mean groups repaired | worst group erasures |
+|---|---|---|---|---|---|---|---|---|
+| substitution 0.001 | cluster + consensus | 30/30 | [0.8865, 1.0000] | 0 | 0 | 9.80 | 3.6 | 4 |
+| substitution 0.001 | direct | 30/30 | [0.8865, 1.0000] | 0 | 0 | 9.80 | 3.6 | 4 |
+| substitution 0.005 | cluster + consensus | 30/30 | [0.8865, 1.0000] | 0 | 0 | 9.80 | 3.7 | 6 |
+| substitution 0.005 | direct | 30/30 | [0.8865, 1.0000] | 0 | 0 | 9.80 | 3.7 | 6 |
+| substitution 0.01 | cluster + consensus | 30/30 | [0.8865, 1.0000] | 0 | 0 | 9.81 | 3.5 | 6 |
+| substitution 0.01 | direct | 30/30 | [0.8865, 1.0000] | 0 | 0 | 9.81 | 3.5 | 6 |
+| substitution 0.02 | cluster + consensus | 30/30 | [0.8865, 1.0000] | 0 | 0 | 9.84 | 3.7 | 5 |
+| substitution 0.02 | direct | 30/30 | [0.8865, 1.0000] | 0 | 0 | 9.84 | 4.5 | 6 |
+| substitution 0.04 | cluster + consensus | 20/30 | [0.4878, 0.8077] | 10 | 0 | 9.85 | 6.0 | 16 |
+| substitution 0.04 | direct | 0/30 | [0.0000, 0.1135] | 30 | 0 | 9.85 | n/a (no successful trial) | n/a |
+| substitution 0.06 | cluster + consensus | 0/30 | [0.0000, 0.1135] | 30 | 0 | 9.79 | n/a (no successful trial) | n/a |
+| substitution 0.06 | direct | 0/30 | [0.0000, 0.1135] | 30 | 0 | 9.79 | n/a (no successful trial) | n/a |
+| insertion = deletion = 0.0001 | cluster + consensus | 30/30 | [0.8865, 1.0000] | 0 | 0 | 9.79 | 3.8 | 6 |
+| insertion = deletion = 0.0001 | direct | 30/30 | [0.8865, 1.0000] | 0 | 0 | 9.79 | 3.8 | 6 |
+| insertion = deletion = 0.0005 | cluster + consensus | 30/30 | [0.8865, 1.0000] | 0 | 0 | 9.82 | 3.6 | 5 |
+| insertion = deletion = 0.0005 | direct | 30/30 | [0.8865, 1.0000] | 0 | 0 | 9.82 | 3.6 | 5 |
+| insertion = deletion = 0.001 | cluster + consensus | 30/30 | [0.8865, 1.0000] | 0 | 0 | 9.81 | 3.9 | 5 |
+| insertion = deletion = 0.001 | direct | 30/30 | [0.8865, 1.0000] | 0 | 0 | 9.81 | 3.9 | 5 |
+| insertion = deletion = 0.003 | cluster + consensus | 30/30 | [0.8865, 1.0000] | 0 | 0 | 9.82 | 4.3 | 6 |
+| insertion = deletion = 0.003 | direct | 30/30 | [0.8865, 1.0000] | 0 | 0 | 9.82 | 5.9 | 15 |
+| insertion = deletion = 0.005 | cluster + consensus | 30/30 | [0.8865, 1.0000] | 0 | 0 | 9.79 | 5.5 | 12 |
+| insertion = deletion = 0.005 | direct | 0/30 | [0.0000, 0.1135] | 30 | 0 | 9.79 | n/a (no successful trial) | n/a |
+| insertion = deletion = 0.01 | cluster + consensus | 2/30 | [0.0185, 0.2132] | 28 | 0 | 9.82 | 6.0 | 16 |
+| insertion = deletion = 0.01 | direct | 0/30 | [0.0000, 0.1135] | 30 | 0 | 9.82 | n/a (no successful trial) | n/a |
+<!-- END GENERATED: errors -->
 
-| value | recovered | wrong data | mean observed dropped strands | mean observed events (sub/ins/del) |
-|---|---|---|---|---|
-| 0.0 | 10/10 | 0 | 0.0 | 0 / 0 / 0 |
-| 0.001 | 10/10 | 0 | 0.0 | 256 / 0 / 0 |
-| 0.005 | 10/10 | 0 | 0.0 | 1293 / 0 / 0 |
-| 0.01 | 10/10 | 0 | 0.0 | 2575 / 0 / 0 |
-| 0.015 | 0/10 | 0 | 0.0 | 3849 / 0 / 0 |
-| 0.02 | 0/10 | 0 | 0.0 | 5135 / 0 / 0 |
-| 0.03 | 0/10 | 0 | 0.0 | 7725 / 0 / 0 |
+### Uneven abundance
 
-### X3-sub+dropout (64+16 outer code; varying `substitution_rate`; base {'dropout_rate': 0.1}; indel repair off)
+<!-- BEGIN GENERATED: abundance -->
+*(generated by `research/v2/render_v2_tables.py` from `research/results/v2/abundance.json`)*
 
-| value | recovered | wrong data | mean observed dropped strands | mean observed events (sub/ins/del) |
-|---|---|---|---|---|
-| 0.001 | 9/10 | 0 | 100.9 | 233 / 0 / 0 |
-| 0.005 | 9/10 | 0 | 100.9 | 1172 / 0 / 0 |
-| 0.01 | 0/10 | 0 | 100.9 | 2333 / 0 / 0 |
+20,000 B mixed (seed 7), mean coverage 5 with log-normal abundance, 40 trials per point.
 
-### X4-indel-no-repair (64+16 outer code; varying `deletion_rate`; base {'insertion_rate': 0.0}; indel repair off)
+| point | read processing | exact recovery | 95 % Wilson CI | failed (detected) | undetected corruption | mean reads/strand | mean groups repaired | worst group erasures |
+|---|---|---|---|---|---|---|---|---|
+| sigma 0.0 | cluster + consensus | 40/40 | [0.9124, 1.0000] | 0 | 0 | 4.89 | 4.3 | 9 |
+| sigma 0.5 | cluster + consensus | 40/40 | [0.9124, 1.0000] | 0 | 0 | 4.93 | 5.4 | 11 |
+| sigma 1.0 | cluster + consensus | 25/40 | [0.4703, 0.7578] | 15 | 0 | 4.91 | 6.0 | 16 |
+| sigma 1.5 | cluster + consensus | 0/40 | [0.0000, 0.0876] | 40 | 0 | 4.87 | n/a (no successful trial) | n/a |
+<!-- END GENERATED: abundance -->
 
-| value | recovered | wrong data | mean observed dropped strands | mean observed events (sub/ins/del) |
-|---|---|---|---|---|
-| 0.0002 | 10/10 | 0 | 0.0 | 0 / 0 / 54 |
-| 0.0005 | 7/10 | 0 | 0.0 | 0 / 0 / 134 |
-| 0.001 | 0/10 | 0 | 0.0 | 0 / 0 / 256 |
-| 0.002 | 0/10 | 0 | 0.0 | 0 / 0 / 516 |
-
-### X5-indel-with-repair (64+16 outer code; varying `deletion_rate`; base {'insertion_rate': 0.0}; indel repair on)
-
-| value | recovered | wrong data | mean observed dropped strands | mean observed events (sub/ins/del) |
-|---|---|---|---|---|
-| 0.0002 | 10/10 | 0 | 0.0 | 0 / 0 / 54 |
-| 0.0005 | 10/10 | 0 | 0.0 | 0 / 0 / 134 |
-| 0.001 | 10/10 | 0 | 0.0 | 0 / 0 / 256 |
-| 0.002 | 10/10 | 0 | 0.0 | 0 / 0 / 516 |
-
-### X6-mixed-indel-repair (64+16 outer code; varying `insertion_rate`; base {'deletion_rate': 0.0005, 'substitution_rate': 0.002}; indel repair on)
-
-| value | recovered | wrong data | mean observed dropped strands | mean observed events (sub/ins/del) |
-|---|---|---|---|---|
-| 0.0005 | 10/10 | 0 | 0.0 | 516 / 135 / 125 |
-| 0.001 | 10/10 | 0 | 0.0 | 516 / 263 / 125 |
-
-### X7-dropout-96+48 (96+48 outer code; varying `dropout_rate`; base {}; indel repair off)
-
-| value | recovered | wrong data | mean observed dropped strands | mean observed events (sub/ins/del) |
-|---|---|---|---|---|
-| 0.1 | 10/10 | 0 | 123.3 | 0 / 0 / 0 |
-| 0.15 | 10/10 | 0 | 187.3 | 0 / 0 / 0 |
-| 0.2 | 10/10 | 0 | 254.9 | 0 / 0 / 0 |
-| 0.25 | 10/10 | 0 | 316.2 | 0 / 0 / 0 |
-| 0.3 | 4/10 | 0 | 379.6 | 0 / 0 / 0 |
-
-## Interpretation
-
-These are simulated results on one dataset (60 kB, 1,063 strands, 10 seeds per point). They are not a statistical
-characterisation, and none of them says anything about real DNA.
-
-- **Dropout.** The default 64+16 profile (20 % parity) recovered every trial up to 5 % dropout, 9/10 at 10 % and 2/10
-  at 15 %. The 96+48 profile (33 % parity) recovered every trial up to 25 %. Pick `--parity-shards` for the expected
-  loss.
-- **Substitutions.** Up to 1 % per base, every trial recovered (4 correctable byte errors per 244-nt strand). At
-  1.5 %, too many strands exceed the inner capacity at once, and every trial failed explicitly.
-- **Indels without repair.** Every read with an indel becomes an erasure, so recovery collapses at about 0.05–0.1 %
-  deletions per base.
-- **Indels with the experimental repair.** 10/10 at 0.2 % deletions, and with mixed insertions, deletions and
-  substitutions at the tested rates. It is slow (a per-read search) and validated only for single indels per read.
-- **Wrong data: 0 in all 33 settings × 10 seeds.** Every unrecoverable trial ended in an explicit error.
+The V1 channel measurements (format 4, V1 simulator) remain in `research/results/channel_experiments.md` for
+reference.

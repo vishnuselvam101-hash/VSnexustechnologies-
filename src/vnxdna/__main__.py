@@ -1,4 +1,4 @@
 """``python -m vnxdna`` runs the CLI."""
-from .cli import main
+from ._entry import main
 
 main()

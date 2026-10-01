@@ -6,7 +6,7 @@ import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
-from conftest import FAST, TEST_KEY, mixed_bytes
+from v1_support import FAST, TEST_KEY, mixed_bytes
 from vnxdna import api
 from vnxdna.container import manifest as mf
 from vnxdna.container import vxdna

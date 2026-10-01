@@ -1,0 +1,406 @@
+{
+  "environment": {
+    "cpu_count": 8,
+    "git": {
+      "commit": "9f255985304c78e267c0fb8027cb3240d444095b",
+      "dirty": false
+    },
+    "implementation": "CPython",
+    "libraries": {
+      "cryptography": "46.0.7",
+      "numpy": "2.5.3",
+      "reedsolo": "unknown",
+      "zstandard": "0.25.0"
+    },
+    "machine": "x86_64",
+    "platform": "Linux-6.8.0-139-generic-x86_64-with-glibc2.39",
+    "processor": "x86_64",
+    "python": "3.12.3",
+    "vnxdna_version": "2.0.0rc4"
+  },
+  "generated_by": "research/v2/run_v2_research.py",
+  "input": "200,000,000 B mixed (seed 11), profile balanced except chunk size; random access = 4,096 B at offset 100,000,000",
+  "rows": [
+    {
+      "chunk_size": 65536,
+      "identical": true,
+      "stages": {
+        "encode": {
+          "cpu_utilisation": 6.11485056642655,
+          "peak_rss_tree_bytes": 413061120,
+          "report": {
+            "chunks": null,
+            "container_bytes": null,
+            "container_bytes_read": null,
+            "dna_bases": 727761384,
+            "stored_bytes": null,
+            "strands": 2887942,
+            "strands_processed": null
+          },
+          "wall_s": 3.9175671980483457
+        },
+        "extract_container": {
+          "cpu_utilisation": 2.658680710909859,
+          "peak_rss_tree_bytes": 55537664,
+          "report": {
+            "chunks": null,
+            "container_bytes": null,
+            "container_bytes_read": 15266,
+            "dna_bases": null,
+            "stored_bytes": null,
+            "strands": null,
+            "strands_processed": null
+          },
+          "wall_s": 0.42868893407285213
+        },
+        "extract_dna": {
+          "cpu_utilisation": 2.011806775870238,
+          "peak_rss_tree_bytes": 396529664,
+          "report": {
+            "chunks": null,
+            "container_bytes": null,
+            "container_bytes_read": null,
+            "dna_bases": null,
+            "stored_bytes": null,
+            "strands": null,
+            "strands_processed": 14606
+          },
+          "wall_s": 0.7823609199840575
+        },
+        "recover": {
+          "cpu_utilisation": 2.5810930284491658,
+          "peak_rss_tree_bytes": 601706496,
+          "report": {
+            "chunks": null,
+            "container_bytes": null,
+            "container_bytes_read": null,
+            "dna_bases": null,
+            "stored_bytes": null,
+            "strands": null,
+            "strands_processed": null
+          },
+          "wall_s": 7.239848310011439
+        },
+        "store": {
+          "cpu_utilisation": 2.2073993136806114,
+          "peak_rss_tree_bytes": 64212992,
+          "report": {
+            "chunks": 3052,
+            "container_bytes": 91579925,
+            "container_bytes_read": null,
+            "dna_bases": null,
+            "stored_bytes": 91297306,
+            "strands": null,
+            "strands_processed": null
+          },
+          "wall_s": 2.0445680000120774
+        }
+      }
+    },
+    {
+      "chunk_size": 262144,
+      "identical": true,
+      "stages": {
+        "encode": {
+          "cpu_utilisation": 5.4922612748116535,
+          "peak_rss_tree_bytes": 432685056,
+          "report": {
+            "chunks": null,
+            "container_bytes": null,
+            "container_bytes_read": null,
+            "dna_bases": 709235100,
+            "stored_bytes": null,
+            "strands": 2814425,
+            "strands_processed": null
+          },
+          "wall_s": 4.1128931909333915
+        },
+        "extract_container": {
+          "cpu_utilisation": 2.695270976611863,
+          "peak_rss_tree_bytes": 55631872,
+          "report": {
+            "chunks": null,
+            "container_bytes": null,
+            "container_bytes_read": 58571,
+            "dna_bases": null,
+            "stored_bytes": null,
+            "strands": null,
+            "strands_processed": null
+          },
+          "wall_s": 0.4202490249881521
+        },
+        "extract_dna": {
+          "cpu_utilisation": 2.3093139520018666,
+          "peak_rss_tree_bytes": 313946112,
+          "report": {
+            "chunks": null,
+            "container_bytes": null,
+            "container_bytes_read": null,
+            "dna_bases": null,
+            "stored_bytes": null,
+            "strands": null,
+            "strands_processed": 5433
+          },
+          "wall_s": 0.6111499039689079
+        },
+        "recover": {
+          "cpu_utilisation": 3.215748667182271,
+          "peak_rss_tree_bytes": 618356736,
+          "report": {
+            "chunks": null,
+            "container_bytes": null,
+            "container_bytes_read": null,
+            "dna_bases": null,
+            "stored_bytes": null,
+            "strands": null,
+            "strands_processed": null
+          },
+          "wall_s": 5.145075288019143
+        },
+        "store": {
+          "cpu_utilisation": 2.3349567626731247,
+          "peak_rss_tree_bytes": 66789376,
+          "report": {
+            "chunks": 763,
+            "container_bytes": 89893421,
+            "container_bytes_read": null,
+            "dna_bases": null,
+            "stored_bytes": 89821392,
+            "strands": null,
+            "strands_processed": null
+          },
+          "wall_s": 1.7138111779931933
+        }
+      }
+    },
+    {
+      "chunk_size": 1048576,
+      "identical": true,
+      "stages": {
+        "encode": {
+          "cpu_utilisation": 5.610848412002145,
+          "peak_rss_tree_bytes": 518275072,
+          "report": {
+            "chunks": null,
+            "container_bytes": null,
+            "container_bytes_read": null,
+            "dna_bases": 695508156,
+            "stored_bytes": null,
+            "strands": 2759953,
+            "strands_processed": null
+          },
+          "wall_s": 4.028954150970094
+        },
+        "extract_container": {
+          "cpu_utilisation": 2.5667392231720707,
+          "peak_rss_tree_bytes": 59330560,
+          "report": {
+            "chunks": null,
+            "container_bytes": null,
+            "container_bytes_read": 225822,
+            "dna_bases": null,
+            "stored_bytes": null,
+            "strands": null,
+            "strands_processed": null
+          },
+          "wall_s": 0.4484997889958322
+        },
+        "extract_dna": {
+          "cpu_utilisation": 2.2638463157516617,
+          "peak_rss_tree_bytes": 64110592,
+          "report": {
+            "chunks": null,
+            "container_bytes": null,
+            "container_bytes_read": null,
+            "dna_bases": null,
+            "stored_bytes": null,
+            "strands": null,
+            "strands_processed": 8046
+          },
+          "wall_s": 0.6160546280443668
+        },
+        "recover": {
+          "cpu_utilisation": 3.5193730140819555,
+          "peak_rss_tree_bytes": 627744768,
+          "report": {
+            "chunks": null,
+            "container_bytes": null,
+            "container_bytes_read": null,
+            "dna_bases": null,
+            "stored_bytes": null,
+            "strands": null,
+            "strands_processed": null
+          },
+          "wall_s": 4.509095209999941
+        },
+        "store": {
+          "cpu_utilisation": 2.410780991119439,
+          "peak_rss_tree_bytes": 83251200,
+          "report": {
+            "chunks": 191,
+            "container_bytes": 88245873,
+            "container_bytes_read": null,
+            "dna_bases": null,
+            "stored_bytes": 88226468,
+            "strands": null,
+            "strands_processed": null
+          },
+          "wall_s": 1.6452253500465304
+        }
+      }
+    },
+    {
+      "chunk_size": 4194304,
+      "identical": true,
+      "stages": {
+        "encode": {
+          "cpu_utilisation": 6.217532500112684,
+          "peak_rss_tree_bytes": 622899200,
+          "report": {
+            "chunks": null,
+            "container_bytes": null,
+            "container_bytes_read": null,
+            "dna_bases": 694634724,
+            "stored_bytes": null,
+            "strands": 2756487,
+            "strands_processed": null
+          },
+          "wall_s": 3.6529452800750732
+        },
+        "extract_container": {
+          "cpu_utilisation": 2.533893284900153,
+          "peak_rss_tree_bytes": 58941440,
+          "report": {
+            "chunks": null,
+            "container_bytes": null,
+            "container_bytes_read": 1849145,
+            "dna_bases": null,
+            "stored_bytes": null,
+            "strands": null,
+            "strands_processed": null
+          },
+          "wall_s": 0.4674857489299029
+        },
+        "extract_dna": {
+          "cpu_utilisation": 2.1907627214620216,
+          "peak_rss_tree_bytes": 359211008,
+          "report": {
+            "chunks": null,
+            "container_bytes": null,
+            "container_bytes_read": null,
+            "dna_bases": null,
+            "stored_bytes": null,
+            "strands": null,
+            "strands_processed": 58117
+          },
+          "wall_s": 0.7625298639759421
+        },
+        "recover": {
+          "cpu_utilisation": 3.5590364979923605,
+          "peak_rss_tree_bytes": 618786816,
+          "report": {
+            "chunks": null,
+            "container_bytes": null,
+            "container_bytes_read": null,
+            "dna_bases": null,
+            "stored_bytes": null,
+            "strands": null,
+            "strands_processed": null
+          },
+          "wall_s": 4.3933775359764695
+        },
+        "store": {
+          "cpu_utilisation": 2.4467257106124327,
+          "peak_rss_tree_bytes": 101056512,
+          "report": {
+            "chunks": 48,
+            "container_bytes": 88188120,
+            "container_bytes_read": null,
+            "dna_bases": null,
+            "stored_bytes": 88181873,
+            "strands": null,
+            "strands_processed": null
+          },
+          "wall_s": 1.5976322899805382
+        }
+      }
+    },
+    {
+      "chunk_size": 16777216,
+      "identical": true,
+      "stages": {
+        "encode": {
+          "cpu_utilisation": 5.338741920950698,
+          "peak_rss_tree_bytes": 810147840,
+          "report": {
+            "chunks": null,
+            "container_bytes": null,
+            "container_bytes_read": null,
+            "dna_bases": 694165248,
+            "stored_bytes": null,
+            "strands": 2754624,
+            "strands_processed": null
+          },
+          "wall_s": 3.965161327039823
+        },
+        "extract_container": {
+          "cpu_utilisation": 2.277587780334223,
+          "peak_rss_tree_bytes": 80760832,
+          "report": {
+            "chunks": null,
+            "container_bytes": null,
+            "container_bytes_read": 7393795,
+            "dna_bases": null,
+            "stored_bytes": null,
+            "strands": null,
+            "strands_processed": null
+          },
+          "wall_s": 0.5599639280699193
+        },
+        "extract_dna": {
+          "cpu_utilisation": 2.6938697932652214,
+          "peak_rss_tree_bytes": 470360064,
+          "report": {
+            "chunks": null,
+            "container_bytes": null,
+            "container_bytes_read": null,
+            "dna_bases": null,
+            "stored_bytes": null,
+            "strands": null,
+            "strands_processed": 231213
+          },
+          "wall_s": 0.987691760994494
+        },
+        "recover": {
+          "cpu_utilisation": 3.402466742152328,
+          "peak_rss_tree_bytes": 635179008,
+          "report": {
+            "chunks": null,
+            "container_bytes": null,
+            "container_bytes_read": null,
+            "dna_bases": null,
+            "stored_bytes": null,
+            "strands": null,
+            "strands_processed": null
+          },
+          "wall_s": 4.721827197005041
+        },
+        "store": {
+          "cpu_utilisation": 2.5217008161845733,
+          "peak_rss_tree_bytes": 205557760,
+          "report": {
+            "chunks": 12,
+            "container_bytes": 88142863,
+            "container_bytes_read": null,
+            "dna_bases": null,
+            "stored_bytes": 88139928,
+            "strands": null,
+            "strands_processed": null
+          },
+          "wall_s": 1.6348446150077507
+        }
+      }
+    }
+  ],
+  "simulation": "SOFTWARE SIMULATION"
+}

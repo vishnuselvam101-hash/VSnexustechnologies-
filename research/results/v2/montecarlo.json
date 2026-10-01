@@ -1,0 +1,134 @@
+{
+  "canonical": {
+    "channel": {
+      "abundance_sigma": 0.0,
+      "contamination_rate": 0.0,
+      "coverage": 10,
+      "coverage_model": "poisson",
+      "deletion_rate": 0.0001,
+      "dropout_rate": 0.02,
+      "duplication_rate": 0.0,
+      "insertion_rate": 0.0001,
+      "invalid_read_rate": 0.0,
+      "n_rate": 0.0,
+      "quality_informativeness": 0.8,
+      "quality_model": "informative",
+      "reverse_complement_rate": 0.0,
+      "seed": 42,
+      "shuffle": true,
+      "substitution_rate": 0.001,
+      "synthesis_deletion_rate": 0.0,
+      "synthesis_insertion_rate": 0.0,
+      "synthesis_substitution_rate": 0.0,
+      "truncation_rate": 0.0
+    },
+    "consensus": true,
+    "name": "mc-canonical",
+    "profile": "balanced-custom",
+    "summary": {
+      "detected_failures": 0,
+      "failed_recovery": 0,
+      "failures_by_category": {},
+      "internal_errors": 0,
+      "max_erasures_in_any_group": 7,
+      "mean_deletions": 122.239,
+      "mean_groups_repaired": 3.638,
+      "mean_insertions": 123.179,
+      "mean_reads_per_strand": 9.802372983870967,
+      "mean_strands_dropped": 9.934,
+      "mean_strands_with_zero_reads": 9.955,
+      "mean_substitutions": 1224.923,
+      "mean_trial_runtime_s": 1.318332739002537,
+      "simulation": "SOFTWARE SIMULATION",
+      "success_ci95": [
+        0.996173241514445,
+        1.0
+      ],
+      "success_rate": 1.0,
+      "successful_recovery": 1000,
+      "total_runtime_s": 200.77968412602786,
+      "trials": 1000,
+      "undetected_corruption": 0
+    },
+    "trials": 1000
+  },
+  "direct": {
+    "channel": {
+      "abundance_sigma": 0.0,
+      "contamination_rate": 0.0,
+      "coverage": 5.0,
+      "coverage_model": "poisson",
+      "deletion_rate": 0.0,
+      "dropout_rate": 0.02,
+      "duplication_rate": 0.0,
+      "insertion_rate": 0.0,
+      "invalid_read_rate": 0.0,
+      "n_rate": 0.0,
+      "quality_informativeness": 0.8,
+      "quality_model": "informative",
+      "reverse_complement_rate": 0.0,
+      "seed": 50000,
+      "shuffle": true,
+      "substitution_rate": 0.001,
+      "synthesis_deletion_rate": 0.0,
+      "synthesis_insertion_rate": 0.0,
+      "synthesis_substitution_rate": 0.0,
+      "truncation_rate": 0.0
+    },
+    "consensus": false,
+    "name": "mc-direct",
+    "profile": "balanced-custom",
+    "summary": {
+      "detected_failures": 0,
+      "failed_recovery": 0,
+      "failures_by_category": {},
+      "internal_errors": 0,
+      "max_erasures_in_any_group": 10,
+      "mean_deletions": 0.0,
+      "mean_groups_repaired": 0.7927,
+      "mean_insertions": 0.0,
+      "mean_reads_per_strand": 4.9033894117647066,
+      "mean_strands_dropped": 3.3733,
+      "mean_strands_with_zero_reads": 4.5103,
+      "mean_substitutions": 210.016,
+      "mean_trial_runtime_s": 0.14987750177367123,
+      "simulation": "SOFTWARE SIMULATION",
+      "success_ci95": [
+        0.9996160016293234,
+        1.0
+      ],
+      "success_rate": 1.0,
+      "successful_recovery": 10000,
+      "total_runtime_s": 218.3600707279984,
+      "trials": 10000,
+      "undetected_corruption": 0
+    },
+    "trials": 10000
+  },
+  "environment": {
+    "cpu_count": 8,
+    "git": {
+      "commit": "9f255985304c78e267c0fb8027cb3240d444095b",
+      "dirty": false
+    },
+    "implementation": "CPython",
+    "libraries": {
+      "cryptography": "46.0.7",
+      "numpy": "2.5.3",
+      "reedsolo": "unknown",
+      "zstandard": "0.25.0"
+    },
+    "machine": "x86_64",
+    "platform": "Linux-6.8.0-139-generic-x86_64-with-glibc2.39",
+    "processor": "x86_64",
+    "python": "3.12.3",
+    "vnxdna_version": "2.0.0rc4"
+  },
+  "generated_by": "research/v2/run_v2_research.py",
+  "inputs": {
+    "canonical": "20,000 B mixed (seed 7)",
+    "direct": "4,000 B mixed (seed 8)"
+  },
+  "runtime_s": 419.7212780790869,
+  "simulation": "SOFTWARE SIMULATION"
+}

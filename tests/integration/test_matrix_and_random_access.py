@@ -1,11 +1,10 @@
 """Configuration matrix, special inputs, random access, tampering at the container level."""
 import hashlib
 import json
-from pathlib import Path
 
 import pytest
 
-from conftest import FAST, OTHER_KEY, TEST_KEY, mixed_bytes
+from v1_support import FAST, OTHER_KEY, TEST_KEY, mixed_bytes
 from vnxdna import api
 from vnxdna.container import manifest as mf
 from vnxdna.container import vxdna

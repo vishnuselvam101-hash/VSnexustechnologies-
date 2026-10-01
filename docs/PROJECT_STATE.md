@@ -1,97 +1,62 @@
 # VNX-DNA project state
 
-_Last updated: 2026-09-29_
+_Last updated: 2026-10-01_
 
-**Current version:** 1.0.0. The only version source is `src/vnxdna/_version.py`.
-**Release status:** v1.0.0 is a stable research-grade *software* release. There is **no wet-lab validation**.
-**Branch:** `vnx-dna/v0.2`. The V0.1 baseline remains at tag `v0.1-baseline` (`cf7d1f5`).
-**Measurements:** experiments and benchmarks were run from a fresh clone at commit `bb33372`. Later commits change only
-docs, tests, research scripts and results (`git diff bb33372 -- src` is empty).
+**Current version:** 3.0.0. The only version source is `src/vnxdna/_version.py`.
+**Release status:** v3.0.0 is a research-grade *software* release on archive format 5. It follows a complete audit of
+2.0.0 ([V3_AUDIT.md](V3_AUDIT.md)). There is **no wet-lab validation**. V2 and V1 archives stay readable.
+**Branch:** `feature/vnx-dna-v3` (from `vnx-dna/v2`). V2 is tagged `v2.0.0`, V1 `v1.0.0`, and the V0.1 baseline
+`v0.1-baseline`.
+**Measurements:** everything in `research/results/v3/` was produced by `research/v3/run_v3_research.py` on this
+machine, with VNX-DNA 2.0.0 (tag `v2.0.0`) as the baseline. Each file records its commit and dirty flag. The 2.0.0
+results in `research/results/v2/` are kept as the historical record.
 
 ## Architecture
 
-The layers are store (container) → encode (outer Cauchy RS + in-band strand frames + inner RS + DNA mapping) →
-simulate → decode → restore/verify. See [ARCHITECTURE.md](ARCHITECTURE.md). There is one implementation. The V0.1
-code, tests, docs and results are archived unchanged under `research/legacy/`.
+store (streaming container, format 5) → encode (outer Cauchy RS + frame format 5 + inner RS + DNA mapping) →
+simulate / sequence (now with bursts) / simulate-errors → reads → cluster → consensus → decode (vectorised inner RS,
+optional indel or burst resynchronisation, two-pass, disk-backed) → restore / verify. See
+[ARCHITECTURE.md](ARCHITECTURE.md) and [STORAGE_FORMAT.md](STORAGE_FORMAT.md).
+
+## V3 acceptance
+
+| criterion | result | evidence |
+|---|---|---|
+| complete V2 audit, every finding reproduced | met: 48 code and test defects and 13 documentation claims found and fixed; 5 low-impact items remain, none of which can produce wrong output | [V3_AUDIT.md](V3_AUDIT.md) §4 |
+| release review (independent end-to-end and corruption harness, 4 GB encrypted run, adversarial review) | met: 15 more issues fixed (two data-loss paths, signal handling and a SIGTERM hang, symlink-safe temporary files); 1 low-impact item remains (L3) | [V3_AUDIT.md](V3_AUDIT.md) §4.7 |
+| every fix has a regression test that fails on 2.0.0 | met, checked against a `v2.0.0` checkout | [TESTING.md](TESTING.md) |
+| full test suite | met | V3_AUDIT §6 (generated) |
+| V2 compatibility | met: V3 reads all 2.0.0 fixtures; V2 reads V3 output except resumed encrypted stores (clean exit 6) | [COMPATIBILITY.md](COMPATIBILITY.md) |
+| V2 baseline and V3 measured on the same machine | met | [BENCHMARKS.md](BENCHMARKS.md) |
+| no undetected corruption under any simulated error type | met: 0 in every sweep | [ERROR_MODEL.md](ERROR_MODEL.md) |
+| no measured number typed by hand | met | `research/v3/render_v3_tables.py`, `research/v2/render_v2_tables.py` |
 
 ## Supported commands
 
-`store` (`pack`), `encode`, `simulate`, `decode`, `restore`, `recover`, `verify`, `info`, `extract`, `pipeline`,
-`keygen`, `benchmark`, `version`, `legacy info|restore`. Exit codes 0–8 and 70 ([CLI.md](CLI.md)).
+`store`, `restore`, `verify`, `info`, `extract`, `encode`, `decode`, `recover`, `simulate`, `sequence`,
+`simulate-errors` (new), `reads`, `cluster`, `consensus`, `pipeline`, `migrate`, `keygen`, `experiment run`,
+`benchmark generate|scale|corruption|stages|v1`, `version`, `legacy` and `v1 …`. Exit codes are in [CLI.md](CLI.md).
 
 ## Configuration and guarantees
 
 | aspect | state |
 |---|---|
-| outer ECC | Cauchy Reed–Solomon over GF(2⁸)/0x11D, default 64+16, configurable K+M ≤ 256. Any M lost strands per stripe are recoverable: proven MDS and exhaustively verified on small codes, including {4,5,7,11} for 8+4. |
-| inner ECC | RS per strand, default 8 parity bytes (corrects 4 byte errors), CRC-32 re-checked after every correction |
-| DNA codec | 2bit (default), rotation3, codebook8; GC / window / homopolymer / motif screening with 256 scrambler variants; fails loudly if unsatisfiable |
-| strand | 244 nt default (61-byte frame: 9 header + 40 payload + 4 CRC + 8 parity); identity inside the DNA |
-| compression | zstd (default, level 9), zlib, none; per chunk; bounded decompression |
-| encryption | AES-256-GCM per chunk, HKDF-SHA256 subkeys, HMAC-SHA256 manifest, key check; name, size and hashes sealed |
-| container | `.vxdna` v1 (magic, version, canonical manifest, body, SHA-256 trailer). `decode(encode(c)) == c` byte for byte |
-| simulator | seeded dropout, coverage (fixed/Poisson), substitutions, insertions, deletions, bursts, reverse complement, shuffle; observed events plus an event log |
-| synchronization | experimental opt-in RS-assisted realignment (single indel per read guaranteed) |
-| random access | per chunk or byte range; only that chunk's stripes are decoded |
-| compatibility | explicit read-only V0.1 decoder (dataset formats 1–3, RD-1 0.1). All 10 baseline fixtures decode. |
+| container | `.vxdna` v2 (format 5); body length must equal `stored_size`; atomic, no-clobber publish |
+| encryption | chunked AES-256-GCM, HKDF-SHA256, HMAC-SHA256; per-resume AEAD epochs persisted before use; HMAC-bound checkpoints; `final-seal-epoch-v3` for resumed stores |
+| outer ECC | Cauchy RS (MDS): any M of K+M strands per group |
+| inner ECC | RS per strand + CRC-32, vectorised bounded-distance decoder (`2e + f ≤ r`) |
+| resynchronisation | consensus (coverage > 1); single-read indel repair and burst repair (coverage 1, opt-in) |
+| channel | coverage models, substitutions, indels, bursts, dropout, duplicates, truncation, N, junk, contamination, reverse complements, reordering |
+| ECC interface | `vnxdna.ecc.engine` (registry keyed by manifest names) |
 
-## Test status (fresh clone, fresh venv, Python 3.12.3)
+## Security review (V3)
 
-- `pytest` at `df2da03`: **269 passed, 0 failed** (163 unit, 62 integration, 5 property with Hypothesis, 11 adversarial/fuzz,
-  28 CLI including the clean-room §35 test and the README-executes test). About 60 s wall time on 8 CPUs.
-- ECC exhaustive: 8+4 (794 patterns) and 16 other configurations; sampled up to 200+56; 192+64 worst case.
-- Extended fuzz (`research/experiments/extended_fuzz.py`, 3,000 seeds): 24,000 container mutations in raw,
-  body-resealed, bit-flip and manifest-resealed modes, and 1,586 manifest-field cases. Result: **0 unstructured
-  exceptions, 0 wrong outputs** (`research/results/extended_fuzz.json`, run at `df2da03`).
-- Package install: `pip install -e '.[dev]'` from a fresh clone succeeds, and `vnx-dna` is on PATH.
-
-## Measured results (simulation only; [CHANNEL_MODEL.md](CHANNEL_MODEL.md), `research/results/`)
-
-These come from 10 seeds per point with the default 64+16 profile on 60 kB:
-- **Dropout:** 100 % recovered up to 5 %, 9/10 at 10 %, 2/10 at 15 %. The 96+48 profile gives 100 % up to 25 %.
-- **Substitutions:** 100 % recovered up to 1.0 % per base, 0/10 at 1.5 %.
-- **Deletions:** 7/10 at 0.05 % and 0/10 at 0.1 % without repair; 10/10 at 0.2 % with the experimental repair.
-- **Wrong data returned: 0** in every trial.
-
-## Benchmarks ([BENCHMARKS.md](BENCHMARKS.md))
-
-At 10 MB (encrypted, 50 % compressible, 8-CPU x86-64, single-threaded):
-- storage: 157,537 strands, 38.4 M nt, 3.84 nt per input byte (2.08 net bits/nt, all overheads included);
-- speed: DNA encode 2.7 s; clean scan 1.7 s; damaged scan 16.8 s (the bottleneck is per-read RS);
-- end to end: 24 s with about 270 MiB peak traced memory.
-
-## Security review (at release)
-
-- **Secret scan** of all tracked files (AWS/GitHub/Slack/API-key-style tokens, private keys, password/api_key/secret
-  assignments; no gitleaks available): no findings. No `.env` or key files are tracked. The test keys are derived
-  from public strings, and the V0.1 fixture Fernet key is labelled test-only.
-- **Unsafe code:** no `eval`, `exec`, `pickle`, `shell=True` or `os.system`. The only subprocess is `git` with an
-  argument list.
-- **Files:** outputs are atomic and never written before verification. Stored names are sanitized and never used as
-  output paths.
-- **Hygiene:** no debug prints or TODO placeholders in `src/`.
+- Secret scan of all tracked files (key/token/password patterns, private keys): no secrets. The only key material
+  in the repository is test keys derived from public strings (`tests/v1_support.py`, `tests/v2_support.py`,
+  `tests/fixtures/v2_0/key.hex`), each documented as protecting nothing.
+- No `eval`, `exec`, `pickle`, `shell=True` or `os.system` in `src/`.
+- The crypto fixes are listed in [SECURITY.md](SECURITY.md#v3-changes).
 
 ## Known limitations
 
-- Software only: no synthesis or sequencing, no primer design, and no secondary-structure or melting-temperature
-  screening. The channel is an i.i.d. model with bursts, not fitted to any platform.
-- Indel handling is experimental. It is slow, validated for one indel per read, and uses no consensus across copies.
-- Everything runs in memory (4 GiB input limit, about 27× peak traced memory). Damaged-read decoding runs at about
-  0.3 MB/s.
-- Unencrypted archives have integrity digests but no authenticity. Encrypted archives still reveal the approximate
-  size and compressibility ([SECURITY.md](SECURITY.md)).
-- A tiny file costs about 97 strands, because the manifest and a minimum stripe dominate.
-- If every copy of a metadata stripe is lost beyond 8 of 16 strands, decoding from reads alone fails. The `.vxdna`
-  container still works.
-
-## Future research
-
-See [ROADMAP.md](ROADMAP.md): streaming, a vectorized inner decoder, padding, marker/consensus synchronization,
-secondary-structure constraints, fitted channel models, fountain codes and wet-lab validation.
-
-## Git / release
-
-- Commits are logical and in `git log` from `204d8a8` onward.
-- Tag `v1.0.0` marks the release commit.
-- Publishing (pushing the branch and tag to `origin` without force, see [RELEASE_PROCESS.md](RELEASE_PROCESS.md))
-  happens after tagging, so this tagged tree cannot record its outcome. No credentials are stored in the repository.
+[LIMITATIONS.md](LIMITATIONS.md). Future work: [ROADMAP.md](ROADMAP.md).

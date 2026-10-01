@@ -100,7 +100,8 @@ class CauchyErasureCode:
         if short.size:
             raise InsufficientRedundancyError(
                 f"{short.size} stripe(s) have fewer than {k} valid shards",
-                details={"unrecoverable_stripes": short.tolist(), "available": counts[short].tolist(), "required": k},
+                details={"unrecoverable_stripes": short[:50].tolist(), "available": counts[short[:50]].tolist(), "required": k,
+                         "unrecoverable_count": int(short.size)},  # capped: the list can be as long as the input
             )
         out = np.array(shards[:, :k, :], copy=True)
         needs = np.flatnonzero((~present[:, :k]).any(axis=1))
