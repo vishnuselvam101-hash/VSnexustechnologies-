@@ -893,11 +893,18 @@ def version_cmd(as_json: bool = JsonOut) -> None:
         typer.echo(f"vnx-dna {__version__} (writes archive format 5 / container v2 / frame 5; reads formats 5 and 4 and legacy V0.1)")
 
 
+_MAIN_PID = os.getpid()
+
+
 def _terminate(signum, frame) -> None:
     """SIGTERM/SIGHUP (``kill``, ``timeout``, ``docker stop``, a closed terminal) end the command like Ctrl-C: worker
     processes are stopped first (so pools shut down at once), then KeyboardInterrupt runs the normal cleanup, which
     removes partial outputs and temporary directories, and the command exits 130. VNX-DNA 2.0/3.0 had no handler:
     a terminated command left partial files, temporary directories and orphaned workers behind."""
+    if os.getpid() != _MAIN_PID:
+        # a worker forked while the signal was pending inherits it and would run this handler before its initializer
+        # resets it (a KeyboardInterrupt in the initializer broke the pool: exit 70); the parent handles the interrupt
+        return
     import multiprocessing
     for child in multiprocessing.active_children():
         child.terminate()
@@ -909,7 +916,23 @@ def main() -> None:  # pragma: no cover - console entry point
     for name in ("SIGTERM", "SIGHUP"):
         if hasattr(signal, name):
             signal.signal(getattr(signal, name), _terminate)
-    app()
+    try:
+        try:
+            app()
+        except KeyboardInterrupt:  # an interrupt outside a command body (start-up, argument parsing)
+            typer.echo("vnx-dna: interrupted", err=True)
+            raise SystemExit(130)
+    except SystemExit as done:
+        if done.code == 130:
+            # interrupted: the command's cleanup has run; leave without joining worker-pool threads that an interrupt
+            # may have left blocked (see vnxdna.v2.workers), which could otherwise hang the exit
+            for stream in (sys.stdout, sys.stderr):
+                try:
+                    stream.flush()
+                except (OSError, ValueError):
+                    pass
+            os._exit(130)
+        raise
 
 
 if __name__ == "__main__":  # pragma: no cover

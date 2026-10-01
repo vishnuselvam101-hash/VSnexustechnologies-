@@ -201,7 +201,7 @@ def _alive(pid: int) -> bool:
 @pytest.fixture(scope="module")
 def big_strands(tmp_path_factory):
     tmp = tmp_path_factory.mktemp("big")
-    (tmp / "in.bin").write_bytes(os.urandom(6_000_000))
+    (tmp / "in.bin").write_bytes(os.urandom(12_000_000))
     run("store", tmp / "in.bin", "-o", tmp / "a.vxdna", check=0)
     run("encode", tmp / "a.vxdna", "-o", tmp / "s.fasta", check=0)
     return tmp
@@ -225,13 +225,18 @@ def _wait_for_workers(proc: subprocess.Popen, timeout: float = 60.0) -> list[int
 
 
 @pytest.mark.skipif(sys.platform != "linux", reason="process-tree inspection uses Linux ps//proc")
-def test_sigterm_cleans_up_like_ctrl_c(big_strands, tmp_path):
+@pytest.mark.parametrize("delay", [0.0, 0.25, 0.6, 1.0])
+def test_sigterm_cleans_up_like_ctrl_c(big_strands, tmp_path, delay):
+    """Signalled at several points while the worker pool runs. A worker killed while writing its result used to leave
+    the pool's shutdown waiting forever (the command hung after SIGTERM); the timeout below catches a hang."""
     out_dir, scratch = tmp_path / "out", tmp_path / "scratch"
     out_dir.mkdir()
     scratch.mkdir()
     proc = _start_recover(big_strands, out_dir, scratch)
     kids = _wait_for_workers(proc)
-    time.sleep(0.3)
+    time.sleep(delay)
+    if proc.poll() is not None:
+        pytest.skip("the command finished before the signal (machine too fast for this input)")
     proc.send_signal(signal.SIGTERM)
     _, err = proc.communicate(timeout=60)
     assert proc.returncode == 130, err

@@ -24,8 +24,8 @@ dependencies = [
 dev = ["pytest>=8,<9", "pytest-cov>=6,<8", "hypothesis>=6.100,<7", "ruff>=0.6,<1"]
 
 [project.scripts]
-vnx-dna = "vnxdna.cli:main"
-vnxdna = "vnxdna.cli:main"
+vnx-dna = "vnxdna._entry:main"
+vnxdna = "vnxdna._entry:main"
 
 [tool.setuptools.dynamic]
 version = {attr = "vnxdna._version.__version__"}

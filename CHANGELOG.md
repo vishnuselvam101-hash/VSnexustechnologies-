@@ -16,7 +16,13 @@ temporary-file and signal handling. Every finding below was reproduced, fixed, a
   stops `extract a.vxdna -o a.vxdna --force`, `store f -o f --force` and `restore a -o a --force`).
 - **Data loss:** an input named `<output>.partial` was deleted by `store` and truncated by `decode`.
 - **Signals:** SIGTERM/SIGHUP left partial files, temporary directories and orphaned worker processes (7 per
-  command, ~90 MB each). They now clean up like Ctrl-C (exit 130), and workers exit when their parent dies.
+  command, ~90 MB each). They now clean up like Ctrl-C (exit 130), and workers exit when their parent dies. An
+  interrupt no longer waits for the worker pool: a worker killed while writing its result could leave the pool's
+  shutdown waiting forever (found while validating the fix: `recover` hung after SIGTERM in about 1 of 8 runs).
+  Workers ignore Ctrl-C (each printed a traceback) and an inherited pending SIGTERM (a worker forked at that moment
+  broke the pool: exit 70), and an interrupt during start-up ends quietly with exit 130.
+  Checked with 300 randomly timed SIGTERM/SIGINT runs: every one exited 130 with no partial files, no temporary
+  directories and no live workers.
 - **Temporary files:** reports, DNA indexes, cluster files, decoded containers and checkpoints used fixed
   `.<name>.partial` names opened through symlinks; they now use private `mkstemp` files.
 - `encode` of an empty unencrypted archive wrote its outputs and then exited 70 (summary formatting of `None`).

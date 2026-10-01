@@ -175,6 +175,7 @@ test that fails on commit `e3aa2d8` (`tests/v3/test_release_review_v3.py`; F1 in
 | H1 | data loss | `pipeline --work-dir` overwrote files with intermediate names (e.g. `photo.jpg.vxdna`) without `--force`, and `--cleanup` deleted them | FIXED (refused up front; cleanup deletes only what the run wrote) |
 | H2 | data loss | `--report` could replace the key file or the DNA index (`--report key.txt --force`), making a new encrypted archive unrecoverable | FIXED (key files and DNA indexes are inputs/outputs) |
 | M1 | robustness | SIGTERM/SIGHUP left partial files, `vnxdna-decode-*` directories and orphaned workers (7 per command); SIGKILL orphaned workers | FIXED (handled like Ctrl-C; workers watch their parent) |
+| M1b | robustness | found while validating M1: an interrupt that killed a worker mid-write left `ProcessPoolExecutor.shutdown` waiting forever (`recover` hung after SIGTERM in ~1 of 8 randomly timed runs; stack dump: main thread joining the pool's management thread, which was blocked reading a partial result); Ctrl-C printed one traceback per worker; a worker forked while SIGTERM was pending ran the parent's handler in its initializer and broke the pool (exit 70, 1 of 300 runs); an interrupt during start-up printed a traceback | FIXED (pools are abandoned on interrupt and the command ends with `os._exit(130)` after its cleanup; workers ignore SIGINT and inherited signals; a light entry module). 300 randomly timed SIGTERM/SIGINT runs: all exit 130, no leftovers, no live workers, no tracebacks |
 | M2 | security | reports, DNA indexes, cluster files, decoded containers and checkpoints used fixed temporary names opened through symlinks | FIXED (`mkstemp`; a resumable store's fixed names are re-created with `O_EXCL`) |
 | M3 | data loss | an input named `<output>.partial` was deleted by `store` and truncated by `decode` | FIXED |
 | F1 | bug | `encode` of an empty unencrypted archive published its outputs, then exited 70 | FIXED |
@@ -190,7 +191,7 @@ test that fails on commit `e3aa2d8` (`tests/v3/test_release_review_v3.py`; F1 in
 | L7b | behaviour | a malformed `VNXDNA_KEY` is an error (exit 7) even for an unencrypted `restore` | KEPT deliberately (a misconfigured key should never go unnoticed); documented in CLI.md |
 
 **Totals.** 48 code and test defects fixed in the audit: C1–C12, S1–S2, E1, D1–D7, B1–B15, T1, P1 (two tests) and
-R1–R8, and 14 more in the release review (§4.7). There were also 13 documentation corrections (C4, D8, §4.5).
+R1–R8, and 15 more in the release review (§4.7). There were also 13 documentation corrections (C4, D8, §4.5).
 Remaining: D-S1, D-S2, D-S3, B-S1, the R1 residual and L3. All are low impact, and none can produce wrong output.
 
 ## 5. V3 changes

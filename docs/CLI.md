@@ -77,7 +77,7 @@ contiguous run of up to N lost or extra bases), `--archive-tag HEX8` (V3: choose
 | 7 | CONFIGURATION_ERROR | invalid parameters, unsatisfiable constraints |
 | 8 | OUTPUT_ERROR | output or report exists (no `--force`), not writable, disk full, file too large, read-only file system (V3: these OS errors were exit 70) |
 | 70 | INTERNAL_ERROR | a bug; set `VNXDNA_DEBUG=1` for a traceback |
-| 130 | interrupted | Ctrl-C, SIGTERM or SIGHUP (`kill`, `timeout`, `docker stop`, a closed terminal): worker processes are stopped, partial outputs and temporary directories are removed (`store` leaves a resumable checkpoint). Worker processes also exit by themselves if the command is killed with SIGKILL (V3 release review) |
+| 130 | interrupted | Ctrl-C, SIGTERM or SIGHUP (`kill`, `timeout`, `docker stop`, a closed terminal): worker processes are stopped, partial outputs and temporary directories are removed (`store` leaves a resumable checkpoint). Worker processes also exit by themselves if the command is killed with SIGKILL, and an interrupt never waits for running workers (V3 release review) |
 | 141 | output closed | standard output was closed early (e.g. `vnx-dna … | head -1`); V3 exits quietly instead of reporting a BrokenPipe as an internal error |
 
 Errors are one line on stderr: `vnx-dna: error [CATEGORY]: message`. Normal operation never prints a traceback.
