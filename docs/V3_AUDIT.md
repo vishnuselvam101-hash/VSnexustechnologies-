@@ -249,7 +249,7 @@ Measured on this project's machine (8 logical CPUs, Linux-6.8.0-139-generic-x86_
 | single-read repair of 2 indels | 40/40 correct in 145.69 ms per read (V2: 40/40 in 422.25 ms) | `indel-*.json` |
 | VNX-DNA 2.0.0 reading V3 output | plain.vxdna: exit 0 (identical), encrypted.vxdna: exit 0 (identical), resumed.vxdna: exit 6, plain.fasta: exit 0 (identical) | `v2-reads-v3.json` |
 
-Full test suite at commit `cbb9c6a47907` (dirty=False): **601 tests, 601 passed, 0 failed, 0 errors, 0 skipped** in 267 s (`pytest (full suite, vnx-dna on PATH)`). VNX-DNA 2.0.0 collected 406 tests.
+Full test suite at commit `b205f4520da8` (dirty=False): **601 tests, 601 passed, 0 failed, 0 errors, 0 skipped** in 271 s (`pytest (full suite, vnx-dna on PATH)`). VNX-DNA 2.0.0 collected 406 tests.
 <!-- END GENERATED: v3-audit-results -->
 
 ## 7. Security summary

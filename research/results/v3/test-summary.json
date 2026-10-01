@@ -1,11 +1,11 @@
 {
   "command": "pytest (full suite, vnx-dna on PATH)",
-  "commit": "cbb9c6a47907a9056c3f4e6d81a96c1759e677b9",
+  "commit": "b205f4520da8100754a6c072418be01b52eb8e24",
   "dirty": false,
   "environment": {
     "cpu_count": 8,
     "git": {
-      "commit": "cbb9c6a47907a9056c3f4e6d81a96c1759e677b9",
+      "commit": "b205f4520da8100754a6c072418be01b52eb8e24",
       "dirty": false
     },
     "implementation": "CPython",
@@ -26,8 +26,8 @@
   "failed": 0,
   "failed_tests": [],
   "passed": 601,
-  "recorded_at": "2026-10-01T07:47:14+0530",
-  "seconds": 266.7,
+  "recorded_at": "2026-10-01T07:53:35+0530",
+  "seconds": 271.0,
   "skipped": 0,
   "tests": 601
 }
