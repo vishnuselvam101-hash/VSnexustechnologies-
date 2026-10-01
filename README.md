@@ -14,6 +14,9 @@ with SHA-256 that the result is byte-for-byte identical to the original.
   even at coverage 1.
 - **Burst errors in the simulator**, and `vnx-dna simulate-errors`: seeded error sweeps with recovery statistics.
 - **Pools holding several archives** can be decoded (`--archive-tag`).
+- **Release review.** A final review fixed 14 more issues before release, among them two data-loss paths
+  (`pipeline --work-dir` and `--report` onto a key file), SIGTERM cleanup, and symlink-safe temporary files
+  ([audit §4.7](docs/V3_AUDIT.md#47-found-in-the-release-review-2026-10-01)).
 - **Same format as 2.0 (format 5).** V2 archives read in V3 and vice versa, with one documented exception.
 
 - streaming store: per-chunk zstd, **AES-256-GCM chunked authenticated encryption**, footer-indexed container, resumable;

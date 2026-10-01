@@ -28,10 +28,10 @@ from . import __version__
 import errno
 import sys
 
-from .cli_v1 import _key, _run as _run_v1, app as v1_app, legacy_app
+from .cli_v1 import _run as _run_v1, app as v1_app, legacy_app
 from .container import crypto
 from .errors import ConfigurationError, OutputError
-from .v2.paths import check_output_file
+from .v2.paths import atomic_write_text, check_output_file, refuse_same_file, same_file
 
 # OS errors that mean "the output cannot be written" (exit 8, not an internal error)
 _OUTPUT_ERRNOS = {errno.ENOSPC, errno.EFBIG, errno.EDQUOT, errno.EROFS}
@@ -52,6 +52,36 @@ def _run(fn, *args, **kwargs) -> None:
     _run_v1(guarded)
 
 
+_KEY_FILE_MAX = 4096  # a key file holds 44 (base64) or 64 (hex) characters; never read an unbounded file
+
+
+def _key(key_file: Optional[Path]) -> bytes | None:
+    """The key from ``--key-file`` or ``$VNXDNA_KEY``. The file must be a small regular file (``-k /dev/zero`` used to
+    read until memory ran out); a key file that group or others can read or write is accepted with a warning."""
+    if key_file is None:
+        env = os.environ.get("VNXDNA_KEY")
+        return crypto.parse_key(env) if env else None
+    from .errors import InvalidInputError
+    import stat as _stat
+    try:
+        with open(key_file, "rb") as handle:
+            st = os.fstat(handle.fileno())
+            if not _stat.S_ISREG(st.st_mode):
+                raise InvalidInputError(f"key file {key_file} is not a regular file")
+            raw = handle.read(_KEY_FILE_MAX + 1)
+    except OSError as error:
+        raise InvalidInputError(f"cannot read key file {key_file}: {error.strerror or error}") from None
+    if len(raw) > _KEY_FILE_MAX:
+        raise ConfigurationError(f"key file {key_file} is too large to be a VNX-DNA key ({_KEY_FILE_MAX} bytes at most)")
+    if st.st_mode & 0o077:
+        typer.echo(f"vnx-dna: warning: key file {key_file} is accessible by group or others "
+                   f"(mode {_stat.S_IMODE(st.st_mode):o}); use chmod 600", err=True)
+    try:
+        return crypto.parse_key(raw.decode("ascii"))
+    except UnicodeDecodeError as error:
+        raise InvalidInputError(f"cannot read key file {key_file}: {error}") from None
+
+
 def _stdout_closed() -> None:
     """The reader of stdout went away: silence further writes and exit 141 (128 + SIGPIPE), like other CLI tools."""
     try:
@@ -67,23 +97,37 @@ def _check_report(report_path: Optional[Path], force: bool, *paths: Optional[Pat
     or outputs (VNX-DNA 2.0 overwrote whatever was there, including the command's own input)."""
     if report_path is None:
         return
-    target = Path(report_path).resolve()
     for other in paths:
-        if other is not None and Path(other).resolve() == target:
+        if other is not None and (same_file(report_path, other) or Path(other).resolve() == Path(report_path).resolve()):
             raise OutputError(f"--report {report_path} is also an input or output of this command")
     check_output_file(report_path, overwrite=force, what="report")
+
+
+def _require_file(path: Optional[Path], what: str = "input") -> None:
+    """A missing or non-regular input is INVALID_INPUT (exit 3), as for every other command (``store``, ``pipeline``,
+    ``simulate-errors`` and ``experiment run`` used to exit 2 with a usage box)."""
+    from .errors import InvalidInputError
+    if path is not None and not Path(path).is_file():
+        raise InvalidInputError(f"{what} {path} does not exist or is not a regular file")
+
+
+def _guard(report_path: Optional[Path], force: bool, inputs: list, outputs: list) -> None:
+    """Up-front path checks for one command: no output (and no report) may be one of its inputs, key files and DNA
+    indexes included, even with --force (the V3 release review found ``--report key.txt --force`` replacing the key
+    of the archive being written, and ``extract a.vxdna -o a.vxdna --force`` replacing the archive)."""
+    inputs = [p for p in inputs if p is not None]
+    for out in outputs:
+        if out is not None:
+            refuse_same_file(out, *inputs)
+    _check_report(report_path, force, *inputs, *outputs)
 
 
 def _emit(report: dict[str, Any], as_json: bool, report_path: Optional[Path], summary: list[str]) -> None:
     """Print the summary (or JSON) and write the JSON report atomically (checked beforehand by :func:`_check_report`)."""
     if report_path is not None:
-        target = Path(report_path)
-        tmp = target.with_name("." + target.name + ".report.partial")
         try:
-            tmp.write_text(json.dumps(report, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8")
-            os.replace(tmp, target)
+            atomic_write_text(report_path, json.dumps(report, indent=2, sort_keys=True, default=str) + "\n")
         except OSError as error:
-            tmp.unlink(missing_ok=True)
             raise OutputError(f"cannot write report {report_path}: {error.strerror or error}") from None
     try:
         if as_json:
@@ -183,7 +227,7 @@ def _recovery_lines(r: dict[str, Any]) -> list[str]:
 # ======================================================================= store / encode
 @app.command("store")
 def store_cmd(
-    source: Path = typer.Argument(..., help="File to archive (a regular file; read in bounded chunks).", exists=True, dir_okay=False),
+    source: Path = typer.Argument(..., help="File to archive (a regular file; read in bounded chunks)."),
     output: Path = typer.Option(..., "--output", "-o", help="Container to create (.vxdna, format 5).", dir_okay=False),
     key_file: Optional[Path] = KeyFile,
     encrypt: Optional[bool] = typer.Option(None, "--encrypt/--no-encrypt", help="AES-256-GCM (default: on when a key is supplied)."),
@@ -211,10 +255,11 @@ def store_cmd(
 ) -> None:
     """Archive a file into a streaming format-5 container (bounded memory, resumable, atomic)."""
     def body() -> None:
+        _require_file(source)
         from .v2 import api
         from .v2.profiles import options_for
         check_output_file(output, overwrite=force or resume)
-        _check_report(report, force, source, output)
+        _guard(report, force, [source, key_file], [output])
         key = _key(key_file)
         if encrypt is True and key is None:
             raise ConfigurationError("--encrypt needs a key (--key-file or VNXDNA_KEY); create one with `vnx-dna keygen`")
@@ -254,7 +299,7 @@ def encode_cmd(container: Path = typer.Argument(..., help="Container from `vnx-d
     """Encode a container into DNA strands (ECC groups, strand frames, constraint screening), streaming."""
     def body() -> None:
         from .v2 import api
-        _check_report(report, force, container, output)
+        _guard(report, force, [container], [output, None if no_index else Path(str(output) + ".vxidx")])
         r = api.encode(container, output, fmt=fmt, workers=workers, overwrite=force, write_index=not no_index)
         if r.get("format_version") == 4:
             _emit(r, as_json, report, [f"encoded V1 container {container} -> {output}: {r['strands']:,} strands"])
@@ -264,9 +309,10 @@ def encode_cmd(container: Path = typer.Argument(..., help="Container from `vnx-d
             f"encoded {container} -> {output} ({r['output_format']})",
             f"  strands      {r['strands']:,} x {e['strand_nt']} nt = {r['dna_bases']:,} nt ({e['metadata_strands']:,} metadata strands)",
             f"  outer code   {e['outer_code']}: any {e['guaranteed_erasures_per_group']} strands of each of {e['ecc_groups']:,} groups may be lost",
-            f"  density      {e['bases_per_original_byte'] or 0:.3f} nt per original byte "
-            f"({e['net_bits_per_base'] or 0:.3f} net bits/nt, all overheads)" if e["bases_per_original_byte"] else
-            f"  density      {e['bases_per_stored_byte']:.3f} nt per stored byte",
+            f"  density      {e['bases_per_original_byte']:.3f} nt per original byte "
+            f"({e['net_bits_per_base']:.3f} net bits/nt, all overheads)" if e["bases_per_original_byte"] else
+            f"  density      {e['bases_per_stored_byte']:.3f} nt per stored byte" if e["bases_per_stored_byte"] else
+            "  density      n/a (empty input: metadata strands only)",
             f"  output       {r['output_bytes']:,} B in {r['elapsed_s']:.2f} s ({_mb(r['throughput_mb_s'])} of stored data)"
             + (f"; DNA index {r['dna_index']}" if r.get("dna_index") else "")])
     _run(body)
@@ -321,7 +367,7 @@ def _channel_command(name: str, default_coverage: float, default_model: str, def
     ) -> None:
         def body() -> None:
             from .v2 import api
-            _check_report(report, force, strands, output)
+            _guard(report, force, [strands], [output])
             config = _channel(seed, coverage, coverage_model, abundance_sigma, dropout, syn_sub, syn_ins, syn_del, sub, ins, dele, dup,
                               trunc, n_rate, invalid, contamination, rc, shuffle, quality_model, informativeness,
                               burst_rate, burst_length, burst_kind)
@@ -361,13 +407,14 @@ def reads_cmd(source: Path = typer.Argument(..., help="Reads (FASTQ/FASTA/plain/
     """Validate and filter raw reads; print read statistics."""
     def body() -> None:
         from .v2 import api
-        _check_report(report, force, source, output)
+        _guard(report, force, [source], [output])
         r = api.reads_filter(source, output, min_length=min_length, max_length=max_length, min_mean_quality=min_mean_quality,
                              drop_invalid=not keep_invalid, overwrite=force)
         _emit(r, as_json, report, [
             f"reads {source} ({r['input_format']}): {r['reads_in']:,} in, {r['reads_kept']:,} kept, {r['reads_removed']:,} removed",
-            f"  lengths      {r['length_min']}..{r['length_max']}, most common {r['length_most_common'][:3]}",
-            f"  quality      mean {r['mean_quality'] if r['mean_quality'] is None else round(r['mean_quality'], 2)}; "
+            f"  lengths      {r['length_min']}..{r['length_max']}, most common "
+            + (", ".join(f"{x['length']} nt ({x['reads']:,} reads)" for x in r['length_most_common'][:3]) or "n/a"),
+            f"  quality      mean {'n/a (no quality scores)' if r['mean_quality'] is None else round(r['mean_quality'], 2)}; "
             f"invalid-symbol reads {r['reads_invalid_symbols']:,}; N calls {r['n_calls']:,}"])
     _run(body)
 
@@ -380,7 +427,7 @@ def cluster_cmd(reads: Path = typer.Argument(..., help="Reads (FASTQ/FASTA/plain
     """Group reads by strand (address indexing; minimizer index for unaddressed reads)."""
     def body() -> None:
         from .v2 import api
-        _check_report(report, force, reads, output)
+        _guard(report, force, [reads], [output])
         r = api.cluster(reads, output, workers=workers, overwrite=force, temp_dir=temp_dir)
         s = r["stats"]
         _emit(r, as_json, report, [
@@ -401,7 +448,7 @@ def consensus_cmd(clusters: Path = typer.Argument(..., help="Cluster file from `
     """One consensus sequence per cluster; ambiguous positions are written as N (erasures for the inner code)."""
     def body() -> None:
         from .v2 import api
-        _check_report(report, force, clusters, output)
+        _guard(report, force, [clusters], [output])
         r = api.consensus(clusters, output, overwrite=force, band=band, max_edit_fraction=max_edit_fraction,
                           min_winner_share=min_winner_share)
         s = r["stats"]
@@ -426,7 +473,7 @@ def decode_cmd(reads: Path = typer.Argument(..., help="Reads or strands (FASTA/F
     """Rebuild the original container from DNA (byte-identical; no key needed)."""
     def body() -> None:
         from .v2 import api
-        _check_report(report, force, reads, output)
+        _guard(report, force, [reads], [output])
         r = api.decode(reads, output, options=_decode_options(indel, max_indel, quality, archive_tag, burst), workers=workers, overwrite=force,
                        temp_dir=temp_dir)
         _emit(r, as_json, report, [f"decoded {reads} -> {output}: {r['status']}"] + _recovery_lines(r)
@@ -443,7 +490,7 @@ def _restore_like(op: str):
                 report: Optional[Path] = ReportOut) -> None:
         def body() -> None:
             from .v2 import api
-            _check_report(report, force, source, output)
+            _guard(report, force, [source, key_file], [output])
             fn = api.restore if op == "restore" else api.recover
             r = fn(source, output, key=_key(key_file), options=_decode_options(indel, max_indel, quality, archive_tag, burst), workers=workers,
                    overwrite=force, temp_dir=temp_dir)
@@ -470,7 +517,7 @@ def verify_cmd(source: Path = typer.Argument(..., help="Container (V1/V2) or DNA
     """Independently verify an archive (structure, authentication, ECC, every SHA-256). Writes nothing."""
     def body() -> None:
         from .v2 import api
-        _check_report(report, force, source, against)
+        _guard(report, force, [source, against, key_file], [])
         r = api.verify(source, key=_key(key_file), against=against, options=_decode_options(indel, max_indel, quality, archive_tag, burst),
                        workers=workers, temp_dir=temp_dir)
         lines = [f"verify {source}: {r['status']}"] + [f"  [{c['result']}] {c['check']}" + (f": {c['detail']}" if c.get("detail") else "")
@@ -521,7 +568,16 @@ def extract_cmd(source: Path = typer.Argument(..., help="Container (V1/V2) or DN
     """Random access: recover a byte range (or chunk), reading and decoding only what it needs."""
     def body() -> None:
         from .v2 import api
-        _check_report(report, force, source, output, dna_index)
+        _guard(report, force, [source, dna_index, Path(str(source) + ".vxidx"), key_file], [output])
+        # conflicting selections are refused instead of silently ignored (V3 release review: `--chunk 0 --length 5`
+        # wrote the whole chunk, and `--end` was dropped when `--length` was given)
+        from .errors import InvalidInputError
+        if offset is not None and start is not None:
+            raise InvalidInputError("--offset and --start are the same option; give one of them")
+        if length is not None and end is not None:
+            raise InvalidInputError("give --length or --end, not both")
+        if chunk is not None and any(v is not None for v in (offset, start, length, end)):
+            raise InvalidInputError("--chunk selects a whole chunk; it cannot be combined with --offset/--start/--length/--end")
         off = offset if offset is not None else start
         ln = length if length is not None else ((end - off) if (end is not None and off is not None) else None)
         r = api.extract(source, output, offset=off, length=ln, chunk=chunk, key=_key(key_file), dna_index=dna_index,
@@ -551,7 +607,7 @@ def migrate_cmd(source: Path = typer.Argument(..., help="V1 container or V1 DNA 
     def body() -> None:
         from .v2 import api
         from .v2.profiles import options_for
-        _check_report(report, force, source, output)
+        _guard(report, force, [source, key_file, new_key_file], [output])
         new_key = _key(new_key_file) if new_key_file is not None else None
         r = api.migrate(source, output, options=options_for(profile, chunk_size=_size(chunk_size)), key=_key(key_file), new_key=new_key,
                         overwrite=force, workers=workers, temp_dir=temp_dir)
@@ -563,7 +619,7 @@ def migrate_cmd(source: Path = typer.Argument(..., help="V1 container or V1 DNA 
 # ======================================================================= pipeline
 @app.command("pipeline")
 def pipeline_cmd(
-    source: Path = typer.Argument(..., help="File to push through the whole lifecycle.", exists=True, dir_okay=False),
+    source: Path = typer.Argument(..., help="File to push through the whole lifecycle."),
     output: Path = typer.Option(..., "--output", "-o", help="Recovered file."),
     work_dir: Optional[Path] = typer.Option(None, "--work-dir", help="Directory for intermediate files (default: temporary)."),
     key_file: Optional[Path] = KeyFile,
@@ -583,13 +639,14 @@ def pipeline_cmd(
     workers: int = Workers, temp_dir: Optional[Path] = TempDir, force: bool = Force, as_json: bool = JsonOut,
     report: Optional[Path] = ReportOut,
 ) -> None:
-    """store → encode → [sequence → cluster → consensus] → decode → restore → verify, with real files."""
+    """store → encode → (sequence → cluster → consensus) → decode → restore → verify, with real files."""
     def body() -> None:
+        _require_file(source)
         from .v2 import api
         from .v2.profiles import options_for
         if cleanup not in ("keep", "outputs", "all"):
             raise ConfigurationError("--cleanup must be keep, outputs or all")
-        _check_report(report, force, source, output)
+        _guard(report, force, [source, key_file], [output])
         any_channel = coverage is not None or any((dropout, sub, ins, dele, dup, rc, syn_sub))
         channel = _channel(seed, coverage if coverage is not None else 1.0, coverage_model if coverage is not None else "fixed",
                            abundance_sigma, dropout, syn_sub, 0.0, 0.0, sub, ins, dele, dup, 0.0, 0.0, 0.0, 0.0, rc, True,
@@ -614,7 +671,7 @@ def pipeline_cmd(
 # ======================================================================= experiments / benchmarks
 @experiment_app.command("run")
 def experiment_run_cmd(
-    source: Path = typer.Option(..., "--input", "-i", help="Input file.", exists=True, dir_okay=False),
+    source: Path = typer.Option(..., "--input", "-i", help="Input file."),
     output: Path = typer.Option(..., "--output", "-o", help="Experiment directory (configuration.json, results.json, ...)."),
     trials: int = typer.Option(1, "--trials", min=1, max=100_000, help="Monte Carlo trials (seeds seed, seed+1, ...)."),
     seed: int = typer.Option(0, "--seed"), profile: str = typer.Option("balanced", "--profile"),
@@ -632,6 +689,7 @@ def experiment_run_cmd(
 ) -> None:
     """Run a reproducible channel experiment (optionally Monte Carlo); results are generated, never typed by hand."""
     def body() -> None:
+        _require_file(source)
         from .v2.experiment import run_experiment
         from .v2.profiles import options_for
         channel = _channel(seed, coverage, coverage_model, abundance_sigma, dropout, syn_sub, syn_ins, syn_del, sub, ins, dele, dup, trunc,
@@ -651,8 +709,7 @@ def experiment_run_cmd(
 
 @app.command("simulate-errors")
 def simulate_errors_cmd(
-    source: Path = typer.Argument(..., help="Input file to store, encode and push through the simulated channel.", exists=True,
-                                  dir_okay=False),
+    source: Path = typer.Argument(..., help="Input file to store, encode and push through the simulated channel."),
     output: Path = typer.Option(..., "--output", "-o", help="Sweep directory (sweep.json, sweep.csv, sweep.md)."),
     sweep: list[str] = typer.Option(..., "--sweep", help="TYPE=RATE[,RATE...] (repeatable) or mixed=TYPE:RATE+TYPE:RATE. Types: "
                                     "substitution insertion deletion dropout duplication n truncation reverse-complement "
@@ -671,10 +728,11 @@ def simulate_errors_cmd(
 ) -> None:
     """Error-channel sweep: recovery statistics per error type and rate (software simulation, seeded)."""
     def body() -> None:
+        _require_file(source)
         from .v2.profiles import options_for
         from .v2.sequencing import SequencingConfig
         from .v3.sweep import run_sweep
-        _check_report(report, force, source)
+        _guard(report, force, [source], [])
         base = SequencingConfig(seed=seed, coverage=coverage, coverage_model=coverage_model, burst_length_mean=burst_length,
                                 shuffle=shuffle)
         r = run_sweep(source, output, sweep=sweep, base=base, trials=trials, options=options_for(profile, chunk_size=_size(chunk_size)),
@@ -745,7 +803,7 @@ def benchmark_corruption_cmd(size: str = typer.Option("1GB", "--size"), pattern:
         r = corruption_acceptance(parse_size(size), work_dir, pattern=pattern, seed=seed, profile=profile, groups_within=groups,
                                   substitutions_per_group=substitutions, workers=workers, keep=keep, log=lambda m: typer.echo(m, err=True))
         if output is not None:
-            Path(output).write_text(json.dumps(r, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8")
+            atomic_write_text(output, json.dumps(r, indent=2, sort_keys=True, default=str) + "\n")
         _emit(r, as_json, None, [
             f"corruption acceptance ({r['size']:,} B): {r['status']}",
             f"  within       {len(r.get('damage_within', {}).get('damaged_groups', []))} groups lost M strands "
@@ -765,7 +823,7 @@ def benchmark_stages_cmd(sizes: str = typer.Option("100KB,1MB,10MB", "--sizes"),
         from .v2.stages import format_stages, parse_sizes, run_stages
         results = run_stages(parse_sizes(sizes), seed=seed, workers=workers)
         if output is not None:
-            Path(output).write_text(json.dumps(results, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8")
+            atomic_write_text(output, json.dumps(results, indent=2, sort_keys=True, default=str) + "\n")
         typer.echo(json.dumps(results, indent=2, sort_keys=True, default=str) if as_json else format_stages(results))
     _run(body)
 
@@ -779,7 +837,7 @@ def benchmark_v1_cmd(sizes: str = typer.Option("1K,10K,100K,1M", "--sizes"), rep
         from .bench import format_table, parse_sizes, run_benchmarks
         results = run_benchmarks(parse_sizes(sizes), repeats=repeats, seed=seed)
         if output is not None:
-            Path(output).write_text(json.dumps(results, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+            atomic_write_text(output, json.dumps(results, indent=2, sort_keys=True) + "\n")
         typer.echo(json.dumps(results, indent=2, sort_keys=True) if as_json else format_table(results))
     _run(body)
 
@@ -794,16 +852,27 @@ def keygen_cmd(output: Optional[Path] = typer.Option(None, "--output", "-o", hel
         if output is None:
             typer.echo(key)
             return
+        from .v2.container import publish
+        from .v2.paths import private_temp
         path = Path(output)
-        if path.exists() and not force:
+        if os.path.lexists(path) and not force:
             raise OutputError(f"key file already exists: {path}")
+        check_output_file(path, overwrite=True, what="key file")
+        # written to a private (0600) temporary file and then published: never through a symlink, and a failed write
+        # never truncates an existing key (VNX-DNA 2.0/3.0 opened the name itself with O_TRUNC)
+        tmp = None
         try:
-            fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            fd, tmp = private_temp(path, ".tmp")
             with os.fdopen(fd, "w", encoding="ascii") as handle:
                 handle.write(key + "\n")
-            os.chmod(path, 0o600)
+                handle.flush()
+                os.fsync(handle.fileno())
+            publish(tmp, path, overwrite=force)
         except OSError as error:
             raise OutputError(f"cannot write key file {path}: {error.strerror or error}") from None
+        finally:
+            if tmp is not None:
+                tmp.unlink(missing_ok=True)
         typer.echo(f"wrote new key to {path} (mode 0600). Losing it makes encrypted archives unrecoverable.")
     _run(body)
 
@@ -824,7 +893,22 @@ def version_cmd(as_json: bool = JsonOut) -> None:
         typer.echo(f"vnx-dna {__version__} (writes archive format 5 / container v2 / frame 5; reads formats 5 and 4 and legacy V0.1)")
 
 
+def _terminate(signum, frame) -> None:
+    """SIGTERM/SIGHUP (``kill``, ``timeout``, ``docker stop``, a closed terminal) end the command like Ctrl-C: worker
+    processes are stopped first (so pools shut down at once), then KeyboardInterrupt runs the normal cleanup, which
+    removes partial outputs and temporary directories, and the command exits 130. VNX-DNA 2.0/3.0 had no handler:
+    a terminated command left partial files, temporary directories and orphaned workers behind."""
+    import multiprocessing
+    for child in multiprocessing.active_children():
+        child.terminate()
+    raise KeyboardInterrupt
+
+
 def main() -> None:  # pragma: no cover - console entry point
+    import signal
+    for name in ("SIGTERM", "SIGHUP"):
+        if hasattr(signal, name):
+            signal.signal(getattr(signal, name), _terminate)
     app()
 
 

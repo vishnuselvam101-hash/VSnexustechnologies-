@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=75"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,7 +8,8 @@ dynamic = ["version"]
 description = "VNX-DNA: scalable computational DNA data storage (streaming archives, AES-256-GCM, MDS erasure coding, DNA encoding, sequencing simulation, clustering, consensus, recovery)"
 readme = "README.md"
 requires-python = ">=3.12"
-license = {text = "MIT"}
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [{name = "VS Nexus Technologies"}]
 dependencies = [
     "numpy>=2.0,<3",
@@ -23,8 +24,8 @@ dependencies = [
 dev = ["pytest>=8,<9", "pytest-cov>=6,<8", "hypothesis>=6.100,<7", "ruff>=0.6,<1"]
 
 [project.scripts]
-vnx-dna = "vnxdna.cli:app"
-vnxdna = "vnxdna.cli:app"
+vnx-dna = "vnxdna.cli:main"
+vnxdna = "vnxdna.cli:main"
 
 [tool.setuptools.dynamic]
 version = {attr = "vnxdna._version.__version__"}

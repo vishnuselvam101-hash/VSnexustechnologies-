@@ -52,6 +52,7 @@ from ..errors import (AuthenticationError, ConfigurationError, IntegrityError, I
 from . import crypto
 from . import manifest as mf
 from .container import ContainerFileV2, ContainerWriter, fsync_dir, publish
+from .paths import atomic_write_text, refuse_same_file
 from .profiles import StoreOptionsV2
 
 SIDECAR_ENTRY = mf.INDEX_DTYPE.itemsize + mf.PLAIN_DTYPE.itemsize  # 92 bytes per chunk
@@ -340,12 +341,7 @@ def _write_checkpoint(path: Path, state: dict[str, Any], keys: "crypto.ArchiveKe
     body = {k: v for k, v in state.items() if k not in ("checkpoint_sha256", "checkpoint_hmac")}
     state = {**body, "checkpoint_sha256": hashlib.sha256(mf.canonical_bytes(body)).hexdigest(),
              "checkpoint_hmac": _checkpoint_mac(keys, body)}
-    tmp = path.with_name(path.name + ".tmp")
-    with tmp.open("w", encoding="ascii") as handle:
-        handle.write(json.dumps(state, sort_keys=True))
-        handle.flush()
-        os.fsync(handle.fileno())
-    os.replace(tmp, path)
+    atomic_write_text(path, json.dumps(state, sort_keys=True), encoding="ascii")
 
 
 def _read_checkpoint(path: Path) -> dict[str, Any]:
@@ -399,9 +395,13 @@ def store_file(input_path: str | os.PathLike, output_path: str | os.PathLike, *,
     name = _safe_name(src.name.encode("utf-8", "surrogateescape").decode("utf-8", "replace")) if options.store_name else None
     stripe_bytes = options.data_shards * options.payload_bytes
 
-    writer = ContainerWriter(output_path, overwrite=overwrite)
+    writer = ContainerWriter(output_path, overwrite=overwrite, resumable=True)
     ckpt_path = writer.partial.with_name(writer.partial.name + ".ckpt")
     sidecar_path = writer.partial.with_name(writer.partial.name + ".idx")
+    # the resumable work files have fixed names; an input that is one of them would be deleted as a stale partial
+    # (V3 release review: `store movie.mkv.partial -o movie.mkv` destroyed its input)
+    for work_file in (Path(output_path), writer.partial, ckpt_path, sidecar_path):
+        refuse_same_file(work_file, src, what="the store's work file")
     options_sha = _options_digest(options)
     start_chunk = 0
     discarded_partial = False
@@ -477,7 +477,7 @@ def store_file(input_path: str | os.PathLike, output_path: str | os.PathLike, *,
             salt, archive_id = crypto.new_salt(), os.urandom(16)
             keys = crypto.ArchiveKeys.derive(key, salt)
         writer.start_fresh()
-        sidecar_path.write_bytes(b"")
+        os.close(os.open(sidecar_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0), 0o600))
 
     cipher = crypto.ChunkCipher(keys, archive_id, n) if key is not None else None
     base_state = {"format": CHECKPOINT_FORMAT, "input": {"path": str(src.resolve()), "size": size, "mtime_ns": st.st_mtime_ns},

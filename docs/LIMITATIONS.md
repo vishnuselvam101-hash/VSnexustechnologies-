@@ -61,6 +61,14 @@
   above the coverage-batch threshold ([CHANNEL_MODEL.md](CHANNEL_MODEL.md)). Unshuffled output and ordinary channels
   are byte-identical.
 
+## Operations
+
+* Do not run two `store` commands for the **same output** at the same time. A resumable store keeps its work files
+  under fixed names next to the output (`<output>.partial`, `.partial.ckpt`, `.partial.idx`); a concurrent second
+  store can make the first fail (exit 70). Stores to different outputs are independent.
+* Outputs are created with mode 0600; restored files do not keep the original file's permissions or timestamps.
+* The `benchmark` commands' `--output` JSON files are replaced without `--force` (they are measurement results).
+
 ## Not implemented
 
 Molecular primers and PCR selection, in-strand synchronisation markers or watermark/VT codes, fountain outer codes,

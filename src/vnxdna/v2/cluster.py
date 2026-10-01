@@ -43,7 +43,6 @@ import shutil
 import tempfile
 import time
 from collections import Counter, defaultdict, deque
-from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 from typing import Any
 
@@ -56,8 +55,9 @@ from .archive import default_workers
 from .decoder import discover
 from .frame import FRAME_FORMAT, HEADER_BYTES, KEYSTREAMS, KIND_META, FrameGeometry, parse_batch, parse_many_corrected
 from .container import publish
-from .paths import check_output_file, check_temp_dir
+from .paths import check_output_file, check_temp_dir, private_temp
 from .strandio import ReadBatch, iter_batches
+from .workers import process_pool
 
 CLUSTER_FORMAT = "vnx-clusters-1"
 BUCKET_TARGET_BYTES = 64 << 20
@@ -262,7 +262,7 @@ def cluster_file(reads_path: str | os.PathLike, output_path: str | os.PathLike, 
         raise InvalidInputError("these are V1 (frame format 4) reads; clustering is a V2 feature")
     workdir = Path(tempfile.mkdtemp(prefix="vnxdna-cluster-", dir=temp_dir))
     stats: Counter = Counter()
-    tmp = out.with_name("." + out.name + ".partial")
+    tmp: Path | None = None  # private temporary output (mkstemp), created when the cluster file is written
     try:
         size = Path(reads_path).stat().st_size
         buckets = max(1, min(1024, -(-size * 2 // BUCKET_TARGET_BYTES)))
@@ -300,7 +300,7 @@ def cluster_file(reads_path: str | os.PathLike, output_path: str | os.PathLike, 
             for batch in batches:
                 consume(_cl_task(batch))
         else:
-            with ProcessPoolExecutor(workers, initializer=_cl_setup, initargs=init) as pool:
+            with process_pool(workers, initializer=_cl_setup, initargs=init) as pool:
                 pending: deque = deque()
                 for batch in batches:
                     pending.append(pool.submit(_cl_task, batch))
@@ -390,7 +390,8 @@ def cluster_file(reads_path: str | os.PathLike, output_path: str | os.PathLike, 
             sizes[min(len(members), 50)] += 1
             cluster_id += 1
 
-        with tmp.open("w", encoding="ascii") as handle:
+        fd, tmp = private_temp(out)
+        with os.fdopen(fd, "w", encoding="ascii") as handle:
             handle.write(json.dumps({"format": CLUSTER_FORMAT, "encoder": f"vnxdna {__version__}", "source": str(reads_path),
                                      "geometry": geometry.to_dict(), "archive_tags": sorted(known_tags)}, sort_keys=True) + "\n")
             for b in range(buckets):
@@ -421,7 +422,8 @@ def cluster_file(reads_path: str | os.PathLike, output_path: str | os.PathLike, 
             handle.write(json.dumps({"end": True, "stats": dict(stats)}, sort_keys=True) + "\n")
         publish(tmp, out, overwrite=overwrite)
     except BaseException:
-        tmp.unlink(missing_ok=True)  # never leave the partial cluster file behind (VNX-DNA 2.0 did)
+        if tmp is not None:
+            tmp.unlink(missing_ok=True)  # never leave the partial cluster file behind (VNX-DNA 2.0 did)
         raise
     finally:
         shutil.rmtree(workdir, ignore_errors=True)

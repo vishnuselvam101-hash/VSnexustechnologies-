@@ -33,7 +33,6 @@ import shutil
 import tempfile
 import time
 import traceback
-from concurrent.futures import ProcessPoolExecutor
 from dataclasses import asdict, replace
 from pathlib import Path
 from typing import Any
@@ -46,6 +45,7 @@ from .encoder import encode_file
 from .profiles import StoreOptionsV2
 from .paths import check_output_dir
 from .sequencing import SequencingConfig, sequence_file
+from .workers import process_pool
 
 CSV_FIELDS = ["trial", "seed", "outcome", "error", "strands", "reads", "reads_per_strand", "strands_dropped", "strands_zero_reads",
               "substitutions", "insertions", "deletions", "bursts", "consensus_valid", "consensus_fallback", "reads_valid",
@@ -162,7 +162,7 @@ def run_experiment(input_path: str | os.PathLike, output_dir: str | os.PathLike,
     if workers <= 1 or trials == 1:
         records = [_trial(task) for task in tasks]
     else:
-        with ProcessPoolExecutor(min(workers, trials)) as pool:
+        with process_pool(min(workers, trials)) as pool:
             records = list(pool.map(_trial, tasks, chunksize=max(1, trials // (workers * 8))))
     shutil.rmtree(work, ignore_errors=True)
     outcomes = [r["outcome"] for r in records]

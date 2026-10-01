@@ -76,7 +76,7 @@ import numpy as np
 
 from ..dna.mapping import _COMPLEMENT
 from ..errors import ConfigurationError, InvalidInputError, OutputError
-from .paths import check_output_file, check_temp_dir
+from .paths import atomic_write_text, check_output_file, check_temp_dir
 from .strandio import ReadBatch, StrandWriter, format_for_output, iter_batches
 
 BUCKET_TARGET_BYTES = 64 << 20
@@ -521,10 +521,7 @@ def sequence_file(strands_path: str | os.PathLike, output_path: str | os.PathLik
 
 
 def _write_report(path: Path, report: dict[str, Any]) -> None:
-    tmp = path.with_name("." + path.name + ".partial")
     try:
-        tmp.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-        os.replace(tmp, path)
+        atomic_write_text(path, json.dumps(report, indent=2, sort_keys=True) + "\n")
     except OSError as error:
-        tmp.unlink(missing_ok=True)
         raise OutputError(f"cannot write report {path}: {error.strerror or error}") from None

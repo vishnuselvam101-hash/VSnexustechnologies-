@@ -46,7 +46,6 @@ import hashlib
 import json
 import shutil
 import time
-from concurrent.futures import ProcessPoolExecutor
 from dataclasses import asdict, replace
 from pathlib import Path
 from typing import Any
@@ -61,6 +60,7 @@ from ..v2.experiment import _trial, wilson
 from ..v2.paths import check_output_dir
 from ..v2.profiles import StoreOptionsV2
 from ..v2.sequencing import SequencingConfig
+from ..v2.workers import process_pool
 
 ERROR_TYPES: dict[str, tuple[str, dict[str, Any]]] = {
     "substitution": ("substitution_rate", {}),
@@ -177,7 +177,7 @@ def run_sweep(input_path, output_dir, *, sweep: list[str], base: SequencingConfi
         if workers <= 1 or len(tasks) == 1:
             records = [_trial(task) for task in tasks]
         else:
-            with ProcessPoolExecutor(min(workers, len(tasks))) as pool:
+            with process_pool(min(workers, len(tasks))) as pool:
                 records = list(pool.map(_trial, tasks, chunksize=max(1, len(tasks) // (workers * 8))))
     finally:
         shutil.rmtree(work, ignore_errors=True)

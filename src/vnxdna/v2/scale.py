@@ -35,7 +35,7 @@ import numpy as np
 from ..errors import ConfigurationError, InvalidInputError
 from ..provenance import environment
 from .container import publish
-from .paths import check_output_file
+from .paths import atomic_write_text, check_output_file, private_temp
 
 BLOCK = 4 << 20
 PATTERNS = ("random", "compressible", "mixed", "structured")
@@ -112,10 +112,10 @@ def generate_file(output: str | os.PathLike, size: int, pattern: str = "mixed", 
     started = time.perf_counter()
     vocab = _vocabulary(seed)
     h = hashlib.sha256()
-    tmp = out.with_name("." + out.name + ".partial")
+    fd, tmp = private_temp(out)
     written = 0
     try:
-        with tmp.open("wb") as handle:
+        with os.fdopen(fd, "wb") as handle:
             index = 0
             while written < size:
                 data = _block(pattern, seed, index, min(BLOCK, size - written), vocab)
@@ -291,9 +291,7 @@ def scale_benchmark(sizes: list[int], work_dir: str | os.PathLike, *, pattern: s
 
     def save() -> None:
         if output is not None:
-            tmp = Path(output).with_name(Path(output).name + ".tmp")
-            tmp.write_text(json.dumps(results, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8")
-            os.replace(tmp, output)
+            atomic_write_text(output, json.dumps(results, indent=2, sort_keys=True, default=str) + "\n")
 
     for size in sizes:
         run_dir = work / f"size-{size}"

@@ -155,3 +155,33 @@ def test_burst_options_reach_the_simulator(pool, tmp_path):
     assert "detected" in e.stdout and "all detected" not in e.stdout
     conf = json.loads((tmp_path / "exp" / "configuration.json").read_text())
     assert conf["channel"]["burst_rate"] == 0.2
+
+
+# ---------------------------------------------------------------- empty input through every CLI stage
+@pytest.mark.parametrize("fmt", ["fasta", "vxs"])
+def test_empty_file_through_every_cli_stage(tmp_path, fmt):
+    """An empty input has no data groups (density fields are None); every command must still succeed, in human and JSON mode."""
+    src = tmp_path / "empty.bin"
+    src.write_bytes(b"")
+    reads = "r.fastq" if fmt == "fasta" else "r.vxs"
+    steps = [
+        ["store", src, "-o", tmp_path / "e.vxdna"],
+        ["encode", tmp_path / "e.vxdna", "-o", tmp_path / f"s.{fmt}"],
+        ["encode", tmp_path / "e.vxdna", "-o", tmp_path / f"j.{fmt}", "--json"],
+        ["info", tmp_path / f"s.{fmt}"],
+        ["sequence", tmp_path / f"s.{fmt}", "-o", tmp_path / reads, "--coverage", "3", "--seed", "1"],
+        ["decode", tmp_path / reads, "-o", tmp_path / "d.vxdna"],
+        ["restore", tmp_path / "d.vxdna", "-o", tmp_path / "out.bin"],
+        ["recover", tmp_path / reads, "-o", tmp_path / "out2.bin"],
+        ["verify", tmp_path / reads, "--file", tmp_path / "out2.bin"],
+        ["extract", tmp_path / "e.vxdna", "--offset", "0", "--length", "0", "-o", tmp_path / "x.bin"],
+        ["pipeline", src, "-o", tmp_path / "p.bin", "--coverage", "3", "--seed", "1"],
+    ]
+    if fmt == "fasta":
+        steps.insert(5, ["cluster", tmp_path / reads, "-o", tmp_path / "c.jsonl"])
+        steps.insert(6, ["consensus", tmp_path / "c.jsonl", "-o", tmp_path / "cons.fasta"])
+    for step in steps:
+        run(*step, check=0)
+    assert (tmp_path / "d.vxdna").read_bytes() == (tmp_path / "e.vxdna").read_bytes()
+    for out in ("out.bin", "out2.bin", "p.bin"):
+        assert (tmp_path / out).read_bytes() == b""

@@ -160,9 +160,38 @@ The generated baseline figures are in §8 and in [BENCHMARKS.md](BENCHMARKS.md).
 | R7 | robustness | the hard-link publish fallback missed some errnos | FIXED |
 | R8 | bug | `simulate-errors` validated decoder options only inside each trial | FIXED |
 
-**Totals.** 48 code and test defects fixed: C1–C12, S1–S2, E1, D1–D7, B1–B15, T1, P1 (two tests) and R1–R8. There
-were also 13 documentation corrections (C4, D8, §4.5). Remaining: D-S1, D-S2, D-S3, B-S1 and the R1 residual. All
-are low impact, and none can produce wrong output.
+### 4.7 Found in the release review (2026-10-01)
+
+A final review before release ran the full suite, an independent harness that drives only the installed CLI (42
+round trips of text, binary, random, empty, chunk-boundary and incompressible files through FASTA and VXS, plain and
+encrypted, clean and through an 8× noisy channel with consensus; 300 single-bit container flips, 52 truncations,
+exact-M and M+1 losses in data and metadata groups, forged FASTA headers, malformed read files, coverage-1 channels),
+a 4 GB encrypted store → encode → recover run, and an adversarial review of data-loss, temporary-file, signal and
+packaging behaviour. Undetected corruption: 0. Every confirmed issue was reproduced, then fixed with a regression
+test that fails on commit `e3aa2d8` (`tests/v3/test_release_review_v3.py`; F1 in `tests/v3/test_cli_v3.py`).
+
+| id | type | issue | status |
+|---|---|---|---|
+| H1 | data loss | `pipeline --work-dir` overwrote files with intermediate names (e.g. `photo.jpg.vxdna`) without `--force`, and `--cleanup` deleted them | FIXED (refused up front; cleanup deletes only what the run wrote) |
+| H2 | data loss | `--report` could replace the key file or the DNA index (`--report key.txt --force`), making a new encrypted archive unrecoverable | FIXED (key files and DNA indexes are inputs/outputs) |
+| M1 | robustness | SIGTERM/SIGHUP left partial files, `vnxdna-decode-*` directories and orphaned workers (7 per command); SIGKILL orphaned workers | FIXED (handled like Ctrl-C; workers watch their parent) |
+| M2 | security | reports, DNA indexes, cluster files, decoded containers and checkpoints used fixed temporary names opened through symlinks | FIXED (`mkstemp`; a resumable store's fixed names are re-created with `O_EXCL`) |
+| M3 | data loss | an input named `<output>.partial` was deleted by `store` and truncated by `decode` | FIXED |
+| F1 | bug | `encode` of an empty unencrypted archive published its outputs, then exited 70 | FIXED |
+| L1 | robustness | `keygen` wrote through symlinks and truncated the old key when the write failed | FIXED (private temporary file + publish) |
+| L2 | data loss | an output could be the input with `--force` (`extract a -o a`, `store f -o f`, `restore a -o a`) | FIXED (refused) |
+| L4 | bug | `encode --no-index --force` left a stale DNA index that made `extract` fail | FIXED |
+| L5 | bug | `extract` ignored conflicting selections | FIXED (exit 3) |
+| L6 | CLI contract | a missing input to `store`, `pipeline`, `simulate-errors`, `experiment run` exited 2, not 3 | FIXED |
+| L7 | robustness | key files were read without a size limit (`-k /dev/zero`); loose permissions went unnoticed | FIXED (regular file ≤ 4 KiB; warning) |
+| L8 | packaging | `license = {text = …}` stops building with setuptools releases after 2027-02-18; `LICENSE` not in the wheel; no `.dockerignore`; the Docker example failed on a mounted directory owned by another user | FIXED |
+| C1 | cosmetic | `reads` printed Python reprs; `pipeline --help` lost its optional stages to Rich markup | FIXED |
+| L3 | robustness | two `store` commands writing the same output at the same time share the fixed resumable work files; the slower one can fail with exit 70 (the published archive stayed consistent in the reproduction) | REMAINING (documented in LIMITATIONS.md); next action: an exclusive lock on the checkpoint |
+| L7b | behaviour | a malformed `VNXDNA_KEY` is an error (exit 7) even for an unencrypted `restore` | KEPT deliberately (a misconfigured key should never go unnoticed); documented in CLI.md |
+
+**Totals.** 48 code and test defects fixed in the audit: C1–C12, S1–S2, E1, D1–D7, B1–B15, T1, P1 (two tests) and
+R1–R8, and 14 more in the release review (§4.7). There were also 13 documentation corrections (C4, D8, §4.5).
+Remaining: D-S1, D-S2, D-S3, B-S1, the R1 residual and L3. All are low impact, and none can produce wrong output.
 
 ## 5. V3 changes
 
@@ -195,7 +224,7 @@ The components and modules are listed in [ARCHITECTURE.md](ARCHITECTURE.md). The
 | suite | result |
 |---|---|
 | full suite, V3 (`PATH=.venv/bin:$PATH pytest`) | see the generated block below |
-| new V3 tests | 166 (165 in `tests/v3/`, 8 files, and the README's V3 block in `tests/cli/test_readme.py`), all pass |
+| new V3 tests | 192 (191 in `tests/v3/`, 9 files, 26 of them from the release review, and the README's V3 block in `tests/cli/test_readme.py`), all pass |
 | regression tests run against `v2.0.0` | container/security 15 of 16 fail on 2.0.0 (the 16th is a guard that must pass on both); decoder 7 of 7 fail; channel/CLI 19 targeted tests fail; review regressions R1–R8 target V3-only code |
 | lint (`ruff check src tests research`, pyflakes rules) | PASS (V1 modules exempt from unused-import fixes: they are byte-identical to 1.0.0) |
 | `compileall` | PASS |

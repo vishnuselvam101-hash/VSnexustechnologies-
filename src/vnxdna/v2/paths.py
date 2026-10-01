@@ -9,6 +9,7 @@ raise the documented OUTPUT_ERROR (exit 8).
 from __future__ import annotations
 
 import os
+import tempfile
 from pathlib import Path
 
 from ..errors import OutputError
@@ -47,3 +48,42 @@ def check_temp_dir(temp_dir: str | os.PathLike | None) -> None:
     """``--temp-dir`` must be an existing directory (it is not created implicitly)."""
     if temp_dir is not None and not Path(temp_dir).is_dir():
         raise OutputError(f"temporary directory does not exist or is not a directory: {temp_dir}")
+
+
+def same_file(a: str | os.PathLike, b: str | os.PathLike) -> bool:
+    """True if both paths name the same existing file (also through symlinks, hard links or different spellings)."""
+    try:
+        return os.path.samefile(a, b)
+    except OSError:
+        return False
+
+
+def refuse_same_file(output: str | os.PathLike, *inputs: str | os.PathLike | None, what: str = "output") -> None:
+    """An output may never be one of the command's inputs, not even with ``--force`` (found in the V3 release review: ``extract a -o a
+    --force`` replaced the archive with the extracted bytes)."""
+    for other in inputs:
+        if other is not None and (same_file(output, other) or Path(output).resolve() == Path(other).resolve()):
+            raise OutputError(f"{what} {output} is also an input of this command")
+
+
+def private_temp(target: str | os.PathLike, suffix: str = ".partial") -> tuple[int, Path]:
+    """Create a uniquely named temporary file next to ``target`` (``mkstemp``: O_EXCL, never follows a planted
+    symlink, mode 0600). Fixed temporary names such as ``.<name>.partial`` let anyone who can write to the
+    directory redirect the write through a symlink (fixed in the V3 release review)."""
+    t = Path(target)
+    fd, tmp = tempfile.mkstemp(prefix="." + t.name + ".", suffix=suffix, dir=t.parent if str(t.parent) else ".")
+    return fd, Path(tmp)
+
+
+def atomic_write_text(target: str | os.PathLike, text: str, *, encoding: str = "utf-8") -> None:
+    """Write ``text`` to a private temporary file, fsync it and rename it over ``target`` (no partial files on failure)."""
+    fd, tmp = private_temp(target)
+    try:
+        with os.fdopen(fd, "w", encoding=encoding, newline="\n") as handle:
+            handle.write(text)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(tmp, target)
+    except BaseException:
+        tmp.unlink(missing_ok=True)
+        raise

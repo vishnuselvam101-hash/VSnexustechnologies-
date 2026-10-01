@@ -29,13 +29,13 @@ from typing import Any
 
 from .. import __version__
 from .. import api as v1
-from ..errors import (ConfigurationError, IntegrityError, InvalidInputError, UnrecoverableCorruptionError,
+from ..errors import (ConfigurationError, IntegrityError, InvalidInputError, OutputError, UnrecoverableCorruptionError,
                       UnsupportedFormatError, VNXDNAError)
 from . import archive as arc
 from .container import container_version
 from .decoder import DecodeOptionsV2, ReadsArchive, discover
 from .encoder import encode_file, read_dna_index
-from .paths import check_output_dir, check_output_file, check_temp_dir
+from .paths import atomic_write_text, check_output_dir, check_output_file, check_temp_dir, refuse_same_file, same_file
 from .profiles import StoreOptionsV2
 from .sequencing import SequencingConfig, sequence_file
 from .strandio import detect_format, iter_batches, StrandWriter, format_for_output, verify_vxs
@@ -568,8 +568,28 @@ def _pipeline(src: Path, output_path, work: Path, temporary: bool, *, options, k
     container = work / f"{stem}.vxdna"
     strands = work / f"{stem}.{fmt}"
     decoded = work / f"{stem}.decoded.vxdna"
+    raw_reads = clusters = cons = None
+    need_consensus = False
+    if channel is not None:
+        reads_fmt = "vxs" if fmt == "vxs" and not (channel.changes_length or channel.n_rate or channel.contamination_rate) else "fastq"
+        raw_reads = work / f"{stem}.reads.{reads_fmt}"
+        need_consensus = use_consensus if use_consensus is not None else (channel.coverage > 1 and reads_fmt == "fastq")
+        if need_consensus:
+            clusters, cons = work / f"{stem}.clusters.jsonl", work / f"{stem}.consensus.fasta"
+    index = strands.with_name(strands.name + ".vxidx")
+    planned = [p for p in (container, strands, index, raw_reads, clusters, cons, decoded) if p is not None]
+    # Every intermediate is checked before the first stage (V3 release review: with --work-dir, existing files such as
+    # the user's own photo.jpg.vxdna were overwritten without --force, and --cleanup then deleted them).
+    for path in planned:
+        refuse_same_file(path, src, output_path, report_path, what="pipeline intermediate")
+    if not temporary and not overwrite and not resume:
+        existing = [p.name for p in planned if os.path.lexists(p)]
+        if existing:
+            raise OutputError(f"work directory {work} already holds {', '.join(existing)}; use --force to overwrite them, "
+                              "--resume to continue an earlier pipeline run, or another --work-dir")
     steps: dict[str, Any] = {}
     timings: dict[str, float] = {}
+    produced: list[Path] = []  # intermediates this run wrote or verified as its own; the only files cleanup may delete
 
     def run(name, fn, *args, **kwargs):
         t = time.perf_counter()
@@ -581,26 +601,26 @@ def _pipeline(src: Path, output_path, work: Path, temporary: bool, *, options, k
         steps["store"] = {"status": "SKIPPED", "reason": "resume: complete container for this exact input (size and SHA-256 checked)"}
     else:
         run("store", arc.store_file, src, container, options=options, key=key, overwrite=True, resume=resume, workers=workers)
+    produced.append(container)
     if resume and _strands_match(strands, container):
         steps["encode"] = {"status": "SKIPPED", "reason": "resume: complete strand file for this container (DNA index checked)"}
     else:
         run("encode", encode_file, container, strands, fmt=fmt, workers=workers, overwrite=True)
+    produced += [strands, index]
     reads = strands
-    raw_reads = None
     if channel is not None:
-        reads_fmt = "vxs" if fmt == "vxs" and not (channel.changes_length or channel.n_rate or channel.contamination_rate) else "fastq"
-        reads = raw_reads = work / f"{stem}.reads.{reads_fmt}"
-        run("sequence", sequence_file, strands, reads, channel, fmt=reads_fmt, overwrite=True, temp_dir=temp_dir)
-        need_consensus = use_consensus if use_consensus is not None else (channel.coverage > 1 and reads_fmt == "fastq")
+        run("sequence", sequence_file, strands, raw_reads, channel, fmt=reads_fmt, overwrite=True, temp_dir=temp_dir)
+        produced.append(raw_reads)
+        reads = raw_reads
         if need_consensus:
             from .cluster import cluster_file
             from .consensus import consensus_file
-            clusters = work / f"{stem}.clusters.jsonl"
-            cons = work / f"{stem}.consensus.fasta"
-            run("cluster", cluster_file, reads, clusters, workers=workers, overwrite=True, temp_dir=temp_dir)
+            run("cluster", cluster_file, raw_reads, clusters, workers=workers, overwrite=True, temp_dir=temp_dir)
             run("consensus", consensus_file, clusters, cons, overwrite=True)
+            produced += [clusters, cons]
             reads = cons
     run("decode", decode, reads, decoded, options=decode_options, workers=workers, overwrite=True, temp_dir=temp_dir)
+    produced.append(decoded)
     run("restore", arc.restore_file, decoded, output_path, key=key, workers=workers, overwrite=overwrite)
     run("verify", arc.verify_container, decoded, key=key, against=output_path, workers=workers)
     identical, in_sha, out_sha = _compare_files(src, Path(output_path))
@@ -609,11 +629,11 @@ def _pipeline(src: Path, output_path, work: Path, temporary: bool, *, options, k
     container_identical = _files_equal(container, decoded)
     removed = []
     if cleanup in ("outputs", "all") and not temporary:
-        doomed = [container, decoded, work / f"{stem}.clusters.jsonl"]
+        doomed = [container, decoded, clusters]
         if cleanup == "all":  # every intermediate, including the raw reads and the DNA index (2.0 kept both)
-            doomed += [strands, strands.with_name(strands.name + ".vxidx"), raw_reads, work / f"{stem}.consensus.fasta"]
-        for path in dict.fromkeys(p for p in doomed if p is not None):
-            if path.exists() and path.resolve() != Path(output_path).resolve():
+            doomed += [strands, index, raw_reads, cons]
+        for path in dict.fromkeys(p for p in doomed if p is not None and p in produced):
+            if path.exists() and not same_file(path, output_path):
                 path.unlink()
                 removed.append(path.name)
     report = {"status": "RECOVERED" if steps["decode"].get("status") == "RECOVERED" else "SUCCESS", "operation": "pipeline",
@@ -624,9 +644,7 @@ def _pipeline(src: Path, output_path, work: Path, temporary: bool, *, options, k
               "version": __version__,
               "elapsed_s": time.perf_counter() - started}
     if report_path is not None:
-        tmp = Path(report_path).with_name("." + Path(report_path).name + ".partial")
-        tmp.write_text(json.dumps(report, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8")
-        os.replace(tmp, report_path)
+        atomic_write_text(report_path, json.dumps(report, indent=2, sort_keys=True, default=str) + "\n")
     return report
 
 

@@ -35,7 +35,6 @@ import tempfile
 import time
 from collections import Counter, deque
 from collections.abc import Callable, Iterable, Iterator
-from concurrent.futures import ProcessPoolExecutor
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -53,6 +52,7 @@ from .archive import LoadedV2, check_stored, default_workers, load
 from .encoder import META_DATA_SHARDS, META_MAGIC, META_PARITY_SHARDS, geometry_of, used_data_shards
 from .frame import (FRAME_FORMAT, KIND_META, FrameGeometry, parse_batch, parse_many_corrected)
 from .strandio import ReadBatch, detect_format, iter_batches, read_vxs_range, vxs_info
+from .workers import process_pool
 
 BUCKET_TARGET_BYTES = 64 << 20
 SPILL_BLOCK_RECORDS = 1 << 18
@@ -387,7 +387,7 @@ def scan_file(path: str | os.PathLike, geometry: FrameGeometry, options: DecodeO
             for task in tasks():
                 consume(_scan_task(task))
         else:
-            with ProcessPoolExecutor(workers, initializer=_scan_setup, initargs=init) as pool:
+            with process_pool(workers, initializer=_scan_setup, initargs=init) as pool:
                 pending: deque = deque()
                 for task in tasks():
                     pending.append(pool.submit(_scan_task, task))

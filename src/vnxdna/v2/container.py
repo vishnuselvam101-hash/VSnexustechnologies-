@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import tempfile
 import threading
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -113,13 +114,18 @@ class ContainerWriter:
     caller re-feeds the existing prefix through :meth:`rehash_prefix`.
     """
 
-    def __init__(self, target: str | os.PathLike, *, overwrite: bool = False):
+    def __init__(self, target: str | os.PathLike, *, overwrite: bool = False, resumable: bool = False):
         self.target = Path(target)
         if self.target.exists() and self.target.is_dir():
             raise OutputError(f"output is a directory: {self.target}")
         if self.target.exists() and not overwrite:
             raise OutputError(f"output already exists: {self.target} (use --force to overwrite)")
-        self.partial = self.target.with_name(self.target.name + ".partial")
+        # A resumable store needs a predictable name (``<output>.partial``, next to its checkpoint); the caller removes a
+        # stale one first and the file is then created exclusively. Every other writer (decode) uses a private, uniquely
+        # named temporary file: a fixed name was opened with O_TRUNC through any symlink planted there, and an input
+        # that happened to be called ``<output>.partial`` was truncated (V3 release review).
+        self.resumable = resumable
+        self.partial = self.target.with_name(self.target.name + ".partial") if resumable else None
         self.overwrite = overwrite
         self.file_hash = hashlib.sha256()
         self.body_hash = hashlib.sha256()
@@ -129,9 +135,13 @@ class ContainerWriter:
     def start_fresh(self) -> None:
         try:
             self.target.parent.mkdir(parents=True, exist_ok=True)
-            fd = os.open(self.partial, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            if self.resumable:
+                fd = os.open(self.partial, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0), 0o600)
+            else:
+                fd, tmp = tempfile.mkstemp(prefix="." + self.target.name + ".", suffix=".partial", dir=self.target.parent)
+                self.partial = Path(tmp)
         except OSError as error:
-            raise OutputError(f"cannot write {self.partial}: {error.strerror or error}") from None
+            raise OutputError(f"cannot write {self.partial or self.target}: {error.strerror or error}") from None
         self.handle = os.fdopen(fd, "wb")
         head = header_bytes()
         self.handle.write(head)
@@ -219,7 +229,7 @@ class ContainerWriter:
                 self.handle.close()
             finally:
                 self.handle = None
-        if remove:
+        if remove and self.partial is not None:
             self.partial.unlink(missing_ok=True)
 
 

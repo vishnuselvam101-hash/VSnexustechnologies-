@@ -96,6 +96,9 @@ There is no built-in padding; to hide the size, pad the input.
 | unbounded line reads (D3) | whole lines read before any length check (430 MiB for a 190 MiB line) | lines cut while reading (47 MiB) |
 | `--report` overwrote any file (B4) | including the command's own input, without `--force` | refused unless `--force`; never an input or output of the command |
 | output clobbering race (S2) | an output created between the existence check and the rename was replaced | hard-link publish refuses it |
+| report replaced the key file (release review H2) | `--report key.txt --force` (or `--report S.fasta.vxidx`) was accepted | key files and DNA indexes count as inputs/outputs |
+| symlinks at fixed temporary names (release review M2) | reports, DNA indexes, cluster files and decoded containers were written through a planted `.<name>.partial` symlink | private `mkstemp` files |
+| key files (release review L1, L7) | `keygen --force` wrote through symlinks and truncated the old key on failure; `-k /dev/zero` read without limit | atomic, symlink-safe `keygen`; bounded, regular-file key reads |
 
 ## Hardening
 
@@ -110,8 +113,14 @@ There is no built-in padding; to hide the size, pad the input.
   (with valid digests and the trailer resealed, to reach the inner layers).
 * **Path safety**: output paths come only from the command line. The stored name is metadata (plain file name,
   control characters and separators rejected), never a path.
-* **Temporary files**: created with `mkstemp` or `O_CREAT|O_TRUNC` mode 0600 in the output's directory (or
-  `--temp-dir`), removed on failure, and never readable under the final name before verification. Decoder,
+* **Temporary files**: created with `mkstemp` (unique name, `O_EXCL`, never through a symlink, mode 0600) in the
+  output's directory (or `--temp-dir`), removed on failure, and never readable under the final name before
+  verification. The only fixed names are a resumable store's `<output>.partial`, `.partial.ckpt` and `.partial.idx`;
+  stale ones are removed and the files re-created exclusively, and an input that is one of them is refused. (Before
+  the V3 release review, reports, DNA indexes, cluster files and decoded containers used fixed `.<name>.partial`
+  names opened with `O_TRUNC`, so anyone able to write to the output directory could redirect the write through a
+  planted symlink.) Every output VNX-DNA writes, including reports, DNA indexes and `keygen` keys, has mode 0600;
+  restored files do not keep the original file's mode. Decoder,
   cluster and sequence work directories are private `mkdtemp` directories, removed on exit.
 * **Checkpoints** carry their own SHA-256 and, when encrypted, an HMAC under the archive MAC key. `--resume` refuses
   a changed input (path, size, mtime, and every completed chunk's plaintext hash), changed options, a different key,
@@ -120,6 +129,12 @@ There is no built-in padding; to hide the size, pad the input.
 * **No** `pickle`, `eval`, `exec` or `shell=True`. Subprocesses: `git` (provenance), and `sha256sum`/`cmp` in the
   benchmark harness, all with argument lists.
 * Keys never appear in reports, errors or logs.
+* **Key files** are read only if they are regular files of at most 4 KiB (`-k /dev/zero` used to read until memory
+  ran out), and a key file readable or writable by group or others is reported with a warning. `keygen` writes a
+  private temporary file and publishes it: it never writes through a symlink and never truncates an existing key when
+  the write fails.
+* **Signals**: SIGTERM and SIGHUP clean up like Ctrl-C (partial outputs, temporary directories, worker processes), and
+  worker processes exit when their parent dies, even by SIGKILL.
 
 ## Known limitations
 

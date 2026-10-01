@@ -1,6 +1,34 @@
 # Changelog
 
-## 3.0.0 — 2026-09-30
+## 3.0.0 — 2026-10-01
+
+### Release review (2026-10-01)
+A final pre-release review ran the full suite, an independent end-to-end and corruption harness (42 round trips of
+text, binary, random, empty, chunk-boundary and incompressible files; 300 container bit flips; truncations; exact-M
+and M+1 strand losses; coverage-1 error channels), a 4 GB encrypted run, and an adversarial review of data-loss,
+temporary-file and signal handling. Every finding below was reproduced, fixed, and has a regression test
+(`tests/v3/test_release_review_v3.py`, `tests/v3/test_cli_v3.py`) that fails on the previous commit.
+- **Data loss:** `pipeline --work-dir` overwrote existing intermediate-named files (e.g. the user's
+  `photo.jpg.vxdna`) without `--force`, and `--cleanup` then deleted them. Existing intermediates are now refused
+  unless `--force`/`--resume`, and cleanup deletes only files the run wrote.
+- **Data loss:** `--report` could replace the key file (`store … -k key.txt --report key.txt --force`), making the new
+  archive unrecoverable, or the DNA index. An output may now never be an input, not even with `--force` (this also
+  stops `extract a.vxdna -o a.vxdna --force`, `store f -o f --force` and `restore a -o a --force`).
+- **Data loss:** an input named `<output>.partial` was deleted by `store` and truncated by `decode`.
+- **Signals:** SIGTERM/SIGHUP left partial files, temporary directories and orphaned worker processes (7 per
+  command, ~90 MB each). They now clean up like Ctrl-C (exit 130), and workers exit when their parent dies.
+- **Temporary files:** reports, DNA indexes, cluster files, decoded containers and checkpoints used fixed
+  `.<name>.partial` names opened through symlinks; they now use private `mkstemp` files.
+- `encode` of an empty unencrypted archive wrote its outputs and then exited 70 (summary formatting of `None`).
+- `keygen` wrote through symlinks and truncated an existing key when the write failed; it is now atomic.
+- `encode --no-index --force` left a stale DNA index that broke `extract`; it is removed.
+- `extract` silently ignored conflicting selections (`--chunk 0 --length 5`, `--length` with `--end`); now exit 3.
+- A missing input to `store`, `pipeline`, `simulate-errors` and `experiment run` exited 2 with a usage box instead of
+  the documented exit 3.
+- Key files must be regular files of at most 4 KiB (`-k /dev/zero` read without limit); loose permissions warn.
+- `reads` printed Python reprs (`[{'length': …}]`, `mean None`); `pipeline --help` lost its optional stages to markup.
+- Packaging: SPDX `license = "MIT"` (the table form stops building with setuptools releases after 2027-02-18), the
+  wheel ships `LICENSE`, a `.dockerignore`, and the Docker example runs as the calling user.
 
 Audit of V2 and an architectural upgrade on the same format. Computational only: no wet-lab validation. Archive
 format 5 is kept: V2 archives are read, and V2 reads V3 archives, with one exception (see Compatibility). The full
@@ -37,7 +65,7 @@ report is [docs/V3_AUDIT.md](docs/V3_AUDIT.md).
   70 on any undetected corruption.
 - **Multi-archive pools**: the only decodable archive is used, or `--archive-tag` picks one.
 - `verify --force` (for `--report`), exit code 141 for a closed standard output, `ruff` lint in CI, V2 compatibility
-  fixtures (`tests/fixtures/v2_0/`), the V3 research harness (`research/v3/`), and 166 new tests (165 in `tests/v3/`, 1 README test).
+  fixtures (`tests/fixtures/v2_0/`), the V3 research harness (`research/v3/`), and 192 new tests (191 in `tests/v3/`, 1 README test; 26 of them from the release review).
 - Docs: ARCHITECTURE (V3), STORAGE_FORMAT, ENCODING, ERROR_MODEL, LIMITATIONS, REPRODUCIBILITY and V3_AUDIT. The V1
   documents were renamed V1_ARCHITECTURE and V1_FORMAT.
 
