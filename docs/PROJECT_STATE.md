@@ -1,6 +1,6 @@
 # VNX-DNA project state
 
-_Last updated: 2026-09-30_
+_Last updated: 2026-10-01_
 
 **Current version:** 3.0.0. The only version source is `src/vnxdna/_version.py`.
 **Release status:** v3.0.0 is a research-grade *software* release on archive format 5. It follows a complete audit of
@@ -23,6 +23,7 @@ optional indel or burst resynchronisation, two-pass, disk-backed) → restore / 
 | criterion | result | evidence |
 |---|---|---|
 | complete V2 audit, every finding reproduced | met: 48 code and test defects and 13 documentation claims found and fixed; 5 low-impact items remain, none of which can produce wrong output | [V3_AUDIT.md](V3_AUDIT.md) §4 |
+| release review (independent end-to-end and corruption harness, 4 GB encrypted run, adversarial review) | met: 15 more issues fixed (two data-loss paths, signal handling and a SIGTERM hang, symlink-safe temporary files); 1 low-impact item remains (L3) | [V3_AUDIT.md](V3_AUDIT.md) §4.7 |
 | every fix has a regression test that fails on 2.0.0 | met, checked against a `v2.0.0` checkout | [TESTING.md](TESTING.md) |
 | full test suite | met | V3_AUDIT §6 (generated) |
 | V2 compatibility | met: V3 reads all 2.0.0 fixtures; V2 reads V3 output except resumed encrypted stores (clean exit 6) | [COMPATIBILITY.md](COMPATIBILITY.md) |

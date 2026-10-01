@@ -71,7 +71,7 @@ report is [docs/V3_AUDIT.md](docs/V3_AUDIT.md).
   70 on any undetected corruption.
 - **Multi-archive pools**: the only decodable archive is used, or `--archive-tag` picks one.
 - `verify --force` (for `--report`), exit code 141 for a closed standard output, `ruff` lint in CI, V2 compatibility
-  fixtures (`tests/fixtures/v2_0/`), the V3 research harness (`research/v3/`), and 192 new tests (191 in `tests/v3/`, 1 README test; 26 of them from the release review).
+  fixtures (`tests/fixtures/v2_0/`), the V3 research harness (`research/v3/`), and 195 new tests (194 in `tests/v3/`, 1 README test; 29 of them from the release review).
 - Docs: ARCHITECTURE (V3), STORAGE_FORMAT, ENCODING, ERROR_MODEL, LIMITATIONS, REPRODUCIBILITY and V3_AUDIT. The V1
   documents were renamed V1_ARCHITECTURE and V1_FORMAT.
 
