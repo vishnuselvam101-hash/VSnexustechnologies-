@@ -238,7 +238,12 @@ def test_sigterm_cleans_up_like_ctrl_c(big_strands, tmp_path, delay):
     if proc.poll() is not None:
         pytest.skip("the command finished before the signal (machine too fast for this input)")
     proc.send_signal(signal.SIGTERM)
-    _, err = proc.communicate(timeout=60)
+    try:
+        _, err = proc.communicate(timeout=60)
+    except subprocess.TimeoutExpired:
+        proc.kill()  # never leave a hung command behind
+        proc.communicate()
+        pytest.fail("the command did not exit within 60 s of SIGTERM (hang)")
     assert proc.returncode == 130, err
     assert "Traceback" not in err and "interrupted" in err
     assert os.listdir(out_dir) == [] and os.listdir(scratch) == []
