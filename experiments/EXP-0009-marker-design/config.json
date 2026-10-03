@@ -1,0 +1,181 @@
+{
+  "id": "EXP-0009-marker-design",
+  "type": "sweep",
+  "purpose": "marker period/length design study: success vs nucleotide cost at fixed indel rate (0.2% ins + 0.2% del, coverage 1)",
+  "input": {
+    "size": 262144,
+    "pattern": "random",
+    "seed": 42
+  },
+  "channel": {
+    "coverage": 1,
+    "insertion_rate": 0.002,
+    "deletion_rate": 0.002,
+    "seed": 1009
+  },
+  "sweep": {
+    "points": [
+      {}
+    ]
+  },
+  "trials": 10,
+  "workers": 7,
+  "variants": [
+    {
+      "name": "P=40 r=16 period=0 len=0",
+      "dna": {
+        "layout": {
+          "payload_bytes": 40,
+          "inner_parity": 16,
+          "marker_period": 0,
+          "marker_len": 0
+        },
+        "data_symbols": 64,
+        "parity_symbols": 16
+      }
+    },
+    {
+      "name": "P=40 r=16 period=48 len=2",
+      "dna": {
+        "layout": {
+          "payload_bytes": 40,
+          "inner_parity": 16,
+          "marker_period": 48,
+          "marker_len": 2
+        },
+        "data_symbols": 64,
+        "parity_symbols": 16
+      }
+    },
+    {
+      "name": "P=40 r=16 period=32 len=2",
+      "dna": {
+        "layout": {
+          "payload_bytes": 40,
+          "inner_parity": 16,
+          "marker_period": 32,
+          "marker_len": 2
+        },
+        "data_symbols": 64,
+        "parity_symbols": 16
+      }
+    },
+    {
+      "name": "P=40 r=16 period=24 len=2",
+      "dna": {
+        "layout": {
+          "payload_bytes": 40,
+          "inner_parity": 16,
+          "marker_period": 24,
+          "marker_len": 2
+        },
+        "data_symbols": 64,
+        "parity_symbols": 16
+      }
+    },
+    {
+      "name": "P=40 r=16 period=16 len=2",
+      "dna": {
+        "layout": {
+          "payload_bytes": 40,
+          "inner_parity": 16,
+          "marker_period": 16,
+          "marker_len": 2
+        },
+        "data_symbols": 64,
+        "parity_symbols": 16
+      }
+    },
+    {
+      "name": "P=40 r=16 period=32 len=3",
+      "dna": {
+        "layout": {
+          "payload_bytes": 40,
+          "inner_parity": 16,
+          "marker_period": 32,
+          "marker_len": 3
+        },
+        "data_symbols": 64,
+        "parity_symbols": 16
+      }
+    },
+    {
+      "name": "P=40 r=16 period=24 len=3",
+      "dna": {
+        "layout": {
+          "payload_bytes": 40,
+          "inner_parity": 16,
+          "marker_period": 24,
+          "marker_len": 3
+        },
+        "data_symbols": 64,
+        "parity_symbols": 16
+      }
+    },
+    {
+      "name": "P=40 r=16 period=32 len=4",
+      "dna": {
+        "layout": {
+          "payload_bytes": 40,
+          "inner_parity": 16,
+          "marker_period": 32,
+          "marker_len": 4
+        },
+        "data_symbols": 64,
+        "parity_symbols": 16
+      }
+    },
+    {
+      "name": "P=36 r=20 period=24 len=3",
+      "dna": {
+        "layout": {
+          "payload_bytes": 36,
+          "inner_parity": 20,
+          "marker_period": 24,
+          "marker_len": 3
+        },
+        "data_symbols": 64,
+        "parity_symbols": 16
+      }
+    },
+    {
+      "name": "P=36 r=20 period=32 len=3",
+      "dna": {
+        "layout": {
+          "payload_bytes": 36,
+          "inner_parity": 20,
+          "marker_period": 32,
+          "marker_len": 3
+        },
+        "data_symbols": 64,
+        "parity_symbols": 16
+      }
+    },
+    {
+      "name": "P=32 r=24 period=24 len=3",
+      "dna": {
+        "layout": {
+          "payload_bytes": 32,
+          "inner_parity": 24,
+          "marker_period": 24,
+          "marker_len": 3
+        },
+        "data_symbols": 64,
+        "parity_symbols": 16
+      }
+    },
+    {
+      "name": "P=36 r=20 period=16 len=3",
+      "dna": {
+        "layout": {
+          "payload_bytes": 36,
+          "inner_parity": 20,
+          "marker_period": 16,
+          "marker_len": 3
+        },
+        "data_symbols": 64,
+        "parity_symbols": 16
+      }
+    }
+  ]
+}

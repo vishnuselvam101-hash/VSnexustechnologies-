@@ -1,0 +1,35 @@
+{
+  "id": "EXP-0005-coverage-consensus",
+  "type": "sweep",
+  "purpose": "recovery and decode cost vs coverage (1-100x) under heavy mixed errors (1% sub, 0.4% ins, 0.4% del)",
+  "input": {
+    "size": 65536,
+    "pattern": "random",
+    "seed": 42
+  },
+  "dna": {
+    "profile": "v4-balanced"
+  },
+  "channel": {
+    "substitution_rate": 0.01,
+    "insertion_rate": 0.004,
+    "deletion_rate": 0.004,
+    "coverage_model": "poisson",
+    "seed": 1005
+  },
+  "sweep": {
+    "parameter": "coverage",
+    "values": [
+      1,
+      2,
+      5,
+      10,
+      20,
+      30,
+      50,
+      100
+    ]
+  },
+  "trials": 5,
+  "workers": 7
+}

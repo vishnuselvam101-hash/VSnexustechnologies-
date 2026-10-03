@@ -72,6 +72,12 @@ def _trial(args: tuple) -> dict:
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+def channel_fields(point: dict) -> dict:
+    """Channel parameters of a sweep point; other keys (e.g. "level", "model") are labels kept only in the report."""
+    names = set(ch.ChannelConfig.__dataclass_fields__)
+    return {k: v for k, v in point.items() if k in names}
+
+
 def expand_points(spec: dict) -> list[dict]:
     """``{"parameter": name, "values": [...]}`` or ``{"grid": {name: [...], ...}}`` → list of overrides."""
     if "grid" in spec:
@@ -120,7 +126,7 @@ def run_sweep(config: dict, *, workdir: str | None = None, progress=None) -> dic
         tasks = []
         for pi, over in enumerate(points):
             for tr in range(trials):
-                chan = {**base_channel, **over, "seed": _seed(base_seed, pi, tr)}
+                chan = {**base_channel, **channel_fields(over), "seed": _seed(base_seed, pi, tr)}
                 ch.ChannelConfig.from_dict(chan)
                 tasks.append((str(tmp / "s.fasta"), chan, decode, profile if not layout else None, pi, tr, str(tmp)))
         records = []

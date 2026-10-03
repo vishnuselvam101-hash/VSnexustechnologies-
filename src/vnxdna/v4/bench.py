@@ -107,8 +107,7 @@ def end_to_end(input_size: int, pattern: str = "mixed", seed: int = 42, profile:
             t = time.perf_counter()
             ar.extract(tmp / "r.vnx", tmp / "out")
             extract_s = time.perf_counter() - t
-            out_sha = hashlib.sha256((tmp / "out" / "input.bin").read_bytes()).hexdigest() if input_size < (2 << 30) else \
-                _sha_file(tmp / "out" / "input.bin")
+            out_sha = _sha_file(tmp / "out" / "input.bin")      # streamed: must not inflate the measured peak RSS
             if out_sha != in_sha:
                 status = "INTEGRITY_FAILURE"      # must never happen: the container SHA-256 was verified
         mb = input_size / 1e6

@@ -29,7 +29,7 @@ from . import bench, sweep
 from .errors import VNXConfigurationError
 from .util import environment, write_json
 
-TYPES = ("sweep", "end_to_end", "codec_compare", "stages", "scaling", "memory")
+TYPES = ("sweep", "end_to_end", "codec_compare", "stages", "scaling", "memory", "v3_vs_v4", "constraints")
 TIMING_KEYS = ("seconds", "_s", "mb_s", "rss", "per_second", "_per_day", "reads_s", "frames_s", "leaves_s", "mbases", "strands_s",
                "per_trial", "timestamp", "duration")
 
@@ -46,8 +46,26 @@ def load(path: str | os.PathLike) -> dict:
 
 def execute(cfg: dict, workdir: str | None = None, progress=None) -> dict:
     kind = cfg["type"]
+    if kind == "sweep" and "variants" in cfg:
+        # several encodings (profiles / layouts / codes) under the same channel points and seeds
+        out = {"case": "sweep_variants", "variants": []}
+        for var in cfg["variants"]:
+            sub = {k: v for k, v in cfg.items() if k != "variants"}
+            sub["dna"] = {**cfg.get("dna", {}), **var.get("dna", {})}
+            sub["decode"] = {**cfg.get("decode", {}), **var.get("decode", {})}
+            res = sweep.run_sweep(sub, workdir=workdir, progress=progress)
+            res["variant"] = var["name"]
+            out["variants"].append(res)
+        out["input_sha256"] = out["variants"][0]["input_sha256"] if out["variants"] else None
+        return out
     if kind == "sweep":
         return sweep.run_sweep(cfg, workdir=workdir, progress=progress)
+    if kind == "v3_vs_v4":
+        from . import compare
+        return compare.v3_vs_v4(cfg, workdir=workdir, progress=progress)
+    if kind == "constraints":
+        from . import compare
+        return compare.constraint_study(**cfg.get("parameters", {}))
     if kind == "end_to_end":
         return {"case": "end_to_end_set", "runs": [bench.isolated("end_to_end", **run, workdir=workdir) for run in cfg["runs"]]}
     if kind == "codec_compare":

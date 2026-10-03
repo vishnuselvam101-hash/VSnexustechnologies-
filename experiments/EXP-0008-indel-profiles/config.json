@@ -1,0 +1,66 @@
+{
+  "id": "EXP-0008-indel-profiles",
+  "type": "sweep",
+  "purpose": "indel recovery at coverage 1: markers vs no markers (equal outer code)",
+  "input": {
+    "size": 262144,
+    "pattern": "random",
+    "seed": 42
+  },
+  "channel": {
+    "coverage": 1,
+    "seed": 1008
+  },
+  "sweep": {
+    "points": [
+      {
+        "insertion_rate": 0.0,
+        "deletion_rate": 0.0
+      },
+      {
+        "insertion_rate": 0.0005,
+        "deletion_rate": 0.0005
+      },
+      {
+        "insertion_rate": 0.001,
+        "deletion_rate": 0.001
+      },
+      {
+        "insertion_rate": 0.002,
+        "deletion_rate": 0.002
+      },
+      {
+        "insertion_rate": 0.003,
+        "deletion_rate": 0.003
+      },
+      {
+        "insertion_rate": 0.005,
+        "deletion_rate": 0.005
+      }
+    ]
+  },
+  "trials": 10,
+  "workers": 7,
+  "variants": [
+    {
+      "name": "v4-dense (no markers, P=44, r=12)",
+      "dna": {
+        "profile": "v4-dense"
+      }
+    },
+    {
+      "name": "v4-balanced (2-nt markers / 32 nt, P=40, r=16)",
+      "dna": {
+        "profile": "v4-balanced"
+      }
+    },
+    {
+      "name": "v4-indel (3-nt markers / 24 nt, P=36, r=20)",
+      "dna": {
+        "profile": "v4-indel",
+        "data_symbols": 64,
+        "parity_symbols": 16
+      }
+    }
+  ]
+}
