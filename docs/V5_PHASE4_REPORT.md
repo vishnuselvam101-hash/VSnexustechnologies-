@@ -46,6 +46,10 @@ inner RS code is not changed: soft evidence only chooses which received words th
   `experiments/v5/phase4/` (scripts, results, logs, curves, README), `experiments/v5/phase3/repro-3633dfb/` and
   `repro_compare.py` (§3).
 * Results were produced from the working tree on top of `3633dfb` (provenance `worktree_dirty = true`); see §19.
+* **Validated on the committed code (Gate A):** P4-EXP-01, 03, 04, 06, 07 and 08 were re-run on a clean worktree of
+  `c5b68d6` (`worktree_dirty = false`, native kernel rebuilt from that commit). Every deterministic field is identical
+  to the published results, and the full suite passes 997 / 997 there. See `docs/V5_PHASE4_PROVENANCE_VALIDATION.md`
+  and `experiments/v5/phase4/committed-c5b68d6/`. The numbers in this report are unchanged.
 
 ## 3. Phase 3 reproduction (Phase 4A)
 

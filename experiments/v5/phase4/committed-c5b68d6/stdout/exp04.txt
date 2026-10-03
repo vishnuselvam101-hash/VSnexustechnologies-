@@ -1,0 +1,90 @@
+EXP-04 2e+f=15 e= 2 f=11 uninformative hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=15 e= 2 f=11 informative   hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=15 e= 2 f=11 misleading    hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=15 e= 3 f= 9 uninformative hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=15 e= 3 f= 9 informative   hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=15 e= 3 f= 9 misleading    hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=15 e= 4 f= 7 uninformative hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=15 e= 4 f= 7 informative   hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=15 e= 4 f= 7 misleading    hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=15 e= 5 f= 5 uninformative hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=15 e= 5 f= 5 informative   hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=15 e= 5 f= 5 misleading    hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=15 e= 6 f= 3 uninformative hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=15 e= 6 f= 3 informative   hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=15 e= 6 f= 3 misleading    hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=15 e= 7 f= 1 uninformative hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=15 e= 7 f= 1 informative   hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=15 e= 7 f= 1 misleading    hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 3 f=10 uninformative hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 3 f=10 informative   hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 3 f=10 misleading    hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 4 f= 8 uninformative hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 4 f= 8 informative   hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 4 f= 8 misleading    hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 5 f= 6 uninformative hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 5 f= 6 informative   hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 5 f= 6 misleading    hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 6 f= 4 uninformative hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 6 f= 4 informative   hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 6 f= 4 misleading    hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 7 f= 2 uninformative hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 7 f= 2 informative   hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 7 f= 2 misleading    hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 8 f= 0 uninformative hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 8 f= 0 informative   hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 8 f= 0 misleading    hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=17 e= 3 f=11 uninformative hard    0  erasure 3  chase 20  auto 22
+EXP-04 2e+f=17 e= 3 f=11 informative   hard    0  erasure 500  chase 345  auto 500
+EXP-04 2e+f=17 e= 3 f=11 misleading    hard    0  erasure 0  chase 23  auto 23
+EXP-04 2e+f=17 e= 4 f= 9 uninformative hard    0  erasure 1  chase 32  auto 33
+EXP-04 2e+f=17 e= 4 f= 9 informative   hard    0  erasure 500  chase 412  auto 500
+EXP-04 2e+f=17 e= 4 f= 9 misleading    hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=17 e= 5 f= 7 uninformative hard    0  erasure 3  chase 45  auto 46
+EXP-04 2e+f=17 e= 5 f= 7 informative   hard    0  erasure 500  chase 380  auto 500
+EXP-04 2e+f=17 e= 5 f= 7 misleading    hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=17 e= 6 f= 5 uninformative hard    0  erasure 4  chase 51  auto 52
+EXP-04 2e+f=17 e= 6 f= 5 informative   hard    0  erasure 500  chase 408  auto 500
+EXP-04 2e+f=17 e= 6 f= 5 misleading    hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=17 e= 7 f= 3 uninformative hard    0  erasure 6  chase 56  auto 59
+EXP-04 2e+f=17 e= 7 f= 3 informative   hard    0  erasure 500  chase 397  auto 500
+EXP-04 2e+f=17 e= 7 f= 3 misleading    hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=17 e= 8 f= 1 uninformative hard    0  erasure 7  chase 66  auto 67
+EXP-04 2e+f=17 e= 8 f= 1 informative   hard    0  erasure 500  chase 411  auto 500
+EXP-04 2e+f=17 e= 8 f= 1 misleading    hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=18 e= 4 f=10 uninformative hard    0  erasure 3  chase 42  auto 42
+EXP-04 2e+f=18 e= 4 f=10 informative   hard    0  erasure 500  chase 405  auto 500
+EXP-04 2e+f=18 e= 4 f=10 misleading    hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=18 e= 5 f= 8 uninformative hard    0  erasure 3  chase 45  auto 46
+EXP-04 2e+f=18 e= 5 f= 8 informative   hard    0  erasure 500  chase 398  auto 500
+EXP-04 2e+f=18 e= 5 f= 8 misleading    hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=18 e= 6 f= 6 uninformative hard    0  erasure 9  chase 52  auto 55
+EXP-04 2e+f=18 e= 6 f= 6 informative   hard    0  erasure 500  chase 397  auto 500
+EXP-04 2e+f=18 e= 6 f= 6 misleading    hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=18 e= 7 f= 4 uninformative hard    0  erasure 4  chase 57  auto 57
+EXP-04 2e+f=18 e= 7 f= 4 informative   hard    0  erasure 500  chase 386  auto 500
+EXP-04 2e+f=18 e= 7 f= 4 misleading    hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=18 e= 8 f= 2 uninformative hard    0  erasure 11  chase 69  auto 69
+EXP-04 2e+f=18 e= 8 f= 2 informative   hard    0  erasure 500  chase 422  auto 500
+EXP-04 2e+f=18 e= 8 f= 2 misleading    hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=18 e= 9 f= 0 uninformative hard    0  erasure 9  chase 81  auto 83
+EXP-04 2e+f=18 e= 9 f= 0 informative   hard    0  erasure 500  chase 388  auto 500
+EXP-04 2e+f=18 e= 9 f= 0 misleading    hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=20 e= 5 f=10 uninformative hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=20 e= 5 f=10 informative   hard    0  erasure 500  chase 208  auto 500
+EXP-04 2e+f=20 e= 5 f=10 misleading    hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=20 e= 6 f= 8 uninformative hard    0  erasure 0  chase 2  auto 2
+EXP-04 2e+f=20 e= 6 f= 8 informative   hard    0  erasure 500  chase 202  auto 500
+EXP-04 2e+f=20 e= 6 f= 8 misleading    hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=20 e= 7 f= 6 uninformative hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=20 e= 7 f= 6 informative   hard    0  erasure 500  chase 214  auto 500
+EXP-04 2e+f=20 e= 7 f= 6 misleading    hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=20 e= 8 f= 4 uninformative hard    0  erasure 0  chase 3  auto 3
+EXP-04 2e+f=20 e= 8 f= 4 informative   hard    0  erasure 500  chase 210  auto 500
+EXP-04 2e+f=20 e= 8 f= 4 misleading    hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=20 e= 9 f= 2 uninformative hard    0  erasure 0  chase 1  auto 1
+EXP-04 2e+f=20 e= 9 f= 2 informative   hard    0  erasure 500  chase 204  auto 500
+EXP-04 2e+f=20 e= 9 f= 2 misleading    hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=20 e=10 f= 0 uninformative hard    0  erasure 0  chase 1  auto 1
+EXP-04 2e+f=20 e=10 f= 0 informative   hard    0  erasure 500  chase 192  auto 500
+EXP-04 2e+f=20 e=10 f= 0 misleading    hard    0  erasure 0  chase 0  auto 0
