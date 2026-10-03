@@ -1,0 +1,1865 @@
+{
+  "benchmark": "vnx-dna v3 baseline",
+  "software_simulation_only": true,
+  "repeats": 3,
+  "profile": "balanced",
+  "encryption": false,
+  "startup_s_median": 0.368,
+  "total_runtime_s": 66.0,
+  "all_pass": true,
+  "cases": [
+    {
+      "name": "tiny",
+      "description": "100 B English-like text (seed 1)",
+      "input_size": 100,
+      "input_sha256": "7e00a0059cf1c660322a52089d7ad8a1d5720b8a300997df34731e9cefb45d61",
+      "stored_size": 87,
+      "container_file_size": 1984,
+      "stored_over_input": 0.87,
+      "chunks": 1,
+      "ecc_groups": 1,
+      "outer_code": "64+16 Cauchy RS",
+      "strands_total": 115,
+      "data_and_parity_strands": 19,
+      "parity_strands": 16,
+      "metadata_strands": 96,
+      "strand_nt": 252,
+      "bases_total": 28980,
+      "fasta_file_size": 31562,
+      "independent_fasta_count": {
+        "records": 115,
+        "bases": 28980,
+        "distinct_lengths": [
+          252
+        ]
+      },
+      "nt_per_input_byte": 289.8,
+      "ecc_overhead_parity_over_total_strands": 0.1391,
+      "ecc_overhead_parity_plus_metadata_over_total_strands": 0.9739,
+      "time_store_s_median": 0.4042,
+      "time_encode_s_median": 0.4611,
+      "time_store_plus_encode_s_median": 0.8611,
+      "time_recover_s_median": 0.4894,
+      "cpu_s_median": {
+        "store": 1.11,
+        "encode": 1.21,
+        "recover": 1.21
+      },
+      "peak_rss_kib": {
+        "store": 58048,
+        "encode": 58240,
+        "recover": 58768,
+        "max": 58768
+      },
+      "recovered_sha256": "7e00a0059cf1c660322a52089d7ad8a1d5720b8a300997df34731e9cefb45d61",
+      "pass": true,
+      "repeats": 3,
+      "cli_internal_elapsed_s_first_run": {
+        "store": 0.013469758996507153,
+        "encode": 0.04867243199259974,
+        "recover": 0.0531391559925396
+      },
+      "store_report_profile": "balanced",
+      "chunks_compressed": 1,
+      "recover_report_recovery": {
+        "chunks_assembled": 1,
+        "max_erasures_in_a_group": 0,
+        "metadata_groups_repaired": 0,
+        "metadata_shards_conflict_majority": 0,
+        "metadata_shards_conflict_tie": 0,
+        "metadata_shards_erased": 0,
+        "pass2_mode": "sequential",
+        "records_foreign_or_out_of_range": 0,
+        "shards_conflict_majority": 0,
+        "shards_conflict_tie": 0,
+        "shards_duplicates_consistent": 0,
+        "shards_erased": 0,
+        "shards_unique": 19,
+        "stored_chunks_verified": 1,
+        "stripes_decoded": 1,
+        "stripes_outer_recovered": 0
+      },
+      "runs": [
+        {
+          "store": {
+            "cmd": "vnx-dna store /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/input-tiny.bin -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/tiny/archive.vxdna --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/tiny/store.json --force",
+            "returncode": 0,
+            "wall_s": 0.4042,
+            "user_s": 1.08,
+            "sys_s": 0.03,
+            "time_v_elapsed_s": 0.4,
+            "max_rss_kib": 58048,
+            "exit_status": 0
+          },
+          "encode": {
+            "cmd": "vnx-dna encode /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/tiny/archive.vxdna -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/tiny/strands.fasta --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/tiny/encode.json --force",
+            "returncode": 0,
+            "wall_s": 0.4883,
+            "user_s": 1.1,
+            "sys_s": 0.1,
+            "time_v_elapsed_s": 0.48,
+            "max_rss_kib": 57772,
+            "exit_status": 0
+          },
+          "recover": {
+            "cmd": "vnx-dna recover /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/tiny/strands.fasta -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/tiny/recovered.bin --temp-dir /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/tiny --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/tiny/recover.json --force",
+            "returncode": 0,
+            "wall_s": 0.458,
+            "user_s": 1.11,
+            "sys_s": 0.08,
+            "time_v_elapsed_s": 0.45,
+            "max_rss_kib": 58768,
+            "exit_status": 0
+          },
+          "recovered_sha256": "7e00a0059cf1c660322a52089d7ad8a1d5720b8a300997df34731e9cefb45d61",
+          "pass": true
+        },
+        {
+          "store": {
+            "cmd": "vnx-dna store /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/input-tiny.bin -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/tiny/archive.vxdna --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/tiny/store.json --force",
+            "returncode": 0,
+            "wall_s": 0.3942,
+            "user_s": 1.06,
+            "sys_s": 0.04,
+            "time_v_elapsed_s": 0.39,
+            "max_rss_kib": 58048,
+            "exit_status": 0
+          },
+          "encode": {
+            "cmd": "vnx-dna encode /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/tiny/archive.vxdna -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/tiny/strands.fasta --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/tiny/encode.json --force",
+            "returncode": 0,
+            "wall_s": 0.4611,
+            "user_s": 1.13,
+            "sys_s": 0.09,
+            "time_v_elapsed_s": 0.45,
+            "max_rss_kib": 58140,
+            "exit_status": 0
+          },
+          "recover": {
+            "cmd": "vnx-dna recover /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/tiny/strands.fasta -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/tiny/recovered.bin --temp-dir /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/tiny --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/tiny/recover.json --force",
+            "returncode": 0,
+            "wall_s": 0.5055,
+            "user_s": 1.16,
+            "sys_s": 0.07,
+            "time_v_elapsed_s": 0.5,
+            "max_rss_kib": 58616,
+            "exit_status": 0
+          },
+          "recovered_sha256": "7e00a0059cf1c660322a52089d7ad8a1d5720b8a300997df34731e9cefb45d61",
+          "pass": true
+        },
+        {
+          "store": {
+            "cmd": "vnx-dna store /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/input-tiny.bin -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/tiny/archive.vxdna --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/tiny/store.json --force",
+            "returncode": 0,
+            "wall_s": 0.411,
+            "user_s": 1.08,
+            "sys_s": 0.03,
+            "time_v_elapsed_s": 0.4,
+            "max_rss_kib": 58048,
+            "exit_status": 0
+          },
+          "encode": {
+            "cmd": "vnx-dna encode /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/tiny/archive.vxdna -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/tiny/strands.fasta --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/tiny/encode.json --force",
+            "returncode": 0,
+            "wall_s": 0.4501,
+            "user_s": 1.12,
+            "sys_s": 0.09,
+            "time_v_elapsed_s": 0.44,
+            "max_rss_kib": 58240,
+            "exit_status": 0
+          },
+          "recover": {
+            "cmd": "vnx-dna recover /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/tiny/strands.fasta -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/tiny/recovered.bin --temp-dir /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/tiny --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/tiny/recover.json --force",
+            "returncode": 0,
+            "wall_s": 0.4894,
+            "user_s": 1.13,
+            "sys_s": 0.08,
+            "time_v_elapsed_s": 0.48,
+            "max_rss_kib": 58648,
+            "exit_status": 0
+          },
+          "recovered_sha256": "7e00a0059cf1c660322a52089d7ad8a1d5720b8a300997df34731e9cefb45d61",
+          "pass": true
+        }
+      ]
+    },
+    {
+      "name": "small",
+      "description": "10 KiB English-like text (seed 2)",
+      "input_size": 10240,
+      "input_sha256": "bbf219d5d33c24c54702c439f9bbc5eae69d3daddadbe4739fe9b1a58c4f659f",
+      "stored_size": 4540,
+      "container_file_size": 6442,
+      "stored_over_input": 0.4434,
+      "chunks": 1,
+      "ecc_groups": 2,
+      "outer_code": "64+16 Cauchy RS",
+      "strands_total": 242,
+      "data_and_parity_strands": 146,
+      "parity_strands": 32,
+      "metadata_strands": 96,
+      "strand_nt": 252,
+      "bases_total": 60984,
+      "fasta_file_size": 66470,
+      "independent_fasta_count": {
+        "records": 242,
+        "bases": 60984,
+        "distinct_lengths": [
+          252
+        ]
+      },
+      "nt_per_input_byte": 5.9555,
+      "ecc_overhead_parity_over_total_strands": 0.1322,
+      "ecc_overhead_parity_plus_metadata_over_total_strands": 0.5289,
+      "time_store_s_median": 0.4333,
+      "time_encode_s_median": 0.4773,
+      "time_store_plus_encode_s_median": 0.9106,
+      "time_recover_s_median": 0.4774,
+      "cpu_s_median": {
+        "store": 1.13,
+        "encode": 1.22,
+        "recover": 1.21
+      },
+      "peak_rss_kib": {
+        "store": 58084,
+        "encode": 58248,
+        "recover": 58812,
+        "max": 58812
+      },
+      "recovered_sha256": "bbf219d5d33c24c54702c439f9bbc5eae69d3daddadbe4739fe9b1a58c4f659f",
+      "pass": true,
+      "repeats": 3,
+      "cli_internal_elapsed_s_first_run": {
+        "store": 0.01379367099434603,
+        "encode": 0.08063298699562438,
+        "recover": 0.05708290101028979
+      },
+      "store_report_profile": "balanced",
+      "chunks_compressed": 1,
+      "recover_report_recovery": {
+        "chunks_assembled": 1,
+        "max_erasures_in_a_group": 0,
+        "metadata_groups_repaired": 0,
+        "metadata_shards_conflict_majority": 0,
+        "metadata_shards_conflict_tie": 0,
+        "metadata_shards_erased": 0,
+        "pass2_mode": "sequential",
+        "records_foreign_or_out_of_range": 0,
+        "shards_conflict_majority": 0,
+        "shards_conflict_tie": 0,
+        "shards_duplicates_consistent": 0,
+        "shards_erased": 0,
+        "shards_unique": 146,
+        "stored_chunks_verified": 1,
+        "stripes_decoded": 2,
+        "stripes_outer_recovered": 0
+      },
+      "runs": [
+        {
+          "store": {
+            "cmd": "vnx-dna store /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/input-small.bin -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/small/archive.vxdna --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/small/store.json --force",
+            "returncode": 0,
+            "wall_s": 0.4489,
+            "user_s": 1.12,
+            "sys_s": 0.03,
+            "time_v_elapsed_s": 0.44,
+            "max_rss_kib": 58076,
+            "exit_status": 0
+          },
+          "encode": {
+            "cmd": "vnx-dna encode /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/small/archive.vxdna -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/small/strands.fasta --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/small/encode.json --force",
+            "returncode": 0,
+            "wall_s": 0.559,
+            "user_s": 1.19,
+            "sys_s": 0.12,
+            "time_v_elapsed_s": 0.55,
+            "max_rss_kib": 58080,
+            "exit_status": 0
+          },
+          "recover": {
+            "cmd": "vnx-dna recover /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/small/strands.fasta -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/small/recovered.bin --temp-dir /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/small --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/small/recover.json --force",
+            "returncode": 0,
+            "wall_s": 0.4865,
+            "user_s": 1.15,
+            "sys_s": 0.08,
+            "time_v_elapsed_s": 0.48,
+            "max_rss_kib": 58712,
+            "exit_status": 0
+          },
+          "recovered_sha256": "bbf219d5d33c24c54702c439f9bbc5eae69d3daddadbe4739fe9b1a58c4f659f",
+          "pass": true
+        },
+        {
+          "store": {
+            "cmd": "vnx-dna store /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/input-small.bin -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/small/archive.vxdna --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/small/store.json --force",
+            "returncode": 0,
+            "wall_s": 0.4333,
+            "user_s": 1.06,
+            "sys_s": 0.03,
+            "time_v_elapsed_s": 0.43,
+            "max_rss_kib": 57832,
+            "exit_status": 0
+          },
+          "encode": {
+            "cmd": "vnx-dna encode /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/small/archive.vxdna -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/small/strands.fasta --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/small/encode.json --force",
+            "returncode": 0,
+            "wall_s": 0.4773,
+            "user_s": 1.1,
+            "sys_s": 0.1,
+            "time_v_elapsed_s": 0.47,
+            "max_rss_kib": 58248,
+            "exit_status": 0
+          },
+          "recover": {
+            "cmd": "vnx-dna recover /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/small/strands.fasta -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/small/recovered.bin --temp-dir /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/small --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/small/recover.json --force",
+            "returncode": 0,
+            "wall_s": 0.4774,
+            "user_s": 1.13,
+            "sys_s": 0.08,
+            "time_v_elapsed_s": 0.47,
+            "max_rss_kib": 58812,
+            "exit_status": 0
+          },
+          "recovered_sha256": "bbf219d5d33c24c54702c439f9bbc5eae69d3daddadbe4739fe9b1a58c4f659f",
+          "pass": true
+        },
+        {
+          "store": {
+            "cmd": "vnx-dna store /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/input-small.bin -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/small/archive.vxdna --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/small/store.json --force",
+            "returncode": 0,
+            "wall_s": 0.4207,
+            "user_s": 1.09,
+            "sys_s": 0.04,
+            "time_v_elapsed_s": 0.41,
+            "max_rss_kib": 58084,
+            "exit_status": 0
+          },
+          "encode": {
+            "cmd": "vnx-dna encode /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/small/archive.vxdna -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/small/strands.fasta --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/small/encode.json --force",
+            "returncode": 0,
+            "wall_s": 0.4595,
+            "user_s": 1.13,
+            "sys_s": 0.09,
+            "time_v_elapsed_s": 0.45,
+            "max_rss_kib": 58128,
+            "exit_status": 0
+          },
+          "recover": {
+            "cmd": "vnx-dna recover /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/small/strands.fasta -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/small/recovered.bin --temp-dir /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/small --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/small/recover.json --force",
+            "returncode": 0,
+            "wall_s": 0.4727,
+            "user_s": 1.13,
+            "sys_s": 0.07,
+            "time_v_elapsed_s": 0.47,
+            "max_rss_kib": 58676,
+            "exit_status": 0
+          },
+          "recovered_sha256": "bbf219d5d33c24c54702c439f9bbc5eae69d3daddadbe4739fe9b1a58c4f659f",
+          "pass": true
+        }
+      ]
+    },
+    {
+      "name": "medium",
+      "description": "1 MiB `vnx-dna benchmark generate --pattern mixed --seed 42`",
+      "input_size": 1048576,
+      "input_sha256": "dbcce721f62226fcde7a292eec0ae5fbebdfcfa40863c2e069c1410e5253dfc2",
+      "stored_size": 469646,
+      "container_file_size": 471555,
+      "stored_over_input": 0.4479,
+      "chunks": 1,
+      "ecc_groups": 184,
+      "outer_code": "64+16 Cauchy RS",
+      "strands_total": 14782,
+      "data_and_parity_strands": 14686,
+      "parity_strands": 2944,
+      "metadata_strands": 96,
+      "strand_nt": 252,
+      "bases_total": 3725064,
+      "fasta_file_size": 4083722,
+      "independent_fasta_count": {
+        "records": 14782,
+        "bases": 3725064,
+        "distinct_lengths": [
+          252
+        ]
+      },
+      "nt_per_input_byte": 3.5525,
+      "ecc_overhead_parity_over_total_strands": 0.1992,
+      "ecc_overhead_parity_plus_metadata_over_total_strands": 0.2057,
+      "time_store_s_median": 0.4397,
+      "time_encode_s_median": 0.6284,
+      "time_store_plus_encode_s_median": 1.077,
+      "time_recover_s_median": 0.632,
+      "cpu_s_median": {
+        "store": 1.13,
+        "encode": 1.39,
+        "recover": 1.36
+      },
+      "peak_rss_kib": {
+        "store": 58720,
+        "encode": 66184,
+        "recover": 78272,
+        "max": 78272
+      },
+      "recovered_sha256": "dbcce721f62226fcde7a292eec0ae5fbebdfcfa40863c2e069c1410e5253dfc2",
+      "pass": true,
+      "repeats": 3,
+      "cli_internal_elapsed_s_first_run": {
+        "store": 0.027307287004077807,
+        "encode": 0.21091031801188365,
+        "recover": 0.1827560180099681
+      },
+      "store_report_profile": "balanced",
+      "chunks_compressed": 1,
+      "recover_report_recovery": {
+        "chunks_assembled": 1,
+        "max_erasures_in_a_group": 0,
+        "metadata_groups_repaired": 0,
+        "metadata_shards_conflict_majority": 0,
+        "metadata_shards_conflict_tie": 0,
+        "metadata_shards_erased": 0,
+        "pass2_mode": "sequential",
+        "records_foreign_or_out_of_range": 0,
+        "shards_conflict_majority": 0,
+        "shards_conflict_tie": 0,
+        "shards_duplicates_consistent": 0,
+        "shards_erased": 0,
+        "shards_unique": 14686,
+        "stored_chunks_verified": 1,
+        "stripes_decoded": 184,
+        "stripes_outer_recovered": 0
+      },
+      "runs": [
+        {
+          "store": {
+            "cmd": "vnx-dna store /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/input-medium.bin -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/medium/archive.vxdna --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/medium/store.json --force",
+            "returncode": 0,
+            "wall_s": 0.4397,
+            "user_s": 1.08,
+            "sys_s": 0.03,
+            "time_v_elapsed_s": 0.43,
+            "max_rss_kib": 58720,
+            "exit_status": 0
+          },
+          "encode": {
+            "cmd": "vnx-dna encode /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/medium/archive.vxdna -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/medium/strands.fasta --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/medium/encode.json --force",
+            "returncode": 0,
+            "wall_s": 0.6142,
+            "user_s": 1.24,
+            "sys_s": 0.13,
+            "time_v_elapsed_s": 0.61,
+            "max_rss_kib": 66112,
+            "exit_status": 0
+          },
+          "recover": {
+            "cmd": "vnx-dna recover /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/medium/strands.fasta -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/medium/recovered.bin --temp-dir /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/medium --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/medium/recover.json --force",
+            "returncode": 0,
+            "wall_s": 0.6688,
+            "user_s": 1.17,
+            "sys_s": 0.12,
+            "time_v_elapsed_s": 0.66,
+            "max_rss_kib": 78272,
+            "exit_status": 0
+          },
+          "recovered_sha256": "dbcce721f62226fcde7a292eec0ae5fbebdfcfa40863c2e069c1410e5253dfc2",
+          "pass": true
+        },
+        {
+          "store": {
+            "cmd": "vnx-dna store /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/input-medium.bin -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/medium/archive.vxdna --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/medium/store.json --force",
+            "returncode": 0,
+            "wall_s": 0.4486,
+            "user_s": 1.11,
+            "sys_s": 0.04,
+            "time_v_elapsed_s": 0.44,
+            "max_rss_kib": 58424,
+            "exit_status": 0
+          },
+          "encode": {
+            "cmd": "vnx-dna encode /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/medium/archive.vxdna -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/medium/strands.fasta --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/medium/encode.json --force",
+            "returncode": 0,
+            "wall_s": 0.6284,
+            "user_s": 1.24,
+            "sys_s": 0.15,
+            "time_v_elapsed_s": 0.62,
+            "max_rss_kib": 66184,
+            "exit_status": 0
+          },
+          "recover": {
+            "cmd": "vnx-dna recover /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/medium/strands.fasta -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/medium/recovered.bin --temp-dir /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/medium --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/medium/recover.json --force",
+            "returncode": 0,
+            "wall_s": 0.632,
+            "user_s": 1.23,
+            "sys_s": 0.13,
+            "time_v_elapsed_s": 0.63,
+            "max_rss_kib": 78084,
+            "exit_status": 0
+          },
+          "recovered_sha256": "dbcce721f62226fcde7a292eec0ae5fbebdfcfa40863c2e069c1410e5253dfc2",
+          "pass": true
+        },
+        {
+          "store": {
+            "cmd": "vnx-dna store /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/input-medium.bin -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/medium/archive.vxdna --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/medium/store.json --force",
+            "returncode": 0,
+            "wall_s": 0.4339,
+            "user_s": 1.1,
+            "sys_s": 0.03,
+            "time_v_elapsed_s": 0.43,
+            "max_rss_kib": 58712,
+            "exit_status": 0
+          },
+          "encode": {
+            "cmd": "vnx-dna encode /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/medium/archive.vxdna -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/medium/strands.fasta --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/medium/encode.json --force",
+            "returncode": 0,
+            "wall_s": 0.6507,
+            "user_s": 1.27,
+            "sys_s": 0.15,
+            "time_v_elapsed_s": 0.64,
+            "max_rss_kib": 66036,
+            "exit_status": 0
+          },
+          "recover": {
+            "cmd": "vnx-dna recover /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/medium/strands.fasta -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/medium/recovered.bin --temp-dir /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/medium --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/medium/recover.json --force",
+            "returncode": 0,
+            "wall_s": 0.6173,
+            "user_s": 1.24,
+            "sys_s": 0.12,
+            "time_v_elapsed_s": 0.61,
+            "max_rss_kib": 78124,
+            "exit_status": 0
+          },
+          "recovered_sha256": "dbcce721f62226fcde7a292eec0ae5fbebdfcfa40863c2e069c1410e5253dfc2",
+          "pass": true
+        }
+      ]
+    },
+    {
+      "name": "large",
+      "description": "10 MiB `vnx-dna benchmark generate --pattern mixed --seed 42`",
+      "input_size": 10485760,
+      "input_sha256": "70b89185103be97a8aadb18cdc0656067f1f21329967dd577f6156161b7048f7",
+      "stored_size": 4650068,
+      "container_file_size": 4652810,
+      "stored_over_input": 0.4435,
+      "chunks": 10,
+      "ecc_groups": 1821,
+      "outer_code": "64+16 Cauchy RS",
+      "strands_total": 145537,
+      "data_and_parity_strands": 145393,
+      "parity_strands": 29136,
+      "metadata_strands": 144,
+      "strand_nt": 252,
+      "bases_total": 36675324,
+      "fasta_file_size": 40351887,
+      "independent_fasta_count": {
+        "records": 145537,
+        "bases": 36675324,
+        "distinct_lengths": [
+          252
+        ]
+      },
+      "nt_per_input_byte": 3.4976,
+      "ecc_overhead_parity_over_total_strands": 0.2002,
+      "ecc_overhead_parity_plus_metadata_over_total_strands": 0.2012,
+      "time_store_s_median": 0.4858,
+      "time_encode_s_median": 0.9629,
+      "time_store_plus_encode_s_median": 1.4591,
+      "time_recover_s_median": 1.1671,
+      "cpu_s_median": {
+        "store": 1.23,
+        "encode": 2.87,
+        "recover": 2.39
+      },
+      "peak_rss_kib": {
+        "store": 69424,
+        "encode": 115356,
+        "recover": 139992,
+        "max": 139992
+      },
+      "recovered_sha256": "70b89185103be97a8aadb18cdc0656067f1f21329967dd577f6156161b7048f7",
+      "pass": true,
+      "repeats": 3,
+      "cli_internal_elapsed_s_first_run": {
+        "store": 0.08000231800542679,
+        "encode": 0.548349952994613,
+        "recover": 0.72573950298829
+      },
+      "store_report_profile": "balanced",
+      "chunks_compressed": 8,
+      "recover_report_recovery": {
+        "chunks_assembled": 10,
+        "max_erasures_in_a_group": 0,
+        "metadata_groups_repaired": 0,
+        "metadata_shards_conflict_majority": 0,
+        "metadata_shards_conflict_tie": 0,
+        "metadata_shards_erased": 0,
+        "pass2_mode": "sequential",
+        "records_foreign_or_out_of_range": 0,
+        "shards_conflict_majority": 0,
+        "shards_conflict_tie": 0,
+        "shards_duplicates_consistent": 0,
+        "shards_erased": 0,
+        "shards_unique": 145393,
+        "stored_chunks_verified": 10,
+        "stripes_decoded": 1821,
+        "stripes_outer_recovered": 0
+      },
+      "runs": [
+        {
+          "store": {
+            "cmd": "vnx-dna store /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/input-large.bin -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/large/archive.vxdna --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/large/store.json --force",
+            "returncode": 0,
+            "wall_s": 0.4858,
+            "user_s": 1.22,
+            "sys_s": 0.06,
+            "time_v_elapsed_s": 0.48,
+            "max_rss_kib": 68784,
+            "exit_status": 0
+          },
+          "encode": {
+            "cmd": "vnx-dna encode /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/large/archive.vxdna -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/large/strands.fasta --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/large/encode.json --force",
+            "returncode": 0,
+            "wall_s": 0.9733,
+            "user_s": 2.39,
+            "sys_s": 0.62,
+            "time_v_elapsed_s": 0.97,
+            "max_rss_kib": 115356,
+            "exit_status": 0
+          },
+          "recover": {
+            "cmd": "vnx-dna recover /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/large/strands.fasta -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/large/recovered.bin --temp-dir /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/large --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/large/recover.json --force",
+            "returncode": 0,
+            "wall_s": 1.1559,
+            "user_s": 2.01,
+            "sys_s": 0.4,
+            "time_v_elapsed_s": 1.15,
+            "max_rss_kib": 133376,
+            "exit_status": 0
+          },
+          "recovered_sha256": "70b89185103be97a8aadb18cdc0656067f1f21329967dd577f6156161b7048f7",
+          "pass": true
+        },
+        {
+          "store": {
+            "cmd": "vnx-dna store /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/input-large.bin -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/large/archive.vxdna --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/large/store.json --force",
+            "returncode": 0,
+            "wall_s": 0.5402,
+            "user_s": 1.17,
+            "sys_s": 0.06,
+            "time_v_elapsed_s": 0.53,
+            "max_rss_kib": 69176,
+            "exit_status": 0
+          },
+          "encode": {
+            "cmd": "vnx-dna encode /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/large/archive.vxdna -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/large/strands.fasta --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/large/encode.json --force",
+            "returncode": 0,
+            "wall_s": 0.9385,
+            "user_s": 2.32,
+            "sys_s": 0.54,
+            "time_v_elapsed_s": 0.93,
+            "max_rss_kib": 115176,
+            "exit_status": 0
+          },
+          "recover": {
+            "cmd": "vnx-dna recover /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/large/strands.fasta -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/large/recovered.bin --temp-dir /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/large --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/large/recover.json --force",
+            "returncode": 0,
+            "wall_s": 1.1671,
+            "user_s": 2.02,
+            "sys_s": 0.34,
+            "time_v_elapsed_s": 1.16,
+            "max_rss_kib": 133576,
+            "exit_status": 0
+          },
+          "recovered_sha256": "70b89185103be97a8aadb18cdc0656067f1f21329967dd577f6156161b7048f7",
+          "pass": true
+        },
+        {
+          "store": {
+            "cmd": "vnx-dna store /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/input-large.bin -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/large/archive.vxdna --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/large/store.json --force",
+            "returncode": 0,
+            "wall_s": 0.4736,
+            "user_s": 1.19,
+            "sys_s": 0.04,
+            "time_v_elapsed_s": 0.47,
+            "max_rss_kib": 69424,
+            "exit_status": 0
+          },
+          "encode": {
+            "cmd": "vnx-dna encode /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/large/archive.vxdna -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/large/strands.fasta --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/large/encode.json --force",
+            "returncode": 0,
+            "wall_s": 0.9629,
+            "user_s": 2.3,
+            "sys_s": 0.57,
+            "time_v_elapsed_s": 0.96,
+            "max_rss_kib": 115088,
+            "exit_status": 0
+          },
+          "recover": {
+            "cmd": "vnx-dna recover /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/large/strands.fasta -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/large/recovered.bin --temp-dir /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/large --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/large/recover.json --force",
+            "returncode": 0,
+            "wall_s": 1.1912,
+            "user_s": 1.98,
+            "sys_s": 0.41,
+            "time_v_elapsed_s": 1.19,
+            "max_rss_kib": 139992,
+            "exit_status": 0
+          },
+          "recovered_sha256": "70b89185103be97a8aadb18cdc0656067f1f21329967dd577f6156161b7048f7",
+          "pass": true
+        }
+      ]
+    },
+    {
+      "name": "repetitive",
+      "description": "1 MiB of a repeated 24-byte ASCII pattern",
+      "input_size": 1048576,
+      "input_sha256": "2ea626033e83dffc6e5374828173be1290be1e910b1c4da00e0e6a431302f133",
+      "stored_size": 128,
+      "container_file_size": 2036,
+      "stored_over_input": 0.0001,
+      "chunks": 1,
+      "ecc_groups": 1,
+      "outer_code": "64+16 Cauchy RS",
+      "strands_total": 116,
+      "data_and_parity_strands": 20,
+      "parity_strands": 16,
+      "metadata_strands": 96,
+      "strand_nt": 252,
+      "bases_total": 29232,
+      "fasta_file_size": 31836,
+      "independent_fasta_count": {
+        "records": 116,
+        "bases": 29232,
+        "distinct_lengths": [
+          252
+        ]
+      },
+      "nt_per_input_byte": 0.0279,
+      "ecc_overhead_parity_over_total_strands": 0.1379,
+      "ecc_overhead_parity_plus_metadata_over_total_strands": 0.9655,
+      "time_store_s_median": 0.4188,
+      "time_encode_s_median": 0.4761,
+      "time_store_plus_encode_s_median": 0.8929,
+      "time_recover_s_median": 0.5206,
+      "cpu_s_median": {
+        "store": 1.12,
+        "encode": 1.24,
+        "recover": 1.25
+      },
+      "peak_rss_kib": {
+        "store": 58268,
+        "encode": 58336,
+        "recover": 59680,
+        "max": 59680
+      },
+      "recovered_sha256": "2ea626033e83dffc6e5374828173be1290be1e910b1c4da00e0e6a431302f133",
+      "pass": true,
+      "repeats": 3,
+      "cli_internal_elapsed_s_first_run": {
+        "store": 0.01974203700956423,
+        "encode": 0.0496840519917896,
+        "recover": 0.07558642100775614
+      },
+      "store_report_profile": "balanced",
+      "chunks_compressed": 1,
+      "recover_report_recovery": {
+        "chunks_assembled": 1,
+        "max_erasures_in_a_group": 0,
+        "metadata_groups_repaired": 0,
+        "metadata_shards_conflict_majority": 0,
+        "metadata_shards_conflict_tie": 0,
+        "metadata_shards_erased": 0,
+        "pass2_mode": "sequential",
+        "records_foreign_or_out_of_range": 0,
+        "shards_conflict_majority": 0,
+        "shards_conflict_tie": 0,
+        "shards_duplicates_consistent": 0,
+        "shards_erased": 0,
+        "shards_unique": 20,
+        "stored_chunks_verified": 1,
+        "stripes_decoded": 1,
+        "stripes_outer_recovered": 0
+      },
+      "runs": [
+        {
+          "store": {
+            "cmd": "vnx-dna store /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/input-repetitive.bin -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/repetitive/archive.vxdna --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/repetitive/store.json --force",
+            "returncode": 0,
+            "wall_s": 0.4188,
+            "user_s": 1.09,
+            "sys_s": 0.03,
+            "time_v_elapsed_s": 0.41,
+            "max_rss_kib": 58144,
+            "exit_status": 0
+          },
+          "encode": {
+            "cmd": "vnx-dna encode /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/repetitive/archive.vxdna -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/repetitive/strands.fasta --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/repetitive/encode.json --force",
+            "returncode": 0,
+            "wall_s": 0.4658,
+            "user_s": 1.13,
+            "sys_s": 0.09,
+            "time_v_elapsed_s": 0.46,
+            "max_rss_kib": 58212,
+            "exit_status": 0
+          },
+          "recover": {
+            "cmd": "vnx-dna recover /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/repetitive/strands.fasta -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/repetitive/recovered.bin --temp-dir /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/repetitive --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/repetitive/recover.json --force",
+            "returncode": 0,
+            "wall_s": 0.5502,
+            "user_s": 1.18,
+            "sys_s": 0.1,
+            "time_v_elapsed_s": 0.54,
+            "max_rss_kib": 59680,
+            "exit_status": 0
+          },
+          "recovered_sha256": "2ea626033e83dffc6e5374828173be1290be1e910b1c4da00e0e6a431302f133",
+          "pass": true
+        },
+        {
+          "store": {
+            "cmd": "vnx-dna store /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/input-repetitive.bin -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/repetitive/archive.vxdna --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/repetitive/store.json --force",
+            "returncode": 0,
+            "wall_s": 0.4168,
+            "user_s": 1.09,
+            "sys_s": 0.03,
+            "time_v_elapsed_s": 0.41,
+            "max_rss_kib": 58144,
+            "exit_status": 0
+          },
+          "encode": {
+            "cmd": "vnx-dna encode /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/repetitive/archive.vxdna -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/repetitive/strands.fasta --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/repetitive/encode.json --force",
+            "returncode": 0,
+            "wall_s": 0.4761,
+            "user_s": 1.13,
+            "sys_s": 0.11,
+            "time_v_elapsed_s": 0.47,
+            "max_rss_kib": 58336,
+            "exit_status": 0
+          },
+          "recover": {
+            "cmd": "vnx-dna recover /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/repetitive/strands.fasta -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/repetitive/recovered.bin --temp-dir /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/repetitive --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/repetitive/recover.json --force",
+            "returncode": 0,
+            "wall_s": 0.5206,
+            "user_s": 1.16,
+            "sys_s": 0.09,
+            "time_v_elapsed_s": 0.51,
+            "max_rss_kib": 59624,
+            "exit_status": 0
+          },
+          "recovered_sha256": "2ea626033e83dffc6e5374828173be1290be1e910b1c4da00e0e6a431302f133",
+          "pass": true
+        },
+        {
+          "store": {
+            "cmd": "vnx-dna store /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/input-repetitive.bin -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/repetitive/archive.vxdna --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/repetitive/store.json --force",
+            "returncode": 0,
+            "wall_s": 0.4898,
+            "user_s": 1.13,
+            "sys_s": 0.06,
+            "time_v_elapsed_s": 0.48,
+            "max_rss_kib": 58268,
+            "exit_status": 0
+          },
+          "encode": {
+            "cmd": "vnx-dna encode /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/repetitive/archive.vxdna -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/repetitive/strands.fasta --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/repetitive/encode.json --force",
+            "returncode": 0,
+            "wall_s": 0.516,
+            "user_s": 1.18,
+            "sys_s": 0.1,
+            "time_v_elapsed_s": 0.51,
+            "max_rss_kib": 58096,
+            "exit_status": 0
+          },
+          "recover": {
+            "cmd": "vnx-dna recover /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/repetitive/strands.fasta -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/repetitive/recovered.bin --temp-dir /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/repetitive --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/repetitive/recover.json --force",
+            "returncode": 0,
+            "wall_s": 0.4846,
+            "user_s": 1.13,
+            "sys_s": 0.08,
+            "time_v_elapsed_s": 0.48,
+            "max_rss_kib": 59444,
+            "exit_status": 0
+          },
+          "recovered_sha256": "2ea626033e83dffc6e5374828173be1290be1e910b1c4da00e0e6a431302f133",
+          "pass": true
+        }
+      ]
+    },
+    {
+      "name": "random",
+      "description": "1 MiB numpy default_rng(3) uniform bytes",
+      "input_size": 1048576,
+      "input_sha256": "c8047a3f20e4d0b6a10ffe394bb1f6f97150717332a5c19aa6590fdea6b2148b",
+      "stored_size": 1048576,
+      "container_file_size": 1050486,
+      "stored_over_input": 1.0,
+      "chunks": 1,
+      "ecc_groups": 410,
+      "outer_code": "64+16 Cauchy RS",
+      "strands_total": 32871,
+      "data_and_parity_strands": 32775,
+      "parity_strands": 6560,
+      "metadata_strands": 96,
+      "strand_nt": 252,
+      "bases_total": 8283492,
+      "fasta_file_size": 9092115,
+      "independent_fasta_count": {
+        "records": 32871,
+        "bases": 8283492,
+        "distinct_lengths": [
+          252
+        ]
+      },
+      "nt_per_input_byte": 7.8998,
+      "ecc_overhead_parity_over_total_strands": 0.1996,
+      "ecc_overhead_parity_plus_metadata_over_total_strands": 0.2025,
+      "time_store_s_median": 0.4896,
+      "time_encode_s_median": 0.8333,
+      "time_store_plus_encode_s_median": 1.3039,
+      "time_recover_s_median": 0.7733,
+      "cpu_s_median": {
+        "store": 1.19,
+        "encode": 1.6,
+        "recover": 1.52
+      },
+      "peak_rss_kib": {
+        "store": 59228,
+        "encode": 83976,
+        "recover": 104216,
+        "max": 104216
+      },
+      "recovered_sha256": "c8047a3f20e4d0b6a10ffe394bb1f6f97150717332a5c19aa6590fdea6b2148b",
+      "pass": true,
+      "repeats": 3,
+      "cli_internal_elapsed_s_first_run": {
+        "store": 0.030279385988251306,
+        "encode": 0.4412404339964269,
+        "recover": 0.31574748999264557
+      },
+      "store_report_profile": "balanced",
+      "chunks_compressed": 0,
+      "recover_report_recovery": {
+        "chunks_assembled": 1,
+        "max_erasures_in_a_group": 0,
+        "metadata_groups_repaired": 0,
+        "metadata_shards_conflict_majority": 0,
+        "metadata_shards_conflict_tie": 0,
+        "metadata_shards_erased": 0,
+        "pass2_mode": "sequential",
+        "records_foreign_or_out_of_range": 0,
+        "shards_conflict_majority": 0,
+        "shards_conflict_tie": 0,
+        "shards_duplicates_consistent": 0,
+        "shards_erased": 0,
+        "shards_unique": 32775,
+        "stored_chunks_verified": 1,
+        "stripes_decoded": 410,
+        "stripes_outer_recovered": 0
+      },
+      "runs": [
+        {
+          "store": {
+            "cmd": "vnx-dna store /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/input-random.bin -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/random/archive.vxdna --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/random/store.json --force",
+            "returncode": 0,
+            "wall_s": 0.4162,
+            "user_s": 1.07,
+            "sys_s": 0.04,
+            "time_v_elapsed_s": 0.41,
+            "max_rss_kib": 59096,
+            "exit_status": 0
+          },
+          "encode": {
+            "cmd": "vnx-dna encode /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/random/archive.vxdna -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/random/strands.fasta --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/random/encode.json --force",
+            "returncode": 0,
+            "wall_s": 0.8877,
+            "user_s": 1.42,
+            "sys_s": 0.22,
+            "time_v_elapsed_s": 0.88,
+            "max_rss_kib": 82376,
+            "exit_status": 0
+          },
+          "recover": {
+            "cmd": "vnx-dna recover /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/random/strands.fasta -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/random/recovered.bin --temp-dir /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/random --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/random/recover.json --force",
+            "returncode": 0,
+            "wall_s": 0.7622,
+            "user_s": 1.26,
+            "sys_s": 0.18,
+            "time_v_elapsed_s": 0.76,
+            "max_rss_kib": 104216,
+            "exit_status": 0
+          },
+          "recovered_sha256": "c8047a3f20e4d0b6a10ffe394bb1f6f97150717332a5c19aa6590fdea6b2148b",
+          "pass": true
+        },
+        {
+          "store": {
+            "cmd": "vnx-dna store /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/input-random.bin -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/random/archive.vxdna --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/random/store.json --force",
+            "returncode": 0,
+            "wall_s": 0.4896,
+            "user_s": 1.13,
+            "sys_s": 0.06,
+            "time_v_elapsed_s": 0.48,
+            "max_rss_kib": 59108,
+            "exit_status": 0
+          },
+          "encode": {
+            "cmd": "vnx-dna encode /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/random/archive.vxdna -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/random/strands.fasta --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/random/encode.json --force",
+            "returncode": 0,
+            "wall_s": 0.7767,
+            "user_s": 1.34,
+            "sys_s": 0.2,
+            "time_v_elapsed_s": 0.77,
+            "max_rss_kib": 83976,
+            "exit_status": 0
+          },
+          "recover": {
+            "cmd": "vnx-dna recover /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/random/strands.fasta -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/random/recovered.bin --temp-dir /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/random --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/random/recover.json --force",
+            "returncode": 0,
+            "wall_s": 0.8025,
+            "user_s": 1.35,
+            "sys_s": 0.2,
+            "time_v_elapsed_s": 0.8,
+            "max_rss_kib": 103392,
+            "exit_status": 0
+          },
+          "recovered_sha256": "c8047a3f20e4d0b6a10ffe394bb1f6f97150717332a5c19aa6590fdea6b2148b",
+          "pass": true
+        },
+        {
+          "store": {
+            "cmd": "vnx-dna store /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/input-random.bin -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/random/archive.vxdna --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/random/store.json --force",
+            "returncode": 0,
+            "wall_s": 0.5046,
+            "user_s": 1.15,
+            "sys_s": 0.05,
+            "time_v_elapsed_s": 0.5,
+            "max_rss_kib": 59228,
+            "exit_status": 0
+          },
+          "encode": {
+            "cmd": "vnx-dna encode /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/random/archive.vxdna -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/random/strands.fasta --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/random/encode.json --force",
+            "returncode": 0,
+            "wall_s": 0.8333,
+            "user_s": 1.4,
+            "sys_s": 0.2,
+            "time_v_elapsed_s": 0.83,
+            "max_rss_kib": 82952,
+            "exit_status": 0
+          },
+          "recover": {
+            "cmd": "vnx-dna recover /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/random/strands.fasta -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/random/recovered.bin --temp-dir /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/random --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/random/recover.json --force",
+            "returncode": 0,
+            "wall_s": 0.7733,
+            "user_s": 1.34,
+            "sys_s": 0.18,
+            "time_v_elapsed_s": 0.77,
+            "max_rss_kib": 104200,
+            "exit_status": 0
+          },
+          "recovered_sha256": "c8047a3f20e4d0b6a10ffe394bb1f6f97150717332a5c19aa6590fdea6b2148b",
+          "pass": true
+        }
+      ]
+    },
+    {
+      "name": "text",
+      "description": "1 MiB English-like text (seed 4)",
+      "input_size": 1048576,
+      "input_sha256": "488c48560e4cf16985947e68f4c5679a7e57dbbccb0466e74bacb5b7f5c38ec3",
+      "stored_size": 352021,
+      "container_file_size": 353928,
+      "stored_over_input": 0.3357,
+      "chunks": 1,
+      "ecc_groups": 138,
+      "outer_code": "64+16 Cauchy RS",
+      "strands_total": 11105,
+      "data_and_parity_strands": 11009,
+      "parity_strands": 2208,
+      "metadata_strands": 96,
+      "strand_nt": 252,
+      "bases_total": 2798460,
+      "fasta_file_size": 3065653,
+      "independent_fasta_count": {
+        "records": 11105,
+        "bases": 2798460,
+        "distinct_lengths": [
+          252
+        ]
+      },
+      "nt_per_input_byte": 2.6688,
+      "ecc_overhead_parity_over_total_strands": 0.1988,
+      "ecc_overhead_parity_plus_metadata_over_total_strands": 0.2075,
+      "time_store_s_median": 0.4328,
+      "time_encode_s_median": 0.6387,
+      "time_store_plus_encode_s_median": 1.0707,
+      "time_recover_s_median": 0.6032,
+      "cpu_s_median": {
+        "store": 1.14,
+        "encode": 1.33,
+        "recover": 1.34
+      },
+      "peak_rss_kib": {
+        "store": 58452,
+        "encode": 64180,
+        "recover": 73316,
+        "max": 73316
+      },
+      "recovered_sha256": "488c48560e4cf16985947e68f4c5679a7e57dbbccb0466e74bacb5b7f5c38ec3",
+      "pass": true,
+      "repeats": 3,
+      "cli_internal_elapsed_s_first_run": {
+        "store": 0.030962429998908192,
+        "encode": 0.16473696500179358,
+        "recover": 0.15811682000639848
+      },
+      "store_report_profile": "balanced",
+      "chunks_compressed": 1,
+      "recover_report_recovery": {
+        "chunks_assembled": 1,
+        "max_erasures_in_a_group": 0,
+        "metadata_groups_repaired": 0,
+        "metadata_shards_conflict_majority": 0,
+        "metadata_shards_conflict_tie": 0,
+        "metadata_shards_erased": 0,
+        "pass2_mode": "sequential",
+        "records_foreign_or_out_of_range": 0,
+        "shards_conflict_majority": 0,
+        "shards_conflict_tie": 0,
+        "shards_duplicates_consistent": 0,
+        "shards_erased": 0,
+        "shards_unique": 11009,
+        "stored_chunks_verified": 1,
+        "stripes_decoded": 138,
+        "stripes_outer_recovered": 0
+      },
+      "runs": [
+        {
+          "store": {
+            "cmd": "vnx-dna store /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/input-text.bin -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/text/archive.vxdna --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/text/store.json --force",
+            "returncode": 0,
+            "wall_s": 0.4328,
+            "user_s": 1.09,
+            "sys_s": 0.05,
+            "time_v_elapsed_s": 0.43,
+            "max_rss_kib": 58452,
+            "exit_status": 0
+          },
+          "encode": {
+            "cmd": "vnx-dna encode /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/text/archive.vxdna -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/text/strands.fasta --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/text/encode.json --force",
+            "returncode": 0,
+            "wall_s": 0.5776,
+            "user_s": 1.21,
+            "sys_s": 0.12,
+            "time_v_elapsed_s": 0.57,
+            "max_rss_kib": 64176,
+            "exit_status": 0
+          },
+          "recover": {
+            "cmd": "vnx-dna recover /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/text/strands.fasta -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/text/recovered.bin --temp-dir /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/text --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/text/recover.json --force",
+            "returncode": 0,
+            "wall_s": 0.5983,
+            "user_s": 1.22,
+            "sys_s": 0.11,
+            "time_v_elapsed_s": 0.59,
+            "max_rss_kib": 73132,
+            "exit_status": 0
+          },
+          "recovered_sha256": "488c48560e4cf16985947e68f4c5679a7e57dbbccb0466e74bacb5b7f5c38ec3",
+          "pass": true
+        },
+        {
+          "store": {
+            "cmd": "vnx-dna store /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/input-text.bin -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/text/archive.vxdna --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/text/store.json --force",
+            "returncode": 0,
+            "wall_s": 0.4457,
+            "user_s": 1.1,
+            "sys_s": 0.04,
+            "time_v_elapsed_s": 0.44,
+            "max_rss_kib": 58200,
+            "exit_status": 0
+          },
+          "encode": {
+            "cmd": "vnx-dna encode /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/text/archive.vxdna -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/text/strands.fasta --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/text/encode.json --force",
+            "returncode": 0,
+            "wall_s": 0.6387,
+            "user_s": 1.26,
+            "sys_s": 0.15,
+            "time_v_elapsed_s": 0.63,
+            "max_rss_kib": 64144,
+            "exit_status": 0
+          },
+          "recover": {
+            "cmd": "vnx-dna recover /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/text/strands.fasta -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/text/recovered.bin --temp-dir /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/text --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/text/recover.json --force",
+            "returncode": 0,
+            "wall_s": 0.627,
+            "user_s": 1.24,
+            "sys_s": 0.13,
+            "time_v_elapsed_s": 0.62,
+            "max_rss_kib": 73316,
+            "exit_status": 0
+          },
+          "recovered_sha256": "488c48560e4cf16985947e68f4c5679a7e57dbbccb0466e74bacb5b7f5c38ec3",
+          "pass": true
+        },
+        {
+          "store": {
+            "cmd": "vnx-dna store /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/input-text.bin -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/text/archive.vxdna --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/text/store.json --force",
+            "returncode": 0,
+            "wall_s": 0.4207,
+            "user_s": 1.1,
+            "sys_s": 0.03,
+            "time_v_elapsed_s": 0.41,
+            "max_rss_kib": 58448,
+            "exit_status": 0
+          },
+          "encode": {
+            "cmd": "vnx-dna encode /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/text/archive.vxdna -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/text/strands.fasta --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/text/encode.json --force",
+            "returncode": 0,
+            "wall_s": 0.65,
+            "user_s": 1.17,
+            "sys_s": 0.14,
+            "time_v_elapsed_s": 0.64,
+            "max_rss_kib": 64180,
+            "exit_status": 0
+          },
+          "recover": {
+            "cmd": "vnx-dna recover /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/text/strands.fasta -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/text/recovered.bin --temp-dir /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/text --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/text/recover.json --force",
+            "returncode": 0,
+            "wall_s": 0.6032,
+            "user_s": 1.22,
+            "sys_s": 0.12,
+            "time_v_elapsed_s": 0.6,
+            "max_rss_kib": 73296,
+            "exit_status": 0
+          },
+          "recovered_sha256": "488c48560e4cf16985947e68f4c5679a7e57dbbccb0466e74bacb5b7f5c38ec3",
+          "pass": true
+        }
+      ]
+    },
+    {
+      "name": "binary",
+      "description": "1 MiB packed little-endian 20-byte records (seed 5)",
+      "input_size": 1048576,
+      "input_sha256": "3e086eddb92d3ea85577c6e9a8d04af6a3a18a0220ea922934805bc12c7ffe52",
+      "stored_size": 594043,
+      "container_file_size": 595952,
+      "stored_over_input": 0.5665,
+      "chunks": 1,
+      "ecc_groups": 233,
+      "outer_code": "64+16 Cauchy RS",
+      "strands_total": 18676,
+      "data_and_parity_strands": 18580,
+      "parity_strands": 3728,
+      "metadata_strands": 96,
+      "strand_nt": 252,
+      "bases_total": 4706352,
+      "fasta_file_size": 5161876,
+      "independent_fasta_count": {
+        "records": 18676,
+        "bases": 4706352,
+        "distinct_lengths": [
+          252
+        ]
+      },
+      "nt_per_input_byte": 4.4883,
+      "ecc_overhead_parity_over_total_strands": 0.1996,
+      "ecc_overhead_parity_plus_metadata_over_total_strands": 0.2048,
+      "time_store_s_median": 0.433,
+      "time_encode_s_median": 0.6495,
+      "time_store_plus_encode_s_median": 1.0846,
+      "time_recover_s_median": 0.6779,
+      "cpu_s_median": {
+        "store": 1.14,
+        "encode": 1.41,
+        "recover": 1.41
+      },
+      "peak_rss_kib": {
+        "store": 58716,
+        "encode": 69092,
+        "recover": 83520,
+        "max": 83520
+      },
+      "recovered_sha256": "3e086eddb92d3ea85577c6e9a8d04af6a3a18a0220ea922934805bc12c7ffe52",
+      "pass": true,
+      "repeats": 3,
+      "cli_internal_elapsed_s_first_run": {
+        "store": 0.03305675499723293,
+        "encode": 0.24243563901109155,
+        "recover": 0.22670249799557496
+      },
+      "store_report_profile": "balanced",
+      "chunks_compressed": 1,
+      "recover_report_recovery": {
+        "chunks_assembled": 1,
+        "max_erasures_in_a_group": 0,
+        "metadata_groups_repaired": 0,
+        "metadata_shards_conflict_majority": 0,
+        "metadata_shards_conflict_tie": 0,
+        "metadata_shards_erased": 0,
+        "pass2_mode": "sequential",
+        "records_foreign_or_out_of_range": 0,
+        "shards_conflict_majority": 0,
+        "shards_conflict_tie": 0,
+        "shards_duplicates_consistent": 0,
+        "shards_erased": 0,
+        "shards_unique": 18580,
+        "stored_chunks_verified": 1,
+        "stripes_decoded": 233,
+        "stripes_outer_recovered": 0
+      },
+      "runs": [
+        {
+          "store": {
+            "cmd": "vnx-dna store /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/input-binary.bin -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/binary/archive.vxdna --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/binary/store.json --force",
+            "returncode": 0,
+            "wall_s": 0.433,
+            "user_s": 1.1,
+            "sys_s": 0.04,
+            "time_v_elapsed_s": 0.43,
+            "max_rss_kib": 58716,
+            "exit_status": 0
+          },
+          "encode": {
+            "cmd": "vnx-dna encode /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/binary/archive.vxdna -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/binary/strands.fasta --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/binary/encode.json --force",
+            "returncode": 0,
+            "wall_s": 0.6516,
+            "user_s": 1.27,
+            "sys_s": 0.14,
+            "time_v_elapsed_s": 0.65,
+            "max_rss_kib": 68444,
+            "exit_status": 0
+          },
+          "recover": {
+            "cmd": "vnx-dna recover /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/binary/strands.fasta -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/binary/recovered.bin --temp-dir /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/binary --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/binary/recover.json --force",
+            "returncode": 0,
+            "wall_s": 0.6793,
+            "user_s": 1.28,
+            "sys_s": 0.13,
+            "time_v_elapsed_s": 0.67,
+            "max_rss_kib": 83500,
+            "exit_status": 0
+          },
+          "recovered_sha256": "3e086eddb92d3ea85577c6e9a8d04af6a3a18a0220ea922934805bc12c7ffe52",
+          "pass": true
+        },
+        {
+          "store": {
+            "cmd": "vnx-dna store /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/input-binary.bin -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/binary/archive.vxdna --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/binary/store.json --force",
+            "returncode": 0,
+            "wall_s": 0.4429,
+            "user_s": 1.11,
+            "sys_s": 0.03,
+            "time_v_elapsed_s": 0.44,
+            "max_rss_kib": 58712,
+            "exit_status": 0
+          },
+          "encode": {
+            "cmd": "vnx-dna encode /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/binary/archive.vxdna -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/binary/strands.fasta --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/binary/encode.json --force",
+            "returncode": 0,
+            "wall_s": 0.6495,
+            "user_s": 1.26,
+            "sys_s": 0.15,
+            "time_v_elapsed_s": 0.64,
+            "max_rss_kib": 69092,
+            "exit_status": 0
+          },
+          "recover": {
+            "cmd": "vnx-dna recover /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/binary/strands.fasta -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/binary/recovered.bin --temp-dir /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/binary --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/binary/recover.json --force",
+            "returncode": 0,
+            "wall_s": 0.6779,
+            "user_s": 1.28,
+            "sys_s": 0.14,
+            "time_v_elapsed_s": 0.67,
+            "max_rss_kib": 83520,
+            "exit_status": 0
+          },
+          "recovered_sha256": "3e086eddb92d3ea85577c6e9a8d04af6a3a18a0220ea922934805bc12c7ffe52",
+          "pass": true
+        },
+        {
+          "store": {
+            "cmd": "vnx-dna store /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/input-binary.bin -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/binary/archive.vxdna --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/binary/store.json --force",
+            "returncode": 0,
+            "wall_s": 0.4253,
+            "user_s": 1.11,
+            "sys_s": 0.02,
+            "time_v_elapsed_s": 0.42,
+            "max_rss_kib": 58492,
+            "exit_status": 0
+          },
+          "encode": {
+            "cmd": "vnx-dna encode /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/binary/archive.vxdna -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/binary/strands.fasta --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/binary/encode.json --force",
+            "returncode": 0,
+            "wall_s": 0.6196,
+            "user_s": 1.24,
+            "sys_s": 0.15,
+            "time_v_elapsed_s": 0.61,
+            "max_rss_kib": 68996,
+            "exit_status": 0
+          },
+          "recover": {
+            "cmd": "vnx-dna recover /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/binary/strands.fasta -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/binary/recovered.bin --temp-dir /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/binary --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/binary/recover.json --force",
+            "returncode": 0,
+            "wall_s": 0.6507,
+            "user_s": 1.26,
+            "sys_s": 0.13,
+            "time_v_elapsed_s": 0.64,
+            "max_rss_kib": 83368,
+            "exit_status": 0
+          },
+          "recovered_sha256": "3e086eddb92d3ea85577c6e9a8d04af6a3a18a0220ea922934805bc12c7ffe52",
+          "pass": true
+        }
+      ]
+    }
+  ],
+  "noisy_pipeline": {
+    "input": "medium (1 MiB mixed, seed 42)",
+    "input_size": 1048576,
+    "parameters": {
+      "coverage": 10,
+      "substitution_rate": 0.001,
+      "insertion_rate": 0.0001,
+      "deletion_rate": 0.0001,
+      "dropout_rate": 0.02,
+      "seed": 42,
+      "profile": "balanced"
+    },
+    "timing": {
+      "cmd": "vnx-dna pipeline /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/input-medium.bin -o /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/noisy-recovered.bin --work-dir /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/noisy --temp-dir /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/noisy --coverage 10 --substitution-rate 0.001 --insertion-rate 0.0001 --deletion-rate 0.0001 --dropout-rate 0.02 --seed 42 --report /root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/noisy-report.json --force",
+      "returncode": 0,
+      "wall_s": 20.2181,
+      "user_s": 21.47,
+      "sys_s": 2.64,
+      "time_v_elapsed_s": 20.21,
+      "max_rss_kib": 572948,
+      "exit_status": 0
+    },
+    "input_sha256": "dbcce721f62226fcde7a292eec0ae5fbebdfcfa40863c2e069c1410e5253dfc2",
+    "recovered_sha256": "dbcce721f62226fcde7a292eec0ae5fbebdfcfa40863c2e069c1410e5253dfc2",
+    "pass": true,
+    "report": {
+      "bytes_identical": true,
+      "cleanup": {
+        "policy": "keep",
+        "removed": []
+      },
+      "container_roundtrip_identical": true,
+      "elapsed_s": 19.808498275000602,
+      "input": "/root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/input-medium.bin",
+      "input_sha256": "dbcce721f62226fcde7a292eec0ae5fbebdfcfa40863c2e069c1410e5253dfc2",
+      "operation": "pipeline",
+      "output": "/root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/noisy-recovered.bin",
+      "output_sha256": "dbcce721f62226fcde7a292eec0ae5fbebdfcfa40863c2e069c1410e5253dfc2",
+      "simulation": "SOFTWARE SIMULATION",
+      "status": "RECOVERED",
+      "steps": {
+        "cluster": {
+          "cluster_size_histogram": {
+            "1": 8,
+            "2": 23,
+            "3": 106,
+            "4": 277,
+            "5": 577,
+            "6": 887,
+            "7": 1239,
+            "8": 1630,
+            "9": 1831,
+            "10": 1809,
+            "11": 1623,
+            "12": 1452,
+            "13": 1106,
+            "14": 731,
+            "15": 495,
+            "16": 303,
+            "17": 190,
+            "18": 119,
+            "19": 50,
+            "20": 22,
+            "21": 11,
+            "22": 6,
+            "23": 2,
+            "24": 2
+          },
+          "clusters": 14499,
+          "elapsed_s": 8.988749162002932,
+          "geometry": {
+            "frame_bytes": 63,
+            "frame_format": 5,
+            "header_bytes": 11,
+            "inner_parity_bytes": 8,
+            "mapping": "2bit",
+            "payload_bytes": 40,
+            "strand_nt": 252
+          },
+          "input": "/root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/noisy/input-medium.bin.reads.fastq",
+          "method": "address indexing (verified CRC, tentative header), minimizer-index reassignment of weak reads to strong clusters, minimizer leader clustering for the rest",
+          "operation": "cluster",
+          "output": "/root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/noisy/input-medium.bin.clusters.jsonl",
+          "stats": {
+            "clusters_addressed": 14499,
+            "clusters_orphan": 0,
+            "clusters_strong": 14498,
+            "clusters_tentative_only": 1,
+            "orphans_clustered": 0,
+            "orphans_dropped_over_limit": 0,
+            "reads_inner_corrected": 27524,
+            "reads_orphan": 260,
+            "reads_reassigned_to_strong_cluster": 1315,
+            "reads_tentative": 6889,
+            "reads_total": 145350,
+            "reads_verified": 138201,
+            "tentative_unknown_tag": 571
+          },
+          "status": "SUCCESS"
+        },
+        "consensus": {
+          "consensus_sequences": 14499,
+          "elapsed_s": 7.617559665988665,
+          "input": "/root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/noisy/input-medium.bin.clusters.jsonl",
+          "operation": "consensus",
+          "output": "/root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/noisy/input-medium.bin.consensus.fasta",
+          "parameters": {
+            "band": 12,
+            "fallback_to_verified": true,
+            "max_edit_fraction": 0.15,
+            "min_winner_share": 0.6,
+            "single_read_min_quality": 10
+          },
+          "stats": {
+            "clusters": 14499,
+            "consensus_by_alignment": 1,
+            "consensus_crc_valid": 14498,
+            "consensus_from_corrected_read": 4,
+            "consensus_from_verified_read": 14494,
+            "consensus_length_mismatch": 1,
+            "consensus_unverified_written": 1,
+            "reads_aligned": 1,
+            "reads_excluded_unalignable": 0
+          },
+          "status": "SUCCESS"
+        },
+        "decode": {
+          "archive_id": "4bc2774512a41f031bedade941f23ff2",
+          "container_bytes": 471555,
+          "container_sha256_trailer": "6d499d16add948fa78665df2a8a9cc097172c7642776dde04e11ed9f053b283a",
+          "elapsed_s": 0.3116831030056346,
+          "encrypted": false,
+          "format_version": 5,
+          "frame_format": 5,
+          "geometry": {
+            "frame_bytes": 63,
+            "frame_format": 5,
+            "header_bytes": 11,
+            "inner_parity_bytes": 8,
+            "mapping": "2bit",
+            "payload_bytes": 40,
+            "strand_nt": 252
+          },
+          "input": "/root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/noisy/input-medium.bin.consensus.fasta",
+          "input_kind": "dna-reads",
+          "manifest_authentication": "digest-only",
+          "manifest_source": "dna-metadata-strands",
+          "operation": "decode",
+          "output": "/root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/noisy/input-medium.bin.decoded.vxdna",
+          "reads": {
+            "reads_foreign_archive": 0,
+            "reads_invalid_symbols": 0,
+            "reads_length_mismatch": 1,
+            "reads_rejected": 0,
+            "reads_total": 14499,
+            "reads_valid": 14498
+          },
+          "records_in_stripe_order": false,
+          "recovery": {
+            "chunks_assembled": 1,
+            "max_erasures_in_a_group": 7,
+            "metadata_groups_repaired": 1,
+            "metadata_shards_conflict_majority": 0,
+            "metadata_shards_conflict_tie": 0,
+            "metadata_shards_erased": 1,
+            "pass2_mode": "bucket-sort (1 buckets)",
+            "records_foreign_or_out_of_range": 0,
+            "shards_conflict_majority": 0,
+            "shards_conflict_tie": 0,
+            "shards_duplicates_consistent": 0,
+            "shards_erased": 283,
+            "shards_unique": 14403,
+            "stored_chunks_verified": 1,
+            "stripes_decoded": 184,
+            "stripes_outer_recovered": 128
+          },
+          "status": "RECOVERED",
+          "validated_records_spilled": 14403
+        },
+        "encode": {
+          "archive_id": "4bc2774512a41f031bedade941f23ff2",
+          "average_strand_nt": 252.0,
+          "dna_bases": 3725064,
+          "dna_index": "/root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/noisy/input-medium.bin.fasta.vxidx",
+          "efficiency": {
+            "bases_per_original_byte": 3.5524978637695312,
+            "bases_per_stored_byte": 7.931642130455705,
+            "chunks": 1,
+            "data_and_parity_strands": 14686,
+            "dna_bases_total": 3725064,
+            "ecc_groups": 184,
+            "frame_overhead_bytes_per_strand": 23,
+            "guaranteed_erasures_per_group": 16,
+            "metadata_strands": 96,
+            "net_bits_per_base": 2.251936611021985,
+            "outer_code": "64+16 Cauchy RS",
+            "parity_strands": 2944,
+            "screening_max_variant": 21,
+            "stored_bytes": 469646,
+            "strand_nt": 252,
+            "strands_total": 14782
+          },
+          "elapsed_s": 0.1891167099965969,
+          "format_version": 5,
+          "input": "/root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/noisy/input-medium.bin.vxdna",
+          "operation": "encode",
+          "output": "/root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/noisy/input-medium.bin.fasta",
+          "output_bytes": 4083722,
+          "output_format": "fasta",
+          "output_sha256": "db38c9d8eb2d7348c5f3041145f52139cb7786475e5436ac8eee902b48a6e12e",
+          "status": "SUCCESS",
+          "strands": 14782,
+          "throughput_mb_s": 2.4833659596153677,
+          "workers": 7
+        },
+        "restore": {
+          "archive_id": "4bc2774512a41f031bedade941f23ff2",
+          "chunks_verified": 1,
+          "elapsed_s": 0.012640752989682369,
+          "encrypted": false,
+          "expected_sha256": "dbcce721f62226fcde7a292eec0ae5fbebdfcfa40863c2e069c1410e5253dfc2",
+          "input": "/root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/noisy/input-medium.bin.decoded.vxdna",
+          "input_kind": "container-v2",
+          "manifest_authentication": "digest-only",
+          "name": "input-medium.bin",
+          "operation": "restore",
+          "output": "/root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/noisy-recovered.bin",
+          "output_sha256": "dbcce721f62226fcde7a292eec0ae5fbebdfcfa40863c2e069c1410e5253dfc2",
+          "recovered_sha256": "dbcce721f62226fcde7a292eec0ae5fbebdfcfa40863c2e069c1410e5253dfc2",
+          "sha256_match": true,
+          "size": 1048576,
+          "status": "SUCCESS",
+          "throughput_mb_s": 82.9520204101661
+        },
+        "sequence": {
+          "bases_out": 36628051,
+          "batch_strands": 8192,
+          "config": {
+            "abundance_sigma": 0.0,
+            "burst_kind": "substitution",
+            "burst_length_mean": 4.0,
+            "burst_rate": 0.0,
+            "contamination_rate": 0.0,
+            "coverage": 10.0,
+            "coverage_model": "poisson",
+            "deletion_rate": 0.0001,
+            "dropout_rate": 0.02,
+            "duplication_rate": 0.0,
+            "insertion_rate": 0.0001,
+            "invalid_read_rate": 0.0,
+            "n_rate": 0.0,
+            "quality_informativeness": 0.8,
+            "quality_model": "informative",
+            "reverse_complement_rate": 0.0,
+            "seed": 42,
+            "shuffle": true,
+            "substitution_rate": 0.001,
+            "synthesis_deletion_rate": 0.0,
+            "synthesis_insertion_rate": 0.0,
+            "synthesis_substitution_rate": 0.0,
+            "truncation_rate": 0.0
+          },
+          "contamination_reads_added": 0,
+          "coverage_distribution": {
+            "0": 283,
+            "1": 8,
+            "2": 24,
+            "3": 104,
+            "4": 281,
+            "5": 570,
+            "6": 883,
+            "7": 1249,
+            "8": 1632,
+            "9": 1831,
+            "10": 1807,
+            "11": 1614,
+            "12": 1457,
+            "13": 1116,
+            "14": 717,
+            "15": 499,
+            "16": 308,
+            "17": 187,
+            "18": 120,
+            "19": 51,
+            "20": 19,
+            "21": 13,
+            "22": 5,
+            "23": 2,
+            "24": 2
+          },
+          "duplicate_reads": 0,
+          "elapsed_s": 2.5828390620008577,
+          "errors": {
+            "burst_bases_deletion": 0,
+            "burst_bases_insertion": 0,
+            "burst_bases_substitution": 0,
+            "bursts_deletion": 0,
+            "bursts_insertion": 0,
+            "bursts_substitution": 0,
+            "n_calls": 0,
+            "sequencing_deletions": 3747,
+            "sequencing_insertions": 3598,
+            "sequencing_substitutions": 36673,
+            "synthesis_deletions": 0,
+            "synthesis_insertions": 0,
+            "synthesis_substitutions": 0
+          },
+          "input": "/root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/noisy/input-medium.bin.fasta",
+          "invalid_reads_added": 0,
+          "observed_rates_per_designed_base": {
+            "sequencing_deletions": 0.00010229822923321375,
+            "sequencing_insertions": 9.823032526850896e-05,
+            "sequencing_substitutions": 0.0010012231013263005,
+            "synthesis_deletions": 0.0,
+            "synthesis_insertions": 0.0,
+            "synthesis_substitutions": 0.0
+          },
+          "operation": "sequence",
+          "output": "/root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/noisy/input-medium.bin.reads.fastq",
+          "output_bytes": 75034542,
+          "output_format": "fastq",
+          "output_sha256": "2161dfa6b5793319af6095b649e4bee4df2878d1c74d0ce3a66e6ad937bd7fd7",
+          "reads": 145350,
+          "reads_per_strand_mean": 9.832904884318767,
+          "reads_reverse_complemented": 0,
+          "reads_truncated": 0,
+          "simulation": "SOFTWARE SIMULATION (not a physical experiment)",
+          "status": "SUCCESS",
+          "strands": 14782,
+          "strands_dropped": 282,
+          "strands_with_zero_reads": 283
+        },
+        "store": {
+          "archive_id": "4bc2774512a41f031bedade941f23ff2",
+          "chunk_size": 1048576,
+          "chunks": 1,
+          "chunks_compressed": 1,
+          "compression": "zstd",
+          "compression_ratio": 0.4478893280029297,
+          "container_bytes": 471555,
+          "discarded_stale_partial": false,
+          "ecc_stripes": 184,
+          "elapsed_s": 0.027698478996171616,
+          "encrypted": false,
+          "format_version": 5,
+          "operation": "store",
+          "original_bytes": 1048576,
+          "original_sha256": "dbcce721f62226fcde7a292eec0ae5fbebdfcfa40863c2e069c1410e5253dfc2",
+          "output": "/root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/noisy/input-medium.bin.vxdna",
+          "profile": "balanced",
+          "resumed_from_chunk": 0,
+          "status": "SUCCESS",
+          "stored_bytes": 469646,
+          "throughput_mb_s": 37.8568079548675,
+          "workers": 7
+        },
+        "verify": {
+          "archive_id": "4bc2774512a41f031bedade941f23ff2",
+          "checks": [
+            {
+              "check": "container-structure",
+              "detail": "471555 bytes, body 469646 bytes",
+              "result": "PASS"
+            },
+            {
+              "check": "container-checksum",
+              "detail": "file SHA-256 matches the trailer",
+              "result": "PASS"
+            },
+            {
+              "check": "stored-body-sha256",
+              "detail": "body SHA-256 matches the manifest's stored_sha256",
+              "result": "PASS"
+            },
+            {
+              "check": "manifest-and-index",
+              "detail": "schema, canonical form and digest; chunk index (1 entries) consistent",
+              "result": "PASS"
+            },
+            {
+              "check": "manifest-authentication",
+              "detail": "unencrypted archive: SHA-256 digest only (detects corruption, not tampering)",
+              "result": "PASS"
+            },
+            {
+              "check": "stored-chunks",
+              "detail": "1/1 stored chunks match their SHA-256",
+              "result": "PASS"
+            },
+            {
+              "check": "plaintext-chunks",
+              "detail": "1/1 chunks authenticated, decompressed and SHA-256 verified",
+              "result": "PASS"
+            },
+            {
+              "check": "object-sha256",
+              "detail": "recomputed dbcce721f62226fcde7a292eec0ae5fbebdfcfa40863c2e069c1410e5253dfc2",
+              "result": "PASS"
+            },
+            {
+              "check": "file-matches-archive",
+              "detail": "file is byte-identical to the archived object",
+              "result": "PASS"
+            }
+          ],
+          "chunks": 1,
+          "encrypted": false,
+          "exit_code": 0,
+          "expected_sha256": "dbcce721f62226fcde7a292eec0ae5fbebdfcfa40863c2e069c1410e5253dfc2",
+          "failure_count": 0,
+          "failures": [],
+          "file_comparison": {
+            "expected_sha256": "dbcce721f62226fcde7a292eec0ae5fbebdfcfa40863c2e069c1410e5253dfc2",
+            "expected_size": 1048576,
+            "file": "/root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/noisy-recovered.bin",
+            "file_sha256": "dbcce721f62226fcde7a292eec0ae5fbebdfcfa40863c2e069c1410e5253dfc2",
+            "file_size": 1048576,
+            "identical": true,
+            "mismatched_chunks": []
+          },
+          "format_version": 5,
+          "input": "/root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/noisy/input-medium.bin.decoded.vxdna",
+          "input_kind": "container-v2",
+          "operation": "verify",
+          "original_size": 1048576,
+          "recovered_sha256": "dbcce721f62226fcde7a292eec0ae5fbebdfcfa40863c2e069c1410e5253dfc2",
+          "recovered_size": 1048576,
+          "status": "PASS"
+        }
+      },
+      "strand_format": "fasta",
+      "timings_s": {
+        "cluster": 9.00957285099139,
+        "consensus": 7.617662609991385,
+        "decode": 0.3394204040087061,
+        "encode": 0.18920749799872283,
+        "restore": 0.01267070100584533,
+        "sequence": 2.5828865980001865,
+        "store": 0.02778222299821209,
+        "verify": 0.01678735100722406
+      },
+      "version": "3.0.0",
+      "work_dir": "/root/VSnexustechnologies-v4/.bench-tmp/v3-baseline/noisy"
+    }
+  }
+}

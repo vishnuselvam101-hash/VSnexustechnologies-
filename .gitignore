@@ -25,3 +25,6 @@ key.txt
 *.partial.idx
 *.fastq
 clusters.jsonl
+
+# local benchmark scratch data (never committed)
+.bench-tmp/
