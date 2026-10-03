@@ -1,0 +1,6 @@
+# Seconds-scale suite for CI, `vnxdna doctor --deep` and LAYA's benchmark gate.
+name: smoke
+seed: 42
+workers: 2
+sizes: [1KB, 10KB, 100KB]
+recovery: {size: 16KB, seeds: [1, 2], channel: {coverage: 8, substitution_rate: 0.005}}

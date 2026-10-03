@@ -1,0 +1,55 @@
+# Logical agents. An agent is a role: a prompt (ops/prompts/<role>.md), the model tiers it may use, the tools it may
+# call, and where it may write. Agents propose; the harness executes and the gates decide.
+schema: vnxdna.agents/1
+
+common_rules: ops/prompts/_common.md     # prepended to every agent prompt (honesty, tests, scope)
+
+agents:
+  architect:
+    responsibilities: [system architecture, interfaces, dependency boundaries, version planning]
+    tiers: [3]
+    tools: [Read, Grep, Glob]
+    write_paths: ["docs/architecture/**", "docs/ARCHITECTURE.md", "docs/ROADMAP.md", "docs/releases/**"]
+  researcher:
+    responsibilities: [literature research, algorithm investigation, prior-art discovery, scientific comparison]
+    tiers: [4, 3]
+    tools: [Read, Grep, Glob, WebSearch, WebFetch]
+    write_paths: ["research/notes/**"]
+    evidence_labels: [ESTABLISHED_FACT, PUBLISHED_RESULT, EXPERIMENTAL_OBSERVATION, ENGINEERING_ASSUMPTION, HYPOTHESIS,
+                      UNVERIFIED_CLAIM, FUTURE_WORK]
+  coder:
+    responsibilities: [implementation]
+    tiers: [3, 2]
+    tools: [Read, Grep, Glob, Edit, Write, "Bash(python -m pytest:*)", "Bash(ruff check:*)", "Bash(git diff:*)", "Bash(git status:*)"]
+    write_paths: ["src/**", "tests/**", "docs/**", "benchmarks/**", "experiments/**", "ops/**"]
+  test_engineer:
+    responsibilities: [unit tests, integration tests, property tests, fuzz tests, failure tests]
+    tiers: [3, 2, 0]
+    tools: [Read, Grep, Glob, Edit, Write, "Bash(python -m pytest:*)"]
+    write_paths: ["tests/**", "ops/tests/**"]
+  benchmark_engineer:
+    responsibilities: [performance, RAM, CPU, throughput, compression, DNA overhead, recovery probability]
+    tiers: [0, 3]
+    tools: [Read, Grep, Glob, "Bash(vnxdna benchmark:*)"]
+    write_paths: ["benchmarks/**"]
+  security_engineer:
+    responsibilities: [dependency auditing, secret detection, unsafe input handling, cryptographic misuse, supply-chain risk]
+    tiers: [0, 3]
+    tools: [Read, Grep, Glob]
+    write_paths: ["docs/security/**"]
+  red_team:
+    responsibilities: [attempt to break the implementation; adversarial inputs; malformed archives]
+    tiers: [3]
+    tools: [Read, Grep, Glob, Write, "Bash(python -m pytest:*)"]
+    write_paths: ["tests/adversarial/**"]
+  documentation_engineer:
+    responsibilities: [API docs, architecture docs, whitepaper, benchmarks, limitations, changelog]
+    tiers: [1, 3]
+    tools: [Read, Grep, Glob, Edit, Write]
+    write_paths: ["docs/**", "README.md", "CHANGELOG.md"]
+  release_manager:
+    responsibilities: [versioning, acceptance, tagging, release artifacts]
+    tiers: [0]
+    tools: []
+    write_paths: ["release/**"]
+    notes: "Deterministic only. Tags and merges to main always need explicit human confirmation of the exact SHA."

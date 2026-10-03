@@ -1,0 +1,28 @@
+# Human approval requirements. LAYA writes a `pending_approval` decision and stops; `vnxdna laya approve <id>`
+# records the approval (who, when) and the task can then be executed. Approvals are single-use and expire.
+schema: vnxdna.approvals/1
+
+approval_expiry_hours: 72
+
+always_require_approval:
+  - merge_to_protected_branch
+  - create_or_move_tag
+  - push_to_remote
+  - delete_files_outside_workspace
+  - change_file_format_or_compatibility     # approval_paths in policy.yaml
+  - install_system_package
+  - change_systemd_or_firewall
+  - load_model_requiring_exclusive_ram       # tier-2 local model while other heavy jobs are queued
+  - spend_remote_budget_over_daily_cap
+
+remote_budget:
+  daily_usd_cap: 5.00          # measured from the agent CLI's reported total_cost_usd per run
+  per_task_usd_cap: 1.00
+
+never_allowed:                  # refused outright, approval or not
+  - force_push
+  - rewrite_published_history
+  - read_secrets_into_prompts   # .env, *.key, ~/.ssh, /root/vnx-weather-secrets, tokens
+  - disable_tests_to_pass
+  - fabricate_benchmark_or_validation
+  - signal_processes_outside_vnxdna_slice

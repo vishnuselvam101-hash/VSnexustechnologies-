@@ -1,0 +1,76 @@
+# Model registry and selection policy. Measured numbers (RAM, speed, scores) are NOT written here: they come from
+# /opt/vnx-dna/reports/model-benchmarks.json (`vnxdna models bench`) and are joined at selection time.
+schema: vnxdna.models/1
+
+tiers:
+  0: {name: deterministic, description: "ruff, mypy, pytest, rg, jq, git, vnx-dna CLI — no model; always preferred when sufficient"}
+  1: {name: tiny-local, description: "≤ 4 B local model: classification, small transforms, log summaries, metadata extraction"}
+  2: {name: medium-local, description: "large local coding model; gated on free RAM; never given tools or write access"}
+  3: {name: strong-remote, description: "external coding-agent CLI (remote): architecture, hard debugging, refactoring, scientific reasoning"}
+  4: {name: specialist-research, description: "external coding-agent CLI with web research tools (RESEARCHER role only)"}
+
+models:
+  deterministic:
+    tier: 0
+    backend: none
+  qwen2.5-coder:1.5b:
+    tier: 1
+    backend: ollama
+    trust: standard          # official Qwen release via the Ollama library
+    ram_estimate: 1.6GiB     # replaced by the measured value when model-benchmarks.json exists
+    tools_allowed: false     # LAYA never lets local models call tools directly; the harness executes, the model proposes
+    quality: 1
+  huihui_ai/qwen3-coder-abliterated:latest:
+    tier: 2
+    backend: ollama
+    trust: untrusted         # community "abliterated" (refusal-removed) fine-tune; provenance unverified
+    ram_estimate: 18.7GiB    # 17.3 GiB GGUF × 1.05 + 0.5 GiB KV cache at num_ctx 4096; replaced by measured RSS
+    tools_allowed: false
+    quality: 2
+    requires_exclusive: true # nothing else heavy may run while it is loaded
+  agent-cli:
+    tier: 3
+    backend: agent-cli
+    trust: standard
+    command: ["{agent_cli}", -p, --output-format, json, --max-turns, "1", --disallowedTools, "Bash,Edit,Write,WebFetch,WebSearch"]
+    ram_estimate: 400MiB
+    quality: 4
+    cost: metered            # uses the owner's agent subscription/API quota
+  agent-cli-research:
+    tier: 4
+    backend: agent-cli
+    trust: standard
+    command: ["{agent_cli}", -p, --output-format, json, --max-turns, "8", --allowedTools, "WebSearch,WebFetch,Read"]
+    ram_estimate: 400MiB
+    quality: 4
+    cost: metered
+
+# Task type → minimum tier and quality. LAYA picks the cheapest model that meets the minimum and passes resource checks.
+task_requirements:
+  classification:      {min_tier: 1, min_quality: 1}
+  metadata_extraction: {min_tier: 1, min_quality: 1}
+  log_summary:         {min_tier: 1, min_quality: 1}
+  small_transform:     {min_tier: 1, min_quality: 1}
+  code_inspection:     {min_tier: 1, min_quality: 1}
+  test_generation:     {min_tier: 2, min_quality: 2}
+  lint_fix:            {min_tier: 0, min_quality: 0}
+  test_run:            {min_tier: 0, min_quality: 0}
+  benchmark_run:       {min_tier: 0, min_quality: 0}
+  implementation:      {min_tier: 3, min_quality: 3}
+  debugging:           {min_tier: 3, min_quality: 3}
+  refactoring:         {min_tier: 3, min_quality: 3}
+  architecture:        {min_tier: 3, min_quality: 4}
+  scientific_reasoning: {min_tier: 3, min_quality: 4}
+  research:            {min_tier: 4, min_quality: 4}
+  security_review:     {min_tier: 3, min_quality: 3}
+  red_team:            {min_tier: 3, min_quality: 3}
+  documentation:       {min_tier: 3, min_quality: 3}   # docs are reviewed text; a 1.5 B model scored 2/5 on code tasks
+  release:             {min_tier: 0, min_quality: 0}   # deterministic gates only
+
+selection:
+  # Fallback order when the preferred model is unavailable or refused by the governor.
+  escalate_when_unavailable: true   # a local model that does not fit RAM escalates to the next tier, never downgrades quality
+  max_loaded_local_models: 1
+  latency_weight: 1.0
+  cost_weight: 1.0
+  prefer_local_for_tiers: [1, 2]

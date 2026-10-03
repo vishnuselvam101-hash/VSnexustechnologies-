@@ -1,0 +1,5 @@
+# Large-file suite (minutes to an hour). Sizes beyond the hardware profile's MAX_BENCHMARK_INPUT are skipped, not attempted.
+name: large
+seed: 42
+workers: 4
+sizes: [100MB, 1GB]

@@ -38,3 +38,5 @@ The capabilities each milestone named are present, and their evidence is listed 
 
 GPU acceleration is not planned until profiling shows a bottleneck that vectorised CPU code cannot address. The CPU
 path remains the reference implementation.
+
+- **V4–V50 plan:** see [ROADMAP_V4_V50.md](ROADMAP_V4_V50.md) (PLAN, not commitment; gated by `vnxdna release check`).

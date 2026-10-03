@@ -1,0 +1,15 @@
+# Error-model sweep: each channel effect in isolation, then mixed. Rates are per base (sequencing) unless noted.
+# Outcomes are measured, not asserted, except: undetected corruption must be 0 everywhere (framework-wide rule).
+name: error-models
+defaults: {size: 64KB, pattern: mixed, coverage: 10, coverage_model: poisson}
+matrix:
+  - {name: substitution, substitution_rate: [0.001, 0.01, 0.03], seeds: [1, 2]}
+  - {name: insertion, insertion_rate: [0.001, 0.005], seeds: [1, 2]}
+  - {name: deletion, deletion_rate: [0.001, 0.005], seeds: [1, 2]}
+  - {name: dropout, dropout_rate: [0.01, 0.05, 0.2], seeds: [1, 2]}            # strand species lost (chunk/strand loss)
+  - {name: duplication, duplication_rate: [0.2, 0.5], seeds: [1]}              # read duplication
+  - {name: coverage, coverage: [2, 5, 20], substitution_rate: 0.005, seeds: [1, 2]}   # coverage variation
+  - {name: lognormal-abundance, coverage_model: lognormal, abundance_sigma: [0.5, 1.0], seeds: [1]}
+  - {name: truncation, truncation_rate: [0.05, 0.2], seeds: [1]}               # partial reads
+  - {name: mixed, substitution_rate: 0.005, insertion_rate: 0.001, deletion_rate: 0.001, dropout_rate: [0.01, 0.05], seeds: [1, 2]}
+  - {name: burst, burst_rate: [0.05, 0.2], burst_kind: mixed, seeds: [1]}

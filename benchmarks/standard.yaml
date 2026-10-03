@@ -1,0 +1,6 @@
+# Release benchmark: 1 KB … 10 MB on every run; recovery statistics from 6 seeded channel trials.
+name: standard
+seed: 42
+workers: 4
+sizes: [1KB, 10KB, 100KB, 1MB, 10MB]
+recovery: {size: 64KB, seeds: [1, 2, 3, 4, 5, 6], channel: {coverage: 10, substitution_rate: 0.01, dropout_rate: 0.02}}

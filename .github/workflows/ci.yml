@@ -15,3 +15,50 @@ jobs:
       - run: ruff check src tests research
       - run: python -m pytest
       - run: python -m compileall -q src
+
+  # Engineering-environment layer (ops/): lint, type-check, unit tests. Installs from the hashed lockfile.
+  ops:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with: {python-version: '3.12'}
+      - run: echo "VNXDNA_HOME=$RUNNER_TEMP/vnxdna" >> "$GITHUB_ENV"   # the runner context is not available in job-level env
+      - run: python -m pip install --require-hashes -r ops/requirements.lock
+      - run: python -m pip install --no-deps -e .
+      - run: python -m pip install mypy
+      - run: ruff check ops
+      - run: mypy --ignore-missing-imports ops/vnxops
+      - run: python -m pytest -q ops/tests -p no:cacheprovider
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with: {fetch-depth: 0}
+      - uses: actions/setup-python@v6
+        with: {python-version: '3.12'}
+      - name: pip-audit (pinned, hashed lockfile)
+        run: python -m pip install pip-audit && pip-audit -r ops/requirements.lock --require-hashes --progress-spinner off
+      - name: gitleaks (release binary, checksum verified)
+        run: |
+          V=8.30.1
+          curl -sSLO https://github.com/gitleaks/gitleaks/releases/download/v$V/gitleaks_${V}_linux_x64.tar.gz
+          curl -sSLO https://github.com/gitleaks/gitleaks/releases/download/v$V/gitleaks_${V}_checksums.txt
+          grep linux_x64.tar.gz gitleaks_${V}_checksums.txt | sha256sum -c -
+          tar -xzf gitleaks_${V}_linux_x64.tar.gz gitleaks
+          ./gitleaks git --no-banner --redact .
+
+  # Seconds-scale DNA benchmark + experiment smoke. Heavy suites (standard/large) are run on the VPS, not in CI.
+  benchmark-smoke:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with: {python-version: '3.12'}
+      - run: echo "VNXDNA_HOME=$RUNNER_TEMP/vnxdna" >> "$GITHUB_ENV"
+      - run: python -m pip install --require-hashes -r ops/requirements.lock && python -m pip install --no-deps -e .
+      - run: cd ops && python -m vnxops e2e
+      - run: cd ops && python -m vnxops benchmark --dna --suite smoke
+      - run: cd ops && python -m vnxops experiment smoke

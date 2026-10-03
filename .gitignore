@@ -28,3 +28,10 @@ clusters.jsonl
 
 # local benchmark scratch data (never committed)
 .bench-tmp/
+
+# VNX-DNA environment: runtime state lives in /opt/vnx-dna, never in the repo
+/artifacts/
+/datasets/
+/logs/
+/backups/
+/reports/

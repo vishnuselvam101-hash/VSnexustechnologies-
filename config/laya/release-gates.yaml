@@ -1,0 +1,33 @@
+# Version acceptance gates. `vnxdna release check --version vN` runs every gate that applies and writes
+# release/VN_ACCEPTANCE_REPORT.md. A version is accepted only if every applicable gate is PASS; SKIPPED gates must
+# carry a reason, and a gate marked `required` cannot be skipped.
+schema: vnxdna.release-gates/1
+
+gates:
+  BUILD:            {required: true, tools: [compileall], check: "package builds; `vnx-dna --help` works"}
+  TEST:             {required: true, tools: [pytest_full, pytest_ops]}
+  INTEGRATION:      {required: true, tools: [dna_e2e], check: "end-to-end store→encode→simulate→decode→restore, SHA-256 identical"}
+  REGRESSION:       {required: true, check: "V3 baseline suite + benchmark thresholds vs docs/releases/V3_BASELINE.md"}
+  SECURITY:         {required: true, tools: [gitleaks, pip_audit], check: "0 secrets, 0 known-vulnerable pinned deps"}
+  PERFORMANCE:      {required: true, tools: [bench_smoke], check: "no threshold below regression limits"}
+  REPRODUCIBILITY:  {required: true, check: "same seed → identical output hashes on two runs"}
+  DOCUMENTATION:    {required: true, check: "CHANGELOG entry, LIMITATIONS updated, docs build/tests pass"}
+  LINT:             {required: true, tools: [ruff]}
+  SCIENTIFIC_VALIDATION:        {required_for: research, check: "claims labelled; experiments reproducible; no unsupported comparisons"}
+  COMMERCIAL_READINESS_REVIEW:  {required_for: commercial, check: "human review; SDK/API docs; licence review"}
+
+# Regression thresholds relative to the V3 baseline (docs/releases/V3_BASELINE.md / v3-baseline.json).
+benchmark_thresholds:
+  throughput_max_regression: 0.15        # a stage may not get more than 15% slower
+  peak_rss_max_regression: 0.25
+  dna_density_max_regression: 0.00       # bits per nucleotide may not drop at all without an approved format change
+  recovery_rate_min: 1.0                 # inside the documented ECC guarantee, recovery must stay 100%
+  undetected_corruption_max: 0
+
+rollback:
+  on_gate_failure: keep_branch_unmerged  # nothing is reverted automatically; the candidate branch is simply not merged
+  on_bad_release: "new patch release from the last accepted tag; tags are never moved"
+
+version_classes:   # which optional gates apply to which roadmap ranges (docs/ROADMAP_V4_V50.md)
+  research: [V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16, V37, V38, V39, V40]
+  commercial: [V41, V42, V43, V44, V45, V46, V47, V50]

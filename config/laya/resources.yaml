@@ -1,0 +1,50 @@
+# Resource governor policy. Absolute byte limits come from /opt/vnx-dna/config/hardware-capability.yaml
+# (`vnxdna profile`); this file holds the policy that is the same on every machine.
+schema: vnxdna.resources/1
+
+slice:
+  name: vnxdna.slice            # every governed VNX-DNA job runs in a transient scope inside this slice
+  cpu_quota_from: SAFE_CPU_THREADS
+  memory_high_from: SAFE_RAM_HIGH
+  memory_max_from: SAFE_RAM_LIMIT
+  swap_max_from: SAFE_SWAP_LIMIT
+  tasks_max_from: MAX_PROCESSES
+  cpu_weight: 50                # production services keep the default weight of 100
+  io_weight: 50
+
+# Never touched by the governor, whatever the pressure. The governor only signals units inside vnxdna.slice.
+protected:
+  - "docker.service"
+  - "containerd.service"
+  - "postgresql@16-main.service"
+  - "redis-server.service"
+  - "ssh.service"
+  - "snap.ollama.listener.service"
+
+job_classes:                     # max concurrent jobs per class at pressure level OK; scaled down at higher levels
+  build:   {max_from: SAFE_PARALLEL_BUILDS, essential: true,  default_mem: 2GiB}
+  test:    {max_from: SAFE_TEST_PARALLELISM, essential: true, default_mem: 2GiB}
+  bench:   {max: 1, essential: false, default_mem: 4GiB}
+  experiment: {max: 2, essential: false, default_mem: 2GiB}
+  agent:   {max: 2, essential: false, default_mem: 1GiB}
+  llm:     {max_from: SAFE_LLM_CONCURRENCY, essential: false, default_mem: 0}   # memory is the model's own estimate
+  misc:    {max: 4, essential: false, default_mem: 512MiB}
+
+admission:
+  min_free_ram_from: MIN_FREE_RAM   # MemAvailable − job estimate must stay above this
+  disk_free_floor_from: DISK_FREE_FLOOR
+  max_wait_seconds: 600             # queue for capacity this long, then fail with exit 75 (EX_TEMPFAIL)
+  poll_seconds: 5
+
+# Pressure levels, evaluated by the watchdog every `interval_seconds`. First matching level from the top wins.
+levels:
+  interval_seconds: 5
+  CRITICAL:  {mem_available_below_x_floor: 0.5, swap_used_above_x_limit: 2.0, psi_memory_full_avg10_above: 25,
+              disk_free_below_x_floor: 0.5,
+              action: [log, kill_nonessential, freeze_essential, unload_llm]}
+  DANGER:    {mem_available_below_x_floor: 1.0, swap_used_above_x_limit: 1.0, psi_memory_some_avg10_above: 30,
+              action: [log, freeze_nonessential, unload_llm, concurrency_factor_0]}
+  ELEVATED:  {mem_available_below_x_floor: 1.5, psi_memory_some_avg10_above: 10, psi_cpu_some_avg10_above: 60,
+              disk_free_below_x_floor: 1.0, action: [log, concurrency_factor_half]}
+  OK:        {action: [thaw_all, concurrency_factor_full]}
+  hysteresis_intervals: 3           # stay at least this many intervals in a level before stepping down

@@ -1,0 +1,29 @@
+# Deterministic tools (Tier 0) the harness may run, and repository permissions. Commands are argv lists, never
+# shell strings; `{repo}`, `{venv}` and `{workers}` are the only substitutions.
+schema: vnxdna.tools/1
+
+tools:
+  pytest_full:       {argv: ["{venv}/bin/python", "-m", "pytest", "-q", "-p", "no:cacheprovider"], cwd: "{repo}", job_class: test, mem: 3GiB, timeout: 7200}
+  pytest_fast:       {argv: ["{venv}/bin/python", "-m", "pytest", "-q", "-x", "-m", "not slow", "-p", "no:cacheprovider"], cwd: "{repo}", job_class: test, mem: 2GiB, timeout: 3600}
+  pytest_ops:        {argv: ["{venv}/bin/python", "-m", "pytest", "-q", "ops/tests", "-p", "no:cacheprovider"], cwd: "{repo}", job_class: test, mem: 1GiB, timeout: 900}
+  ruff:              {argv: ["{venv}/bin/ruff", "check", "src", "tests", "research", "ops"], cwd: "{repo}", job_class: misc, mem: 512MiB, timeout: 300}
+  mypy_ops:          {argv: ["mypy", "--ignore-missing-imports", "ops/vnxops"], cwd: "{repo}", job_class: misc, mem: 1GiB, timeout: 600}
+  compileall:        {argv: ["{venv}/bin/python", "-m", "compileall", "-q", "src", "ops/vnxops"], cwd: "{repo}", job_class: misc, mem: 512MiB, timeout: 300}
+  gitleaks:          {argv: ["gitleaks", "git", "--no-banner", "--redact", "-l", "warn", "{repo}"], cwd: "{repo}", job_class: misc, mem: 1GiB, timeout: 600}
+  pip_audit:         {argv: ["pip-audit", "-r", "ops/requirements.lock", "--require-hashes", "--progress-spinner", "off"], cwd: "{repo}", job_class: misc, mem: 1GiB, timeout: 900}
+  bench_smoke:       {argv: ["{venv}/bin/python", "-m", "vnxops", "benchmark", "--dna", "--suite", "smoke"], cwd: "{repo}/ops", job_class: bench, mem: 2GiB, timeout: 1800}
+  dna_e2e:           {argv: ["{venv}/bin/python", "-m", "vnxops", "e2e"], cwd: "{repo}/ops", job_class: test, mem: 1GiB, timeout: 900}
+
+repository:
+  canonical_remote: "https://github.com/vishnuselvam101-hash/VSnexustechnologies-.git"
+  protected_branches: [main, development]
+  protected_tags: ["v*"]
+  agent_branch_prefixes: ["experiment/", "feature/"]
+  allow_push: false            # agents never push; the owner pushes after review
+  allow_force_push: false
+  allow_history_rewrite: false
+  workspaces: /opt/vnx-dna/workspaces   # one git worktree per agent task
+
+mcp:
+  # See docs/MCP_REGISTRY.md. Agent runs get no MCP servers unless listed here.
+  allowed_servers: []
