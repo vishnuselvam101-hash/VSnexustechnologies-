@@ -1,0 +1,73 @@
+{
+  "id": "EXP-0013-channel-models",
+  "type": "sweep",
+  "purpose": "effect of homopolymer-dependent indels and GC-dependent coverage bias",
+  "input": {
+    "size": 262144,
+    "pattern": "random",
+    "seed": 42
+  },
+  "dna": {
+    "profile": "v4-balanced"
+  },
+  "channel": {
+    "seed": 1013
+  },
+  "sweep": {
+    "points": [
+      {
+        "model": "homopolymer x1",
+        "coverage": 1,
+        "insertion_rate": 0.001,
+        "deletion_rate": 0.001,
+        "homopolymer_indel_multiplier": 1.0
+      },
+      {
+        "model": "homopolymer x5",
+        "coverage": 1,
+        "insertion_rate": 0.001,
+        "deletion_rate": 0.001,
+        "homopolymer_indel_multiplier": 5.0
+      },
+      {
+        "model": "homopolymer x20",
+        "coverage": 1,
+        "insertion_rate": 0.001,
+        "deletion_rate": 0.001,
+        "homopolymer_indel_multiplier": 20.0
+      },
+      {
+        "model": "gc bias 0",
+        "coverage": 3,
+        "coverage_model": "poisson",
+        "gc_bias_strength": 0.0
+      },
+      {
+        "model": "gc bias 1",
+        "coverage": 3,
+        "coverage_model": "poisson",
+        "gc_bias_strength": 1.0
+      },
+      {
+        "model": "gc bias 4",
+        "coverage": 3,
+        "coverage_model": "poisson",
+        "gc_bias_strength": 4.0
+      },
+      {
+        "model": "uneven coverage (NB k=1)",
+        "coverage": 3,
+        "coverage_model": "negative-binomial",
+        "coverage_dispersion": 1.0
+      },
+      {
+        "model": "uneven coverage (NB k=0.5)",
+        "coverage": 3,
+        "coverage_model": "negative-binomial",
+        "coverage_dispersion": 0.5
+      }
+    ]
+  },
+  "trials": 10,
+  "workers": 7
+}

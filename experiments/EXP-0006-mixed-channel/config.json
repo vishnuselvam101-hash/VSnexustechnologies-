@@ -1,0 +1,91 @@
+{
+  "id": "EXP-0006-mixed-channel",
+  "type": "sweep",
+  "purpose": "combined substitution + insertion + deletion + dropout at increasing severity, coverage 1 (fixed) and 5 (Poisson)",
+  "input": {
+    "size": 262144,
+    "pattern": "random",
+    "seed": 42
+  },
+  "dna": {
+    "profile": "v4-balanced"
+  },
+  "channel": {
+    "seed": 1006
+  },
+  "sweep": {
+    "points": [
+      {
+        "level": "L1",
+        "substitution_rate": 0.001,
+        "insertion_rate": 0.0002,
+        "deletion_rate": 0.0002,
+        "dropout_rate": 0.01,
+        "coverage": 1
+      },
+      {
+        "level": "L2",
+        "substitution_rate": 0.002,
+        "insertion_rate": 0.0005,
+        "deletion_rate": 0.0005,
+        "dropout_rate": 0.02,
+        "coverage": 1
+      },
+      {
+        "level": "L3",
+        "substitution_rate": 0.005,
+        "insertion_rate": 0.001,
+        "deletion_rate": 0.001,
+        "dropout_rate": 0.05,
+        "coverage": 1
+      },
+      {
+        "level": "L1",
+        "substitution_rate": 0.001,
+        "insertion_rate": 0.0002,
+        "deletion_rate": 0.0002,
+        "dropout_rate": 0.01,
+        "coverage": 5,
+        "coverage_model": "poisson"
+      },
+      {
+        "level": "L2",
+        "substitution_rate": 0.002,
+        "insertion_rate": 0.0005,
+        "deletion_rate": 0.0005,
+        "dropout_rate": 0.02,
+        "coverage": 5,
+        "coverage_model": "poisson"
+      },
+      {
+        "level": "L3",
+        "substitution_rate": 0.005,
+        "insertion_rate": 0.001,
+        "deletion_rate": 0.001,
+        "dropout_rate": 0.05,
+        "coverage": 5,
+        "coverage_model": "poisson"
+      },
+      {
+        "level": "L4",
+        "substitution_rate": 0.01,
+        "insertion_rate": 0.002,
+        "deletion_rate": 0.002,
+        "dropout_rate": 0.1,
+        "coverage": 5,
+        "coverage_model": "poisson"
+      },
+      {
+        "level": "L5",
+        "substitution_rate": 0.02,
+        "insertion_rate": 0.005,
+        "deletion_rate": 0.005,
+        "dropout_rate": 0.15,
+        "coverage": 5,
+        "coverage_model": "poisson"
+      }
+    ]
+  },
+  "trials": 10,
+  "workers": 7
+}

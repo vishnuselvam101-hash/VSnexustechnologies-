@@ -1,0 +1,36 @@
+{
+  "timestamp_utc": "2026-10-03T01:51:46Z",
+  "cpu_model": "Intel(R) Xeon(R) Gold 6240 CPU @ 2.60GHz",
+  "logical_cpus": 8,
+  "ram_total_gib": 31.34,
+  "os": {
+    "uname": "Linux 6.8.0-146-generic #146-Ubuntu SMP PREEMPT_DYNAMIC Thu Sep  3 16:12:30 UTC 2026 x86_64",
+    "pretty_name": "Ubuntu 24.04.5 LTS"
+  },
+  "python": "3.12.3",
+  "python_executable_venv": true,
+  "package_versions": {
+    "numpy": "2.5.3",
+    "cryptography": "46.0.7",
+    "zstandard": "0.25.0",
+    "reedsolo": "1.7.0",
+    "pydantic": "2.13.5",
+    "typer": "0.27.2",
+    "vnx-dna": "3.0.0"
+  },
+  "vnxdna_version": "3.0.0",
+  "vnx_dna_cli_version": "vnx-dna 3.0.0 (writes archive format 5 / container v2 / frame 5; reads formats 5 and 4 and legacy V0.1)",
+  "git_commit": "9b5123ceb86805b9d0eabd7a5f74592c3d97eb58",
+  "git_branch": "feature/vnx-dna-v4",
+  "git_describe": "v3.0.0",
+  "tracked_src_and_tests_unmodified_vs_head": true,
+  "untracked_paths_under_src_or_tests": [
+    "src/vnxdna/v4/"
+  ],
+  "load_average_at_start": [
+    0.4462890625,
+    0.63720703125,
+    0.6337890625
+  ],
+  "measurement": "/usr/bin/time -v per CLI process; max RSS = largest single process (main or worker), not the sum over the process tree"
+}

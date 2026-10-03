@@ -1,5 +1,31 @@
 # Changelog
 
+## 4.0.0 — 2026-10-03
+
+VNX-DNA V4: a new format and package (`vnxdna.v4`, CLI `vnx`) on top of the unchanged V3 (format 5, `vnx-dna`).
+All results are SIMULATED; nothing has been synthesised or sequenced. Details: docs/V4_COMPLETION_REPORT.md.
+
+- **VNX4 archives:** multi-file/directory archives with deterministic order, content-addressed chunks and
+  deduplication, RFC 6962 Merkle tree (`vnx verify --chunk`), AES-256-GCM with key files or scrypt passphrases,
+  sealed file tables, random access (`vnx locate`, `vnx extract --file`), verify-before-publish extraction.
+- **Strand frame v4** with in-strand synchronisation markers. A marker-template DP turns indels into erasures for
+  the inner RS code. A superblock makes strand pools self-describing.
+- **Decoder:** CRC-first fast path, orientation detection, sync path, consensus with soft posteriors, address
+  snapping, duplicate resolution, outer decoding, a fail-closed publish rule, PARTIAL recovery of individually verified
+  files (exit 9), selective decoding of single files from reads.
+- **Channel simulator:** substitutions, insertions, deletions, dropout, fixed/Poisson/negative-binomial coverage,
+  duplication, homopolymer- and GC-dependent effects, bursts, N calls, reverse complements, qualities. Seeded and
+  worker-count independent.
+- **Codecs:** comparative outer-code interface. Cauchy RS (V3 code, default) and an EXPERIMENTAL GF(2) fountain
+  code. The inner RS gets fast table-gather kernels (bit-identical to V3, 2.5–5.2× faster).
+- **Constraint engine** with JSON diagnostics (`vnx validate`), screening by scrambler variants.
+- **Benchmarks, error sweeps, fair V3-vs-V4 comparison, 16 reproducible experiment directories**, generated results
+  tables (docs/V4_RESULTS.md).
+- **Security:** decompression bombs bounded (zstd `max_output_size` is not a bound when a frame declares its size),
+  path/symlink safety, bounded parsers, fuzz tests for archives, manifests, frames, read files and configurations.
+- V3 code, tests and formats are unchanged. The package version is now 4.0.0, so new V3-format archives record
+  encoder version 4.0.0.
+
 ## 3.0.0 — 2026-10-01
 
 ### Release review (2026-10-01)

@@ -1,0 +1,10 @@
+{
+  "id": "EXP-0014-constraints",
+  "type": "constraints",
+  "purpose": "constraint violations before/after scrambler screening, cost and recoverability",
+  "parameters": {
+    "n_strands": 20000,
+    "seed": 3,
+    "profile": "v4-balanced"
+  }
+}

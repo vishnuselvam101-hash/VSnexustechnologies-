@@ -1,0 +1,36 @@
+{
+  "id": "EXP-0001-substitution",
+  "type": "sweep",
+  "purpose": "recovery vs substitution rate at coverage 1 and 5",
+  "input": {
+    "size": 262144,
+    "pattern": "random",
+    "seed": 42
+  },
+  "dna": {
+    "profile": "v4-balanced"
+  },
+  "channel": {
+    "coverage_model": "fixed",
+    "seed": 1001
+  },
+  "sweep": {
+    "grid": {
+      "substitution_rate": [
+        0.0,
+        0.0001,
+        0.0005,
+        0.001,
+        0.005,
+        0.01,
+        0.02
+      ],
+      "coverage": [
+        1,
+        5
+      ]
+    }
+  },
+  "trials": 10,
+  "workers": 7
+}

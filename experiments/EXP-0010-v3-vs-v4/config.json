@@ -1,0 +1,68 @@
+{
+  "id": "EXP-0010-v3-vs-v4",
+  "type": "v3_vs_v4",
+  "purpose": "V3 (unchanged) vs V4 under the identical channel and seeds",
+  "input": {
+    "size": 131072,
+    "pattern": "random",
+    "seed": 42
+  },
+  "dna": {
+    "profile": "v4-balanced"
+  },
+  "channel": {
+    "seed": 1010
+  },
+  "sweep": {
+    "points": [
+      {
+        "coverage": 1,
+        "substitution_rate": 0.002
+      },
+      {
+        "coverage": 1,
+        "deletion_rate": 0.0005
+      },
+      {
+        "coverage": 1,
+        "deletion_rate": 0.001
+      },
+      {
+        "coverage": 1,
+        "deletion_rate": 0.002
+      },
+      {
+        "coverage": 1,
+        "insertion_rate": 0.001,
+        "deletion_rate": 0.001
+      },
+      {
+        "coverage": 1,
+        "insertion_rate": 0.002,
+        "deletion_rate": 0.002
+      },
+      {
+        "coverage": 1,
+        "dropout_rate": 0.1
+      },
+      {
+        "coverage": 5,
+        "coverage_model": "fixed",
+        "substitution_rate": 0.005,
+        "insertion_rate": 0.001,
+        "deletion_rate": 0.001,
+        "dropout_rate": 0.02
+      },
+      {
+        "coverage": 5,
+        "coverage_model": "fixed",
+        "substitution_rate": 0.01,
+        "insertion_rate": 0.004,
+        "deletion_rate": 0.004,
+        "dropout_rate": 0.02
+      }
+    ]
+  },
+  "trials": 6,
+  "workers": 7
+}

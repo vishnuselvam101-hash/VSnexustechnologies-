@@ -1,0 +1,56 @@
+{
+  "id": "EXP-0016-outer-codes-pipeline",
+  "type": "sweep",
+  "purpose": "full DNA pipeline under strand dropout: three outer codes at the same 25% redundancy (parity/data), coverage 1, no base errors",
+  "input": {
+    "size": 262144,
+    "pattern": "random",
+    "seed": 42
+  },
+  "channel": {
+    "coverage": 1,
+    "seed": 1016
+  },
+  "sweep": {
+    "parameter": "dropout_rate",
+    "values": [
+      0.05,
+      0.1,
+      0.12,
+      0.14,
+      0.16,
+      0.18,
+      0.2
+    ]
+  },
+  "trials": 10,
+  "workers": 7,
+  "variants": [
+    {
+      "name": "cauchy-rs 64+16 (default)",
+      "dna": {
+        "profile": "v4-balanced",
+        "data_symbols": 64,
+        "parity_symbols": 16
+      }
+    },
+    {
+      "name": "cauchy-rs 200+50",
+      "dna": {
+        "profile": "v4-balanced",
+        "data_symbols": 200,
+        "parity_symbols": 50
+      }
+    },
+    {
+      "name": "lt-fountain dense 256+64 (EXPERIMENTAL)",
+      "dna": {
+        "profile": "v4-balanced",
+        "outer_code": "lt-fountain",
+        "data_symbols": 256,
+        "parity_symbols": 64,
+        "experimental": true
+      }
+    }
+  ]
+}

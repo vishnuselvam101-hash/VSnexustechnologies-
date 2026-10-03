@@ -1,4 +1,57 @@
-# Security (V3)
+# Security
+
+This page covers **V4** (`vnx`, VNX4 container) first. The **V3** security design and audit follow unchanged below
+the divider.
+
+## V4 cryptography
+
+* **Primitives.** AES-256-GCM (chunks, file table, reference table), HKDF-SHA256 (key separation), HMAC-SHA256
+  (manifest, keyed chunk IDs) and scrypt (passphrases), all from `cryptography`. No primitive is invented.
+* **Order.** compress → encrypt → (outer code, DNA). Compressing first is required for any gain, because ciphertext
+  does not compress. It leaks each chunk's compressed size (below).
+* **Keys.** A 32-byte key file (raw / 64 hex / 44 base64; read bounded from regular files only), or a passphrase
+  through `--passphrase-env VAR` (never on the command line) stretched with scrypt (N = 2¹⁵, r = 8, p = 1 by default,
+  recorded in the manifest). **No key or passphrase is ever stored**; only a 16-byte HKDF-derived key check is kept,
+  so a wrong key is detected before decryption (`VNXKeyError`, exit 4). Tested: the key bytes do not appear in the
+  archive.
+* **Nonces.** `domain ‖ index` under a key derived from a fresh 16-byte random salt per archive, so no (key, nonce)
+  pair repeats. The associated data binds the archive ID, domain, index and count, so reordering, splicing or swapping
+  chunks between archives fails authentication.
+* **Unencrypted archives** detect accidents (SHA-256 everywhere, Merkle root), not deliberate tampering: an attacker
+  can rebuild every hash. The null-encryption mode provides **no confidentiality**.
+
+### What an encrypted VNX4 archive still reveals
+
+The chunk table is in clear, so stored sizes, the number of unique chunks, the compression flag and stored-chunk
+hashes are visible. Deduplication shows which chunks of the archive are equal (keyed IDs prevent confirming guessed
+content, but equality inside the archive is visible). The manifest reveals the chunk size, compression level,
+total content size and number of files. Paths, file sizes, per-file hashes and chunk ordering per file are sealed.
+The DNA layer reveals the archive tag (2 bytes of the random archive ID) and all coding parameters. There is no
+padding.
+
+## V4 parsing and resource safety (audit, 2026-10-03)
+
+| area | risk | V4 behaviour | evidence |
+|---|---|---|---|
+| archive parsing | malformed or truncated containers | every section length cross-checked against the file size; canonical JSON only (no floats, no duplicate keys, ≤ 1 MiB); every table checked against SHA-256s in the manifest; manifest checked against the trailer (SHA-256 or HMAC) | `test_container_v4.py`, `test_fuzz_v4.py` (byte flips, truncation, insertion, semantic manifest mutations, random files) |
+| path traversal | `../`, absolute paths, NUL, backslashes, control characters, symlink escapes | paths validated on write *and* read; extraction refuses symlinks in the output tree and paths resolving outside it | `test_unsafe_archive_paths_rejected`, `test_extract_refuses_symlink_escape` |
+| decompression bombs | a chunk expanding far beyond its declared size | decompression bounded by the table's plaintext size (≤ 64 MiB) through a bounded stream reader. **Finding fixed:** `zstd.decompress(max_output_size=…)` is not a bound when the frame declares a content size | `test_decompression_bomb_bounded` |
+| malicious metadata | counts, sizes and references inconsistent with the data | file sizes, chunk counts, reference ranges, contiguity, tiling and unreferenced chunks all validated; mismatches are format errors | `test_fuzz_counts_and_root_mutations` |
+| malformed DNA / reads | binary data, gzip/BAM, huge lines, truncated FASTQ | bounded block reader (≤ 100,000 nt per read, line-length cap), explicit format errors, non-ACGTN → N | `test_fuzz_hostile_read_files`, `test_fuzz_read_file_parser` |
+| forged strands | valid-CRC frames carrying wrong content | duplicate majority, outer decoding, then the container SHA-256 from the superblock; nothing is published unless it matches | `test_fuzz_corrupted_ecc_and_forged_frames` |
+| resource exhaustion | unbounded memory or time | bounded batches and in-flight windows, disk spill in the decoder, read-count limit (`max_reads`), sweep size limit (points × trials ≤ 100,000), file count ≤ 10⁷ | code review; EXP-0012 memory measurements |
+| unsafe deserialisation | pickle / eval | none: JSON (validated) and fixed binary layouts only. Worker processes receive plain arguments | code review |
+| temporary files | races, leaks, permissions | `mkstemp` in the destination directory, mode 0600, fsync, atomic `os.replace`; removed on failure; decoder scratch directories removed in `finally` | `util.atomic_output`, `decoder.decode_reads` |
+| permissions | archives readable by others | containers and extracted files are created 0600; modes are applied only with `--apply-metadata` | code review |
+| cryptographic configuration | weak or absurd scrypt parameters | N must be a power of two ≤ 2²⁰, r ≤ 32, p ≤ 16; unknown KDF names are rejected | `crypto.scrypt_master` |
+
+**Limits.** A malicious read file can make decoding fail or run slowly (denial of service). It cannot make V4
+publish wrong bytes without a SHA-256 collision (plus HMAC/AES-GCM forgeries when encrypted). Python cannot reliably
+erase keys from memory.
+
+---
+
+# V3 security — unchanged
 
 V3 keeps the V2 cryptographic design (no primitive or label changed) and fixes the weaknesses the V2 audit found in
 how it was used: two AES-GCM nonce-reuse paths on resumed stores, an unauthenticated checkpoint epoch, and several

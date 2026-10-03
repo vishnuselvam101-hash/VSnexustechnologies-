@@ -1,0 +1,26 @@
+{
+  "id": "EXP-0011-worker-scaling",
+  "type": "scaling",
+  "purpose": "1/2/4/8 worker scaling of archive, encode, channel and decode (16 MiB, mixed errors, coverage 3)",
+  "workers": [
+    1,
+    2,
+    4,
+    8
+  ],
+  "repeats": 1,
+  "run": {
+    "input_size": 16777216,
+    "pattern": "random",
+    "seed": 42,
+    "channel": {
+      "substitution_rate": 0.002,
+      "insertion_rate": 0.0005,
+      "deletion_rate": 0.0005,
+      "dropout_rate": 0.02,
+      "coverage": 3,
+      "coverage_model": "poisson",
+      "seed": 1011
+    }
+  }
+}

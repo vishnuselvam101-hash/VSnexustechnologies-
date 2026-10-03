@@ -1,0 +1,44 @@
+{
+  "id": "EXP-0004-dropout",
+  "type": "sweep",
+  "purpose": "recovery vs strand dropout (coverage 1, no base errors) for two redundancy budgets",
+  "input": {
+    "size": 262144,
+    "pattern": "random",
+    "seed": 42
+  },
+  "channel": {
+    "coverage": 1,
+    "seed": 1004
+  },
+  "sweep": {
+    "parameter": "dropout_rate",
+    "values": [
+      0.0,
+      0.01,
+      0.05,
+      0.1,
+      0.15,
+      0.2,
+      0.3,
+      0.4,
+      0.5
+    ]
+  },
+  "trials": 10,
+  "workers": 7,
+  "variants": [
+    {
+      "name": "v4-balanced cauchy-rs 64+16 (20% parity)",
+      "dna": {
+        "profile": "v4-balanced"
+      }
+    },
+    {
+      "name": "v4-archival cauchy-rs 32+32 (50% parity)",
+      "dna": {
+        "profile": "v4-archival"
+      }
+    }
+  ]
+}

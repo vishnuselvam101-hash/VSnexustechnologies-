@@ -1,0 +1,9 @@
+{
+  "id": "EXP-0015-stage-throughput",
+  "type": "stages",
+  "purpose": "single-core throughput of every pipeline stage",
+  "parameters": {
+    "size": 8388608,
+    "seed": 1
+  }
+}

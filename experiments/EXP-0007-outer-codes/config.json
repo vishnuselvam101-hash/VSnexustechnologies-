@@ -1,0 +1,33 @@
+{
+  "id": "EXP-0007-outer-codes",
+  "type": "codec_compare",
+  "purpose": "Cauchy RS vs GF(2) fountain at the same 25% redundancy budget under i.i.d. symbol loss",
+  "parameters": {
+    "k": 256,
+    "budget": 0.25,
+    "symbol_bytes": 40,
+    "loss_rates": [
+      0.0,
+      0.05,
+      0.08,
+      0.1,
+      0.12,
+      0.14,
+      0.16,
+      0.18,
+      0.2
+    ],
+    "trials": 200,
+    "seed": 7,
+    "rs_groups": [
+      [
+        64,
+        16
+      ],
+      [
+        200,
+        50
+      ]
+    ]
+  }
+}

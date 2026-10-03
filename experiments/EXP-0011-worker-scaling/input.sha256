@@ -1,0 +1,1 @@
+b2191a9d0f24a060eb17a9c3cef05631e1c6a85ba000eef80491abae63431b7e  generated:{"channel": {"coverage": 3, "coverage_model": "poisson", "deletion_rate": 0.0005, "dropout_rate": 0.02, "insertion_rate": 0.0005, "seed": 1011, "substitution_rate": 0.002}, "input_size": 16777216, "pattern": "random", "seed": 42}
