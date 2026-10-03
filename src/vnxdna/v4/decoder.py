@@ -85,22 +85,43 @@ def detect_layout(reads_path: str | os.PathLike, opt: DecodeOptions) -> Layout:
             raise VNXConfigurationError(f"unknown profile {opt.profile!r}")
         return PROFILES[opt.profile][0]
     counts: Counter = Counter()
+    sample: list[np.ndarray] = []
     seen = 0
     for batch in iter_reads(reads_path, 4096):
         counts.update(batch.lengths.tolist())
+        offs = np.concatenate([[0], np.cumsum(batch.lengths)])
+        sample.extend(batch.codes[offs[i]:offs[i + 1]] for i in range(batch.count))
         seen += batch.count
         if seen >= 20000:
             break
     if not counts:
         raise VNXFormatError("no reads found", stage="input")
-    best = None
+    # candidate layouts: distinct profile layouts whose strand length is near many reads; several layouts can share a
+    # length, so each candidate is scored by how many sampled exact-length reads pass its frame check (both orientations)
+    candidates = []
     for name, (lay, _, _) in PROFILES.items():
         near = sum(v for length, v in counts.items() if abs(length - lay.strand_nt) <= opt.band)
-        if best is None or near > best[0]:
-            best = (near, name, lay)
-    if not best or best[0] < max(1, seen // 10):
+        if near >= max(1, seen // 10) and lay not in [c[1] for c in candidates]:
+            candidates.append((name, lay))
+    if not candidates:
         raise VNXFormatError(f"cannot detect the strand layout (modal read length {counts.most_common(1)[0][0]}); pass --profile",
                              stage="layout")
+    if len(candidates) == 1:
+        return candidates[0][1]
+    from .sync import strip_markers_exact
+    best = None
+    for name, lay in candidates:
+        exact = [r for r in sample if r.size == lay.strand_nt][:4000]
+        score = 0
+        if exact:
+            mat = np.stack(exact)
+            for m in (mat, _RC[mat[:, ::-1]]):
+                fb, _ = strip_markers_exact(lay, m)
+                score += int(decode_frames(lay, nt_to_bytes(np.minimum(fb, 3)), errors_only_retry=False).ok.sum())
+        if best is None or score > best[0]:
+            best = (score, name, lay)
+    if best[0] == 0:
+        raise VNXFormatError("several layouts match the read lengths and none verifies on a sample; pass --profile", stage="layout")
     return best[2]
 
 
@@ -117,6 +138,7 @@ def _try(reads: list[np.ndarray], quals: list | None) -> tuple:
     n = len(reads)
     acc = np.zeros(n, dtype=bool)
     proj_bases = np.full((n, lay.frame_nt), 4, dtype=np.uint8)
+    hard_bases = np.zeros((n, lay.frame_nt), dtype=np.uint8)
     cost = np.full(n, 1 << 28, dtype=np.int64)
     parsed_fields = np.zeros((n, 4), dtype=np.int64)
     payload = np.zeros((n, lay.payload_bytes), dtype=np.uint8)
@@ -140,6 +162,7 @@ def _try(reads: list[np.ndarray], quals: list | None) -> tuple:
         parsed_fields[idx] = np.stack([P.kind, P.tag, P.group, P.symbol], axis=1)[ok]
         payload[idx] = P.payload[ok]
         cost[exact] = mism * _P["al"].costs.marker_mismatch
+        hard_bases[exact] = np.minimum(fb, 3)
         pb = fb.copy()
         pb[er] = 4
         proj_bases[exact] = pb
@@ -160,10 +183,11 @@ def _try(reads: list[np.ndarray], quals: list | None) -> tuple:
         parsed_fields[idx] = np.stack([P.kind, P.tag, P.group, P.symbol], axis=1)[ok]
         payload[idx] = P.payload[ok]
         cost[rest] = np.where(pr.ok, pr.cost, 1 << 28)
+        hard_bases[rest] = np.minimum(pr.bases, 3)
         pb = pr.bases.copy()
         pb[pr.erased] = 4
         proj_bases[rest] = pb
-    return acc, parsed_fields, payload, proj_bases, cost, path
+    return acc, parsed_fields, payload, proj_bases, cost, path, hard_bases
 
 
 def _orientation(codes: np.ndarray, lengths: np.ndarray) -> np.ndarray:
@@ -202,35 +226,45 @@ def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | N
             if ql is not None:
                 ql[i] = ql[i][::-1]
         rc_used |= flip
-    acc, fields, payload, proj, cost, path = _try(reads, ql)
+    acc, fields, payload, proj, cost, path, hard = _try(reads, ql)
     if _P["rc"]:
         bad = np.flatnonzero(~acc & (cost > 2 * _P["al"].costs.insertion))
         if bad.size:
             rreads = [_RC[reads[i][::-1]] for i in bad]
             rq = None if ql is None else [ql[i][::-1] for i in bad]
-            a2, f2, p2, pr2, c2, path2 = _try(rreads, rq)
+            a2, f2, p2, pr2, c2, path2, h2 = _try(rreads, rq)
             better = a2 | (c2 < cost[bad])
             sel = bad[better]
-            acc[sel], fields[sel], payload[sel], proj[sel], cost[sel], path[sel] = (a2[better], f2[better], p2[better], pr2[better],
-                                                                                    c2[better], path2[better])
+            acc[sel], fields[sel], payload[sel], proj[sel], cost[sel], path[sel], hard[sel] = (
+                a2[better], f2[better], p2[better], pr2[better], c2[better], path2[better], h2[better])
             rc_used[sel] = ~rc_used[sel]
-    # pending: failed reads with an alignment and a fully readable header (bytes 0..9 not erased)
+    # pending: every failed but aligned read. Its tentative address comes from the hard header bases (even where the
+    # header was erased by an indel); pass 2 snaps addresses that are not expected to the nearest missing address.
     pend = np.flatnonzero(~acc & (cost < (1 << 28)))
     pend_fields = np.zeros((0, 4), dtype=np.int64)
     pend_bases = np.zeros((0, lay.frame_nt), dtype=np.uint8)
     orphans = 0
+    pend_alt = np.zeros((0, 4), dtype=np.int64)
     if pend.size:
-        pb = proj[pend]
-        header_ok = (pb[:, : 4 * HEADER_BYTES] <= 3).all(axis=1)
-        orphans = int((~header_ok).sum())
-        pb = pb[header_ok]
-        if pb.size:
-            ta = tentative_address(lay, nt_to_bytes(np.minimum(pb, 3)))
-            good = ta[:, 0] >= 0
-            orphans += int((~good).sum())
-            pend_fields = ta[good]
-            pend_bases = pb[good]
+        header_erased = (proj[pend][:, : 4 * HEADER_BYTES] > 3).any(axis=1)
+        orphans = int(header_erased.sum())            # header not trusted (kept, addressed by hard bases)
+        ta = tentative_address(lay, nt_to_bytes(hard[pend]))
+        # second reading of the header: the raw read prefix without any indel correction. The DP puts an indel at the
+        # left edge of its segment, so where the projected header is shifted, the unshifted prefix is right.
+        _, fpos = lay.template()
+        hpos = fpos[: 4 * HEADER_BYTES]
+        raw = np.zeros((pend.size, lay.frame_nt), dtype=np.uint8)
+        for j, i in enumerate(pend.tolist()):
+            r = reads[i]
+            take = hpos[hpos < r.size]
+            raw[j, : take.size] = np.minimum(r[take], 3)
+        alt = tentative_address(lay, nt_to_bytes(raw))
+        good = (ta[:, 0] >= 0) | (alt[:, 0] >= 0)
+        pend_fields = np.where((ta[:, 0] >= 0)[:, None], ta, alt)[good]
+        pend_alt = np.where((alt[:, 0] >= 0)[:, None], alt, ta)[good]
+        pend_bases = proj[pend][good]
     return {"acc_fields": fields[acc], "acc_payload": payload[acc], "pend_fields": pend_fields, "pend_bases": pend_bases,
+            "pend_alt": pend_alt,
             "stats": {"reads": int(lengths.size), "fast": int((path == 1).sum()), "sync": int((path == 2).sum()),
                       "reverse_complement": int((rc_used & acc).sum()), "pending": int(pend_fields.shape[0]), "orphans": orphans,
                       "unaligned": int((~acc).sum()) - int(pend.size)}}
@@ -244,7 +278,8 @@ class Spill:
         self.dir = workdir
         self.B = buckets
         self.acc_dtype = np.dtype([("kind", "u1"), ("tag", ">u2"), ("group", ">u4"), ("symbol", ">u2"), ("payload", "u1", (payload,))])
-        self.pend_dtype = np.dtype([("kind", "u1"), ("tag", ">u2"), ("group", ">u4"), ("symbol", ">u2"), ("bases", "u1", (frame_nt,))])
+        self.pend_dtype = np.dtype([("kind", "u1"), ("tag", ">u2"), ("group", ">u4"), ("symbol", ">u2"), ("alt", ">i8", (4,)),
+                                    ("bases", "u1", (frame_nt,))])
         self.acc_files = [open(workdir / f"acc{b}.bin", "wb") for b in range(buckets)]
         self.pend_files = [open(workdir / f"pend{b}.bin", "wb") for b in range(buckets)]
 
@@ -256,6 +291,8 @@ class Spill:
             rec = np.zeros(len(fields), dtype=dtype)
             rec["kind"], rec["tag"], rec["group"], rec["symbol"] = fields[:, 0], fields[:, 1], fields[:, 2], fields[:, 3]
             rec[name] = data
+            if name == "bases":
+                rec["alt"] = res["pend_alt"]
             b = fields[:, 2] % self.B
             for k in np.unique(b):
                 files[int(k)].write(rec[b == k].tobytes())
@@ -430,13 +467,73 @@ def _decode_superblock(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
     return candidates[tag], {"archive_tags_seen": [f"{t:04x}" for t in tags], "superblock_conflicts": conflicts}
 
 
-def _consensus_symbols(pend: np.ndarray, known: dict, lay: Layout, opt: DecodeOptions, stats: Counter) -> dict:
-    """Consensus over pending reads per tentative address (addresses already known are skipped)."""
+def _addr_bytes(key: tuple) -> bytes:
+    kind, tag, group, symbol = key
+    return bytes([(4 << 4) | (kind & 15)]) + int(tag).to_bytes(2, "big") + int(group).to_bytes(4, "big") + int(symbol).to_bytes(2, "big")
+
+
+def snap_addresses(keys: np.ndarray, missing: set, alt: np.ndarray | None = None) -> tuple[np.ndarray, int]:
+    """Map tentative addresses to the unique missing address within one header byte.
+
+    Each read can carry two readings of its header (``keys`` from the indel-corrected projection, ``alt`` from the raw
+    prefix). A candidate address matches a byte position if either reading has that byte; a read is snapped when
+    exactly one missing address differs from it in at most one position. Reads whose address is already missing are
+    unchanged; reads matching nothing (or several) are left as they are and later ignored. A wrong snap can only
+    cost a consensus vote: every recovered frame is still RS- and CRC-verified, and the address it decodes to must
+    equal the group's address.
+    """
+    if not missing or not len(keys):
+        return keys, 0
+    index: dict = {}
+    for m in missing:
+        b = _addr_bytes(m)
+        for pos in range(9):
+            index.setdefault((pos, b[:pos] + b[pos + 1:]), []).append(m)
+    out = keys.copy()
+    snapped = 0
+    alts = keys if alt is None else alt
+    cache: dict = {}
+    for i, (row, arow) in enumerate(zip(keys.tolist(), alts.tolist())):
+        key, akey = tuple(row), tuple(arow)
+        if key in missing:
+            continue
+        if akey in missing:
+            out[i] = akey
+            snapped += 1
+            continue
+        ck = (key, akey)
+        hit = cache.get(ck)
+        if hit is None:
+            b1, b2 = _addr_bytes(key), _addr_bytes(akey)
+            cands = set()
+            for b in {b1, b2}:
+                for pos in range(9):
+                    cands.update(index.get((pos, b[:pos] + b[pos + 1:]), ()))
+            good = [m for m in cands
+                    if sum(1 for x, y, z in zip(_addr_bytes(m), b1, b2) if x != y and x != z) <= 1]
+            hit = cache[ck] = good[0] if len(good) == 1 else False
+        if hit:
+            out[i] = hit
+            snapped += 1
+    return out, snapped
+
+
+def _consensus_symbols(pend: np.ndarray, known: dict, lay: Layout, opt: DecodeOptions, stats: Counter,
+                       missing: set | None = None) -> dict:
+    """Consensus over pending reads per (snapped) tentative address; addresses already known are skipped."""
     out = {}
     if not pend.size:
         return out
     keys = np.stack([pend["kind"].astype(np.int64), pend["tag"].astype(np.int64), pend["group"].astype(np.int64),
                      pend["symbol"].astype(np.int64)], axis=1)
+    if missing is not None:
+        alt = np.asarray(pend["alt"], dtype=np.int64) if "alt" in pend.dtype.names else None
+        keys, snapped = snap_addresses(keys, missing, alt)
+        stats["addresses_snapped"] += snapped
+        wanted = np.fromiter((tuple(k) in missing for k in keys.tolist()), dtype=bool, count=len(keys))
+        keys, pend = keys[wanted], pend[wanted]
+        if not len(keys):
+            return out
     order = np.lexsort((keys[:, 3], keys[:, 2], keys[:, 1], keys[:, 0]))
     keys = keys[order]
     bases = pend["bases"][order]
@@ -490,18 +587,22 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
             for b in range(spill.B):
                 acc, pend = spill.load(b)
                 acc = acc[(acc["kind"] == KIND_DATA) & (acc["tag"] == tag)]
-                pend = pend[(pend["kind"] == KIND_DATA) & (pend["tag"] == tag)]
                 acc = acc[acc["group"] < sb.group_count]
-                pend = pend[pend["group"] < sb.group_count]
                 if groups_filter is not None:
                     acc = acc[np.isin(acc["group"], list(groups_filter))]
-                    pend = pend[np.isin(pend["group"], list(groups_filter))]
                 symbols, c = resolve_duplicates(acc)
                 conflicts += c
-                symbols.update(_consensus_symbols(pend, symbols, lay, opt, stats))
+                targets_b = [g for g in range(b, sb.group_count, spill.B)
+                             if g not in done and (groups_filter is None or g in groups_filter)]
+                missing = set()
+                for g in targets_b:
+                    n_sym = codec.symbols_for(group_k(sb.container_size, K, P, g))
+                    missing.update((KIND_DATA, tag, g, s_) for s_ in range(n_sym) if (KIND_DATA, tag, g, s_) not in symbols)
+                symbols.update(_consensus_symbols(pend, symbols, lay, opt, stats, missing))
                 by_group: dict[int, dict[int, np.ndarray]] = {}
-                for (_, _, g, s), v in symbols.items():
-                    by_group.setdefault(g, {})[s] = v
+                for (kd, tg, g, s), v in symbols.items():
+                    if kd == KIND_DATA and tg == tag:
+                        by_group.setdefault(g, {})[s] = v
                 targets = [g for g in range(b, sb.group_count, spill.B)
                            if g not in done and (groups_filter is None or g in groups_filter)]
                 for g in targets:

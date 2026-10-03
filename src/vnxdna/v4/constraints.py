@@ -90,6 +90,8 @@ class ConstraintConfig:
 
     @classmethod
     def from_dict(cls, data: dict) -> "ConstraintConfig":
+        if not isinstance(data, dict):
+            raise VNXConfigurationError("configuration must be a JSON object")
         unknown = set(data) - set(cls.__dataclass_fields__)
         if unknown:
             raise VNXConfigurationError(f"unknown constraint keys: {sorted(unknown)}")

@@ -120,6 +120,8 @@ class ChannelConfig:
 
     @classmethod
     def from_dict(cls, data: dict) -> "ChannelConfig":
+        if not isinstance(data, dict):
+            raise VNXConfigurationError("configuration must be a JSON object")
         unknown = set(data) - set(cls.__dataclass_fields__)
         if unknown:
             raise VNXConfigurationError(f"unknown channel configuration keys: {sorted(unknown)}")

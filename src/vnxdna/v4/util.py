@@ -117,8 +117,9 @@ def git_commit(cwd: str | os.PathLike | None = None) -> str | None:
         commit = out.stdout.strip()
         if out.returncode != 0 or not commit:
             return None
-        dirty = subprocess.run(["git", "status", "--porcelain", "--untracked-files=no"], cwd=here,
-                               capture_output=True, text=True, timeout=5).stdout.strip()
+        # "-dirty" only when code that can change results differs from the commit (documentation edits do not count)
+        dirty = subprocess.run(["git", "status", "--porcelain", "--untracked-files=no", "--", ":/src", ":/pyproject.toml"],
+                               cwd=here, capture_output=True, text=True, timeout=5).stdout.strip()
         return commit + ("-dirty" if dirty else "")
     except (OSError, subprocess.SubprocessError):
         return None

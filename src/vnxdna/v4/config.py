@@ -68,6 +68,9 @@ def validate_config(data: dict) -> dict:
         bad = set(sec) - allowed
         if bad:
             raise VNXConfigurationError(f"unknown keys in {name!r}: {sorted(bad)}")
+    for name in ("constraints", "channel"):
+        if name in data and not isinstance(data[name], dict):
+            raise VNXConfigurationError(f"section {name!r} must be an object")
     if "constraints" in data:
         ConstraintConfig.from_dict(data["constraints"])
     if "channel" in data:
@@ -78,7 +81,7 @@ def validate_config(data: dict) -> dict:
             raise VNXConfigurationError("dna.layout must contain only payload_bytes, inner_parity, marker_period, marker_len")
         Layout(**lay).validate()
     perf = data.get("performance")
-    if perf is not None and perf not in PERFORMANCE_PROFILES:
+    if perf is not None and (not isinstance(perf, str) or perf not in PERFORMANCE_PROFILES):
         raise VNXConfigurationError(f"performance must be one of {sorted(PERFORMANCE_PROFILES)}")
     return data
 

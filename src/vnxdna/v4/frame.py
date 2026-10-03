@@ -126,7 +126,9 @@ class Layout:
 
 PROFILES = {
     # name: (layout, outer K, outer M) — redundancy budgets are explicit; see docs/V4_ARCHITECTURE.md
-    "v4-balanced": (Layout(40, 16, 32, 2), 64, 16),
+    # v4-balanced uses 3-nt markers every 24 nt since round 2 of the experiments (EXP-0009: 10/10 vs 2/10 recoveries at
+    # 0.2 % insertions + 0.2 % deletions, coverage 1, for +5.8 % nucleotides); round 1 used Layout(40, 16, 32, 2)
+    "v4-balanced": (Layout(40, 16, 24, 3), 64, 16),
     "v4-dense": (Layout(44, 12, 0, 0), 64, 16),
     "v4-indel": (Layout(36, 20, 24, 3), 48, 16),
     "v4-archival": (Layout(36, 20, 24, 3), 32, 32),
