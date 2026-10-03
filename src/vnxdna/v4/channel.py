@@ -66,6 +66,23 @@ class ChannelConfig:
     seed: int = 12345
 
     def validate(self) -> "ChannelConfig":
+        try:
+            return self._validate()
+        except TypeError as error:   # wrong types (e.g. a string where a number is expected) are configuration errors
+            raise VNXConfigurationError(f"invalid channel configuration value: {error}") from None
+
+    def _validate(self) -> "ChannelConfig":
+        for name in ("homopolymer_min_run", "burst_max_len", "quality_correct", "quality_error", "shuffle_window", "seed"):
+            v = getattr(self, name)
+            if not isinstance(v, int) or isinstance(v, bool):
+                raise VNXConfigurationError(f"{name} must be an integer", details={name: v})
+        for name in ("coverage", "coverage_dispersion", "homopolymer_indel_multiplier", "homopolymer_substitution_multiplier",
+                     "gc_bias_strength", "gc_bias_optimum"):
+            v = getattr(self, name)
+            if not isinstance(v, (int, float)) or isinstance(v, bool) or v != v:
+                raise VNXConfigurationError(f"{name} must be a number", details={name: v})
+        if not isinstance(self.coverage_model, str):
+            raise VNXConfigurationError("coverage_model must be a string")
         for name in ("substitution_rate", "insertion_rate", "deletion_rate", "dropout_rate", "duplication_rate", "burst_rate",
                      "n_rate", "reverse_complement_rate", "quality_informative"):
             v = getattr(self, name)
