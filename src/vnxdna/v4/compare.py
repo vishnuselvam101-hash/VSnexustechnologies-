@@ -175,9 +175,11 @@ def constraint_study(n_strands: int = 20000, seed: int = 3, profile: str = "v4-b
         {"name": "very strict (GC 48-52, homopolymer<=2)", "constraints": {"gc_min_percent": 48, "gc_max_percent": 52,
                                                                            "max_homopolymer": 2}},
     ]
-    # "before": the same frames with scrambler variant 0 only (no screening)
+    # "before": the same frames with ONE scrambler variant drawn at random per strand (unscreened scrambling). Variant 0
+    # would be unrepresentative: its unscrambled variant byte 0x00 maps to AAAA at the strand start (also 0x55, 0xAA, 0xFF).
     plain = plain_rows(1, 0, groups, syms, pays)
-    msg = np.concatenate([np.zeros((n_strands, 1), dtype=np.uint8), plain ^ keystreams(plain.shape[1])[0]], axis=1)
+    rv = rng.integers(0, 256, n_strands).astype(np.uint8)
+    msg = np.concatenate([rv[:, None], plain ^ keystreams(plain.shape[1])[rv]], axis=1)
     frames0 = np.concatenate([msg, InnerRS(lay.inner_parity).parity(msg)], axis=1)
     before_strands = insert_markers(lay, bytes_to_nt(frames0))
     out = {"case": "constraints", "profile": profile, "strands": n_strands, "strand_nt": lay.strand_nt, "results": []}
@@ -204,6 +206,7 @@ def constraint_study(n_strands: int = 20000, seed: int = 3, profile: str = "v4-b
                    "violations_before_by_rule": before, "status": "UNSATISFIABLE", "error": type(error).__name__,
                    "message": str(error)[:200], "seconds": round(time.perf_counter() - t, 3)}
         out["results"].append(res)
+    out["before_definition"] = "one uniformly random scrambler variant per strand, no screening"
     out["note"] = ("screening changes only the 1-byte scrambler variant inside each frame, so it costs no extra nucleotides; "
                    "the alternative is to fail explicitly (VNXConstraintError) — sequences are never emitted unscreened")
     return out
