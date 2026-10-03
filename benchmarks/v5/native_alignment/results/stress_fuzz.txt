@@ -1,0 +1,3 @@
+# stress_fuzz.py, production build (-O3), kernel source sha256 921194fd86898709244e16e4e2eb7e7726e0bd1039fcd517a0cd7773a2eead21 (SIMULATED data)
+# command: python benchmarks/v5/native_alignment/stress_fuzz.py --rounds 2000 --seed 99
+{"rounds": 2000, "reads": 500000, "mismatches": 0, "library": "src/vnxdna/v5/_vnx_align.cpython-312-x86_64-linux-gnu.so", "seconds": 251.0}

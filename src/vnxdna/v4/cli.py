@@ -119,7 +119,17 @@ def main_callback(verbose: bool = typer.Option(False, "--verbose", "-v", help="S
 def version() -> None:
     """Print versions."""
     from .version import FORMAT_VERSION
-    typer.echo(json.dumps({"vnx": __version__, "vnx4_format": list(FORMAT_VERSION), "frame_version": 4}))
+    from ..v5 import native_alignment as na
+    st = na.status()
+    typer.echo(json.dumps({"vnx": __version__, "vnx4_format": list(FORMAT_VERSION), "frame_version": 4,
+                           "alignment_backend": st["active_backend"], "native_alignment": st["native_available"]}))
+
+
+@app.command()
+def native() -> None:
+    """Show whether the native (C) marker aligner is active, which library is loaded and why not if it is not."""
+    from ..v5 import native_alignment as na
+    _emit(na.status())
 
 
 @app.command()

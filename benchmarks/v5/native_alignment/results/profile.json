@@ -1,0 +1,183 @@
+{
+  "section": "profile",
+  "simulated": true,
+  "config": {
+    "input_size": 4194304,
+    "pattern": "random",
+    "seed": 42,
+    "profile": "v4-balanced",
+    "workers": 1,
+    "channel": {
+      "substitution_rate": 0.002,
+      "insertion_rate": 0.0005,
+      "deletion_rate": 0.0005,
+      "dropout_rate": 0.02,
+      "coverage": 3,
+      "coverage_model": "poisson",
+      "seed": 1011
+    },
+    "stage_definition": {
+      "marker alignment": "sync.py:project cumulative",
+      "read parsing": "reads.py:iter_reads cumulative",
+      "inner RS decode": "rs_fast.py:decode_batch cumulative",
+      "pass 2 (consensus, snapping, outer, verify)": "decoder.py:_pass2 cumulative",
+      "orientation pre-pass": "decoder.py:_orientation cumulative"
+    }
+  },
+  "provenance": {
+    "timestamp_utc": "2026-10-03T05:48:57Z",
+    "vnx_version": "4.0.0",
+    "vnx4_format_version": [
+      4,
+      0
+    ],
+    "git_commit": "f3a6e7571bca16d3d6b1acfd8df0b6ef5e203421-dirty",
+    "cpu_model": "Intel(R) Xeon(R) Gold 6240 CPU @ 2.60GHz",
+    "logical_cpus": 8,
+    "ram_bytes": 33654890496,
+    "os": "Linux 6.8.0-146-generic",
+    "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "packages": {
+      "numpy": "2.5.3",
+      "cryptography": "46.0.7",
+      "zstandard": "0.25.0",
+      "reedsolo": "1.7.0",
+      "pydantic": "2.13.5",
+      "typer": "0.27.2"
+    },
+    "v4_control_tag": "v4.0.0",
+    "v4_control_commit": "a358ae8284066d0608f329b47a53e55018bbfa79",
+    "commit_under_test": "f3a6e7571bca16d3d6b1acfd8df0b6ef5e203421",
+    "worktree_dirty": true,
+    "native_toolchain": {
+      "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+      "rustc": "rustc 1.75.0 (82e1608df 2023-12-21) (built from a source tarball)",
+      "cargo": "cargo 1.75.0"
+    },
+    "cpu_flags": [
+      "avx",
+      "avx2",
+      "avx512bw",
+      "avx512f",
+      "bmi2",
+      "popcnt",
+      "sse4_2"
+    ],
+    "config_sha256": "030bde78ad6bac5adb959d68e54a354f1bbf7920fdcf0b5467b8fff1a6b997f0"
+  },
+  "native": {
+    "requested_backend": "auto",
+    "active_backend": "native",
+    "native_available": true,
+    "library": "/root/VSnexustechnologies-v5/src/vnxdna/v5/_vnx_align.cpython-312-x86_64-linux-gnu.so",
+    "load_error": null,
+    "abi_version": 1,
+    "error": null,
+    "domain": {
+      "max_band": 64,
+      "max_template_nt": 8192,
+      "max_cost": 65536,
+      "max_guard": 1024,
+      "read_dtype": "uint8"
+    },
+    "library_sha256": "271e30c99e36b14c4431c08653cf99f40046a72b944861c675f9301b6589d631",
+    "lanes": 4,
+    "source_sha256": "921194fd86898709244e16e4e2eb7e7726e0bd1039fcd517a0cd7773a2eead21",
+    "build": "setup.py Extension (pip install): -O3 -std=c11, no -march; the portable x86-64 baseline ISA"
+  },
+  "rows": [
+    {
+      "backend": "reference",
+      "status": "SUCCESS",
+      "container_sha256": "11df854aaa5b86aa39d363aca5f9af894f3299ebe1c43be0389491af542e4f1b",
+      "input_sha256": "d8658297886061b9ba2c32cf29014707c7599ca64195e2d4b862df2c9c8c5c77",
+      "decode_reads": {
+        "reads": 386490,
+        "fast": 283637,
+        "sync": 100484,
+        "reverse_complement": 0,
+        "pending": 2217,
+        "orphans": 839,
+        "unaligned": 0,
+        "consensus_attempted": 100,
+        "consensus_recovered": 0,
+        "addresses_snapped": 16
+      },
+      "unprofiled_seconds": {
+        "median": 24.976026,
+        "min": 24.926447,
+        "max": 25.438692,
+        "reps": [
+          25.438692,
+          24.926447,
+          24.976026
+        ]
+      },
+      "profiled_seconds": 29.764,
+      "profiled_total": 29.764,
+      "stage_seconds": {
+        "marker alignment": 17.182,
+        "read parsing": 4.2818,
+        "inner RS decode": 4.1052,
+        "pass 2 (consensus, snapping, outer, verify)": 1.6896,
+        "orientation pre-pass": 0.2225,
+        "everything else": 2.2829
+      },
+      "stage_share": {
+        "marker alignment": 0.5773,
+        "read parsing": 0.1439,
+        "inner RS decode": 0.1379,
+        "pass 2 (consensus, snapping, outer, verify)": 0.0568,
+        "orientation pre-pass": 0.0075,
+        "everything else": 0.0767
+      }
+    },
+    {
+      "backend": "native",
+      "status": "SUCCESS",
+      "container_sha256": "11df854aaa5b86aa39d363aca5f9af894f3299ebe1c43be0389491af542e4f1b",
+      "input_sha256": "d8658297886061b9ba2c32cf29014707c7599ca64195e2d4b862df2c9c8c5c77",
+      "decode_reads": {
+        "reads": 386490,
+        "fast": 283637,
+        "sync": 100484,
+        "reverse_complement": 0,
+        "pending": 2217,
+        "orphans": 839,
+        "unaligned": 0,
+        "consensus_attempted": 100,
+        "consensus_recovered": 0,
+        "addresses_snapped": 16
+      },
+      "unprofiled_seconds": {
+        "median": 10.326627,
+        "min": 10.313473,
+        "max": 10.418784,
+        "reps": [
+          10.418784,
+          10.313473,
+          10.326627
+        ]
+      },
+      "profiled_seconds": 13.78,
+      "profiled_total": 13.7797,
+      "stage_seconds": {
+        "marker alignment": 1.3237,
+        "read parsing": 4.2298,
+        "inner RS decode": 4.0897,
+        "pass 2 (consensus, snapping, outer, verify)": 1.6789,
+        "orientation pre-pass": 0.2168,
+        "everything else": 2.2408
+      },
+      "stage_share": {
+        "marker alignment": 0.0961,
+        "read parsing": 0.307,
+        "inner RS decode": 0.2968,
+        "pass 2 (consensus, snapping, outer, verify)": 0.1218,
+        "orientation pre-pass": 0.0157,
+        "everything else": 0.1626
+      }
+    }
+  ]
+}

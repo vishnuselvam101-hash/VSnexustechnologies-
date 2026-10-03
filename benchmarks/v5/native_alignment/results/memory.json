@@ -1,0 +1,142 @@
+{
+  "section": "memory",
+  "simulated": true,
+  "config": {
+    "reads": 4096,
+    "error_point": "mixed-L2",
+    "band": 6,
+    "method": "VmHWM (reset via /proc/self/clear_refs) minus VmRSS around one project() call on all reads, in a fresh spawned process after malloc_trim(0); plus tracemalloc peak of a second call (sees NumPy, not C malloc); outputs (n \u00d7 frame_nt \u00d7 2 bytes) are included for both backends"
+  },
+  "provenance": {
+    "timestamp_utc": "2026-10-03T05:43:35Z",
+    "vnx_version": "4.0.0",
+    "vnx4_format_version": [
+      4,
+      0
+    ],
+    "git_commit": "f3a6e7571bca16d3d6b1acfd8df0b6ef5e203421-dirty",
+    "cpu_model": "Intel(R) Xeon(R) Gold 6240 CPU @ 2.60GHz",
+    "logical_cpus": 8,
+    "ram_bytes": 33654890496,
+    "os": "Linux 6.8.0-146-generic",
+    "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "packages": {
+      "numpy": "2.5.3",
+      "cryptography": "46.0.7",
+      "zstandard": "0.25.0",
+      "reedsolo": "1.7.0",
+      "pydantic": "2.13.5",
+      "typer": "0.27.2"
+    },
+    "v4_control_tag": "v4.0.0",
+    "v4_control_commit": "a358ae8284066d0608f329b47a53e55018bbfa79",
+    "commit_under_test": "f3a6e7571bca16d3d6b1acfd8df0b6ef5e203421",
+    "worktree_dirty": true,
+    "native_toolchain": {
+      "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+      "rustc": "rustc 1.75.0 (82e1608df 2023-12-21) (built from a source tarball)",
+      "cargo": "cargo 1.75.0"
+    },
+    "cpu_flags": [
+      "avx",
+      "avx2",
+      "avx512bw",
+      "avx512f",
+      "bmi2",
+      "popcnt",
+      "sse4_2"
+    ],
+    "config_sha256": "5166029afb4e2e7fd9930b04a0614a05a149fa9b248bbe84155f5136f6d165e0"
+  },
+  "native": {
+    "requested_backend": "auto",
+    "active_backend": "native",
+    "native_available": true,
+    "library": "/root/VSnexustechnologies-v5/src/vnxdna/v5/_vnx_align.cpython-312-x86_64-linux-gnu.so",
+    "load_error": null,
+    "abi_version": 1,
+    "error": null,
+    "domain": {
+      "max_band": 64,
+      "max_template_nt": 8192,
+      "max_cost": 65536,
+      "max_guard": 1024,
+      "read_dtype": "uint8"
+    },
+    "library_sha256": "271e30c99e36b14c4431c08653cf99f40046a72b944861c675f9301b6589d631",
+    "lanes": 4,
+    "source_sha256": "921194fd86898709244e16e4e2eb7e7726e0bd1039fcd517a0cd7773a2eead21",
+    "build": "setup.py Extension (pip install): -O3 -std=c11, no -march; the portable x86-64 baseline ISA"
+  },
+  "rows": [
+    {
+      "backend": "reference",
+      "layout_name": "short-178nt",
+      "reads": 4096,
+      "vmrss_before_kb": 60176,
+      "vmhwm_after_kb": 72224,
+      "peak_growth_mb": 11.77,
+      "tracemalloc_peak_mb": 10.89
+    },
+    {
+      "backend": "native",
+      "layout_name": "short-178nt",
+      "reads": 4096,
+      "vmrss_before_kb": 60068,
+      "vmhwm_after_kb": 63816,
+      "peak_growth_mb": 3.66,
+      "tracemalloc_peak_mb": 3.63
+    },
+    {
+      "backend": "reference",
+      "layout_name": "default-313nt",
+      "reads": 4096,
+      "vmrss_before_kb": 60704,
+      "vmhwm_after_kb": 80392,
+      "peak_growth_mb": 19.23,
+      "tracemalloc_peak_mb": 18.26
+    },
+    {
+      "backend": "native",
+      "layout_name": "default-313nt",
+      "reads": 4096,
+      "vmrss_before_kb": 60764,
+      "vmhwm_after_kb": 66944,
+      "peak_growth_mb": 6.04,
+      "tracemalloc_peak_mb": 6.03
+    },
+    {
+      "backend": "reference",
+      "layout_name": "long-494nt",
+      "reads": 4096,
+      "vmrss_before_kb": 61572,
+      "vmhwm_after_kb": 91500,
+      "peak_growth_mb": 29.23,
+      "tracemalloc_peak_mb": 28.11
+    },
+    {
+      "backend": "native",
+      "layout_name": "long-494nt",
+      "reads": 4096,
+      "vmrss_before_kb": 61664,
+      "vmhwm_after_kb": 71132,
+      "peak_growth_mb": 9.25,
+      "tracemalloc_peak_mb": 9.24
+    }
+  ],
+  "analytic": {
+    "short-178nt": {
+      "native_scratch_bytes": 13248,
+      "reference_ptr_bytes_per_2048_chunk": 4765696
+    },
+    "default-313nt": {
+      "native_scratch_bytes": 22698,
+      "reference_ptr_bytes_per_2048_chunk": 8359936
+    },
+    "long-494nt": {
+      "native_scratch_bytes": 35368,
+      "reference_ptr_bytes_per_2048_chunk": 13178880
+    }
+  }
+}

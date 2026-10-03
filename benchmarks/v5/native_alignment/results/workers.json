@@ -1,0 +1,153 @@
+{
+  "section": "workers",
+  "simulated": true,
+  "config": {
+    "reads": 32768,
+    "chunk": 2048,
+    "error_point": "mixed-L2",
+    "band": 6,
+    "pool_startup_included": true,
+    "statistic": "best of 2 (as Phase 1, for comparability)"
+  },
+  "provenance": {
+    "timestamp_utc": "2026-10-03T05:43:56Z",
+    "vnx_version": "4.0.0",
+    "vnx4_format_version": [
+      4,
+      0
+    ],
+    "git_commit": "f3a6e7571bca16d3d6b1acfd8df0b6ef5e203421-dirty",
+    "cpu_model": "Intel(R) Xeon(R) Gold 6240 CPU @ 2.60GHz",
+    "logical_cpus": 8,
+    "ram_bytes": 33654890496,
+    "os": "Linux 6.8.0-146-generic",
+    "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "packages": {
+      "numpy": "2.5.3",
+      "cryptography": "46.0.7",
+      "zstandard": "0.25.0",
+      "reedsolo": "1.7.0",
+      "pydantic": "2.13.5",
+      "typer": "0.27.2"
+    },
+    "v4_control_tag": "v4.0.0",
+    "v4_control_commit": "a358ae8284066d0608f329b47a53e55018bbfa79",
+    "commit_under_test": "f3a6e7571bca16d3d6b1acfd8df0b6ef5e203421",
+    "worktree_dirty": true,
+    "native_toolchain": {
+      "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+      "rustc": "rustc 1.75.0 (82e1608df 2023-12-21) (built from a source tarball)",
+      "cargo": "cargo 1.75.0"
+    },
+    "cpu_flags": [
+      "avx",
+      "avx2",
+      "avx512bw",
+      "avx512f",
+      "bmi2",
+      "popcnt",
+      "sse4_2"
+    ],
+    "config_sha256": "49d672587843b0b99a8e8d9d068eb9d8aab7992cc3abc49d192aad37fa8804f1"
+  },
+  "native": {
+    "requested_backend": "auto",
+    "active_backend": "native",
+    "native_available": true,
+    "library": "/root/VSnexustechnologies-v5/src/vnxdna/v5/_vnx_align.cpython-312-x86_64-linux-gnu.so",
+    "load_error": null,
+    "abi_version": 1,
+    "error": null,
+    "domain": {
+      "max_band": 64,
+      "max_template_nt": 8192,
+      "max_cost": 65536,
+      "max_guard": 1024,
+      "read_dtype": "uint8"
+    },
+    "library_sha256": "271e30c99e36b14c4431c08653cf99f40046a72b944861c675f9301b6589d631",
+    "lanes": 4,
+    "source_sha256": "921194fd86898709244e16e4e2eb7e7726e0bd1039fcd517a0cd7773a2eead21",
+    "build": "setup.py Extension (pip install): -O3 -std=c11, no -march; the portable x86-64 baseline ISA"
+  },
+  "rows": {
+    "reference": [
+      {
+        "workers": 1,
+        "seconds": 3.992,
+        "reads_per_second": 8209.2,
+        "speedup": 1.0,
+        "result_sha256": "8913c84b56efba0275ccb690caa9d6e9b042dba512ce55a33446207cdacc4afb",
+        "identical_to_1_worker": true,
+        "efficiency": 1.0
+      },
+      {
+        "workers": 2,
+        "seconds": 2.161,
+        "reads_per_second": 15163.2,
+        "speedup": 1.85,
+        "result_sha256": "8913c84b56efba0275ccb690caa9d6e9b042dba512ce55a33446207cdacc4afb",
+        "identical_to_1_worker": true,
+        "efficiency": 0.925
+      },
+      {
+        "workers": 4,
+        "seconds": 1.154,
+        "reads_per_second": 28386.7,
+        "speedup": 3.46,
+        "result_sha256": "8913c84b56efba0275ccb690caa9d6e9b042dba512ce55a33446207cdacc4afb",
+        "identical_to_1_worker": true,
+        "efficiency": 0.865
+      },
+      {
+        "workers": 8,
+        "seconds": 0.661,
+        "reads_per_second": 49585.0,
+        "speedup": 6.04,
+        "result_sha256": "8913c84b56efba0275ccb690caa9d6e9b042dba512ce55a33446207cdacc4afb",
+        "identical_to_1_worker": true,
+        "efficiency": 0.755
+      }
+    ],
+    "native": [
+      {
+        "workers": 1,
+        "seconds": 0.406,
+        "reads_per_second": 80646.5,
+        "speedup": 1.0,
+        "result_sha256": "8913c84b56efba0275ccb690caa9d6e9b042dba512ce55a33446207cdacc4afb",
+        "identical_to_1_worker": true,
+        "efficiency": 1.0
+      },
+      {
+        "workers": 2,
+        "seconds": 0.268,
+        "reads_per_second": 122177.7,
+        "speedup": 1.51,
+        "result_sha256": "8913c84b56efba0275ccb690caa9d6e9b042dba512ce55a33446207cdacc4afb",
+        "identical_to_1_worker": true,
+        "efficiency": 0.755
+      },
+      {
+        "workers": 4,
+        "seconds": 0.18,
+        "reads_per_second": 181559.0,
+        "speedup": 2.25,
+        "result_sha256": "8913c84b56efba0275ccb690caa9d6e9b042dba512ce55a33446207cdacc4afb",
+        "identical_to_1_worker": true,
+        "efficiency": 0.562
+      },
+      {
+        "workers": 8,
+        "seconds": 0.178,
+        "reads_per_second": 183816.1,
+        "speedup": 2.28,
+        "result_sha256": "8913c84b56efba0275ccb690caa9d6e9b042dba512ce55a33446207cdacc4afb",
+        "identical_to_1_worker": true,
+        "efficiency": 0.285
+      }
+    ]
+  },
+  "identical_across_backends_and_workers": true
+}
