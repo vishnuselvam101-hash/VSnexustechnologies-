@@ -454,16 +454,35 @@ def list_container(path: str | os.PathLike, *, key: bytes | None = None, passphr
     return [r.to_dict() for r in c.files]
 
 
-def locate(path: str | os.PathLike, name: str, *, key: bytes | None = None, passphrase: str | None = None) -> dict:
+def dna_location(ranges: list[list[int]], profile: str, container_size: int) -> dict:
+    """Strand groups and strand-file record ranges holding container byte ranges (no index file needed: group g covers
+    container bytes [g·K·P, (g+1)·K·P); strand records are the superblock strands, then each group's K+M symbols)."""
+    from .encoder import Superblock
+    from .frame import PROFILES
+    lay, k, m = PROFILES[profile]
+    span = k * lay.payload_bytes
+    groups = sorted({g for off, n in ranges for g in range(off // span, (off + n - 1) // span + 1)})
+    ks, ms = Superblock.symbols(lay.payload_bytes)
+    total_groups = -(-container_size // span)
+    return {"profile": profile, "groups": groups, "groups_total": total_groups,
+            "strand_records": [[ks + ms + g * (k + m), k + m] for g in groups], "superblock_records": [0, ks + ms],
+            "note": "records are 0-based positions in the strand file written by `vnx encode` with this profile"}
+
+
+def locate(path: str | os.PathLike, name: str, *, key: bytes | None = None, passphrase: str | None = None,
+           profile: str | None = None) -> dict:
     """Where a file's bytes live: chunk indices and container byte ranges (input to selective DNA decoding)."""
     t0 = time.perf_counter()
     c = ct.open_container(path, key=key, passphrase=passphrase, require_key=True)
     rec = c.file(name)
     idx = c.file_chunks(rec)
     ranges = [list(c.chunk_range(int(i))) for i in idx]
-    return {"file": rec.to_dict(), "chunks": idx.tolist(), "container_ranges": ranges,
-            "bytes_to_read": int(sum(r[1] for r in ranges)), "container_bytes": c.size,
-            "index_bytes": c.size - ct.HEADER_BYTES - c.manifest["counts"]["stored_bytes"], "lookup_seconds": time.perf_counter() - t0}
+    out = {"file": rec.to_dict(), "chunks": idx.tolist(), "container_ranges": ranges,
+           "bytes_to_read": int(sum(r[1] for r in ranges)), "container_bytes": c.size,
+           "index_bytes": c.size - ct.HEADER_BYTES - c.manifest["counts"]["stored_bytes"], "lookup_seconds": time.perf_counter() - t0}
+    if profile:
+        out["dna"] = dna_location(ranges, profile, c.size)
+    return out
 
 
 # ============================================================================ extract
