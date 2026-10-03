@@ -951,9 +951,12 @@ def _deferred_recovery(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
         r = info["rounds"].setdefault(rnd, {"reads": 0, "recovered": 0, "unique_addresses": 0, "seconds": 0.0})
         if len(recs):
             nonlocal pool
+            # about four tasks per worker (≤ _DEFER_CHUNK reads each), so small rounds still use every worker. Per-read
+            # results do not depend on the chunking.
+            size = _DEFER_CHUNK if opt.workers == 1 else max(8, min(_DEFER_CHUNK, -(-len(recs) // (4 * opt.workers))))
             jobs = []
-            for c0 in range(0, len(recs), _DEFER_CHUNK):
-                c = recs[c0:c0 + _DEFER_CHUNK]
+            for c0 in range(0, len(recs), size):
+                c = recs[c0:c0 + size]
                 lens = c["rawlen"].astype(np.int64)
                 codes = np.concatenate([c["raw"][j, : lens[j]] for j in range(len(c))])
                 quals = np.concatenate([c["rawq"][j, : lens[j]] for j in range(len(c))]) if c["hasq"].all() else None
@@ -966,7 +969,7 @@ def _deferred_recovery(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
                     pool = ProcessPoolExecutor(max_workers=opt.workers, initializer=_p_init, initargs=initargs)
                 outs = list(pool.map(_process, *zip(*jobs)))
             fields, payloads = [], []
-            for c0, out in zip(range(0, len(recs), _DEFER_CHUNK), outs):
+            for c0, out in zip(range(0, len(recs), size), outs):
                 ok[c0 + out["acc_index"]] = True
                 fields.append(out["acc_fields"])
                 payloads.append(out["acc_payload"])
