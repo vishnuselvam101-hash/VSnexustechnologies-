@@ -1,0 +1,20 @@
+=== exp02 23:43:03
+indel-heavy (0.5%+0.5%, sub 0.1%)  cov  1 s0  V5-hard eager FAIL 0.9286 3.862s  V5-hard eager batch256 FAIL 0.9286 1.645s  V5-hard deferred FAIL 0.9286 2.343s
+indel-heavy (0.5%+0.5%, sub 0.1%)  cov  1 s1  V5-hard eager FAIL 0.7857 4.152s  V5-hard eager batch256 FAIL 0.7857 1.616s  V5-hard deferred FAIL 0.7857 2.378s
+indel-heavy (0.5%+0.5%, sub 0.1%)  cov  3 s0  V5-hard eager SUCC 1.0 11.555s  V5-hard eager batch256 SUCC 1.0 3.576s  V5-hard deferred SUCC 1.0 2.145s
+indel-heavy (0.5%+0.5%, sub 0.1%)  cov  3 s1  V5-hard eager SUCC 1.0 11.764s  V5-hard eager batch256 SUCC 1.0 3.402s  V5-hard deferred SUCC 1.0 1.849s
+indel-heavy (0.5%+0.5%, sub 0.1%)  cov 10 s0  V5-hard eager SUCC 1.0 24.436s  V5-hard eager batch256 SUCC 1.0 5.612s  V5-hard deferred SUCC 1.0 2.863s
+indel-heavy (0.5%+0.5%, sub 0.1%)  cov 10 s1  V5-hard eager SUCC 1.0 25.839s  V5-hard eager batch256 SUCC 1.0 5.615s  V5-hard deferred SUCC 1.0 2.184s
+mixed (0.5%+0.5%, sub 1%)          cov  1 s0  V5-hard eager FAIL 0.0714 6.024s  V5-hard eager batch256 FAIL 0.0714 2.266s  V5-hard deferred FAIL 0.0714 3.159s
+mixed (0.5%+0.5%, sub 1%)          cov  1 s1  V5-hard eager FAIL 0.1429 6.377s  V5-hard eager batch256 FAIL 0.1429 2.321s  V5-hard deferred FAIL 0.1429 2.964s
+mixed (0.5%+0.5%, sub 1%)          cov  3 s0  V5-hard eager SUCC 1.0 18.842s  V5-hard eager batch256 SUCC 1.0 4.76s  V5-hard deferred SUCC 1.0 3.558s
+mixed (0.5%+0.5%, sub 1%)          cov  3 s1  V5-hard eager SUCC 1.0 17.437s  V5-hard eager batch256 SUCC 1.0 4.165s  V5-hard deferred SUCC 1.0 3.374s
+mixed (0.5%+0.5%, sub 1%)          cov 10 s0  V5-hard eager SUCC 1.0 41.398s  V5-hard eager batch256 SUCC 1.0 8.601s  V5-hard deferred SUCC 1.0 5.192s
+mixed (0.5%+0.5%, sub 1%)          cov 10 s1  V5-hard eager SUCC 1.0 42.335s  V5-hard eager batch256 SUCC 1.0 8.619s  V5-hard deferred SUCC 1.0 7.73s
+mixed, substitution-heavy (0.25%+0 cov  1 s0  V5-hard eager FAIL None 6.664s  V5-hard eager batch256 FAIL None 2.376s  V5-hard deferred FAIL None 2.658s
+mixed, substitution-heavy (0.25%+0 cov  1 s1  V5-hard eager FAIL None 7.089s  V5-hard eager batch256 FAIL None 2.221s  V5-hard deferred FAIL None 2.607s
+mixed, substitution-heavy (0.25%+0 cov  3 s0  V5-hard eager FAIL 0.0 23.223s  V5-hard eager batch256 FAIL 0.0 7.471s  V5-hard deferred FAIL 0.0 8.9s
+mixed, substitution-heavy (0.25%+0 cov  3 s1  V5-hard eager FAIL 0.0 24.92s  V5-hard eager batch256 FAIL 0.0 8.573s  V5-hard deferred FAIL 0.0 9.38s
+mixed, substitution-heavy (0.25%+0 cov 10 s0  V5-hard eager SUCC 1.0 50.527s  V5-hard eager batch256 SUCC 1.0 13.171s  V5-hard deferred SUCC 1.0 14.714s
+mixed, substitution-heavy (0.25%+0 cov 10 s1  V5-hard eager FAIL 0.9286 52.807s  V5-hard eager batch256 FAIL 0.9286 13.978s  V5-hard deferred FAIL 0.9286 15.257s
+=== exit 0 23:52:59
