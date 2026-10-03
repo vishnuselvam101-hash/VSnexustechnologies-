@@ -26,7 +26,7 @@ from pathlib import Path
 
 import numpy as np
 
-ABI_VERSION = 1
+ABI_VERSION = 2
 MAX_BAND = 64
 MAX_TEMPLATE = 8192
 MAX_COST = 65536
@@ -73,6 +73,8 @@ def _bind(lib) -> None:
     lib.vnx_align_batch.argtypes = args
     lib.vnx_align_batch_profiled.restype = ctypes.c_int
     lib.vnx_align_batch_profiled.argtypes = [*args, p]
+    lib.vnx_align_batch_path.restype = ctypes.c_int
+    lib.vnx_align_batch_path.argtypes = [*args, p]
     lib.vnx_align_lanes.restype = ctypes.c_int
     lib.vnx_align_lanes.argtypes = []
 
@@ -188,12 +190,17 @@ def _ptr(a: np.ndarray | None):
 
 
 # ============================================================================ alignment
-def align_usable(aligner, reads: list, quals: list | None, min_quality: int, timings: dict | None = None):
+def align_usable(aligner, reads: list, quals: list | None, min_quality: int, timings: dict | None = None,
+                 readpos: bool = False):
     """Align usable reads (|len − T| ≤ band) natively.
 
     Returns (bases, erased, ok, ins, del, mm, cost), the same arrays as ``TemplateAligner._align``, or None when the
     input is outside the native domain (the caller then runs the reference). With ``timings`` (benchmarks only) the
-    profiled entry point adds the seconds spent in pack / dp / traceback / projection / wrapper to that dict."""
+    profiled entry point adds the seconds spent in pack / dp / traceback / projection / wrapper to that dict. With
+    ``readpos`` an eighth array (n, T) int16 is appended: the read index aligned to every template position on the
+    traceback path, −1 where the template base was deleted or the read is not ok (V5 Phase 3)."""
+    if readpos and timings is not None:
+        raise ValueError("readpos and timings cannot be combined")
     import time
     t_start = time.perf_counter()
     lib = _load()
@@ -226,7 +233,11 @@ def align_usable(aligner, reads: list, quals: list | None, min_quality: int, tim
             lay.frame_nt, _ptr(g["frame_pos"]), _ptr(g["seg_frame"]), int(aligner.band), int(c.marker_mismatch), int(c.insertion),
             int(c.deletion), int(c.marker_deletion_extra), int(c.guard_segments), int(min_quality),
             _ptr(bases), _ptr(erased), _ptr(ok), _ptr(ins), _ptr(dele), _ptr(mm), _ptr(cost))
-    if timings is None:
+    rpos = None
+    if readpos:
+        rpos = np.empty((n, aligner.T), dtype=np.int16)
+        rc = lib.vnx_align_batch_path(*args, _ptr(rpos))
+    elif timings is None:
         rc = lib.vnx_align_batch(*args)
     else:
         stages = np.zeros(4, dtype=np.float64)
@@ -240,6 +251,8 @@ def align_usable(aligner, reads: list, quals: list | None, min_quality: int, tim
     if rc != 0:
         # every argument was validated above; a kernel error is a bug, never silently ignored
         raise NativeAlignmentError(f"native aligner failed: {_ERRORS.get(rc, rc)} (code {rc})")
+    if rpos is not None:
+        return bases, erased.view(bool), ok.view(bool), ins, dele, mm, cost, rpos
     return bases, erased.view(bool), ok.view(bool), ins, dele, mm, cost
 
 

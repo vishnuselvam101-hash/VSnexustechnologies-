@@ -1,0 +1,78 @@
+{
+  "layout": {
+    "payload_bytes": 40,
+    "inner_parity": 16,
+    "marker_period": 24,
+    "marker_len": 3,
+    "frame_bytes": 70,
+    "strand_nt": 313,
+    "markers": 11
+  },
+  "reads_per_case": 300,
+  "seed": 3201,
+  "cases": [
+    [
+      "separated",
+      2
+    ],
+    [
+      "separated",
+      3
+    ],
+    [
+      "separated",
+      4
+    ],
+    [
+      "separated",
+      5
+    ],
+    [
+      "separated",
+      10
+    ],
+    [
+      "adjacent",
+      2
+    ],
+    [
+      "ins+del-near",
+      2
+    ],
+    [
+      "del+ins-near",
+      2
+    ],
+    [
+      "ins|del-split",
+      2
+    ],
+    [
+      "marker-adjacent",
+      2
+    ],
+    [
+      "separated+sub",
+      3
+    ]
+  ],
+  "band": 6,
+  "recovery": {
+    "max_shift": 1,
+    "max_window_segments": 2,
+    "max_candidates": 64,
+    "max_trials": 1024,
+    "max_joint_windows": 2,
+    "max_read_nt": 8256,
+    "trial_batch": 8192,
+    "substitution_prior": 0.005,
+    "keep_byte_error": 0.001,
+    "high_confidence": 0.001,
+    "false_accept_budget": 1e-09,
+    "phases": [
+      "T0",
+      "T1",
+      "T2"
+    ]
+  }
+}

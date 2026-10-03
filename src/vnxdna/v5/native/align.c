@@ -26,7 +26,7 @@
 #include <string.h>
 #include <time.h>
 
-#define VNX_ALIGN_ABI 1
+#define VNX_ALIGN_ABI 2   /* 2: adds vnx_align_batch_path (read position of every template base) */
 
 #define INF_COST ((int32_t)(1 << 28))
 #define OP_DIAG 0
@@ -159,7 +159,7 @@ static void dp_group(const geom_t *g, scratch_t *s, const vi32 *Lp) {
 /* Section 4 (final cost), 5 and 6 for one lane of the current group. */
 static int finish_lane(const geom_t *g, scratch_t *s, int lane, const uint8_t *r, const uint8_t *q, int32_t Li, uint8_t *out_bases,
                        uint8_t *out_erased, uint8_t *out_ok, int64_t *out_ins, int64_t *out_del, int64_t *out_mm, int64_t *out_cost,
-                       timers_t *tm) {
+                       int16_t *out_rpos, timers_t *tm) {
     double t0 = tm ? now_s() : 0.0;
     const int32_t T = g->T, B = g->B, W = g->W;
     const int32_t w_end = (Li - T) + B;
@@ -171,6 +171,7 @@ static int finish_lane(const geom_t *g, scratch_t *s, int lane, const uint8_t *r
     memset(tb, 4, (size_t)T);
     memset(bad, 0, (size_t)T);
     memset(hit, 0, (size_t)g->n_segments);
+    if (out_rpos) for (int32_t p = 0; p < T; p++) out_rpos[p] = -1;   /* -1: deleted, or the read is not ok */
     int64_t n_ins = 0, n_del = 0;
     if (ok) {
         int32_t i = T, d = Li - T;
@@ -188,6 +189,7 @@ static int finish_lane(const geom_t *g, scratch_t *s, int lane, const uint8_t *r
                 const int32_t rv = j < Li ? (int32_t)r[j] : 5;
                 const int32_t qv = (q != NULL && j < Li) ? (int32_t)q[j] : 99;
                 tb[i - 1] = (uint8_t)(rv < 4 ? rv : 4);
+                if (out_rpos) out_rpos[i - 1] = (int16_t)j;               /* j < width <= 8192 + 64 + 2 */
                 bad[i - 1] = (uint8_t)(rv > 3 || qv < g->min_q);
                 i -= 1;
             } else if (op == OP_DEL) {
@@ -272,7 +274,7 @@ static int align_batch(int64_t n, const uint8_t *codes, const int64_t *offsets, 
                        const int32_t *next_seg, int32_t n_segments, int32_t frame_nt, const int32_t *frame_pos,
                        const int32_t *seg_frame, int32_t band, int32_t c_mm, int32_t c_ins, int32_t c_del, int32_t c_x, int32_t guard,
                        int32_t min_q, uint8_t *out_bases, uint8_t *out_erased, uint8_t *out_ok, int64_t *out_ins, int64_t *out_del,
-                       int64_t *out_mm, int64_t *out_cost, timers_t *tm) {
+                       int64_t *out_mm, int64_t *out_cost, int16_t *out_rpos, timers_t *tm) {
     if (n < 0 || total_len < 0) return VNX_E_ARG;
     if (n == 0) return VNX_OK;
     if (!offsets || !tpl || !seg_of || !prev_seg || !next_seg || !frame_pos || !seg_frame || !out_bases || !out_erased ||
@@ -292,6 +294,7 @@ static int align_batch(int64_t n, const uint8_t *codes, const int64_t *offsets, 
         if (has_qual && has_qual[k] && L > 0 && !quals) return VNX_E_ARG;   /* an empty read reads no quality */
     }
     if ((uint64_t)n > SIZE_MAX / (size_t)frame_nt) return VNX_E_ARG;   /* output row indexing cannot overflow */
+    if (out_rpos && (uint64_t)n > SIZE_MAX / (size_t)T) return VNX_E_ARG;
 
     /* scratch: ptr (T + 1) * W * LANES <= 8193 * 129 * 4 bytes (4.2 MB); R (B + width) * 16 bytes; the rest O(T) */
     scratch_t s = {0};
@@ -335,7 +338,8 @@ static int align_batch(int64_t n, const uint8_t *codes, const int64_t *offsets, 
             const uint8_t *q = (quals && (!has_qual || has_qual[k])) ? quals + a : NULL;
             const size_t row = (size_t)k * (size_t)frame_nt;
             rc = finish_lane(&g, &s, l, codes ? codes + a : NULL, q, Lv[l], out_bases + row, out_erased + row, out_ok + k,
-                             out_ins + k, out_del + k, out_mm + k, out_cost + k, tm);
+                             out_ins + k, out_del + k, out_mm + k, out_cost + k,
+                             out_rpos ? out_rpos + (size_t)k * (size_t)T : NULL, tm);
             if (rc != VNX_OK) goto done;
         }
     }
@@ -358,7 +362,21 @@ int vnx_align_batch(int64_t n, const uint8_t *codes, const int64_t *offsets, int
                     int64_t *out_mm, int64_t *out_cost) {
     return align_batch(n, codes, offsets, total_len, quals, has_qual, T, tpl, seg_of, prev_seg, next_seg, n_segments, frame_nt,
                        frame_pos, seg_frame, band, c_mm, c_ins, c_del, c_x, guard, min_q, out_bases, out_erased, out_ok, out_ins,
-                       out_del, out_mm, out_cost, NULL);
+                       out_del, out_mm, out_cost, NULL, NULL);
+}
+
+/* Same as vnx_align_batch, and also writes out_readpos (n * T int16): for every template position the read index it
+ * was aligned to on the traceback path (DIAG steps), or -1 if it was deleted or the read is not ok. */
+int vnx_align_batch_path(int64_t n, const uint8_t *codes, const int64_t *offsets, int64_t total_len, const uint8_t *quals,
+                         const uint8_t *has_qual, int32_t T, const int16_t *tpl, const int32_t *seg_of, const int32_t *prev_seg,
+                         const int32_t *next_seg, int32_t n_segments, int32_t frame_nt, const int32_t *frame_pos,
+                         const int32_t *seg_frame, int32_t band, int32_t c_mm, int32_t c_ins, int32_t c_del, int32_t c_x, int32_t guard,
+                         int32_t min_q, uint8_t *out_bases, uint8_t *out_erased, uint8_t *out_ok, int64_t *out_ins, int64_t *out_del,
+                         int64_t *out_mm, int64_t *out_cost, int16_t *out_readpos) {
+    if (!out_readpos && n > 0) return VNX_E_ARG;
+    return align_batch(n, codes, offsets, total_len, quals, has_qual, T, tpl, seg_of, prev_seg, next_seg, n_segments, frame_nt,
+                       frame_pos, seg_frame, band, c_mm, c_ins, c_del, c_x, guard, min_q, out_bases, out_erased, out_ok, out_ins,
+                       out_del, out_mm, out_cost, out_readpos, NULL);
 }
 
 /* Same as vnx_align_batch, and adds stage times in seconds: timings[0..3] += pack, DP, traceback, projection.
@@ -373,7 +391,7 @@ int vnx_align_batch_profiled(int64_t n, const uint8_t *codes, const int64_t *off
     timers_t tm = {0.0, 0.0, 0.0, 0.0};
     const int rc = align_batch(n, codes, offsets, total_len, quals, has_qual, T, tpl, seg_of, prev_seg, next_seg, n_segments,
                                frame_nt, frame_pos, seg_frame, band, c_mm, c_ins, c_del, c_x, guard, min_q, out_bases, out_erased,
-                               out_ok, out_ins, out_del, out_mm, out_cost, &tm);
+                               out_ok, out_ins, out_del, out_mm, out_cost, NULL, &tm);
     timings[0] += tm.pack;
     timings[1] += tm.dp;
     timings[2] += tm.traceback;

@@ -64,6 +64,10 @@ class DecodeOptions:
     archive_tag: int | None = None
     sync_costs: SyncCosts = field(default_factory=SyncCosts)
     max_reads: int = 2_000_000_000
+    # V5 Phase 3: "segment" = V4 (an indel erases its whole segment); "smart" = bounded local indel recovery
+    # (vnxdna.v5.indel) for reads the V4 path cannot decode, plus consensus realignment in pass 2. Opt-in.
+    indel_recovery: str = "segment"
+    indel_config: object = None         # vnxdna.v5.indel.recovery.IndelRecoveryConfig (None = defaults)
 
     def validate(self) -> None:
         if not 1 <= self.workers <= 256:
@@ -74,6 +78,15 @@ class DecodeOptions:
             raise VNXConfigurationError("consensus_threshold must be in [0.25, 1]")
         if not 0 <= self.min_quality <= 93:
             raise VNXConfigurationError("min_quality must be in 0..93")
+        if self.indel_recovery not in ("segment", "smart"):
+            raise VNXConfigurationError("indel_recovery must be 'segment' (V4) or 'smart' (V5)")
+        if self.indel_recovery == "smart":
+            from ..v5.indel.recovery import IndelRecoveryConfig
+            if self.indel_config is None:
+                self.indel_config = IndelRecoveryConfig()
+            elif not isinstance(self.indel_config, IndelRecoveryConfig):
+                raise VNXConfigurationError("indel_config must be an IndelRecoveryConfig")
+            self.indel_config.validate()
 
 
 # ============================================================================ layout detection
@@ -129,8 +142,11 @@ def detect_layout(reads_path: str | os.PathLike, opt: DecodeOptions) -> Layout:
 _P: dict = {}
 
 
-def _p_init(layout: Layout, band: int, costs: SyncCosts, min_q: int, rc: bool) -> None:
-    _P.update(lay=layout, al=TemplateAligner(layout, band, costs), min_q=min_q, rc=rc)
+def _p_init(layout: Layout, band: int, costs: SyncCosts, min_q: int, rc: bool, smart_cfg=None) -> None:
+    _P.update(lay=layout, al=TemplateAligner(layout, band, costs), min_q=min_q, rc=rc, smart=smart_cfg)
+    if smart_cfg is not None:
+        from ..v5.indel.recovery import Geometry
+        _P["geom"] = Geometry(layout)
 
 
 def _try(reads: list[np.ndarray], quals: list | None) -> tuple:
@@ -171,8 +187,16 @@ def _try(reads: list[np.ndarray], quals: list | None) -> tuple:
     if exact.size and lay.markers:
         hopeless[exact[mism == 0]] = True
     rest = np.flatnonzero(~acc & ~hopeless)
+    smart = _P.get("smart")
+    sstats: Counter = Counter()
     if rest.size:
-        pr = _P["al"].project([reads[i] for i in rest], None if quals is None else [quals[i] for i in rest], _P["min_q"])
+        rreads = [reads[i] for i in rest]
+        rquals = None if quals is None else [quals[i] for i in rest]
+        if smart is None:
+            pr = _P["al"].project(rreads, rquals, _P["min_q"])
+        else:
+            from ..v5.indel.path import align_with_path
+            pr, rpos = align_with_path(_P["al"], rreads, rquals, _P["min_q"])   # identical projection + the path
         frames = nt_to_bytes(np.minimum(pr.bases, 3))
         er = frame_erasures_to_bytes(pr.erased)
         P = decode_frames(lay, frames, er, errors_only_retry=False)   # sync erasures come from detected indels
@@ -182,12 +206,28 @@ def _try(reads: list[np.ndarray], quals: list | None) -> tuple:
         path[idx] = 2
         parsed_fields[idx] = np.stack([P.kind, P.tag, P.group, P.symbol], axis=1)[ok]
         payload[idx] = P.payload[ok]
+        if smart is not None:
+            # V5 smart indel recovery, only for aligned reads the V4 erasure rule could not decode
+            from ..v5.indel import recovery as rv
+            cand_all = np.flatnonzero(~ok & pr.ok)
+            for c0 in range(0, cand_all.size, rv.PLAN_CHUNK):     # bounded memory: plans for ≤ PLAN_CHUNK reads at a time
+                cand = cand_all[c0:c0 + rv.PLAN_CHUNK]
+                plans = rv.plan_reads(_P["geom"], rreads, rquals, pr, rpos, cand, smart)
+                outs = rv.recover_batch(_P["geom"], plans, smart)
+                sstats.update(rv.summarize_outcomes(plans, outs, pr.erased[cand]))
+                for j, o in zip(cand.tolist(), outs):
+                    if o.accepted:
+                        i = rest[j]
+                        acc[i] = True
+                        path[i] = 3
+                        parsed_fields[i] = o.fields
+                        payload[i] = o.payload
         cost[rest] = np.where(pr.ok, pr.cost, 1 << 28)
         hard_bases[rest] = np.minimum(pr.bases, 3)
         pb = pr.bases.copy()
         pb[pr.erased] = 4
         proj_bases[rest] = pb
-    return acc, parsed_fields, payload, proj_bases, cost, path, hard_bases
+    return acc, parsed_fields, payload, proj_bases, cost, path, hard_bases, sstats
 
 
 def _orientation(codes: np.ndarray, lengths: np.ndarray) -> np.ndarray:
@@ -226,18 +266,28 @@ def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | N
             if ql is not None:
                 ql[i] = ql[i][::-1]
         rc_used |= flip
-    acc, fields, payload, proj, cost, path, hard = _try(reads, ql)
+    acc, fields, payload, proj, cost, path, hard, sstats = _try(reads, ql)
+    oriented = reads                       # the orientation each read's projection refers to (pending raw reads)
+    oriented_q = ql
     if _P["rc"]:
         bad = np.flatnonzero(~acc & (cost > 2 * _P["al"].costs.insertion))
         if bad.size:
             rreads = [_RC[reads[i][::-1]] for i in bad]
             rq = None if ql is None else [ql[i][::-1] for i in bad]
-            a2, f2, p2, pr2, c2, path2, h2 = _try(rreads, rq)
+            a2, f2, p2, pr2, c2, path2, h2, s2 = _try(rreads, rq)
+            sstats.update(s2)
             better = a2 | (c2 < cost[bad])
             sel = bad[better]
             acc[sel], fields[sel], payload[sel], proj[sel], cost[sel], path[sel], hard[sel] = (
                 a2[better], f2[better], p2[better], pr2[better], c2[better], path2[better], h2[better])
             rc_used[sel] = ~rc_used[sel]
+            if _P.get("smart") is not None:
+                oriented = list(reads)
+                oriented_q = None if ql is None else list(ql)
+                for j in np.flatnonzero(better).tolist():
+                    oriented[bad[j]] = rreads[j]
+                    if oriented_q is not None:
+                        oriented_q[bad[j]] = rq[j]
     # pending: every failed but aligned read. Its tentative address comes from the hard header bases (even where the
     # header was erased by an indel); pass 2 snaps addresses that are not expected to the nearest missing address.
     pend = np.flatnonzero(~acc & (cost < (1 << 28)))
@@ -263,23 +313,44 @@ def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | N
         pend_fields = np.where((ta[:, 0] >= 0)[:, None], ta, alt)[good]
         pend_alt = np.where((alt[:, 0] >= 0)[:, None], alt, ta)[good]
         pend_bases = proj[pend][good]
-    return {"acc_fields": fields[acc], "acc_payload": payload[acc], "pend_fields": pend_fields, "pend_bases": pend_bases,
-            "pend_alt": pend_alt,
-            "stats": {"reads": int(lengths.size), "fast": int((path == 1).sum()), "sync": int((path == 2).sum()),
-                      "reverse_complement": int((rc_used & acc).sum()), "pending": int(pend_fields.shape[0]), "orphans": orphans,
-                      "unaligned": int((~acc).sum()) - int(pend.size)}}
+    out = {"acc_fields": fields[acc], "acc_payload": payload[acc], "pend_fields": pend_fields, "pend_bases": pend_bases,
+           "pend_alt": pend_alt,
+           "stats": {"reads": int(lengths.size), "fast": int((path == 1).sum()), "sync": int((path == 2).sum()),
+                     "reverse_complement": int((rc_used & acc).sum()), "pending": int(pend_fields.shape[0]), "orphans": orphans,
+                     "unaligned": int((~acc).sum()) - int(pend.size)}}
+    if _P.get("smart") is not None:
+        out["stats"]["smart"] = int((path == 3).sum())
+        out["indel"] = dict(sstats)
+        # raw (oriented) reads of pending records, for consensus realignment in pass 2
+        width = lay.strand_nt + _P["al"].band
+        sel = pend[good] if pend.size else pend
+        raw = np.zeros((sel.size, width), dtype=np.uint8)
+        rawq = np.zeros((sel.size, width), dtype=np.uint8)
+        rawlen = np.zeros(sel.size, dtype=np.int64)
+        hasq = np.zeros(sel.size, dtype=np.uint8)
+        for j, i in enumerate(sel.tolist()):
+            r = oriented[i][:width]
+            raw[j, : r.size] = r
+            rawlen[j] = r.size
+            if oriented_q is not None and oriented_q[i] is not None:
+                rawq[j, : r.size] = oriented_q[i][:width]
+                hasq[j] = 1
+        out["pend_raw"], out["pend_rawq"], out["pend_rawlen"], out["pend_hasq"] = raw, rawq, rawlen, hasq
+    return out
 
 
 # ============================================================================ spill
 class Spill:
     """Fixed-width records in bucket files (bucket = group mod B); memory stays bounded by one bucket."""
 
-    def __init__(self, workdir: Path, buckets: int, payload: int, frame_nt: int):
+    def __init__(self, workdir: Path, buckets: int, payload: int, frame_nt: int, raw_nt: int = 0):
         self.dir = workdir
         self.B = buckets
         self.acc_dtype = np.dtype([("kind", "u1"), ("tag", ">u2"), ("group", ">u4"), ("symbol", ">u2"), ("payload", "u1", (payload,))])
-        self.pend_dtype = np.dtype([("kind", "u1"), ("tag", ">u2"), ("group", ">u4"), ("symbol", ">u2"), ("alt", ">i8", (4,)),
-                                    ("bases", "u1", (frame_nt,))])
+        pend = [("kind", "u1"), ("tag", ">u2"), ("group", ">u4"), ("symbol", ">u2"), ("alt", ">i8", (4,)), ("bases", "u1", (frame_nt,))]
+        if raw_nt:     # V5 smart indel recovery keeps the raw read for consensus realignment
+            pend += [("raw", "u1", (raw_nt,)), ("rawq", "u1", (raw_nt,)), ("rawlen", ">u2"), ("hasq", "u1")]
+        self.pend_dtype = np.dtype(pend)
         self.acc_files = [open(workdir / f"acc{b}.bin", "wb") for b in range(buckets)]
         self.pend_files = [open(workdir / f"pend{b}.bin", "wb") for b in range(buckets)]
 
@@ -293,6 +364,9 @@ class Spill:
             rec[name] = data
             if name == "bases":
                 rec["alt"] = res["pend_alt"]
+                if "raw" in dtype.names:
+                    rec["raw"], rec["rawq"], rec["rawlen"], rec["hasq"] = (res["pend_raw"], res["pend_rawq"], res["pend_rawlen"],
+                                                                           res["pend_hasq"])
             b = fields[:, 2] % self.B
             for k in np.unique(b):
                 files[int(k)].write(rec[b == k].tobytes())
@@ -388,14 +462,17 @@ def decode_reads(reads_path: str | os.PathLike, output: str | os.PathLike | None
     buckets = int(min(256, max(1, est_reads // 200_000)))
     tmp_root = tempfile.mkdtemp(prefix="vnx4-decode-", dir=workdir)
     try:
-        spill = Spill(Path(tmp_root), buckets, lay.payload_bytes, lay.frame_nt)
+        smart = opt.indel_recovery == "smart"
+        spill = Spill(Path(tmp_root), buckets, lay.payload_bytes, lay.frame_nt, lay.strand_nt + opt.band if smart else 0)
         stats = Counter()
+        indel_stats: Counter = Counter()
         t1 = time.perf_counter()
-        initargs = (lay, opt.band, opt.sync_costs, opt.min_quality, opt.reverse_complement)
+        initargs = (lay, opt.band, opt.sync_costs, opt.min_quality, opt.reverse_complement, opt.indel_config if smart else None)
 
         def take(res):
             spill.write(res)
             stats.update(res["stats"])
+            indel_stats.update(res.get("indel", {}))
             if progress:
                 progress({"stage": "pass1", "reads": stats["reads"], "elapsed": time.perf_counter() - t0})
 
@@ -403,7 +480,7 @@ def decode_reads(reads_path: str | os.PathLike, output: str | os.PathLike | None
             n = 0
             for batch in iter_reads(reads_path, opt.batch_reads, max_reads=opt.max_reads):
                 n += batch.count
-                q = batch.quals if opt.min_quality else None
+                q = batch.quals if (opt.min_quality or smart) else None
                 yield batch.codes, batch.lengths, q
 
         if opt.workers == 1:
@@ -423,6 +500,8 @@ def decode_reads(reads_path: str | os.PathLike, output: str | os.PathLike | None
         stage["pass1_reads"] = time.perf_counter() - t1
         if stats["reads"] == 0:
             raise VNXFormatError("the read file contains no reads", stage="input")
+        if smart:
+            stats["_indel"] = indel_stats          # pass 2 adds its consensus counters; reported as report["indel_recovery"]
         result = _pass2(spill, lay, opt, stats, stage, t0, output, overwrite, partial_dir, select, select_dir, key, passphrase,
                         tmp_root)
         return result
@@ -560,6 +639,37 @@ def _consensus_symbols(pend: np.ndarray, known: dict, lay: Layout, opt: DecodeOp
         if P.ok[i] and (int(P.kind[i]), int(P.tag[i]), int(P.group[i]), int(P.symbol[i])) == key:
             out[key] = P.payload[i]
     stats["consensus_recovered"] += len(out)
+    if opt.indel_recovery == "smart" and "raw" in pend.dtype.names:
+        out.update(_smart_consensus(cand_keys, out, starts, ends, keys, pend[order], lay, opt, stats))
+    return out
+
+
+def _smart_consensus(cand_keys, done, starts, ends, keys, pend, lay, opt, stats) -> dict:
+    """V5 consensus realignment for addresses the V4 vote could not decode (groups of ≥ 2 pending reads)."""
+    from ..v5.indel.consensus import consensus_recover
+    from ..v5.indel.recovery import Geometry
+    geom = Geometry(lay)
+    al = TemplateAligner(lay, opt.band, opt.sync_costs)
+    out = {}
+    ist = stats["_indel"] if isinstance(stats.get("_indel"), Counter) else Counter()
+    wanted = set(cand_keys)
+    for s, e in zip(starts.tolist(), ends.tolist()):
+        key = tuple(int(x) for x in keys[s])
+        if key in done or key not in wanted or e - s < 2:
+            continue
+        grp = pend[s:min(e, s + opt.max_pending_per_address)]
+        reads = [grp["raw"][j, : int(grp["rawlen"][j])] for j in range(len(grp))]
+        quals = None
+        if grp["hasq"].all():
+            quals = [grp["rawq"][j, : int(grp["rawlen"][j])] for j in range(len(grp))]
+        res = consensus_recover(geom, al, reads, quals, opt.indel_config, threshold=opt.consensus_threshold,
+                                max_reads=opt.max_pending_per_address, expected=key)
+        ist["consensus_groups"] += 1
+        ist[f"consensus_route_{res.route}"] += 1
+        if res.accepted:
+            out[key] = res.payload
+    stats["_indel"] = ist
+    stats["consensus_recovered_smart"] += len(out)
     return out
 
 
@@ -630,9 +740,12 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
         else:
             run(None, done)
         stage["pass2_decode"] = time.perf_counter() - t2
+        indel = stats.pop("_indel", None)
         report = {"superblock": {"archive_id": sb.archive_id.hex(), "container_size": sb.container_size, "groups": sb.group_count,
                                  "outer_code": codec.configuration(), "layout": lay.to_dict()},
                   "reads": dict(stats), **sb_info, "duplicate_conflicts": conflicts}
+        if opt.indel_recovery == "smart":
+            report["indel_recovery"] = {"mode": "smart", "config": dict(opt.indel_config.__dict__), **dict(indel or {})}
         if select:
             return _selective(sb, work, fd, run, done, failed, select, select_dir, key, passphrase, overwrite, report, stage, t0)
     finally:
