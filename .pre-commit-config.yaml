@@ -1,0 +1,27 @@
+# Local hooks only (no third-party hook repositories are fetched): every hook runs a tool already pinned in
+# ops/requirements.lock or installed by the environment bootstrap. Install with `pre-commit install`.
+repos:
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff
+        entry: /opt/vnx-dna/venv/bin/ruff check
+        language: system
+        types: [python]
+      - id: gitleaks
+        name: gitleaks (staged changes)
+        entry: gitleaks git --staged --no-banner --redact
+        language: system
+        pass_filenames: false
+      - id: no-generated-data
+        name: no generated DNA data or keys
+        entry: "generated archives, strand pools or key files must not be committed"
+        language: fail
+        files: '(\.vxdna|\.vxs|\.vxidx|\.fastq|key\.txt)$'
+        exclude: '^tests/fixtures/'
+      - id: ops-tests
+        name: ops unit tests
+        entry: /opt/vnx-dna/venv/bin/python -m pytest -q ops/tests -p no:cacheprovider -x
+        language: system
+        pass_filenames: false
+        files: '^(ops|config)/'

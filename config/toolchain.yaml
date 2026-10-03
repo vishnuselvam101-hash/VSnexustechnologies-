@@ -1,0 +1,25 @@
+# Toolchain contract checked by `vnxdna doctor`. Versions below are what PHASE 4 installed/validated on 2026-10-02;
+# exact versions of Python packages are pinned (with hashes) in ops/requirements.lock.
+schema: vnxdna.toolchain/1
+
+required:   # missing → doctor FAIL
+  [git, git-lfs, python3.12, uv, gcc, g++, cmake, ninja, pkg-config, make, jq, rg, tmux, sqlite3, systemd-run,
+   unshare, sysbench, gitleaks, pip-audit, cyclonedx-py, ollama]
+# The external agent CLI (system.yaml agent.cli) is checked separately by `vnxdna doctor`.
+optional:   # missing → doctor WARN
+  [node, pnpm, cargo, rustc, go, clang, docker, shellcheck, pre-commit, mypy, yq, fzf, fdfind, hyperfine, fio, htop,
+   btop, iotop, sar, redis-cli, gh]
+
+installed_in_phase4:
+  apt: [clang 18.1.3, rustc 1.75.0, cargo 1.75.0, golang-go 1.22.2, shellcheck 0.9.0, fzf 0.44.1, yq 3.1.0 (python-yq),
+        hyperfine 1.18.0, fio 3.36]
+  uv_tool: [pre-commit 4.6.2, mypy 2.4.0, pip-audit 2.10.1, cyclonedx-bom 7.5.0]
+  binary: ["gitleaks 8.30.1 (GitHub release, SHA-256 verified against gitleaks_8.30.1_checksums.txt)"]
+  rollback: /opt/vnx-dna/rollback/toolchain-uninstall.sh
+
+not_installed:   # deliberately — reason recorded
+  podman: "Docker 29 is already installed and running production; a second container engine adds no value"
+  python3.13: "project requires >=3.12; 3.12 is the system Python and CI target"
+  syft/trivy: "SBOM via cyclonedx-py (Python deps are the whole dependency tree); trivy not needed without images"
+  pytest-xdist: "test parallelism is governed at the job level; the suite's own multiprocessing already uses workers"
+  boto3: "SQS adapter is optional and disabled; install only when queue.sqs.enabled is set"

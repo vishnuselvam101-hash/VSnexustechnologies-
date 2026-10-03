@@ -102,3 +102,11 @@ New V3-only modules live in `vnxdna.ecc.engine`, `vnxdna.ecc.rs_batch` and `vnxd
 Details: [STORAGE_FORMAT.md](STORAGE_FORMAT.md), [ENCODING.md](ENCODING.md), [ECC.md](ECC.md),
 [RANDOM_ACCESS.md](RANDOM_ACCESS.md), [ERROR_MODEL.md](ERROR_MODEL.md), [SECURITY.md](SECURITY.md),
 [BENCHMARKS.md](BENCHMARKS.md), [REPRODUCIBILITY.md](REPRODUCIBILITY.md).
+
+## Engineering environment (ops layer)
+
+Development tooling — the LAYA decision layer, the agent harness, the resource governor, model routing, queues,
+benchmarks, experiments and release gates — lives in `ops/vnxops` with its policy in `config/laya/`. It is described
+in [ENVIRONMENT.md](ENVIRONMENT.md). The dependency is one-way: `ops/vnxops` drives the library through its CLI and
+API, and `src/vnxdna` never imports `ops/vnxops`, so the storage library and its formats do not depend on the
+environment.

@@ -25,3 +25,31 @@
    force-push.** Verify that the remote branch and tag point at the release commit.
 10. **Fallback:** if the push fails (authentication or permissions), keep the local release intact and report the exact
     error and the command to run next.
+
+## V4 and later: acceptance gates
+
+From V4, steps 2–6 above are run by `vnxdna release check --version vN` (optionally `--class research` /
+`--class commercial`). It runs every applicable gate in `config/laya/release-gates.yaml` and writes
+`release/VN_ACCEPTANCE_REPORT.md`; per-gate records go to `/opt/vnx-dna/reports/gates/`.
+
+| Gate | How it is decided |
+|---|---|
+| BUILD | `compileall` of `src` and `ops/vnxops`; `vnx-dna --help` exits 0 |
+| TEST | `pytest_full` + `pytest_ops` |
+| INTEGRATION | end-to-end store → encode → sequence → consensus → decode → restore, SHA-256 identical |
+| REGRESSION, PERFORMANCE | `benchmark --dna --suite smoke` compared with `docs/releases/v3-baseline.json` |
+| SECURITY | gitleaks 0 findings, pip-audit 0 vulnerable pinned dependencies, no tracked secret files |
+| REPRODUCIBILITY | same seed twice → identical container, strand and read SHA-256 |
+| DOCUMENTATION | CHANGELOG mentions the version; LIMITATIONS.md present |
+| LINT | `ruff check src tests research ops` |
+| SCIENTIFIC_VALIDATION | research versions only (`version_classes.research`) → `REQUIRES_HUMAN_REVIEW` |
+| COMMERCIAL_READINESS_REVIEW | commercial versions only (`version_classes.commercial`) → `REQUIRES_HUMAN_REVIEW` |
+
+Regression thresholds (`benchmark_thresholds`): a stage may be at most 15 % slower (inputs ≥ 100 KB), peak RSS at most
+25 % higher (and > 32 MiB), net bits per base may not drop, recovery rate inside the documented guarantee stays 1.0,
+undetected corruption stays 0.
+
+A version is ACCEPTED only when every applicable gate is PASS. `REQUIRES_HUMAN_REVIEW` is never PASS: a human records
+the review, then reruns the check. A failed gate leaves the candidate branch unmerged; nothing is reverted
+automatically. Tags are never moved; a bad release is fixed by a new patch release from the last accepted tag.
+Merging into `main` and creating tags always need explicit human confirmation of the exact commit SHA.

@@ -1,0 +1,430 @@
+{
+  "schema": "vnxdna.baseline/1",
+  "version": "3.0.0",
+  "tag": "v3.0.0",
+  "commit": "9b5123ceb86805b9d0eabd7a5f74592c3d97eb58",
+  "tag_commit": "9b5123ceb86805b9d0eabd7a5f74592c3d97eb58",
+  "tag_matches": true,
+  "worktree_clean": true,
+  "worktree": "/opt/vnx-dna/baseline/v3.0.0",
+  "venv": "/opt/vnx-dna/baseline/v3.0.0-venv",
+  "measured_at": "2026-10-02T15:33:15+00:00",
+  "tests": {
+    "tests": 601,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time_s": 281.6,
+    "passed": 601
+  },
+  "test_exit": "0",
+  "benchmark_smoke": {
+    "run_dir": "/opt/vnx-dna/reports/benchmarks/smoke/20261002-210031",
+    "schema": "vnxdna.benchmark/1",
+    "suite": "smoke",
+    "run_id": "20261002-210031",
+    "measured": true,
+    "created_at": "2026-10-02T15:30:49+00:00",
+    "workers": 2,
+    "cli": "/opt/vnx-dna/baseline/v3.0.0-venv/bin/vnx-dna",
+    "repo_src": "/root/vnx-dna-env/src",
+    "host_profile": {
+      "model": "Intel(R) Xeon(R) Gold 6240 CPU @ 2.60GHz",
+      "logical_cpus": 8
+    },
+    "sizes": [
+      {
+        "size_label": "1KB",
+        "bytes": 1000,
+        "result": "PASS",
+        "sha256_identical": true,
+        "compression_ratio": 1.2837,
+        "dna_bases": 33264,
+        "bases_per_input_byte": 33.264,
+        "net_bits_per_base": 0.2405002405002405,
+        "ecc_overhead": 0.8,
+        "outer_code": "64+16 Cauchy RS",
+        "strands": 132,
+        "throughput_MBps": {
+          "store": 0.002,
+          "encode": 0.002,
+          "decode": 0.002,
+          "restore": 0.002
+        },
+        "random_access_s": 0.576,
+        "peak_rss_bytes": {
+          "generate": 58867712,
+          "store": 58966016,
+          "encode": 58937344,
+          "decode": 59564032,
+          "restore": 58679296,
+          "extract_dna": 60153856
+        },
+        "cpu_seconds": {
+          "generate": 1.058,
+          "store": 1.133,
+          "encode": 1.233,
+          "decode": 1.227,
+          "restore": 1.204,
+          "extract_dna": 1.362
+        },
+        "workers": 2
+      },
+      {
+        "size_label": "10KB",
+        "bytes": 10000,
+        "result": "PASS",
+        "sha256_identical": true,
+        "compression_ratio": 1.843,
+        "dna_bases": 70560,
+        "bases_per_input_byte": 7.056,
+        "net_bits_per_base": 1.1337868480725624,
+        "ecc_overhead": 0.3529,
+        "outer_code": "64+16 Cauchy RS",
+        "strands": 280,
+        "throughput_MBps": {
+          "store": 0.019,
+          "encode": 0.02,
+          "decode": 0.018,
+          "restore": 0.022
+        },
+        "random_access_s": 0.617,
+        "peak_rss_bytes": {
+          "generate": 58941440,
+          "store": 58888192,
+          "encode": 59437056,
+          "decode": 59621376,
+          "restore": 58474496,
+          "extract_dna": 60878848
+        },
+        "cpu_seconds": {
+          "generate": 1.121,
+          "store": 1.196,
+          "encode": 1.234,
+          "decode": 1.284,
+          "restore": 1.15,
+          "extract_dna": 1.279
+        },
+        "workers": 2
+      },
+      {
+        "size_label": "100KB",
+        "bytes": 100000,
+        "result": "PASS",
+        "sha256_identical": true,
+        "compression_ratio": 1.9615,
+        "dna_bases": 426132,
+        "bases_per_input_byte": 4.26132,
+        "net_bits_per_base": 1.8773525574235213,
+        "ecc_overhead": 0.251,
+        "outer_code": "64+16 Cauchy RS",
+        "strands": 1691,
+        "throughput_MBps": {
+          "store": 0.183,
+          "encode": 0.205,
+          "decode": 0.178,
+          "restore": 0.207
+        },
+        "random_access_s": 0.621,
+        "peak_rss_bytes": {
+          "generate": 59858944,
+          "store": 58855424,
+          "encode": 59740160,
+          "decode": 61018112,
+          "restore": 58994688,
+          "extract_dna": 63373312
+        },
+        "cpu_seconds": {
+          "generate": 1.025,
+          "store": 1.1,
+          "encode": 1.205,
+          "decode": 1.283,
+          "restore": 1.115,
+          "extract_dna": 1.411
+        },
+        "workers": 2
+      }
+    ],
+    "recovery": {
+      "channel": {
+        "coverage": 8,
+        "substitution_rate": 0.005
+      },
+      "size": "16KB",
+      "trials": 2,
+      "recovered": 2,
+      "recovery_rate": 1.0,
+      "failure_rate": 0.0,
+      "undetected_corruption": 0
+    },
+    "pass": true
+  },
+  "benchmark_standard": {
+    "run_dir": "/opt/vnx-dna/reports/benchmarks/standard/20261002-210049",
+    "schema": "vnxdna.benchmark/1",
+    "suite": "standard",
+    "run_id": "20261002-210049",
+    "measured": true,
+    "created_at": "2026-10-02T15:31:49+00:00",
+    "workers": 4,
+    "cli": "/opt/vnx-dna/baseline/v3.0.0-venv/bin/vnx-dna",
+    "repo_src": "/root/vnx-dna-env/src",
+    "host_profile": {
+      "model": "Intel(R) Xeon(R) Gold 6240 CPU @ 2.60GHz",
+      "logical_cpus": 8
+    },
+    "sizes": [
+      {
+        "size_label": "1KB",
+        "bytes": 1000,
+        "result": "PASS",
+        "sha256_identical": true,
+        "compression_ratio": 1.2837,
+        "dna_bases": 33264,
+        "bases_per_input_byte": 33.264,
+        "net_bits_per_base": 0.2405002405002405,
+        "ecc_overhead": 0.8,
+        "outer_code": "64+16 Cauchy RS",
+        "strands": 132,
+        "throughput_MBps": {
+          "store": 0.002,
+          "encode": 0.002,
+          "decode": 0.002,
+          "restore": 0.002
+        },
+        "random_access_s": 0.626,
+        "peak_rss_bytes": {
+          "generate": 58867712,
+          "store": 59097088,
+          "encode": 59097088,
+          "decode": 59424768,
+          "restore": 58683392,
+          "extract_dna": 59920384
+        },
+        "cpu_seconds": {
+          "generate": 1.047,
+          "store": 1.175,
+          "encode": 1.225,
+          "decode": 1.225,
+          "restore": 1.14,
+          "extract_dna": 1.286
+        },
+        "workers": 4
+      },
+      {
+        "size_label": "10KB",
+        "bytes": 10000,
+        "result": "PASS",
+        "sha256_identical": true,
+        "compression_ratio": 1.843,
+        "dna_bases": 70560,
+        "bases_per_input_byte": 7.056,
+        "net_bits_per_base": 1.1337868480725624,
+        "ecc_overhead": 0.3529,
+        "outer_code": "64+16 Cauchy RS",
+        "strands": 280,
+        "throughput_MBps": {
+          "store": 0.021,
+          "encode": 0.018,
+          "decode": 0.018,
+          "restore": 0.022
+        },
+        "random_access_s": 0.579,
+        "peak_rss_bytes": {
+          "generate": 58945536,
+          "store": 59011072,
+          "encode": 59060224,
+          "decode": 59629568,
+          "restore": 58687488,
+          "extract_dna": 61050880
+        },
+        "cpu_seconds": {
+          "generate": 1.098,
+          "store": 1.078,
+          "encode": 1.176,
+          "decode": 1.28,
+          "restore": 1.156,
+          "extract_dna": 1.362
+        },
+        "workers": 4
+      },
+      {
+        "size_label": "100KB",
+        "bytes": 100000,
+        "result": "PASS",
+        "sha256_identical": true,
+        "compression_ratio": 1.9615,
+        "dna_bases": 426132,
+        "bases_per_input_byte": 4.26132,
+        "net_bits_per_base": 1.8773525574235213,
+        "ecc_overhead": 0.251,
+        "outer_code": "64+16 Cauchy RS",
+        "strands": 1691,
+        "throughput_MBps": {
+          "store": 0.217,
+          "encode": 0.193,
+          "decode": 0.181,
+          "restore": 0.234
+        },
+        "random_access_s": 0.606,
+        "peak_rss_bytes": {
+          "generate": 59994112,
+          "store": 59080704,
+          "encode": 59748352,
+          "decode": 61026304,
+          "restore": 58863616,
+          "extract_dna": 63238144
+        },
+        "cpu_seconds": {
+          "generate": 1.131,
+          "store": 1.006,
+          "encode": 1.259,
+          "decode": 1.243,
+          "restore": 1.143,
+          "extract_dna": 1.293
+        },
+        "workers": 4
+      },
+      {
+        "size_label": "1MB",
+        "bytes": 1000000,
+        "result": "PASS",
+        "sha256_identical": true,
+        "compression_ratio": 2.205,
+        "dna_bases": 3599064,
+        "bases_per_input_byte": 3.599064,
+        "net_bits_per_base": 2.22280015026129,
+        "ecc_overhead": 0.2512,
+        "outer_code": "64+16 Cauchy RS",
+        "strands": 14282,
+        "throughput_MBps": {
+          "store": 1.842,
+          "encode": 1.422,
+          "decode": 1.46,
+          "restore": 2.132
+        },
+        "random_access_s": 0.757,
+        "peak_rss_bytes": {
+          "generate": 69885952,
+          "store": 59662336,
+          "encode": 67084288,
+          "decode": 78168064,
+          "restore": 61186048,
+          "extract_dna": 79777792
+        },
+        "cpu_seconds": {
+          "generate": 1.203,
+          "store": 1.184,
+          "encode": 1.446,
+          "decode": 1.427,
+          "restore": 1.18,
+          "extract_dna": 1.502
+        },
+        "workers": 4
+      },
+      {
+        "size_label": "10MB",
+        "bytes": 10000000,
+        "result": "PASS",
+        "sha256_identical": true,
+        "compression_ratio": 2.2522,
+        "dna_bases": 35022708,
+        "bases_per_input_byte": 3.5022708,
+        "net_bits_per_base": 2.284232275813738,
+        "ecc_overhead": 0.2506,
+        "outer_code": "64+16 Cauchy RS",
+        "strands": 138979,
+        "throughput_MBps": {
+          "store": 18.727,
+          "encode": 9.183,
+          "decode": 8.091,
+          "restore": 19.048
+        },
+        "random_access_s": 0.919,
+        "peak_rss_bytes": {
+          "generate": 107462656,
+          "store": 68673536,
+          "encode": 94892032,
+          "decode": 133423104,
+          "restore": 74919936,
+          "extract_dna": 94613504
+        },
+        "cpu_seconds": {
+          "generate": 1.693,
+          "store": 1.168,
+          "encode": 2.906,
+          "decode": 2.367,
+          "restore": 1.276,
+          "extract_dna": 1.625
+        },
+        "workers": 4
+      }
+    ],
+    "recovery": {
+      "channel": {
+        "coverage": 10,
+        "substitution_rate": 0.01,
+        "dropout_rate": 0.02
+      },
+      "size": "64KB",
+      "trials": 6,
+      "recovered": 6,
+      "recovery_rate": 1.0,
+      "failure_rate": 0.0,
+      "undetected_corruption": 0
+    },
+    "pass": true
+  },
+  "e2e": {
+    "roundtrip": {
+      "outcome": "RECOVERED",
+      "input_sha256": "3f978e931d26a66c128a996675f97a305c7dabba69501f3a26e3f9866828b397",
+      "output_sha256": "3f978e931d26a66c128a996675f97a305c7dabba69501f3a26e3f9866828b397",
+      "reads": 7253,
+      "runtime_s": 5.842,
+      "peak_rss_bytes": 107065344,
+      "failed_stage": null,
+      "error_model": {
+        "coverage": 6,
+        "dropout_rate": 0.01,
+        "substitution_rate": 0.004,
+        "insertion_rate": 0.0005,
+        "deletion_rate": 0.0005
+      }
+    },
+    "sha256_identical": true,
+    "reproducible": true,
+    "repro_hashes": {
+      "a.vxdna": "68f55db4a12dabdbeb2dbd7ae5dc85299938dfc9cb137a5ac6dcd642045b37de",
+      "s.fasta": "d30f940327550d398c3b4025d92a5f445c2ebdde381fc0d3465f20f05722f59c",
+      "r.fastq": "67ecd915db48b10d5e63e74abcb5e89a0b78b30da5183597db2e1a7df2f0c610"
+    },
+    "ok": true
+  },
+  "known_limitations_source": "docs/LIMITATIONS.md @ v3.0.0",
+  "known_limitations": [
+    "**Software and simulation only.** No DNA has been synthesised, stored, amplified or sequenced for this project.",
+    "**The channel is not fitted to a platform.** Error rates are stress parameters. Real synthesis and sequencing have",
+    "**No molecular random access.** VNX-DNA assigns no PCR primers. Random access from DNA reads selected records of a",
+    "**Sequence constraints are screening rules** (GC content, homopolymers, tandem repeats, motifs). There is no",
+    "**Density figures are information-theoretic counts** of nucleotides per input byte for software strands, including",
+    "Guarantees hold **per ECC group** (any M of K + M strands) and **per strand** (`2e + f \u2264 r`). An archive is",
+    "**Indels at coverage 1** are repaired only for one indel (or up to three of the same net direction within the search",
+    "Indels present in **every** molecule of a strand (a synthesis error in the species) cannot be corrected by",
+    "There is **no cross-group code**: correlated loss of more than M strands in one group loses that chunk, even if",
+    "Throughput is CPU-bound Python/NumPy. The inner RS decoder is vectorised since V3, but clustering and consensus remain",
+    "Nothing here is RAM- or DRAM-class storage: decoding is a batch process measured in MB/s.",
+    "Peak memory depends on the chunk size and the worker count, not on the file size, for store, restore, encode and",
+    "Single-read indel repair is expensive for two or three indels (tens to thousands of milliseconds per read;",
+    "Unencrypted archives detect accidents, not deliberate modification.",
+    "Encrypted archives leak the approximate size (chunk count), per-chunk compressibility and every ECC parameter",
+    "There is no password-based key derivation and no key escrow. A lost key is a lost archive. Python cannot reliably",
+    "A malicious strand pool can make decoding fail (denial of service). It cannot make decoding output wrong bytes",
+    "VNX-DNA 2.0 cannot read encrypted archives whose store was resumed by V3. They declare `final-seal-epoch-v3`, and",
+    "VNX-DNA 2.0 store checkpoints cannot be resumed by V3 (start over without `--resume`).",
+    "Shuffled read output of `sequence`/`simulate` can differ from V2 for the same seed on large pools or VXS input, and",
+    "Do not run two `store` commands for the **same output** at the same time. A resumable store keeps its work files",
+    "Outputs are created with mode 0600; restored files do not keep the original file's permissions or timestamps.",
+    "The `benchmark` commands' `--output` JSON files are replaced without `--force` (they are measurement results)."
+  ]
+}

@@ -1,0 +1,82 @@
+# LAYA decision policy: how a request is classified, which steps it needs, and what decides acceptance.
+# LAYA is deterministic wherever possible: rules are evaluated top to bottom; a local model is consulted only when
+# no rule matches, and its answer must be one of the declared task types.
+schema: vnxdna.laya-policy/1
+
+classification:
+  rules:   # first match wins (case-insensitive regex on the request text)
+    - {match: '\b(architecture|interface|module boundar|design the|roadmap|version plan)', type: architecture}
+    - {match: '\b(literature|prior art|paper|published|survey|state of the art|research)\b', type: research}
+    - {match: '\b(security|cve|secret|vulnerab|audit dependenc|supply.chain)', type: security_review}
+    - {match: '\b(red.team|break|attack|adversar|fuzz)', type: red_team}
+    - {match: '\b(benchmark|throughput|latency|profil|performance)', type: benchmark_run}
+    - {match: '\b(run (the )?tests?|pytest|regression suite)', type: test_run}
+    - {match: '\b(write|add|generate) (unit |property |integration )?tests?\b', type: test_generation}
+    - {match: '\b(lint|ruff|format)\b', type: lint_fix}
+    - {match: '\b(docs?|documentation|readme|changelog|whitepaper)\b', type: documentation}
+    - {match: '\b(release|tag|acceptance gate|version bump)\b', type: release}
+    - {match: '\b(debug|traceback|crash|fails?|failing|bug)\b', type: debugging}
+    - {match: '\b(refactor|clean ?up|restructure)\b', type: refactoring}
+    - {match: '\b(summari[sz]e|log|classif)', type: log_summary}
+    - {match: '\b(implement|add|build|feature|support)\b', type: implementation}
+  fallback_model_classification: true     # Tier-1 model picks from task_types; invalid answers fall back to `default`
+  default: implementation
+
+risk_levels:
+  low:      {approval: none}
+  medium:   {approval: none, notes: "accepted work still lands on a branch for human merge"}
+  high:     {approval: required}
+  critical: {approval: required_two_step, notes: "explicit approval naming the decision id, re-confirmed at execution"}
+
+# Each task type: owner agent, fallback, risk, governor job class, and the gates acceptance needs.
+task_types:
+  architecture:   {agent: architect, fallback: researcher, risk: high, job_class: agent,
+                   steps: [execute, review], requirements: {tests_required: false, benchmark_required: false, human_review: true}}
+  research:       {agent: researcher, fallback: architect, risk: low, job_class: agent,
+                   steps: [execute, review], requirements: {tests_required: false, benchmark_required: false, human_review: true,
+                   evidence_labels_required: true}}
+  implementation: {agent: coder, fallback: test_engineer, risk: medium, job_class: agent,
+                   steps: [execute, test, benchmark, review], requirements: {tests_required: true, benchmark_required: true,
+                   regression_check: true, human_review: true, docs_required: true}}
+  debugging:      {agent: coder, fallback: test_engineer, risk: medium, job_class: agent,
+                   steps: [execute, test, review], requirements: {tests_required: true, regression_check: true, human_review: true}}
+  refactoring:    {agent: coder, fallback: architect, risk: medium, job_class: agent,
+                   steps: [execute, test, benchmark, review], requirements: {tests_required: true, benchmark_required: true,
+                   regression_check: true, human_review: true}}
+  test_generation: {agent: test_engineer, fallback: coder, risk: low, job_class: agent,
+                   steps: [execute, test, review], requirements: {tests_required: true, human_review: true}}
+  test_run:       {agent: test_engineer, risk: low, job_class: test, steps: [execute], requirements: {}}
+  lint_fix:       {agent: coder, risk: low, job_class: misc, steps: [execute, test], requirements: {tests_required: true}}
+  benchmark_run:  {agent: benchmark_engineer, risk: low, job_class: bench, steps: [execute], requirements: {}}
+  security_review: {agent: security_engineer, fallback: red_team, risk: medium, job_class: agent,
+                   steps: [execute, review], requirements: {human_review: true}}
+  red_team:       {agent: red_team, fallback: security_engineer, risk: medium, job_class: agent,
+                   steps: [execute, review], requirements: {human_review: true}}
+  documentation:  {agent: documentation_engineer, risk: low, job_class: agent, steps: [execute, test, review],
+                   requirements: {tests_required: true, human_review: true}}   # README examples are tested
+  release:        {agent: release_manager, risk: critical, job_class: test, steps: [execute, test, benchmark, review],
+                   requirements: {tests_required: true, benchmark_required: true, regression_check: true, human_review: true}}
+  log_summary:    {agent: documentation_engineer, risk: low, job_class: misc, steps: [execute], requirements: {}}
+  classification: {agent: architect, risk: low, job_class: misc, steps: [execute], requirements: {}}
+
+review:
+  max_changed_lines: 1500             # larger diffs are rejected and must be split
+  forbidden_paths:                    # never modified by an agent; only by a human
+    - ".github/workflows/**"
+    - "tests/fixtures/**"
+    - "research/results/**"           # measured results are produced by scripts, never edited
+    - "src/vnxdna/_version.py"
+  approval_paths:                     # changes here raise risk to high (format/compat surface)
+    - "src/vnxdna/container/**"
+    - "src/vnxdna/v2/format*.py"
+    - "docs/*FORMAT*.md"
+  secret_scan: true
+  docs_paths: ["docs/**", "README.md", "CHANGELOG.md"]
+
+retries:
+  max_attempts: 3
+  retryable: [timeout, resource_refused, model_error, transient]
+  strategies:                         # attempt N uses strategies[N-2]; never the same strategy twice
+    - escalate_model                  # next tier up
+    - reduce_parallelism              # halve workers / test parallelism
+  never_retry: [policy_violation, test_failure_after_change, approval_required, secret_detected]

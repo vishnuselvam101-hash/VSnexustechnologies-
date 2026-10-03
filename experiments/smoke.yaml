@@ -1,0 +1,10 @@
+# Fast experiment suite for CI/doctor: one clean trial and one damaged-but-recoverable trial.
+name: smoke
+defaults: {size: 32KB, pattern: mixed, coverage: 10}
+trials:
+  - {name: clean, seed: 1, substitution_rate: 0.0}
+  - {name: substitutions-0.5pct, seed: 2, substitution_rate: 0.005}
+expect:
+  rules:
+    - {match: clean, outcome: RECOVERED}
+    - {match: substitutions-0.5pct, outcome: RECOVERED}

@@ -1,0 +1,2 @@
+# VNX-DNA operations layer (LAYA, harness, governor, observability). Library deps come from pyproject.toml.
+pyyaml>=6,<7

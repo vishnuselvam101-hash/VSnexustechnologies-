@@ -1,0 +1,9 @@
+# Biochemical constraint screening: GC bounds, homopolymer limit, forbidden motifs (with their reverse complement).
+name: constraints
+defaults: {size: 32KB, pattern: mixed, coverage: 8, substitution_rate: 0.002}
+trials:
+  - {name: gc-40-60, seed: 1, gc_min: 40, gc_max: 60}
+  - {name: gc-45-55-window, seed: 1, gc_min: 45, gc_max: 55, gc_window: 50}
+  - {name: homopolymer-3, seed: 1, max_homopolymer: 3}
+  - {name: motifs-ecori-bamhi, seed: 1, forbid_motif: [GAATTC, GGATCC]}
+  - {name: all-constraints, seed: 2, gc_min: 40, gc_max: 60, max_homopolymer: 3, forbid_motif: [GAATTC]}
