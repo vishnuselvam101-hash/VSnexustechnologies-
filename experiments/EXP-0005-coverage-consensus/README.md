@@ -15,20 +15,20 @@ vnx experiment reproduce experiments/EXP-0005-coverage-consensus            # re
 
 ## Results
 
-Commit `2cd82b316ff6729b469744f76549b51b98183d7b-dirty`, 2026-10-03T02:29:09Z; environment in `environment.json`; every trial in `results.json`.
+Commit `a387b34141161092ace2dcd8017dabe546b95831`, 2026-10-03T03:03:14Z; environment in `environment.json`; every trial in `results.json`.
 
-**results** — 9.5526 nt per input byte, 2115 strands of 296 nt, 5 trials per point
+**results** — 10.1012 nt per input byte, 2115 strands of 313 nt, 5 trials per point
 
 | channel | SUCCESS | PARTIAL | DECODER_FAILURE | INTEGRITY_FAILURE | other | success rate | median decode s |
 |---|---|---|---|---|---|---|---|
-| coverage=1 | 0 | 0 | 5 | 0 | 0 | 0.0 | 0.485 |
-| coverage=2 | 0 | 0 | 5 | 0 | 0 | 0.0 | 0.8806 |
-| coverage=5 | 1 | 0 | 4 | 0 | 0 | 0.2 | 2.4402 |
-| coverage=10 | 5 | 0 | 0 | 0 | 0 | 1.0 | 4.642 |
-| coverage=20 | 5 | 0 | 0 | 0 | 0 | 1.0 | 9.1078 |
-| coverage=30 | 5 | 0 | 0 | 0 | 0 | 1.0 | 14.5678 |
-| coverage=50 | 5 | 0 | 0 | 0 | 0 | 1.0 | 24.5225 |
-| coverage=100 | 5 | 0 | 0 | 0 | 0 | 1.0 | 47.9639 |
+| coverage=1 | 0 | 0 | 5 | 0 | 0 | 0.0 | 0.5799 |
+| coverage=2 | 0 | 0 | 5 | 0 | 0 | 0.0 | 1.011 |
+| coverage=5 | 5 | 0 | 0 | 0 | 0 | 1.0 | 2.3942 |
+| coverage=10 | 5 | 0 | 0 | 0 | 0 | 1.0 | 4.449 |
+| coverage=20 | 5 | 0 | 0 | 0 | 0 | 1.0 | 8.7657 |
+| coverage=30 | 5 | 0 | 0 | 0 | 0 | 1.0 | 13.22 |
+| coverage=50 | 5 | 0 | 0 | 0 | 0 | 1.0 | 22.6814 |
+| coverage=100 | 5 | 0 | 0 | 0 | 0 | 1.0 | 43.481 |
 
 ## Limitations
 

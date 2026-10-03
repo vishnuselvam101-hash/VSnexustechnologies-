@@ -49,7 +49,7 @@
       }
     },
     {
-      "name": "v4-balanced (2-nt markers / 32 nt, P=40, r=16)",
+      "name": "v4-balanced (3-nt markers / 24 nt, P=40, r=16)",
       "dna": {
         "profile": "v4-balanced"
       }

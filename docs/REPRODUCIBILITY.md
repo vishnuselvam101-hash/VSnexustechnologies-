@@ -1,5 +1,39 @@
 # Reproducibility
 
+**V4** first; the **V3** procedures follow unchanged below the divider.
+
+## V4 experiment directories
+
+```
+experiments/EXP-XXXX-name/
+  README.md         purpose, method, results summary, limitations
+  config.json       the complete definition: input generator (pattern, size, seed), codes/layout, channel, sweep, trials
+  environment.json  CPU, logical CPUs, RAM, OS, Python, package versions, vnx version, git commit, UTC timestamp
+  input.sha256      SHA-256 of the generated input
+  seed.json         every seed in the configuration (trial seeds derive from the base seed: vnxdna.v4.sweep._seed)
+  results.json      every trial (no filtering) + per-point aggregates
+```
+
+Inputs are generated deterministically, so a directory is self-contained:
+
+```bash
+vnx experiment run experiments/EXP-0001-substitution/config.json     # (re)writes environment/seed/input/results
+vnx experiment reproduce experiments/EXP-0001-substitution           # re-runs and compares every deterministic field
+```
+
+`reproduce` compares outcomes, counts, read numbers, sizes and SHA-256s. It excludes timings and memory, which depend
+on the machine. It exits 0 only if everything matches. Determinism holds for the same software version. A version
+that changes encoding or simulation can legitimately change results; the git commit in `environment.json`
+identifies the code.
+
+Benchmarks: `vnx benchmark --profile balanced --output bench.json` writes JSON (with environment and resolved
+configuration) plus a Markdown table next to it. The V3 baseline is reproduced by
+`python benchmarks/baseline/v3/run_v3_baseline.py`.
+
+---
+
+# V3 reproducibility — unchanged
+
 Every number in the documentation is produced by a script from JSON in `research/results/`. None is typed by hand.
 This page lists how to regenerate each one.
 

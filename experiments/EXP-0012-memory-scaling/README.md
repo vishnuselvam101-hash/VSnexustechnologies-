@@ -15,14 +15,14 @@ vnx experiment reproduce experiments/EXP-0012-memory-scaling            # re-run
 
 ## Results
 
-Commit `2cd82b316ff6729b469744f76549b51b98183d7b-dirty`, 2026-10-03T02:43:02Z; environment in `environment.json`; every trial in `results.json`.
+Commit `a387b34141161092ace2dcd8017dabe546b95831`, 2026-10-03T03:17:48Z; environment in `environment.json`; every trial in `results.json`.
 
 | input_size | input MB | status | archive s | encode s | channel s | decode s | encode MB/s | decode MB/s | recoverable MB/s | reads/s | peak RSS MB (process / largest worker) |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 1048576 | 1.0 | SUCCESS | 0.0188 | 0.6192 | None | 0.7922 | 1.643 | 1.324 | 1.324 | 41446.8 | 100.1 / 100.1 |
-| 10485760 | 10.5 | SUCCESS | 0.1007 | 1.4941 | None | 2.554 | 6.575 | 4.106 | 4.106 | 128332.8 | 274.8 / 120.7 |
-| 104857600 | 104.9 | SUCCESS | 0.8907 | 9.9336 | None | 22.3168 | 9.687 | 4.699 | 4.699 | 146845.9 | 304.0 / 125.7 |
-| 1073741824 | 1073.7 | SUCCESS | 9.2313 | 92.3926 | None | 231.2099 | 10.566 | 4.644 | 4.644 | 145137.9 | 322.1 / 122.9 |
+| 1048576 | 1.0 | SUCCESS | 0.018 | 0.6417 | None | 0.7903 | 1.589 | 1.327 | 1.327 | 41547.1 | 102.0 / 102.0 |
+| 10485760 | 10.5 | SUCCESS | 0.1005 | 1.5325 | None | 2.6196 | 6.421 | 4.003 | 4.003 | 125117.7 | 273.0 / 126.3 |
+| 104857600 | 104.9 | SUCCESS | 0.9229 | 10.5275 | None | 23.3109 | 9.158 | 4.498 | 4.498 | 140583.5 | 302.2 / 126.5 |
+| 1073741824 | 1073.7 | SUCCESS | 8.8582 | 96.8205 | None | 244.4004 | 10.16 | 4.393 | 4.393 | 137304.7 | 326.1 / 123.7 |
 
 ## Limitations
 

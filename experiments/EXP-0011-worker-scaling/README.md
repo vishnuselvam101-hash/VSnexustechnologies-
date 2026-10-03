@@ -15,21 +15,21 @@ vnx experiment reproduce experiments/EXP-0011-worker-scaling            # re-run
 
 ## Results
 
-Commit `2cd82b316ff6729b469744f76549b51b98183d7b-dirty`, 2026-10-03T02:38:37Z; environment in `environment.json`; every trial in `results.json`.
+Commit `a387b34141161092ace2dcd8017dabe546b95831`, 2026-10-03T03:12:51Z; environment in `environment.json`; every trial in `results.json`.
 
 | workers | input MB | status | archive s | encode s | channel s | decode s | encode MB/s | decode MB/s | recoverable MB/s | reads/s | peak RSS MB (process / largest worker) |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 1 | 16.8 | SUCCESS | 0.2094 | 6.0607 | 39.411 | 87.0671 | 2.676 | 0.193 | 0.193 | 17690.0 | 157.0 / 0.0 |
-| 2 | 16.8 | SUCCESS | 0.1601 | 3.5197 | 17.7031 | 44.9292 | 4.559 | 0.373 | 0.373 | 34280.9 | 150.3 / 126.9 |
-| 4 | 16.8 | SUCCESS | 0.1575 | 2.1954 | 10.2511 | 24.7079 | 7.13 | 0.679 | 0.679 | 62337.0 | 178.3 / 137.3 |
-| 8 | 16.8 | SUCCESS | 0.1588 | 1.5963 | 7.4893 | 16.4124 | 9.559 | 1.022 | 1.022 | 93844.7 | 216.6 / 171.0 |
+| 1 | 16.8 | SUCCESS | 0.2058 | 6.3168 | 40.1078 | 100.199 | 2.572 | 0.167 | 0.167 | 15371.6 | 162.9 / 0.0 |
+| 2 | 16.8 | SUCCESS | 0.1551 | 3.6533 | 20.6637 | 51.5901 | 4.405 | 0.325 | 0.325 | 29854.8 | 156.9 / 130.3 |
+| 4 | 16.8 | SUCCESS | 0.1584 | 2.2068 | 10.7969 | 28.6061 | 7.093 | 0.586 | 0.586 | 53842.2 | 172.4 / 140.5 |
+| 8 | 16.8 | SUCCESS | 0.1617 | 1.6478 | 7.9929 | 18.4316 | 9.272 | 0.91 | 0.91 | 83563.6 | 243.2 / 195.1 |
 
 | workers | encode speed-up | decode speed-up | decode scaling efficiency |
 |---|---|---|---|
 | 1 | 1.00× | 1.00× | 100% |
-| 2 | 1.72× | 1.94× | 97% |
-| 4 | 2.76× | 3.52× | 88% |
-| 8 | 3.80× | 5.30× | 66% |
+| 2 | 1.73× | 1.94× | 97% |
+| 4 | 2.86× | 3.50× | 88% |
+| 8 | 3.83× | 5.44× | 68% |
 
 ## Limitations
 

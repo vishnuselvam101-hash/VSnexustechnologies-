@@ -1,4 +1,78 @@
-# VNX-DNA 3
+# VNX-DNA 4
+
+**A CPU-first, research-grade software stack for DNA data storage.** VNX-DNA 4 packs files and directories into a
+verifiable archive and encodes it as constraint-screened DNA strands. Through a configurable *simulated* storage and
+sequencing channel, it reconstructs the archive from noisy reads, including insertions, deletions, dropout and
+uneven coverage. It reports success only after SHA-256 and Merkle verification.
+
+> **Scope: SIMULATED, NOT PHYSICALLY VALIDATED.** All results come from computation and simulation. No sequence
+> has been synthesised or sequenced. The channel is a configurable model, not fitted to any platform. Nothing here
+> demonstrates physical DNA storage, synthesis or sequencing yields, storage lifetime, or production readiness.
+> See [docs/LIMITATIONS.md](docs/LIMITATIONS.md).
+
+**New in 4.0** ([architecture](docs/V4_ARCHITECTURE.md), [format](docs/VNX4_FORMAT.md),
+[completion report](docs/V4_COMPLETION_REPORT.md)):
+- **VNX4 archives**: multiple files and directories, content-addressed chunks with deduplication, an RFC 6962 Merkle
+  tree (`vnx verify --chunk N` checks one chunk), AES-256-GCM with key files or scrypt passphrases, sealed file
+  tables, and random access (`vnx locate`, `vnx extract --file`).
+- **Strand frame v4 with in-strand synchronisation markers.** A marker-template alignment turns insertions and
+  deletions into erasures for the inner Reed–Solomon code. With the `v4-indel` profile, 87–100 % of single reads
+  carrying 2–3 indels decoded in our simulated tests; V3 repairs one indel or one burst per read
+  ([docs/INDEL_ENGINE.md](docs/INDEL_ENGINE.md), [docs/INDEL_RESEARCH.md](docs/INDEL_RESEARCH.md)).
+- **Self-describing strand pools** (superblock), selective decoding of single files from reads, and PARTIAL recovery
+  that extracts only individually verified files.
+- **A configurable stochastic channel**: substitutions, insertions, deletions, dropout,
+  Poisson/negative-binomial coverage, duplication, homopolymer-dependent errors, GC bias, bursts, N calls and reverse
+  complements. It is seeded and independent of the worker count.
+- **Pluggable outer codes**: Cauchy RS (default, MDS; V3's code) and an EXPERIMENTAL GF(2) fountain code, compared
+  at equal redundancy ([docs/ECC_ARCHITECTURE.md](docs/ECC_ARCHITECTURE.md)).
+- **Configurable constraint engine** with JSON diagnostics (`vnx validate`).
+- **Benchmarks, error sweeps and reproducible experiment directories** (`vnx benchmark`, `vnx sweep`,
+  `vnx experiment run|reproduce`), with recovery curves that count every failure.
+- **Performance**: fast RS kernels, bit-identical to V3 and 2.5–5.2× faster, plus multi-worker encode, channel and
+  decode ([docs/PERFORMANCE.md](docs/PERFORMANCE.md)).
+- **V3 is unchanged** and still included (`vnx-dna`, format 5). Its 601 tests pass.
+
+## Install (Linux, Python ≥ 3.12, CPU only)
+
+```bash
+python3 -m venv .venv && . .venv/bin/activate
+pip install -e .            # '.[dev]' for the tests
+vnx --help                  # V4
+vnx-dna --help              # V3 (format 5), unchanged
+```
+
+## V4 quick start
+
+```bash
+vnx archive ./dataset archive.vnx                     # files/directories → verified VNX4 archive
+vnx inspect archive.vnx && vnx verify archive.vnx
+vnx encode archive.vnx strands.fasta                  # → DNA strands (v4-balanced: 313 nt, sync markers, Cauchy RS 64+16)
+vnx validate strands.fasta                            # constraint diagnostics (JSON)
+vnx channel simulate strands.fasta reads.fastq --config channel.json      # SIMULATED storage + sequencing
+vnx decode reads.fastq -o recovered.vnx --extract ./restored              # verified reconstruction
+vnx decode reads.fastq --select dataset/one.bin --extract ./one           # random access from reads
+vnx experiment run experiments/EXP-0001-substitution/config.json          # reproducible experiment
+```
+
+`channel.json` example: `{"substitution_rate": 0.003, "insertion_rate": 0.001, "deletion_rate": 0.001,
+"dropout_rate": 0.03, "coverage": 5, "coverage_model": "poisson", "seed": 12345}`
+
+Exit codes: 0 success, 1 verification failed, 3 invalid input, 4 key/authentication, 5 insufficient redundancy,
+6 unsupported format, 7 configuration, 8 output, **9 PARTIAL recovery**, 70 internal error.
+
+## V4 documentation
+
+[Architecture](docs/V4_ARCHITECTURE.md) · [Format](docs/VNX4_FORMAT.md) · [Archive engine](docs/ARCHIVE_ENGINE.md) ·
+[Channel model](docs/CHANNEL_MODEL.md) · [Indel engine](docs/INDEL_ENGINE.md) · [Indel research](docs/INDEL_RESEARCH.md) ·
+[ECC architecture](docs/ECC_ARCHITECTURE.md) · [Constraint engine](docs/CONSTRAINT_ENGINE.md) ·
+[Performance](docs/PERFORMANCE.md) · [Benchmarking](docs/BENCHMARKING.md) · [Reproducibility](docs/REPRODUCIBILITY.md) ·
+[Security](docs/SECURITY.md) · [Limitations](docs/LIMITATIONS.md) · [Engineering log](docs/V4_ENGINEERING_LOG.md) ·
+[Audit of V3](docs/V4_AUDIT.md) · [Completion report](docs/V4_COMPLETION_REPORT.md)
+
+---
+
+# VNX-DNA 3 (format 5, `vnx-dna`) — included unchanged
 
 **Scalable computational DNA data storage, end to end, on a CPU.** Give VNX-DNA a real file, including a
 multi-gigabyte one. It processes the file in bounded memory, turns it into a structured DNA-storage representation,

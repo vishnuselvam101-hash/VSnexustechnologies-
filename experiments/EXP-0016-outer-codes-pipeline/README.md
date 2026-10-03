@@ -15,7 +15,43 @@ vnx experiment reproduce experiments/EXP-0016-outer-codes-pipeline            # 
 
 ## Results
 
-_Not run yet._
+Commit `a387b34141161092ace2dcd8017dabe546b95831`, 2026-10-03T03:05:44Z; environment in `environment.json`; every trial in `results.json`.
+
+**cauchy-rs 64+16 (default)** — 9.8469 nt per input byte, 8247 strands of 313 nt, 10 trials per point
+
+| channel | SUCCESS | PARTIAL | DECODER_FAILURE | INTEGRITY_FAILURE | other | success rate | median decode s |
+|---|---|---|---|---|---|---|---|
+| dropout=0.05 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.152 |
+| dropout=0.1 | 9 | 0 | 1 | 0 | 0 | 0.9 | 0.1766 |
+| dropout=0.12 | 2 | 0 | 8 | 0 | 0 | 0.2 | 0.1461 |
+| dropout=0.14 | 0 | 0 | 10 | 0 | 0 | 0.0 | 0.147 |
+| dropout=0.16 | 0 | 0 | 10 | 0 | 0 | 0.0 | 0.1488 |
+| dropout=0.18 | 0 | 0 | 10 | 0 | 0 | 0.0 | 0.1417 |
+| dropout=0.2 | 0 | 0 | 10 | 0 | 0 | 0.0 | 0.1291 |
+
+**cauchy-rs 200+50** — 9.8493 nt per input byte, 8249 strands of 313 nt, 10 trials per point
+
+| channel | SUCCESS | PARTIAL | DECODER_FAILURE | INTEGRITY_FAILURE | other | success rate | median decode s |
+|---|---|---|---|---|---|---|---|
+| dropout=0.05 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.1668 |
+| dropout=0.1 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.1919 |
+| dropout=0.12 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.1757 |
+| dropout=0.14 | 9 | 0 | 1 | 0 | 0 | 0.9 | 0.1827 |
+| dropout=0.16 | 1 | 0 | 9 | 0 | 0 | 0.1 | 0.1892 |
+| dropout=0.18 | 0 | 0 | 10 | 0 | 0 | 0.0 | 0.1855 |
+| dropout=0.2 | 0 | 0 | 10 | 0 | 0 | 0.0 | 0.1503 |
+
+**lt-fountain dense 256+64 (EXPERIMENTAL)** — 9.8457 nt per input byte, 8246 strands of 313 nt, 10 trials per point
+
+| channel | SUCCESS | PARTIAL | DECODER_FAILURE | INTEGRITY_FAILURE | other | success rate | median decode s |
+|---|---|---|---|---|---|---|---|
+| dropout=0.05 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.2986 |
+| dropout=0.1 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.2777 |
+| dropout=0.12 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.2565 |
+| dropout=0.14 | 9 | 0 | 1 | 0 | 0 | 0.9 | 0.2542 |
+| dropout=0.16 | 3 | 0 | 7 | 0 | 0 | 0.3 | 0.2535 |
+| dropout=0.18 | 0 | 0 | 10 | 0 | 0 | 0.0 | 0.2292 |
+| dropout=0.2 | 0 | 0 | 10 | 0 | 0 | 0.0 | 0.1747 |
 
 ## Limitations
 

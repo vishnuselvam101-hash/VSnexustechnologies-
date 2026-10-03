@@ -15,35 +15,35 @@ vnx experiment reproduce experiments/EXP-0004-dropout            # re-run in scr
 
 ## Results
 
-Commit `2cd82b316ff6729b469744f76549b51b98183d7b-dirty`, 2026-10-03T02:28:53Z; environment in `environment.json`; every trial in `results.json`.
+Commit `a387b34141161092ace2dcd8017dabe546b95831`, 2026-10-03T03:03:01Z; environment in `environment.json`; every trial in `results.json`.
 
-**v4-balanced cauchy-rs 64+16 (20% parity)** — 9.3121 nt per input byte, 8247 strands of 296 nt, 10 trials per point
+**v4-balanced cauchy-rs 64+16 (20% parity)** — 9.8469 nt per input byte, 8247 strands of 313 nt, 10 trials per point
 
 | channel | SUCCESS | PARTIAL | DECODER_FAILURE | INTEGRITY_FAILURE | other | success rate | median decode s |
 |---|---|---|---|---|---|---|---|
-| dropout=0 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.1366 |
-| dropout=0.01 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.1866 |
-| dropout=0.05 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.1773 |
-| dropout=0.1 | 8 | 0 | 2 | 0 | 0 | 0.8 | 0.1741 |
-| dropout=0.15 | 0 | 0 | 10 | 0 | 0 | 0.0 | 0.1751 |
-| dropout=0.2 | 0 | 0 | 10 | 0 | 0 | 0.0 | 0.1419 |
-| dropout=0.3 | 0 | 0 | 10 | 0 | 0 | 0.0 | 0.0829 |
-| dropout=0.4 | 0 | 0 | 10 | 0 | 0 | 0.0 | 0.0656 |
-| dropout=0.5 | 0 | 0 | 10 | 0 | 0 | 0.0 | 0.0543 |
+| dropout=0 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.1396 |
+| dropout=0.01 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.1487 |
+| dropout=0.05 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.1363 |
+| dropout=0.1 | 8 | 0 | 2 | 0 | 0 | 0.8 | 0.1466 |
+| dropout=0.15 | 0 | 0 | 10 | 0 | 0 | 0.0 | 0.1451 |
+| dropout=0.2 | 0 | 0 | 10 | 0 | 0 | 0.0 | 0.1243 |
+| dropout=0.3 | 0 | 0 | 10 | 0 | 0 | 0.0 | 0.0755 |
+| dropout=0.4 | 0 | 0 | 10 | 0 | 0 | 0.0 | 0.0614 |
+| dropout=0.5 | 0 | 0 | 10 | 0 | 0 | 0.0 | 0.0513 |
 
 **v4-archival cauchy-rs 32+32 (50% parity)** — 17.5017 nt per input byte, 14658 strands of 313 nt, 10 trials per point
 
 | channel | SUCCESS | PARTIAL | DECODER_FAILURE | INTEGRITY_FAILURE | other | success rate | median decode s |
 |---|---|---|---|---|---|---|---|
-| dropout=0 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.3024 |
-| dropout=0.01 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.2621 |
-| dropout=0.05 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.2576 |
-| dropout=0.1 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.2908 |
-| dropout=0.15 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.2911 |
-| dropout=0.2 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.3014 |
-| dropout=0.3 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.3157 |
-| dropout=0.4 | 0 | 0 | 10 | 0 | 0 | 0.0 | 0.2989 |
-| dropout=0.5 | 0 | 0 | 10 | 0 | 0 | 0.0 | 0.195 |
+| dropout=0 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.246 |
+| dropout=0.01 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.2136 |
+| dropout=0.05 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.2275 |
+| dropout=0.1 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.2314 |
+| dropout=0.15 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.2404 |
+| dropout=0.2 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.2546 |
+| dropout=0.3 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.249 |
+| dropout=0.4 | 0 | 0 | 10 | 0 | 0 | 0.0 | 0.2316 |
+| dropout=0.5 | 0 | 0 | 10 | 0 | 0 | 0.0 | 0.1639 |
 
 ## Limitations
 

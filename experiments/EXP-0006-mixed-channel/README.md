@@ -15,20 +15,20 @@ vnx experiment reproduce experiments/EXP-0006-mixed-channel            # re-run 
 
 ## Results
 
-Commit `2cd82b316ff6729b469744f76549b51b98183d7b-dirty`, 2026-10-03T02:30:57Z; environment in `environment.json`; every trial in `results.json`.
+Commit `a387b34141161092ace2dcd8017dabe546b95831`, 2026-10-03T03:04:53Z; environment in `environment.json`; every trial in `results.json`.
 
-**results** — 9.3121 nt per input byte, 8247 strands of 296 nt, 10 trials per point
+**results** — 9.8469 nt per input byte, 8247 strands of 313 nt, 10 trials per point
 
 | channel | SUCCESS | PARTIAL | DECODER_FAILURE | INTEGRITY_FAILURE | other | success rate | median decode s |
 |---|---|---|---|---|---|---|---|
-| coverage=1, deletion=0.0002, dropout=0.01, insertion=0.0002, level=L1, substitution=0.001 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.4072 |
-| coverage=1, deletion=0.0005, dropout=0.02, insertion=0.0005, level=L2, substitution=0.002 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.7813 |
-| coverage=1, deletion=0.001, dropout=0.05, insertion=0.001, level=L3, substitution=0.005 | 0 | 0 | 10 | 0 | 0 | 0.0 | 0.9422 |
-| coverage=5, deletion=0.0002, dropout=0.01, insertion=0.0002, level=L1, substitution=0.001 | 10 | 0 | 0 | 0 | 0 | 1.0 | 1.8329 |
-| coverage=5, deletion=0.0005, dropout=0.02, insertion=0.0005, level=L2, substitution=0.002 | 10 | 0 | 0 | 0 | 0 | 1.0 | 2.8216 |
-| coverage=5, deletion=0.001, dropout=0.05, insertion=0.001, level=L3, substitution=0.005 | 10 | 0 | 0 | 0 | 0 | 1.0 | 4.0777 |
-| coverage=5, deletion=0.002, dropout=0.1, insertion=0.002, level=L4, substitution=0.01 | 0 | 0 | 10 | 0 | 0 | 0.0 | 5.4477 |
-| coverage=5, deletion=0.005, dropout=0.15, insertion=0.005, level=L5, substitution=0.02 | 0 | 0 | 10 | 0 | 0 | 0.0 | 7.8271 |
+| coverage=1, deletion=0.0002, dropout=0.01, insertion=0.0002, level=L1, substitution=0.001 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.3748 |
+| coverage=1, deletion=0.0005, dropout=0.02, insertion=0.0005, level=L2, substitution=0.002 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.586 |
+| coverage=1, deletion=0.001, dropout=0.05, insertion=0.001, level=L3, substitution=0.005 | 9 | 0 | 1 | 0 | 0 | 0.9 | 0.8088 |
+| coverage=5, deletion=0.0002, dropout=0.01, insertion=0.0002, level=L1, substitution=0.001 | 10 | 0 | 0 | 0 | 0 | 1.0 | 1.5508 |
+| coverage=5, deletion=0.0005, dropout=0.02, insertion=0.0005, level=L2, substitution=0.002 | 10 | 0 | 0 | 0 | 0 | 1.0 | 2.5744 |
+| coverage=5, deletion=0.001, dropout=0.05, insertion=0.001, level=L3, substitution=0.005 | 10 | 0 | 0 | 0 | 0 | 1.0 | 3.6064 |
+| coverage=5, deletion=0.002, dropout=0.1, insertion=0.002, level=L4, substitution=0.01 | 2 | 0 | 8 | 0 | 0 | 0.2 | 5.5212 |
+| coverage=5, deletion=0.005, dropout=0.15, insertion=0.005, level=L5, substitution=0.02 | 0 | 0 | 10 | 0 | 0 | 0.0 | 9.6649 |
 
 ## Limitations
 

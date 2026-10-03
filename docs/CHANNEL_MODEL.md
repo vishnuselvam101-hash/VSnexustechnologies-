@@ -1,4 +1,63 @@
-# Channel model (simulated storage and sequencing) and measured recovery
+# Channel models
+
+This page has two parts. **V4 channel** (`vnx channel simulate`, `vnxdna.v4.channel`) comes first. The **V3 channel**
+(`vnx-dna sequence`, format 5) follows unchanged below the divider.
+
+> **SIMULATED.** Both channels are configurable, seeded stress generators for the decoders. Neither is fitted to a
+> synthesis chemistry or a sequencing platform. Recovery measured with them describes this software under the stated
+> parameters, not physical DNA storage. No physical experiment has been performed.
+
+## V4 channel
+
+Each strand goes through: dropout → coverage (number of reads) → per-read errors → optional N calls, quality scores,
+reverse complement → optional duplication → output (FASTQ or FASTA, optionally shuffled in windows).
+
+| parameter | default | model |
+|---|---|---|
+| `dropout_rate` | 0 | strand lost entirely (Bernoulli per strand) |
+| `coverage`, `coverage_model` | 1, `fixed` | reads per surviving strand: fixed integer, Poisson(mean), or negative binomial (`coverage_dispersion` k; Gamma–Poisson, smaller k = more uneven) |
+| `gc_bias_strength`, `gc_bias_optimum` | 0, 0.5 | coverage weight `exp(−s·((gc − optimum)/0.1)²)` per strand (strands far from the optimum get fewer reads) |
+| `substitution_rate` | 0 | base replaced by one of the other three uniformly (per base) |
+| `insertion_rate` | 0 | random base inserted before a position (per base) |
+| `deletion_rate` | 0 | base removed (per base) |
+| `homopolymer_min_run`, `homopolymer_indel_multiplier`, `homopolymer_substitution_multiplier` | 3, 1, 1 | rates multiplied at positions inside runs ≥ min_run |
+| `burst_rate`, `burst_max_len` | 0, 0 | per read, delete a contiguous run of 1…max bases |
+| `n_rate` | 0 | base reported as N |
+| `reverse_complement_rate` | 0 | read reported on the opposite strand |
+| `duplication_rate` | 0 | read emitted twice (identical copy) |
+| `quality_correct`, `quality_error`, `quality_informative` | 35, 12, 0 | Phred scores; with probability `quality_informative` an erroneous base gets `quality_error` |
+| `shuffle_window` | 0 | seeded shuffle of reads within windows (0 = strand order) |
+| `seed` | 12345 | see determinism |
+
+Example (`channel.json`):
+
+```json
+{"substitution_rate": 0.001, "insertion_rate": 0.001, "deletion_rate": 0.001, "dropout_rate": 0.01,
+ "coverage": 30, "coverage_model": "poisson", "duplication_rate": 0.05, "seed": 12345}
+```
+
+`vnx channel simulate strands.fasta reads.fastq --config channel.json [--workers N]`
+
+**Determinism.** Strands are processed in fixed batches of 1024. Batch b draws all randomness from
+`numpy.random.default_rng([seed, b])`, so the output is a pure function of (strands, configuration, seed),
+independent of the worker count. This is tested byte for byte with 1 and 3 workers. A different seed gives different
+reads (also tested).
+
+**Validation.** Rates must be probabilities. The sum of substitution, insertion and deletion rates must be ≤ 0.5.
+Unknown keys and wrong types are errors (`VNXConfigurationError`, exit 7). Measured event counts match the configured
+rates within sampling error (`test_channel_rates_are_respected`).
+
+**Not modelled** (NOT VALIDATED against any platform): position-dependent error profiles, synthesis truncation,
+chimeras, primer/adapter sequences, PCR amplification dynamics, strand breakage, context-dependent substitution
+matrices, spatial/temporal decay.
+
+Recovery curves under this channel: EXP-0001 (substitution), EXP-0002 (insertion), EXP-0003 (deletion), EXP-0004
+(dropout), EXP-0005 (coverage), EXP-0006 (mixed), EXP-0013 (homopolymer, GC bias, uneven coverage). They are
+summarised in [V4_COMPLETION_REPORT.md](V4_COMPLETION_REPORT.md).
+
+---
+
+# V3 channel model (format 5, `vnx-dna sequence`) — unchanged
 
 > **SOFTWARE SIMULATION.** The channel below is a configurable, reproducible stress generator for the decoder. It is
 > not fitted to any synthesis chemistry or sequencing platform. Recovery rates measured with it describe *this

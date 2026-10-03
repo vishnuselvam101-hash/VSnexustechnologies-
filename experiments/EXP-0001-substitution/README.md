@@ -15,26 +15,26 @@ vnx experiment reproduce experiments/EXP-0001-substitution            # re-run i
 
 ## Results
 
-Commit `790d4f4ce14ef4d288a8acaf182a1fd9887a1bc4`, 2026-10-03T02:26:37Z; environment in `environment.json`; every trial in `results.json`.
+Commit `a387b34141161092ace2dcd8017dabe546b95831`, 2026-10-03T03:00:47Z; environment in `environment.json`; every trial in `results.json`.
 
-**results** — 9.3121 nt per input byte, 8247 strands of 296 nt, 10 trials per point
+**results** — 9.8469 nt per input byte, 8247 strands of 313 nt, 10 trials per point
 
 | channel | SUCCESS | PARTIAL | DECODER_FAILURE | INTEGRITY_FAILURE | other | success rate | median decode s |
 |---|---|---|---|---|---|---|---|
-| coverage=1, substitution=0 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.1322 |
-| coverage=1, substitution=0.0001 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.1464 |
-| coverage=1, substitution=0.0005 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.122 |
-| coverage=1, substitution=0.001 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.1287 |
-| coverage=1, substitution=0.005 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.1928 |
-| coverage=1, substitution=0.01 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.2501 |
-| coverage=1, substitution=0.02 | 8 | 0 | 2 | 0 | 0 | 0.8 | 0.3963 |
-| coverage=5, substitution=0 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.4574 |
-| coverage=5, substitution=0.0001 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.4732 |
-| coverage=5, substitution=0.0005 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.5162 |
-| coverage=5, substitution=0.001 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.5693 |
-| coverage=5, substitution=0.005 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.854 |
-| coverage=5, substitution=0.01 | 10 | 0 | 0 | 0 | 0 | 1.0 | 1.1497 |
-| coverage=5, substitution=0.02 | 10 | 0 | 0 | 0 | 0 | 1.0 | 1.3899 |
+| coverage=1, substitution=0 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.1445 |
+| coverage=1, substitution=0.0001 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.1598 |
+| coverage=1, substitution=0.0005 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.1392 |
+| coverage=1, substitution=0.001 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.1468 |
+| coverage=1, substitution=0.005 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.2108 |
+| coverage=1, substitution=0.01 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.2862 |
+| coverage=1, substitution=0.02 | 9 | 0 | 1 | 0 | 0 | 0.9 | 0.4783 |
+| coverage=5, substitution=0 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.5281 |
+| coverage=5, substitution=0.0001 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.5624 |
+| coverage=5, substitution=0.0005 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.6002 |
+| coverage=5, substitution=0.001 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.6361 |
+| coverage=5, substitution=0.005 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.9438 |
+| coverage=5, substitution=0.01 | 10 | 0 | 0 | 0 | 0 | 1.0 | 1.2012 |
+| coverage=5, substitution=0.02 | 10 | 0 | 0 | 0 | 0 | 1.0 | 1.6873 |
 
 ## Limitations
 

@@ -15,24 +15,24 @@ vnx experiment reproduce experiments/EXP-0003-deletion            # re-run in sc
 
 ## Results
 
-Commit `790d4f4ce14ef4d288a8acaf182a1fd9887a1bc4-dirty`, 2026-10-03T02:27:53Z; environment in `environment.json`; every trial in `results.json`.
+Commit `a387b34141161092ace2dcd8017dabe546b95831`, 2026-10-03T03:02:09Z; environment in `environment.json`; every trial in `results.json`.
 
-**results** — 9.3121 nt per input byte, 8247 strands of 296 nt, 10 trials per point
+**results** — 9.8469 nt per input byte, 8247 strands of 313 nt, 10 trials per point
 
 | channel | SUCCESS | PARTIAL | DECODER_FAILURE | INTEGRITY_FAILURE | other | success rate | median decode s |
 |---|---|---|---|---|---|---|---|
-| coverage=1, deletion=0 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.1465 |
-| coverage=1, deletion=0.0001 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.3206 |
-| coverage=1, deletion=0.0005 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.4158 |
-| coverage=1, deletion=0.001 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.6272 |
-| coverage=1, deletion=0.005 | 0 | 0 | 10 | 0 | 0 | 0.0 | 1.6261 |
-| coverage=1, deletion=0.01 | 0 | 0 | 10 | 0 | 0 | 0.0 | 2.2548 |
-| coverage=5, deletion=0 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.5648 |
-| coverage=5, deletion=0.0001 | 10 | 0 | 0 | 0 | 0 | 1.0 | 1.1421 |
-| coverage=5, deletion=0.0005 | 10 | 0 | 0 | 0 | 0 | 1.0 | 1.7996 |
-| coverage=5, deletion=0.001 | 10 | 0 | 0 | 0 | 0 | 1.0 | 2.7426 |
-| coverage=5, deletion=0.005 | 10 | 0 | 0 | 0 | 0 | 1.0 | 6.8886 |
-| coverage=5, deletion=0.01 | 10 | 0 | 0 | 0 | 0 | 1.0 | 9.603 |
+| coverage=1, deletion=0 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.1376 |
+| coverage=1, deletion=0.0001 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.2525 |
+| coverage=1, deletion=0.0005 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.3677 |
+| coverage=1, deletion=0.001 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.5536 |
+| coverage=1, deletion=0.005 | 5 | 0 | 5 | 0 | 0 | 0.5 | 1.4109 |
+| coverage=1, deletion=0.01 | 0 | 0 | 10 | 0 | 0 | 0.0 | 2.0294 |
+| coverage=5, deletion=0 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.5156 |
+| coverage=5, deletion=0.0001 | 10 | 0 | 0 | 0 | 0 | 1.0 | 0.9796 |
+| coverage=5, deletion=0.0005 | 10 | 0 | 0 | 0 | 0 | 1.0 | 1.5982 |
+| coverage=5, deletion=0.001 | 10 | 0 | 0 | 0 | 0 | 1.0 | 2.5267 |
+| coverage=5, deletion=0.005 | 10 | 0 | 0 | 0 | 0 | 1.0 | 6.1284 |
+| coverage=5, deletion=0.01 | 10 | 0 | 0 | 0 | 0 | 1.0 | 8.3161 |
 
 ## Limitations
 

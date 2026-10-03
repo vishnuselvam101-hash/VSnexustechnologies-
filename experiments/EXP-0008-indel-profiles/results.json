@@ -1,9 +1,9 @@
 {
   "case": "sweep_variants",
   "experiment": {
-    "git_commit": "2cd82b316ff6729b469744f76549b51b98183d7b-dirty",
+    "git_commit": "a387b34141161092ace2dcd8017dabe546b95831",
     "id": "EXP-0008-indel-profiles",
-    "timestamp_utc": "2026-10-03T02:31:47Z",
+    "timestamp_utc": "2026-10-03T03:05:58Z",
     "type": "sweep",
     "vnx_version": "4.0.0"
   },
@@ -41,8 +41,8 @@
       },
       "points": [
         {
-          "decode_seconds_mean": 0.0891,
-          "decode_seconds_median": 0.0917,
+          "decode_seconds_mean": 0.0948,
+          "decode_seconds_median": 0.0968,
           "groups_failed_max": 0,
           "outcomes": {
             "ADDRESS_FAILURE": 0,
@@ -60,11 +60,11 @@
           "reads_mean": 7504.0,
           "success_rate": 1.0,
           "trials": 10,
-          "worker_peak_rss_mb_max": 71.1
+          "worker_peak_rss_mb_max": 73.0
         },
         {
-          "decode_seconds_mean": 0.3531,
-          "decode_seconds_median": 0.351,
+          "decode_seconds_mean": 0.4907,
+          "decode_seconds_median": 0.4921,
           "groups_failed_max": 65,
           "outcomes": {
             "ADDRESS_FAILURE": 0,
@@ -82,11 +82,11 @@
           "reads_mean": 7504.0,
           "success_rate": 0.0,
           "trials": 10,
-          "worker_peak_rss_mb_max": 78.6
+          "worker_peak_rss_mb_max": 81.7
         },
         {
-          "decode_seconds_mean": 0.4919,
-          "decode_seconds_median": 0.4888,
+          "decode_seconds_mean": 0.71,
+          "decode_seconds_median": 0.7007,
           "groups_failed_max": 94,
           "outcomes": {
             "ADDRESS_FAILURE": 0,
@@ -104,11 +104,11 @@
           "reads_mean": 7504.0,
           "success_rate": 0.0,
           "trials": 10,
-          "worker_peak_rss_mb_max": 80.3
+          "worker_peak_rss_mb_max": 87.2
         },
         {
-          "decode_seconds_mean": 0.7532,
-          "decode_seconds_median": 0.7621,
+          "decode_seconds_mean": 0.9344,
+          "decode_seconds_median": 1.0284,
           "groups_failed_max": 94,
           "outcomes": {
             "ADDRESS_FAILURE": 0,
@@ -126,11 +126,11 @@
           "reads_mean": 7504.0,
           "success_rate": 0.0,
           "trials": 10,
-          "worker_peak_rss_mb_max": 81.4
+          "worker_peak_rss_mb_max": 87.2
         },
         {
-          "decode_seconds_mean": 0.848,
-          "decode_seconds_median": 0.848,
+          "decode_seconds_mean": 1.1621,
+          "decode_seconds_median": 1.2272,
           "groups_failed_max": 94,
           "outcomes": {
             "ADDRESS_FAILURE": 0,
@@ -148,11 +148,11 @@
           "reads_mean": 7504.0,
           "success_rate": 0.0,
           "trials": 10,
-          "worker_peak_rss_mb_max": 84.8
+          "worker_peak_rss_mb_max": 90.9
         },
         {
-          "decode_seconds_mean": 0.9656,
-          "decode_seconds_median": 0.9581,
+          "decode_seconds_mean": 1.0358,
+          "decode_seconds_median": 0.9851,
           "groups_failed_max": 94,
           "outcomes": {
             "ADDRESS_FAILURE": 0,
@@ -170,16 +170,16 @@
           "reads_mean": 7504.0,
           "success_rate": 0.0,
           "trials": 10,
-          "worker_peak_rss_mb_max": 84.8
+          "worker_peak_rss_mb_max": 92.7
         }
       ],
-      "seconds": 7.5,
+      "seconds": 8.93,
       "strand_nt": 280,
       "strands": 7504,
       "trials": [
         {
-          "channel_seconds": 0.2561,
-          "decode_seconds": 0.0957,
+          "channel_seconds": 0.2503,
+          "decode_seconds": 0.0955,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -205,11 +205,11 @@
           "reads": 7504,
           "seed": 24193106666314677,
           "trial": 0,
-          "worker_peak_rss_mb": 69.4
+          "worker_peak_rss_mb": 71.3
         },
         {
-          "channel_seconds": 0.2648,
-          "decode_seconds": 0.0943,
+          "channel_seconds": 0.264,
+          "decode_seconds": 0.0981,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -235,11 +235,11 @@
           "reads": 7504,
           "seed": 59766419074561144,
           "trial": 1,
-          "worker_peak_rss_mb": 69.4
+          "worker_peak_rss_mb": 71.2
         },
         {
-          "channel_seconds": 0.2726,
-          "decode_seconds": 0.0928,
+          "channel_seconds": 0.2639,
+          "decode_seconds": 0.1019,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -265,11 +265,11 @@
           "reads": 7504,
           "seed": 41262375751040324,
           "trial": 2,
-          "worker_peak_rss_mb": 69.4
+          "worker_peak_rss_mb": 71.5
         },
         {
-          "channel_seconds": 0.2674,
-          "decode_seconds": 0.0983,
+          "channel_seconds": 0.2632,
+          "decode_seconds": 0.1017,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -295,11 +295,11 @@
           "reads": 7504,
           "seed": 45676613434044916,
           "trial": 3,
-          "worker_peak_rss_mb": 69.4
+          "worker_peak_rss_mb": 71.5
         },
         {
-          "channel_seconds": 0.268,
-          "decode_seconds": 0.0905,
+          "channel_seconds": 0.2569,
+          "decode_seconds": 0.0992,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -325,11 +325,11 @@
           "reads": 7504,
           "seed": 49758981351257399,
           "trial": 4,
-          "worker_peak_rss_mb": 69.6
+          "worker_peak_rss_mb": 71.5
         },
         {
-          "channel_seconds": 0.2642,
-          "decode_seconds": 0.0906,
+          "channel_seconds": 0.2562,
+          "decode_seconds": 0.099,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -355,11 +355,11 @@
           "reads": 7504,
           "seed": 40599930055918611,
           "trial": 5,
-          "worker_peak_rss_mb": 69.5
+          "worker_peak_rss_mb": 71.5
         },
         {
-          "channel_seconds": 0.2672,
-          "decode_seconds": 0.0927,
+          "channel_seconds": 0.2568,
+          "decode_seconds": 0.0937,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -385,11 +385,11 @@
           "reads": 7504,
           "seed": 2605598405444184,
           "trial": 6,
-          "worker_peak_rss_mb": 69.5
+          "worker_peak_rss_mb": 71.5
         },
         {
-          "channel_seconds": 0.2093,
-          "decode_seconds": 0.0797,
+          "channel_seconds": 0.191,
+          "decode_seconds": 0.095,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -415,11 +415,11 @@
           "reads": 7504,
           "seed": 32044101799509846,
           "trial": 7,
-          "worker_peak_rss_mb": 70.8
+          "worker_peak_rss_mb": 72.9
         },
         {
-          "channel_seconds": 0.1982,
-          "decode_seconds": 0.0773,
+          "channel_seconds": 0.1863,
+          "decode_seconds": 0.0804,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -445,11 +445,11 @@
           "reads": 7504,
           "seed": 18201313516696564,
           "trial": 8,
-          "worker_peak_rss_mb": 70.9
+          "worker_peak_rss_mb": 73.0
         },
         {
-          "channel_seconds": 0.2009,
-          "decode_seconds": 0.0791,
+          "channel_seconds": 0.1926,
+          "decode_seconds": 0.0839,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -475,11 +475,11 @@
           "reads": 7504,
           "seed": 4750624872663381,
           "trial": 9,
-          "worker_peak_rss_mb": 71.1
+          "worker_peak_rss_mb": 73.0
         },
         {
-          "channel_seconds": 0.2021,
-          "decode_seconds": 0.3224,
+          "channel_seconds": 0.1924,
+          "decode_seconds": 0.4928,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 65,
@@ -494,11 +494,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 1,
           "read_paths": {
-            "consensus_attempted": 63,
+            "addresses_snapped": 173,
+            "consensus_attempted": 1535,
             "consensus_recovered": 0,
             "fast": 5661,
-            "orphans": 1616,
-            "pending": 87,
+            "orphans": 1613,
+            "pending": 1694,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 140,
@@ -507,11 +508,11 @@
           "reads": 7504,
           "seed": 69732742054694722,
           "trial": 0,
-          "worker_peak_rss_mb": 78.3
+          "worker_peak_rss_mb": 79.9
         },
         {
-          "channel_seconds": 0.2008,
-          "decode_seconds": 0.337,
+          "channel_seconds": 0.1922,
+          "decode_seconds": 0.5032,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 63,
@@ -526,11 +527,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 1,
           "read_paths": {
-            "consensus_attempted": 70,
+            "addresses_snapped": 199,
+            "consensus_attempted": 1525,
             "consensus_recovered": 0,
             "fast": 5673,
-            "orphans": 1590,
-            "pending": 90,
+            "orphans": 1587,
+            "pending": 1669,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 151,
@@ -539,11 +541,11 @@
           "reads": 7504,
           "seed": 25669115693245660,
           "trial": 1,
-          "worker_peak_rss_mb": 78.2
+          "worker_peak_rss_mb": 79.6
         },
         {
-          "channel_seconds": 0.1953,
-          "decode_seconds": 0.3365,
+          "channel_seconds": 0.2055,
+          "decode_seconds": 0.5173,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 60,
@@ -558,11 +560,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 1,
           "read_paths": {
-            "consensus_attempted": 78,
+            "addresses_snapped": 189,
+            "consensus_attempted": 1582,
             "consensus_recovered": 0,
             "fast": 5656,
-            "orphans": 1630,
-            "pending": 94,
+            "orphans": 1629,
+            "pending": 1720,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 124,
@@ -571,11 +574,11 @@
           "reads": 7504,
           "seed": 2534850997689203,
           "trial": 2,
-          "worker_peak_rss_mb": 78.4
+          "worker_peak_rss_mb": 80.4
         },
         {
-          "channel_seconds": 0.2028,
-          "decode_seconds": 0.3395,
+          "channel_seconds": 0.2056,
+          "decode_seconds": 0.5444,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 61,
@@ -590,11 +593,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 1,
           "read_paths": {
-            "consensus_attempted": 66,
+            "addresses_snapped": 224,
+            "consensus_attempted": 1589,
             "consensus_recovered": 0,
             "fast": 5636,
-            "orphans": 1647,
-            "pending": 84,
+            "orphans": 1643,
+            "pending": 1720,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 137,
@@ -603,11 +607,11 @@
           "reads": 7504,
           "seed": 18392388475421632,
           "trial": 3,
-          "worker_peak_rss_mb": 78.4
+          "worker_peak_rss_mb": 80.0
         },
         {
-          "channel_seconds": 0.1929,
-          "decode_seconds": 0.3991,
+          "channel_seconds": 0.1839,
+          "decode_seconds": 0.4915,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 54,
@@ -622,11 +626,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 1,
           "read_paths": {
-            "consensus_attempted": 84,
+            "addresses_snapped": 195,
+            "consensus_attempted": 1531,
             "consensus_recovered": 0,
             "fast": 5664,
-            "orphans": 1586,
-            "pending": 105,
+            "orphans": 1580,
+            "pending": 1682,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 149,
@@ -635,11 +640,11 @@
           "reads": 7504,
           "seed": 58027262663360195,
           "trial": 4,
-          "worker_peak_rss_mb": 77.7
+          "worker_peak_rss_mb": 80.1
         },
         {
-          "channel_seconds": 0.1894,
-          "decode_seconds": 0.3659,
+          "channel_seconds": 0.1865,
+          "decode_seconds": 0.4895,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 60,
@@ -654,11 +659,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 1,
           "read_paths": {
-            "consensus_attempted": 67,
+            "addresses_snapped": 194,
+            "consensus_attempted": 1532,
             "consensus_recovered": 0,
             "fast": 5699,
-            "orphans": 1592,
-            "pending": 83,
+            "orphans": 1591,
+            "pending": 1672,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 130,
@@ -667,11 +673,11 @@
           "reads": 7504,
           "seed": 26396300966327668,
           "trial": 5,
-          "worker_peak_rss_mb": 77.8
+          "worker_peak_rss_mb": 79.7
         },
         {
-          "channel_seconds": 0.1913,
-          "decode_seconds": 0.3624,
+          "channel_seconds": 0.1892,
+          "decode_seconds": 0.5043,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 55,
@@ -686,11 +692,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 1,
           "read_paths": {
-            "consensus_attempted": 74,
+            "addresses_snapped": 227,
+            "consensus_attempted": 1541,
             "consensus_recovered": 0,
             "fast": 5722,
-            "orphans": 1579,
-            "pending": 87,
+            "orphans": 1572,
+            "pending": 1655,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 116,
@@ -699,11 +706,11 @@
           "reads": 7504,
           "seed": 18426321188445706,
           "trial": 6,
-          "worker_peak_rss_mb": 77.3
+          "worker_peak_rss_mb": 79.7
         },
         {
-          "channel_seconds": 0.2102,
-          "decode_seconds": 0.3566,
+          "channel_seconds": 0.1988,
+          "decode_seconds": 0.4504,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 58,
@@ -718,11 +725,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 1,
           "read_paths": {
-            "consensus_attempted": 72,
+            "addresses_snapped": 200,
+            "consensus_attempted": 1493,
             "consensus_recovered": 0,
             "fast": 5752,
-            "orphans": 1534,
-            "pending": 83,
+            "orphans": 1530,
+            "pending": 1607,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 135,
@@ -731,11 +739,11 @@
           "reads": 7504,
           "seed": 1170218369875816,
           "trial": 7,
-          "worker_peak_rss_mb": 78.3
+          "worker_peak_rss_mb": 81.0
         },
         {
-          "channel_seconds": 0.1865,
-          "decode_seconds": 0.3454,
+          "channel_seconds": 0.2034,
+          "decode_seconds": 0.4672,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 65,
@@ -750,11 +758,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 1,
           "read_paths": {
-            "consensus_attempted": 69,
+            "addresses_snapped": 217,
+            "consensus_attempted": 1561,
             "consensus_recovered": 0,
             "fast": 5653,
-            "orphans": 1622,
-            "pending": 89,
+            "orphans": 1616,
+            "pending": 1700,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 140,
@@ -763,11 +772,11 @@
           "reads": 7504,
           "seed": 56649472823455814,
           "trial": 8,
-          "worker_peak_rss_mb": 78.6
+          "worker_peak_rss_mb": 81.3
         },
         {
-          "channel_seconds": 0.192,
-          "decode_seconds": 0.3662,
+          "channel_seconds": 0.2,
+          "decode_seconds": 0.4459,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 54,
@@ -782,11 +791,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 1,
           "read_paths": {
-            "consensus_attempted": 76,
+            "addresses_snapped": 186,
+            "consensus_attempted": 1513,
             "consensus_recovered": 0,
             "fast": 5701,
-            "orphans": 1558,
-            "pending": 93,
+            "orphans": 1554,
+            "pending": 1646,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 152,
@@ -795,11 +805,11 @@
           "reads": 7504,
           "seed": 51772885625984450,
           "trial": 9,
-          "worker_peak_rss_mb": 78.5
+          "worker_peak_rss_mb": 81.7
         },
         {
-          "channel_seconds": 0.197,
-          "decode_seconds": 0.4906,
+          "channel_seconds": 0.1987,
+          "decode_seconds": 0.6819,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 94,
@@ -814,11 +824,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 2,
           "read_paths": {
-            "consensus_attempted": 230,
+            "addresses_snapped": 307,
+            "consensus_attempted": 2599,
             "consensus_recovered": 0,
             "fast": 4346,
-            "orphans": 2652,
-            "pending": 284,
+            "orphans": 2637,
+            "pending": 2914,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 222,
@@ -827,11 +838,11 @@
           "reads": 7504,
           "seed": 23905583095900432,
           "trial": 0,
-          "worker_peak_rss_mb": 79.2
+          "worker_peak_rss_mb": 81.7
         },
         {
-          "channel_seconds": 0.2072,
-          "decode_seconds": 0.4788,
+          "channel_seconds": 0.1912,
+          "decode_seconds": 0.6923,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 94,
@@ -846,11 +857,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 2,
           "read_paths": {
-            "consensus_attempted": 244,
+            "addresses_snapped": 333,
+            "consensus_attempted": 2738,
             "consensus_recovered": 0,
             "fast": 4220,
-            "orphans": 2773,
-            "pending": 289,
+            "orphans": 2765,
+            "pending": 3043,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 222,
@@ -859,11 +871,11 @@
           "reads": 7504,
           "seed": 154796670623922,
           "trial": 1,
-          "worker_peak_rss_mb": 80.3
+          "worker_peak_rss_mb": 81.9
         },
         {
-          "channel_seconds": 0.2085,
-          "decode_seconds": 0.4869,
+          "channel_seconds": 0.197,
+          "decode_seconds": 0.7115,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 94,
@@ -878,11 +890,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 2,
           "read_paths": {
-            "consensus_attempted": 227,
+            "addresses_snapped": 336,
+            "consensus_attempted": 2579,
             "consensus_recovered": 0,
             "fast": 4378,
-            "orphans": 2641,
-            "pending": 276,
+            "orphans": 2629,
+            "pending": 2892,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 209,
@@ -891,11 +904,11 @@
           "reads": 7504,
           "seed": 10170329597516425,
           "trial": 2,
-          "worker_peak_rss_mb": 79.6
+          "worker_peak_rss_mb": 82.4
         },
         {
-          "channel_seconds": 0.1917,
-          "decode_seconds": 0.4727,
+          "channel_seconds": 0.1903,
+          "decode_seconds": 0.6955,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 94,
@@ -910,11 +923,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 2,
           "read_paths": {
-            "consensus_attempted": 206,
+            "addresses_snapped": 333,
+            "consensus_attempted": 2584,
             "consensus_recovered": 0,
             "fast": 4345,
-            "orphans": 2673,
-            "pending": 254,
+            "orphans": 2667,
+            "pending": 2905,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 232,
@@ -923,11 +937,11 @@
           "reads": 7504,
           "seed": 28115990068351150,
           "trial": 3,
-          "worker_peak_rss_mb": 79.6
+          "worker_peak_rss_mb": 82.1
         },
         {
-          "channel_seconds": 0.1861,
-          "decode_seconds": 0.478,
+          "channel_seconds": 0.1913,
+          "decode_seconds": 0.6995,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 94,
@@ -942,11 +956,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 2,
           "read_paths": {
-            "consensus_attempted": 209,
+            "addresses_snapped": 305,
+            "consensus_attempted": 2538,
             "consensus_recovered": 0,
             "fast": 4425,
-            "orphans": 2631,
-            "pending": 260,
+            "orphans": 2621,
+            "pending": 2866,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 188,
@@ -955,11 +970,11 @@
           "reads": 7504,
           "seed": 44312340834962468,
           "trial": 4,
-          "worker_peak_rss_mb": 79.8
+          "worker_peak_rss_mb": 82.4
         },
         {
-          "channel_seconds": 0.1974,
-          "decode_seconds": 0.4757,
+          "channel_seconds": 0.1978,
+          "decode_seconds": 0.7491,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 94,
@@ -974,11 +989,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 2,
           "read_paths": {
-            "consensus_attempted": 226,
+            "addresses_snapped": 305,
+            "consensus_attempted": 2612,
             "consensus_recovered": 0,
             "fast": 4322,
-            "orphans": 2688,
-            "pending": 272,
+            "orphans": 2676,
+            "pending": 2930,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 222,
@@ -987,11 +1003,11 @@
           "reads": 7504,
           "seed": 64643070063724574,
           "trial": 5,
-          "worker_peak_rss_mb": 79.3
+          "worker_peak_rss_mb": 82.2
         },
         {
-          "channel_seconds": 0.2051,
-          "decode_seconds": 0.5321,
+          "channel_seconds": 0.1872,
+          "decode_seconds": 0.702,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 94,
@@ -1006,11 +1022,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 2,
           "read_paths": {
-            "consensus_attempted": 236,
+            "addresses_snapped": 328,
+            "consensus_attempted": 2596,
             "consensus_recovered": 0,
             "fast": 4354,
-            "orphans": 2646,
-            "pending": 287,
+            "orphans": 2641,
+            "pending": 2913,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 217,
@@ -1019,11 +1036,11 @@
           "reads": 7504,
           "seed": 51557441602093729,
           "trial": 6,
-          "worker_peak_rss_mb": 79.8
+          "worker_peak_rss_mb": 82.9
         },
         {
-          "channel_seconds": 0.1902,
-          "decode_seconds": 0.4952,
+          "channel_seconds": 0.1815,
+          "decode_seconds": 0.7704,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 94,
@@ -1038,11 +1055,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 2,
           "read_paths": {
-            "consensus_attempted": 191,
+            "addresses_snapped": 328,
+            "consensus_attempted": 2598,
             "consensus_recovered": 0,
             "fast": 4325,
-            "orphans": 2705,
-            "pending": 246,
+            "orphans": 2693,
+            "pending": 2919,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 228,
@@ -1051,11 +1069,11 @@
           "reads": 7504,
           "seed": 69695931130637070,
           "trial": 7,
-          "worker_peak_rss_mb": 79.4
+          "worker_peak_rss_mb": 87.2
         },
         {
-          "channel_seconds": 0.2057,
-          "decode_seconds": 0.5147,
+          "channel_seconds": 0.192,
+          "decode_seconds": 0.7035,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 94,
@@ -1070,11 +1088,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 2,
           "read_paths": {
-            "consensus_attempted": 245,
+            "addresses_snapped": 328,
+            "consensus_attempted": 2665,
             "consensus_recovered": 0,
             "fast": 4329,
-            "orphans": 2685,
-            "pending": 295,
+            "orphans": 2680,
+            "pending": 2963,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 195,
@@ -1083,11 +1102,11 @@
           "reads": 7504,
           "seed": 19122960519500468,
           "trial": 8,
-          "worker_peak_rss_mb": 80.3
+          "worker_peak_rss_mb": 82.5
         },
         {
-          "channel_seconds": 0.1997,
-          "decode_seconds": 0.4943,
+          "channel_seconds": 0.1955,
+          "decode_seconds": 0.6939,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 94,
@@ -1102,11 +1121,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 2,
           "read_paths": {
-            "consensus_attempted": 202,
+            "addresses_snapped": 298,
+            "consensus_attempted": 2538,
             "consensus_recovered": 0,
             "fast": 4378,
-            "orphans": 2621,
-            "pending": 262,
+            "orphans": 2611,
+            "pending": 2858,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 243,
@@ -1115,11 +1135,11 @@
           "reads": 7504,
           "seed": 30056670941615564,
           "trial": 9,
-          "worker_peak_rss_mb": 79.7
+          "worker_peak_rss_mb": 83.3
         },
         {
-          "channel_seconds": 0.2,
-          "decode_seconds": 0.7807,
+          "channel_seconds": 0.2249,
+          "decode_seconds": 0.7113,
           "detail": "no superblock could be decoded (too few superblock strands survived, or the layout is wrong)",
           "files_recovered": 0,
           "groups_failed": null,
@@ -1137,11 +1157,11 @@
           "reads": 7504,
           "seed": 20621060441252961,
           "trial": 0,
-          "worker_peak_rss_mb": 80.6
+          "worker_peak_rss_mb": 83.7
         },
         {
-          "channel_seconds": 0.1895,
-          "decode_seconds": 0.7579,
+          "channel_seconds": 0.2123,
+          "decode_seconds": 1.0263,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 94,
@@ -1156,11 +1176,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 3,
           "read_paths": {
-            "consensus_attempted": 530,
+            "addresses_snapped": 538,
+            "consensus_attempted": 3855,
             "consensus_recovered": 0,
             "fast": 2598,
-            "orphans": 4019,
-            "pending": 646,
+            "orphans": 3996,
+            "pending": 4589,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 241,
@@ -1169,11 +1190,11 @@
           "reads": 7504,
           "seed": 3769651273381638,
           "trial": 1,
-          "worker_peak_rss_mb": 81.1
+          "worker_peak_rss_mb": 83.5
         },
         {
-          "channel_seconds": 0.1939,
-          "decode_seconds": 0.785,
+          "channel_seconds": 0.1886,
+          "decode_seconds": 1.0066,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 94,
@@ -1188,11 +1209,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 3,
           "read_paths": {
-            "consensus_attempted": 504,
+            "addresses_snapped": 546,
+            "consensus_attempted": 3860,
             "consensus_recovered": 0,
             "fast": 2581,
-            "orphans": 4049,
-            "pending": 621,
+            "orphans": 4012,
+            "pending": 4582,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 253,
@@ -1201,11 +1223,11 @@
           "reads": 7504,
           "seed": 32431745753160687,
           "trial": 2,
-          "worker_peak_rss_mb": 80.1
+          "worker_peak_rss_mb": 85.9
         },
         {
-          "channel_seconds": 0.2096,
-          "decode_seconds": 0.795,
+          "channel_seconds": 0.2005,
+          "decode_seconds": 1.0596,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 94,
@@ -1220,11 +1242,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 3,
           "read_paths": {
-            "consensus_attempted": 530,
+            "addresses_snapped": 521,
+            "consensus_attempted": 3873,
             "consensus_recovered": 0,
             "fast": 2604,
-            "orphans": 3983,
-            "pending": 673,
+            "orphans": 3956,
+            "pending": 4566,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 244,
@@ -1233,11 +1256,11 @@
           "reads": 7504,
           "seed": 31480990033203093,
           "trial": 3,
-          "worker_peak_rss_mb": 81.4
+          "worker_peak_rss_mb": 83.2
         },
         {
           "channel_seconds": 0.1929,
-          "decode_seconds": 0.748,
+          "decode_seconds": 0.6868,
           "detail": "no superblock could be decoded (too few superblock strands survived, or the layout is wrong)",
           "files_recovered": 0,
           "groups_failed": null,
@@ -1255,11 +1278,11 @@
           "reads": 7504,
           "seed": 17263945884762617,
           "trial": 4,
-          "worker_peak_rss_mb": 80.2
+          "worker_peak_rss_mb": 87.2
         },
         {
-          "channel_seconds": 0.1973,
-          "decode_seconds": 0.7391,
+          "channel_seconds": 0.1892,
+          "decode_seconds": 1.0374,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 94,
@@ -1274,11 +1297,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 3,
           "read_paths": {
-            "consensus_attempted": 494,
+            "addresses_snapped": 565,
+            "consensus_attempted": 3893,
             "consensus_recovered": 0,
             "fast": 2531,
-            "orphans": 4087,
-            "pending": 623,
+            "orphans": 4056,
+            "pending": 4615,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 263,
@@ -1287,11 +1311,11 @@
           "reads": 7504,
           "seed": 67684460504926007,
           "trial": 5,
-          "worker_peak_rss_mb": 80.2
+          "worker_peak_rss_mb": 83.7
         },
         {
-          "channel_seconds": 0.2191,
-          "decode_seconds": 0.6511,
+          "channel_seconds": 0.1925,
+          "decode_seconds": 0.6857,
           "detail": "no superblock could be decoded (too few superblock strands survived, or the layout is wrong)",
           "files_recovered": 0,
           "groups_failed": null,
@@ -1309,11 +1333,11 @@
           "reads": 7504,
           "seed": 32370667936009864,
           "trial": 6,
-          "worker_peak_rss_mb": 80.4
+          "worker_peak_rss_mb": 83.3
         },
         {
-          "channel_seconds": 0.1966,
-          "decode_seconds": 0.7795,
+          "channel_seconds": 0.1921,
+          "decode_seconds": 1.0596,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 94,
@@ -1328,11 +1352,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 3,
           "read_paths": {
-            "consensus_attempted": 558,
+            "addresses_snapped": 508,
+            "consensus_attempted": 3847,
             "consensus_recovered": 0,
             "fast": 2547,
-            "orphans": 3979,
-            "pending": 711,
+            "orphans": 3945,
+            "pending": 4594,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 267,
@@ -1341,11 +1366,11 @@
           "reads": 7504,
           "seed": 17770179967947854,
           "trial": 7,
-          "worker_peak_rss_mb": 80.6
+          "worker_peak_rss_mb": 85.7
         },
         {
-          "channel_seconds": 0.1956,
-          "decode_seconds": 0.73,
+          "channel_seconds": 0.1921,
+          "decode_seconds": 1.0398,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 94,
@@ -1360,11 +1385,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 3,
           "read_paths": {
-            "consensus_attempted": 564,
+            "addresses_snapped": 508,
+            "consensus_attempted": 3851,
             "consensus_recovered": 0,
             "fast": 2589,
-            "orphans": 3971,
-            "pending": 699,
+            "orphans": 3942,
+            "pending": 4591,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 245,
@@ -1373,11 +1399,11 @@
           "reads": 7504,
           "seed": 35855692488584293,
           "trial": 8,
-          "worker_peak_rss_mb": 81.3
+          "worker_peak_rss_mb": 87.0
         },
         {
-          "channel_seconds": 0.1932,
-          "decode_seconds": 0.7662,
+          "channel_seconds": 0.1918,
+          "decode_seconds": 1.0304,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 94,
@@ -1392,11 +1418,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 3,
           "read_paths": {
-            "consensus_attempted": 573,
+            "addresses_snapped": 492,
+            "consensus_attempted": 3855,
             "consensus_recovered": 0,
             "fast": 2587,
-            "orphans": 3959,
-            "pending": 702,
+            "orphans": 3924,
+            "pending": 4564,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 256,
@@ -1405,11 +1432,11 @@
           "reads": 7504,
           "seed": 68727392774658183,
           "trial": 9,
-          "worker_peak_rss_mb": 80.7
+          "worker_peak_rss_mb": 85.6
         },
         {
-          "channel_seconds": 0.1937,
-          "decode_seconds": 0.8491,
+          "channel_seconds": 0.1875,
+          "decode_seconds": 1.2223,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 94,
@@ -1424,11 +1451,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 4,
           "read_paths": {
-            "consensus_attempted": 774,
+            "addresses_snapped": 610,
+            "consensus_attempted": 4422,
             "consensus_recovered": 0,
             "fast": 1525,
-            "orphans": 4750,
-            "pending": 992,
+            "orphans": 4706,
+            "pending": 5579,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 236,
@@ -1437,11 +1465,11 @@
           "reads": 7504,
           "seed": 48191370861952258,
           "trial": 0,
-          "worker_peak_rss_mb": 81.5
+          "worker_peak_rss_mb": 90.9
         },
         {
-          "channel_seconds": 0.1879,
-          "decode_seconds": 0.9223,
+          "channel_seconds": 0.1925,
+          "decode_seconds": 1.247,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 94,
@@ -1456,11 +1484,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 4,
           "read_paths": {
-            "consensus_attempted": 770,
+            "addresses_snapped": 557,
+            "consensus_attempted": 4362,
             "consensus_recovered": 0,
             "fast": 1567,
-            "orphans": 4722,
-            "pending": 979,
+            "orphans": 4685,
+            "pending": 5531,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 236,
@@ -1469,11 +1498,11 @@
           "reads": 7504,
           "seed": 54521449071670819,
           "trial": 1,
-          "worker_peak_rss_mb": 80.2
+          "worker_peak_rss_mb": 84.3
         },
         {
-          "channel_seconds": 0.2059,
-          "decode_seconds": 0.8342,
+          "channel_seconds": 0.1963,
+          "decode_seconds": 1.3653,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 94,
@@ -1488,11 +1517,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 4,
           "read_paths": {
-            "consensus_attempted": 793,
+            "addresses_snapped": 568,
+            "consensus_attempted": 4431,
             "consensus_recovered": 0,
             "fast": 1568,
-            "orphans": 4723,
-            "pending": 995,
+            "orphans": 4677,
+            "pending": 5549,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 218,
@@ -1501,11 +1531,11 @@
           "reads": 7504,
           "seed": 62980223869908126,
           "trial": 2,
-          "worker_peak_rss_mb": 80.9
+          "worker_peak_rss_mb": 83.7
         },
         {
-          "channel_seconds": 0.1909,
-          "decode_seconds": 0.7707,
+          "channel_seconds": 0.1904,
+          "decode_seconds": 0.7834,
           "detail": "no superblock could be decoded (too few superblock strands survived, or the layout is wrong)",
           "files_recovered": 0,
           "groups_failed": null,
@@ -1523,11 +1553,11 @@
           "reads": 7504,
           "seed": 28239731950694068,
           "trial": 3,
-          "worker_peak_rss_mb": 80.4
+          "worker_peak_rss_mb": 86.2
         },
         {
-          "channel_seconds": 0.1921,
-          "decode_seconds": 0.7943,
+          "channel_seconds": 0.1867,
+          "decode_seconds": 0.7796,
           "detail": "no superblock could be decoded (too few superblock strands survived, or the layout is wrong)",
           "files_recovered": 0,
           "groups_failed": null,
@@ -1545,11 +1575,11 @@
           "reads": 7504,
           "seed": 28878871485978031,
           "trial": 4,
-          "worker_peak_rss_mb": 80.6
+          "worker_peak_rss_mb": 87.3
         },
         {
-          "channel_seconds": 0.1901,
-          "decode_seconds": 0.8845,
+          "channel_seconds": 0.1908,
+          "decode_seconds": 1.2083,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 94,
@@ -1564,11 +1594,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 4,
           "read_paths": {
-            "consensus_attempted": 786,
+            "addresses_snapped": 600,
+            "consensus_attempted": 4374,
             "consensus_recovered": 0,
             "fast": 1574,
-            "orphans": 4702,
-            "pending": 991,
+            "orphans": 4663,
+            "pending": 5541,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 237,
@@ -1577,11 +1608,11 @@
           "reads": 7504,
           "seed": 8838653645198922,
           "trial": 5,
-          "worker_peak_rss_mb": 81.3
+          "worker_peak_rss_mb": 85.6
         },
         {
-          "channel_seconds": 0.1905,
-          "decode_seconds": 0.8845,
+          "channel_seconds": 0.1889,
+          "decode_seconds": 1.2995,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 94,
@@ -1596,11 +1627,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 4,
           "read_paths": {
-            "consensus_attempted": 789,
+            "addresses_snapped": 669,
+            "consensus_attempted": 4510,
             "consensus_recovered": 0,
             "fast": 1522,
-            "orphans": 4755,
-            "pending": 978,
+            "orphans": 4716,
+            "pending": 5579,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 249,
@@ -1609,11 +1641,11 @@
           "reads": 7504,
           "seed": 63956621882595799,
           "trial": 6,
-          "worker_peak_rss_mb": 80.7
+          "worker_peak_rss_mb": 88.8
         },
         {
-          "channel_seconds": 0.1876,
-          "decode_seconds": 0.8632,
+          "channel_seconds": 0.1872,
+          "decode_seconds": 1.2776,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 94,
@@ -1628,11 +1660,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 4,
           "read_paths": {
-            "consensus_attempted": 721,
+            "addresses_snapped": 593,
+            "consensus_attempted": 4407,
             "consensus_recovered": 0,
             "fast": 1587,
-            "orphans": 4745,
-            "pending": 931,
+            "orphans": 4692,
+            "pending": 5525,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 240,
@@ -1641,11 +1674,11 @@
           "reads": 7504,
           "seed": 51621224147133636,
           "trial": 7,
-          "worker_peak_rss_mb": 84.8
+          "worker_peak_rss_mb": 90.9
         },
         {
-          "channel_seconds": 0.1864,
-          "decode_seconds": 0.8305,
+          "channel_seconds": 0.1891,
+          "decode_seconds": 1.2056,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 94,
@@ -1660,11 +1693,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 4,
           "read_paths": {
-            "consensus_attempted": 716,
+            "addresses_snapped": 621,
+            "consensus_attempted": 4484,
             "consensus_recovered": 0,
             "fast": 1508,
-            "orphans": 4825,
-            "pending": 924,
+            "orphans": 4778,
+            "pending": 5606,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 247,
@@ -1673,11 +1707,11 @@
           "reads": 7504,
           "seed": 18922394713776933,
           "trial": 8,
-          "worker_peak_rss_mb": 80.7
+          "worker_peak_rss_mb": 86.2
         },
         {
-          "channel_seconds": 0.189,
-          "decode_seconds": 0.847,
+          "channel_seconds": 0.1975,
+          "decode_seconds": 1.2321,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 94,
@@ -1692,11 +1726,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 4,
           "read_paths": {
-            "consensus_attempted": 776,
+            "addresses_snapped": 606,
+            "consensus_attempted": 4446,
             "consensus_recovered": 0,
             "fast": 1533,
-            "orphans": 4757,
-            "pending": 976,
+            "orphans": 4714,
+            "pending": 5597,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 238,
@@ -1705,11 +1740,11 @@
           "reads": 7504,
           "seed": 57731226774717100,
           "trial": 9,
-          "worker_peak_rss_mb": 80.9
+          "worker_peak_rss_mb": 89.1
         },
         {
-          "channel_seconds": 0.188,
-          "decode_seconds": 0.94,
+          "channel_seconds": 0.1911,
+          "decode_seconds": 1.027,
           "detail": "no superblock could be decoded (too few superblock strands survived, or the layout is wrong)",
           "files_recovered": 0,
           "groups_failed": null,
@@ -1727,11 +1762,11 @@
           "reads": 7504,
           "seed": 55981194590206739,
           "trial": 0,
-          "worker_peak_rss_mb": 82.1
+          "worker_peak_rss_mb": 86.4
         },
         {
-          "channel_seconds": 0.203,
-          "decode_seconds": 0.9891,
+          "channel_seconds": 0.1885,
+          "decode_seconds": 0.9898,
           "detail": "no superblock could be decoded (too few superblock strands survived, or the layout is wrong)",
           "files_recovered": 0,
           "groups_failed": null,
@@ -1749,11 +1784,11 @@
           "reads": 7504,
           "seed": 4453107339864795,
           "trial": 1,
-          "worker_peak_rss_mb": 80.6
+          "worker_peak_rss_mb": 85.9
         },
         {
-          "channel_seconds": 0.1881,
-          "decode_seconds": 0.9587,
+          "channel_seconds": 0.1861,
+          "decode_seconds": 0.9766,
           "detail": "no superblock could be decoded (too few superblock strands survived, or the layout is wrong)",
           "files_recovered": 0,
           "groups_failed": null,
@@ -1771,11 +1806,11 @@
           "reads": 7504,
           "seed": 57423853752217951,
           "trial": 2,
-          "worker_peak_rss_mb": 81.3
+          "worker_peak_rss_mb": 86.2
         },
         {
-          "channel_seconds": 0.1901,
-          "decode_seconds": 0.9806,
+          "channel_seconds": 0.1912,
+          "decode_seconds": 1.0237,
           "detail": "no superblock could be decoded (too few superblock strands survived, or the layout is wrong)",
           "files_recovered": 0,
           "groups_failed": null,
@@ -1793,11 +1828,11 @@
           "reads": 7504,
           "seed": 71537892665976123,
           "trial": 3,
-          "worker_peak_rss_mb": 81.1
+          "worker_peak_rss_mb": 88.8
         },
         {
-          "channel_seconds": 0.1895,
-          "decode_seconds": 0.9736,
+          "channel_seconds": 0.1956,
+          "decode_seconds": 0.9779,
           "detail": "no superblock could be decoded (too few superblock strands survived, or the layout is wrong)",
           "files_recovered": 0,
           "groups_failed": null,
@@ -1815,11 +1850,11 @@
           "reads": 7504,
           "seed": 32370161648531721,
           "trial": 4,
-          "worker_peak_rss_mb": 84.8
+          "worker_peak_rss_mb": 86.4
         },
         {
-          "channel_seconds": 0.1827,
-          "decode_seconds": 0.9302,
+          "channel_seconds": 0.1903,
+          "decode_seconds": 0.9772,
           "detail": "no superblock could be decoded (too few superblock strands survived, or the layout is wrong)",
           "files_recovered": 0,
           "groups_failed": null,
@@ -1837,11 +1872,11 @@
           "reads": 7504,
           "seed": 41490686267861420,
           "trial": 5,
-          "worker_peak_rss_mb": 84.0
+          "worker_peak_rss_mb": 86.6
         },
         {
-          "channel_seconds": 0.2053,
-          "decode_seconds": 0.9365,
+          "channel_seconds": 0.2,
+          "decode_seconds": 0.9842,
           "detail": "no superblock could be decoded (too few superblock strands survived, or the layout is wrong)",
           "files_recovered": 0,
           "groups_failed": null,
@@ -1859,11 +1894,11 @@
           "reads": 7504,
           "seed": 46473910566965470,
           "trial": 6,
-          "worker_peak_rss_mb": 80.9
+          "worker_peak_rss_mb": 90.9
         },
         {
-          "channel_seconds": 0.1832,
-          "decode_seconds": 0.936,
+          "channel_seconds": 0.1956,
+          "decode_seconds": 0.9861,
           "detail": "no superblock could be decoded (too few superblock strands survived, or the layout is wrong)",
           "files_recovered": 0,
           "groups_failed": null,
@@ -1881,11 +1916,11 @@
           "reads": 7504,
           "seed": 30661966482504538,
           "trial": 7,
-          "worker_peak_rss_mb": 82.1
+          "worker_peak_rss_mb": 86.0
         },
         {
-          "channel_seconds": 0.1869,
-          "decode_seconds": 1.0538,
+          "channel_seconds": 0.1925,
+          "decode_seconds": 1.4458,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 94,
@@ -1900,11 +1935,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 5,
           "read_paths": {
-            "consensus_attempted": 917,
+            "addresses_snapped": 646,
+            "consensus_attempted": 4548,
             "consensus_recovered": 0,
             "fast": 620,
-            "orphans": 5497,
-            "pending": 1253,
+            "orphans": 5427,
+            "pending": 6440,
             "reads": 7504,
             "reverse_complement": 0,
             "sync": 133,
@@ -1913,11 +1949,11 @@
           "reads": 7504,
           "seed": 24621166920139902,
           "trial": 8,
-          "worker_peak_rss_mb": 80.6
+          "worker_peak_rss_mb": 92.7
         },
         {
-          "channel_seconds": 0.1899,
-          "decode_seconds": 0.9575,
+          "channel_seconds": 0.1901,
+          "decode_seconds": 0.9697,
           "detail": "no superblock could be decoded (too few superblock strands survived, or the layout is wrong)",
           "files_recovered": 0,
           "groups_failed": null,
@@ -1935,7 +1971,7 @@
           "reads": 7504,
           "seed": 53763137343288991,
           "trial": 9,
-          "worker_peak_rss_mb": 81.3
+          "worker_peak_rss_mb": 86.2
         }
       ],
       "trials_per_point": 10,
@@ -1946,7 +1982,7 @@
         "coverage": 1,
         "seed": 1008
       },
-      "bases": 2441112,
+      "bases": 2581311,
       "case": "sweep",
       "container_bytes": 263441,
       "decode": {},
@@ -1959,13 +1995,13 @@
       "layout": {
         "frame_bytes": 70,
         "inner_parity": 16,
-        "marker_len": 2,
-        "marker_period": 32,
-        "markers": 8,
+        "marker_len": 3,
+        "marker_period": 24,
+        "markers": 11,
         "payload_bytes": 40,
-        "strand_nt": 296
+        "strand_nt": 313
       },
-      "nt_per_input_byte": 9.3121,
+      "nt_per_input_byte": 9.8469,
       "outer_code": {
         "data_symbols": 64,
         "name": "cauchy-rs",
@@ -1973,8 +2009,8 @@
       },
       "points": [
         {
-          "decode_seconds_mean": 0.1169,
-          "decode_seconds_median": 0.1177,
+          "decode_seconds_mean": 0.1341,
+          "decode_seconds_median": 0.1339,
           "groups_failed_max": 0,
           "outcomes": {
             "ADDRESS_FAILURE": 0,
@@ -1992,11 +2028,11 @@
           "reads_mean": 8247.0,
           "success_rate": 1.0,
           "trials": 10,
-          "worker_peak_rss_mb_max": 80.5
+          "worker_peak_rss_mb_max": 84.2
         },
         {
-          "decode_seconds_mean": 0.5456,
-          "decode_seconds_median": 0.5471,
+          "decode_seconds_mean": 0.5976,
+          "decode_seconds_median": 0.5985,
           "groups_failed_max": 0,
           "outcomes": {
             "ADDRESS_FAILURE": 0,
@@ -2014,11 +2050,11 @@
           "reads_mean": 8247.0,
           "success_rate": 1.0,
           "trials": 10,
-          "worker_peak_rss_mb_max": 92.7
+          "worker_peak_rss_mb_max": 94.6
         },
         {
-          "decode_seconds_mean": 0.755,
-          "decode_seconds_median": 0.752,
+          "decode_seconds_mean": 0.806,
+          "decode_seconds_median": 0.7867,
           "groups_failed_max": 0,
           "outcomes": {
             "ADDRESS_FAILURE": 0,
@@ -2036,19 +2072,19 @@
           "reads_mean": 8247.0,
           "success_rate": 1.0,
           "trials": 10,
-          "worker_peak_rss_mb_max": 94.0
+          "worker_peak_rss_mb_max": 95.5
         },
         {
-          "decode_seconds_mean": 1.1089,
-          "decode_seconds_median": 1.096,
-          "groups_failed_max": 5,
+          "decode_seconds_mean": 1.2169,
+          "decode_seconds_median": 1.2181,
+          "groups_failed_max": 0,
           "outcomes": {
             "ADDRESS_FAILURE": 0,
-            "DECODER_FAILURE": 9,
+            "DECODER_FAILURE": 0,
             "ERROR": 0,
             "INTEGRITY_FAILURE": 0,
             "PARTIAL": 0,
-            "SUCCESS": 1
+            "SUCCESS": 10
           },
           "parameters": {
             "deletion_rate": 0.002,
@@ -2056,14 +2092,14 @@
           },
           "point": 3,
           "reads_mean": 8247.0,
-          "success_rate": 0.1,
+          "success_rate": 1.0,
           "trials": 10,
-          "worker_peak_rss_mb_max": 98.0
+          "worker_peak_rss_mb_max": 99.6
         },
         {
-          "decode_seconds_mean": 1.3705,
-          "decode_seconds_median": 1.3527,
-          "groups_failed_max": 91,
+          "decode_seconds_mean": 1.5679,
+          "decode_seconds_median": 1.5571,
+          "groups_failed_max": 38,
           "outcomes": {
             "ADDRESS_FAILURE": 0,
             "DECODER_FAILURE": 10,
@@ -2080,11 +2116,11 @@
           "reads_mean": 8247.0,
           "success_rate": 0.0,
           "trials": 10,
-          "worker_peak_rss_mb_max": 98.0
+          "worker_peak_rss_mb_max": 100.7
         },
         {
-          "decode_seconds_mean": 1.8223,
-          "decode_seconds_median": 1.8304,
+          "decode_seconds_mean": 2.0598,
+          "decode_seconds_median": 2.0438,
           "groups_failed_max": 103,
           "outcomes": {
             "ADDRESS_FAILURE": 0,
@@ -2102,21 +2138,21 @@
           "reads_mean": 8247.0,
           "success_rate": 0.0,
           "trials": 10,
-          "worker_peak_rss_mb_max": 98.8
+          "worker_peak_rss_mb_max": 101.0
         }
       ],
-      "seconds": 11.43,
-      "strand_nt": 296,
+      "seconds": 12.44,
+      "strand_nt": 313,
       "strands": 8247,
       "trials": [
         {
-          "channel_seconds": 0.2939,
-          "decode_seconds": 0.1155,
+          "channel_seconds": 0.3213,
+          "decode_seconds": 0.1388,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
           "observed": {
-            "bases": 2441112,
+            "bases": 2581311,
             "deletions": 0,
             "dropped": 0,
             "insertions": 0,
@@ -2137,16 +2173,16 @@
           "reads": 8247,
           "seed": 24193106666314677,
           "trial": 0,
-          "worker_peak_rss_mb": 78.8
+          "worker_peak_rss_mb": 82.3
         },
         {
-          "channel_seconds": 0.291,
-          "decode_seconds": 0.1229,
+          "channel_seconds": 0.3073,
+          "decode_seconds": 0.1323,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
           "observed": {
-            "bases": 2441112,
+            "bases": 2581311,
             "deletions": 0,
             "dropped": 0,
             "insertions": 0,
@@ -2167,16 +2203,16 @@
           "reads": 8247,
           "seed": 59766419074561144,
           "trial": 1,
-          "worker_peak_rss_mb": 78.9
+          "worker_peak_rss_mb": 82.6
         },
         {
-          "channel_seconds": 0.2909,
-          "decode_seconds": 0.1156,
+          "channel_seconds": 0.308,
+          "decode_seconds": 0.1339,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
           "observed": {
-            "bases": 2441112,
+            "bases": 2581311,
             "deletions": 0,
             "dropped": 0,
             "insertions": 0,
@@ -2197,16 +2233,16 @@
           "reads": 8247,
           "seed": 41262375751040324,
           "trial": 2,
-          "worker_peak_rss_mb": 78.6
+          "worker_peak_rss_mb": 82.6
         },
         {
-          "channel_seconds": 0.2905,
-          "decode_seconds": 0.1197,
+          "channel_seconds": 0.3176,
+          "decode_seconds": 0.1302,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
           "observed": {
-            "bases": 2441112,
+            "bases": 2581311,
             "deletions": 0,
             "dropped": 0,
             "insertions": 0,
@@ -2227,16 +2263,16 @@
           "reads": 8247,
           "seed": 45676613434044916,
           "trial": 3,
-          "worker_peak_rss_mb": 78.9
+          "worker_peak_rss_mb": 82.6
         },
         {
-          "channel_seconds": 0.2916,
-          "decode_seconds": 0.1208,
+          "channel_seconds": 0.3242,
+          "decode_seconds": 0.1345,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
           "observed": {
-            "bases": 2441112,
+            "bases": 2581311,
             "deletions": 0,
             "dropped": 0,
             "insertions": 0,
@@ -2257,16 +2293,16 @@
           "reads": 8247,
           "seed": 49758981351257399,
           "trial": 4,
-          "worker_peak_rss_mb": 78.8
+          "worker_peak_rss_mb": 82.4
         },
         {
-          "channel_seconds": 0.307,
-          "decode_seconds": 0.1197,
+          "channel_seconds": 0.3077,
+          "decode_seconds": 0.1364,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
           "observed": {
-            "bases": 2441112,
+            "bases": 2581311,
             "deletions": 0,
             "dropped": 0,
             "insertions": 0,
@@ -2287,16 +2323,16 @@
           "reads": 8247,
           "seed": 40599930055918611,
           "trial": 5,
-          "worker_peak_rss_mb": 79.0
+          "worker_peak_rss_mb": 82.4
         },
         {
-          "channel_seconds": 0.29,
-          "decode_seconds": 0.1202,
+          "channel_seconds": 0.3076,
+          "decode_seconds": 0.1339,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
           "observed": {
-            "bases": 2441112,
+            "bases": 2581311,
             "deletions": 0,
             "dropped": 0,
             "insertions": 0,
@@ -2317,16 +2353,16 @@
           "reads": 8247,
           "seed": 2605598405444184,
           "trial": 6,
-          "worker_peak_rss_mb": 78.7
+          "worker_peak_rss_mb": 82.5
         },
         {
-          "channel_seconds": 0.2989,
-          "decode_seconds": 0.1133,
+          "channel_seconds": 0.295,
+          "decode_seconds": 0.1486,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
           "observed": {
-            "bases": 2441112,
+            "bases": 2581311,
             "deletions": 0,
             "dropped": 0,
             "insertions": 0,
@@ -2347,16 +2383,16 @@
           "reads": 8247,
           "seed": 32044101799509846,
           "trial": 7,
-          "worker_peak_rss_mb": 80.3
+          "worker_peak_rss_mb": 84.2
         },
         {
-          "channel_seconds": 0.2937,
-          "decode_seconds": 0.1077,
+          "channel_seconds": 0.3022,
+          "decode_seconds": 0.1293,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
           "observed": {
-            "bases": 2441112,
+            "bases": 2581311,
             "deletions": 0,
             "dropped": 0,
             "insertions": 0,
@@ -2377,16 +2413,16 @@
           "reads": 8247,
           "seed": 18201313516696564,
           "trial": 8,
-          "worker_peak_rss_mb": 80.5
+          "worker_peak_rss_mb": 84.1
         },
         {
-          "channel_seconds": 0.2923,
-          "decode_seconds": 0.1131,
+          "channel_seconds": 0.3111,
+          "decode_seconds": 0.1226,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
           "observed": {
-            "bases": 2441112,
+            "bases": 2581311,
             "deletions": 0,
             "dropped": 0,
             "insertions": 0,
@@ -2407,417 +2443,430 @@
           "reads": 8247,
           "seed": 4750624872663381,
           "trial": 9,
-          "worker_peak_rss_mb": 80.3
+          "worker_peak_rss_mb": 84.2
         },
         {
-          "channel_seconds": 0.2941,
-          "decode_seconds": 0.5272,
+          "channel_seconds": 0.2992,
+          "decode_seconds": 0.5973,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
           "observed": {
-            "bases": 2441116,
-            "deletions": 1219,
+            "bases": 2581307,
+            "deletions": 1290,
             "dropped": 0,
-            "insertions": 1223,
+            "insertions": 1286,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "SUCCESS",
           "point": 1,
           "read_paths": {
-            "consensus_attempted": 33,
+            "addresses_snapped": 3,
+            "consensus_attempted": 22,
             "consensus_recovered": 0,
-            "fast": 6153,
-            "orphans": 25,
-            "pending": 36,
+            "fast": 6060,
+            "orphans": 9,
+            "pending": 27,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 2033,
+            "sync": 2160,
             "unaligned": 0
           },
           "reads": 8247,
           "seed": 69732742054694722,
           "trial": 0,
-          "worker_peak_rss_mb": 89.1
+          "worker_peak_rss_mb": 93.0
         },
         {
-          "channel_seconds": 0.2921,
-          "decode_seconds": 0.5358,
+          "channel_seconds": 0.2927,
+          "decode_seconds": 0.6151,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
           "observed": {
-            "bases": 2441105,
-            "deletions": 1222,
+            "bases": 2581322,
+            "deletions": 1287,
             "dropped": 0,
-            "insertions": 1215,
+            "insertions": 1298,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "SUCCESS",
           "point": 1,
           "read_paths": {
-            "consensus_attempted": 40,
+            "addresses_snapped": 8,
+            "consensus_attempted": 29,
             "consensus_recovered": 0,
-            "fast": 6173,
-            "orphans": 20,
-            "pending": 43,
+            "fast": 6053,
+            "orphans": 14,
+            "pending": 34,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 2011,
+            "sync": 2159,
             "unaligned": 0
           },
           "reads": 8247,
           "seed": 25669115693245660,
           "trial": 1,
-          "worker_peak_rss_mb": 88.4
+          "worker_peak_rss_mb": 93.1
         },
         {
-          "channel_seconds": 0.2916,
-          "decode_seconds": 0.5574,
+          "channel_seconds": 0.3101,
+          "decode_seconds": 0.5961,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
           "observed": {
-            "bases": 2441065,
-            "deletions": 1265,
+            "bases": 2581285,
+            "deletions": 1333,
             "dropped": 0,
-            "insertions": 1218,
+            "insertions": 1307,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "SUCCESS",
           "point": 1,
           "read_paths": {
-            "consensus_attempted": 39,
+            "addresses_snapped": 3,
+            "consensus_attempted": 23,
             "consensus_recovered": 0,
-            "fast": 6108,
-            "orphans": 21,
-            "pending": 44,
+            "fast": 6004,
+            "orphans": 8,
+            "pending": 26,
+            "reads": 8247,
+            "reverse_complement": 0,
+            "sync": 2216,
+            "unaligned": 0
+          },
+          "reads": 8247,
+          "seed": 2534850997689203,
+          "trial": 2,
+          "worker_peak_rss_mb": 92.9
+        },
+        {
+          "channel_seconds": 0.2999,
+          "decode_seconds": 0.5996,
+          "detail": null,
+          "files_recovered": 0,
+          "groups_failed": 0,
+          "observed": {
+            "bases": 2581297,
+            "deletions": 1336,
+            "dropped": 0,
+            "insertions": 1322,
+            "substitutions": 0,
+            "zero_coverage": 0
+          },
+          "outcome": "SUCCESS",
+          "point": 1,
+          "read_paths": {
+            "addresses_snapped": 4,
+            "consensus_attempted": 22,
+            "consensus_recovered": 0,
+            "fast": 5986,
+            "orphans": 11,
+            "pending": 30,
+            "reads": 8247,
+            "reverse_complement": 0,
+            "sync": 2231,
+            "unaligned": 0
+          },
+          "reads": 8247,
+          "seed": 18392388475421632,
+          "trial": 3,
+          "worker_peak_rss_mb": 92.1
+        },
+        {
+          "channel_seconds": 0.2899,
+          "decode_seconds": 0.6009,
+          "detail": null,
+          "files_recovered": 0,
+          "groups_failed": 0,
+          "observed": {
+            "bases": 2581375,
+            "deletions": 1290,
+            "dropped": 0,
+            "insertions": 1354,
+            "substitutions": 0,
+            "zero_coverage": 0
+          },
+          "outcome": "SUCCESS",
+          "point": 1,
+          "read_paths": {
+            "addresses_snapped": 5,
+            "consensus_attempted": 22,
+            "consensus_recovered": 0,
+            "fast": 6036,
+            "orphans": 17,
+            "pending": 30,
+            "reads": 8247,
+            "reverse_complement": 0,
+            "sync": 2178,
+            "unaligned": 0
+          },
+          "reads": 8247,
+          "seed": 58027262663360195,
+          "trial": 4,
+          "worker_peak_rss_mb": 92.3
+        },
+        {
+          "channel_seconds": 0.2884,
+          "decode_seconds": 0.5929,
+          "detail": null,
+          "files_recovered": 0,
+          "groups_failed": 0,
+          "observed": {
+            "bases": 2581312,
+            "deletions": 1268,
+            "dropped": 0,
+            "insertions": 1269,
+            "substitutions": 0,
+            "zero_coverage": 0
+          },
+          "outcome": "SUCCESS",
+          "point": 1,
+          "read_paths": {
+            "addresses_snapped": 7,
+            "consensus_attempted": 27,
+            "consensus_recovered": 0,
+            "fast": 6082,
+            "orphans": 12,
+            "pending": 31,
+            "reads": 8247,
+            "reverse_complement": 0,
+            "sync": 2134,
+            "unaligned": 0
+          },
+          "reads": 8247,
+          "seed": 26396300966327668,
+          "trial": 5,
+          "worker_peak_rss_mb": 92.4
+        },
+        {
+          "channel_seconds": 0.2876,
+          "decode_seconds": 0.5924,
+          "detail": null,
+          "files_recovered": 0,
+          "groups_failed": 0,
+          "observed": {
+            "bases": 2581364,
+            "deletions": 1233,
+            "dropped": 0,
+            "insertions": 1286,
+            "substitutions": 0,
+            "zero_coverage": 0
+          },
+          "outcome": "SUCCESS",
+          "point": 1,
+          "read_paths": {
+            "addresses_snapped": 0,
+            "consensus_attempted": 21,
+            "consensus_recovered": 0,
+            "fast": 6117,
+            "orphans": 4,
+            "pending": 25,
+            "reads": 8247,
+            "reverse_complement": 0,
+            "sync": 2105,
+            "unaligned": 0
+          },
+          "reads": 8247,
+          "seed": 18426321188445706,
+          "trial": 6,
+          "worker_peak_rss_mb": 92.4
+        },
+        {
+          "channel_seconds": 0.231,
+          "decode_seconds": 0.5632,
+          "detail": null,
+          "files_recovered": 0,
+          "groups_failed": 0,
+          "observed": {
+            "bases": 2581273,
+            "deletions": 1246,
+            "dropped": 0,
+            "insertions": 1208,
+            "substitutions": 0,
+            "zero_coverage": 0
+          },
+          "outcome": "SUCCESS",
+          "point": 1,
+          "read_paths": {
+            "addresses_snapped": 3,
+            "consensus_attempted": 19,
+            "consensus_recovered": 0,
+            "fast": 6151,
+            "orphans": 6,
+            "pending": 21,
             "reads": 8247,
             "reverse_complement": 0,
             "sync": 2074,
             "unaligned": 0
           },
           "reads": 8247,
-          "seed": 2534850997689203,
-          "trial": 2,
-          "worker_peak_rss_mb": 88.5
+          "seed": 1170218369875816,
+          "trial": 7,
+          "worker_peak_rss_mb": 93.1
         },
         {
-          "channel_seconds": 0.2971,
-          "decode_seconds": 0.5538,
+          "channel_seconds": 0.2245,
+          "decode_seconds": 0.6007,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
           "observed": {
-            "bases": 2441105,
-            "deletions": 1261,
+            "bases": 2581298,
+            "deletions": 1320,
             "dropped": 0,
-            "insertions": 1254,
+            "insertions": 1307,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "SUCCESS",
           "point": 1,
           "read_paths": {
-            "consensus_attempted": 35,
+            "addresses_snapped": 4,
+            "consensus_attempted": 31,
             "consensus_recovered": 0,
-            "fast": 6095,
-            "orphans": 23,
-            "pending": 36,
-            "reads": 8247,
-            "reverse_complement": 0,
-            "sync": 2093,
-            "unaligned": 0
-          },
-          "reads": 8247,
-          "seed": 18392388475421632,
-          "trial": 3,
-          "worker_peak_rss_mb": 89.0
-        },
-        {
-          "channel_seconds": 0.2703,
-          "decode_seconds": 0.5672,
-          "detail": null,
-          "files_recovered": 0,
-          "groups_failed": 0,
-          "observed": {
-            "bases": 2441176,
-            "deletions": 1227,
-            "dropped": 0,
-            "insertions": 1291,
-            "substitutions": 0,
-            "zero_coverage": 0
-          },
-          "outcome": "SUCCESS",
-          "point": 1,
-          "read_paths": {
-            "consensus_attempted": 41,
-            "consensus_recovered": 0,
-            "fast": 6116,
-            "orphans": 20,
-            "pending": 44,
-            "reads": 8247,
-            "reverse_complement": 0,
-            "sync": 2067,
-            "unaligned": 0
-          },
-          "reads": 8247,
-          "seed": 58027262663360195,
-          "trial": 4,
-          "worker_peak_rss_mb": 88.4
-        },
-        {
-          "channel_seconds": 0.2786,
-          "decode_seconds": 0.5209,
-          "detail": null,
-          "files_recovered": 0,
-          "groups_failed": 0,
-          "observed": {
-            "bases": 2441114,
-            "deletions": 1202,
-            "dropped": 0,
-            "insertions": 1204,
-            "substitutions": 0,
-            "zero_coverage": 0
-          },
-          "outcome": "SUCCESS",
-          "point": 1,
-          "read_paths": {
-            "consensus_attempted": 38,
-            "consensus_recovered": 0,
-            "fast": 6189,
-            "orphans": 17,
-            "pending": 44,
-            "reads": 8247,
-            "reverse_complement": 0,
-            "sync": 1997,
-            "unaligned": 0
-          },
-          "reads": 8247,
-          "seed": 26396300966327668,
-          "trial": 5,
-          "worker_peak_rss_mb": 88.9
-        },
-        {
-          "channel_seconds": 0.2838,
-          "decode_seconds": 0.5683,
-          "detail": null,
-          "files_recovered": 0,
-          "groups_failed": 0,
-          "observed": {
-            "bases": 2441147,
-            "deletions": 1180,
-            "dropped": 0,
-            "insertions": 1215,
-            "substitutions": 0,
-            "zero_coverage": 0
-          },
-          "outcome": "SUCCESS",
-          "point": 1,
-          "read_paths": {
-            "consensus_attempted": 22,
-            "consensus_recovered": 0,
-            "fast": 6161,
-            "orphans": 21,
-            "pending": 24,
-            "reads": 8247,
-            "reverse_complement": 0,
-            "sync": 2041,
-            "unaligned": 0
-          },
-          "reads": 8247,
-          "seed": 18426321188445706,
-          "trial": 6,
-          "worker_peak_rss_mb": 88.3
-        },
-        {
-          "channel_seconds": 0.2307,
-          "decode_seconds": 0.5268,
-          "detail": null,
-          "files_recovered": 0,
-          "groups_failed": 0,
-          "observed": {
-            "bases": 2441065,
-            "deletions": 1184,
-            "dropped": 0,
-            "insertions": 1137,
-            "substitutions": 0,
-            "zero_coverage": 0
-          },
-          "outcome": "SUCCESS",
-          "point": 1,
-          "read_paths": {
-            "consensus_attempted": 33,
-            "consensus_recovered": 0,
-            "fast": 6251,
-            "orphans": 26,
+            "fast": 6013,
+            "orphans": 9,
             "pending": 35,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 1935,
-            "unaligned": 0
-          },
-          "reads": 8247,
-          "seed": 1170218369875816,
-          "trial": 7,
-          "worker_peak_rss_mb": 92.3
-        },
-        {
-          "channel_seconds": 0.2243,
-          "decode_seconds": 0.5403,
-          "detail": null,
-          "files_recovered": 0,
-          "groups_failed": 0,
-          "observed": {
-            "bases": 2441122,
-            "deletions": 1242,
-            "dropped": 0,
-            "insertions": 1252,
-            "substitutions": 0,
-            "zero_coverage": 0
-          },
-          "outcome": "SUCCESS",
-          "point": 1,
-          "read_paths": {
-            "consensus_attempted": 37,
-            "consensus_recovered": 0,
-            "fast": 6107,
-            "orphans": 27,
-            "pending": 42,
-            "reads": 8247,
-            "reverse_complement": 0,
-            "sync": 2071,
+            "sync": 2198,
             "unaligned": 0
           },
           "reads": 8247,
           "seed": 56649472823455814,
           "trial": 8,
-          "worker_peak_rss_mb": 92.7
+          "worker_peak_rss_mb": 93.6
         },
         {
-          "channel_seconds": 0.2248,
-          "decode_seconds": 0.5579,
+          "channel_seconds": 0.228,
+          "decode_seconds": 0.6178,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
           "observed": {
-            "bases": 2441084,
-            "deletions": 1224,
+            "bases": 2581264,
+            "deletions": 1304,
             "dropped": 0,
-            "insertions": 1196,
+            "insertions": 1257,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "SUCCESS",
           "point": 1,
           "read_paths": {
-            "consensus_attempted": 29,
+            "addresses_snapped": 8,
+            "consensus_attempted": 21,
             "consensus_recovered": 0,
-            "fast": 6173,
-            "orphans": 25,
-            "pending": 32,
+            "fast": 6063,
+            "orphans": 16,
+            "pending": 27,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 2017,
+            "sync": 2155,
             "unaligned": 0
           },
           "reads": 8247,
           "seed": 51772885625984450,
           "trial": 9,
-          "worker_peak_rss_mb": 92.6
+          "worker_peak_rss_mb": 94.6
         },
         {
-          "channel_seconds": 0.217,
-          "decode_seconds": 0.7668,
+          "channel_seconds": 0.2266,
+          "decode_seconds": 0.8391,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
           "observed": {
-            "bases": 2441140,
-            "deletions": 2437,
+            "bases": 2581321,
+            "deletions": 2593,
             "dropped": 0,
-            "insertions": 2465,
+            "insertions": 2603,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "SUCCESS",
           "point": 2,
           "read_paths": {
-            "consensus_attempted": 155,
+            "addresses_snapped": 17,
+            "consensus_attempted": 109,
             "consensus_recovered": 0,
-            "fast": 4653,
-            "orphans": 106,
-            "pending": 177,
+            "fast": 4497,
+            "orphans": 66,
+            "pending": 150,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 3311,
+            "sync": 3592,
             "unaligned": 0
           },
           "reads": 8247,
           "seed": 23905583095900432,
           "trial": 0,
-          "worker_peak_rss_mb": 89.0
+          "worker_peak_rss_mb": 92.9
         },
         {
-          "channel_seconds": 0.2161,
-          "decode_seconds": 0.7515,
+          "channel_seconds": 0.2238,
+          "decode_seconds": 0.8534,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
           "observed": {
-            "bases": 2441131,
-            "deletions": 2488,
+            "bases": 2581311,
+            "deletions": 2640,
             "dropped": 0,
-            "insertions": 2507,
+            "insertions": 2640,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "SUCCESS",
           "point": 2,
           "read_paths": {
-            "consensus_attempted": 161,
+            "addresses_snapped": 28,
+            "consensus_attempted": 124,
             "consensus_recovered": 0,
-            "fast": 4583,
-            "orphans": 90,
-            "pending": 182,
+            "fast": 4438,
+            "orphans": 78,
+            "pending": 159,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 3392,
+            "sync": 3635,
             "unaligned": 0
           },
           "reads": 8247,
           "seed": 154796670623922,
           "trial": 1,
-          "worker_peak_rss_mb": 92.8
+          "worker_peak_rss_mb": 93.4
         },
         {
-          "channel_seconds": 0.2202,
-          "decode_seconds": 0.7161,
+          "channel_seconds": 0.2219,
+          "decode_seconds": 0.7769,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
           "observed": {
-            "bases": 2441156,
-            "deletions": 2374,
+            "bases": 2581381,
+            "deletions": 2496,
             "dropped": 0,
-            "insertions": 2418,
+            "insertions": 2566,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "SUCCESS",
           "point": 2,
           "read_paths": {
-            "consensus_attempted": 141,
+            "addresses_snapped": 22,
+            "consensus_attempted": 97,
             "consensus_recovered": 0,
-            "fast": 4727,
-            "orphans": 111,
-            "pending": 156,
+            "fast": 4574,
+            "orphans": 64,
+            "pending": 140,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 3253,
+            "sync": 3525,
             "unaligned": 0
           },
           "reads": 8247,
@@ -2826,1192 +2875,1229 @@
           "worker_peak_rss_mb": 93.3
         },
         {
-          "channel_seconds": 0.2252,
-          "decode_seconds": 0.7901,
+          "channel_seconds": 0.2219,
+          "decode_seconds": 0.7849,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
           "observed": {
-            "bases": 2441076,
-            "deletions": 2466,
+            "bases": 2581316,
+            "deletions": 2592,
             "dropped": 0,
-            "insertions": 2430,
+            "insertions": 2597,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "SUCCESS",
           "point": 2,
           "read_paths": {
-            "consensus_attempted": 144,
+            "addresses_snapped": 24,
+            "consensus_attempted": 101,
             "consensus_recovered": 0,
-            "fast": 4645,
-            "orphans": 85,
-            "pending": 161,
+            "fast": 4495,
+            "orphans": 69,
+            "pending": 139,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 3356,
+            "sync": 3608,
             "unaligned": 0
           },
           "reads": 8247,
           "seed": 28115990068351150,
           "trial": 3,
-          "worker_peak_rss_mb": 93.1
+          "worker_peak_rss_mb": 93.7
         },
         {
-          "channel_seconds": 0.2292,
-          "decode_seconds": 0.7525,
+          "channel_seconds": 0.2326,
+          "decode_seconds": 0.8133,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
           "observed": {
-            "bases": 2441064,
-            "deletions": 2403,
+            "bases": 2581264,
+            "deletions": 2548,
             "dropped": 0,
-            "insertions": 2355,
+            "insertions": 2501,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "SUCCESS",
           "point": 2,
           "read_paths": {
-            "consensus_attempted": 138,
+            "addresses_snapped": 16,
+            "consensus_attempted": 95,
             "consensus_recovered": 0,
-            "fast": 4693,
-            "orphans": 91,
-            "pending": 147,
+            "fast": 4554,
+            "orphans": 59,
+            "pending": 132,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 3316,
+            "sync": 3551,
             "unaligned": 0
           },
           "reads": 8247,
           "seed": 44312340834962468,
           "trial": 4,
-          "worker_peak_rss_mb": 93.1
+          "worker_peak_rss_mb": 95.5
         },
         {
-          "channel_seconds": 0.217,
-          "decode_seconds": 0.819,
+          "channel_seconds": 0.2261,
+          "decode_seconds": 0.785,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
           "observed": {
-            "bases": 2441157,
-            "deletions": 2455,
+            "bases": 2581378,
+            "deletions": 2583,
             "dropped": 0,
-            "insertions": 2500,
+            "insertions": 2650,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "SUCCESS",
           "point": 2,
           "read_paths": {
-            "consensus_attempted": 142,
+            "addresses_snapped": 13,
+            "consensus_attempted": 102,
             "consensus_recovered": 0,
-            "fast": 4600,
-            "orphans": 101,
+            "fast": 4501,
+            "orphans": 72,
             "pending": 158,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 3388,
+            "sync": 3578,
             "unaligned": 0
           },
           "reads": 8247,
           "seed": 64643070063724574,
           "trial": 5,
-          "worker_peak_rss_mb": 93.3
+          "worker_peak_rss_mb": 94.9
         },
         {
-          "channel_seconds": 0.2291,
-          "decode_seconds": 0.8073,
+          "channel_seconds": 0.2356,
+          "decode_seconds": 0.8759,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
           "observed": {
-            "bases": 2441135,
-            "deletions": 2442,
+            "bases": 2581329,
+            "deletions": 2585,
             "dropped": 0,
-            "insertions": 2465,
+            "insertions": 2603,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "SUCCESS",
           "point": 2,
           "read_paths": {
-            "consensus_attempted": 147,
+            "addresses_snapped": 19,
+            "consensus_attempted": 107,
             "consensus_recovered": 0,
-            "fast": 4646,
-            "orphans": 104,
-            "pending": 170,
+            "fast": 4523,
+            "orphans": 63,
+            "pending": 149,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 3327,
+            "sync": 3566,
             "unaligned": 0
           },
           "reads": 8247,
           "seed": 51557441602093729,
           "trial": 6,
-          "worker_peak_rss_mb": 93.3
+          "worker_peak_rss_mb": 95.4
         },
         {
-          "channel_seconds": 0.2227,
-          "decode_seconds": 0.7307,
+          "channel_seconds": 0.2219,
+          "decode_seconds": 0.7883,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
           "observed": {
-            "bases": 2441068,
-            "deletions": 2482,
+            "bases": 2581261,
+            "deletions": 2624,
             "dropped": 0,
-            "insertions": 2438,
+            "insertions": 2574,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "SUCCESS",
           "point": 2,
           "read_paths": {
-            "consensus_attempted": 141,
+            "addresses_snapped": 15,
+            "consensus_attempted": 98,
             "consensus_recovered": 0,
-            "fast": 4666,
-            "orphans": 114,
-            "pending": 156,
+            "fast": 4488,
+            "orphans": 58,
+            "pending": 140,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 3311,
+            "sync": 3616,
             "unaligned": 0
           },
           "reads": 8247,
           "seed": 69695931130637070,
           "trial": 7,
-          "worker_peak_rss_mb": 91.0
+          "worker_peak_rss_mb": 93.6
         },
         {
-          "channel_seconds": 0.2216,
-          "decode_seconds": 0.7005,
+          "channel_seconds": 0.2238,
+          "decode_seconds": 0.7774,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
           "observed": {
-            "bases": 2441056,
-            "deletions": 2484,
+            "bases": 2581261,
+            "deletions": 2626,
             "dropped": 0,
-            "insertions": 2428,
+            "insertions": 2576,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "SUCCESS",
           "point": 2,
           "read_paths": {
-            "consensus_attempted": 140,
+            "addresses_snapped": 21,
+            "consensus_attempted": 111,
             "consensus_recovered": 0,
-            "fast": 4628,
-            "orphans": 110,
-            "pending": 155,
+            "fast": 4491,
+            "orphans": 69,
+            "pending": 154,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 3354,
+            "sync": 3594,
             "unaligned": 0
           },
           "reads": 8247,
           "seed": 19122960519500468,
           "trial": 8,
-          "worker_peak_rss_mb": 94.0
+          "worker_peak_rss_mb": 93.8
         },
         {
-          "channel_seconds": 0.2207,
-          "decode_seconds": 0.7157,
+          "channel_seconds": 0.2238,
+          "decode_seconds": 0.7662,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
           "observed": {
-            "bases": 2441024,
-            "deletions": 2431,
+            "bases": 2581220,
+            "deletions": 2566,
             "dropped": 0,
-            "insertions": 2343,
+            "insertions": 2475,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "SUCCESS",
           "point": 2,
           "read_paths": {
-            "consensus_attempted": 124,
+            "addresses_snapped": 7,
+            "consensus_attempted": 91,
             "consensus_recovered": 0,
-            "fast": 4686,
-            "orphans": 103,
-            "pending": 141,
+            "fast": 4553,
+            "orphans": 47,
+            "pending": 128,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 3317,
+            "sync": 3560,
             "unaligned": 0
           },
           "reads": 8247,
           "seed": 30056670941615564,
           "trial": 9,
-          "worker_peak_rss_mb": 92.9
+          "worker_peak_rss_mb": 93.8
         },
         {
-          "channel_seconds": 0.2198,
-          "decode_seconds": 1.0889,
-          "detail": null,
-          "files_recovered": 0,
-          "groups_failed": 2,
-          "observed": {
-            "bases": 2441033,
-            "deletions": 4945,
-            "dropped": 0,
-            "insertions": 4866,
-            "substitutions": 0,
-            "zero_coverage": 0
-          },
-          "outcome": "DECODER_FAILURE",
-          "point": 3,
-          "read_paths": {
-            "consensus_attempted": 489,
-            "consensus_recovered": 0,
-            "fast": 2675,
-            "orphans": 442,
-            "pending": 549,
-            "reads": 8247,
-            "reverse_complement": 0,
-            "sync": 4581,
-            "unaligned": 0
-          },
-          "reads": 8247,
-          "seed": 20621060441252961,
-          "trial": 0,
-          "worker_peak_rss_mb": 93.1
-        },
-        {
-          "channel_seconds": 0.2263,
-          "decode_seconds": 1.1287,
-          "detail": null,
-          "files_recovered": 0,
-          "groups_failed": 2,
-          "observed": {
-            "bases": 2440944,
-            "deletions": 4939,
-            "dropped": 0,
-            "insertions": 4771,
-            "substitutions": 0,
-            "zero_coverage": 0
-          },
-          "outcome": "DECODER_FAILURE",
-          "point": 3,
-          "read_paths": {
-            "consensus_attempted": 489,
-            "consensus_recovered": 0,
-            "fast": 2719,
-            "orphans": 462,
-            "pending": 547,
-            "reads": 8247,
-            "reverse_complement": 0,
-            "sync": 4519,
-            "unaligned": 0
-          },
-          "reads": 8247,
-          "seed": 3769651273381638,
-          "trial": 1,
-          "worker_peak_rss_mb": 94.0
-        },
-        {
-          "channel_seconds": 0.2285,
-          "decode_seconds": 1.1618,
-          "detail": null,
-          "files_recovered": 0,
-          "groups_failed": 2,
-          "observed": {
-            "bases": 2440962,
-            "deletions": 4954,
-            "dropped": 0,
-            "insertions": 4804,
-            "substitutions": 0,
-            "zero_coverage": 0
-          },
-          "outcome": "DECODER_FAILURE",
-          "point": 3,
-          "read_paths": {
-            "consensus_attempted": 501,
-            "consensus_recovered": 0,
-            "fast": 2648,
-            "orphans": 430,
-            "pending": 561,
-            "reads": 8247,
-            "reverse_complement": 0,
-            "sync": 4608,
-            "unaligned": 0
-          },
-          "reads": 8247,
-          "seed": 32431745753160687,
-          "trial": 2,
-          "worker_peak_rss_mb": 93.3
-        },
-        {
-          "channel_seconds": 0.2416,
-          "decode_seconds": 1.0741,
-          "detail": null,
-          "files_recovered": 0,
-          "groups_failed": 2,
-          "observed": {
-            "bases": 2441127,
-            "deletions": 4835,
-            "dropped": 0,
-            "insertions": 4850,
-            "substitutions": 0,
-            "zero_coverage": 0
-          },
-          "outcome": "DECODER_FAILURE",
-          "point": 3,
-          "read_paths": {
-            "consensus_attempted": 513,
-            "consensus_recovered": 0,
-            "fast": 2760,
-            "orphans": 431,
-            "pending": 568,
-            "reads": 8247,
-            "reverse_complement": 0,
-            "sync": 4488,
-            "unaligned": 0
-          },
-          "reads": 8247,
-          "seed": 31480990033203093,
-          "trial": 3,
-          "worker_peak_rss_mb": 93.3
-        },
-        {
-          "channel_seconds": 0.2583,
-          "decode_seconds": 1.1023,
-          "detail": null,
-          "files_recovered": 0,
-          "groups_failed": 1,
-          "observed": {
-            "bases": 2441223,
-            "deletions": 4827,
-            "dropped": 0,
-            "insertions": 4938,
-            "substitutions": 0,
-            "zero_coverage": 0
-          },
-          "outcome": "DECODER_FAILURE",
-          "point": 3,
-          "read_paths": {
-            "consensus_attempted": 511,
-            "consensus_recovered": 0,
-            "fast": 2667,
-            "orphans": 415,
-            "pending": 586,
-            "reads": 8247,
-            "reverse_complement": 0,
-            "sync": 4579,
-            "unaligned": 0
-          },
-          "reads": 8247,
-          "seed": 17263945884762617,
-          "trial": 4,
-          "worker_peak_rss_mb": 91.0
-        },
-        {
-          "channel_seconds": 0.2121,
-          "decode_seconds": 1.0939,
-          "detail": null,
-          "files_recovered": 0,
-          "groups_failed": 1,
-          "observed": {
-            "bases": 2440973,
-            "deletions": 4953,
-            "dropped": 0,
-            "insertions": 4814,
-            "substitutions": 0,
-            "zero_coverage": 0
-          },
-          "outcome": "DECODER_FAILURE",
-          "point": 3,
-          "read_paths": {
-            "consensus_attempted": 496,
-            "consensus_recovered": 0,
-            "fast": 2669,
-            "orphans": 450,
-            "pending": 573,
-            "reads": 8247,
-            "reverse_complement": 0,
-            "sync": 4555,
-            "unaligned": 0
-          },
-          "reads": 8247,
-          "seed": 67684460504926007,
-          "trial": 5,
-          "worker_peak_rss_mb": 94.0
-        },
-        {
-          "channel_seconds": 0.2148,
-          "decode_seconds": 1.098,
+          "channel_seconds": 0.2341,
+          "decode_seconds": 1.2208,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
           "observed": {
-            "bases": 2441062,
-            "deletions": 4831,
+            "bases": 2581209,
+            "deletions": 5244,
             "dropped": 0,
-            "insertions": 4781,
+            "insertions": 5142,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "SUCCESS",
           "point": 3,
           "read_paths": {
-            "consensus_attempted": 476,
+            "addresses_snapped": 90,
+            "consensus_attempted": 461,
             "consensus_recovered": 0,
-            "fast": 2740,
-            "orphans": 439,
-            "pending": 554,
+            "fast": 2530,
+            "orphans": 321,
+            "pending": 652,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 4514,
+            "sync": 5016,
+            "unaligned": 0
+          },
+          "reads": 8247,
+          "seed": 20621060441252961,
+          "trial": 0,
+          "worker_peak_rss_mb": 93.8
+        },
+        {
+          "channel_seconds": 0.229,
+          "decode_seconds": 1.2308,
+          "detail": null,
+          "files_recovered": 0,
+          "groups_failed": 0,
+          "observed": {
+            "bases": 2581154,
+            "deletions": 5232,
+            "dropped": 0,
+            "insertions": 5075,
+            "substitutions": 0,
+            "zero_coverage": 0
+          },
+          "outcome": "SUCCESS",
+          "point": 3,
+          "read_paths": {
+            "addresses_snapped": 81,
+            "consensus_attempted": 434,
+            "consensus_recovered": 0,
+            "fast": 2553,
+            "orphans": 328,
+            "pending": 646,
+            "reads": 8247,
+            "reverse_complement": 0,
+            "sync": 5006,
+            "unaligned": 0
+          },
+          "reads": 8247,
+          "seed": 3769651273381638,
+          "trial": 1,
+          "worker_peak_rss_mb": 99.4
+        },
+        {
+          "channel_seconds": 0.2241,
+          "decode_seconds": 1.1902,
+          "detail": null,
+          "files_recovered": 0,
+          "groups_failed": 0,
+          "observed": {
+            "bases": 2581192,
+            "deletions": 5242,
+            "dropped": 0,
+            "insertions": 5123,
+            "substitutions": 0,
+            "zero_coverage": 0
+          },
+          "outcome": "SUCCESS",
+          "point": 3,
+          "read_paths": {
+            "addresses_snapped": 74,
+            "consensus_attempted": 453,
+            "consensus_recovered": 0,
+            "fast": 2565,
+            "orphans": 311,
+            "pending": 662,
+            "reads": 8247,
+            "reverse_complement": 0,
+            "sync": 4976,
+            "unaligned": 0
+          },
+          "reads": 8247,
+          "seed": 32431745753160687,
+          "trial": 2,
+          "worker_peak_rss_mb": 95.1
+        },
+        {
+          "channel_seconds": 0.2317,
+          "decode_seconds": 1.261,
+          "detail": null,
+          "files_recovered": 0,
+          "groups_failed": 0,
+          "observed": {
+            "bases": 2581299,
+            "deletions": 5107,
+            "dropped": 0,
+            "insertions": 5095,
+            "substitutions": 0,
+            "zero_coverage": 0
+          },
+          "outcome": "SUCCESS",
+          "point": 3,
+          "read_paths": {
+            "addresses_snapped": 96,
+            "consensus_attempted": 469,
+            "consensus_recovered": 0,
+            "fast": 2646,
+            "orphans": 329,
+            "pending": 646,
+            "reads": 8247,
+            "reverse_complement": 0,
+            "sync": 4915,
+            "unaligned": 0
+          },
+          "reads": 8247,
+          "seed": 31480990033203093,
+          "trial": 3,
+          "worker_peak_rss_mb": 97.7
+        },
+        {
+          "channel_seconds": 0.2245,
+          "decode_seconds": 1.2153,
+          "detail": null,
+          "files_recovered": 0,
+          "groups_failed": 0,
+          "observed": {
+            "bases": 2581424,
+            "deletions": 5104,
+            "dropped": 0,
+            "insertions": 5217,
+            "substitutions": 0,
+            "zero_coverage": 0
+          },
+          "outcome": "SUCCESS",
+          "point": 3,
+          "read_paths": {
+            "addresses_snapped": 79,
+            "consensus_attempted": 414,
+            "consensus_recovered": 0,
+            "fast": 2521,
+            "orphans": 296,
+            "pending": 613,
+            "reads": 8247,
+            "reverse_complement": 0,
+            "sync": 5071,
+            "unaligned": 0
+          },
+          "reads": 8247,
+          "seed": 17263945884762617,
+          "trial": 4,
+          "worker_peak_rss_mb": 98.5
+        },
+        {
+          "channel_seconds": 0.2305,
+          "decode_seconds": 1.1943,
+          "detail": null,
+          "files_recovered": 0,
+          "groups_failed": 0,
+          "observed": {
+            "bases": 2581145,
+            "deletions": 5277,
+            "dropped": 0,
+            "insertions": 5111,
+            "substitutions": 0,
+            "zero_coverage": 0
+          },
+          "outcome": "SUCCESS",
+          "point": 3,
+          "read_paths": {
+            "addresses_snapped": 80,
+            "consensus_attempted": 455,
+            "consensus_recovered": 0,
+            "fast": 2501,
+            "orphans": 293,
+            "pending": 644,
+            "reads": 8247,
+            "reverse_complement": 0,
+            "sync": 5058,
+            "unaligned": 0
+          },
+          "reads": 8247,
+          "seed": 67684460504926007,
+          "trial": 5,
+          "worker_peak_rss_mb": 94.2
+        },
+        {
+          "channel_seconds": 0.228,
+          "decode_seconds": 1.1795,
+          "detail": null,
+          "files_recovered": 0,
+          "groups_failed": 0,
+          "observed": {
+            "bases": 2581257,
+            "deletions": 5112,
+            "dropped": 0,
+            "insertions": 5058,
+            "substitutions": 0,
+            "zero_coverage": 0
+          },
+          "outcome": "SUCCESS",
+          "point": 3,
+          "read_paths": {
+            "addresses_snapped": 73,
+            "consensus_attempted": 429,
+            "consensus_recovered": 0,
+            "fast": 2617,
+            "orphans": 298,
+            "pending": 640,
+            "reads": 8247,
+            "reverse_complement": 0,
+            "sync": 4956,
             "unaligned": 0
           },
           "reads": 8247,
           "seed": 32370667936009864,
           "trial": 6,
-          "worker_peak_rss_mb": 98.0
+          "worker_peak_rss_mb": 94.1
         },
         {
-          "channel_seconds": 0.2296,
-          "decode_seconds": 1.0895,
+          "channel_seconds": 0.228,
+          "decode_seconds": 1.2452,
           "detail": null,
           "files_recovered": 0,
-          "groups_failed": 5,
+          "groups_failed": 0,
           "observed": {
-            "bases": 2440971,
-            "deletions": 5010,
+            "bases": 2581158,
+            "deletions": 5278,
             "dropped": 0,
-            "insertions": 4869,
+            "insertions": 5125,
             "substitutions": 0,
             "zero_coverage": 0
           },
-          "outcome": "DECODER_FAILURE",
+          "outcome": "SUCCESS",
           "point": 3,
           "read_paths": {
-            "consensus_attempted": 493,
+            "addresses_snapped": 89,
+            "consensus_attempted": 470,
             "consensus_recovered": 0,
-            "fast": 2688,
-            "orphans": 482,
-            "pending": 548,
+            "fast": 2563,
+            "orphans": 308,
+            "pending": 670,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 4529,
+            "sync": 4984,
             "unaligned": 0
           },
           "reads": 8247,
           "seed": 17770179967947854,
           "trial": 7,
-          "worker_peak_rss_mb": 93.1
+          "worker_peak_rss_mb": 94.5
         },
         {
-          "channel_seconds": 0.2204,
-          "decode_seconds": 1.1619,
+          "channel_seconds": 0.2214,
+          "decode_seconds": 1.2018,
           "detail": null,
           "files_recovered": 0,
-          "groups_failed": 4,
+          "groups_failed": 0,
           "observed": {
-            "bases": 2441076,
-            "deletions": 4870,
+            "bases": 2581269,
+            "deletions": 5168,
             "dropped": 0,
-            "insertions": 4834,
+            "insertions": 5126,
             "substitutions": 0,
             "zero_coverage": 0
           },
-          "outcome": "DECODER_FAILURE",
+          "outcome": "SUCCESS",
           "point": 3,
           "read_paths": {
-            "consensus_attempted": 521,
+            "addresses_snapped": 89,
+            "consensus_attempted": 484,
             "consensus_recovered": 0,
-            "fast": 2740,
-            "orphans": 446,
-            "pending": 584,
+            "fast": 2586,
+            "orphans": 311,
+            "pending": 673,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 4477,
+            "sync": 4952,
             "unaligned": 0
           },
           "reads": 8247,
           "seed": 35855692488584293,
           "trial": 8,
-          "worker_peak_rss_mb": 94.1
+          "worker_peak_rss_mb": 95.8
         },
         {
-          "channel_seconds": 0.2188,
-          "decode_seconds": 1.0897,
+          "channel_seconds": 0.2289,
+          "decode_seconds": 1.2305,
           "detail": null,
           "files_recovered": 0,
-          "groups_failed": 3,
+          "groups_failed": 0,
           "observed": {
-            "bases": 2441014,
-            "deletions": 4879,
+            "bases": 2581244,
+            "deletions": 5152,
             "dropped": 0,
-            "insertions": 4781,
+            "insertions": 5085,
             "substitutions": 0,
             "zero_coverage": 0
           },
-          "outcome": "DECODER_FAILURE",
+          "outcome": "SUCCESS",
           "point": 3,
           "read_paths": {
-            "consensus_attempted": 510,
+            "addresses_snapped": 71,
+            "consensus_attempted": 461,
             "consensus_recovered": 0,
-            "fast": 2697,
-            "orphans": 418,
-            "pending": 594,
+            "fast": 2573,
+            "orphans": 320,
+            "pending": 663,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 4538,
+            "sync": 4969,
             "unaligned": 0
           },
           "reads": 8247,
           "seed": 68727392774658183,
           "trial": 9,
-          "worker_peak_rss_mb": 93.3
+          "worker_peak_rss_mb": 99.6
         },
         {
-          "channel_seconds": 0.2294,
-          "decode_seconds": 1.3747,
+          "channel_seconds": 0.2382,
+          "decode_seconds": 1.5398,
           "detail": null,
           "files_recovered": 0,
-          "groups_failed": 91,
+          "groups_failed": 33,
           "observed": {
-            "bases": 2441013,
-            "deletions": 7446,
+            "bases": 2581216,
+            "deletions": 7865,
             "dropped": 0,
-            "insertions": 7347,
+            "insertions": 7770,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "DECODER_FAILURE",
           "point": 4,
           "read_paths": {
-            "consensus_attempted": 994,
+            "addresses_snapped": 172,
+            "consensus_attempted": 989,
             "consensus_recovered": 0,
-            "fast": 1630,
-            "orphans": 1022,
-            "pending": 1134,
+            "fast": 1574,
+            "orphans": 718,
+            "pending": 1472,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 4461,
-            "unaligned": 0
+            "sync": 5101,
+            "unaligned": 2
           },
           "reads": 8247,
           "seed": 48191370861952258,
           "trial": 0,
-          "worker_peak_rss_mb": 93.3
+          "worker_peak_rss_mb": 100.1
         },
         {
-          "channel_seconds": 0.2165,
-          "decode_seconds": 1.3441,
+          "channel_seconds": 0.2306,
+          "decode_seconds": 1.5944,
           "detail": null,
           "files_recovered": 0,
-          "groups_failed": 87,
+          "groups_failed": 36,
           "observed": {
-            "bases": 2441139,
-            "deletions": 7329,
+            "bases": 2581367,
+            "deletions": 7746,
             "dropped": 0,
-            "insertions": 7356,
+            "insertions": 7802,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "DECODER_FAILURE",
           "point": 4,
           "read_paths": {
-            "consensus_attempted": 957,
+            "addresses_snapped": 170,
+            "consensus_attempted": 993,
             "consensus_recovered": 0,
-            "fast": 1621,
-            "orphans": 992,
-            "pending": 1084,
+            "fast": 1492,
+            "orphans": 735,
+            "pending": 1477,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 4550,
-            "unaligned": 0
+            "sync": 5175,
+            "unaligned": 1
           },
           "reads": 8247,
           "seed": 54521449071670819,
           "trial": 1,
-          "worker_peak_rss_mb": 95.7
+          "worker_peak_rss_mb": 98.5
         },
         {
-          "channel_seconds": 0.2176,
-          "decode_seconds": 1.337,
+          "channel_seconds": 0.2315,
+          "decode_seconds": 1.526,
           "detail": null,
           "files_recovered": 0,
-          "groups_failed": 83,
+          "groups_failed": 30,
           "observed": {
-            "bases": 2440971,
-            "deletions": 7387,
+            "bases": 2581180,
+            "deletions": 7765,
             "dropped": 0,
-            "insertions": 7246,
+            "insertions": 7634,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "DECODER_FAILURE",
           "point": 4,
           "read_paths": {
-            "consensus_attempted": 928,
+            "addresses_snapped": 162,
+            "consensus_attempted": 956,
             "consensus_recovered": 0,
-            "fast": 1638,
-            "orphans": 985,
-            "pending": 1042,
+            "fast": 1514,
+            "orphans": 705,
+            "pending": 1416,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 4582,
+            "sync": 5217,
             "unaligned": 0
           },
           "reads": 8247,
           "seed": 62980223869908126,
           "trial": 2,
-          "worker_peak_rss_mb": 94.0
+          "worker_peak_rss_mb": 94.7
         },
         {
-          "channel_seconds": 0.2286,
-          "decode_seconds": 1.3664,
+          "channel_seconds": 0.2256,
+          "decode_seconds": 1.6249,
           "detail": null,
           "files_recovered": 0,
-          "groups_failed": 80,
+          "groups_failed": 25,
           "observed": {
-            "bases": 2440922,
-            "deletions": 7288,
+            "bases": 2581124,
+            "deletions": 7701,
             "dropped": 0,
-            "insertions": 7098,
+            "insertions": 7514,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "DECODER_FAILURE",
           "point": 4,
           "read_paths": {
-            "consensus_attempted": 876,
+            "addresses_snapped": 185,
+            "consensus_attempted": 930,
             "consensus_recovered": 0,
-            "fast": 1694,
-            "orphans": 992,
-            "pending": 985,
+            "fast": 1519,
+            "orphans": 676,
+            "pending": 1365,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 4576,
+            "sync": 5268,
             "unaligned": 0
           },
           "reads": 8247,
           "seed": 28239731950694068,
           "trial": 3,
-          "worker_peak_rss_mb": 98.0
+          "worker_peak_rss_mb": 94.3
         },
         {
-          "channel_seconds": 0.2124,
-          "decode_seconds": 1.3536,
+          "channel_seconds": 0.2356,
+          "decode_seconds": 1.564,
           "detail": null,
           "files_recovered": 0,
-          "groups_failed": 81,
+          "groups_failed": 38,
           "observed": {
-            "bases": 2440938,
-            "deletions": 7371,
+            "bases": 2581196,
+            "deletions": 7775,
             "dropped": 0,
-            "insertions": 7197,
+            "insertions": 7660,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "DECODER_FAILURE",
           "point": 4,
           "read_paths": {
-            "consensus_attempted": 940,
+            "addresses_snapped": 187,
+            "consensus_attempted": 991,
             "consensus_recovered": 0,
-            "fast": 1665,
-            "orphans": 988,
-            "pending": 1063,
+            "fast": 1501,
+            "orphans": 743,
+            "pending": 1472,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 4531,
+            "sync": 5168,
             "unaligned": 0
           },
           "reads": 8247,
           "seed": 28878871485978031,
           "trial": 4,
-          "worker_peak_rss_mb": 93.1
+          "worker_peak_rss_mb": 94.5
         },
         {
-          "channel_seconds": 0.2302,
-          "decode_seconds": 1.3426,
+          "channel_seconds": 0.2246,
+          "decode_seconds": 1.5415,
           "detail": null,
           "files_recovered": 0,
-          "groups_failed": 82,
+          "groups_failed": 29,
           "observed": {
-            "bases": 2441120,
-            "deletions": 7283,
+            "bases": 2581325,
+            "deletions": 7706,
             "dropped": 0,
-            "insertions": 7291,
+            "insertions": 7720,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "DECODER_FAILURE",
           "point": 4,
           "read_paths": {
-            "consensus_attempted": 934,
+            "addresses_snapped": 165,
+            "consensus_attempted": 936,
             "consensus_recovered": 0,
-            "fast": 1643,
-            "orphans": 1012,
-            "pending": 1048,
+            "fast": 1511,
+            "orphans": 723,
+            "pending": 1400,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 4544,
+            "sync": 5220,
             "unaligned": 0
           },
           "reads": 8247,
           "seed": 8838653645198922,
           "trial": 5,
-          "worker_peak_rss_mb": 93.3
+          "worker_peak_rss_mb": 95.8
         },
         {
           "channel_seconds": 0.2291,
-          "decode_seconds": 1.4407,
+          "decode_seconds": 1.5995,
           "detail": null,
           "files_recovered": 0,
-          "groups_failed": 82,
+          "groups_failed": 37,
           "observed": {
-            "bases": 2440961,
-            "deletions": 7441,
+            "bases": 2581172,
+            "deletions": 7869,
             "dropped": 0,
-            "insertions": 7290,
+            "insertions": 7730,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "DECODER_FAILURE",
           "point": 4,
           "read_paths": {
-            "consensus_attempted": 933,
+            "addresses_snapped": 177,
+            "consensus_attempted": 998,
             "consensus_recovered": 0,
-            "fast": 1665,
-            "orphans": 1005,
-            "pending": 1076,
+            "fast": 1514,
+            "orphans": 741,
+            "pending": 1486,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 4501,
+            "sync": 5130,
             "unaligned": 0
           },
           "reads": 8247,
           "seed": 63956621882595799,
           "trial": 6,
-          "worker_peak_rss_mb": 94.1
+          "worker_peak_rss_mb": 99.6
         },
         {
-          "channel_seconds": 0.2187,
-          "decode_seconds": 1.3466,
+          "channel_seconds": 0.2241,
+          "decode_seconds": 1.5501,
           "detail": null,
           "files_recovered": 0,
-          "groups_failed": 83,
+          "groups_failed": 29,
           "observed": {
-            "bases": 2441147,
-            "deletions": 7244,
+            "bases": 2581355,
+            "deletions": 7672,
             "dropped": 0,
-            "insertions": 7279,
+            "insertions": 7716,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "DECODER_FAILURE",
           "point": 4,
           "read_paths": {
-            "consensus_attempted": 925,
+            "addresses_snapped": 190,
+            "consensus_attempted": 944,
             "consensus_recovered": 0,
-            "fast": 1652,
-            "orphans": 1008,
-            "pending": 1040,
+            "fast": 1529,
+            "orphans": 738,
+            "pending": 1421,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 4547,
-            "unaligned": 0
+            "sync": 5195,
+            "unaligned": 1
           },
           "reads": 8247,
           "seed": 51621224147133636,
           "trial": 7,
-          "worker_peak_rss_mb": 93.3
+          "worker_peak_rss_mb": 100.2
         },
         {
-          "channel_seconds": 0.2152,
-          "decode_seconds": 1.3518,
+          "channel_seconds": 0.2297,
+          "decode_seconds": 1.6112,
           "detail": null,
           "files_recovered": 0,
-          "groups_failed": 84,
+          "groups_failed": 35,
           "observed": {
-            "bases": 2440973,
-            "deletions": 7429,
+            "bases": 2581154,
+            "deletions": 7868,
             "dropped": 0,
-            "insertions": 7290,
+            "insertions": 7711,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "DECODER_FAILURE",
           "point": 4,
           "read_paths": {
-            "consensus_attempted": 957,
+            "addresses_snapped": 200,
+            "consensus_attempted": 976,
             "consensus_recovered": 0,
-            "fast": 1589,
-            "orphans": 973,
-            "pending": 1102,
+            "fast": 1479,
+            "orphans": 724,
+            "pending": 1431,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 4583,
+            "sync": 5239,
             "unaligned": 0
           },
           "reads": 8247,
           "seed": 18922394713776933,
           "trial": 8,
-          "worker_peak_rss_mb": 95.7
+          "worker_peak_rss_mb": 98.5
         },
         {
-          "channel_seconds": 0.2151,
-          "decode_seconds": 1.4471,
+          "channel_seconds": 0.2193,
+          "decode_seconds": 1.5276,
           "detail": null,
           "files_recovered": 0,
-          "groups_failed": 87,
+          "groups_failed": 27,
           "observed": {
-            "bases": 2441041,
-            "deletions": 7390,
+            "bases": 2581226,
+            "deletions": 7844,
             "dropped": 0,
-            "insertions": 7319,
+            "insertions": 7759,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "DECODER_FAILURE",
           "point": 4,
           "read_paths": {
-            "consensus_attempted": 922,
+            "addresses_snapped": 185,
+            "consensus_attempted": 919,
             "consensus_recovered": 0,
-            "fast": 1590,
-            "orphans": 1005,
-            "pending": 1050,
+            "fast": 1453,
+            "orphans": 760,
+            "pending": 1397,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 4601,
+            "sync": 5264,
             "unaligned": 1
           },
           "reads": 8247,
           "seed": 57731226774717100,
           "trial": 9,
-          "worker_peak_rss_mb": 94.0
+          "worker_peak_rss_mb": 100.7
         },
         {
-          "channel_seconds": 0.2213,
-          "decode_seconds": 1.8046,
+          "channel_seconds": 0.2259,
+          "decode_seconds": 2.1794,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 103,
           "observed": {
-            "bases": 2441020,
-            "deletions": 12389,
+            "bases": 2581224,
+            "deletions": 13097,
             "dropped": 0,
-            "insertions": 12297,
+            "insertions": 13010,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "DECODER_FAILURE",
           "point": 5,
           "read_paths": {
-            "consensus_attempted": 1690,
+            "addresses_snapped": 449,
+            "consensus_attempted": 2086,
             "consensus_recovered": 0,
-            "fast": 630,
-            "orphans": 2324,
-            "pending": 1983,
+            "fast": 582,
+            "orphans": 1842,
+            "pending": 3309,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 3306,
-            "unaligned": 4
+            "sync": 4040,
+            "unaligned": 8
           },
           "reads": 8247,
           "seed": 55981194590206739,
           "trial": 0,
-          "worker_peak_rss_mb": 98.1
+          "worker_peak_rss_mb": 94.6
         },
         {
-          "channel_seconds": 0.2195,
-          "decode_seconds": 1.7943,
+          "channel_seconds": 0.2276,
+          "decode_seconds": 2.092,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 103,
           "observed": {
-            "bases": 2440966,
-            "deletions": 12243,
+            "bases": 2581140,
+            "deletions": 12933,
             "dropped": 0,
-            "insertions": 12097,
+            "insertions": 12762,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "DECODER_FAILURE",
           "point": 5,
           "read_paths": {
-            "consensus_attempted": 1678,
+            "addresses_snapped": 421,
+            "consensus_attempted": 1975,
             "consensus_recovered": 0,
-            "fast": 657,
-            "orphans": 2229,
-            "pending": 2002,
+            "fast": 594,
+            "orphans": 1783,
+            "pending": 3245,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 3358,
-            "unaligned": 1
+            "sync": 4113,
+            "unaligned": 2
           },
           "reads": 8247,
           "seed": 4453107339864795,
           "trial": 1,
-          "worker_peak_rss_mb": 93.1
+          "worker_peak_rss_mb": 95.0
         },
         {
-          "channel_seconds": 0.2194,
-          "decode_seconds": 1.7528,
+          "channel_seconds": 0.2211,
+          "decode_seconds": 2.0112,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 103,
           "observed": {
-            "bases": 2440915,
-            "deletions": 12175,
+            "bases": 2581079,
+            "deletions": 12909,
             "dropped": 0,
-            "insertions": 11978,
+            "insertions": 12677,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "DECODER_FAILURE",
           "point": 5,
           "read_paths": {
-            "consensus_attempted": 1725,
+            "addresses_snapped": 406,
+            "consensus_attempted": 1969,
             "consensus_recovered": 0,
-            "fast": 696,
-            "orphans": 2160,
-            "pending": 2037,
+            "fast": 601,
+            "orphans": 1725,
+            "pending": 3176,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 3351,
-            "unaligned": 3
+            "sync": 4154,
+            "unaligned": 4
           },
           "reads": 8247,
           "seed": 57423853752217951,
           "trial": 2,
-          "worker_peak_rss_mb": 93.3
+          "worker_peak_rss_mb": 95.8
         },
         {
-          "channel_seconds": 0.2204,
-          "decode_seconds": 1.835,
+          "channel_seconds": 0.2272,
+          "decode_seconds": 2.0546,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 103,
           "observed": {
-            "bases": 2441243,
-            "deletions": 12161,
+            "bases": 2581469,
+            "deletions": 12863,
             "dropped": 0,
-            "insertions": 12292,
+            "insertions": 13021,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "DECODER_FAILURE",
           "point": 5,
           "read_paths": {
-            "consensus_attempted": 1720,
+            "addresses_snapped": 391,
+            "consensus_attempted": 1985,
             "consensus_recovered": 0,
-            "fast": 681,
-            "orphans": 2178,
-            "pending": 2029,
+            "fast": 589,
+            "orphans": 1697,
+            "pending": 3156,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 3352,
-            "unaligned": 7
+            "sync": 4207,
+            "unaligned": 5
           },
           "reads": 8247,
           "seed": 71537892665976123,
           "trial": 3,
-          "worker_peak_rss_mb": 98.8
+          "worker_peak_rss_mb": 99.7
         },
         {
-          "channel_seconds": 0.2198,
-          "decode_seconds": 1.8339,
+          "channel_seconds": 0.2242,
+          "decode_seconds": 1.9856,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 103,
           "observed": {
-            "bases": 2441270,
-            "deletions": 11980,
+            "bases": 2581459,
+            "deletions": 12674,
             "dropped": 0,
-            "insertions": 12138,
+            "insertions": 12822,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "DECODER_FAILURE",
           "point": 5,
           "read_paths": {
-            "consensus_attempted": 1692,
+            "addresses_snapped": 415,
+            "consensus_attempted": 1988,
             "consensus_recovered": 0,
-            "fast": 644,
-            "orphans": 2157,
-            "pending": 2001,
+            "fast": 579,
+            "orphans": 1732,
+            "pending": 3131,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 3438,
-            "unaligned": 7
+            "sync": 4242,
+            "unaligned": 8
           },
           "reads": 8247,
           "seed": 32370161648531721,
           "trial": 4,
-          "worker_peak_rss_mb": 93.3
+          "worker_peak_rss_mb": 100.2
         },
         {
-          "channel_seconds": 0.2163,
-          "decode_seconds": 1.8835,
+          "channel_seconds": 0.2339,
+          "decode_seconds": 2.0824,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 103,
           "observed": {
-            "bases": 2440976,
-            "deletions": 12365,
+            "bases": 2581153,
+            "deletions": 13087,
             "dropped": 0,
-            "insertions": 12229,
+            "insertions": 12929,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "DECODER_FAILURE",
           "point": 5,
           "read_paths": {
-            "consensus_attempted": 1756,
+            "addresses_snapped": 447,
+            "consensus_attempted": 2046,
             "consensus_recovered": 0,
-            "fast": 629,
-            "orphans": 2284,
-            "pending": 2058,
+            "fast": 580,
+            "orphans": 1803,
+            "pending": 3206,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 3275,
-            "unaligned": 1
+            "sync": 4120,
+            "unaligned": 6
           },
           "reads": 8247,
           "seed": 41490686267861420,
           "trial": 5,
-          "worker_peak_rss_mb": 95.8
+          "worker_peak_rss_mb": 98.9
         },
         {
-          "channel_seconds": 0.2314,
-          "decode_seconds": 1.8343,
+          "channel_seconds": 0.2199,
+          "decode_seconds": 1.9991,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 103,
           "observed": {
-            "bases": 2441182,
-            "deletions": 12241,
+            "bases": 2581310,
+            "deletions": 12951,
             "dropped": 0,
-            "insertions": 12311,
+            "insertions": 12950,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "DECODER_FAILURE",
           "point": 5,
           "read_paths": {
-            "consensus_attempted": 1729,
+            "addresses_snapped": 402,
+            "consensus_attempted": 2029,
             "consensus_recovered": 0,
-            "fast": 672,
-            "orphans": 2252,
-            "pending": 2035,
+            "fast": 577,
+            "orphans": 1724,
+            "pending": 3258,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 3284,
-            "unaligned": 4
+            "sync": 4126,
+            "unaligned": 3
           },
           "reads": 8247,
           "seed": 46473910566965470,
           "trial": 6,
-          "worker_peak_rss_mb": 94.0
+          "worker_peak_rss_mb": 101.0
         },
         {
-          "channel_seconds": 0.2282,
-          "decode_seconds": 1.8615,
+          "channel_seconds": 0.2194,
+          "decode_seconds": 2.1308,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 103,
           "observed": {
-            "bases": 2441076,
-            "deletions": 12342,
+            "bases": 2581265,
+            "deletions": 13031,
             "dropped": 0,
-            "insertions": 12306,
+            "insertions": 12985,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "DECODER_FAILURE",
           "point": 5,
           "read_paths": {
-            "consensus_attempted": 1730,
+            "addresses_snapped": 419,
+            "consensus_attempted": 2043,
             "consensus_recovered": 0,
-            "fast": 652,
-            "orphans": 2277,
-            "pending": 2038,
+            "fast": 582,
+            "orphans": 1820,
+            "pending": 3287,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 3280,
-            "unaligned": 0
+            "sync": 4072,
+            "unaligned": 5
           },
           "reads": 8247,
           "seed": 30661966482504538,
           "trial": 7,
-          "worker_peak_rss_mb": 98.2
+          "worker_peak_rss_mb": 95.9
         },
         {
-          "channel_seconds": 0.2245,
-          "decode_seconds": 1.8268,
+          "channel_seconds": 0.2308,
+          "decode_seconds": 2.0331,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 103,
           "observed": {
-            "bases": 2441062,
-            "deletions": 12263,
+            "bases": 2581267,
+            "deletions": 12955,
             "dropped": 0,
-            "insertions": 12213,
+            "insertions": 12911,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "DECODER_FAILURE",
           "point": 5,
           "read_paths": {
-            "consensus_attempted": 1745,
+            "addresses_snapped": 395,
+            "consensus_attempted": 1965,
             "consensus_recovered": 0,
-            "fast": 676,
-            "orphans": 2229,
-            "pending": 2008,
+            "fast": 617,
+            "orphans": 1765,
+            "pending": 3166,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 3331,
-            "unaligned": 3
+            "sync": 4157,
+            "unaligned": 4
           },
           "reads": 8247,
           "seed": 24621166920139902,
           "trial": 8,
-          "worker_peak_rss_mb": 93.1
+          "worker_peak_rss_mb": 95.5
         },
         {
-          "channel_seconds": 0.2315,
-          "decode_seconds": 1.7967,
+          "channel_seconds": 0.2216,
+          "decode_seconds": 2.0296,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 103,
           "observed": {
-            "bases": 2441168,
-            "deletions": 12138,
+            "bases": 2581316,
+            "deletions": 12825,
             "dropped": 0,
-            "insertions": 12194,
+            "insertions": 12830,
             "substitutions": 0,
             "zero_coverage": 0
           },
           "outcome": "DECODER_FAILURE",
           "point": 5,
           "read_paths": {
-            "consensus_attempted": 1724,
+            "addresses_snapped": 457,
+            "consensus_attempted": 2079,
             "consensus_recovered": 0,
-            "fast": 651,
-            "orphans": 2192,
-            "pending": 2032,
+            "fast": 593,
+            "orphans": 1809,
+            "pending": 3259,
             "reads": 8247,
             "reverse_complement": 0,
-            "sync": 3368,
+            "sync": 4090,
             "unaligned": 4
           },
           "reads": 8247,
           "seed": 53763137343288991,
           "trial": 9,
-          "worker_peak_rss_mb": 93.3
+          "worker_peak_rss_mb": 95.8
         }
       ],
       "trials_per_point": 10,
-      "variant": "v4-balanced (2-nt markers / 32 nt, P=40, r=16)"
+      "variant": "v4-balanced (3-nt markers / 24 nt, P=40, r=16)"
     },
     {
       "base_channel": {
@@ -4045,8 +4131,8 @@
       },
       "points": [
         {
-          "decode_seconds_mean": 0.1382,
-          "decode_seconds_median": 0.1323,
+          "decode_seconds_mean": 0.1526,
+          "decode_seconds_median": 0.1475,
           "groups_failed_max": 0,
           "outcomes": {
             "ADDRESS_FAILURE": 0,
@@ -4064,11 +4150,11 @@
           "reads_mean": 9170.0,
           "success_rate": 1.0,
           "trials": 10,
-          "worker_peak_rss_mb_max": 82.8
+          "worker_peak_rss_mb_max": 84.7
         },
         {
-          "decode_seconds_mean": 0.6563,
-          "decode_seconds_median": 0.6639,
+          "decode_seconds_mean": 0.6566,
+          "decode_seconds_median": 0.6444,
           "groups_failed_max": 0,
           "outcomes": {
             "ADDRESS_FAILURE": 0,
@@ -4086,11 +4172,11 @@
           "reads_mean": 9170.0,
           "success_rate": 1.0,
           "trials": 10,
-          "worker_peak_rss_mb_max": 93.7
+          "worker_peak_rss_mb_max": 95.9
         },
         {
-          "decode_seconds_mean": 0.8805,
-          "decode_seconds_median": 0.8683,
+          "decode_seconds_mean": 0.8727,
+          "decode_seconds_median": 0.8693,
           "groups_failed_max": 0,
           "outcomes": {
             "ADDRESS_FAILURE": 0,
@@ -4108,11 +4194,11 @@
           "reads_mean": 9170.0,
           "success_rate": 1.0,
           "trials": 10,
-          "worker_peak_rss_mb_max": 94.9
+          "worker_peak_rss_mb_max": 95.9
         },
         {
-          "decode_seconds_mean": 1.2688,
-          "decode_seconds_median": 1.2616,
+          "decode_seconds_mean": 1.3016,
+          "decode_seconds_median": 1.2886,
           "groups_failed_max": 0,
           "outcomes": {
             "ADDRESS_FAILURE": 0,
@@ -4130,11 +4216,11 @@
           "reads_mean": 9170.0,
           "success_rate": 1.0,
           "trials": 10,
-          "worker_peak_rss_mb_max": 97.3
+          "worker_peak_rss_mb_max": 98.7
         },
         {
-          "decode_seconds_mean": 1.636,
-          "decode_seconds_median": 1.6356,
+          "decode_seconds_mean": 1.6186,
+          "decode_seconds_median": 1.6135,
           "groups_failed_max": 1,
           "outcomes": {
             "ADDRESS_FAILURE": 0,
@@ -4152,11 +4238,11 @@
           "reads_mean": 9170.0,
           "success_rate": 0.6,
           "trials": 10,
-          "worker_peak_rss_mb_max": 100.0
+          "worker_peak_rss_mb_max": 102.3
         },
         {
-          "decode_seconds_mean": 2.0864,
-          "decode_seconds_median": 2.072,
+          "decode_seconds_mean": 2.1194,
+          "decode_seconds_median": 2.0996,
           "groups_failed_max": 112,
           "outcomes": {
             "ADDRESS_FAILURE": 0,
@@ -4174,16 +4260,16 @@
           "reads_mean": 9170.0,
           "success_rate": 0.0,
           "trials": 10,
-          "worker_peak_rss_mb_max": 100.1
+          "worker_peak_rss_mb_max": 102.3
         }
       ],
-      "seconds": 13.39,
+      "seconds": 13.29,
       "strand_nt": 313,
       "strands": 9170,
       "trials": [
         {
-          "channel_seconds": 0.3361,
-          "decode_seconds": 0.1292,
+          "channel_seconds": 0.3309,
+          "decode_seconds": 0.1382,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -4209,11 +4295,11 @@
           "reads": 9170,
           "seed": 24193106666314677,
           "trial": 0,
-          "worker_peak_rss_mb": 81.0
+          "worker_peak_rss_mb": 83.3
         },
         {
-          "channel_seconds": 0.3445,
-          "decode_seconds": 0.129,
+          "channel_seconds": 0.3411,
+          "decode_seconds": 0.1468,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -4239,11 +4325,11 @@
           "reads": 9170,
           "seed": 59766419074561144,
           "trial": 1,
-          "worker_peak_rss_mb": 81.1
+          "worker_peak_rss_mb": 83.2
         },
         {
-          "channel_seconds": 0.3383,
-          "decode_seconds": 0.1328,
+          "channel_seconds": 0.3433,
+          "decode_seconds": 0.1439,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -4269,11 +4355,11 @@
           "reads": 9170,
           "seed": 41262375751040324,
           "trial": 2,
-          "worker_peak_rss_mb": 80.9
+          "worker_peak_rss_mb": 83.1
         },
         {
-          "channel_seconds": 0.3728,
-          "decode_seconds": 0.1288,
+          "channel_seconds": 0.3432,
+          "decode_seconds": 0.1444,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -4299,11 +4385,11 @@
           "reads": 9170,
           "seed": 45676613434044916,
           "trial": 3,
-          "worker_peak_rss_mb": 80.9
+          "worker_peak_rss_mb": 83.3
         },
         {
-          "channel_seconds": 0.3373,
-          "decode_seconds": 0.1278,
+          "channel_seconds": 0.3437,
+          "decode_seconds": 0.1481,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -4329,11 +4415,11 @@
           "reads": 9170,
           "seed": 49758981351257399,
           "trial": 4,
-          "worker_peak_rss_mb": 81.0
+          "worker_peak_rss_mb": 83.3
         },
         {
-          "channel_seconds": 0.3657,
-          "decode_seconds": 0.1439,
+          "channel_seconds": 0.3437,
+          "decode_seconds": 0.145,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -4359,11 +4445,11 @@
           "reads": 9170,
           "seed": 40599930055918611,
           "trial": 5,
-          "worker_peak_rss_mb": 81.1
+          "worker_peak_rss_mb": 83.1
         },
         {
-          "channel_seconds": 0.3351,
-          "decode_seconds": 0.1319,
+          "channel_seconds": 0.347,
+          "decode_seconds": 0.1654,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -4389,11 +4475,11 @@
           "reads": 9170,
           "seed": 2605598405444184,
           "trial": 6,
-          "worker_peak_rss_mb": 81.1
+          "worker_peak_rss_mb": 83.3
         },
         {
-          "channel_seconds": 0.3155,
-          "decode_seconds": 0.1537,
+          "channel_seconds": 0.3093,
+          "decode_seconds": 0.1635,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -4419,11 +4505,11 @@
           "reads": 9170,
           "seed": 32044101799509846,
           "trial": 7,
-          "worker_peak_rss_mb": 82.7
+          "worker_peak_rss_mb": 84.7
         },
         {
-          "channel_seconds": 0.2917,
-          "decode_seconds": 0.1477,
+          "channel_seconds": 0.322,
+          "decode_seconds": 0.1669,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -4449,11 +4535,11 @@
           "reads": 9170,
           "seed": 18201313516696564,
           "trial": 8,
-          "worker_peak_rss_mb": 82.8
+          "worker_peak_rss_mb": 84.5
         },
         {
-          "channel_seconds": 0.3066,
-          "decode_seconds": 0.1572,
+          "channel_seconds": 0.3185,
+          "decode_seconds": 0.164,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -4479,11 +4565,11 @@
           "reads": 9170,
           "seed": 4750624872663381,
           "trial": 9,
-          "worker_peak_rss_mb": 82.7
+          "worker_peak_rss_mb": 84.5
         },
         {
-          "channel_seconds": 0.3062,
-          "decode_seconds": 0.673,
+          "channel_seconds": 0.3253,
+          "decode_seconds": 0.6752,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -4498,11 +4584,12 @@
           "outcome": "SUCCESS",
           "point": 1,
           "read_paths": {
+            "addresses_snapped": 0,
             "consensus_attempted": 4,
             "consensus_recovered": 0,
             "fast": 6771,
             "orphans": 1,
-            "pending": 5,
+            "pending": 6,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 2393,
@@ -4511,11 +4598,11 @@
           "reads": 9170,
           "seed": 69732742054694722,
           "trial": 0,
-          "worker_peak_rss_mb": 91.6
+          "worker_peak_rss_mb": 94.0
         },
         {
-          "channel_seconds": 0.3034,
-          "decode_seconds": 0.6843,
+          "channel_seconds": 0.3237,
+          "decode_seconds": 0.6817,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -4530,10 +4617,11 @@
           "outcome": "SUCCESS",
           "point": 1,
           "read_paths": {
+            "addresses_snapped": 0,
             "consensus_attempted": 7,
             "consensus_recovered": 0,
             "fast": 6717,
-            "orphans": 1,
+            "orphans": 0,
             "pending": 7,
             "reads": 9170,
             "reverse_complement": 0,
@@ -4543,11 +4631,11 @@
           "reads": 9170,
           "seed": 25669115693245660,
           "trial": 1,
-          "worker_peak_rss_mb": 91.5
+          "worker_peak_rss_mb": 93.9
         },
         {
-          "channel_seconds": 0.2939,
-          "decode_seconds": 0.6856,
+          "channel_seconds": 0.3212,
+          "decode_seconds": 0.6912,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -4562,11 +4650,12 @@
           "outcome": "SUCCESS",
           "point": 1,
           "read_paths": {
-            "consensus_attempted": 6,
+            "addresses_snapped": 1,
+            "consensus_attempted": 7,
             "consensus_recovered": 0,
             "fast": 6683,
             "orphans": 1,
-            "pending": 6,
+            "pending": 7,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 2480,
@@ -4575,11 +4664,11 @@
           "reads": 9170,
           "seed": 2534850997689203,
           "trial": 2,
-          "worker_peak_rss_mb": 92.1
+          "worker_peak_rss_mb": 94.1
         },
         {
-          "channel_seconds": 0.3213,
-          "decode_seconds": 0.7042,
+          "channel_seconds": 0.3324,
+          "decode_seconds": 0.7337,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -4594,11 +4683,12 @@
           "outcome": "SUCCESS",
           "point": 1,
           "read_paths": {
-            "consensus_attempted": 6,
+            "addresses_snapped": 3,
+            "consensus_attempted": 8,
             "consensus_recovered": 0,
             "fast": 6670,
             "orphans": 5,
-            "pending": 7,
+            "pending": 12,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 2488,
@@ -4607,11 +4697,11 @@
           "reads": 9170,
           "seed": 18392388475421632,
           "trial": 3,
-          "worker_peak_rss_mb": 92.1
+          "worker_peak_rss_mb": 94.0
         },
         {
-          "channel_seconds": 0.3087,
-          "decode_seconds": 0.6083,
+          "channel_seconds": 0.3093,
+          "decode_seconds": 0.6152,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -4626,9 +4716,12 @@
           "outcome": "SUCCESS",
           "point": 1,
           "read_paths": {
+            "addresses_snapped": 1,
+            "consensus_attempted": 1,
+            "consensus_recovered": 0,
             "fast": 6739,
             "orphans": 5,
-            "pending": 0,
+            "pending": 4,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 2426,
@@ -4637,11 +4730,11 @@
           "reads": 9170,
           "seed": 58027262663360195,
           "trial": 4,
-          "worker_peak_rss_mb": 92.8
+          "worker_peak_rss_mb": 94.8
         },
         {
-          "channel_seconds": 0.2984,
-          "decode_seconds": 0.6198,
+          "channel_seconds": 0.3107,
+          "decode_seconds": 0.6386,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -4656,11 +4749,12 @@
           "outcome": "SUCCESS",
           "point": 1,
           "read_paths": {
-            "consensus_attempted": 5,
+            "addresses_snapped": 1,
+            "consensus_attempted": 7,
             "consensus_recovered": 0,
             "fast": 6775,
             "orphans": 2,
-            "pending": 5,
+            "pending": 7,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 2388,
@@ -4669,11 +4763,11 @@
           "reads": 9170,
           "seed": 26396300966327668,
           "trial": 5,
-          "worker_peak_rss_mb": 92.4
+          "worker_peak_rss_mb": 94.8
         },
         {
-          "channel_seconds": 0.3123,
-          "decode_seconds": 0.6797,
+          "channel_seconds": 0.3085,
+          "decode_seconds": 0.6476,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -4688,11 +4782,12 @@
           "outcome": "SUCCESS",
           "point": 1,
           "read_paths": {
-            "consensus_attempted": 2,
+            "addresses_snapped": 0,
+            "consensus_attempted": 3,
             "consensus_recovered": 0,
             "fast": 6774,
             "orphans": 1,
-            "pending": 3,
+            "pending": 4,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 2392,
@@ -4701,11 +4796,11 @@
           "reads": 9170,
           "seed": 18426321188445706,
           "trial": 6,
-          "worker_peak_rss_mb": 92.5
+          "worker_peak_rss_mb": 94.6
         },
         {
-          "channel_seconds": 0.2504,
-          "decode_seconds": 0.603,
+          "channel_seconds": 0.2542,
+          "decode_seconds": 0.6305,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -4720,11 +4815,12 @@
           "outcome": "SUCCESS",
           "point": 1,
           "read_paths": {
-            "consensus_attempted": 4,
+            "addresses_snapped": 1,
+            "consensus_attempted": 5,
             "consensus_recovered": 0,
             "fast": 6837,
             "orphans": 3,
-            "pending": 4,
+            "pending": 7,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 2326,
@@ -4733,11 +4829,11 @@
           "reads": 9170,
           "seed": 1170218369875816,
           "trial": 7,
-          "worker_peak_rss_mb": 93.7
+          "worker_peak_rss_mb": 95.9
         },
         {
-          "channel_seconds": 0.2543,
-          "decode_seconds": 0.6505,
+          "channel_seconds": 0.2541,
+          "decode_seconds": 0.6412,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -4752,6 +4848,7 @@
           "outcome": "SUCCESS",
           "point": 1,
           "read_paths": {
+            "addresses_snapped": 0,
             "consensus_attempted": 4,
             "consensus_recovered": 0,
             "fast": 6683,
@@ -4765,11 +4862,11 @@
           "reads": 9170,
           "seed": 56649472823455814,
           "trial": 8,
-          "worker_peak_rss_mb": 92.9
+          "worker_peak_rss_mb": 95.4
         },
         {
-          "channel_seconds": 0.2567,
-          "decode_seconds": 0.6547,
+          "channel_seconds": 0.2564,
+          "decode_seconds": 0.6108,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -4784,11 +4881,12 @@
           "outcome": "SUCCESS",
           "point": 1,
           "read_paths": {
-            "consensus_attempted": 4,
+            "addresses_snapped": 4,
+            "consensus_attempted": 8,
             "consensus_recovered": 0,
             "fast": 6769,
             "orphans": 5,
-            "pending": 4,
+            "pending": 9,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 2392,
@@ -4797,11 +4895,11 @@
           "reads": 9170,
           "seed": 51772885625984450,
           "trial": 9,
-          "worker_peak_rss_mb": 93.0
+          "worker_peak_rss_mb": 95.6
         },
         {
-          "channel_seconds": 0.2535,
-          "decode_seconds": 0.8443,
+          "channel_seconds": 0.2553,
+          "decode_seconds": 0.9064,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -4816,11 +4914,12 @@
           "outcome": "SUCCESS",
           "point": 2,
           "read_paths": {
-            "consensus_attempted": 28,
+            "addresses_snapped": 3,
+            "consensus_attempted": 33,
             "consensus_recovered": 0,
             "fast": 5051,
             "orphans": 19,
-            "pending": 31,
+            "pending": 48,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 4069,
@@ -4829,11 +4928,11 @@
           "reads": 9170,
           "seed": 23905583095900432,
           "trial": 0,
-          "worker_peak_rss_mb": 94.4
+          "worker_peak_rss_mb": 94.2
         },
         {
-          "channel_seconds": 0.2463,
-          "decode_seconds": 0.8962,
+          "channel_seconds": 0.2563,
+          "decode_seconds": 0.8495,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -4848,11 +4947,12 @@
           "outcome": "SUCCESS",
           "point": 2,
           "read_paths": {
-            "consensus_attempted": 29,
+            "addresses_snapped": 8,
+            "consensus_attempted": 37,
             "consensus_recovered": 0,
             "fast": 4986,
-            "orphans": 20,
-            "pending": 31,
+            "orphans": 18,
+            "pending": 45,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 4133,
@@ -4861,11 +4961,11 @@
           "reads": 9170,
           "seed": 154796670623922,
           "trial": 1,
-          "worker_peak_rss_mb": 92.8
+          "worker_peak_rss_mb": 94.8
         },
         {
-          "channel_seconds": 0.2452,
-          "decode_seconds": 0.8665,
+          "channel_seconds": 0.2518,
+          "decode_seconds": 0.8709,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -4880,11 +4980,12 @@
           "outcome": "SUCCESS",
           "point": 2,
           "read_paths": {
-            "consensus_attempted": 25,
+            "addresses_snapped": 12,
+            "consensus_attempted": 38,
             "consensus_recovered": 0,
             "fast": 5120,
-            "orphans": 31,
-            "pending": 29,
+            "orphans": 29,
+            "pending": 57,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 3990,
@@ -4893,11 +4994,11 @@
           "reads": 9170,
           "seed": 10170329597516425,
           "trial": 2,
-          "worker_peak_rss_mb": 93.7
+          "worker_peak_rss_mb": 94.8
         },
         {
-          "channel_seconds": 0.2528,
-          "decode_seconds": 0.8935,
+          "channel_seconds": 0.2523,
+          "decode_seconds": 0.9009,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -4912,11 +5013,12 @@
           "outcome": "SUCCESS",
           "point": 2,
           "read_paths": {
-            "consensus_attempted": 27,
+            "addresses_snapped": 6,
+            "consensus_attempted": 40,
             "consensus_recovered": 0,
             "fast": 5020,
-            "orphans": 20,
-            "pending": 32,
+            "orphans": 19,
+            "pending": 50,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 4098,
@@ -4925,11 +5027,11 @@
           "reads": 9170,
           "seed": 28115990068351150,
           "trial": 3,
-          "worker_peak_rss_mb": 93.6
+          "worker_peak_rss_mb": 94.7
         },
         {
-          "channel_seconds": 0.2628,
-          "decode_seconds": 0.8883,
+          "channel_seconds": 0.2445,
+          "decode_seconds": 0.8336,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -4944,11 +5046,12 @@
           "outcome": "SUCCESS",
           "point": 2,
           "read_paths": {
-            "consensus_attempted": 24,
+            "addresses_snapped": 7,
+            "consensus_attempted": 37,
             "consensus_recovered": 0,
             "fast": 5092,
-            "orphans": 21,
-            "pending": 29,
+            "orphans": 20,
+            "pending": 47,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 4028,
@@ -4957,11 +5060,11 @@
           "reads": 9170,
           "seed": 44312340834962468,
           "trial": 4,
-          "worker_peak_rss_mb": 93.8
+          "worker_peak_rss_mb": 95.6
         },
         {
-          "channel_seconds": 0.2541,
-          "decode_seconds": 0.866,
+          "channel_seconds": 0.2497,
+          "decode_seconds": 0.8889,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -4976,11 +5079,12 @@
           "outcome": "SUCCESS",
           "point": 2,
           "read_paths": {
-            "consensus_attempted": 30,
+            "addresses_snapped": 8,
+            "consensus_attempted": 39,
             "consensus_recovered": 0,
             "fast": 4992,
-            "orphans": 33,
-            "pending": 37,
+            "orphans": 31,
+            "pending": 64,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 4108,
@@ -4989,11 +5093,11 @@
           "reads": 9170,
           "seed": 64643070063724574,
           "trial": 5,
-          "worker_peak_rss_mb": 92.9
+          "worker_peak_rss_mb": 95.9
         },
         {
-          "channel_seconds": 0.2668,
-          "decode_seconds": 0.9602,
+          "channel_seconds": 0.2477,
+          "decode_seconds": 0.8677,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -5008,11 +5112,12 @@
           "outcome": "SUCCESS",
           "point": 2,
           "read_paths": {
-            "consensus_attempted": 28,
+            "addresses_snapped": 9,
+            "consensus_attempted": 38,
             "consensus_recovered": 0,
             "fast": 5050,
-            "orphans": 26,
-            "pending": 30,
+            "orphans": 24,
+            "pending": 51,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 4064,
@@ -5021,11 +5126,11 @@
           "reads": 9170,
           "seed": 51557441602093729,
           "trial": 6,
-          "worker_peak_rss_mb": 93.0
+          "worker_peak_rss_mb": 95.4
         },
         {
-          "channel_seconds": 0.2522,
-          "decode_seconds": 0.8669,
+          "channel_seconds": 0.2475,
+          "decode_seconds": 0.9076,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -5040,11 +5145,12 @@
           "outcome": "SUCCESS",
           "point": 2,
           "read_paths": {
-            "consensus_attempted": 30,
+            "addresses_snapped": 10,
+            "consensus_attempted": 44,
             "consensus_recovered": 0,
             "fast": 4989,
             "orphans": 26,
-            "pending": 32,
+            "pending": 57,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 4123,
@@ -5053,11 +5159,11 @@
           "reads": 9170,
           "seed": 69695931130637070,
           "trial": 7,
-          "worker_peak_rss_mb": 94.4
+          "worker_peak_rss_mb": 94.9
         },
         {
-          "channel_seconds": 0.2561,
-          "decode_seconds": 0.8532,
+          "channel_seconds": 0.2654,
+          "decode_seconds": 0.8436,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -5072,11 +5178,12 @@
           "outcome": "SUCCESS",
           "point": 2,
           "read_paths": {
-            "consensus_attempted": 30,
+            "addresses_snapped": 6,
+            "consensus_attempted": 41,
             "consensus_recovered": 0,
             "fast": 5028,
-            "orphans": 26,
-            "pending": 35,
+            "orphans": 25,
+            "pending": 55,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 4081,
@@ -5085,11 +5192,11 @@
           "reads": 9170,
           "seed": 19122960519500468,
           "trial": 8,
-          "worker_peak_rss_mb": 94.9
+          "worker_peak_rss_mb": 95.3
         },
         {
-          "channel_seconds": 0.2549,
-          "decode_seconds": 0.8697,
+          "channel_seconds": 0.2541,
+          "decode_seconds": 0.8576,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -5104,11 +5211,12 @@
           "outcome": "SUCCESS",
           "point": 2,
           "read_paths": {
-            "consensus_attempted": 23,
+            "addresses_snapped": 1,
+            "consensus_attempted": 25,
             "consensus_recovered": 0,
             "fast": 5087,
-            "orphans": 14,
-            "pending": 27,
+            "orphans": 12,
+            "pending": 36,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 4042,
@@ -5117,11 +5225,11 @@
           "reads": 9170,
           "seed": 30056670941615564,
           "trial": 9,
-          "worker_peak_rss_mb": 92.9
+          "worker_peak_rss_mb": 95.4
         },
         {
-          "channel_seconds": 0.2488,
-          "decode_seconds": 1.2596,
+          "channel_seconds": 0.2544,
+          "decode_seconds": 1.3628,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -5136,11 +5244,12 @@
           "outcome": "SUCCESS",
           "point": 3,
           "read_paths": {
-            "consensus_attempted": 158,
+            "addresses_snapped": 45,
+            "consensus_attempted": 219,
             "consensus_recovered": 0,
             "fast": 2869,
-            "orphans": 190,
-            "pending": 174,
+            "orphans": 178,
+            "pending": 333,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 5937,
@@ -5149,11 +5258,11 @@
           "reads": 9170,
           "seed": 20621060441252961,
           "trial": 0,
-          "worker_peak_rss_mb": 94.1
+          "worker_peak_rss_mb": 95.1
         },
         {
-          "channel_seconds": 0.2704,
-          "decode_seconds": 1.2804,
+          "channel_seconds": 0.2459,
+          "decode_seconds": 1.2808,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -5168,11 +5277,12 @@
           "outcome": "SUCCESS",
           "point": 3,
           "read_paths": {
-            "consensus_attempted": 149,
+            "addresses_snapped": 48,
+            "consensus_attempted": 213,
             "consensus_recovered": 0,
             "fast": 2894,
-            "orphans": 162,
-            "pending": 168,
+            "orphans": 157,
+            "pending": 306,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 5946,
@@ -5181,11 +5291,11 @@
           "reads": 9170,
           "seed": 3769651273381638,
           "trial": 1,
-          "worker_peak_rss_mb": 96.0
+          "worker_peak_rss_mb": 98.5
         },
         {
-          "channel_seconds": 0.2532,
-          "decode_seconds": 1.2446,
+          "channel_seconds": 0.2491,
+          "decode_seconds": 1.2988,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -5200,11 +5310,12 @@
           "outcome": "SUCCESS",
           "point": 3,
           "read_paths": {
-            "consensus_attempted": 161,
+            "addresses_snapped": 33,
+            "consensus_attempted": 203,
             "consensus_recovered": 0,
             "fast": 2903,
-            "orphans": 158,
-            "pending": 178,
+            "orphans": 151,
+            "pending": 314,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 5931,
@@ -5213,11 +5324,11 @@
           "reads": 9170,
           "seed": 32431745753160687,
           "trial": 2,
-          "worker_peak_rss_mb": 93.8
+          "worker_peak_rss_mb": 96.2
         },
         {
-          "channel_seconds": 0.2526,
-          "decode_seconds": 1.3308,
+          "channel_seconds": 0.2532,
+          "decode_seconds": 1.3459,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -5232,11 +5343,12 @@
           "outcome": "SUCCESS",
           "point": 3,
           "read_paths": {
-            "consensus_attempted": 160,
+            "addresses_snapped": 54,
+            "consensus_attempted": 237,
             "consensus_recovered": 0,
             "fast": 2983,
-            "orphans": 183,
-            "pending": 176,
+            "orphans": 175,
+            "pending": 332,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 5828,
@@ -5245,11 +5357,11 @@
           "reads": 9170,
           "seed": 31480990033203093,
           "trial": 3,
-          "worker_peak_rss_mb": 94.0
+          "worker_peak_rss_mb": 96.1
         },
         {
-          "channel_seconds": 0.2491,
-          "decode_seconds": 1.2782,
+          "channel_seconds": 0.2607,
+          "decode_seconds": 1.3437,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -5264,11 +5376,12 @@
           "outcome": "SUCCESS",
           "point": 3,
           "read_paths": {
-            "consensus_attempted": 150,
+            "addresses_snapped": 41,
+            "consensus_attempted": 210,
             "consensus_recovered": 0,
             "fast": 2847,
-            "orphans": 161,
-            "pending": 178,
+            "orphans": 155,
+            "pending": 317,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 5984,
@@ -5277,11 +5390,11 @@
           "reads": 9170,
           "seed": 17263945884762617,
           "trial": 4,
-          "worker_peak_rss_mb": 94.4
+          "worker_peak_rss_mb": 95.8
         },
         {
-          "channel_seconds": 0.2545,
-          "decode_seconds": 1.2548,
+          "channel_seconds": 0.24,
+          "decode_seconds": 1.2742,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -5296,11 +5409,12 @@
           "outcome": "SUCCESS",
           "point": 3,
           "read_paths": {
-            "consensus_attempted": 169,
+            "addresses_snapped": 41,
+            "consensus_attempted": 220,
             "consensus_recovered": 0,
             "fast": 2869,
-            "orphans": 160,
-            "pending": 189,
+            "orphans": 154,
+            "pending": 323,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 5952,
@@ -5309,11 +5423,11 @@
           "reads": 9170,
           "seed": 67684460504926007,
           "trial": 5,
-          "worker_peak_rss_mb": 94.9
+          "worker_peak_rss_mb": 96.8
         },
         {
-          "channel_seconds": 0.2521,
-          "decode_seconds": 1.2585,
+          "channel_seconds": 0.2423,
+          "decode_seconds": 1.2457,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -5328,11 +5442,12 @@
           "outcome": "SUCCESS",
           "point": 3,
           "read_paths": {
-            "consensus_attempted": 143,
+            "addresses_snapped": 32,
+            "consensus_attempted": 184,
             "consensus_recovered": 0,
             "fast": 2953,
-            "orphans": 159,
-            "pending": 164,
+            "orphans": 154,
+            "pending": 295,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 5894,
@@ -5341,11 +5456,11 @@
           "reads": 9170,
           "seed": 32370667936009864,
           "trial": 6,
-          "worker_peak_rss_mb": 93.7
+          "worker_peak_rss_mb": 95.4
         },
         {
-          "channel_seconds": 0.2446,
-          "decode_seconds": 1.2635,
+          "channel_seconds": 0.2589,
+          "decode_seconds": 1.2899,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -5360,11 +5475,12 @@
           "outcome": "SUCCESS",
           "point": 3,
           "read_paths": {
-            "consensus_attempted": 158,
+            "addresses_snapped": 56,
+            "consensus_attempted": 225,
             "consensus_recovered": 0,
             "fast": 2893,
-            "orphans": 167,
-            "pending": 176,
+            "orphans": 163,
+            "pending": 323,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 5934,
@@ -5373,11 +5489,11 @@
           "reads": 9170,
           "seed": 17770179967947854,
           "trial": 7,
-          "worker_peak_rss_mb": 94.1
+          "worker_peak_rss_mb": 96.7
         },
         {
-          "channel_seconds": 0.2491,
-          "decode_seconds": 1.2515,
+          "channel_seconds": 0.2668,
+          "decode_seconds": 1.2873,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -5392,11 +5508,12 @@
           "outcome": "SUCCESS",
           "point": 3,
           "read_paths": {
-            "consensus_attempted": 158,
+            "addresses_snapped": 57,
+            "consensus_attempted": 229,
             "consensus_recovered": 0,
             "fast": 2922,
-            "orphans": 190,
-            "pending": 177,
+            "orphans": 184,
+            "pending": 336,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 5881,
@@ -5405,11 +5522,11 @@
           "reads": 9170,
           "seed": 35855692488584293,
           "trial": 8,
-          "worker_peak_rss_mb": 97.3
+          "worker_peak_rss_mb": 98.7
         },
         {
-          "channel_seconds": 0.2905,
-          "decode_seconds": 1.2662,
+          "channel_seconds": 0.2598,
+          "decode_seconds": 1.2868,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -5424,11 +5541,12 @@
           "outcome": "SUCCESS",
           "point": 3,
           "read_paths": {
-            "consensus_attempted": 145,
+            "addresses_snapped": 34,
+            "consensus_attempted": 197,
             "consensus_recovered": 0,
             "fast": 2944,
-            "orphans": 158,
-            "pending": 161,
+            "orphans": 147,
+            "pending": 294,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 5907,
@@ -5437,11 +5555,11 @@
           "reads": 9170,
           "seed": 68727392774658183,
           "trial": 9,
-          "worker_peak_rss_mb": 96.0
+          "worker_peak_rss_mb": 98.6
         },
         {
-          "channel_seconds": 0.2522,
-          "decode_seconds": 1.6705,
+          "channel_seconds": 0.2567,
+          "decode_seconds": 1.6088,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 1,
@@ -5456,11 +5574,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 4,
           "read_paths": {
-            "consensus_attempted": 437,
+            "addresses_snapped": 107,
+            "consensus_attempted": 579,
             "consensus_recovered": 0,
             "fast": 1826,
-            "orphans": 463,
-            "pending": 488,
+            "orphans": 451,
+            "pending": 883,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 6391,
@@ -5469,11 +5588,11 @@
           "reads": 9170,
           "seed": 48191370861952258,
           "trial": 0,
-          "worker_peak_rss_mb": 94.0
+          "worker_peak_rss_mb": 102.1
         },
         {
-          "channel_seconds": 0.2519,
-          "decode_seconds": 1.5873,
+          "channel_seconds": 0.2619,
+          "decode_seconds": 1.6599,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 1,
@@ -5488,11 +5607,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 4,
           "read_paths": {
-            "consensus_attempted": 423,
+            "addresses_snapped": 113,
+            "consensus_attempted": 581,
             "consensus_recovered": 0,
             "fast": 1757,
-            "orphans": 503,
-            "pending": 477,
+            "orphans": 489,
+            "pending": 901,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 6432,
@@ -5501,11 +5621,11 @@
           "reads": 9170,
           "seed": 54521449071670819,
           "trial": 1,
-          "worker_peak_rss_mb": 94.8
+          "worker_peak_rss_mb": 96.2
         },
         {
-          "channel_seconds": 0.249,
-          "decode_seconds": 1.5604,
+          "channel_seconds": 0.2436,
+          "decode_seconds": 1.5695,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -5520,11 +5640,12 @@
           "outcome": "SUCCESS",
           "point": 4,
           "read_paths": {
-            "consensus_attempted": 406,
+            "addresses_snapped": 102,
+            "consensus_attempted": 540,
             "consensus_recovered": 0,
             "fast": 1759,
-            "orphans": 455,
-            "pending": 463,
+            "orphans": 439,
+            "pending": 854,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 6493,
@@ -5533,11 +5654,11 @@
           "reads": 9170,
           "seed": 62980223869908126,
           "trial": 2,
-          "worker_peak_rss_mb": 97.2
+          "worker_peak_rss_mb": 102.1
         },
         {
-          "channel_seconds": 0.2637,
-          "decode_seconds": 1.6369,
+          "channel_seconds": 0.2452,
+          "decode_seconds": 1.5782,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -5552,11 +5673,12 @@
           "outcome": "SUCCESS",
           "point": 4,
           "read_paths": {
-            "consensus_attempted": 408,
+            "addresses_snapped": 117,
+            "consensus_attempted": 550,
             "consensus_recovered": 0,
             "fast": 1758,
-            "orphans": 441,
-            "pending": 460,
+            "orphans": 429,
+            "pending": 834,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 6511,
@@ -5565,11 +5687,11 @@
           "reads": 9170,
           "seed": 28239731950694068,
           "trial": 3,
-          "worker_peak_rss_mb": 100.0
+          "worker_peak_rss_mb": 98.6
         },
         {
-          "channel_seconds": 0.244,
-          "decode_seconds": 1.558,
+          "channel_seconds": 0.2539,
+          "decode_seconds": 1.6004,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -5584,11 +5706,12 @@
           "outcome": "SUCCESS",
           "point": 4,
           "read_paths": {
-            "consensus_attempted": 404,
+            "addresses_snapped": 119,
+            "consensus_attempted": 558,
             "consensus_recovered": 0,
             "fast": 1779,
-            "orphans": 465,
-            "pending": 454,
+            "orphans": 446,
+            "pending": 840,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 6472,
@@ -5597,11 +5720,11 @@
           "reads": 9170,
           "seed": 28878871485978031,
           "trial": 4,
-          "worker_peak_rss_mb": 94.1
+          "worker_peak_rss_mb": 96.7
         },
         {
-          "channel_seconds": 0.2498,
-          "decode_seconds": 1.5819,
+          "channel_seconds": 0.2467,
+          "decode_seconds": 1.6182,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -5616,11 +5739,12 @@
           "outcome": "SUCCESS",
           "point": 4,
           "read_paths": {
-            "consensus_attempted": 393,
+            "addresses_snapped": 105,
+            "consensus_attempted": 529,
             "consensus_recovered": 0,
             "fast": 1773,
-            "orphans": 463,
-            "pending": 446,
+            "orphans": 447,
+            "pending": 836,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 6488,
@@ -5629,11 +5753,11 @@
           "reads": 9170,
           "seed": 8838653645198922,
           "trial": 5,
-          "worker_peak_rss_mb": 97.3
+          "worker_peak_rss_mb": 101.1
         },
         {
-          "channel_seconds": 0.2506,
-          "decode_seconds": 1.7349,
+          "channel_seconds": 0.2505,
+          "decode_seconds": 1.626,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 1,
@@ -5648,11 +5772,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 4,
           "read_paths": {
-            "consensus_attempted": 390,
+            "addresses_snapped": 109,
+            "consensus_attempted": 530,
             "consensus_recovered": 0,
             "fast": 1759,
-            "orphans": 456,
-            "pending": 447,
+            "orphans": 432,
+            "pending": 817,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 6508,
@@ -5661,11 +5786,11 @@
           "reads": 9170,
           "seed": 63956621882595799,
           "trial": 6,
-          "worker_peak_rss_mb": 96.0
+          "worker_peak_rss_mb": 98.6
         },
         {
-          "channel_seconds": 0.2453,
-          "decode_seconds": 1.6558,
+          "channel_seconds": 0.2514,
+          "decode_seconds": 1.6782,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 1,
@@ -5680,11 +5805,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 4,
           "read_paths": {
-            "consensus_attempted": 383,
+            "addresses_snapped": 118,
+            "consensus_attempted": 538,
             "consensus_recovered": 0,
             "fast": 1773,
-            "orphans": 463,
-            "pending": 434,
+            "orphans": 450,
+            "pending": 834,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 6499,
@@ -5693,11 +5819,11 @@
           "reads": 9170,
           "seed": 51621224147133636,
           "trial": 7,
-          "worker_peak_rss_mb": 94.8
+          "worker_peak_rss_mb": 102.1
         },
         {
-          "channel_seconds": 0.2521,
-          "decode_seconds": 1.7403,
+          "channel_seconds": 0.2415,
+          "decode_seconds": 1.5826,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -5712,11 +5838,12 @@
           "outcome": "SUCCESS",
           "point": 4,
           "read_paths": {
-            "consensus_attempted": 391,
+            "addresses_snapped": 114,
+            "consensus_attempted": 527,
             "consensus_recovered": 0,
             "fast": 1737,
-            "orphans": 476,
-            "pending": 440,
+            "orphans": 464,
+            "pending": 847,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 6517,
@@ -5725,11 +5852,11 @@
           "reads": 9170,
           "seed": 18922394713776933,
           "trial": 8,
-          "worker_peak_rss_mb": 95.1
+          "worker_peak_rss_mb": 102.3
         },
         {
-          "channel_seconds": 0.253,
-          "decode_seconds": 1.6343,
+          "channel_seconds": 0.2507,
+          "decode_seconds": 1.664,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 0,
@@ -5744,11 +5871,12 @@
           "outcome": "SUCCESS",
           "point": 4,
           "read_paths": {
-            "consensus_attempted": 367,
+            "addresses_snapped": 95,
+            "consensus_attempted": 498,
             "consensus_recovered": 0,
             "fast": 1729,
-            "orphans": 496,
-            "pending": 415,
+            "orphans": 481,
+            "pending": 829,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 6529,
@@ -5757,11 +5885,11 @@
           "reads": 9170,
           "seed": 57731226774717100,
           "trial": 9,
-          "worker_peak_rss_mb": 97.2
+          "worker_peak_rss_mb": 96.9
         },
         {
-          "channel_seconds": 0.2531,
-          "decode_seconds": 2.0658,
+          "channel_seconds": 0.2461,
+          "decode_seconds": 2.0981,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 110,
@@ -5776,11 +5904,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 5,
           "read_paths": {
-            "consensus_attempted": 1066,
+            "addresses_snapped": 341,
+            "consensus_attempted": 1442,
             "consensus_recovered": 0,
             "fast": 725,
-            "orphans": 1520,
-            "pending": 1244,
+            "orphans": 1471,
+            "pending": 2495,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 5672,
@@ -5789,11 +5918,11 @@
           "reads": 9170,
           "seed": 55981194590206739,
           "trial": 0,
-          "worker_peak_rss_mb": 100.0
+          "worker_peak_rss_mb": 98.7
         },
         {
-          "channel_seconds": 0.25,
-          "decode_seconds": 2.0239,
+          "channel_seconds": 0.2509,
+          "decode_seconds": 2.1011,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 110,
@@ -5808,11 +5937,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 5,
           "read_paths": {
-            "consensus_attempted": 1062,
+            "addresses_snapped": 286,
+            "consensus_attempted": 1400,
             "consensus_recovered": 0,
             "fast": 726,
-            "orphans": 1428,
-            "pending": 1251,
+            "orphans": 1375,
+            "pending": 2455,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 5763,
@@ -5821,11 +5951,11 @@
           "reads": 9170,
           "seed": 4453107339864795,
           "trial": 1,
-          "worker_peak_rss_mb": 94.1
+          "worker_peak_rss_mb": 96.7
         },
         {
-          "channel_seconds": 0.2458,
-          "decode_seconds": 2.1707,
+          "channel_seconds": 0.2613,
+          "decode_seconds": 2.1139,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 107,
@@ -5840,11 +5970,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 5,
           "read_paths": {
-            "consensus_attempted": 1040,
+            "addresses_snapped": 297,
+            "consensus_attempted": 1382,
             "consensus_recovered": 0,
             "fast": 758,
-            "orphans": 1362,
-            "pending": 1216,
+            "orphans": 1308,
+            "pending": 2349,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 5830,
@@ -5853,11 +5984,11 @@
           "reads": 9170,
           "seed": 57423853752217951,
           "trial": 2,
-          "worker_peak_rss_mb": 97.3
+          "worker_peak_rss_mb": 101.1
         },
         {
-          "channel_seconds": 0.2504,
-          "decode_seconds": 2.0449,
+          "channel_seconds": 0.2505,
+          "decode_seconds": 2.0832,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 111,
@@ -5872,11 +6003,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 5,
           "read_paths": {
-            "consensus_attempted": 1030,
+            "addresses_snapped": 299,
+            "consensus_attempted": 1401,
             "consensus_recovered": 0,
             "fast": 721,
-            "orphans": 1429,
-            "pending": 1208,
+            "orphans": 1381,
+            "pending": 2412,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 5807,
@@ -5885,11 +6017,11 @@
           "reads": 9170,
           "seed": 71537892665976123,
           "trial": 3,
-          "worker_peak_rss_mb": 96.0
+          "worker_peak_rss_mb": 98.7
         },
         {
-          "channel_seconds": 0.2554,
-          "decode_seconds": 2.1017,
+          "channel_seconds": 0.2679,
+          "decode_seconds": 2.3533,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 106,
@@ -5904,11 +6036,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 5,
           "read_paths": {
-            "consensus_attempted": 1071,
+            "addresses_snapped": 309,
+            "consensus_attempted": 1453,
             "consensus_recovered": 0,
             "fast": 712,
-            "orphans": 1395,
-            "pending": 1233,
+            "orphans": 1352,
+            "pending": 2403,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 5822,
@@ -5917,11 +6050,11 @@
           "reads": 9170,
           "seed": 32370161648531721,
           "trial": 4,
-          "worker_peak_rss_mb": 99.9
+          "worker_peak_rss_mb": 102.2
         },
         {
-          "channel_seconds": 0.2926,
-          "decode_seconds": 2.2033,
+          "channel_seconds": 0.2439,
+          "decode_seconds": 2.0577,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 112,
@@ -5936,11 +6069,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 5,
           "read_paths": {
-            "consensus_attempted": 1047,
+            "addresses_snapped": 330,
+            "consensus_attempted": 1457,
             "consensus_recovered": 0,
             "fast": 712,
-            "orphans": 1472,
-            "pending": 1217,
+            "orphans": 1428,
+            "pending": 2436,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 5763,
@@ -5949,11 +6083,11 @@
           "reads": 9170,
           "seed": 41490686267861420,
           "trial": 5,
-          "worker_peak_rss_mb": 97.6
+          "worker_peak_rss_mb": 102.3
         },
         {
-          "channel_seconds": 0.248,
-          "decode_seconds": 2.0781,
+          "channel_seconds": 0.2512,
+          "decode_seconds": 2.1212,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 111,
@@ -5968,11 +6102,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 5,
           "read_paths": {
-            "consensus_attempted": 1096,
+            "addresses_snapped": 298,
+            "consensus_attempted": 1445,
             "consensus_recovered": 0,
             "fast": 714,
-            "orphans": 1425,
-            "pending": 1285,
+            "orphans": 1377,
+            "pending": 2461,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 5741,
@@ -5981,11 +6116,11 @@
           "reads": 9170,
           "seed": 46473910566965470,
           "trial": 6,
-          "worker_peak_rss_mb": 97.3
+          "worker_peak_rss_mb": 96.9
         },
         {
-          "channel_seconds": 0.2477,
-          "decode_seconds": 1.9854,
+          "channel_seconds": 0.2446,
+          "decode_seconds": 2.0735,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 109,
@@ -6000,11 +6135,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 5,
           "read_paths": {
-            "consensus_attempted": 1078,
+            "addresses_snapped": 294,
+            "consensus_attempted": 1473,
             "consensus_recovered": 0,
             "fast": 698,
-            "orphans": 1500,
-            "pending": 1242,
+            "orphans": 1464,
+            "pending": 2496,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 5725,
@@ -6013,11 +6149,11 @@
           "reads": 9170,
           "seed": 30661966482504538,
           "trial": 7,
-          "worker_peak_rss_mb": 100.1
+          "worker_peak_rss_mb": 99.5
         },
         {
-          "channel_seconds": 0.2463,
-          "decode_seconds": 1.9784,
+          "channel_seconds": 0.2456,
+          "decode_seconds": 2.1088,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 107,
@@ -6032,11 +6168,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 5,
           "read_paths": {
-            "consensus_attempted": 1028,
+            "addresses_snapped": 286,
+            "consensus_attempted": 1409,
             "consensus_recovered": 0,
             "fast": 746,
-            "orphans": 1452,
-            "pending": 1204,
+            "orphans": 1409,
+            "pending": 2403,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 5764,
@@ -6045,11 +6182,11 @@
           "reads": 9170,
           "seed": 24621166920139902,
           "trial": 8,
-          "worker_peak_rss_mb": 94.1
+          "worker_peak_rss_mb": 97.1
         },
         {
-          "channel_seconds": 0.2781,
-          "decode_seconds": 2.2113,
+          "channel_seconds": 0.2453,
+          "decode_seconds": 2.0828,
           "detail": null,
           "files_recovered": 0,
           "groups_failed": 108,
@@ -6064,11 +6201,12 @@
           "outcome": "DECODER_FAILURE",
           "point": 5,
           "read_paths": {
-            "consensus_attempted": 1089,
+            "addresses_snapped": 319,
+            "consensus_attempted": 1473,
             "consensus_recovered": 0,
             "fast": 735,
-            "orphans": 1429,
-            "pending": 1244,
+            "orphans": 1392,
+            "pending": 2412,
             "reads": 9170,
             "reverse_complement": 0,
             "sync": 5758,
@@ -6077,7 +6215,7 @@
           "reads": 9170,
           "seed": 53763137343288991,
           "trial": 9,
-          "worker_peak_rss_mb": 97.3
+          "worker_peak_rss_mb": 101.1
         }
       ],
       "trials_per_point": 10,

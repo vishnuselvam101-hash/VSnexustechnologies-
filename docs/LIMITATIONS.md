@@ -1,5 +1,62 @@
 # Limitations
 
+This page lists **V4** limitations first. The **V3** list follows unchanged below the divider and still applies to
+`vnx-dna`.
+
+## V4: scientific scope
+
+* **NOT PHYSICALLY VALIDATED.** No DNA was synthesised, stored, amplified or sequenced. Every V4 result is SIMULATED:
+  software-generated strands through a configurable channel that is not fitted to any platform. Nothing here
+  supports claims about synthesis yield, sequencing accuracy, storage lifetime, laboratory error rates or
+  commercial readiness.
+* The channel does not model position- or context-dependent errors, synthesis truncation, chimeras, primers and
+  adapters, PCR dynamics or strand breakage ([CHANNEL_MODEL.md](CHANNEL_MODEL.md)).
+* The constraint engine is a set of screening rules (GC, homopolymer, tandem repeats, motifs, length). It has no
+  secondary-structure, melting-temperature or synthesis-cost model. Strict rules (e.g. homopolymer ≤ 3 over
+  ~300 nt) can make encoding fail, because screening explores 256 scrambler variants and does not use constrained
+  coding (EXP-0014).
+* Random access is digital: groups and strand records are computed from the container index. No PCR primers or
+  molecular selection exist.
+* Cost metrics are software metrics (nt per byte, recoverable MB/s). A cost-per-gigabyte figure would need physical
+  price assumptions, which are not part of V4 (see the completion report for the stated, theoretical model).
+
+## V4: correction behaviour
+
+* **Indels:** no deterministic guarantee. Marker synchronisation turns indels into erased segments. Success under
+  random indels is measured (EXP-0002/3/8/9), not proven. A +1/−1 pair within a few markers can look like marker
+  mismatches. Indels in every copy of a strand cannot be corrected by consensus.
+* **Erased segment granularity:** every indel costs a whole segment (marker_period/4 bytes) of the inner RS budget.
+* **Orphans:** reads whose header bytes are erased cannot be grouped for consensus. At high error rates this wastes
+  a large fraction of reads (31 % at 1 % sub + 0.4 % ins + 0.4 % del in one measurement).
+* **Outer code:** Cauchy RS guarantees any M of K + M per group. There is no cross-group interleaving, so correlated
+  loss of more than M strands in one group loses that group's container bytes (PARTIAL recovery then extracts only the
+  files not touching them). The fountain code is EXPERIMENTAL and probabilistic.
+* **Soft decoding:** the posterior interface exists, but the inner decoder is hard-decision plus erasures.
+
+## V4: performance and scale
+
+* CPU-bound Python/NumPy. The marker DP and its traceback are the most expensive noisy-decode stages; clean decoding
+  is much faster (measured in [PERFORMANCE.md](PERFORMANCE.md)).
+* The encoder's constraint screening and frame building run at a few MB/s per core. Large inputs need several
+  workers.
+* The archive writer keeps 84 B per unique chunk in memory (≈ 84 MB per TB at 1 MiB chunks). The decoder's spill
+  files take roughly (15 + P) bytes per verified read on disk.
+* The fountain decoder's Gaussian elimination is quadratic in block size (k ≤ 1024 intended).
+
+## V4: formats and compatibility
+
+* VNX4 and V3's format 5 are different formats. Converting means extracting with one tool and re-archiving with the
+  other.
+* The PARTIAL recovery path restores the container's constant 16-byte header when group 0 is lost. The files it
+  extracts are still verified individually.
+* BAM input is not supported (FASTA, FASTQ and plain only). GPU acceleration is not implemented (CPU-first by
+  design).
+* Encrypted archives are intentionally nondeterministic (random salt and archive ID).
+
+---
+
+# V3 limitations (format 5, `vnx-dna`) — unchanged
+
 ## Scientific scope
 
 * **Software and simulation only.** No DNA has been synthesised, stored, amplified or sequenced for this project.

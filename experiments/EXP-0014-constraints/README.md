@@ -15,18 +15,18 @@ vnx experiment reproduce experiments/EXP-0014-constraints            # re-run in
 
 ## Results
 
-Commit `44d3ae932bd4896879fe517d4b7ab52157256da6`, 2026-10-03T02:20:17Z; environment in `environment.json`; every trial in `results.json`.
+Commit `a387b34141161092ace2dcd8017dabe546b95831`, 2026-10-03T03:00:21Z; environment in `environment.json`; every trial in `results.json`.
 
-20000 random v4-balanced frames (296 nt). Before = variant 0.
+20000 random v4-balanced frames (313 nt). Before = one uniformly random scrambler variant per strand, no screening.
 
 | rule set | status | violating before | by rule (before) | violating after | mean variant | max variant | strands/s | decodes |
 |---|---|---|---|---|---|---|---|---|
-| default (GC 40-60, homopolymer<=4) | SATISFIED | 9894 (0.4947) | {'GC_CONTENT': 3, 'HOMOPOLYMER': 9892} | 0 | 1.013 | 15 | 115973.0 | True |
-| relaxed (GC 30-70, homopolymer<=6) | SATISFIED | 751 (0.03755) | {'HOMOPOLYMER': 751} | 0 | 0.039 | 3 | 170509.2 | True |
-| strict (GC 45-55, homopolymer<=3) | UNSATISFIABLE | 20000 () | {'GC_CONTENT': 1115, 'HOMOPOLYMER': 20000} | — | — | — | — | — |
-| windowed GC (window 50 nt, 30-70) | SATISFIED | 10426 (0.5213) | {'GC_CONTENT': 3, 'GC_WINDOW': 1316, 'HOMOPOLYMER': 9892} | 0 | 1.141 | 16 | 76879.1 | True |
-| motifs (EcoRI, BamHI, HindIII) + tandem<=12 | SATISFIED | 11601 (0.58) | {'FORBIDDEN_MOTIF': 3345, 'GC_CONTENT': 3, 'HOMOPOLYMER': 9892, 'TANDEM_REPEAT': 3} | 0 | 1.415 | 19 | 67976.6 | True |
-| very strict (GC 48-52, homopolymer<=2) | UNSATISFIABLE | 20000 () | {'GC_CONTENT': 10469, 'HOMOPOLYMER': 20000} | — | — | — | — | — |
+| default (GC 40-60, homopolymer<=4) | SATISFIED | 11010 (0.5505) | {'GC_CONTENT': 4, 'HOMOPOLYMER': 11007} | 0 | 0.982 | 19 | 110894.2 | True |
+| relaxed (GC 30-70, homopolymer<=6) | SATISFIED | 909 (0.04545) | {'HOMOPOLYMER': 909} | 0 | 0.037 | 3 | 164721.9 | True |
+| strict (GC 45-55, homopolymer<=3) | UNSATISFIABLE | 19342 () | {'GC_CONTENT': 1138, 'HOMOPOLYMER': 19308} | — | — | — | — | — |
+| windowed GC (window 50 nt, 30-70) | SATISFIED | 11535 (0.5767) | {'GC_CONTENT': 4, 'GC_WINDOW': 1424, 'HOMOPOLYMER': 11007} | 0 | 1.125 | 20 | 72031.6 | True |
+| motifs (EcoRI, BamHI, HindIII) + tandem<=12 | SATISFIED | 12420 (0.621) | {'FORBIDDEN_MOTIF': 3129, 'GC_CONTENT': 4, 'HOMOPOLYMER': 11007, 'TANDEM_REPEAT': 3} | 0 | 1.354 | 19 | 65402.2 | True |
+| very strict (GC 48-52, homopolymer<=2) | UNSATISFIABLE | 20000 () | {'GC_CONTENT': 9634, 'HOMOPOLYMER': 20000} | — | — | — | — | — |
 
 screening changes only the 1-byte scrambler variant inside each frame, so it costs no extra nucleotides; the alternative is to fail explicitly (VNXConstraintError) — sequences are never emitted unscreened
 
