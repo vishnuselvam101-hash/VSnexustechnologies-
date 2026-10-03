@@ -1,0 +1,24 @@
+{
+  "layout": {
+    "payload_bytes": 40,
+    "inner_parity": 16,
+    "marker_period": 24,
+    "marker_len": 3,
+    "frame_bytes": 70,
+    "strand_nt": 313,
+    "markers": 11
+  },
+  "frames_per_cell": 500,
+  "seed": 4201,
+  "soft_defaults": {
+    "mode": "auto",
+    "chase_bytes": 4,
+    "chase_values": 2,
+    "max_soft_trials": 64,
+    "max_bytes_per_trial": 4,
+    "false_accept_budget": 1e-09,
+    "default_error": 0.005,
+    "unknown_reliability": 0.0
+  },
+  "hard": "decode_frames (V4 inner RS + CRC), optional min_quality erasures"
+}

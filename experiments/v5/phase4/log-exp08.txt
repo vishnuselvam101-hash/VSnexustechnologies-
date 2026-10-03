@@ -1,0 +1,22 @@
+=== rerun (VmHWM fix, complete) 20:29:32 exp08
+indel 0.5%+0.5% + sub 1%, informative 0.5, cov 1               s0 V4 FAIL 0.0 0.616s  V5-hard FAIL 0.0714 5.893s  V5-soft-auto FAIL 0.0714 6.823s
+indel 0.5%+0.5% + sub 1%, informative 0.5, cov 1               s1 V4 FAIL 0.0 0.615s  V5-hard FAIL 0.1429 6.296s  V5-soft-auto FAIL 0.2143 7.188s
+indel 0.5%+0.5% + sub 1%, informative 0.5, cov 2               s0 V4 FAIL 0.0714 0.731s  V5-hard OK 1.0 12.238s  V5-soft-auto OK 1.0 13.331s
+indel 0.5%+0.5% + sub 1%, informative 0.5, cov 2               s1 V4 FAIL 0.0714 0.732s  V5-hard OK 1.0 11.493s  V5-soft-auto OK 1.0 13.257s
+indel 0.5%+0.5% + sub 1%, informative 0.5, cov 3               s0 V4 FAIL 0.6429 0.811s  V5-hard OK 1.0 17.968s  V5-soft-auto OK 1.0 21.074s
+indel 0.5%+0.5% + sub 1%, informative 0.5, cov 3               s1 V4 FAIL 0.7857 0.851s  V5-hard OK 1.0 17.307s  V5-soft-auto OK 1.0 19.833s
+indel 0.5%+0.5% + sub 1%, informative 0.5, cov 5               s0 V4 OK 1.0 1.035s  V5-hard OK 1.0 29.192s  V5-soft-auto OK 1.0 32.353s
+indel 0.5%+0.5% + sub 1%, informative 0.5, cov 5               s1 V4 OK 1.0 1.092s  V5-hard OK 1.0 29.733s  V5-soft-auto OK 1.0 34.282s
+indel 0.5%+0.5% + sub 1%, informative 0.5, cov 10              s0 V4 OK 1.0 1.434s  V5-hard OK 1.0 39.035s  V5-soft-auto OK 1.0 45.837s
+indel 0.5%+0.5% + sub 1%, informative 0.5, cov 10              s1 V4 OK 1.0 1.397s  V5-hard OK 1.0 40.354s  V5-soft-auto OK 1.0 47.708s
+indel 0.25%+0.25% + sub 4%, informative 0.5, cov 1             s0 V4 FAIL None 0.591s  V5-hard FAIL None 6.625s  V5-soft-auto FAIL None 8.56s
+indel 0.25%+0.25% + sub 4%, informative 0.5, cov 1             s1 V4 FAIL None 0.55s  V5-hard FAIL None 6.812s  V5-soft-auto FAIL 0.0 9.497s
+indel 0.25%+0.25% + sub 4%, informative 0.5, cov 2             s0 V4 FAIL None 0.685s  V5-hard FAIL None 13.142s  V5-soft-auto FAIL 0.0714 18.435s
+indel 0.25%+0.25% + sub 4%, informative 0.5, cov 2             s1 V4 FAIL None 0.639s  V5-hard FAIL 0.0 16.296s  V5-soft-auto FAIL 0.0714 19.879s
+indel 0.25%+0.25% + sub 4%, informative 0.5, cov 3             s0 V4 FAIL None 0.771s  V5-hard FAIL 0.0 23.102s  V5-soft-auto FAIL 0.0714 27.262s
+indel 0.25%+0.25% + sub 4%, informative 0.5, cov 3             s1 V4 FAIL None 0.782s  V5-hard FAIL 0.0 23.523s  V5-soft-auto FAIL 0.0714 29.388s
+indel 0.25%+0.25% + sub 4%, informative 0.5, cov 5             s0 V4 FAIL None 1.048s  V5-hard FAIL 0.0714 37.011s  V5-soft-auto OK 1.0 43.574s
+indel 0.25%+0.25% + sub 4%, informative 0.5, cov 5             s1 V4 FAIL 0.0 1.222s  V5-hard FAIL 0.0714 38.187s  V5-soft-auto OK 1.0 44.642s
+indel 0.25%+0.25% + sub 4%, informative 0.5, cov 10            s0 V4 FAIL 0.6429 1.623s  V5-hard OK 1.0 49.096s  V5-soft-auto OK 1.0 62.981s
+indel 0.25%+0.25% + sub 4%, informative 0.5, cov 10            s1 V4 FAIL 0.7143 1.656s  V5-hard FAIL 0.9286 51.396s  V5-soft-auto OK 1.0 63.508s
+=== exit 0 20:47:42

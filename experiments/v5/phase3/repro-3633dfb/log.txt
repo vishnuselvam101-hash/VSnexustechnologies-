@@ -1,0 +1,28 @@
+== commit 3633dfb86e76bb3d0661ecf8bf000cbb2da2359b dirty=0
+== suite
+....................................................                     [100%]
+916 passed in 473.42s (0:07:53)
+== phase3 tests
+.....                                                                    [100%]
+77 passed in 143.76s (0:02:23)
+== P3-EXP-01-single-indel (0 dirty before)
+v4-indel (24/3, r=20)      del: cases 1878  V4 ok 1878 erased  25.6 nt | V5-T0 ok 1878 false 0 erased  23.2 | V5-T0/0.5 ok 1878 false 0 erased  13.0 | V5-T1 ok 1878 false 0 erased   3.7 | V5-T0+Q ok 1878 false 0 erased  23.2 | V5-T1+Q ok 1878 false 0 erased   3.7
+v4-indel (24/3, r=20)      ins: cases 1878  V4 ok 1878 erased  32.3 nt | V5-T0 ok 1878 false 0 erased  23.9 | V5-T0/0.5 ok 1878 false 0 erased  13.0 | V5-T1 ok 1878 false 0 erased   0.0 | V5-T0+Q ok 1878 false 0 erased  22.3 | V5-T1+Q ok 1878 false 0 erased   0.0
+wrote /tmp/claude-0/-root/de60d5e2-f354-4c9d-bf9f-805a00057640/scratchpad/p3repro/experiments/v5/phase3/P3-EXP-01-single-indel/results.json
+== P3-EXP-02-multi-indel (0 dirty before)
+ins|del-split k=2      V4  250/300  V5  250  false 0  erased/indel V4   0.0  V5   0.0  phases {'T0': 250, 'none': 50}  status {}  0.1s
+marker-adjacent k=2    V4  280/300  V5  299  false 0  erased/indel V4  23.3  V5  20.8  phases {'T0': 299, 'none': 1}  status {'LOW': 518, 'UNRECOVERABLE': 10}  0.3s
+separated+sub k=3      V4   55/300  V5  262  false 0  erased/indel V4  21.8  V5  13.8  phases {'T1': 223, 'none': 39, 'T0': 30, 'T2': 8}  status {'LOW': 720, 'MEDIUM': 9, 'UNRECOVERABLE': 15}  0.9s
+== P3-EXP-04-accounting (0 dirty before)
+1%+1%                            reads ok V4  669 V5 1563 (false 0/0)  erased/indel mean V4 24.972 V5-prod 15.459 V5-loc 10.181  {'V4': 27924.4, 'V5': 157.8}
+mixed-L2 (0.5% sub, 0.2%+0.2%)   reads ok V4 3539 V5 3957 (false 0/0)  erased/indel mean V4 27.178 V5-prod 24.275 V5-loc 8.441  {'V4': 34093.3, 'V5': 1603.7}
+records: 20279
+== P3-EXP-03-consensus (0 dirty before)
+cov 10 rate 0.010 seed 0: V4 SUCCESS  (1.0, 1.935s)  V5 SUCCESS  (1.0, 67.312s)
+cov 10 rate 0.010 seed 1: V4 SUCCESS  (1.0, 1.976s)  V5 SUCCESS  (1.0, 69.066s)
+cov 10 rate 0.010 seed 2: V4 SUCCESS  (1.0, 1.893s)  V5 SUCCESS  (1.0, 68.051s)
+== P3-EXP-05-v4-vs-v5 (0 dirty before)
+EXP-0011 (0.2% sub, 0.05%+0.05%, 2% dropout), Poisson cov 3 seed 2: V4 SUCCESS     1.1s  V5 SUCCESS     1.8s  groups V4 1.0 V5 1.0
+4 MiB EXP-0011 workers 1: V4 SUCCESS 10.87s  V5 SUCCESS 19.225s
+4 MiB EXP-0011 workers 8: V4 SUCCESS 4.342s  V5 SUCCESS 5.174s
+== done dirty=0

@@ -1,0 +1,6808 @@
+{
+  "experiment": "P3-EXP-01 single indel",
+  "simulated": true,
+  "config": {
+    "layouts": {
+      "v4-balanced (24/3)": {
+        "payload_bytes": 40,
+        "inner_parity": 16,
+        "marker_period": 24,
+        "marker_len": 3,
+        "frame_bytes": 70,
+        "strand_nt": 313,
+        "markers": 11
+      },
+      "period 16/2": {
+        "payload_bytes": 40,
+        "inner_parity": 16,
+        "marker_period": 16,
+        "marker_len": 2,
+        "frame_bytes": 70,
+        "strand_nt": 314,
+        "markers": 17
+      },
+      "period 32/2 (V4 round 1)": {
+        "payload_bytes": 40,
+        "inner_parity": 16,
+        "marker_period": 32,
+        "marker_len": 2,
+        "frame_bytes": 70,
+        "strand_nt": 296,
+        "markers": 8
+      },
+      "v4-indel (24/3, r=20)": {
+        "payload_bytes": 36,
+        "inner_parity": 20,
+        "marker_period": 24,
+        "marker_len": 3,
+        "frame_bytes": 70,
+        "strand_nt": 313,
+        "markers": 11
+      }
+    },
+    "strands_per_layout": 6,
+    "seed": 3101,
+    "positions": "every template position",
+    "band": 6,
+    "quality_model": {
+      "correct": 35,
+      "error": 12,
+      "informative": "inserted base gets Q_ERROR"
+    },
+    "recovery_defaults": {
+      "max_shift": 1,
+      "max_window_segments": 2,
+      "max_candidates": 64,
+      "max_trials": 1024,
+      "max_joint_windows": 2,
+      "max_read_nt": 8256,
+      "trial_batch": 8192,
+      "substitution_prior": 0.005,
+      "keep_byte_error": 0.001,
+      "high_confidence": 0.001,
+      "false_accept_budget": 1e-09,
+      "phases": [
+        "T0",
+        "T1",
+        "T2"
+      ]
+    }
+  },
+  "provenance": {
+    "timestamp_utc": "2026-10-03T08:47:34Z",
+    "vnx_version": "4.0.0",
+    "vnx4_format_version": [
+      4,
+      0
+    ],
+    "git_commit": "3633dfb86e76bb3d0661ecf8bf000cbb2da2359b",
+    "cpu_model": "Intel(R) Xeon(R) Gold 6240 CPU @ 2.60GHz",
+    "logical_cpus": 8,
+    "ram_bytes": 33654890496,
+    "os": "Linux 6.8.0-146-generic",
+    "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "packages": {
+      "numpy": "2.5.3",
+      "cryptography": "46.0.7",
+      "zstandard": "0.25.0",
+      "reedsolo": "1.7.0",
+      "pydantic": "2.13.5",
+      "typer": "0.27.2"
+    },
+    "v4_control_tag": "v4.0.0",
+    "v4_control_commit": "a358ae8284066d0608f329b47a53e55018bbfa79",
+    "commit_under_test": "3633dfb86e76bb3d0661ecf8bf000cbb2da2359b",
+    "worktree_dirty": false,
+    "native_toolchain": {
+      "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+      "rustc": "rustc 1.75.0 (82e1608df 2023-12-21) (built from a source tarball)",
+      "cargo": "cargo 1.75.0"
+    },
+    "cpu_flags": [
+      "avx",
+      "avx2",
+      "avx512bw",
+      "avx512f",
+      "bmi2",
+      "popcnt",
+      "sse4_2"
+    ],
+    "config_sha256": "7596306814e9fbed7eba2d029ca0071ea38850e90eda07f884ec8a562a909f78"
+  },
+  "results": {
+    "summary": {
+      "v4-balanced (24/3)": {
+        "del | all": {
+          "cases": 1878,
+          "V4_ok": 1878,
+          "V4_erased_nt": {
+            "n": 1878,
+            "mean": 25.529,
+            "median": 24.0,
+            "p95": 48.0,
+            "max": 48.0,
+            "min": 16.0
+          },
+          "V5-T0": {
+            "accepted": 1878,
+            "correct": 1878,
+            "false": 0,
+            "erased_nt": {
+              "n": 1878,
+              "mean": 23.242,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 48.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1878,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 1721,
+              "MEDIUM": 157
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 1878,
+            "correct": 1878,
+            "false": 0,
+            "erased_nt": {
+              "n": 1878,
+              "mean": 12.856,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1878,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 792,
+            "reads_with_wrong_kept_bytes": 699,
+            "window_status": {
+              "LOW": 1721,
+              "MEDIUM": 157
+            }
+          },
+          "V5-T1": {
+            "accepted": 1878,
+            "correct": 1878,
+            "false": 0,
+            "erased_nt": {
+              "n": 1878,
+              "mean": 3.666,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1878,
+              "mean": 25.78,
+              "median": 24.0,
+              "p95": 51.0,
+              "max": 51.0,
+              "min": 16.0
+            },
+            "window_status": {
+              "LOW": 1721,
+              "MEDIUM": 157
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 1878,
+            "correct": 1878,
+            "false": 0,
+            "erased_nt": {
+              "n": 1878,
+              "mean": 23.242,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 48.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1878,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 1721,
+              "MEDIUM": 157
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 1878,
+            "correct": 1878,
+            "false": 0,
+            "erased_nt": {
+              "n": 1878,
+              "mean": 3.666,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1878,
+              "mean": 25.78,
+              "median": 24.0,
+              "p95": 51.0,
+              "max": 51.0,
+              "min": 16.0
+            },
+            "window_status": {
+              "LOW": 1721,
+              "MEDIUM": 157
+            }
+          },
+          "detected": 1878,
+          "window_contains_truth": 1856,
+          "truth_in_candidates": 1856,
+          "n_candidates": {
+            "n": 1856,
+            "mean": 25.805,
+            "median": 24.0,
+            "p95": 51.0,
+            "max": 51.0,
+            "min": 16.0
+          }
+        },
+        "del | first segment": {
+          "cases": 138,
+          "V4_ok": 138,
+          "V4_erased_nt": {
+            "n": 138,
+            "mean": 24.0,
+            "median": 24.0,
+            "p95": 24.0,
+            "max": 24.0,
+            "min": 24.0
+          },
+          "V5-T0": {
+            "accepted": 138,
+            "correct": 138,
+            "false": 0,
+            "erased_nt": {
+              "n": 138,
+              "mean": 24.0,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 24.0
+            },
+            "trials": {
+              "n": 138,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 138
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 138,
+            "correct": 138,
+            "false": 0,
+            "erased_nt": {
+              "n": 138,
+              "mean": 13.884,
+              "median": 12.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 12.0
+            },
+            "trials": {
+              "n": 138,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 49,
+            "reads_with_wrong_kept_bytes": 47,
+            "window_status": {
+              "LOW": 138
+            }
+          },
+          "V5-T1": {
+            "accepted": 138,
+            "correct": 138,
+            "false": 0,
+            "erased_nt": {
+              "n": 138,
+              "mean": 4.0,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 138,
+              "mean": 24.0,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 24.0
+            },
+            "window_status": {
+              "LOW": 138
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 138,
+            "correct": 138,
+            "false": 0,
+            "erased_nt": {
+              "n": 138,
+              "mean": 24.0,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 24.0
+            },
+            "trials": {
+              "n": 138,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 138
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 138,
+            "correct": 138,
+            "false": 0,
+            "erased_nt": {
+              "n": 138,
+              "mean": 4.0,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 138,
+              "mean": 24.0,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 24.0
+            },
+            "window_status": {
+              "LOW": 138
+            }
+          },
+          "detected": 138,
+          "window_contains_truth": 138,
+          "truth_in_candidates": 138,
+          "n_candidates": {
+            "n": 138,
+            "mean": 24.0,
+            "median": 24.0,
+            "p95": 24.0,
+            "max": 24.0,
+            "min": 24.0
+          }
+        },
+        "del | interior segment": {
+          "cases": 1320,
+          "V4_ok": 1320,
+          "V4_erased_nt": {
+            "n": 1320,
+            "mean": 24.0,
+            "median": 24.0,
+            "p95": 24.0,
+            "max": 24.0,
+            "min": 24.0
+          },
+          "V5-T0": {
+            "accepted": 1320,
+            "correct": 1320,
+            "false": 0,
+            "erased_nt": {
+              "n": 1320,
+              "mean": 24.0,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 24.0
+            },
+            "trials": {
+              "n": 1320,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 1320
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 1320,
+            "correct": 1320,
+            "false": 0,
+            "erased_nt": {
+              "n": 1320,
+              "mean": 14.452,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 1320,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 496,
+            "reads_with_wrong_kept_bytes": 438,
+            "window_status": {
+              "LOW": 1320
+            }
+          },
+          "V5-T1": {
+            "accepted": 1320,
+            "correct": 1320,
+            "false": 0,
+            "erased_nt": {
+              "n": 1320,
+              "mean": 4.0,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 1320,
+              "mean": 24.0,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 24.0
+            },
+            "window_status": {
+              "LOW": 1320
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 1320,
+            "correct": 1320,
+            "false": 0,
+            "erased_nt": {
+              "n": 1320,
+              "mean": 24.0,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 24.0
+            },
+            "trials": {
+              "n": 1320,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 1320
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 1320,
+            "correct": 1320,
+            "false": 0,
+            "erased_nt": {
+              "n": 1320,
+              "mean": 4.0,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 1320,
+              "mean": 24.0,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 24.0
+            },
+            "window_status": {
+              "LOW": 1320
+            }
+          },
+          "detected": 1320,
+          "window_contains_truth": 1320,
+          "truth_in_candidates": 1320,
+          "n_candidates": {
+            "n": 1320,
+            "mean": 24.0,
+            "median": 24.0,
+            "p95": 24.0,
+            "max": 24.0,
+            "min": 24.0
+          }
+        },
+        "del | last segment": {
+          "cases": 90,
+          "V4_ok": 90,
+          "V4_erased_nt": {
+            "n": 90,
+            "mean": 16.0,
+            "median": 16.0,
+            "p95": 16.0,
+            "max": 16.0,
+            "min": 16.0
+          },
+          "V5-T0": {
+            "accepted": 90,
+            "correct": 90,
+            "false": 0,
+            "erased_nt": {
+              "n": 90,
+              "mean": 16.0,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 16.0
+            },
+            "trials": {
+              "n": 90,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 90
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 90,
+            "correct": 90,
+            "false": 0,
+            "erased_nt": {
+              "n": 90,
+              "mean": 7.689,
+              "median": 8.0,
+              "p95": 8.0,
+              "max": 8.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 90,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 41,
+            "reads_with_wrong_kept_bytes": 41,
+            "window_status": {
+              "LOW": 90
+            }
+          },
+          "V5-T1": {
+            "accepted": 90,
+            "correct": 90,
+            "false": 0,
+            "erased_nt": {
+              "n": 90,
+              "mean": 4.0,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 90,
+              "mean": 16.0,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 16.0
+            },
+            "window_status": {
+              "LOW": 90
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 90,
+            "correct": 90,
+            "false": 0,
+            "erased_nt": {
+              "n": 90,
+              "mean": 16.0,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 16.0
+            },
+            "trials": {
+              "n": 90,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 90
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 90,
+            "correct": 90,
+            "false": 0,
+            "erased_nt": {
+              "n": 90,
+              "mean": 4.0,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 90,
+              "mean": 16.0,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 16.0
+            },
+            "window_status": {
+              "LOW": 90
+            }
+          },
+          "detected": 90,
+          "window_contains_truth": 90,
+          "truth_in_candidates": 90,
+          "n_candidates": {
+            "n": 90,
+            "mean": 16.0,
+            "median": 16.0,
+            "p95": 16.0,
+            "max": 16.0,
+            "min": 16.0
+          }
+        },
+        "del | marker base": {
+          "cases": 198,
+          "V4_ok": 198,
+          "V4_erased_nt": {
+            "n": 198,
+            "mean": 42.384,
+            "median": 48.0,
+            "p95": 48.0,
+            "max": 48.0,
+            "min": 16.0
+          },
+          "V5-T0": {
+            "accepted": 198,
+            "correct": 198,
+            "false": 0,
+            "erased_nt": {
+              "n": 198,
+              "mean": 20.687,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 48.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 198,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "MEDIUM": 157,
+              "LOW": 41
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 198,
+            "correct": 198,
+            "false": 0,
+            "erased_nt": {
+              "n": 198,
+              "mean": 2.97,
+              "median": 0.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 198,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 51,
+            "reads_with_wrong_kept_bytes": 41,
+            "window_status": {
+              "MEDIUM": 157,
+              "LOW": 41
+            }
+          },
+          "V5-T1": {
+            "accepted": 198,
+            "correct": 198,
+            "false": 0,
+            "erased_nt": {
+              "n": 198,
+              "mean": 0.828,
+              "median": 0.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 198,
+              "mean": 44.763,
+              "median": 51.0,
+              "p95": 51.0,
+              "max": 51.0,
+              "min": 16.0
+            },
+            "window_status": {
+              "MEDIUM": 157,
+              "LOW": 41
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 198,
+            "correct": 198,
+            "false": 0,
+            "erased_nt": {
+              "n": 198,
+              "mean": 20.687,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 48.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 198,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "MEDIUM": 157,
+              "LOW": 41
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 198,
+            "correct": 198,
+            "false": 0,
+            "erased_nt": {
+              "n": 198,
+              "mean": 0.828,
+              "median": 0.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 198,
+              "mean": 44.763,
+              "median": 51.0,
+              "p95": 51.0,
+              "max": 51.0,
+              "min": 16.0
+            },
+            "window_status": {
+              "MEDIUM": 157,
+              "LOW": 41
+            }
+          },
+          "detected": 198,
+          "window_contains_truth": 176,
+          "truth_in_candidates": 176,
+          "n_candidates": {
+            "n": 176,
+            "mean": 47.403,
+            "median": 51.0,
+            "p95": 51.0,
+            "max": 51.0,
+            "min": 24.0
+          }
+        },
+        "del | marker-adjacent": {
+          "cases": 132,
+          "V4_ok": 132,
+          "V4_erased_nt": {
+            "n": 132,
+            "mean": 23.636,
+            "median": 24.0,
+            "p95": 24.0,
+            "max": 24.0,
+            "min": 16.0
+          },
+          "V5-T0": {
+            "accepted": 132,
+            "correct": 132,
+            "false": 0,
+            "erased_nt": {
+              "n": 132,
+              "mean": 23.636,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 16.0
+            },
+            "trials": {
+              "n": 132,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 132
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 132,
+            "correct": 132,
+            "false": 0,
+            "erased_nt": {
+              "n": 132,
+              "mean": 14.182,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 132,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 155,
+            "reads_with_wrong_kept_bytes": 132,
+            "window_status": {
+              "LOW": 132
+            }
+          },
+          "V5-T1": {
+            "accepted": 132,
+            "correct": 132,
+            "false": 0,
+            "erased_nt": {
+              "n": 132,
+              "mean": 4.0,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 132,
+              "mean": 23.636,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 16.0
+            },
+            "window_status": {
+              "LOW": 132
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 132,
+            "correct": 132,
+            "false": 0,
+            "erased_nt": {
+              "n": 132,
+              "mean": 23.636,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 16.0
+            },
+            "trials": {
+              "n": 132,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 132
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 132,
+            "correct": 132,
+            "false": 0,
+            "erased_nt": {
+              "n": 132,
+              "mean": 4.0,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 132,
+              "mean": 23.636,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 16.0
+            },
+            "window_status": {
+              "LOW": 132
+            }
+          },
+          "detected": 132,
+          "window_contains_truth": 132,
+          "truth_in_candidates": 132,
+          "n_candidates": {
+            "n": 132,
+            "mean": 23.636,
+            "median": 24.0,
+            "p95": 24.0,
+            "max": 24.0,
+            "min": 16.0
+          }
+        },
+        "ins | all": {
+          "cases": 1878,
+          "V4_ok": 1878,
+          "V4_erased_nt": {
+            "n": 1878,
+            "mean": 31.902,
+            "median": 24.0,
+            "p95": 48.0,
+            "max": 48.0,
+            "min": 16.0
+          },
+          "V5-T0": {
+            "accepted": 1878,
+            "correct": 1878,
+            "false": 0,
+            "erased_nt": {
+              "n": 1878,
+              "mean": 23.883,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 48.0,
+              "min": 16.0
+            },
+            "trials": {
+              "n": 1878,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 1782,
+              "MEDIUM": 96
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 1878,
+            "correct": 1878,
+            "false": 0,
+            "erased_nt": {
+              "n": 1878,
+              "mean": 13.186,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1878,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 850,
+            "reads_with_wrong_kept_bytes": 714,
+            "window_status": {
+              "LOW": 1782,
+              "MEDIUM": 96
+            }
+          },
+          "V5-T1": {
+            "accepted": 1878,
+            "correct": 1878,
+            "false": 0,
+            "erased_nt": {
+              "n": 1878,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1878,
+              "mean": 25.624,
+              "median": 21.0,
+              "p95": 42.0,
+              "max": 46.0,
+              "min": 10.0
+            },
+            "window_status": {
+              "LOW": 1782,
+              "MEDIUM": 96
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 1878,
+            "correct": 1878,
+            "false": 0,
+            "erased_nt": {
+              "n": 1878,
+              "mean": 22.349,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1878,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "MEDIUM": 1763,
+              "LOW": 19,
+              "HIGH": 96
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 1878,
+            "correct": 1878,
+            "false": 0,
+            "erased_nt": {
+              "n": 1878,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1878,
+              "mean": 25.624,
+              "median": 21.0,
+              "p95": 42.0,
+              "max": 46.0,
+              "min": 10.0
+            },
+            "window_status": {
+              "MEDIUM": 1763,
+              "LOW": 19,
+              "HIGH": 96
+            }
+          },
+          "detected": 1878,
+          "window_contains_truth": 1859,
+          "truth_in_candidates": 1859,
+          "n_candidates": {
+            "n": 1859,
+            "mean": 25.642,
+            "median": 21.0,
+            "p95": 42.0,
+            "max": 46.0,
+            "min": 10.0
+          }
+        },
+        "ins | first segment": {
+          "cases": 144,
+          "V4_ok": 144,
+          "V4_erased_nt": {
+            "n": 144,
+            "mean": 24.0,
+            "median": 24.0,
+            "p95": 24.0,
+            "max": 24.0,
+            "min": 24.0
+          },
+          "V5-T0": {
+            "accepted": 144,
+            "correct": 144,
+            "false": 0,
+            "erased_nt": {
+              "n": 144,
+              "mean": 23.917,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 20.0
+            },
+            "trials": {
+              "n": 144,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 144
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 144,
+            "correct": 144,
+            "false": 0,
+            "erased_nt": {
+              "n": 144,
+              "mean": 14.472,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 8.0
+            },
+            "trials": {
+              "n": 144,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 70,
+            "reads_with_wrong_kept_bytes": 59,
+            "window_status": {
+              "LOW": 144
+            }
+          },
+          "V5-T1": {
+            "accepted": 144,
+            "correct": 144,
+            "false": 0,
+            "erased_nt": {
+              "n": 144,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 144,
+              "mean": 16.368,
+              "median": 16.0,
+              "p95": 19.0,
+              "max": 20.0,
+              "min": 14.0
+            },
+            "window_status": {
+              "LOW": 144
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 144,
+            "correct": 144,
+            "false": 0,
+            "erased_nt": {
+              "n": 144,
+              "mean": 23.917,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 20.0
+            },
+            "trials": {
+              "n": 144,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "MEDIUM": 144
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 144,
+            "correct": 144,
+            "false": 0,
+            "erased_nt": {
+              "n": 144,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 144,
+              "mean": 16.368,
+              "median": 16.0,
+              "p95": 19.0,
+              "max": 20.0,
+              "min": 14.0
+            },
+            "window_status": {
+              "MEDIUM": 144
+            }
+          },
+          "detected": 144,
+          "window_contains_truth": 144,
+          "truth_in_candidates": 144,
+          "n_candidates": {
+            "n": 144,
+            "mean": 16.368,
+            "median": 16.0,
+            "p95": 19.0,
+            "max": 20.0,
+            "min": 14.0
+          }
+        },
+        "ins | interior segment": {
+          "cases": 1380,
+          "V4_ok": 1380,
+          "V4_erased_nt": {
+            "n": 1380,
+            "mean": 32.4,
+            "median": 24.0,
+            "p95": 48.0,
+            "max": 48.0,
+            "min": 24.0
+          },
+          "V5-T0": {
+            "accepted": 1380,
+            "correct": 1380,
+            "false": 0,
+            "erased_nt": {
+              "n": 1380,
+              "mean": 24.0,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 24.0
+            },
+            "trials": {
+              "n": 1380,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 1380
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 1380,
+            "correct": 1380,
+            "false": 0,
+            "erased_nt": {
+              "n": 1380,
+              "mean": 14.223,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 8.0
+            },
+            "trials": {
+              "n": 1380,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 532,
+            "reads_with_wrong_kept_bytes": 455,
+            "window_status": {
+              "LOW": 1380
+            }
+          },
+          "V5-T1": {
+            "accepted": 1380,
+            "correct": 1380,
+            "false": 0,
+            "erased_nt": {
+              "n": 1380,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1380,
+              "mean": 26.154,
+              "median": 21.0,
+              "p95": 42.0,
+              "max": 44.0,
+              "min": 15.0
+            },
+            "window_status": {
+              "LOW": 1380
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 1380,
+            "correct": 1380,
+            "false": 0,
+            "erased_nt": {
+              "n": 1380,
+              "mean": 24.0,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 24.0
+            },
+            "trials": {
+              "n": 1380,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "MEDIUM": 1380
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 1380,
+            "correct": 1380,
+            "false": 0,
+            "erased_nt": {
+              "n": 1380,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1380,
+              "mean": 26.154,
+              "median": 21.0,
+              "p95": 42.0,
+              "max": 44.0,
+              "min": 15.0
+            },
+            "window_status": {
+              "MEDIUM": 1380
+            }
+          },
+          "detected": 1380,
+          "window_contains_truth": 1380,
+          "truth_in_candidates": 1380,
+          "n_candidates": {
+            "n": 1380,
+            "mean": 26.154,
+            "median": 21.0,
+            "p95": 42.0,
+            "max": 44.0,
+            "min": 15.0
+          }
+        },
+        "ins | last segment": {
+          "cases": 90,
+          "V4_ok": 90,
+          "V4_erased_nt": {
+            "n": 90,
+            "mean": 20.0,
+            "median": 16.0,
+            "p95": 40.0,
+            "max": 40.0,
+            "min": 16.0
+          },
+          "V5-T0": {
+            "accepted": 90,
+            "correct": 90,
+            "false": 0,
+            "erased_nt": {
+              "n": 90,
+              "mean": 16.0,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 16.0
+            },
+            "trials": {
+              "n": 90,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 90
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 90,
+            "correct": 90,
+            "false": 0,
+            "erased_nt": {
+              "n": 90,
+              "mean": 8.089,
+              "median": 8.0,
+              "p95": 12.0,
+              "max": 12.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 90,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 36,
+            "reads_with_wrong_kept_bytes": 33,
+            "window_status": {
+              "LOW": 90
+            }
+          },
+          "V5-T1": {
+            "accepted": 90,
+            "correct": 90,
+            "false": 0,
+            "erased_nt": {
+              "n": 90,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 90,
+              "mean": 16.567,
+              "median": 14.0,
+              "p95": 32.0,
+              "max": 33.0,
+              "min": 10.0
+            },
+            "window_status": {
+              "LOW": 90
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 90,
+            "correct": 90,
+            "false": 0,
+            "erased_nt": {
+              "n": 90,
+              "mean": 16.0,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 16.0
+            },
+            "trials": {
+              "n": 90,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "MEDIUM": 90
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 90,
+            "correct": 90,
+            "false": 0,
+            "erased_nt": {
+              "n": 90,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 90,
+              "mean": 16.567,
+              "median": 14.0,
+              "p95": 32.0,
+              "max": 33.0,
+              "min": 10.0
+            },
+            "window_status": {
+              "MEDIUM": 90
+            }
+          },
+          "detected": 90,
+          "window_contains_truth": 90,
+          "truth_in_candidates": 90,
+          "n_candidates": {
+            "n": 90,
+            "mean": 16.567,
+            "median": 14.0,
+            "p95": 32.0,
+            "max": 33.0,
+            "min": 10.0
+          }
+        },
+        "ins | marker-adjacent": {
+          "cases": 264,
+          "V4_ok": 264,
+          "V4_erased_nt": {
+            "n": 264,
+            "mean": 37.667,
+            "median": 48.0,
+            "p95": 48.0,
+            "max": 48.0,
+            "min": 16.0
+          },
+          "V5-T0": {
+            "accepted": 264,
+            "correct": 264,
+            "false": 0,
+            "erased_nt": {
+              "n": 264,
+              "mean": 25.939,
+              "median": 24.0,
+              "p95": 48.0,
+              "max": 48.0,
+              "min": 16.0
+            },
+            "trials": {
+              "n": 264,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 168,
+              "MEDIUM": 96
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 264,
+            "correct": 264,
+            "false": 0,
+            "erased_nt": {
+              "n": 264,
+              "mean": 8.803,
+              "median": 12.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 264,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 212,
+            "reads_with_wrong_kept_bytes": 167,
+            "window_status": {
+              "LOW": 168,
+              "MEDIUM": 96
+            }
+          },
+          "V5-T1": {
+            "accepted": 264,
+            "correct": 264,
+            "false": 0,
+            "erased_nt": {
+              "n": 264,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 264,
+              "mean": 30.985,
+              "median": 36.0,
+              "p95": 44.0,
+              "max": 46.0,
+              "min": 11.0
+            },
+            "window_status": {
+              "LOW": 168,
+              "MEDIUM": 96
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 264,
+            "correct": 264,
+            "false": 0,
+            "erased_nt": {
+              "n": 264,
+              "mean": 15.03,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 264,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "MEDIUM": 149,
+              "LOW": 19,
+              "HIGH": 96
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 264,
+            "correct": 264,
+            "false": 0,
+            "erased_nt": {
+              "n": 264,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 264,
+              "mean": 30.985,
+              "median": 36.0,
+              "p95": 44.0,
+              "max": 46.0,
+              "min": 11.0
+            },
+            "window_status": {
+              "MEDIUM": 149,
+              "LOW": 19,
+              "HIGH": 96
+            }
+          },
+          "detected": 264,
+          "window_contains_truth": 245,
+          "truth_in_candidates": 245,
+          "n_candidates": {
+            "n": 245,
+            "mean": 31.543,
+            "median": 37.0,
+            "p95": 44.79999999999998,
+            "max": 46.0,
+            "min": 11.0
+          }
+        }
+      },
+      "period 16/2": {
+        "del | all": {
+          "cases": 1884,
+          "V4_ok": 1884,
+          "V4_erased_nt": {
+            "n": 1884,
+            "mean": 17.028,
+            "median": 16.0,
+            "p95": 32.0,
+            "max": 32.0,
+            "min": 8.0
+          },
+          "V5-T0": {
+            "accepted": 1884,
+            "correct": 1884,
+            "false": 0,
+            "erased_nt": {
+              "n": 1884,
+              "mean": 16.064,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 32.0,
+              "min": 8.0
+            },
+            "trials": {
+              "n": 1884,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 1735,
+              "MEDIUM": 149
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 1884,
+            "correct": 1884,
+            "false": 0,
+            "erased_nt": {
+              "n": 1884,
+              "mean": 7.208,
+              "median": 8.0,
+              "p95": 8.0,
+              "max": 8.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1884,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 878,
+            "reads_with_wrong_kept_bytes": 840,
+            "window_status": {
+              "LOW": 1735,
+              "MEDIUM": 149
+            }
+          },
+          "V5-T1": {
+            "accepted": 1884,
+            "correct": 1884,
+            "false": 0,
+            "erased_nt": {
+              "n": 1884,
+              "mean": 3.684,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1884,
+              "mean": 17.186,
+              "median": 16.0,
+              "p95": 34.0,
+              "max": 34.0,
+              "min": 8.0
+            },
+            "window_status": {
+              "LOW": 1735,
+              "MEDIUM": 149
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 1884,
+            "correct": 1884,
+            "false": 0,
+            "erased_nt": {
+              "n": 1884,
+              "mean": 16.064,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 32.0,
+              "min": 8.0
+            },
+            "trials": {
+              "n": 1884,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 1735,
+              "MEDIUM": 149
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 1884,
+            "correct": 1884,
+            "false": 0,
+            "erased_nt": {
+              "n": 1884,
+              "mean": 3.684,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1884,
+              "mean": 17.186,
+              "median": 16.0,
+              "p95": 34.0,
+              "max": 34.0,
+              "min": 8.0
+            },
+            "window_status": {
+              "LOW": 1735,
+              "MEDIUM": 149
+            }
+          },
+          "detected": 1884,
+          "window_contains_truth": 1855,
+          "truth_in_candidates": 1855,
+          "n_candidates": {
+            "n": 1855,
+            "mean": 17.213,
+            "median": 16.0,
+            "p95": 34.0,
+            "max": 34.0,
+            "min": 8.0
+          }
+        },
+        "del | first segment": {
+          "cases": 90,
+          "V4_ok": 90,
+          "V4_erased_nt": {
+            "n": 90,
+            "mean": 16.0,
+            "median": 16.0,
+            "p95": 16.0,
+            "max": 16.0,
+            "min": 16.0
+          },
+          "V5-T0": {
+            "accepted": 90,
+            "correct": 90,
+            "false": 0,
+            "erased_nt": {
+              "n": 90,
+              "mean": 16.0,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 16.0
+            },
+            "trials": {
+              "n": 90,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 90
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 90,
+            "correct": 90,
+            "false": 0,
+            "erased_nt": {
+              "n": 90,
+              "mean": 8.0,
+              "median": 8.0,
+              "p95": 8.0,
+              "max": 8.0,
+              "min": 8.0
+            },
+            "trials": {
+              "n": 90,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 40,
+            "reads_with_wrong_kept_bytes": 40,
+            "window_status": {
+              "LOW": 90
+            }
+          },
+          "V5-T1": {
+            "accepted": 90,
+            "correct": 90,
+            "false": 0,
+            "erased_nt": {
+              "n": 90,
+              "mean": 4.0,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 90,
+              "mean": 16.0,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 16.0
+            },
+            "window_status": {
+              "LOW": 90
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 90,
+            "correct": 90,
+            "false": 0,
+            "erased_nt": {
+              "n": 90,
+              "mean": 16.0,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 16.0
+            },
+            "trials": {
+              "n": 90,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 90
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 90,
+            "correct": 90,
+            "false": 0,
+            "erased_nt": {
+              "n": 90,
+              "mean": 4.0,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 90,
+              "mean": 16.0,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 16.0
+            },
+            "window_status": {
+              "LOW": 90
+            }
+          },
+          "detected": 90,
+          "window_contains_truth": 90,
+          "truth_in_candidates": 90,
+          "n_candidates": {
+            "n": 90,
+            "mean": 16.0,
+            "median": 16.0,
+            "p95": 16.0,
+            "max": 16.0,
+            "min": 16.0
+          }
+        },
+        "del | interior segment": {
+          "cases": 1344,
+          "V4_ok": 1344,
+          "V4_erased_nt": {
+            "n": 1344,
+            "mean": 16.0,
+            "median": 16.0,
+            "p95": 16.0,
+            "max": 16.0,
+            "min": 16.0
+          },
+          "V5-T0": {
+            "accepted": 1344,
+            "correct": 1344,
+            "false": 0,
+            "erased_nt": {
+              "n": 1344,
+              "mean": 16.0,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 16.0
+            },
+            "trials": {
+              "n": 1344,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 1344
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 1344,
+            "correct": 1344,
+            "false": 0,
+            "erased_nt": {
+              "n": 1344,
+              "mean": 7.824,
+              "median": 8.0,
+              "p95": 8.0,
+              "max": 8.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 1344,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 573,
+            "reads_with_wrong_kept_bytes": 546,
+            "window_status": {
+              "LOW": 1344
+            }
+          },
+          "V5-T1": {
+            "accepted": 1344,
+            "correct": 1344,
+            "false": 0,
+            "erased_nt": {
+              "n": 1344,
+              "mean": 4.0,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 1344,
+              "mean": 16.0,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 16.0
+            },
+            "window_status": {
+              "LOW": 1344
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 1344,
+            "correct": 1344,
+            "false": 0,
+            "erased_nt": {
+              "n": 1344,
+              "mean": 16.0,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 16.0
+            },
+            "trials": {
+              "n": 1344,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 1344
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 1344,
+            "correct": 1344,
+            "false": 0,
+            "erased_nt": {
+              "n": 1344,
+              "mean": 4.0,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 1344,
+              "mean": 16.0,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 16.0
+            },
+            "window_status": {
+              "LOW": 1344
+            }
+          },
+          "detected": 1344,
+          "window_contains_truth": 1344,
+          "truth_in_candidates": 1344,
+          "n_candidates": {
+            "n": 1344,
+            "mean": 16.0,
+            "median": 16.0,
+            "p95": 16.0,
+            "max": 16.0,
+            "min": 16.0
+          }
+        },
+        "del | last segment": {
+          "cases": 42,
+          "V4_ok": 42,
+          "V4_erased_nt": {
+            "n": 42,
+            "mean": 8.0,
+            "median": 8.0,
+            "p95": 8.0,
+            "max": 8.0,
+            "min": 8.0
+          },
+          "V5-T0": {
+            "accepted": 42,
+            "correct": 42,
+            "false": 0,
+            "erased_nt": {
+              "n": 42,
+              "mean": 8.0,
+              "median": 8.0,
+              "p95": 8.0,
+              "max": 8.0,
+              "min": 8.0
+            },
+            "trials": {
+              "n": 42,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 42
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 42,
+            "correct": 42,
+            "false": 0,
+            "erased_nt": {
+              "n": 42,
+              "mean": 7.81,
+              "median": 8.0,
+              "p95": 8.0,
+              "max": 8.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 42,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 2,
+            "reads_with_wrong_kept_bytes": 2,
+            "window_status": {
+              "LOW": 42
+            }
+          },
+          "V5-T1": {
+            "accepted": 42,
+            "correct": 42,
+            "false": 0,
+            "erased_nt": {
+              "n": 42,
+              "mean": 4.0,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 42,
+              "mean": 8.0,
+              "median": 8.0,
+              "p95": 8.0,
+              "max": 8.0,
+              "min": 8.0
+            },
+            "window_status": {
+              "LOW": 42
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 42,
+            "correct": 42,
+            "false": 0,
+            "erased_nt": {
+              "n": 42,
+              "mean": 8.0,
+              "median": 8.0,
+              "p95": 8.0,
+              "max": 8.0,
+              "min": 8.0
+            },
+            "trials": {
+              "n": 42,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 42
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 42,
+            "correct": 42,
+            "false": 0,
+            "erased_nt": {
+              "n": 42,
+              "mean": 4.0,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 42,
+              "mean": 8.0,
+              "median": 8.0,
+              "p95": 8.0,
+              "max": 8.0,
+              "min": 8.0
+            },
+            "window_status": {
+              "LOW": 42
+            }
+          },
+          "detected": 42,
+          "window_contains_truth": 42,
+          "truth_in_candidates": 42,
+          "n_candidates": {
+            "n": 42,
+            "mean": 8.0,
+            "median": 8.0,
+            "p95": 8.0,
+            "max": 8.0,
+            "min": 8.0
+          }
+        },
+        "del | marker base": {
+          "cases": 204,
+          "V4_ok": 204,
+          "V4_erased_nt": {
+            "n": 204,
+            "mean": 27.373,
+            "median": 32.0,
+            "p95": 32.0,
+            "max": 32.0,
+            "min": 8.0
+          },
+          "V5-T0": {
+            "accepted": 204,
+            "correct": 204,
+            "false": 0,
+            "erased_nt": {
+              "n": 204,
+              "mean": 18.471,
+              "median": 16.0,
+              "p95": 32.0,
+              "max": 32.0,
+              "min": 8.0
+            },
+            "trials": {
+              "n": 204,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "MEDIUM": 149,
+              "LOW": 55
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 204,
+            "correct": 204,
+            "false": 0,
+            "erased_nt": {
+              "n": 204,
+              "mean": 2.118,
+              "median": 0.0,
+              "p95": 8.0,
+              "max": 8.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 204,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 55,
+            "reads_with_wrong_kept_bytes": 53,
+            "window_status": {
+              "MEDIUM": 149,
+              "LOW": 55
+            }
+          },
+          "V5-T1": {
+            "accepted": 204,
+            "correct": 204,
+            "false": 0,
+            "erased_nt": {
+              "n": 204,
+              "mean": 1.078,
+              "median": 0.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 204,
+              "mean": 28.833,
+              "median": 34.0,
+              "p95": 34.0,
+              "max": 34.0,
+              "min": 8.0
+            },
+            "window_status": {
+              "MEDIUM": 149,
+              "LOW": 55
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 204,
+            "correct": 204,
+            "false": 0,
+            "erased_nt": {
+              "n": 204,
+              "mean": 18.471,
+              "median": 16.0,
+              "p95": 32.0,
+              "max": 32.0,
+              "min": 8.0
+            },
+            "trials": {
+              "n": 204,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "MEDIUM": 149,
+              "LOW": 55
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 204,
+            "correct": 204,
+            "false": 0,
+            "erased_nt": {
+              "n": 204,
+              "mean": 1.078,
+              "median": 0.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 204,
+              "mean": 28.833,
+              "median": 34.0,
+              "p95": 34.0,
+              "max": 34.0,
+              "min": 8.0
+            },
+            "window_status": {
+              "MEDIUM": 149,
+              "LOW": 55
+            }
+          },
+          "detected": 204,
+          "window_contains_truth": 175,
+          "truth_in_candidates": 175,
+          "n_candidates": {
+            "n": 175,
+            "mean": 31.051,
+            "median": 34.0,
+            "p95": 34.0,
+            "max": 34.0,
+            "min": 16.0
+          }
+        },
+        "del | marker-adjacent": {
+          "cases": 204,
+          "V4_ok": 204,
+          "V4_erased_nt": {
+            "n": 204,
+            "mean": 15.765,
+            "median": 16.0,
+            "p95": 16.0,
+            "max": 16.0,
+            "min": 8.0
+          },
+          "V5-T0": {
+            "accepted": 204,
+            "correct": 204,
+            "false": 0,
+            "erased_nt": {
+              "n": 204,
+              "mean": 15.765,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 8.0
+            },
+            "trials": {
+              "n": 204,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 204
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 204,
+            "correct": 204,
+            "false": 0,
+            "erased_nt": {
+              "n": 204,
+              "mean": 7.765,
+              "median": 8.0,
+              "p95": 8.0,
+              "max": 8.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 204,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 208,
+            "reads_with_wrong_kept_bytes": 199,
+            "window_status": {
+              "LOW": 204
+            }
+          },
+          "V5-T1": {
+            "accepted": 204,
+            "correct": 204,
+            "false": 0,
+            "erased_nt": {
+              "n": 204,
+              "mean": 4.0,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 204,
+              "mean": 15.765,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 8.0
+            },
+            "window_status": {
+              "LOW": 204
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 204,
+            "correct": 204,
+            "false": 0,
+            "erased_nt": {
+              "n": 204,
+              "mean": 15.765,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 8.0
+            },
+            "trials": {
+              "n": 204,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 204
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 204,
+            "correct": 204,
+            "false": 0,
+            "erased_nt": {
+              "n": 204,
+              "mean": 4.0,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 204,
+              "mean": 15.765,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 8.0
+            },
+            "window_status": {
+              "LOW": 204
+            }
+          },
+          "detected": 204,
+          "window_contains_truth": 204,
+          "truth_in_candidates": 204,
+          "n_candidates": {
+            "n": 204,
+            "mean": 15.765,
+            "median": 16.0,
+            "p95": 16.0,
+            "max": 16.0,
+            "min": 8.0
+          }
+        },
+        "ins | all": {
+          "cases": 1884,
+          "V4_ok": 1884,
+          "V4_erased_nt": {
+            "n": 1884,
+            "mean": 20.535,
+            "median": 16.0,
+            "p95": 32.0,
+            "max": 32.0,
+            "min": 8.0
+          },
+          "V5-T0": {
+            "accepted": 1884,
+            "correct": 1884,
+            "false": 0,
+            "erased_nt": {
+              "n": 1884,
+              "mean": 19.406,
+              "median": 16.0,
+              "p95": 28.0,
+              "max": 32.0,
+              "min": 8.0
+            },
+            "trials": {
+              "n": 1884,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 1823,
+              "MEDIUM": 61
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 1884,
+            "correct": 1884,
+            "false": 0,
+            "erased_nt": {
+              "n": 1884,
+              "mean": 7.915,
+              "median": 8.0,
+              "p95": 12.0,
+              "max": 12.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1884,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 762,
+            "reads_with_wrong_kept_bytes": 755,
+            "window_status": {
+              "LOW": 1823,
+              "MEDIUM": 61
+            }
+          },
+          "V5-T1": {
+            "accepted": 1884,
+            "correct": 1884,
+            "false": 0,
+            "erased_nt": {
+              "n": 1884,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1884,
+              "mean": 16.901,
+              "median": 14.0,
+              "p95": 29.0,
+              "max": 32.0,
+              "min": 4.0
+            },
+            "window_status": {
+              "LOW": 1823,
+              "MEDIUM": 61
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 1884,
+            "correct": 1884,
+            "false": 0,
+            "erased_nt": {
+              "n": 1884,
+              "mean": 15.291,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 28.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1884,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "MEDIUM": 1805,
+              "HIGH": 61,
+              "LOW": 18
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 1884,
+            "correct": 1884,
+            "false": 0,
+            "erased_nt": {
+              "n": 1884,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1884,
+              "mean": 16.901,
+              "median": 14.0,
+              "p95": 29.0,
+              "max": 32.0,
+              "min": 4.0
+            },
+            "window_status": {
+              "MEDIUM": 1805,
+              "HIGH": 61,
+              "LOW": 18
+            }
+          },
+          "detected": 1884,
+          "window_contains_truth": 1866,
+          "truth_in_candidates": 1866,
+          "n_candidates": {
+            "n": 1866,
+            "mean": 16.902,
+            "median": 14.0,
+            "p95": 29.0,
+            "max": 32.0,
+            "min": 4.0
+          }
+        },
+        "ins | first segment": {
+          "cases": 96,
+          "V4_ok": 96,
+          "V4_erased_nt": {
+            "n": 96,
+            "mean": 16.0,
+            "median": 16.0,
+            "p95": 16.0,
+            "max": 16.0,
+            "min": 16.0
+          },
+          "V5-T0": {
+            "accepted": 96,
+            "correct": 96,
+            "false": 0,
+            "erased_nt": {
+              "n": 96,
+              "mean": 15.875,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 12.0
+            },
+            "trials": {
+              "n": 96,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 96
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 96,
+            "correct": 96,
+            "false": 0,
+            "erased_nt": {
+              "n": 96,
+              "mean": 7.583,
+              "median": 8.0,
+              "p95": 8.0,
+              "max": 8.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 96,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 42,
+            "reads_with_wrong_kept_bytes": 42,
+            "window_status": {
+              "LOW": 96
+            }
+          },
+          "V5-T1": {
+            "accepted": 96,
+            "correct": 96,
+            "false": 0,
+            "erased_nt": {
+              "n": 96,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 96,
+              "mean": 10.385,
+              "median": 10.5,
+              "p95": 13.0,
+              "max": 13.0,
+              "min": 8.0
+            },
+            "window_status": {
+              "LOW": 96
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 96,
+            "correct": 96,
+            "false": 0,
+            "erased_nt": {
+              "n": 96,
+              "mean": 15.875,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 12.0
+            },
+            "trials": {
+              "n": 96,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "MEDIUM": 96
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 96,
+            "correct": 96,
+            "false": 0,
+            "erased_nt": {
+              "n": 96,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 96,
+              "mean": 10.385,
+              "median": 10.5,
+              "p95": 13.0,
+              "max": 13.0,
+              "min": 8.0
+            },
+            "window_status": {
+              "MEDIUM": 96
+            }
+          },
+          "detected": 96,
+          "window_contains_truth": 96,
+          "truth_in_candidates": 96,
+          "n_candidates": {
+            "n": 96,
+            "mean": 10.385,
+            "median": 10.5,
+            "p95": 13.0,
+            "max": 13.0,
+            "min": 8.0
+          }
+        },
+        "ins | interior segment": {
+          "cases": 1440,
+          "V4_ok": 1440,
+          "V4_erased_nt": {
+            "n": 1440,
+            "mean": 20.5,
+            "median": 16.0,
+            "p95": 32.0,
+            "max": 32.0,
+            "min": 16.0
+          },
+          "V5-T0": {
+            "accepted": 1440,
+            "correct": 1440,
+            "false": 0,
+            "erased_nt": {
+              "n": 1440,
+              "mean": 19.289,
+              "median": 16.0,
+              "p95": 28.0,
+              "max": 28.0,
+              "min": 12.0
+            },
+            "trials": {
+              "n": 1440,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 1440
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 1440,
+            "correct": 1440,
+            "false": 0,
+            "erased_nt": {
+              "n": 1440,
+              "mean": 8.239,
+              "median": 8.0,
+              "p95": 12.0,
+              "max": 12.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 1440,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 495,
+            "reads_with_wrong_kept_bytes": 490,
+            "window_status": {
+              "LOW": 1440
+            }
+          },
+          "V5-T1": {
+            "accepted": 1440,
+            "correct": 1440,
+            "false": 0,
+            "erased_nt": {
+              "n": 1440,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1440,
+              "mean": 17.001,
+              "median": 14.0,
+              "p95": 28.0,
+              "max": 32.0,
+              "min": 8.0
+            },
+            "window_status": {
+              "LOW": 1440
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 1440,
+            "correct": 1440,
+            "false": 0,
+            "erased_nt": {
+              "n": 1440,
+              "mean": 15.997,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 12.0
+            },
+            "trials": {
+              "n": 1440,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "MEDIUM": 1440
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 1440,
+            "correct": 1440,
+            "false": 0,
+            "erased_nt": {
+              "n": 1440,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1440,
+              "mean": 17.001,
+              "median": 14.0,
+              "p95": 28.0,
+              "max": 32.0,
+              "min": 8.0
+            },
+            "window_status": {
+              "MEDIUM": 1440
+            }
+          },
+          "detected": 1440,
+          "window_contains_truth": 1440,
+          "truth_in_candidates": 1440,
+          "n_candidates": {
+            "n": 1440,
+            "mean": 17.001,
+            "median": 14.0,
+            "p95": 28.0,
+            "max": 32.0,
+            "min": 8.0
+          }
+        },
+        "ins | last segment": {
+          "cases": 42,
+          "V4_ok": 42,
+          "V4_erased_nt": {
+            "n": 42,
+            "mean": 13.333,
+            "median": 8.0,
+            "p95": 24.0,
+            "max": 24.0,
+            "min": 8.0
+          },
+          "V5-T0": {
+            "accepted": 42,
+            "correct": 42,
+            "false": 0,
+            "erased_nt": {
+              "n": 42,
+              "mean": 12.667,
+              "median": 8.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 8.0
+            },
+            "trials": {
+              "n": 42,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 42
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 42,
+            "correct": 42,
+            "false": 0,
+            "erased_nt": {
+              "n": 42,
+              "mean": 6.857,
+              "median": 8.0,
+              "p95": 8.0,
+              "max": 8.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 42,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 2,
+            "reads_with_wrong_kept_bytes": 2,
+            "window_status": {
+              "LOW": 42
+            }
+          },
+          "V5-T1": {
+            "accepted": 42,
+            "correct": 42,
+            "false": 0,
+            "erased_nt": {
+              "n": 42,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 42,
+              "mean": 11.357,
+              "median": 8.0,
+              "p95": 24.0,
+              "max": 25.0,
+              "min": 4.0
+            },
+            "window_status": {
+              "LOW": 42
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 42,
+            "correct": 42,
+            "false": 0,
+            "erased_nt": {
+              "n": 42,
+              "mean": 8.0,
+              "median": 8.0,
+              "p95": 8.0,
+              "max": 8.0,
+              "min": 8.0
+            },
+            "trials": {
+              "n": 42,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "MEDIUM": 42
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 42,
+            "correct": 42,
+            "false": 0,
+            "erased_nt": {
+              "n": 42,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 42,
+              "mean": 11.357,
+              "median": 8.0,
+              "p95": 24.0,
+              "max": 25.0,
+              "min": 4.0
+            },
+            "window_status": {
+              "MEDIUM": 42
+            }
+          },
+          "detected": 42,
+          "window_contains_truth": 42,
+          "truth_in_candidates": 42,
+          "n_candidates": {
+            "n": 42,
+            "mean": 11.357,
+            "median": 8.0,
+            "p95": 24.0,
+            "max": 25.0,
+            "min": 4.0
+          }
+        },
+        "ins | marker-adjacent": {
+          "cases": 306,
+          "V4_ok": 306,
+          "V4_erased_nt": {
+            "n": 306,
+            "mean": 23.111,
+            "median": 16.0,
+            "p95": 32.0,
+            "max": 32.0,
+            "min": 8.0
+          },
+          "V5-T0": {
+            "accepted": 306,
+            "correct": 306,
+            "false": 0,
+            "erased_nt": {
+              "n": 306,
+              "mean": 21.987,
+              "median": 16.0,
+              "p95": 32.0,
+              "max": 32.0,
+              "min": 8.0
+            },
+            "trials": {
+              "n": 306,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 245,
+              "MEDIUM": 61
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 306,
+            "correct": 306,
+            "false": 0,
+            "erased_nt": {
+              "n": 306,
+              "mean": 6.641,
+              "median": 8.0,
+              "p95": 12.0,
+              "max": 12.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 306,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 223,
+            "reads_with_wrong_kept_bytes": 221,
+            "window_status": {
+              "LOW": 245,
+              "MEDIUM": 61
+            }
+          },
+          "V5-T1": {
+            "accepted": 306,
+            "correct": 306,
+            "false": 0,
+            "erased_nt": {
+              "n": 306,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 306,
+              "mean": 19.235,
+              "median": 15.0,
+              "p95": 29.0,
+              "max": 32.0,
+              "min": 5.0
+            },
+            "window_status": {
+              "LOW": 245,
+              "MEDIUM": 61
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 306,
+            "correct": 306,
+            "false": 0,
+            "erased_nt": {
+              "n": 306,
+              "mean": 12.784,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 28.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 306,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "MEDIUM": 227,
+              "HIGH": 61,
+              "LOW": 18
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 306,
+            "correct": 306,
+            "false": 0,
+            "erased_nt": {
+              "n": 306,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 306,
+              "mean": 19.235,
+              "median": 15.0,
+              "p95": 29.0,
+              "max": 32.0,
+              "min": 5.0
+            },
+            "window_status": {
+              "MEDIUM": 227,
+              "HIGH": 61,
+              "LOW": 18
+            }
+          },
+          "detected": 306,
+          "window_contains_truth": 288,
+          "truth_in_candidates": 288,
+          "n_candidates": {
+            "n": 288,
+            "mean": 19.385,
+            "median": 16.0,
+            "p95": 29.0,
+            "max": 32.0,
+            "min": 5.0
+          }
+        }
+      },
+      "period 32/2 (V4 round 1)": {
+        "del | all": {
+          "cases": 1776,
+          "V4_ok": 1776,
+          "V4_erased_nt": {
+            "n": 1776,
+            "mean": 32.495,
+            "median": 32.0,
+            "p95": 32.0,
+            "max": 64.0,
+            "min": 24.0
+          },
+          "V5-T0": {
+            "accepted": 1776,
+            "correct": 1776,
+            "false": 0,
+            "erased_nt": {
+              "n": 1776,
+              "mean": 31.748,
+              "median": 32.0,
+              "p95": 32.0,
+              "max": 64.0,
+              "min": 24.0
+            },
+            "trials": {
+              "n": 1776,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 1710,
+              "MEDIUM": 66
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 1776,
+            "correct": 1776,
+            "false": 0,
+            "erased_nt": {
+              "n": 1776,
+              "mean": 18.883,
+              "median": 20.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1776,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 824,
+            "reads_with_wrong_kept_bytes": 644,
+            "window_status": {
+              "LOW": 1710,
+              "MEDIUM": 66
+            }
+          },
+          "V5-T1": {
+            "accepted": 1776,
+            "correct": 1776,
+            "false": 0,
+            "erased_nt": {
+              "n": 1776,
+              "mean": 3.851,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1776,
+              "mean": 32.503,
+              "median": 32.0,
+              "p95": 32.0,
+              "max": 64.0,
+              "min": 24.0
+            },
+            "window_status": {
+              "LOW": 1710,
+              "MEDIUM": 66
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 1776,
+            "correct": 1776,
+            "false": 0,
+            "erased_nt": {
+              "n": 1776,
+              "mean": 31.748,
+              "median": 32.0,
+              "p95": 32.0,
+              "max": 64.0,
+              "min": 24.0
+            },
+            "trials": {
+              "n": 1776,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 1710,
+              "MEDIUM": 66
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 1776,
+            "correct": 1776,
+            "false": 0,
+            "erased_nt": {
+              "n": 1776,
+              "mean": 3.851,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1776,
+              "mean": 32.503,
+              "median": 32.0,
+              "p95": 32.0,
+              "max": 64.0,
+              "min": 24.0
+            },
+            "window_status": {
+              "LOW": 1710,
+              "MEDIUM": 66
+            }
+          },
+          "detected": 1776,
+          "window_contains_truth": 1758,
+          "truth_in_candidates": 1758,
+          "n_candidates": {
+            "n": 1758,
+            "mean": 32.522,
+            "median": 32.0,
+            "p95": 32.0,
+            "max": 64.0,
+            "min": 24.0
+          }
+        },
+        "del | first segment": {
+          "cases": 186,
+          "V4_ok": 186,
+          "V4_erased_nt": {
+            "n": 186,
+            "mean": 32.0,
+            "median": 32.0,
+            "p95": 32.0,
+            "max": 32.0,
+            "min": 32.0
+          },
+          "V5-T0": {
+            "accepted": 186,
+            "correct": 186,
+            "false": 0,
+            "erased_nt": {
+              "n": 186,
+              "mean": 32.0,
+              "median": 32.0,
+              "p95": 32.0,
+              "max": 32.0,
+              "min": 32.0
+            },
+            "trials": {
+              "n": 186,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 186
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 186,
+            "correct": 186,
+            "false": 0,
+            "erased_nt": {
+              "n": 186,
+              "mean": 20.409,
+              "median": 20.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 16.0
+            },
+            "trials": {
+              "n": 186,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 74,
+            "reads_with_wrong_kept_bytes": 62,
+            "window_status": {
+              "LOW": 186
+            }
+          },
+          "V5-T1": {
+            "accepted": 186,
+            "correct": 186,
+            "false": 0,
+            "erased_nt": {
+              "n": 186,
+              "mean": 4.0,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 186,
+              "mean": 32.0,
+              "median": 32.0,
+              "p95": 32.0,
+              "max": 32.0,
+              "min": 32.0
+            },
+            "window_status": {
+              "LOW": 186
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 186,
+            "correct": 186,
+            "false": 0,
+            "erased_nt": {
+              "n": 186,
+              "mean": 32.0,
+              "median": 32.0,
+              "p95": 32.0,
+              "max": 32.0,
+              "min": 32.0
+            },
+            "trials": {
+              "n": 186,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 186
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 186,
+            "correct": 186,
+            "false": 0,
+            "erased_nt": {
+              "n": 186,
+              "mean": 4.0,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 186,
+              "mean": 32.0,
+              "median": 32.0,
+              "p95": 32.0,
+              "max": 32.0,
+              "min": 32.0
+            },
+            "window_status": {
+              "LOW": 186
+            }
+          },
+          "detected": 186,
+          "window_contains_truth": 186,
+          "truth_in_candidates": 186,
+          "n_candidates": {
+            "n": 186,
+            "mean": 32.0,
+            "median": 32.0,
+            "p95": 32.0,
+            "max": 32.0,
+            "min": 32.0
+          }
+        },
+        "del | interior segment": {
+          "cases": 1260,
+          "V4_ok": 1260,
+          "V4_erased_nt": {
+            "n": 1260,
+            "mean": 32.0,
+            "median": 32.0,
+            "p95": 32.0,
+            "max": 32.0,
+            "min": 32.0
+          },
+          "V5-T0": {
+            "accepted": 1260,
+            "correct": 1260,
+            "false": 0,
+            "erased_nt": {
+              "n": 1260,
+              "mean": 32.0,
+              "median": 32.0,
+              "p95": 32.0,
+              "max": 32.0,
+              "min": 32.0
+            },
+            "trials": {
+              "n": 1260,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 1260
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 1260,
+            "correct": 1260,
+            "false": 0,
+            "erased_nt": {
+              "n": 1260,
+              "mean": 20.0,
+              "median": 20.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 8.0
+            },
+            "trials": {
+              "n": 1260,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 523,
+            "reads_with_wrong_kept_bytes": 411,
+            "window_status": {
+              "LOW": 1260
+            }
+          },
+          "V5-T1": {
+            "accepted": 1260,
+            "correct": 1260,
+            "false": 0,
+            "erased_nt": {
+              "n": 1260,
+              "mean": 4.0,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 1260,
+              "mean": 32.0,
+              "median": 32.0,
+              "p95": 32.0,
+              "max": 32.0,
+              "min": 32.0
+            },
+            "window_status": {
+              "LOW": 1260
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 1260,
+            "correct": 1260,
+            "false": 0,
+            "erased_nt": {
+              "n": 1260,
+              "mean": 32.0,
+              "median": 32.0,
+              "p95": 32.0,
+              "max": 32.0,
+              "min": 32.0
+            },
+            "trials": {
+              "n": 1260,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 1260
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 1260,
+            "correct": 1260,
+            "false": 0,
+            "erased_nt": {
+              "n": 1260,
+              "mean": 4.0,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 1260,
+              "mean": 32.0,
+              "median": 32.0,
+              "p95": 32.0,
+              "max": 32.0,
+              "min": 32.0
+            },
+            "window_status": {
+              "LOW": 1260
+            }
+          },
+          "detected": 1260,
+          "window_contains_truth": 1260,
+          "truth_in_candidates": 1260,
+          "n_candidates": {
+            "n": 1260,
+            "mean": 32.0,
+            "median": 32.0,
+            "p95": 32.0,
+            "max": 32.0,
+            "min": 32.0
+          }
+        },
+        "del | last segment": {
+          "cases": 138,
+          "V4_ok": 138,
+          "V4_erased_nt": {
+            "n": 138,
+            "mean": 24.0,
+            "median": 24.0,
+            "p95": 24.0,
+            "max": 24.0,
+            "min": 24.0
+          },
+          "V5-T0": {
+            "accepted": 138,
+            "correct": 138,
+            "false": 0,
+            "erased_nt": {
+              "n": 138,
+              "mean": 24.0,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 24.0
+            },
+            "trials": {
+              "n": 138,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 138
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 138,
+            "correct": 138,
+            "false": 0,
+            "erased_nt": {
+              "n": 138,
+              "mean": 14.87,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 8.0
+            },
+            "trials": {
+              "n": 138,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 46,
+            "reads_with_wrong_kept_bytes": 45,
+            "window_status": {
+              "LOW": 138
+            }
+          },
+          "V5-T1": {
+            "accepted": 138,
+            "correct": 138,
+            "false": 0,
+            "erased_nt": {
+              "n": 138,
+              "mean": 4.0,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 138,
+              "mean": 24.0,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 24.0
+            },
+            "window_status": {
+              "LOW": 138
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 138,
+            "correct": 138,
+            "false": 0,
+            "erased_nt": {
+              "n": 138,
+              "mean": 24.0,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 24.0
+            },
+            "trials": {
+              "n": 138,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 138
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 138,
+            "correct": 138,
+            "false": 0,
+            "erased_nt": {
+              "n": 138,
+              "mean": 4.0,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 138,
+              "mean": 24.0,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 24.0
+            },
+            "window_status": {
+              "LOW": 138
+            }
+          },
+          "detected": 138,
+          "window_contains_truth": 138,
+          "truth_in_candidates": 138,
+          "n_candidates": {
+            "n": 138,
+            "mean": 24.0,
+            "median": 24.0,
+            "p95": 24.0,
+            "max": 24.0,
+            "min": 24.0
+          }
+        },
+        "del | marker base": {
+          "cases": 96,
+          "V4_ok": 96,
+          "V4_erased_nt": {
+            "n": 96,
+            "mean": 53.167,
+            "median": 64.0,
+            "p95": 64.0,
+            "max": 64.0,
+            "min": 24.0
+          },
+          "V5-T0": {
+            "accepted": 96,
+            "correct": 96,
+            "false": 0,
+            "erased_nt": {
+              "n": 96,
+              "mean": 39.333,
+              "median": 32.0,
+              "p95": 64.0,
+              "max": 64.0,
+              "min": 24.0
+            },
+            "trials": {
+              "n": 96,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "MEDIUM": 66,
+              "LOW": 30
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 96,
+            "correct": 96,
+            "false": 0,
+            "erased_nt": {
+              "n": 96,
+              "mean": 6.25,
+              "median": 0.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 96,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 42,
+            "reads_with_wrong_kept_bytes": 30,
+            "window_status": {
+              "MEDIUM": 66,
+              "LOW": 30
+            }
+          },
+          "V5-T1": {
+            "accepted": 96,
+            "correct": 96,
+            "false": 0,
+            "erased_nt": {
+              "n": 96,
+              "mean": 1.25,
+              "median": 0.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 96,
+              "mean": 53.312,
+              "median": 64.0,
+              "p95": 64.0,
+              "max": 64.0,
+              "min": 24.0
+            },
+            "window_status": {
+              "MEDIUM": 66,
+              "LOW": 30
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 96,
+            "correct": 96,
+            "false": 0,
+            "erased_nt": {
+              "n": 96,
+              "mean": 39.333,
+              "median": 32.0,
+              "p95": 64.0,
+              "max": 64.0,
+              "min": 24.0
+            },
+            "trials": {
+              "n": 96,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "MEDIUM": 66,
+              "LOW": 30
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 96,
+            "correct": 96,
+            "false": 0,
+            "erased_nt": {
+              "n": 96,
+              "mean": 1.25,
+              "median": 0.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 96,
+              "mean": 53.312,
+              "median": 64.0,
+              "p95": 64.0,
+              "max": 64.0,
+              "min": 24.0
+            },
+            "window_status": {
+              "MEDIUM": 66,
+              "LOW": 30
+            }
+          },
+          "detected": 96,
+          "window_contains_truth": 78,
+          "truth_in_candidates": 78,
+          "n_candidates": {
+            "n": 78,
+            "mean": 58.538,
+            "median": 64.0,
+            "p95": 64.0,
+            "max": 64.0,
+            "min": 32.0
+          }
+        },
+        "del | marker-adjacent": {
+          "cases": 96,
+          "V4_ok": 96,
+          "V4_erased_nt": {
+            "n": 96,
+            "mean": 31.5,
+            "median": 32.0,
+            "p95": 32.0,
+            "max": 32.0,
+            "min": 24.0
+          },
+          "V5-T0": {
+            "accepted": 96,
+            "correct": 96,
+            "false": 0,
+            "erased_nt": {
+              "n": 96,
+              "mean": 31.5,
+              "median": 32.0,
+              "p95": 32.0,
+              "max": 32.0,
+              "min": 24.0
+            },
+            "trials": {
+              "n": 96,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 96
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 96,
+            "correct": 96,
+            "false": 0,
+            "erased_nt": {
+              "n": 96,
+              "mean": 19.667,
+              "median": 20.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 12.0
+            },
+            "trials": {
+              "n": 96,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 139,
+            "reads_with_wrong_kept_bytes": 96,
+            "window_status": {
+              "LOW": 96
+            }
+          },
+          "V5-T1": {
+            "accepted": 96,
+            "correct": 96,
+            "false": 0,
+            "erased_nt": {
+              "n": 96,
+              "mean": 4.0,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 96,
+              "mean": 31.5,
+              "median": 32.0,
+              "p95": 32.0,
+              "max": 32.0,
+              "min": 24.0
+            },
+            "window_status": {
+              "LOW": 96
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 96,
+            "correct": 96,
+            "false": 0,
+            "erased_nt": {
+              "n": 96,
+              "mean": 31.5,
+              "median": 32.0,
+              "p95": 32.0,
+              "max": 32.0,
+              "min": 24.0
+            },
+            "trials": {
+              "n": 96,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 96
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 96,
+            "correct": 96,
+            "false": 0,
+            "erased_nt": {
+              "n": 96,
+              "mean": 4.0,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 96,
+              "mean": 31.5,
+              "median": 32.0,
+              "p95": 32.0,
+              "max": 32.0,
+              "min": 24.0
+            },
+            "window_status": {
+              "LOW": 96
+            }
+          },
+          "detected": 96,
+          "window_contains_truth": 96,
+          "truth_in_candidates": 96,
+          "n_candidates": {
+            "n": 96,
+            "mean": 31.5,
+            "median": 32.0,
+            "p95": 32.0,
+            "max": 32.0,
+            "min": 24.0
+          }
+        },
+        "ins | all": {
+          "cases": 1776,
+          "V4_ok": 1776,
+          "V4_erased_nt": {
+            "n": 1776,
+            "mean": 42.252,
+            "median": 32.0,
+            "p95": 64.0,
+            "max": 64.0,
+            "min": 24.0
+          },
+          "V5-T0": {
+            "accepted": 1776,
+            "correct": 1776,
+            "false": 0,
+            "erased_nt": {
+              "n": 1776,
+              "mean": 40.14,
+              "median": 32.0,
+              "p95": 60.0,
+              "max": 64.0,
+              "min": 24.0
+            },
+            "trials": {
+              "n": 1776,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 1748,
+              "MEDIUM": 28
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 1776,
+            "correct": 1776,
+            "false": 0,
+            "erased_nt": {
+              "n": 1776,
+              "mean": 18.257,
+              "median": 20.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1776,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 989,
+            "reads_with_wrong_kept_bytes": 701,
+            "window_status": {
+              "LOW": 1748,
+              "MEDIUM": 28
+            }
+          },
+          "V5-T1": {
+            "accepted": 1776,
+            "correct": 1776,
+            "false": 0,
+            "erased_nt": {
+              "n": 1776,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1776,
+              "mean": 33.111,
+              "median": 27.0,
+              "p95": 52.0,
+              "max": 59.0,
+              "min": 17.0
+            },
+            "window_status": {
+              "LOW": 1748,
+              "MEDIUM": 28
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 1776,
+            "correct": 1776,
+            "false": 0,
+            "erased_nt": {
+              "n": 1776,
+              "mean": 30.885,
+              "median": 32.0,
+              "p95": 32.0,
+              "max": 60.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1776,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "MEDIUM": 1740,
+              "HIGH": 28,
+              "LOW": 8
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 1776,
+            "correct": 1776,
+            "false": 0,
+            "erased_nt": {
+              "n": 1776,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1776,
+              "mean": 33.111,
+              "median": 27.0,
+              "p95": 52.0,
+              "max": 59.0,
+              "min": 17.0
+            },
+            "window_status": {
+              "MEDIUM": 1740,
+              "HIGH": 28,
+              "LOW": 8
+            }
+          },
+          "detected": 1776,
+          "window_contains_truth": 1768,
+          "truth_in_candidates": 1768,
+          "n_candidates": {
+            "n": 1768,
+            "mean": 33.109,
+            "median": 27.0,
+            "p95": 52.0,
+            "max": 59.0,
+            "min": 17.0
+          }
+        },
+        "ins | first segment": {
+          "cases": 192,
+          "V4_ok": 192,
+          "V4_erased_nt": {
+            "n": 192,
+            "mean": 32.0,
+            "median": 32.0,
+            "p95": 32.0,
+            "max": 32.0,
+            "min": 32.0
+          },
+          "V5-T0": {
+            "accepted": 192,
+            "correct": 192,
+            "false": 0,
+            "erased_nt": {
+              "n": 192,
+              "mean": 31.958,
+              "median": 32.0,
+              "p95": 32.0,
+              "max": 32.0,
+              "min": 28.0
+            },
+            "trials": {
+              "n": 192,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 192
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 192,
+            "correct": 192,
+            "false": 0,
+            "erased_nt": {
+              "n": 192,
+              "mean": 18.354,
+              "median": 16.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 12.0
+            },
+            "trials": {
+              "n": 192,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 109,
+            "reads_with_wrong_kept_bytes": 83,
+            "window_status": {
+              "LOW": 192
+            }
+          },
+          "V5-T1": {
+            "accepted": 192,
+            "correct": 192,
+            "false": 0,
+            "erased_nt": {
+              "n": 192,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 192,
+              "mean": 23.24,
+              "median": 23.0,
+              "p95": 26.0,
+              "max": 26.0,
+              "min": 21.0
+            },
+            "window_status": {
+              "LOW": 192
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 192,
+            "correct": 192,
+            "false": 0,
+            "erased_nt": {
+              "n": 192,
+              "mean": 31.958,
+              "median": 32.0,
+              "p95": 32.0,
+              "max": 32.0,
+              "min": 28.0
+            },
+            "trials": {
+              "n": 192,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "MEDIUM": 192
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 192,
+            "correct": 192,
+            "false": 0,
+            "erased_nt": {
+              "n": 192,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 192,
+              "mean": 23.24,
+              "median": 23.0,
+              "p95": 26.0,
+              "max": 26.0,
+              "min": 21.0
+            },
+            "window_status": {
+              "MEDIUM": 192
+            }
+          },
+          "detected": 192,
+          "window_contains_truth": 192,
+          "truth_in_candidates": 192,
+          "n_candidates": {
+            "n": 192,
+            "mean": 23.24,
+            "median": 23.0,
+            "p95": 26.0,
+            "max": 26.0,
+            "min": 21.0
+          }
+        },
+        "ins | interior segment": {
+          "cases": 1302,
+          "V4_ok": 1302,
+          "V4_erased_nt": {
+            "n": 1302,
+            "mean": 43.429,
+            "median": 32.0,
+            "p95": 64.0,
+            "max": 64.0,
+            "min": 32.0
+          },
+          "V5-T0": {
+            "accepted": 1302,
+            "correct": 1302,
+            "false": 0,
+            "erased_nt": {
+              "n": 1302,
+              "mean": 41.048,
+              "median": 32.0,
+              "p95": 60.0,
+              "max": 60.0,
+              "min": 32.0
+            },
+            "trials": {
+              "n": 1302,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 1302
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 1302,
+            "correct": 1302,
+            "false": 0,
+            "erased_nt": {
+              "n": 1302,
+              "mean": 19.06,
+              "median": 20.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 12.0
+            },
+            "trials": {
+              "n": 1302,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 640,
+            "reads_with_wrong_kept_bytes": 459,
+            "window_status": {
+              "LOW": 1302
+            }
+          },
+          "V5-T1": {
+            "accepted": 1302,
+            "correct": 1302,
+            "false": 0,
+            "erased_nt": {
+              "n": 1302,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1302,
+              "mean": 34.183,
+              "median": 27.0,
+              "p95": 52.0,
+              "max": 54.0,
+              "min": 19.0
+            },
+            "window_status": {
+              "LOW": 1302
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 1302,
+            "correct": 1302,
+            "false": 0,
+            "erased_nt": {
+              "n": 1302,
+              "mean": 32.0,
+              "median": 32.0,
+              "p95": 32.0,
+              "max": 32.0,
+              "min": 32.0
+            },
+            "trials": {
+              "n": 1302,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "MEDIUM": 1302
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 1302,
+            "correct": 1302,
+            "false": 0,
+            "erased_nt": {
+              "n": 1302,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1302,
+              "mean": 34.183,
+              "median": 27.0,
+              "p95": 52.0,
+              "max": 54.0,
+              "min": 19.0
+            },
+            "window_status": {
+              "MEDIUM": 1302
+            }
+          },
+          "detected": 1302,
+          "window_contains_truth": 1302,
+          "truth_in_candidates": 1302,
+          "n_candidates": {
+            "n": 1302,
+            "mean": 34.183,
+            "median": 27.0,
+            "p95": 52.0,
+            "max": 54.0,
+            "min": 19.0
+          }
+        },
+        "ins | last segment": {
+          "cases": 138,
+          "V4_ok": 138,
+          "V4_erased_nt": {
+            "n": 138,
+            "mean": 40.0,
+            "median": 40.0,
+            "p95": 56.0,
+            "max": 56.0,
+            "min": 24.0
+          },
+          "V5-T0": {
+            "accepted": 138,
+            "correct": 138,
+            "false": 0,
+            "erased_nt": {
+              "n": 138,
+              "mean": 37.333,
+              "median": 36.0,
+              "p95": 52.0,
+              "max": 52.0,
+              "min": 24.0
+            },
+            "trials": {
+              "n": 138,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 138
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 138,
+            "correct": 138,
+            "false": 0,
+            "erased_nt": {
+              "n": 138,
+              "mean": 13.855,
+              "median": 12.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 8.0
+            },
+            "trials": {
+              "n": 138,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 51,
+            "reads_with_wrong_kept_bytes": 43,
+            "window_status": {
+              "LOW": 138
+            }
+          },
+          "V5-T1": {
+            "accepted": 138,
+            "correct": 138,
+            "false": 0,
+            "erased_nt": {
+              "n": 138,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 138,
+              "mean": 32.065,
+              "median": 31.5,
+              "p95": 50.0,
+              "max": 51.0,
+              "min": 17.0
+            },
+            "window_status": {
+              "LOW": 138
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 138,
+            "correct": 138,
+            "false": 0,
+            "erased_nt": {
+              "n": 138,
+              "mean": 24.0,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 24.0
+            },
+            "trials": {
+              "n": 138,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "MEDIUM": 138
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 138,
+            "correct": 138,
+            "false": 0,
+            "erased_nt": {
+              "n": 138,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 138,
+              "mean": 32.065,
+              "median": 31.5,
+              "p95": 50.0,
+              "max": 51.0,
+              "min": 17.0
+            },
+            "window_status": {
+              "MEDIUM": 138
+            }
+          },
+          "detected": 138,
+          "window_contains_truth": 138,
+          "truth_in_candidates": 138,
+          "n_candidates": {
+            "n": 138,
+            "mean": 32.065,
+            "median": 31.5,
+            "p95": 50.0,
+            "max": 51.0,
+            "min": 17.0
+          }
+        },
+        "ins | marker-adjacent": {
+          "cases": 144,
+          "V4_ok": 144,
+          "V4_erased_nt": {
+            "n": 144,
+            "mean": 47.444,
+            "median": 44.0,
+            "p95": 64.0,
+            "max": 64.0,
+            "min": 24.0
+          },
+          "V5-T0": {
+            "accepted": 144,
+            "correct": 144,
+            "false": 0,
+            "erased_nt": {
+              "n": 144,
+              "mean": 45.528,
+              "median": 42.0,
+              "p95": 64.0,
+              "max": 64.0,
+              "min": 24.0
+            },
+            "trials": {
+              "n": 144,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 116,
+              "MEDIUM": 28
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 144,
+            "correct": 144,
+            "false": 0,
+            "erased_nt": {
+              "n": 144,
+              "mean": 15.083,
+              "median": 20.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 144,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 189,
+            "reads_with_wrong_kept_bytes": 116,
+            "window_status": {
+              "LOW": 116,
+              "MEDIUM": 28
+            }
+          },
+          "V5-T1": {
+            "accepted": 144,
+            "correct": 144,
+            "false": 0,
+            "erased_nt": {
+              "n": 144,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 144,
+              "mean": 37.59,
+              "median": 36.5,
+              "p95": 54.0,
+              "max": 59.0,
+              "min": 18.0
+            },
+            "window_status": {
+              "LOW": 116,
+              "MEDIUM": 28
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 144,
+            "correct": 144,
+            "false": 0,
+            "erased_nt": {
+              "n": 144,
+              "mean": 25.972,
+              "median": 32.0,
+              "p95": 32.0,
+              "max": 60.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 144,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "MEDIUM": 108,
+              "HIGH": 28,
+              "LOW": 8
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 144,
+            "correct": 144,
+            "false": 0,
+            "erased_nt": {
+              "n": 144,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 144,
+              "mean": 37.59,
+              "median": 36.5,
+              "p95": 54.0,
+              "max": 59.0,
+              "min": 18.0
+            },
+            "window_status": {
+              "MEDIUM": 108,
+              "HIGH": 28,
+              "LOW": 8
+            }
+          },
+          "detected": 144,
+          "window_contains_truth": 136,
+          "truth_in_candidates": 136,
+          "n_candidates": {
+            "n": 136,
+            "mean": 37.824,
+            "median": 43.0,
+            "p95": 54.0,
+            "max": 59.0,
+            "min": 18.0
+          }
+        }
+      },
+      "v4-indel (24/3, r=20)": {
+        "del | all": {
+          "cases": 1878,
+          "V4_ok": 1878,
+          "V4_erased_nt": {
+            "n": 1878,
+            "mean": 25.602,
+            "median": 24.0,
+            "p95": 48.0,
+            "max": 48.0,
+            "min": 16.0
+          },
+          "V5-T0": {
+            "accepted": 1878,
+            "correct": 1878,
+            "false": 0,
+            "erased_nt": {
+              "n": 1878,
+              "mean": 23.165,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 48.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1878,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 1715,
+              "MEDIUM": 163
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 1878,
+            "correct": 1878,
+            "false": 0,
+            "erased_nt": {
+              "n": 1878,
+              "mean": 12.986,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1878,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 796,
+            "reads_with_wrong_kept_bytes": 684,
+            "window_status": {
+              "LOW": 1715,
+              "MEDIUM": 163
+            }
+          },
+          "V5-T1": {
+            "accepted": 1878,
+            "correct": 1878,
+            "false": 0,
+            "erased_nt": {
+              "n": 1878,
+              "mean": 3.653,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1878,
+              "mean": 25.862,
+              "median": 24.0,
+              "p95": 51.0,
+              "max": 51.0,
+              "min": 16.0
+            },
+            "window_status": {
+              "LOW": 1715,
+              "MEDIUM": 163
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 1878,
+            "correct": 1878,
+            "false": 0,
+            "erased_nt": {
+              "n": 1878,
+              "mean": 23.165,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 48.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1878,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 1715,
+              "MEDIUM": 163
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 1878,
+            "correct": 1878,
+            "false": 0,
+            "erased_nt": {
+              "n": 1878,
+              "mean": 3.653,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1878,
+              "mean": 25.862,
+              "median": 24.0,
+              "p95": 51.0,
+              "max": 51.0,
+              "min": 16.0
+            },
+            "window_status": {
+              "LOW": 1715,
+              "MEDIUM": 163
+            }
+          },
+          "detected": 1878,
+          "window_contains_truth": 1855,
+          "truth_in_candidates": 1855,
+          "n_candidates": {
+            "n": 1855,
+            "mean": 25.889,
+            "median": 24.0,
+            "p95": 51.0,
+            "max": 51.0,
+            "min": 16.0
+          }
+        },
+        "del | first segment": {
+          "cases": 138,
+          "V4_ok": 138,
+          "V4_erased_nt": {
+            "n": 138,
+            "mean": 24.0,
+            "median": 24.0,
+            "p95": 24.0,
+            "max": 24.0,
+            "min": 24.0
+          },
+          "V5-T0": {
+            "accepted": 138,
+            "correct": 138,
+            "false": 0,
+            "erased_nt": {
+              "n": 138,
+              "mean": 24.0,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 24.0
+            },
+            "trials": {
+              "n": 138,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 138
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 138,
+            "correct": 138,
+            "false": 0,
+            "erased_nt": {
+              "n": 138,
+              "mean": 13.507,
+              "median": 12.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 12.0
+            },
+            "trials": {
+              "n": 138,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 48,
+            "reads_with_wrong_kept_bytes": 48,
+            "window_status": {
+              "LOW": 138
+            }
+          },
+          "V5-T1": {
+            "accepted": 138,
+            "correct": 138,
+            "false": 0,
+            "erased_nt": {
+              "n": 138,
+              "mean": 4.0,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 138,
+              "mean": 24.0,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 24.0
+            },
+            "window_status": {
+              "LOW": 138
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 138,
+            "correct": 138,
+            "false": 0,
+            "erased_nt": {
+              "n": 138,
+              "mean": 24.0,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 24.0
+            },
+            "trials": {
+              "n": 138,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 138
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 138,
+            "correct": 138,
+            "false": 0,
+            "erased_nt": {
+              "n": 138,
+              "mean": 4.0,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 138,
+              "mean": 24.0,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 24.0
+            },
+            "window_status": {
+              "LOW": 138
+            }
+          },
+          "detected": 138,
+          "window_contains_truth": 138,
+          "truth_in_candidates": 138,
+          "n_candidates": {
+            "n": 138,
+            "mean": 24.0,
+            "median": 24.0,
+            "p95": 24.0,
+            "max": 24.0,
+            "min": 24.0
+          }
+        },
+        "del | interior segment": {
+          "cases": 1320,
+          "V4_ok": 1320,
+          "V4_erased_nt": {
+            "n": 1320,
+            "mean": 24.0,
+            "median": 24.0,
+            "p95": 24.0,
+            "max": 24.0,
+            "min": 24.0
+          },
+          "V5-T0": {
+            "accepted": 1320,
+            "correct": 1320,
+            "false": 0,
+            "erased_nt": {
+              "n": 1320,
+              "mean": 24.0,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 24.0
+            },
+            "trials": {
+              "n": 1320,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 1320
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 1320,
+            "correct": 1320,
+            "false": 0,
+            "erased_nt": {
+              "n": 1320,
+              "mean": 14.709,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 1320,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 506,
+            "reads_with_wrong_kept_bytes": 428,
+            "window_status": {
+              "LOW": 1320
+            }
+          },
+          "V5-T1": {
+            "accepted": 1320,
+            "correct": 1320,
+            "false": 0,
+            "erased_nt": {
+              "n": 1320,
+              "mean": 4.0,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 1320,
+              "mean": 24.0,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 24.0
+            },
+            "window_status": {
+              "LOW": 1320
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 1320,
+            "correct": 1320,
+            "false": 0,
+            "erased_nt": {
+              "n": 1320,
+              "mean": 24.0,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 24.0
+            },
+            "trials": {
+              "n": 1320,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 1320
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 1320,
+            "correct": 1320,
+            "false": 0,
+            "erased_nt": {
+              "n": 1320,
+              "mean": 4.0,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 1320,
+              "mean": 24.0,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 24.0
+            },
+            "window_status": {
+              "LOW": 1320
+            }
+          },
+          "detected": 1320,
+          "window_contains_truth": 1320,
+          "truth_in_candidates": 1320,
+          "n_candidates": {
+            "n": 1320,
+            "mean": 24.0,
+            "median": 24.0,
+            "p95": 24.0,
+            "max": 24.0,
+            "min": 24.0
+          }
+        },
+        "del | last segment": {
+          "cases": 90,
+          "V4_ok": 90,
+          "V4_erased_nt": {
+            "n": 90,
+            "mean": 16.0,
+            "median": 16.0,
+            "p95": 16.0,
+            "max": 16.0,
+            "min": 16.0
+          },
+          "V5-T0": {
+            "accepted": 90,
+            "correct": 90,
+            "false": 0,
+            "erased_nt": {
+              "n": 90,
+              "mean": 16.0,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 16.0
+            },
+            "trials": {
+              "n": 90,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 90
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 90,
+            "correct": 90,
+            "false": 0,
+            "erased_nt": {
+              "n": 90,
+              "mean": 8.0,
+              "median": 8.0,
+              "p95": 8.0,
+              "max": 8.0,
+              "min": 8.0
+            },
+            "trials": {
+              "n": 90,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 41,
+            "reads_with_wrong_kept_bytes": 41,
+            "window_status": {
+              "LOW": 90
+            }
+          },
+          "V5-T1": {
+            "accepted": 90,
+            "correct": 90,
+            "false": 0,
+            "erased_nt": {
+              "n": 90,
+              "mean": 4.0,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 90,
+              "mean": 16.0,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 16.0
+            },
+            "window_status": {
+              "LOW": 90
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 90,
+            "correct": 90,
+            "false": 0,
+            "erased_nt": {
+              "n": 90,
+              "mean": 16.0,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 16.0
+            },
+            "trials": {
+              "n": 90,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 90
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 90,
+            "correct": 90,
+            "false": 0,
+            "erased_nt": {
+              "n": 90,
+              "mean": 4.0,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 90,
+              "mean": 16.0,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 16.0
+            },
+            "window_status": {
+              "LOW": 90
+            }
+          },
+          "detected": 90,
+          "window_contains_truth": 90,
+          "truth_in_candidates": 90,
+          "n_candidates": {
+            "n": 90,
+            "mean": 16.0,
+            "median": 16.0,
+            "p95": 16.0,
+            "max": 16.0,
+            "min": 16.0
+          }
+        },
+        "del | marker base": {
+          "cases": 198,
+          "V4_ok": 198,
+          "V4_erased_nt": {
+            "n": 198,
+            "mean": 43.071,
+            "median": 48.0,
+            "p95": 48.0,
+            "max": 48.0,
+            "min": 16.0
+          },
+          "V5-T0": {
+            "accepted": 198,
+            "correct": 198,
+            "false": 0,
+            "erased_nt": {
+              "n": 198,
+              "mean": 19.96,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 48.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 198,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "MEDIUM": 163,
+              "LOW": 35
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 198,
+            "correct": 198,
+            "false": 0,
+            "erased_nt": {
+              "n": 198,
+              "mean": 2.545,
+              "median": 0.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 198,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 41,
+            "reads_with_wrong_kept_bytes": 35,
+            "window_status": {
+              "MEDIUM": 163,
+              "LOW": 35
+            }
+          },
+          "V5-T1": {
+            "accepted": 198,
+            "correct": 198,
+            "false": 0,
+            "erased_nt": {
+              "n": 198,
+              "mean": 0.707,
+              "median": 0.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 198,
+              "mean": 45.54,
+              "median": 51.0,
+              "p95": 51.0,
+              "max": 51.0,
+              "min": 16.0
+            },
+            "window_status": {
+              "MEDIUM": 163,
+              "LOW": 35
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 198,
+            "correct": 198,
+            "false": 0,
+            "erased_nt": {
+              "n": 198,
+              "mean": 19.96,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 48.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 198,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "MEDIUM": 163,
+              "LOW": 35
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 198,
+            "correct": 198,
+            "false": 0,
+            "erased_nt": {
+              "n": 198,
+              "mean": 0.707,
+              "median": 0.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 198,
+              "mean": 45.54,
+              "median": 51.0,
+              "p95": 51.0,
+              "max": 51.0,
+              "min": 16.0
+            },
+            "window_status": {
+              "MEDIUM": 163,
+              "LOW": 35
+            }
+          },
+          "detected": 198,
+          "window_contains_truth": 175,
+          "truth_in_candidates": 175,
+          "n_candidates": {
+            "n": 175,
+            "mean": 48.417,
+            "median": 51.0,
+            "p95": 51.0,
+            "max": 51.0,
+            "min": 24.0
+          }
+        },
+        "del | marker-adjacent": {
+          "cases": 132,
+          "V4_ok": 132,
+          "V4_erased_nt": {
+            "n": 132,
+            "mean": 23.636,
+            "median": 24.0,
+            "p95": 24.0,
+            "max": 24.0,
+            "min": 16.0
+          },
+          "V5-T0": {
+            "accepted": 132,
+            "correct": 132,
+            "false": 0,
+            "erased_nt": {
+              "n": 132,
+              "mean": 23.636,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 16.0
+            },
+            "trials": {
+              "n": 132,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 132
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 132,
+            "correct": 132,
+            "false": 0,
+            "erased_nt": {
+              "n": 132,
+              "mean": 14.273,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 132,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 160,
+            "reads_with_wrong_kept_bytes": 132,
+            "window_status": {
+              "LOW": 132
+            }
+          },
+          "V5-T1": {
+            "accepted": 132,
+            "correct": 132,
+            "false": 0,
+            "erased_nt": {
+              "n": 132,
+              "mean": 4.0,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 132,
+              "mean": 23.636,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 16.0
+            },
+            "window_status": {
+              "LOW": 132
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 132,
+            "correct": 132,
+            "false": 0,
+            "erased_nt": {
+              "n": 132,
+              "mean": 23.636,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 16.0
+            },
+            "trials": {
+              "n": 132,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 132
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 132,
+            "correct": 132,
+            "false": 0,
+            "erased_nt": {
+              "n": 132,
+              "mean": 4.0,
+              "median": 4.0,
+              "p95": 4.0,
+              "max": 4.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 132,
+              "mean": 23.636,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 16.0
+            },
+            "window_status": {
+              "LOW": 132
+            }
+          },
+          "detected": 132,
+          "window_contains_truth": 132,
+          "truth_in_candidates": 132,
+          "n_candidates": {
+            "n": 132,
+            "mean": 23.636,
+            "median": 24.0,
+            "p95": 24.0,
+            "max": 24.0,
+            "min": 16.0
+          }
+        },
+        "ins | all": {
+          "cases": 1878,
+          "V4_ok": 1878,
+          "V4_erased_nt": {
+            "n": 1878,
+            "mean": 32.26,
+            "median": 24.0,
+            "p95": 48.0,
+            "max": 48.0,
+            "min": 16.0
+          },
+          "V5-T0": {
+            "accepted": 1878,
+            "correct": 1878,
+            "false": 0,
+            "erased_nt": {
+              "n": 1878,
+              "mean": 23.87,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 48.0,
+              "min": 12.0
+            },
+            "trials": {
+              "n": 1878,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 1782,
+              "MEDIUM": 96
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 1878,
+            "correct": 1878,
+            "false": 0,
+            "erased_nt": {
+              "n": 1878,
+              "mean": 13.037,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1878,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 820,
+            "reads_with_wrong_kept_bytes": 691,
+            "window_status": {
+              "LOW": 1782,
+              "MEDIUM": 96
+            }
+          },
+          "V5-T1": {
+            "accepted": 1878,
+            "correct": 1878,
+            "false": 0,
+            "erased_nt": {
+              "n": 1878,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1878,
+              "mean": 25.908,
+              "median": 21.0,
+              "p95": 41.0,
+              "max": 46.0,
+              "min": 12.0
+            },
+            "window_status": {
+              "LOW": 1782,
+              "MEDIUM": 96
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 1878,
+            "correct": 1878,
+            "false": 0,
+            "erased_nt": {
+              "n": 1878,
+              "mean": 22.337,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1878,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "MEDIUM": 1763,
+              "LOW": 19,
+              "HIGH": 96
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 1878,
+            "correct": 1878,
+            "false": 0,
+            "erased_nt": {
+              "n": 1878,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1878,
+              "mean": 25.908,
+              "median": 21.0,
+              "p95": 41.0,
+              "max": 46.0,
+              "min": 12.0
+            },
+            "window_status": {
+              "MEDIUM": 1763,
+              "LOW": 19,
+              "HIGH": 96
+            }
+          },
+          "detected": 1878,
+          "window_contains_truth": 1859,
+          "truth_in_candidates": 1859,
+          "n_candidates": {
+            "n": 1859,
+            "mean": 25.892,
+            "median": 21.0,
+            "p95": 41.0,
+            "max": 46.0,
+            "min": 12.0
+          }
+        },
+        "ins | first segment": {
+          "cases": 144,
+          "V4_ok": 144,
+          "V4_erased_nt": {
+            "n": 144,
+            "mean": 24.0,
+            "median": 24.0,
+            "p95": 24.0,
+            "max": 24.0,
+            "min": 24.0
+          },
+          "V5-T0": {
+            "accepted": 144,
+            "correct": 144,
+            "false": 0,
+            "erased_nt": {
+              "n": 144,
+              "mean": 23.833,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 20.0
+            },
+            "trials": {
+              "n": 144,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 144
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 144,
+            "correct": 144,
+            "false": 0,
+            "erased_nt": {
+              "n": 144,
+              "mean": 14.722,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 12.0
+            },
+            "trials": {
+              "n": 144,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 69,
+            "reads_with_wrong_kept_bytes": 55,
+            "window_status": {
+              "LOW": 144
+            }
+          },
+          "V5-T1": {
+            "accepted": 144,
+            "correct": 144,
+            "false": 0,
+            "erased_nt": {
+              "n": 144,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 144,
+              "mean": 15.618,
+              "median": 15.0,
+              "p95": 19.0,
+              "max": 20.0,
+              "min": 14.0
+            },
+            "window_status": {
+              "LOW": 144
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 144,
+            "correct": 144,
+            "false": 0,
+            "erased_nt": {
+              "n": 144,
+              "mean": 23.833,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 20.0
+            },
+            "trials": {
+              "n": 144,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "MEDIUM": 144
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 144,
+            "correct": 144,
+            "false": 0,
+            "erased_nt": {
+              "n": 144,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 144,
+              "mean": 15.618,
+              "median": 15.0,
+              "p95": 19.0,
+              "max": 20.0,
+              "min": 14.0
+            },
+            "window_status": {
+              "MEDIUM": 144
+            }
+          },
+          "detected": 144,
+          "window_contains_truth": 144,
+          "truth_in_candidates": 144,
+          "n_candidates": {
+            "n": 144,
+            "mean": 15.618,
+            "median": 15.0,
+            "p95": 19.0,
+            "max": 20.0,
+            "min": 14.0
+          }
+        },
+        "ins | interior segment": {
+          "cases": 1380,
+          "V4_ok": 1380,
+          "V4_erased_nt": {
+            "n": 1380,
+            "mean": 32.8,
+            "median": 24.0,
+            "p95": 48.0,
+            "max": 48.0,
+            "min": 24.0
+          },
+          "V5-T0": {
+            "accepted": 1380,
+            "correct": 1380,
+            "false": 0,
+            "erased_nt": {
+              "n": 1380,
+              "mean": 23.994,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 20.0
+            },
+            "trials": {
+              "n": 1380,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 1380
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 1380,
+            "correct": 1380,
+            "false": 0,
+            "erased_nt": {
+              "n": 1380,
+              "mean": 13.986,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 1380,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 512,
+            "reads_with_wrong_kept_bytes": 440,
+            "window_status": {
+              "LOW": 1380
+            }
+          },
+          "V5-T1": {
+            "accepted": 1380,
+            "correct": 1380,
+            "false": 0,
+            "erased_nt": {
+              "n": 1380,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1380,
+              "mean": 26.426,
+              "median": 21.0,
+              "p95": 41.0,
+              "max": 45.0,
+              "min": 14.0
+            },
+            "window_status": {
+              "LOW": 1380
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 1380,
+            "correct": 1380,
+            "false": 0,
+            "erased_nt": {
+              "n": 1380,
+              "mean": 23.994,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 20.0
+            },
+            "trials": {
+              "n": 1380,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "MEDIUM": 1380
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 1380,
+            "correct": 1380,
+            "false": 0,
+            "erased_nt": {
+              "n": 1380,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 1380,
+              "mean": 26.426,
+              "median": 21.0,
+              "p95": 41.0,
+              "max": 45.0,
+              "min": 14.0
+            },
+            "window_status": {
+              "MEDIUM": 1380
+            }
+          },
+          "detected": 1380,
+          "window_contains_truth": 1380,
+          "truth_in_candidates": 1380,
+          "n_candidates": {
+            "n": 1380,
+            "mean": 26.426,
+            "median": 21.0,
+            "p95": 41.0,
+            "max": 45.0,
+            "min": 14.0
+          }
+        },
+        "ins | last segment": {
+          "cases": 90,
+          "V4_ok": 90,
+          "V4_erased_nt": {
+            "n": 90,
+            "mean": 20.0,
+            "median": 16.0,
+            "p95": 40.0,
+            "max": 40.0,
+            "min": 16.0
+          },
+          "V5-T0": {
+            "accepted": 90,
+            "correct": 90,
+            "false": 0,
+            "erased_nt": {
+              "n": 90,
+              "mean": 15.956,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 12.0
+            },
+            "trials": {
+              "n": 90,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 90
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 90,
+            "correct": 90,
+            "false": 0,
+            "erased_nt": {
+              "n": 90,
+              "mean": 8.578,
+              "median": 8.0,
+              "p95": 12.0,
+              "max": 12.0,
+              "min": 4.0
+            },
+            "trials": {
+              "n": 90,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 30,
+            "reads_with_wrong_kept_bytes": 30,
+            "window_status": {
+              "LOW": 90
+            }
+          },
+          "V5-T1": {
+            "accepted": 90,
+            "correct": 90,
+            "false": 0,
+            "erased_nt": {
+              "n": 90,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 90,
+              "mean": 18.022,
+              "median": 14.0,
+              "p95": 39.0,
+              "max": 39.0,
+              "min": 12.0
+            },
+            "window_status": {
+              "LOW": 90
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 90,
+            "correct": 90,
+            "false": 0,
+            "erased_nt": {
+              "n": 90,
+              "mean": 15.956,
+              "median": 16.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 12.0
+            },
+            "trials": {
+              "n": 90,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "MEDIUM": 90
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 90,
+            "correct": 90,
+            "false": 0,
+            "erased_nt": {
+              "n": 90,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 90,
+              "mean": 18.022,
+              "median": 14.0,
+              "p95": 39.0,
+              "max": 39.0,
+              "min": 12.0
+            },
+            "window_status": {
+              "MEDIUM": 90
+            }
+          },
+          "detected": 90,
+          "window_contains_truth": 90,
+          "truth_in_candidates": 90,
+          "n_candidates": {
+            "n": 90,
+            "mean": 18.022,
+            "median": 14.0,
+            "p95": 39.0,
+            "max": 39.0,
+            "min": 12.0
+          }
+        },
+        "ins | marker-adjacent": {
+          "cases": 264,
+          "V4_ok": 264,
+          "V4_erased_nt": {
+            "n": 264,
+            "mean": 38.121,
+            "median": 48.0,
+            "p95": 48.0,
+            "max": 48.0,
+            "min": 16.0
+          },
+          "V5-T0": {
+            "accepted": 264,
+            "correct": 264,
+            "false": 0,
+            "erased_nt": {
+              "n": 264,
+              "mean": 25.939,
+              "median": 24.0,
+              "p95": 48.0,
+              "max": 48.0,
+              "min": 16.0
+            },
+            "trials": {
+              "n": 264,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "LOW": 168,
+              "MEDIUM": 96
+            }
+          },
+          "V5-T0/0.5": {
+            "accepted": 264,
+            "correct": 264,
+            "false": 0,
+            "erased_nt": {
+              "n": 264,
+              "mean": 8.682,
+              "median": 12.0,
+              "p95": 16.0,
+              "max": 16.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 264,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 209,
+            "reads_with_wrong_kept_bytes": 166,
+            "window_status": {
+              "LOW": 168,
+              "MEDIUM": 96
+            }
+          },
+          "V5-T1": {
+            "accepted": 264,
+            "correct": 264,
+            "false": 0,
+            "erased_nt": {
+              "n": 264,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 264,
+              "mean": 31.504,
+              "median": 37.0,
+              "p95": 43.0,
+              "max": 46.0,
+              "min": 12.0
+            },
+            "window_status": {
+              "LOW": 168,
+              "MEDIUM": 96
+            }
+          },
+          "V5-T0+Q": {
+            "accepted": 264,
+            "correct": 264,
+            "false": 0,
+            "erased_nt": {
+              "n": 264,
+              "mean": 15.03,
+              "median": 24.0,
+              "p95": 24.0,
+              "max": 24.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 264,
+              "mean": 1.0,
+              "median": 1.0,
+              "p95": 1.0,
+              "max": 1.0,
+              "min": 1.0
+            },
+            "wrong_kept_bytes": 0,
+            "reads_with_wrong_kept_bytes": 0,
+            "window_status": {
+              "MEDIUM": 149,
+              "LOW": 19,
+              "HIGH": 96
+            }
+          },
+          "V5-T1+Q": {
+            "accepted": 264,
+            "correct": 264,
+            "false": 0,
+            "erased_nt": {
+              "n": 264,
+              "mean": 0.0,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0,
+              "min": 0.0
+            },
+            "trials": {
+              "n": 264,
+              "mean": 31.504,
+              "median": 37.0,
+              "p95": 43.0,
+              "max": 46.0,
+              "min": 12.0
+            },
+            "window_status": {
+              "MEDIUM": 149,
+              "LOW": 19,
+              "HIGH": 96
+            }
+          },
+          "detected": 264,
+          "window_contains_truth": 245,
+          "truth_in_candidates": 245,
+          "n_candidates": {
+            "n": 245,
+            "mean": 31.812,
+            "median": 37.0,
+            "p95": 43.79999999999998,
+            "max": 46.0,
+            "min": 12.0
+          }
+        }
+      }
+    },
+    "seconds": {
+      "v4-balanced (24/3)": {
+        "V5-T0": 2.721,
+        "V5-T0/0.5": 2.621,
+        "V5-T1": 5.402,
+        "V5-T0+Q": 2.735,
+        "V5-T1+Q": 5.573
+      },
+      "period 16/2": {
+        "V5-T0": 3.135,
+        "V5-T0/0.5": 2.99,
+        "V5-T1": 4.923,
+        "V5-T0+Q": 3.401,
+        "V5-T1+Q": 5.279
+      },
+      "period 32/2 (V4 round 1)": {
+        "V5-T0": 2.559,
+        "V5-T0/0.5": 2.525,
+        "V5-T1": 5.671,
+        "V5-T0+Q": 2.423,
+        "V5-T1+Q": 5.792
+      },
+      "v4-indel (24/3, r=20)": {
+        "V5-T0": 2.571,
+        "V5-T0/0.5": 2.571,
+        "V5-T1": 5.701,
+        "V5-T0+Q": 2.652,
+        "V5-T1+Q": 6.285
+      }
+    },
+    "wall_seconds": 81.4
+  }
+}

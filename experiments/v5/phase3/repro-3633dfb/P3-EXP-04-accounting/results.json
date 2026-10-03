@@ -1,0 +1,1034 @@
+{
+  "experiment": "P3-EXP-04 per-strand accounting",
+  "simulated": true,
+  "config": {
+    "layout": {
+      "payload_bytes": 40,
+      "inner_parity": 16,
+      "marker_period": 24,
+      "marker_len": 3,
+      "frame_bytes": 70,
+      "strand_nt": 313,
+      "markers": 11
+    },
+    "strands": 4096,
+    "strand_seed": 3401,
+    "channel_seed": 3402,
+    "coverage": 1,
+    "points": {
+      "0.05%+0.05%": {
+        "insertion_rate": 0.0005,
+        "deletion_rate": 0.0005
+      },
+      "0.1%+0.1%": {
+        "insertion_rate": 0.001,
+        "deletion_rate": 0.001
+      },
+      "0.2%+0.2%": {
+        "insertion_rate": 0.002,
+        "deletion_rate": 0.002
+      },
+      "0.3%+0.3%": {
+        "insertion_rate": 0.003,
+        "deletion_rate": 0.003
+      },
+      "0.5%+0.5%": {
+        "insertion_rate": 0.005,
+        "deletion_rate": 0.005
+      },
+      "1%+1%": {
+        "insertion_rate": 0.01,
+        "deletion_rate": 0.01
+      },
+      "mixed-L2 (0.5% sub, 0.2%+0.2%)": {
+        "substitution_rate": 0.005,
+        "insertion_rate": 0.002,
+        "deletion_rate": 0.002
+      }
+    },
+    "band": 6,
+    "recovery": {
+      "max_shift": 1,
+      "max_window_segments": 2,
+      "max_candidates": 64,
+      "max_trials": 1024,
+      "max_joint_windows": 2,
+      "max_read_nt": 8256,
+      "trial_batch": 8192,
+      "substitution_prior": 0.005,
+      "keep_byte_error": 0.001,
+      "high_confidence": 0.001,
+      "false_accept_budget": 1e-09,
+      "phases": [
+        "T0",
+        "T1",
+        "T2"
+      ]
+    },
+    "truth": "truth_channel.simulate_with_truth (verified byte-identical to vnxdna.v4.channel.simulate_batch)"
+  },
+  "provenance": {
+    "timestamp_utc": "2026-10-03T08:50:30Z",
+    "vnx_version": "4.0.0",
+    "vnx4_format_version": [
+      4,
+      0
+    ],
+    "git_commit": "3633dfb86e76bb3d0661ecf8bf000cbb2da2359b",
+    "cpu_model": "Intel(R) Xeon(R) Gold 6240 CPU @ 2.60GHz",
+    "logical_cpus": 8,
+    "ram_bytes": 33654890496,
+    "os": "Linux 6.8.0-146-generic",
+    "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "packages": {
+      "numpy": "2.5.3",
+      "cryptography": "46.0.7",
+      "zstandard": "0.25.0",
+      "reedsolo": "1.7.0",
+      "pydantic": "2.13.5",
+      "typer": "0.27.2"
+    },
+    "v4_control_tag": "v4.0.0",
+    "v4_control_commit": "a358ae8284066d0608f329b47a53e55018bbfa79",
+    "commit_under_test": "3633dfb86e76bb3d0661ecf8bf000cbb2da2359b",
+    "worktree_dirty": false,
+    "native_toolchain": {
+      "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+      "rustc": "rustc 1.75.0 (82e1608df 2023-12-21) (built from a source tarball)",
+      "cargo": "cargo 1.75.0"
+    },
+    "cpu_flags": [
+      "avx",
+      "avx2",
+      "avx512bw",
+      "avx512f",
+      "bmi2",
+      "popcnt",
+      "sse4_2"
+    ],
+    "config_sha256": "3d3dfdb314fc220f5c0f9daca68f71941fa74536bc6f829f06f40c7aca6b071c"
+  },
+  "results": {
+    "summary": {
+      "0.05%+0.05%": {
+        "reads": 4096,
+        "true_indels": 1283,
+        "channel": {
+          "substitution_rate": 0.0,
+          "insertion_rate": 0.0005,
+          "deletion_rate": 0.0005,
+          "dropout_rate": 0.0,
+          "coverage": 1,
+          "coverage_model": "fixed",
+          "coverage_dispersion": 5.0,
+          "duplication_rate": 0.0,
+          "homopolymer_min_run": 3,
+          "homopolymer_indel_multiplier": 1.0,
+          "homopolymer_substitution_multiplier": 1.0,
+          "gc_bias_strength": 0.0,
+          "gc_bias_optimum": 0.5,
+          "burst_rate": 0.0,
+          "burst_max_len": 0,
+          "n_rate": 0.0,
+          "reverse_complement_rate": 0.0,
+          "quality_correct": 35,
+          "quality_error": 12,
+          "quality_informative": 0.0,
+          "shuffle_window": 0,
+          "seed": 3402
+        },
+        "reads_sha256": "56b4486937c6fbb098dd92b22917e2ef8afbd38a64983d53fd8ee254488f645b",
+        "V4_reads_ok": 4077,
+        "V5_reads_ok": 4091,
+        "V4_false": 0,
+        "V5_false": 0,
+        "V5_smart_path": 14,
+        "erased_nt_per_true_indel_phase1_style": {
+          "V4": 27.5
+        },
+        "per_indel_erased_nt": {
+          "V4": {
+            "n": 1197,
+            "mean": 28.257,
+            "median": 24.0,
+            "p95": 48.0,
+            "max": 48.0,
+            "min": 8.0
+          },
+          "V5-production": {
+            "n": 1230,
+            "mean": 27.951,
+            "median": 24.0,
+            "p95": 48.0,
+            "max": 48.0,
+            "min": 0.0
+          },
+          "V5-localisation": {
+            "n": 1212,
+            "mean": 4.205,
+            "median": 4.0,
+            "p95": 24.0,
+            "max": 24.0,
+            "min": 0.0
+          }
+        },
+        "indel_classes": {
+          "V5-production": {
+            "complete segment erasure": 1213,
+            "undetected": 48,
+            "fully recovered": 9,
+            "partially recovered": 8,
+            "unresolved": 5
+          },
+          "V5-localisation": {
+            "fully recovered": 1071,
+            "complete segment erasure": 127,
+            "unresolved": 23,
+            "undetected": 48,
+            "partially recovered": 14
+          },
+          "V4": {
+            "complete segment erasure": 1197,
+            "undetected": 48,
+            "unresolved": 38
+          }
+        },
+        "seconds": {
+          "V4_pass1": 0.052,
+          "V5_pass1": 0.115
+        },
+        "reads_per_second": {
+          "V4": 78452.6,
+          "V5": 35623.0
+        },
+        "rs_load": {
+          "V4_decoded_reads_erased_bytes": {
+            "n": 1085,
+            "mean": 7.854,
+            "median": 6.0,
+            "p95": 12.0,
+            "max": 24.0,
+            "min": 0.0
+          },
+          "V5_only_reads_erased_bytes": {
+            "n": 14,
+            "mean": 10.357,
+            "median": 12.0,
+            "p95": 12.35,
+            "max": 13.0,
+            "min": 0.0
+          },
+          "V5_only_reads_rs_errata": {
+            "n": 14,
+            "mean": 11.429,
+            "median": 12.0,
+            "p95": 14.0,
+            "max": 14.0,
+            "min": 0.0
+          },
+          "V5_localised_erased_bytes": {
+            "n": 1079,
+            "mean": 1.199,
+            "median": 1.0,
+            "p95": 6.0,
+            "max": 13.0,
+            "min": 0.0
+          }
+        },
+        "bases_per_second": {
+          "V4": 24555664.0,
+          "V5": 11149999.0
+        },
+        "local_search_seconds": 0.063
+      },
+      "0.1%+0.1%": {
+        "reads": 4096,
+        "true_indels": 2577,
+        "channel": {
+          "substitution_rate": 0.0,
+          "insertion_rate": 0.001,
+          "deletion_rate": 0.001,
+          "dropout_rate": 0.0,
+          "coverage": 1,
+          "coverage_model": "fixed",
+          "coverage_dispersion": 5.0,
+          "duplication_rate": 0.0,
+          "homopolymer_min_run": 3,
+          "homopolymer_indel_multiplier": 1.0,
+          "homopolymer_substitution_multiplier": 1.0,
+          "gc_bias_strength": 0.0,
+          "gc_bias_optimum": 0.5,
+          "burst_rate": 0.0,
+          "burst_max_len": 0,
+          "n_rate": 0.0,
+          "reverse_complement_rate": 0.0,
+          "quality_correct": 35,
+          "quality_error": 12,
+          "quality_informative": 0.0,
+          "shuffle_window": 0,
+          "seed": 3402
+        },
+        "reads_sha256": "f5189dbeba5455a14546bbd3206978e81d6bf8f499800891df178011a21e9e83",
+        "V4_reads_ok": 4025,
+        "V5_reads_ok": 4077,
+        "V4_false": 0,
+        "V5_false": 0,
+        "V5_smart_path": 52,
+        "erased_nt_per_true_indel_phase1_style": {
+          "V4": 25.8
+        },
+        "per_indel_erased_nt": {
+          "V4": {
+            "n": 2217,
+            "mean": 27.735,
+            "median": 24.0,
+            "p95": 48.0,
+            "max": 48.0,
+            "min": 8.0
+          },
+          "V5-production": {
+            "n": 2345,
+            "mean": 27.123,
+            "median": 24.0,
+            "p95": 48.0,
+            "max": 48.0,
+            "min": 0.0
+          },
+          "V5-localisation": {
+            "n": 2289,
+            "mean": 6.093,
+            "median": 4.0,
+            "p95": 24.0,
+            "max": 24.0,
+            "min": 0.0
+          }
+        },
+        "indel_classes": {
+          "V5-production": {
+            "complete segment erasure": 2282,
+            "undetected": 213,
+            "fully recovered": 40,
+            "unresolved": 19,
+            "partially recovered": 23
+          },
+          "V5-localisation": {
+            "fully recovered": 1804,
+            "complete segment erasure": 438,
+            "undetected": 213,
+            "unresolved": 75,
+            "partially recovered": 47
+          },
+          "V4": {
+            "complete segment erasure": 2217,
+            "undetected": 213,
+            "unresolved": 147
+          }
+        },
+        "seconds": {
+          "V4_pass1": 0.077,
+          "V5_pass1": 0.317
+        },
+        "reads_per_second": {
+          "V4": 53200.5,
+          "V5": 12929.0
+        },
+        "rs_load": {
+          "V4_decoded_reads_erased_bytes": {
+            "n": 1838,
+            "mean": 8.471,
+            "median": 6.0,
+            "p95": 18.0,
+            "max": 36.0,
+            "min": 0.0
+          },
+          "V5_only_reads_erased_bytes": {
+            "n": 52,
+            "mean": 10.519,
+            "median": 12.0,
+            "p95": 13.0,
+            "max": 16.0,
+            "min": 0.0
+          },
+          "V5_only_reads_rs_errata": {
+            "n": 52,
+            "mean": 12.154,
+            "median": 12.0,
+            "p95": 14.0,
+            "max": 16.0,
+            "min": 7.0
+          },
+          "V5_localised_erased_bytes": {
+            "n": 1817,
+            "mean": 1.952,
+            "median": 1.0,
+            "p95": 7.0,
+            "max": 13.0,
+            "min": 0.0
+          }
+        },
+        "bases_per_second": {
+          "V4": 16651756.0,
+          "V5": 4046777.0
+        },
+        "local_search_seconds": 0.24
+      },
+      "0.2%+0.2%": {
+        "reads": 4096,
+        "true_indels": 5119,
+        "channel": {
+          "substitution_rate": 0.0,
+          "insertion_rate": 0.002,
+          "deletion_rate": 0.002,
+          "dropout_rate": 0.0,
+          "coverage": 1,
+          "coverage_model": "fixed",
+          "coverage_dispersion": 5.0,
+          "duplication_rate": 0.0,
+          "homopolymer_min_run": 3,
+          "homopolymer_indel_multiplier": 1.0,
+          "homopolymer_substitution_multiplier": 1.0,
+          "gc_bias_strength": 0.0,
+          "gc_bias_optimum": 0.5,
+          "burst_rate": 0.0,
+          "burst_max_len": 0,
+          "n_rate": 0.0,
+          "reverse_complement_rate": 0.0,
+          "quality_correct": 35,
+          "quality_error": 12,
+          "quality_informative": 0.0,
+          "shuffle_window": 0,
+          "seed": 3402
+        },
+        "reads_sha256": "3f6707d78e84009c28c375b48e0bb9b7ff9df7a64460673733f969b6ae3123cc",
+        "V4_reads_ok": 3757,
+        "V5_reads_ok": 4009,
+        "V4_false": 0,
+        "V5_false": 0,
+        "V5_smart_path": 252,
+        "erased_nt_per_true_indel_phase1_style": {
+          "V4": 24.08
+        },
+        "per_indel_erased_nt": {
+          "V4": {
+            "n": 3621,
+            "mean": 27.325,
+            "median": 24.0,
+            "p95": 48.0,
+            "max": 48.0,
+            "min": 8.0
+          },
+          "V5-production": {
+            "n": 4289,
+            "mean": 25.448,
+            "median": 24.0,
+            "p95": 48.0,
+            "max": 48.0,
+            "min": 0.0
+          },
+          "V5-localisation": {
+            "n": 4163,
+            "mean": 8.635,
+            "median": 4.0,
+            "p95": 24.0,
+            "max": 48.0,
+            "min": 0.0
+          }
+        },
+        "indel_classes": {
+          "V5-production": {
+            "complete segment erasure": 3963,
+            "undetected": 649,
+            "fully recovered": 230,
+            "partially recovered": 96,
+            "unresolved": 181
+          },
+          "V5-localisation": {
+            "fully recovered": 2745,
+            "undetected": 649,
+            "unresolved": 307,
+            "complete segment erasure": 1279,
+            "partially recovered": 139
+          },
+          "V4": {
+            "complete segment erasure": 3621,
+            "undetected": 649,
+            "unresolved": 849
+          }
+        },
+        "seconds": {
+          "V4_pass1": 0.108,
+          "V5_pass1": 1.583
+        },
+        "reads_per_second": {
+          "V4": 37905.6,
+          "V5": 2587.8
+        },
+        "rs_load": {
+          "V4_decoded_reads_erased_bytes": {
+            "n": 2582,
+            "mean": 9.686,
+            "median": 6.0,
+            "p95": 18.0,
+            "max": 46.0,
+            "min": 0.0
+          },
+          "V5_only_reads_erased_bytes": {
+            "n": 252,
+            "mean": 10.321,
+            "median": 12.0,
+            "p95": 13.0,
+            "max": 16.0,
+            "min": 0.0
+          },
+          "V5_only_reads_rs_errata": {
+            "n": 252,
+            "mean": 12.242,
+            "median": 12.0,
+            "p95": 14.0,
+            "max": 16.0,
+            "min": 0.0
+          },
+          "V5_localised_erased_bytes": {
+            "n": 2697,
+            "mean": 3.379,
+            "median": 1.0,
+            "p95": 12.0,
+            "max": 16.0,
+            "min": 0.0
+          }
+        },
+        "bases_per_second": {
+          "V4": 11864453.0,
+          "V5": 809981.0
+        },
+        "local_search_seconds": 1.475
+      },
+      "0.3%+0.3%": {
+        "reads": 4096,
+        "true_indels": 7688,
+        "channel": {
+          "substitution_rate": 0.0,
+          "insertion_rate": 0.003,
+          "deletion_rate": 0.003,
+          "dropout_rate": 0.0,
+          "coverage": 1,
+          "coverage_model": "fixed",
+          "coverage_dispersion": 5.0,
+          "duplication_rate": 0.0,
+          "homopolymer_min_run": 3,
+          "homopolymer_indel_multiplier": 1.0,
+          "homopolymer_substitution_multiplier": 1.0,
+          "gc_bias_strength": 0.0,
+          "gc_bias_optimum": 0.5,
+          "burst_rate": 0.0,
+          "burst_max_len": 0,
+          "n_rate": 0.0,
+          "reverse_complement_rate": 0.0,
+          "quality_correct": 35,
+          "quality_error": 12,
+          "quality_informative": 0.0,
+          "shuffle_window": 0,
+          "seed": 3402
+        },
+        "reads_sha256": "f92973faffd75fd6dd73de7820505d82ec0556c4e3db57ea0706ce2638dd6cfb",
+        "V4_reads_ok": 3316,
+        "V5_reads_ok": 3892,
+        "V4_false": 0,
+        "V5_false": 0,
+        "V5_smart_path": 576,
+        "erased_nt_per_true_indel_phase1_style": {
+          "V4": 22.36
+        },
+        "per_indel_erased_nt": {
+          "V4": {
+            "n": 4225,
+            "mean": 26.956,
+            "median": 24.0,
+            "p95": 48.0,
+            "max": 48.0,
+            "min": 5.333333333333333
+          },
+          "V5-production": {
+            "n": 5820,
+            "mean": 23.313,
+            "median": 24.0,
+            "p95": 48.0,
+            "max": 48.0,
+            "min": 0.0
+          },
+          "V5-localisation": {
+            "n": 5638,
+            "mean": 9.877,
+            "median": 4.0,
+            "p95": 24.0,
+            "max": 48.0,
+            "min": 0.0
+          }
+        },
+        "indel_classes": {
+          "V5-production": {
+            "complete segment erasure": 5021,
+            "undetected": 1340,
+            "fully recovered": 642,
+            "unresolved": 528,
+            "partially recovered": 157
+          },
+          "V5-localisation": {
+            "complete segment erasure": 2107,
+            "fully recovered": 3305,
+            "unresolved": 710,
+            "partially recovered": 226,
+            "undetected": 1340
+          },
+          "V4": {
+            "complete segment erasure": 4225,
+            "undetected": 1340,
+            "unresolved": 2123
+          }
+        },
+        "seconds": {
+          "V4_pass1": 0.122,
+          "V5_pass1": 3.991
+        },
+        "reads_per_second": {
+          "V4": 33676.4,
+          "V5": 1026.2
+        },
+        "rs_load": {
+          "V4_decoded_reads_erased_bytes": {
+            "n": 2686,
+            "mean": 10.71,
+            "median": 12.0,
+            "p95": 24.0,
+            "max": 36.0,
+            "min": 0.0
+          },
+          "V5_only_reads_erased_bytes": {
+            "n": 576,
+            "mean": 9.668,
+            "median": 12.0,
+            "p95": 13.0,
+            "max": 16.0,
+            "min": 0.0
+          },
+          "V5_only_reads_rs_errata": {
+            "n": 576,
+            "mean": 12.009,
+            "median": 13.0,
+            "p95": 14.0,
+            "max": 16.0,
+            "min": 0.0
+          },
+          "V5_localised_erased_bytes": {
+            "n": 3075,
+            "mean": 4.607,
+            "median": 5.0,
+            "p95": 12.0,
+            "max": 16.0,
+            "min": 0.0
+          }
+        },
+        "bases_per_second": {
+          "V4": 10540713.0,
+          "V5": 321201.0
+        },
+        "local_search_seconds": 3.87
+      },
+      "0.5%+0.5%": {
+        "reads": 4096,
+        "true_indels": 12746,
+        "channel": {
+          "substitution_rate": 0.0,
+          "insertion_rate": 0.005,
+          "deletion_rate": 0.005,
+          "dropout_rate": 0.0,
+          "coverage": 1,
+          "coverage_model": "fixed",
+          "coverage_dispersion": 5.0,
+          "duplication_rate": 0.0,
+          "homopolymer_min_run": 3,
+          "homopolymer_indel_multiplier": 1.0,
+          "homopolymer_substitution_multiplier": 1.0,
+          "gc_bias_strength": 0.0,
+          "gc_bias_optimum": 0.5,
+          "burst_rate": 0.0,
+          "burst_max_len": 0,
+          "n_rate": 0.0,
+          "reverse_complement_rate": 0.0,
+          "quality_correct": 35,
+          "quality_error": 12,
+          "quality_informative": 0.0,
+          "shuffle_window": 0,
+          "seed": 3402
+        },
+        "reads_sha256": "b5344e3d7de9d3002b5c475317223438f8eb1d820b16dd6514839e40801a9865",
+        "V4_reads_ok": 2341,
+        "V5_reads_ok": 3374,
+        "V4_false": 0,
+        "V5_false": 0,
+        "V5_smart_path": 1033,
+        "erased_nt_per_true_indel_phase1_style": {
+          "V4": 19.54
+        },
+        "per_indel_erased_nt": {
+          "V4": {
+            "n": 4080,
+            "mean": 26.229,
+            "median": 24.0,
+            "p95": 48.0,
+            "max": 48.0,
+            "min": 5.333333333333333
+          },
+          "V5-production": {
+            "n": 7235,
+            "mean": 20.223,
+            "median": 24.0,
+            "p95": 48.0,
+            "max": 48.0,
+            "min": 0.0
+          },
+          "V5-localisation": {
+            "n": 6954,
+            "mean": 10.913,
+            "median": 4.0,
+            "p95": 24.0,
+            "max": 40.0,
+            "min": 0.0
+          }
+        },
+        "indel_classes": {
+          "V5-production": {
+            "unresolved": 2542,
+            "complete segment erasure": 5659,
+            "partially recovered": 210,
+            "undetected": 2969,
+            "fully recovered": 1366
+          },
+          "V5-localisation": {
+            "unresolved": 2823,
+            "fully recovered": 3555,
+            "complete segment erasure": 3123,
+            "partially recovered": 276,
+            "undetected": 2969
+          },
+          "V4": {
+            "unresolved": 5697,
+            "complete segment erasure": 4080,
+            "undetected": 2969
+          }
+        },
+        "seconds": {
+          "V4_pass1": 0.14,
+          "V5_pass1": 11.605
+        },
+        "reads_per_second": {
+          "V4": 29308.1,
+          "V5": 352.9
+        },
+        "rs_load": {
+          "V4_decoded_reads_erased_bytes": {
+            "n": 2160,
+            "mean": 12.533,
+            "median": 12.0,
+            "p95": 24.0,
+            "max": 64.0,
+            "min": 0.0
+          },
+          "V5_only_reads_erased_bytes": {
+            "n": 1033,
+            "mean": 9.637,
+            "median": 12.0,
+            "p95": 14.0,
+            "max": 16.0,
+            "min": 0.0
+          },
+          "V5_only_reads_rs_errata": {
+            "n": 1033,
+            "mean": 12.219,
+            "median": 13.0,
+            "p95": 15.0,
+            "max": 16.0,
+            "min": 0.0
+          },
+          "V5_localised_erased_bytes": {
+            "n": 2980,
+            "mean": 6.47,
+            "median": 6.0,
+            "p95": 13.0,
+            "max": 16.0,
+            "min": 0.0
+          }
+        },
+        "bases_per_second": {
+          "V4": 9173435.0,
+          "V5": 110458.0
+        },
+        "local_search_seconds": 11.466
+      },
+      "1%+1%": {
+        "reads": 4096,
+        "true_indels": 25149,
+        "channel": {
+          "substitution_rate": 0.0,
+          "insertion_rate": 0.01,
+          "deletion_rate": 0.01,
+          "dropout_rate": 0.0,
+          "coverage": 1,
+          "coverage_model": "fixed",
+          "coverage_dispersion": 5.0,
+          "duplication_rate": 0.0,
+          "homopolymer_min_run": 3,
+          "homopolymer_indel_multiplier": 1.0,
+          "homopolymer_substitution_multiplier": 1.0,
+          "gc_bias_strength": 0.0,
+          "gc_bias_optimum": 0.5,
+          "burst_rate": 0.0,
+          "burst_max_len": 0,
+          "n_rate": 0.0,
+          "reverse_complement_rate": 0.0,
+          "quality_correct": 35,
+          "quality_error": 12,
+          "quality_informative": 0.0,
+          "shuffle_window": 0,
+          "seed": 3402
+        },
+        "reads_sha256": "585ece4be53f331a2c75f870ed5de49ce99cd9140af60d8fd35468f77d30f96a",
+        "V4_reads_ok": 669,
+        "V5_reads_ok": 1563,
+        "V4_false": 0,
+        "V5_false": 0,
+        "V5_smart_path": 894,
+        "erased_nt_per_true_indel_phase1_style": {
+          "V4": 14.64
+        },
+        "per_indel_erased_nt": {
+          "V4": {
+            "n": 1695,
+            "mean": 24.972,
+            "median": 24.0,
+            "p95": 48.0,
+            "max": 48.0,
+            "min": 4.8
+          },
+          "V5-production": {
+            "n": 4759,
+            "mean": 15.459,
+            "median": 16.0,
+            "p95": 48.0,
+            "max": 48.0,
+            "min": 0.0
+          },
+          "V5-localisation": {
+            "n": 4510,
+            "mean": 10.181,
+            "median": 8.0,
+            "p95": 24.0,
+            "max": 24.0,
+            "min": 0.0
+          }
+        },
+        "indel_classes": {
+          "V5-production": {
+            "fully recovered": 1459,
+            "complete segment erasure": 3141,
+            "undetected": 8106,
+            "unresolved": 12284,
+            "partially recovered": 159
+          },
+          "V5-localisation": {
+            "fully recovered": 2212,
+            "complete segment erasure": 2090,
+            "undetected": 8106,
+            "unresolved": 12533,
+            "partially recovered": 208
+          },
+          "V4": {
+            "unresolved": 15348,
+            "undetected": 8106,
+            "complete segment erasure": 1695
+          }
+        },
+        "seconds": {
+          "V4_pass1": 0.147,
+          "V5_pass1": 25.951
+        },
+        "reads_per_second": {
+          "V4": 27924.4,
+          "V5": 157.8
+        },
+        "rs_load": {
+          "V4_decoded_reads_erased_bytes": {
+            "n": 658,
+            "mean": 16.225,
+            "median": 16.0,
+            "p95": 30.0,
+            "max": 46.0,
+            "min": 0.0
+          },
+          "V5_only_reads_erased_bytes": {
+            "n": 894,
+            "mean": 8.851,
+            "median": 11.0,
+            "p95": 13.349999999999909,
+            "max": 16.0,
+            "min": 0.0
+          },
+          "V5_only_reads_rs_errata": {
+            "n": 894,
+            "mean": 11.978,
+            "median": 13.0,
+            "p95": 14.349999999999909,
+            "max": 16.0,
+            "min": 0.0
+          },
+          "V5_localised_erased_bytes": {
+            "n": 1468,
+            "mean": 7.916,
+            "median": 7.0,
+            "p95": 13.0,
+            "max": 16.0,
+            "min": 0.0
+          }
+        },
+        "bases_per_second": {
+          "V4": 8740337.0,
+          "V5": 49391.0
+        },
+        "local_search_seconds": 25.805
+      },
+      "mixed-L2 (0.5% sub, 0.2%+0.2%)": {
+        "reads": 4096,
+        "true_indels": 5119,
+        "channel": {
+          "substitution_rate": 0.005,
+          "insertion_rate": 0.002,
+          "deletion_rate": 0.002,
+          "dropout_rate": 0.0,
+          "coverage": 1,
+          "coverage_model": "fixed",
+          "coverage_dispersion": 5.0,
+          "duplication_rate": 0.0,
+          "homopolymer_min_run": 3,
+          "homopolymer_indel_multiplier": 1.0,
+          "homopolymer_substitution_multiplier": 1.0,
+          "gc_bias_strength": 0.0,
+          "gc_bias_optimum": 0.5,
+          "burst_rate": 0.0,
+          "burst_max_len": 0,
+          "n_rate": 0.0,
+          "reverse_complement_rate": 0.0,
+          "quality_correct": 35,
+          "quality_error": 12,
+          "quality_informative": 0.0,
+          "shuffle_window": 0,
+          "seed": 3402
+        },
+        "reads_sha256": "124b23e23b6e1cac56d9d95140c9881b1554a2e047636361c968acd826f1ca69",
+        "V4_reads_ok": 3539,
+        "V5_reads_ok": 3957,
+        "V4_false": 0,
+        "V5_false": 0,
+        "V5_smart_path": 418,
+        "erased_nt_per_true_indel_phase1_style": {
+          "V4": 24.18
+        },
+        "per_indel_erased_nt": {
+          "V4": {
+            "n": 3189,
+            "mean": 27.178,
+            "median": 24.0,
+            "p95": 48.0,
+            "max": 48.0,
+            "min": 8.0
+          },
+          "V5-production": {
+            "n": 4174,
+            "mean": 24.275,
+            "median": 24.0,
+            "p95": 48.0,
+            "max": 64.0,
+            "min": 0.0
+          },
+          "V5-localisation": {
+            "n": 4031,
+            "mean": 8.441,
+            "median": 4.0,
+            "p95": 24.0,
+            "max": 64.0,
+            "min": 0.0
+          }
+        },
+        "indel_classes": {
+          "V5-production": {
+            "complete segment erasure": 3662,
+            "fully recovered": 352,
+            "undetected": 646,
+            "partially recovered": 160,
+            "unresolved": 299
+          },
+          "V5-localisation": {
+            "fully recovered": 2696,
+            "undetected": 646,
+            "unresolved": 442,
+            "complete segment erasure": 1200,
+            "partially recovered": 135
+          },
+          "V4": {
+            "complete segment erasure": 3189,
+            "unresolved": 1284,
+            "undetected": 646
+          }
+        },
+        "seconds": {
+          "V4_pass1": 0.12,
+          "V5_pass1": 2.554
+        },
+        "reads_per_second": {
+          "V4": 34093.3,
+          "V5": 1603.7
+        },
+        "rs_load": {
+          "V4_decoded_reads_erased_bytes": {
+            "n": 2364,
+            "mean": 9.272,
+            "median": 6.0,
+            "p95": 18.0,
+            "max": 46.0,
+            "min": 0.0
+          },
+          "V5_only_reads_erased_bytes": {
+            "n": 418,
+            "mean": 8.909,
+            "median": 10.0,
+            "p95": 13.0,
+            "max": 16.0,
+            "min": 0.0
+          },
+          "V5_only_reads_rs_errata": {
+            "n": 418,
+            "mean": 11.78,
+            "median": 12.0,
+            "p95": 14.0,
+            "max": 16.0,
+            "min": 0.0
+          },
+          "V5_localised_erased_bytes": {
+            "n": 2637,
+            "mean": 3.271,
+            "median": 1.0,
+            "p95": 12.0,
+            "max": 16.0,
+            "min": 0.0
+          }
+        },
+        "bases_per_second": {
+          "V4": 10671203.0,
+          "V5": 501958.0
+        },
+        "local_search_seconds": 2.434
+      }
+    },
+    "wall_seconds": 164.4
+  }
+}

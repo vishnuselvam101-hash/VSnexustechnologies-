@@ -1,0 +1,16 @@
+2e+f,posteriors,frames,hard,soft-erasure,soft-chase,soft-auto
+15,informative,3000,3000,3000,3000,3000
+15,misleading,3000,3000,3000,3000,3000
+15,uninformative,3000,3000,3000,3000,3000
+16,informative,3000,3000,3000,3000,3000
+16,misleading,3000,3000,3000,3000,3000
+16,uninformative,3000,3000,3000,3000,3000
+17,informative,3000,0,3000,2353,3000
+17,misleading,3000,0,0,23,23
+17,uninformative,3000,0,24,270,279
+18,informative,3000,0,3000,2396,3000
+18,misleading,3000,0,0,0,0
+18,uninformative,3000,0,39,346,352
+20,informative,3000,0,3000,1230,3000
+20,misleading,3000,0,0,0,0
+20,uninformative,3000,0,0,7,7

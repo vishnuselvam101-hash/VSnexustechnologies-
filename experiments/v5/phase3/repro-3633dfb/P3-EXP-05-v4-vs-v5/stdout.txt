@@ -1,0 +1,26 @@
+indel 0.2%+0.2%, cov 1                                     seed 0: V4 SUCCESS     0.8s  V5 SUCCESS     3.7s  groups V4 1.0 V5 1.0
+indel 0.2%+0.2%, cov 1                                     seed 1: V4 SUCCESS     0.8s  V5 SUCCESS     3.6s  groups V4 1.0 V5 1.0
+indel 0.2%+0.2%, cov 1                                     seed 2: V4 SUCCESS     0.7s  V5 SUCCESS     3.4s  groups V4 1.0 V5 1.0
+indel 0.3%+0.3%, cov 1                                     seed 0: V4 FAILURE     0.9s  V5 SUCCESS     8.3s  groups V4 0.7184 V5 1.0
+indel 0.3%+0.3%, cov 1                                     seed 1: V4 FAILURE     0.8s  V5 SUCCESS     8.5s  groups V4 0.6408 V5 1.0
+indel 0.3%+0.3%, cov 1                                     seed 2: V4 FAILURE     0.9s  V5 SUCCESS     8.9s  groups V4 0.6893 V5 1.0
+indel 0.4%+0.4%, cov 1                                     seed 0: V4 FAILURE     0.9s  V5 SUCCESS    16.8s  groups V4 0.0097 V5 1.0
+indel 0.4%+0.4%, cov 1                                     seed 1: V4 FAILURE     1.0s  V5 SUCCESS    16.9s  groups V4 0.0291 V5 1.0
+indel 0.4%+0.4%, cov 1                                     seed 2: V4 FAILURE     0.9s  V5 SUCCESS    16.4s  groups V4 0.0583 V5 1.0
+indel 0.5%+0.5%, cov 1                                     seed 0: V4 FAILURE     1.0s  V5 FAILURE    24.1s  groups V4 0.0 V5 0.7282
+indel 0.5%+0.5%, cov 1                                     seed 1: V4 FAILURE     1.0s  V5 FAILURE    24.8s  groups V4 0.0 V5 0.8058
+indel 0.5%+0.5%, cov 1                                     seed 2: V4 FAILURE     1.1s  V5 FAILURE    23.9s  groups V4 0.0 V5 0.699
+mixed L3 (0.5% sub, 0.1%+0.1%, 5% dropout), cov 1          seed 0: V4 SUCCESS     0.7s  V5 SUCCESS     1.8s  groups V4 1.0 V5 1.0
+mixed L3 (0.5% sub, 0.1%+0.1%, 5% dropout), cov 1          seed 1: V4 SUCCESS     0.7s  V5 SUCCESS     1.8s  groups V4 1.0 V5 1.0
+mixed L3 (0.5% sub, 0.1%+0.1%, 5% dropout), cov 1          seed 2: V4 SUCCESS     0.8s  V5 SUCCESS     1.6s  groups V4 1.0 V5 1.0
+mixed (0.3% sub, 0.25%+0.25%, 2% dropout), cov 1           seed 0: V4 FAILURE     0.9s  V5 SUCCESS     7.0s  groups V4 0.7767 V5 1.0
+mixed (0.3% sub, 0.25%+0.25%, 2% dropout), cov 1           seed 1: V4 FAILURE     0.9s  V5 SUCCESS     7.4s  groups V4 0.6311 V5 1.0
+mixed (0.3% sub, 0.25%+0.25%, 2% dropout), cov 1           seed 2: V4 FAILURE     0.9s  V5 SUCCESS     6.8s  groups V4 0.7476 V5 1.0
+harsh (0.5% sub, 0.6%+0.6%, 2% dropout), Poisson cov 3     seed 0: V4 FAILURE     2.9s  V5 FAILURE   118.9s  groups V4 0.0291 V5 0.932
+harsh (0.5% sub, 0.6%+0.6%, 2% dropout), Poisson cov 3     seed 1: V4 FAILURE     2.9s  V5 FAILURE   119.8s  groups V4 0.0097 V5 0.9417
+harsh (0.5% sub, 0.6%+0.6%, 2% dropout), Poisson cov 3     seed 2: V4 FAILURE     2.9s  V5 FAILURE   118.9s  groups V4 0.0388 V5 0.9029
+EXP-0011 (0.2% sub, 0.05%+0.05%, 2% dropout), Poisson cov 3 seed 0: V4 SUCCESS     1.1s  V5 SUCCESS     1.7s  groups V4 1.0 V5 1.0
+EXP-0011 (0.2% sub, 0.05%+0.05%, 2% dropout), Poisson cov 3 seed 1: V4 SUCCESS     1.1s  V5 SUCCESS     1.7s  groups V4 1.0 V5 1.0
+EXP-0011 (0.2% sub, 0.05%+0.05%, 2% dropout), Poisson cov 3 seed 2: V4 SUCCESS     1.1s  V5 SUCCESS     1.8s  groups V4 1.0 V5 1.0
+4 MiB EXP-0011 workers 1: V4 SUCCESS 10.87s  V5 SUCCESS 19.225s
+4 MiB EXP-0011 workers 8: V4 SUCCESS 4.342s  V5 SUCCESS 5.174s

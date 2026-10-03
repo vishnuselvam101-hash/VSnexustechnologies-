@@ -1,0 +1,66 @@
+{
+  "layout": {
+    "payload_bytes": 40,
+    "inner_parity": 16,
+    "marker_period": 24,
+    "marker_len": 3,
+    "frame_bytes": 70,
+    "strand_nt": 313,
+    "markers": 11
+  },
+  "strands": 4096,
+  "strand_seed": 3401,
+  "channel_seed": 3402,
+  "coverage": 1,
+  "points": {
+    "0.05%+0.05%": {
+      "insertion_rate": 0.0005,
+      "deletion_rate": 0.0005
+    },
+    "0.1%+0.1%": {
+      "insertion_rate": 0.001,
+      "deletion_rate": 0.001
+    },
+    "0.2%+0.2%": {
+      "insertion_rate": 0.002,
+      "deletion_rate": 0.002
+    },
+    "0.3%+0.3%": {
+      "insertion_rate": 0.003,
+      "deletion_rate": 0.003
+    },
+    "0.5%+0.5%": {
+      "insertion_rate": 0.005,
+      "deletion_rate": 0.005
+    },
+    "1%+1%": {
+      "insertion_rate": 0.01,
+      "deletion_rate": 0.01
+    },
+    "mixed-L2 (0.5% sub, 0.2%+0.2%)": {
+      "substitution_rate": 0.005,
+      "insertion_rate": 0.002,
+      "deletion_rate": 0.002
+    }
+  },
+  "band": 6,
+  "recovery": {
+    "max_shift": 1,
+    "max_window_segments": 2,
+    "max_candidates": 64,
+    "max_trials": 1024,
+    "max_joint_windows": 2,
+    "max_read_nt": 8256,
+    "trial_batch": 8192,
+    "substitution_prior": 0.005,
+    "keep_byte_error": 0.001,
+    "high_confidence": 0.001,
+    "false_accept_budget": 1e-09,
+    "phases": [
+      "T0",
+      "T1",
+      "T2"
+    ]
+  },
+  "truth": "truth_channel.simulate_with_truth (verified byte-identical to vnxdna.v4.channel.simulate_batch)"
+}

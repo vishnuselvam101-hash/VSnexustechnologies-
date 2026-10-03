@@ -68,6 +68,10 @@ class DecodeOptions:
     # (vnxdna.v5.indel) for reads the V4 path cannot decode, plus consensus realignment in pass 2. Opt-in.
     indel_recovery: str = "segment"
     indel_config: object = None         # vnxdna.v5.indel.recovery.IndelRecoveryConfig (None = defaults)
+    # V5 Phase 4: "off" (default) | "erasure" (GMD) | "chase" | "auto" — bounded soft-information search for reads
+    # every hard path failed, and soft consensus in pass 2. Opt-in; verification is unchanged.
+    soft_decoding: str = "off"
+    soft_config: object = None          # vnxdna.v5.soft.decoder.SoftDecodeConfig (None = defaults for the mode)
 
     def validate(self) -> None:
         if not 1 <= self.workers <= 256:
@@ -87,6 +91,18 @@ class DecodeOptions:
             elif not isinstance(self.indel_config, IndelRecoveryConfig):
                 raise VNXConfigurationError("indel_config must be an IndelRecoveryConfig")
             self.indel_config.validate()
+        if self.soft_decoding not in ("off", "erasure", "chase", "auto"):
+            raise VNXConfigurationError("soft_decoding must be off, erasure, chase or auto")
+        if self.soft_decoding != "off":
+            from dataclasses import replace
+            from ..v5.soft.decoder import SoftDecodeConfig
+            if self.soft_config is None:
+                self.soft_config = SoftDecodeConfig(mode=self.soft_decoding)
+            elif not isinstance(self.soft_config, SoftDecodeConfig):
+                raise VNXConfigurationError("soft_config must be a SoftDecodeConfig")
+            else:
+                self.soft_config = replace(self.soft_config, mode=self.soft_decoding)
+            self.soft_config.validate()
 
 
 # ============================================================================ layout detection
@@ -142,9 +158,9 @@ def detect_layout(reads_path: str | os.PathLike, opt: DecodeOptions) -> Layout:
 _P: dict = {}
 
 
-def _p_init(layout: Layout, band: int, costs: SyncCosts, min_q: int, rc: bool, smart_cfg=None) -> None:
-    _P.update(lay=layout, al=TemplateAligner(layout, band, costs), min_q=min_q, rc=rc, smart=smart_cfg)
-    if smart_cfg is not None:
+def _p_init(layout: Layout, band: int, costs: SyncCosts, min_q: int, rc: bool, smart_cfg=None, soft_cfg=None) -> None:
+    _P.update(lay=layout, al=TemplateAligner(layout, band, costs), min_q=min_q, rc=rc, smart=smart_cfg, soft=soft_cfg)
+    if smart_cfg is not None or soft_cfg is not None:
         from ..v5.indel.recovery import Geometry
         _P["geom"] = Geometry(layout)
 
@@ -188,11 +204,13 @@ def _try(reads: list[np.ndarray], quals: list | None) -> tuple:
         hopeless[exact[mism == 0]] = True
     rest = np.flatnonzero(~acc & ~hopeless)
     smart = _P.get("smart")
+    soft = _P.get("soft")
     sstats: Counter = Counter()
+    soft_jobs: list = []                   # (read index, evidence) for the V5 Phase 4 soft stage
     if rest.size:
         rreads = [reads[i] for i in rest]
         rquals = None if quals is None else [quals[i] for i in rest]
-        if smart is None:
+        if smart is None and soft is None:
             pr = _P["al"].project(rreads, rquals, _P["min_q"])
         else:
             from ..v5.indel.path import align_with_path
@@ -206,28 +224,67 @@ def _try(reads: list[np.ndarray], quals: list | None) -> tuple:
         path[idx] = 2
         parsed_fields[idx] = np.stack([P.kind, P.tag, P.group, P.symbol], axis=1)[ok]
         payload[idx] = P.payload[ok]
+        cand_all = np.flatnonzero(~ok & pr.ok)
         if smart is not None:
             # V5 smart indel recovery, only for aligned reads the V4 erasure rule could not decode
             from ..v5.indel import recovery as rv
-            cand_all = np.flatnonzero(~ok & pr.ok)
             for c0 in range(0, cand_all.size, rv.PLAN_CHUNK):     # bounded memory: plans for ≤ PLAN_CHUNK reads at a time
                 cand = cand_all[c0:c0 + rv.PLAN_CHUNK]
                 plans = rv.plan_reads(_P["geom"], rreads, rquals, pr, rpos, cand, smart)
                 outs = rv.recover_batch(_P["geom"], plans, smart)
                 sstats.update(rv.summarize_outcomes(plans, outs, pr.erased[cand]))
-                for j, o in zip(cand.tolist(), outs):
+                for j, o, pl in zip(cand.tolist(), outs, plans):
                     if o.accepted:
                         i = rest[j]
                         acc[i] = True
                         path[i] = 3
                         parsed_fields[i] = o.fields
                         payload[i] = o.payload
+                    elif soft is not None:
+                        soft_jobs.append((int(rest[j]), _soft_evidence(rreads[j], None if rquals is None else rquals[j],
+                                                                       pr.bases[j], pr.erased[j], rpos[j], pl)))
+        elif soft is not None:
+            for j in cand_all.tolist():
+                soft_jobs.append((int(rest[j]), _soft_evidence(rreads[j], None if rquals is None else rquals[j], pr.bases[j],
+                                                               pr.erased[j], rpos[j], None)))
         cost[rest] = np.where(pr.ok, pr.cost, 1 << 28)
         hard_bases[rest] = np.minimum(pr.bases, 3)
         pb = pr.bases.copy()
         pb[pr.erased] = 4
         proj_bases[rest] = pb
+    if soft is not None:
+        # exact-length reads whose markers all match skipped re-alignment: their frame is the read itself
+        T = lay.strand_nt
+        ident = np.arange(T, dtype=np.int16)
+        for i in np.flatnonzero(hopeless & ~acc).tolist():
+            fb = reads[i][_P["geom"].frame_pos]
+            soft_jobs.append((i, _soft_evidence(reads[i], None if quals is None else quals[i], np.minimum(fb, 4),
+                                                fb > 3, ident, None)))
+        if soft_jobs:
+            from ..v5.soft import decoder as sd
+            from ..v5.soft import symbols as ss
+            post = []
+            for _, ev in soft_jobs:
+                try:
+                    post.append(ss.normalise(ev))
+                except ss.SoftInputError:
+                    post.append(np.full((lay.frame_nt, 4), np.nan))    # validated (and rejected) by soft_decode
+            for c0 in range(0, len(soft_jobs), 512):
+                outs = sd.soft_decode(lay, post[c0:c0 + 512], soft)
+                sstats.update({f"soft_{k}": v for k, v in sd.summarize(outs).items() if v is not None})
+                for (i, _), o in zip(soft_jobs[c0:c0 + 512], outs):
+                    if o.accepted and not acc[i]:
+                        acc[i] = True
+                        path[i] = 4
+                        parsed_fields[i] = o.fields
+                        payload[i] = o.payload
     return acc, parsed_fields, payload, proj_bases, cost, path, hard_bases, sstats
+
+
+def _soft_evidence(read, qual, proj_bases, proj_erased, rpos, plan):
+    from ..v5.soft.frames import read_evidence
+    return read_evidence(_P["geom"], np.asarray(read), None if qual is None else np.asarray(qual), proj_bases, proj_erased,
+                         rpos, plan, _P["soft"].default_error)
 
 
 def _orientation(codes: np.ndarray, lengths: np.ndarray) -> np.ndarray:
@@ -281,7 +338,7 @@ def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | N
             acc[sel], fields[sel], payload[sel], proj[sel], cost[sel], path[sel], hard[sel] = (
                 a2[better], f2[better], p2[better], pr2[better], c2[better], path2[better], h2[better])
             rc_used[sel] = ~rc_used[sel]
-            if _P.get("smart") is not None:
+            if _P.get("smart") is not None or _P.get("soft") is not None:
                 oriented = list(reads)
                 oriented_q = None if ql is None else list(ql)
                 for j in np.flatnonzero(better).tolist():
@@ -318,8 +375,11 @@ def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | N
            "stats": {"reads": int(lengths.size), "fast": int((path == 1).sum()), "sync": int((path == 2).sum()),
                      "reverse_complement": int((rc_used & acc).sum()), "pending": int(pend_fields.shape[0]), "orphans": orphans,
                      "unaligned": int((~acc).sum()) - int(pend.size)}}
-    if _P.get("smart") is not None:
-        out["stats"]["smart"] = int((path == 3).sum())
+    if _P.get("smart") is not None or _P.get("soft") is not None:
+        if _P.get("smart") is not None:
+            out["stats"]["smart"] = int((path == 3).sum())
+        if _P.get("soft") is not None:
+            out["stats"]["soft"] = int((path == 4).sum())
         out["indel"] = dict(sstats)
         # raw (oriented) reads of pending records, for consensus realignment in pass 2
         width = lay.strand_nt + _P["al"].band
@@ -463,11 +523,14 @@ def decode_reads(reads_path: str | os.PathLike, output: str | os.PathLike | None
     tmp_root = tempfile.mkdtemp(prefix="vnx4-decode-", dir=workdir)
     try:
         smart = opt.indel_recovery == "smart"
-        spill = Spill(Path(tmp_root), buckets, lay.payload_bytes, lay.frame_nt, lay.strand_nt + opt.band if smart else 0)
+        softm = opt.soft_decoding != "off"
+        spill = Spill(Path(tmp_root), buckets, lay.payload_bytes, lay.frame_nt,
+                      lay.strand_nt + opt.band if (smart or softm) else 0)
         stats = Counter()
         indel_stats: Counter = Counter()
         t1 = time.perf_counter()
-        initargs = (lay, opt.band, opt.sync_costs, opt.min_quality, opt.reverse_complement, opt.indel_config if smart else None)
+        initargs = (lay, opt.band, opt.sync_costs, opt.min_quality, opt.reverse_complement, opt.indel_config if smart else None,
+                    opt.soft_config if softm else None)
 
         def take(res):
             spill.write(res)
@@ -480,7 +543,7 @@ def decode_reads(reads_path: str | os.PathLike, output: str | os.PathLike | None
             n = 0
             for batch in iter_reads(reads_path, opt.batch_reads, max_reads=opt.max_reads):
                 n += batch.count
-                q = batch.quals if (opt.min_quality or smart) else None
+                q = batch.quals if (opt.min_quality or smart or softm) else None
                 yield batch.codes, batch.lengths, q
 
         if opt.workers == 1:
@@ -500,7 +563,7 @@ def decode_reads(reads_path: str | os.PathLike, output: str | os.PathLike | None
         stage["pass1_reads"] = time.perf_counter() - t1
         if stats["reads"] == 0:
             raise VNXFormatError("the read file contains no reads", stage="input")
-        if smart:
+        if smart or softm:
             stats["_indel"] = indel_stats          # pass 2 adds its consensus counters; reported as report["indel_recovery"]
         result = _pass2(spill, lay, opt, stats, stage, t0, output, overwrite, partial_dir, select, select_dir, key, passphrase,
                         tmp_root)
@@ -641,6 +704,53 @@ def _consensus_symbols(pend: np.ndarray, known: dict, lay: Layout, opt: DecodeOp
     stats["consensus_recovered"] += len(out)
     if opt.indel_recovery == "smart" and "raw" in pend.dtype.names:
         out.update(_smart_consensus(cand_keys, out, starts, ends, keys, pend[order], lay, opt, stats))
+    if opt.soft_decoding != "off" and "raw" in pend.dtype.names:
+        out.update(_soft_consensus(cand_keys, out, starts, ends, keys, pend[order], lay, opt, stats))
+    return out
+
+
+def _soft_consensus(cand_keys, done, starts, ends, keys, pend, lay, opt, stats) -> dict:
+    """V5 Phase 4: sum the reads' own soft evidence per still-missing address (≥ 2 reads) and soft-decode it."""
+    from ..v5.indel import recovery as rv
+    from ..v5.indel.path import align_with_path
+    from ..v5.soft import decoder as sd
+    from ..v5.soft import frames as sf
+    from ..v5.soft import symbols as ss
+    geom = rv.Geometry(lay)
+    al = TemplateAligner(lay, opt.band, opt.sync_costs)
+    icfg = opt.indel_config if opt.indel_recovery == "smart" else None
+    wanted = set(cand_keys)
+    ist = stats["_indel"] if isinstance(stats.get("_indel"), Counter) else Counter()
+    keys_out, posts = [], []
+    for s, e in zip(starts.tolist(), ends.tolist()):
+        key = tuple(int(x) for x in keys[s])
+        if key in done or key not in wanted or e - s < 2:
+            continue
+        grp = pend[s:min(e, s + opt.max_pending_per_address)]
+        reads = [grp["raw"][j, : int(grp["rawlen"][j])] for j in range(len(grp))]
+        quals = [grp["rawq"][j, : int(grp["rawlen"][j])] if grp["hasq"][j] else None for j in range(len(grp))]
+        proj, rpos = align_with_path(al, reads, None if any(q is None for q in quals) else quals)
+        evs = []
+        for j in np.flatnonzero(proj.ok).tolist():
+            plan = None if icfg is None else rv.plan_read(geom, reads[j], quals[j], proj.bases[j], proj.erased[j], rpos[j], icfg)
+            evs.append(sf.read_evidence(geom, reads[j], quals[j], proj.bases[j], proj.erased[j], rpos[j], plan,
+                                        opt.soft_config.default_error))
+        if len(evs) < 2:
+            continue
+        try:
+            posts.append(ss.normalise(sf.consensus_evidence(evs)))
+        except ss.SoftInputError:
+            continue
+        keys_out.append(key)
+    out = {}
+    if keys_out:
+        outs = sd.soft_decode(lay, posts, opt.soft_config, expected=keys_out)
+        for key, o in zip(keys_out, outs):
+            ist[f"soft_consensus_{o.mode}"] += 1
+            if o.accepted:
+                out[key] = o.payload
+    stats["_indel"] = ist
+    stats["consensus_recovered_soft"] += len(out)
     return out
 
 
@@ -744,8 +854,13 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
         report = {"superblock": {"archive_id": sb.archive_id.hex(), "container_size": sb.container_size, "groups": sb.group_count,
                                  "outer_code": codec.configuration(), "layout": lay.to_dict()},
                   "reads": dict(stats), **sb_info, "duplicate_conflicts": conflicts}
+        indel = dict(indel or {})
+        softd = {k[5:]: v for k, v in indel.items() if k.startswith("soft_")}
+        indel = {k: v for k, v in indel.items() if not k.startswith("soft_")}
         if opt.indel_recovery == "smart":
-            report["indel_recovery"] = {"mode": "smart", "config": dict(opt.indel_config.__dict__), **dict(indel or {})}
+            report["indel_recovery"] = {"mode": "smart", "config": dict(opt.indel_config.__dict__), **indel}
+        if opt.soft_decoding != "off":
+            report["soft_decoding"] = {"mode": opt.soft_decoding, "config": dict(opt.soft_config.__dict__), **softd}
         if select:
             return _selective(sb, work, fd, run, done, failed, select, select_dir, key, passphrase, overwrite, report, stage, t0)
     finally:

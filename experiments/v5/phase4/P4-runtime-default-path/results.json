@@ -1,0 +1,562 @@
+{
+  "experiment": "P4-runtime-default-path",
+  "simulated": true,
+  "config": {
+    "input": {
+      "size": 4194304,
+      "pattern": "random",
+      "seed": 42
+    },
+    "channel": {
+      "substitution_rate": 0.002,
+      "insertion_rate": 0.0005,
+      "deletion_rate": 0.0005,
+      "dropout_rate": 0.02,
+      "coverage": 3,
+      "coverage_model": "poisson",
+      "seed": 1011
+    },
+    "reps": 3,
+    "baseline_tree_commit": "3633dfb86e76bb3d0661ecf8bf000cbb2da2359b",
+    "native_lib": "/root/VSnexustechnologies-v5/src/vnxdna/v5/_vnx_align.cpython-312-x86_64-linux-gnu.so",
+    "configs": {
+      "V4 default": {},
+      "V5 smart (Phase 3)": {
+        "indel_recovery": "smart"
+      },
+      "V5 smart + soft auto": {
+        "indel_recovery": "smart",
+        "soft_decoding": "auto"
+      }
+    }
+  },
+  "provenance": {
+    "timestamp_utc": "2026-10-03T15:34:20Z",
+    "vnx_version": "4.0.0",
+    "vnx4_format_version": [
+      4,
+      0
+    ],
+    "git_commit": "3633dfb86e76bb3d0661ecf8bf000cbb2da2359b-dirty",
+    "cpu_model": "Intel(R) Xeon(R) Gold 6240 CPU @ 2.60GHz",
+    "logical_cpus": 8,
+    "ram_bytes": 33654890496,
+    "os": "Linux 6.8.0-146-generic",
+    "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "packages": {
+      "numpy": "2.5.3",
+      "cryptography": "46.0.7",
+      "zstandard": "0.25.0",
+      "reedsolo": "1.7.0",
+      "pydantic": "2.13.5",
+      "typer": "0.27.2"
+    },
+    "v4_control_tag": "v4.0.0",
+    "v4_control_commit": "a358ae8284066d0608f329b47a53e55018bbfa79",
+    "commit_under_test": "3633dfb86e76bb3d0661ecf8bf000cbb2da2359b",
+    "worktree_dirty": true,
+    "native_toolchain": {
+      "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+      "rustc": "rustc 1.75.0 (82e1608df 2023-12-21) (built from a source tarball)",
+      "cargo": "cargo 1.75.0"
+    },
+    "cpu_flags": [
+      "avx",
+      "avx2",
+      "avx512bw",
+      "avx512f",
+      "bmi2",
+      "popcnt",
+      "sse4_2"
+    ],
+    "config_sha256": "3a71e3ab75e45d8c2efd6ef63cb5d8a0a04d5e57c2d1c5ea92333a66875bfba4"
+  },
+  "results": {
+    "summary": {
+      "workers 1 | V4 default | phase4": {
+        "verified_success": 3,
+        "runs": 3,
+        "seconds_median": 10.93,
+        "seconds": [
+          10.93,
+          11.125,
+          10.716
+        ],
+        "peak_rss_mb": [
+          149.6,
+          149.5,
+          146.4
+        ]
+      },
+      "workers 1 | V4 default | 3633dfb": {
+        "verified_success": 3,
+        "runs": 3,
+        "seconds_median": 10.893,
+        "seconds": [
+          11.028,
+          10.606,
+          10.893
+        ],
+        "peak_rss_mb": [
+          141.5,
+          144.7,
+          145.0
+        ]
+      },
+      "workers 1 | V5 smart (Phase 3) | phase4": {
+        "verified_success": 3,
+        "runs": 3,
+        "seconds_median": 19.423,
+        "seconds": [
+          19.961,
+          19.423,
+          19.228
+        ],
+        "peak_rss_mb": [
+          152.5,
+          152.5,
+          152.1
+        ]
+      },
+      "workers 1 | V5 smart (Phase 3) | 3633dfb": {
+        "verified_success": 3,
+        "runs": 3,
+        "seconds_median": 19.345,
+        "seconds": [
+          19.572,
+          19.005,
+          19.345
+        ],
+        "peak_rss_mb": [
+          155.3,
+          151.8,
+          152.0
+        ]
+      },
+      "workers 1 | V5 smart + soft auto | phase4": {
+        "verified_success": 3,
+        "runs": 3,
+        "seconds_median": 24.596,
+        "seconds": [
+          24.596,
+          24.574,
+          24.816
+        ],
+        "peak_rss_mb": [
+          157.5,
+          157.6,
+          157.4
+        ]
+      },
+      "workers 8 | V4 default | phase4": {
+        "verified_success": 3,
+        "runs": 3,
+        "seconds_median": 4.027,
+        "seconds": [
+          4.053,
+          3.926,
+          4.027
+        ],
+        "peak_rss_mb": [
+          159.0,
+          162.0,
+          163.4
+        ]
+      },
+      "workers 8 | V4 default | 3633dfb": {
+        "verified_success": 3,
+        "runs": 3,
+        "seconds_median": 3.894,
+        "seconds": [
+          3.894,
+          3.978,
+          3.801
+        ],
+        "peak_rss_mb": [
+          160.0,
+          160.7,
+          160.2
+        ]
+      },
+      "workers 8 | V5 smart (Phase 3) | phase4": {
+        "verified_success": 3,
+        "runs": 3,
+        "seconds_median": 4.612,
+        "seconds": [
+          4.613,
+          4.488,
+          4.612
+        ],
+        "peak_rss_mb": [
+          212.5,
+          211.0,
+          205.8
+        ]
+      },
+      "workers 8 | V5 smart (Phase 3) | 3633dfb": {
+        "verified_success": 3,
+        "runs": 3,
+        "seconds_median": 4.596,
+        "seconds": [
+          4.596,
+          4.496,
+          4.603
+        ],
+        "peak_rss_mb": [
+          211.0,
+          214.1,
+          210.8
+        ]
+      },
+      "workers 8 | V5 smart + soft auto | phase4": {
+        "verified_success": 3,
+        "runs": 3,
+        "seconds_median": 5.204,
+        "seconds": [
+          5.204,
+          5.149,
+          5.389
+        ],
+        "peak_rss_mb": [
+          241.2,
+          237.5,
+          230.5
+        ]
+      }
+    },
+    "rows": [
+      {
+        "workers": 1,
+        "config": "V4 default",
+        "tree": "phase4",
+        "rep": 0,
+        "status": "SUCCESS",
+        "verified": true,
+        "seconds": 10.93,
+        "peak_rss_mb": 149.6,
+        "module": "/root/VSnexustechnologies-v5/src/vnxdna/__init__.py"
+      },
+      {
+        "workers": 1,
+        "config": "V4 default",
+        "tree": "3633dfb",
+        "rep": 0,
+        "status": "SUCCESS",
+        "verified": true,
+        "seconds": 11.028,
+        "peak_rss_mb": 141.5,
+        "module": "/tmp/claude-0/-root/4f31a309-e388-45dd-ac1a-98ccc9380d39/scratchpad/p3base/src/vnxdna/__init__.py"
+      },
+      {
+        "workers": 1,
+        "config": "V4 default",
+        "tree": "phase4",
+        "rep": 1,
+        "status": "SUCCESS",
+        "verified": true,
+        "seconds": 11.125,
+        "peak_rss_mb": 149.5,
+        "module": "/root/VSnexustechnologies-v5/src/vnxdna/__init__.py"
+      },
+      {
+        "workers": 1,
+        "config": "V4 default",
+        "tree": "3633dfb",
+        "rep": 1,
+        "status": "SUCCESS",
+        "verified": true,
+        "seconds": 10.606,
+        "peak_rss_mb": 144.7,
+        "module": "/tmp/claude-0/-root/4f31a309-e388-45dd-ac1a-98ccc9380d39/scratchpad/p3base/src/vnxdna/__init__.py"
+      },
+      {
+        "workers": 1,
+        "config": "V4 default",
+        "tree": "phase4",
+        "rep": 2,
+        "status": "SUCCESS",
+        "verified": true,
+        "seconds": 10.716,
+        "peak_rss_mb": 146.4,
+        "module": "/root/VSnexustechnologies-v5/src/vnxdna/__init__.py"
+      },
+      {
+        "workers": 1,
+        "config": "V4 default",
+        "tree": "3633dfb",
+        "rep": 2,
+        "status": "SUCCESS",
+        "verified": true,
+        "seconds": 10.893,
+        "peak_rss_mb": 145.0,
+        "module": "/tmp/claude-0/-root/4f31a309-e388-45dd-ac1a-98ccc9380d39/scratchpad/p3base/src/vnxdna/__init__.py"
+      },
+      {
+        "workers": 1,
+        "config": "V5 smart (Phase 3)",
+        "tree": "phase4",
+        "rep": 0,
+        "status": "SUCCESS",
+        "verified": true,
+        "seconds": 19.961,
+        "peak_rss_mb": 152.5,
+        "module": "/root/VSnexustechnologies-v5/src/vnxdna/__init__.py"
+      },
+      {
+        "workers": 1,
+        "config": "V5 smart (Phase 3)",
+        "tree": "3633dfb",
+        "rep": 0,
+        "status": "SUCCESS",
+        "verified": true,
+        "seconds": 19.572,
+        "peak_rss_mb": 155.3,
+        "module": "/tmp/claude-0/-root/4f31a309-e388-45dd-ac1a-98ccc9380d39/scratchpad/p3base/src/vnxdna/__init__.py"
+      },
+      {
+        "workers": 1,
+        "config": "V5 smart (Phase 3)",
+        "tree": "phase4",
+        "rep": 1,
+        "status": "SUCCESS",
+        "verified": true,
+        "seconds": 19.423,
+        "peak_rss_mb": 152.5,
+        "module": "/root/VSnexustechnologies-v5/src/vnxdna/__init__.py"
+      },
+      {
+        "workers": 1,
+        "config": "V5 smart (Phase 3)",
+        "tree": "3633dfb",
+        "rep": 1,
+        "status": "SUCCESS",
+        "verified": true,
+        "seconds": 19.005,
+        "peak_rss_mb": 151.8,
+        "module": "/tmp/claude-0/-root/4f31a309-e388-45dd-ac1a-98ccc9380d39/scratchpad/p3base/src/vnxdna/__init__.py"
+      },
+      {
+        "workers": 1,
+        "config": "V5 smart (Phase 3)",
+        "tree": "phase4",
+        "rep": 2,
+        "status": "SUCCESS",
+        "verified": true,
+        "seconds": 19.228,
+        "peak_rss_mb": 152.1,
+        "module": "/root/VSnexustechnologies-v5/src/vnxdna/__init__.py"
+      },
+      {
+        "workers": 1,
+        "config": "V5 smart (Phase 3)",
+        "tree": "3633dfb",
+        "rep": 2,
+        "status": "SUCCESS",
+        "verified": true,
+        "seconds": 19.345,
+        "peak_rss_mb": 152.0,
+        "module": "/tmp/claude-0/-root/4f31a309-e388-45dd-ac1a-98ccc9380d39/scratchpad/p3base/src/vnxdna/__init__.py"
+      },
+      {
+        "workers": 1,
+        "config": "V5 smart + soft auto",
+        "tree": "phase4",
+        "rep": 0,
+        "status": "SUCCESS",
+        "verified": true,
+        "seconds": 24.596,
+        "peak_rss_mb": 157.5,
+        "module": "/root/VSnexustechnologies-v5/src/vnxdna/__init__.py"
+      },
+      {
+        "workers": 1,
+        "config": "V5 smart + soft auto",
+        "tree": "phase4",
+        "rep": 1,
+        "status": "SUCCESS",
+        "verified": true,
+        "seconds": 24.574,
+        "peak_rss_mb": 157.6,
+        "module": "/root/VSnexustechnologies-v5/src/vnxdna/__init__.py"
+      },
+      {
+        "workers": 1,
+        "config": "V5 smart + soft auto",
+        "tree": "phase4",
+        "rep": 2,
+        "status": "SUCCESS",
+        "verified": true,
+        "seconds": 24.816,
+        "peak_rss_mb": 157.4,
+        "module": "/root/VSnexustechnologies-v5/src/vnxdna/__init__.py"
+      },
+      {
+        "workers": 8,
+        "config": "V4 default",
+        "tree": "phase4",
+        "rep": 0,
+        "status": "SUCCESS",
+        "verified": true,
+        "seconds": 4.053,
+        "peak_rss_mb": 159.0,
+        "module": "/root/VSnexustechnologies-v5/src/vnxdna/__init__.py"
+      },
+      {
+        "workers": 8,
+        "config": "V4 default",
+        "tree": "3633dfb",
+        "rep": 0,
+        "status": "SUCCESS",
+        "verified": true,
+        "seconds": 3.894,
+        "peak_rss_mb": 160.0,
+        "module": "/tmp/claude-0/-root/4f31a309-e388-45dd-ac1a-98ccc9380d39/scratchpad/p3base/src/vnxdna/__init__.py"
+      },
+      {
+        "workers": 8,
+        "config": "V4 default",
+        "tree": "phase4",
+        "rep": 1,
+        "status": "SUCCESS",
+        "verified": true,
+        "seconds": 3.926,
+        "peak_rss_mb": 162.0,
+        "module": "/root/VSnexustechnologies-v5/src/vnxdna/__init__.py"
+      },
+      {
+        "workers": 8,
+        "config": "V4 default",
+        "tree": "3633dfb",
+        "rep": 1,
+        "status": "SUCCESS",
+        "verified": true,
+        "seconds": 3.978,
+        "peak_rss_mb": 160.7,
+        "module": "/tmp/claude-0/-root/4f31a309-e388-45dd-ac1a-98ccc9380d39/scratchpad/p3base/src/vnxdna/__init__.py"
+      },
+      {
+        "workers": 8,
+        "config": "V4 default",
+        "tree": "phase4",
+        "rep": 2,
+        "status": "SUCCESS",
+        "verified": true,
+        "seconds": 4.027,
+        "peak_rss_mb": 163.4,
+        "module": "/root/VSnexustechnologies-v5/src/vnxdna/__init__.py"
+      },
+      {
+        "workers": 8,
+        "config": "V4 default",
+        "tree": "3633dfb",
+        "rep": 2,
+        "status": "SUCCESS",
+        "verified": true,
+        "seconds": 3.801,
+        "peak_rss_mb": 160.2,
+        "module": "/tmp/claude-0/-root/4f31a309-e388-45dd-ac1a-98ccc9380d39/scratchpad/p3base/src/vnxdna/__init__.py"
+      },
+      {
+        "workers": 8,
+        "config": "V5 smart (Phase 3)",
+        "tree": "phase4",
+        "rep": 0,
+        "status": "SUCCESS",
+        "verified": true,
+        "seconds": 4.613,
+        "peak_rss_mb": 212.5,
+        "module": "/root/VSnexustechnologies-v5/src/vnxdna/__init__.py"
+      },
+      {
+        "workers": 8,
+        "config": "V5 smart (Phase 3)",
+        "tree": "3633dfb",
+        "rep": 0,
+        "status": "SUCCESS",
+        "verified": true,
+        "seconds": 4.596,
+        "peak_rss_mb": 211.0,
+        "module": "/tmp/claude-0/-root/4f31a309-e388-45dd-ac1a-98ccc9380d39/scratchpad/p3base/src/vnxdna/__init__.py"
+      },
+      {
+        "workers": 8,
+        "config": "V5 smart (Phase 3)",
+        "tree": "phase4",
+        "rep": 1,
+        "status": "SUCCESS",
+        "verified": true,
+        "seconds": 4.488,
+        "peak_rss_mb": 211.0,
+        "module": "/root/VSnexustechnologies-v5/src/vnxdna/__init__.py"
+      },
+      {
+        "workers": 8,
+        "config": "V5 smart (Phase 3)",
+        "tree": "3633dfb",
+        "rep": 1,
+        "status": "SUCCESS",
+        "verified": true,
+        "seconds": 4.496,
+        "peak_rss_mb": 214.1,
+        "module": "/tmp/claude-0/-root/4f31a309-e388-45dd-ac1a-98ccc9380d39/scratchpad/p3base/src/vnxdna/__init__.py"
+      },
+      {
+        "workers": 8,
+        "config": "V5 smart (Phase 3)",
+        "tree": "phase4",
+        "rep": 2,
+        "status": "SUCCESS",
+        "verified": true,
+        "seconds": 4.612,
+        "peak_rss_mb": 205.8,
+        "module": "/root/VSnexustechnologies-v5/src/vnxdna/__init__.py"
+      },
+      {
+        "workers": 8,
+        "config": "V5 smart (Phase 3)",
+        "tree": "3633dfb",
+        "rep": 2,
+        "status": "SUCCESS",
+        "verified": true,
+        "seconds": 4.603,
+        "peak_rss_mb": 210.8,
+        "module": "/tmp/claude-0/-root/4f31a309-e388-45dd-ac1a-98ccc9380d39/scratchpad/p3base/src/vnxdna/__init__.py"
+      },
+      {
+        "workers": 8,
+        "config": "V5 smart + soft auto",
+        "tree": "phase4",
+        "rep": 0,
+        "status": "SUCCESS",
+        "verified": true,
+        "seconds": 5.204,
+        "peak_rss_mb": 241.2,
+        "module": "/root/VSnexustechnologies-v5/src/vnxdna/__init__.py"
+      },
+      {
+        "workers": 8,
+        "config": "V5 smart + soft auto",
+        "tree": "phase4",
+        "rep": 1,
+        "status": "SUCCESS",
+        "verified": true,
+        "seconds": 5.149,
+        "peak_rss_mb": 237.5,
+        "module": "/root/VSnexustechnologies-v5/src/vnxdna/__init__.py"
+      },
+      {
+        "workers": 8,
+        "config": "V5 smart + soft auto",
+        "tree": "phase4",
+        "rep": 2,
+        "status": "SUCCESS",
+        "verified": true,
+        "seconds": 5.389,
+        "peak_rss_mb": 230.5,
+        "module": "/root/VSnexustechnologies-v5/src/vnxdna/__init__.py"
+      }
+    ],
+    "wall_seconds": 346.9
+  }
+}

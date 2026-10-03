@@ -284,7 +284,7 @@ def encode(source: Path = typer.Argument(..., help="A .vnx container, or a file/
 
 
 def _decode(reads, output, extract_dir, partial_dir, select, profile, workers, performance, config, band, min_quality,
-            archive_tag, force, key_file, passphrase_env, report, indel_recovery=None):
+            archive_tag, force, key_file, passphrase_env, report, indel_recovery=None, soft_decoding=None):
     from . import archive as ar
     from . import decoder as de
     from .config import decode_options, load_config, performance as perf
@@ -292,7 +292,7 @@ def _decode(reads, output, extract_dir, partial_dir, select, profile, workers, p
     p = perf(performance or cfg.get("performance"))
     opts = decode_options(cfg, profile=profile, workers=workers or p["workers"], band=band, min_quality=min_quality,
                           batch_reads=p["batch_reads"], archive_tag=int(archive_tag, 16) if archive_tag else None,
-                          indel_recovery=indel_recovery)
+                          indel_recovery=indel_recovery, soft_decoding=soft_decoding)
     key, pw = _keys(key_file, passphrase_env)
     if output is None and extract_dir is None and not select:
         raise VNXConfigurationError("give --output (container), --extract DIR, or --select FILE --extract DIR")
@@ -334,10 +334,12 @@ def decode(reads: Path, output: Optional[Path] = typer.Option(None, "--output", 
            force: bool = FORCE_OPT, key_file: Optional[Path] = KEY_OPT, passphrase_env: Optional[str] = PW_OPT,
            report: Optional[Path] = typer.Option(None, help="Write the JSON report here too."),
            indel_recovery: Optional[str] = typer.Option(None, "--indel-recovery",
-                                                        help="segment (V4 default) or smart (V5 bounded local indel recovery).")) -> None:
+                                                        help="segment (V4 default) or smart (V5 bounded local indel recovery)."),
+           soft_decoding: Optional[str] = typer.Option(None, "--soft-decoding",
+                                                       help="off (default), erasure (GMD), chase or auto: V5 bounded soft decoding.")) -> None:
     """Reconstruct a verified VNX4 container from DNA reads (FASTA/FASTQ)."""
     _run(lambda: _decode(reads, output, extract_dir, partial_dir, select, profile, workers, performance, config, band, min_quality,
-                         archive_tag, force, key_file, passphrase_env, report, indel_recovery))
+                         archive_tag, force, key_file, passphrase_env, report, indel_recovery, soft_decoding))
 
 
 @app.command()

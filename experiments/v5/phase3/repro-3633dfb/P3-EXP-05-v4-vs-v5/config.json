@@ -1,0 +1,79 @@
+{
+  "input": {
+    "size": 262144,
+    "pattern": "random",
+    "seed": 3501
+  },
+  "profile": "v4-balanced (Cauchy RS 64+16)",
+  "channels": {
+    "indel 0.2%+0.2%, cov 1": {
+      "insertion_rate": 0.002,
+      "deletion_rate": 0.002,
+      "coverage": 1
+    },
+    "indel 0.3%+0.3%, cov 1": {
+      "insertion_rate": 0.003,
+      "deletion_rate": 0.003,
+      "coverage": 1
+    },
+    "indel 0.4%+0.4%, cov 1": {
+      "insertion_rate": 0.004,
+      "deletion_rate": 0.004,
+      "coverage": 1
+    },
+    "indel 0.5%+0.5%, cov 1": {
+      "insertion_rate": 0.005,
+      "deletion_rate": 0.005,
+      "coverage": 1
+    },
+    "mixed L3 (0.5% sub, 0.1%+0.1%, 5% dropout), cov 1": {
+      "substitution_rate": 0.005,
+      "insertion_rate": 0.001,
+      "deletion_rate": 0.001,
+      "dropout_rate": 0.05,
+      "coverage": 1
+    },
+    "mixed (0.3% sub, 0.25%+0.25%, 2% dropout), cov 1": {
+      "substitution_rate": 0.003,
+      "insertion_rate": 0.0025,
+      "deletion_rate": 0.0025,
+      "dropout_rate": 0.02,
+      "coverage": 1
+    },
+    "harsh (0.5% sub, 0.6%+0.6%, 2% dropout), Poisson cov 3": {
+      "substitution_rate": 0.005,
+      "insertion_rate": 0.006,
+      "deletion_rate": 0.006,
+      "dropout_rate": 0.02,
+      "coverage": 3,
+      "coverage_model": "poisson"
+    },
+    "EXP-0011 (0.2% sub, 0.05%+0.05%, 2% dropout), Poisson cov 3": {
+      "substitution_rate": 0.002,
+      "insertion_rate": 0.0005,
+      "deletion_rate": 0.0005,
+      "dropout_rate": 0.02,
+      "coverage": 3,
+      "coverage_model": "poisson"
+    }
+  },
+  "seeds_per_channel": 3,
+  "channel_seed_rule": "35000 + 10\u00b7seed_index",
+  "workers": 1,
+  "part_b": {
+    "input": "4 MiB random seed 42",
+    "channel": {
+      "substitution_rate": 0.002,
+      "insertion_rate": 0.0005,
+      "deletion_rate": 0.0005,
+      "dropout_rate": 0.02,
+      "coverage": 3,
+      "coverage_model": "poisson",
+      "seed": 1011
+    },
+    "workers": [
+      1,
+      8
+    ]
+  }
+}

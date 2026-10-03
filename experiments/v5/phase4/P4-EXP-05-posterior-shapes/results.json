@@ -1,0 +1,939 @@
+{
+  "experiment": "P4-EXP-05-posterior-shapes",
+  "simulated": true,
+  "config": {
+    "layout": {
+      "payload_bytes": 40,
+      "inner_parity": 16,
+      "marker_period": 24,
+      "marker_len": 3,
+      "frame_bytes": 70,
+      "strand_nt": 313,
+      "markers": 11
+    },
+    "frames_per_cell": 500,
+    "seed": 4201,
+    "soft_defaults": {
+      "mode": "auto",
+      "chase_bytes": 4,
+      "chase_values": 2,
+      "max_soft_trials": 64,
+      "max_bytes_per_trial": 4,
+      "false_accept_budget": 1e-09,
+      "default_error": 0.005,
+      "unknown_reliability": 0.0
+    },
+    "hard": "decode_frames (V4 inner RS + CRC), optional min_quality erasures"
+  },
+  "provenance": {
+    "timestamp_utc": "2026-10-03T09:35:07Z",
+    "vnx_version": "4.0.0",
+    "vnx4_format_version": [
+      4,
+      0
+    ],
+    "git_commit": "3633dfb86e76bb3d0661ecf8bf000cbb2da2359b-dirty",
+    "cpu_model": "Intel(R) Xeon(R) Gold 6240 CPU @ 2.60GHz",
+    "logical_cpus": 8,
+    "ram_bytes": 33654890496,
+    "os": "Linux 6.8.0-146-generic",
+    "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "packages": {
+      "numpy": "2.5.3",
+      "cryptography": "46.0.7",
+      "zstandard": "0.25.0",
+      "reedsolo": "1.7.0",
+      "pydantic": "2.13.5",
+      "typer": "0.27.2"
+    },
+    "v4_control_tag": "v4.0.0",
+    "v4_control_commit": "a358ae8284066d0608f329b47a53e55018bbfa79",
+    "commit_under_test": "3633dfb86e76bb3d0661ecf8bf000cbb2da2359b",
+    "worktree_dirty": true,
+    "native_toolchain": {
+      "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+      "rustc": "rustc 1.75.0 (82e1608df 2023-12-21) (built from a source tarball)",
+      "cargo": "cargo 1.75.0"
+    },
+    "cpu_flags": [
+      "avx",
+      "avx2",
+      "avx512bw",
+      "avx512f",
+      "bmi2",
+      "popcnt",
+      "sse4_2"
+    ],
+    "config_sha256": "7bec0882a271274919d13ae54d8c4cf910291c7b27aa7284a1cf0611a45281a8"
+  },
+  "results": {
+    "summary": {
+      "e=6 | 0.99/0.0033\u00d73 (truth 0.0033)": {
+        "hard": {
+          "verified_correct": 500,
+          "false": 0
+        },
+        "soft-erasure": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 0.0,
+          "entropy_bits_mean": 0.0966
+        },
+        "soft-chase": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 16.0,
+          "accepted_rank_mean": 0.0,
+          "entropy_bits_mean": 0.0966
+        },
+        "soft-auto": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 0.0,
+          "entropy_bits_mean": 0.0966
+        }
+      },
+      "e=6 | 0.90/0.033\u00d73 (truth 0.033)": {
+        "hard": {
+          "verified_correct": 500,
+          "false": 0
+        },
+        "soft-erasure": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 0.0,
+          "entropy_bits_mean": 0.108
+        },
+        "soft-chase": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 16.0,
+          "accepted_rank_mean": 0.0,
+          "entropy_bits_mean": 0.108
+        },
+        "soft-auto": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 0.0,
+          "entropy_bits_mean": 0.108
+        }
+      },
+      "e=6 | 0.70/0.10\u00d73 (truth 0.10)": {
+        "hard": {
+          "verified_correct": 500,
+          "false": 0
+        },
+        "soft-erasure": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 0.0,
+          "entropy_bits_mean": 0.1236
+        },
+        "soft-chase": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 16.0,
+          "accepted_rank_mean": 0.0,
+          "entropy_bits_mean": 0.1236
+        },
+        "soft-auto": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 0.0,
+          "entropy_bits_mean": 0.1236
+        }
+      },
+      "e=6 | 0.55/0.45/0/0 (truth 0.45)": {
+        "hard": {
+          "verified_correct": 500,
+          "false": 0
+        },
+        "soft-erasure": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 0.0,
+          "entropy_bits_mean": 0.1158
+        },
+        "soft-chase": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 16.0,
+          "accepted_rank_mean": 0.0,
+          "entropy_bits_mean": 0.1158
+        },
+        "soft-auto": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 0.0,
+          "entropy_bits_mean": 0.1158
+        }
+      },
+      "e=6 | 0.51/0.49/0/0 (truth 0.49)": {
+        "hard": {
+          "verified_correct": 500,
+          "false": 0
+        },
+        "soft-erasure": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 0.0,
+          "entropy_bits_mean": 0.116
+        },
+        "soft-chase": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 16.0,
+          "accepted_rank_mean": 0.0,
+          "entropy_bits_mean": 0.116
+        },
+        "soft-auto": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 0.0,
+          "entropy_bits_mean": 0.116
+        }
+      },
+      "e=6 | 0.55/0.45/0/0 (truth 0)": {
+        "hard": {
+          "verified_correct": 500,
+          "false": 0
+        },
+        "soft-erasure": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 0.0,
+          "entropy_bits_mean": 0.1158
+        },
+        "soft-chase": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 16.0,
+          "accepted_rank_mean": 0.0,
+          "entropy_bits_mean": 0.1158
+        },
+        "soft-auto": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 0.0,
+          "entropy_bits_mean": 0.1158
+        }
+      },
+      "e=9 | 0.99/0.0033\u00d73 (truth 0.0033)": {
+        "hard": {
+          "verified_correct": 0,
+          "false": 0
+        },
+        "soft-erasure": {
+          "verified_correct": 4,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 496,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 1.0,
+          "entropy_bits_mean": 0.0966
+        },
+        "soft-chase": {
+          "verified_correct": 31,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 469,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 16.0,
+          "accepted_rank_mean": 3.032,
+          "entropy_bits_mean": 0.0966
+        },
+        "soft-auto": {
+          "verified_correct": 34,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 466,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 24.87,
+          "accepted_rank_mean": 2.765,
+          "entropy_bits_mean": 0.0966
+        }
+      },
+      "e=9 | 0.90/0.033\u00d73 (truth 0.033)": {
+        "hard": {
+          "verified_correct": 0,
+          "false": 0
+        },
+        "soft-erasure": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 1.0,
+          "entropy_bits_mean": 0.1137
+        },
+        "soft-chase": {
+          "verified_correct": 396,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 104,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 16.0,
+          "accepted_rank_mean": 2.172,
+          "entropy_bits_mean": 0.1137
+        },
+        "soft-auto": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 1.0,
+          "entropy_bits_mean": 0.1137
+        }
+      },
+      "e=9 | 0.70/0.10\u00d73 (truth 0.10)": {
+        "hard": {
+          "verified_correct": 0,
+          "false": 0
+        },
+        "soft-erasure": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 1.0,
+          "entropy_bits_mean": 0.1371
+        },
+        "soft-chase": {
+          "verified_correct": 398,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 102,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 16.0,
+          "accepted_rank_mean": 2.075,
+          "entropy_bits_mean": 0.1371
+        },
+        "soft-auto": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 1.0,
+          "entropy_bits_mean": 0.1371
+        }
+      },
+      "e=9 | 0.55/0.45/0/0 (truth 0.45)": {
+        "hard": {
+          "verified_correct": 0,
+          "false": 0
+        },
+        "soft-erasure": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 1.0,
+          "entropy_bits_mean": 0.1254
+        },
+        "soft-chase": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 16.0,
+          "accepted_rank_mean": 1.0,
+          "entropy_bits_mean": 0.1254
+        },
+        "soft-auto": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 1.0,
+          "entropy_bits_mean": 0.1254
+        }
+      },
+      "e=9 | 0.51/0.49/0/0 (truth 0.49)": {
+        "hard": {
+          "verified_correct": 0,
+          "false": 0
+        },
+        "soft-erasure": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 1.0,
+          "entropy_bits_mean": 0.1257
+        },
+        "soft-chase": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 16.0,
+          "accepted_rank_mean": 1.0,
+          "entropy_bits_mean": 0.1257
+        },
+        "soft-auto": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 1.0,
+          "entropy_bits_mean": 0.1257
+        }
+      },
+      "e=9 | 0.55/0.45/0/0 (truth 0)": {
+        "hard": {
+          "verified_correct": 0,
+          "false": 0
+        },
+        "soft-erasure": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 1.0,
+          "entropy_bits_mean": 0.1254
+        },
+        "soft-chase": {
+          "verified_correct": 0,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 500,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 16.0,
+          "accepted_rank_mean": 0.0,
+          "entropy_bits_mean": 0.1254
+        },
+        "soft-auto": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 1.0,
+          "entropy_bits_mean": 0.1254
+        }
+      },
+      "e=10 | 0.99/0.0033\u00d73 (truth 0.0033)": {
+        "hard": {
+          "verified_correct": 0,
+          "false": 0
+        },
+        "soft-erasure": {
+          "verified_correct": 0,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 500,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 0.0,
+          "entropy_bits_mean": 0.0966
+        },
+        "soft-chase": {
+          "verified_correct": 1,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 499,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 16.0,
+          "accepted_rank_mean": 7.0,
+          "entropy_bits_mean": 0.0966
+        },
+        "soft-auto": {
+          "verified_correct": 1,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 499,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 25.0,
+          "accepted_rank_mean": 7.0,
+          "entropy_bits_mean": 0.0966
+        }
+      },
+      "e=10 | 0.90/0.033\u00d73 (truth 0.033)": {
+        "hard": {
+          "verified_correct": 0,
+          "false": 0
+        },
+        "soft-erasure": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 2.0,
+          "entropy_bits_mean": 0.1156
+        },
+        "soft-chase": {
+          "verified_correct": 208,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 292,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 16.0,
+          "accepted_rank_mean": 7.25,
+          "entropy_bits_mean": 0.1156
+        },
+        "soft-auto": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 2.0,
+          "entropy_bits_mean": 0.1156
+        }
+      },
+      "e=10 | 0.70/0.10\u00d73 (truth 0.10)": {
+        "hard": {
+          "verified_correct": 0,
+          "false": 0
+        },
+        "soft-erasure": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 2.0,
+          "entropy_bits_mean": 0.1416
+        },
+        "soft-chase": {
+          "verified_correct": 191,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 309,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 16.0,
+          "accepted_rank_mean": 6.895,
+          "entropy_bits_mean": 0.1416
+        },
+        "soft-auto": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 2.0,
+          "entropy_bits_mean": 0.1416
+        }
+      },
+      "e=10 | 0.55/0.45/0/0 (truth 0.45)": {
+        "hard": {
+          "verified_correct": 0,
+          "false": 0
+        },
+        "soft-erasure": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 2.0,
+          "entropy_bits_mean": 0.1286
+        },
+        "soft-chase": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 16.0,
+          "accepted_rank_mean": 5.0,
+          "entropy_bits_mean": 0.1286
+        },
+        "soft-auto": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 2.0,
+          "entropy_bits_mean": 0.1286
+        }
+      },
+      "e=10 | 0.51/0.49/0/0 (truth 0.49)": {
+        "hard": {
+          "verified_correct": 0,
+          "false": 0
+        },
+        "soft-erasure": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 2.0,
+          "entropy_bits_mean": 0.1289
+        },
+        "soft-chase": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 16.0,
+          "accepted_rank_mean": 5.0,
+          "entropy_bits_mean": 0.1289
+        },
+        "soft-auto": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 2.0,
+          "entropy_bits_mean": 0.1289
+        }
+      },
+      "e=10 | 0.55/0.45/0/0 (truth 0)": {
+        "hard": {
+          "verified_correct": 0,
+          "false": 0
+        },
+        "soft-erasure": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 2.0,
+          "entropy_bits_mean": 0.1286
+        },
+        "soft-chase": {
+          "verified_correct": 0,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 500,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 16.0,
+          "accepted_rank_mean": 0.0,
+          "entropy_bits_mean": 0.1286
+        },
+        "soft-auto": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 2.0,
+          "entropy_bits_mean": 0.1286
+        }
+      },
+      "e=12 | 0.99/0.0033\u00d73 (truth 0.0033)": {
+        "hard": {
+          "verified_correct": 0,
+          "false": 0
+        },
+        "soft-erasure": {
+          "verified_correct": 0,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 500,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 0.0,
+          "entropy_bits_mean": 0.0966
+        },
+        "soft-chase": {
+          "verified_correct": 0,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 500,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 16.0,
+          "accepted_rank_mean": 0.0,
+          "entropy_bits_mean": 0.0966
+        },
+        "soft-auto": {
+          "verified_correct": 0,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 500,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 25.0,
+          "accepted_rank_mean": 0.0,
+          "entropy_bits_mean": 0.0966
+        }
+      },
+      "e=12 | 0.90/0.033\u00d73 (truth 0.033)": {
+        "hard": {
+          "verified_correct": 0,
+          "false": 0
+        },
+        "soft-erasure": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 4.0,
+          "entropy_bits_mean": 0.1194
+        },
+        "soft-chase": {
+          "verified_correct": 9,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 491,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 16.0,
+          "accepted_rank_mean": 15.0,
+          "entropy_bits_mean": 0.1194
+        },
+        "soft-auto": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 4.0,
+          "entropy_bits_mean": 0.1194
+        }
+      },
+      "e=12 | 0.70/0.10\u00d73 (truth 0.10)": {
+        "hard": {
+          "verified_correct": 0,
+          "false": 0
+        },
+        "soft-erasure": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 4.0,
+          "entropy_bits_mean": 0.1506
+        },
+        "soft-chase": {
+          "verified_correct": 10,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 490,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 16.0,
+          "accepted_rank_mean": 15.0,
+          "entropy_bits_mean": 0.1506
+        },
+        "soft-auto": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 4.0,
+          "entropy_bits_mean": 0.1506
+        }
+      },
+      "e=12 | 0.55/0.45/0/0 (truth 0.45)": {
+        "hard": {
+          "verified_correct": 0,
+          "false": 0
+        },
+        "soft-erasure": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 4.0,
+          "entropy_bits_mean": 0.135
+        },
+        "soft-chase": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 16.0,
+          "accepted_rank_mean": 15.0,
+          "entropy_bits_mean": 0.135
+        },
+        "soft-auto": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 4.0,
+          "entropy_bits_mean": 0.135
+        }
+      },
+      "e=12 | 0.51/0.49/0/0 (truth 0.49)": {
+        "hard": {
+          "verified_correct": 0,
+          "false": 0
+        },
+        "soft-erasure": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 4.0,
+          "entropy_bits_mean": 0.1353
+        },
+        "soft-chase": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 16.0,
+          "accepted_rank_mean": 15.0,
+          "entropy_bits_mean": 0.1353
+        },
+        "soft-auto": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 4.0,
+          "entropy_bits_mean": 0.1353
+        }
+      },
+      "e=12 | 0.55/0.45/0/0 (truth 0)": {
+        "hard": {
+          "verified_correct": 0,
+          "false": 0
+        },
+        "soft-erasure": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 4.0,
+          "entropy_bits_mean": 0.135
+        },
+        "soft-chase": {
+          "verified_correct": 0,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 500,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 16.0,
+          "accepted_rank_mean": 0.0,
+          "entropy_bits_mean": 0.135
+        },
+        "soft-auto": {
+          "verified_correct": 500,
+          "false": 0,
+          "ambiguous": 0,
+          "rejected": 0,
+          "wrong_but_verified_frames": 0,
+          "trials_mean": 9.0,
+          "accepted_rank_mean": 4.0,
+          "entropy_bits_mean": 0.135
+        }
+      }
+    },
+    "wall_seconds": 42.6
+  }
+}

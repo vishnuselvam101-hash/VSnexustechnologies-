@@ -1,0 +1,31 @@
+workers 1  V4 default             phase4   rep 0: SUCCESS verified True 10.93s  149.6 MB
+workers 1  V4 default             3633dfb  rep 0: SUCCESS verified True 11.028s  141.5 MB
+workers 1  V4 default             phase4   rep 1: SUCCESS verified True 11.125s  149.5 MB
+workers 1  V4 default             3633dfb  rep 1: SUCCESS verified True 10.606s  144.7 MB
+workers 1  V4 default             phase4   rep 2: SUCCESS verified True 10.716s  146.4 MB
+workers 1  V4 default             3633dfb  rep 2: SUCCESS verified True 10.893s  145.0 MB
+workers 1  V5 smart (Phase 3)     phase4   rep 0: SUCCESS verified True 19.961s  152.5 MB
+workers 1  V5 smart (Phase 3)     3633dfb  rep 0: SUCCESS verified True 19.572s  155.3 MB
+workers 1  V5 smart (Phase 3)     phase4   rep 1: SUCCESS verified True 19.423s  152.5 MB
+workers 1  V5 smart (Phase 3)     3633dfb  rep 1: SUCCESS verified True 19.005s  151.8 MB
+workers 1  V5 smart (Phase 3)     phase4   rep 2: SUCCESS verified True 19.228s  152.1 MB
+workers 1  V5 smart (Phase 3)     3633dfb  rep 2: SUCCESS verified True 19.345s  152.0 MB
+workers 1  V5 smart + soft auto   phase4   rep 0: SUCCESS verified True 24.596s  157.5 MB
+workers 1  V5 smart + soft auto   phase4   rep 1: SUCCESS verified True 24.574s  157.6 MB
+workers 1  V5 smart + soft auto   phase4   rep 2: SUCCESS verified True 24.816s  157.4 MB
+workers 8  V4 default             phase4   rep 0: SUCCESS verified True 4.053s  159.0 MB
+workers 8  V4 default             3633dfb  rep 0: SUCCESS verified True 3.894s  160.0 MB
+workers 8  V4 default             phase4   rep 1: SUCCESS verified True 3.926s  162.0 MB
+workers 8  V4 default             3633dfb  rep 1: SUCCESS verified True 3.978s  160.7 MB
+workers 8  V4 default             phase4   rep 2: SUCCESS verified True 4.027s  163.4 MB
+workers 8  V4 default             3633dfb  rep 2: SUCCESS verified True 3.801s  160.2 MB
+workers 8  V5 smart (Phase 3)     phase4   rep 0: SUCCESS verified True 4.613s  212.5 MB
+workers 8  V5 smart (Phase 3)     3633dfb  rep 0: SUCCESS verified True 4.596s  211.0 MB
+workers 8  V5 smart (Phase 3)     phase4   rep 1: SUCCESS verified True 4.488s  211.0 MB
+workers 8  V5 smart (Phase 3)     3633dfb  rep 1: SUCCESS verified True 4.496s  214.1 MB
+workers 8  V5 smart (Phase 3)     phase4   rep 2: SUCCESS verified True 4.612s  205.8 MB
+workers 8  V5 smart (Phase 3)     3633dfb  rep 2: SUCCESS verified True 4.603s  210.8 MB
+workers 8  V5 smart + soft auto   phase4   rep 0: SUCCESS verified True 5.204s  241.2 MB
+workers 8  V5 smart + soft auto   phase4   rep 1: SUCCESS verified True 5.149s  237.5 MB
+workers 8  V5 smart + soft auto   phase4   rep 2: SUCCESS verified True 5.389s  230.5 MB
+exit 0
