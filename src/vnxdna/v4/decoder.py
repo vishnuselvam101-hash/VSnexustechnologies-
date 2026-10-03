@@ -72,6 +72,10 @@ class DecodeOptions:
     # every hard path failed, and soft consensus in pass 2. Opt-in; verification is unchanged.
     soft_decoding: str = "off"
     soft_config: object = None          # vnxdna.v5.soft.decoder.SoftDecodeConfig (None = defaults for the mode)
+    # V5: when the per-read smart/soft recovery runs. "deferred" = after the cheap pass, only for reads that can still
+    # contribute to a group that is not yet decodable (see _deferred_recovery); "eager" = inside pass 1 for every read
+    # the V4 paths fail (the Phase 3/4 behaviour). Irrelevant unless smart indel recovery or soft decoding is on.
+    recovery_schedule: str = "deferred"
 
     def validate(self) -> None:
         if not 1 <= self.workers <= 256:
@@ -91,6 +95,8 @@ class DecodeOptions:
             elif not isinstance(self.indel_config, IndelRecoveryConfig):
                 raise VNXConfigurationError("indel_config must be an IndelRecoveryConfig")
             self.indel_config.validate()
+        if self.recovery_schedule not in ("deferred", "eager"):
+            raise VNXConfigurationError("recovery_schedule must be 'deferred' or 'eager'")
         if self.soft_decoding not in ("off", "erasure", "chase", "auto"):
             raise VNXConfigurationError("soft_decoding must be off, erasure, chase or auto")
         if self.soft_decoding != "off":
@@ -158,8 +164,11 @@ def detect_layout(reads_path: str | os.PathLike, opt: DecodeOptions) -> Layout:
 _P: dict = {}
 
 
-def _p_init(layout: Layout, band: int, costs: SyncCosts, min_q: int, rc: bool, smart_cfg=None, soft_cfg=None) -> None:
-    _P.update(lay=layout, al=TemplateAligner(layout, band, costs), min_q=min_q, rc=rc, smart=smart_cfg, soft=soft_cfg)
+def _p_init(layout: Layout, band: int, costs: SyncCosts, min_q: int, rc: bool, smart_cfg=None, soft_cfg=None,
+            defer: bool = False) -> None:
+    # defer: pass 1 of the deferred schedule — the cheap V4 paths only; smart/soft run later on the pending reads
+    _P.update(lay=layout, al=TemplateAligner(layout, band, costs), min_q=min_q, rc=rc, smart=smart_cfg, soft=soft_cfg,
+              defer=defer)
     if smart_cfg is not None or soft_cfg is not None:
         from ..v5.indel.recovery import Geometry
         _P["geom"] = Geometry(layout)
@@ -203,8 +212,9 @@ def _try(reads: list[np.ndarray], quals: list | None) -> tuple:
     if exact.size and lay.markers:
         hopeless[exact[mism == 0]] = True
     rest = np.flatnonzero(~acc & ~hopeless)
-    smart = _P.get("smart")
-    soft = _P.get("soft")
+    defer = _P.get("defer", False)
+    smart = None if defer else _P.get("smart")
+    soft = None if defer else _P.get("soft")
     sstats: Counter = Counter()
     soft_jobs: list = []                   # (read index, evidence) for the V5 Phase 4 soft stage
     if rest.size:
@@ -352,6 +362,7 @@ def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | N
     pend_bases = np.zeros((0, lay.frame_nt), dtype=np.uint8)
     orphans = 0
     pend_alt = np.zeros((0, 4), dtype=np.int64)
+    good = np.zeros(pend.size, dtype=bool)
     if pend.size:
         header_erased = (proj[pend][:, : 4 * HEADER_BYTES] > 3).any(axis=1)
         orphans = int(header_erased.sum())            # header not trusted (kept, addressed by hard bases)
@@ -370,8 +381,8 @@ def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | N
         pend_fields = np.where((ta[:, 0] >= 0)[:, None], ta, alt)[good]
         pend_alt = np.where((alt[:, 0] >= 0)[:, None], alt, ta)[good]
         pend_bases = proj[pend][good]
-    out = {"acc_fields": fields[acc], "acc_payload": payload[acc], "pend_fields": pend_fields, "pend_bases": pend_bases,
-           "pend_alt": pend_alt,
+    out = {"acc_fields": fields[acc], "acc_payload": payload[acc], "acc_index": np.flatnonzero(acc),
+           "pend_fields": pend_fields, "pend_bases": pend_bases, "pend_alt": pend_alt,
            "stats": {"reads": int(lengths.size), "fast": int((path == 1).sum()), "sync": int((path == 2).sum()),
                      "reverse_complement": int((rc_used & acc).sum()), "pending": int(pend_fields.shape[0]), "orphans": orphans,
                      "unaligned": int((~acc).sum()) - int(pend.size)}}
@@ -381,21 +392,28 @@ def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | N
         if _P.get("soft") is not None:
             out["stats"]["soft"] = int((path == 4).sum())
         out["indel"] = dict(sstats)
-        # raw (oriented) reads of pending records, for consensus realignment in pass 2
+        # raw (oriented) reads of pending records, for consensus realignment in pass 2 (and the deferred stage)
         width = lay.strand_nt + _P["al"].band
-        sel = pend[good] if pend.size else pend
-        raw = np.zeros((sel.size, width), dtype=np.uint8)
-        rawq = np.zeros((sel.size, width), dtype=np.uint8)
-        rawlen = np.zeros(sel.size, dtype=np.int64)
-        hasq = np.zeros(sel.size, dtype=np.uint8)
-        for j, i in enumerate(sel.tolist()):
-            r = oriented[i][:width]
-            raw[j, : r.size] = r
-            rawlen[j] = r.size
-            if oriented_q is not None and oriented_q[i] is not None:
-                rawq[j, : r.size] = oriented_q[i][:width]
-                hasq[j] = 1
-        out["pend_raw"], out["pend_rawq"], out["pend_rawlen"], out["pend_hasq"] = raw, rawq, rawlen, hasq
+
+        def pack(sel):
+            raw = np.zeros((sel.size, width), dtype=np.uint8)
+            rawq = np.zeros((sel.size, width), dtype=np.uint8)
+            rawlen = np.zeros(sel.size, dtype=np.int64)
+            hasq = np.zeros(sel.size, dtype=np.uint8)
+            for j, i in enumerate(sel.tolist()):
+                r = oriented[i][:width]
+                raw[j, : r.size] = r
+                rawlen[j] = r.size
+                if oriented_q is not None and oriented_q[i] is not None:
+                    rawq[j, : r.size] = oriented_q[i][:width]
+                    hasq[j] = 1
+            return raw, rawq, rawlen, hasq
+
+        out["pend_raw"], out["pend_rawq"], out["pend_rawlen"], out["pend_hasq"] = pack(pend[good])
+        if _P.get("defer"):
+            # aligned reads without a readable header: the eager schedule tried them in pass 1, so the deferred stage
+            # keeps them (address unknown) for its last round
+            out["orph_raw"], out["orph_rawq"], out["orph_rawlen"], out["orph_hasq"] = pack(pend[~good])
     return out
 
 
@@ -413,8 +431,14 @@ class Spill:
         self.pend_dtype = np.dtype(pend)
         self.acc_files = [open(workdir / f"acc{b}.bin", "wb") for b in range(buckets)]
         self.pend_files = [open(workdir / f"pend{b}.bin", "wb") for b in range(buckets)]
+        self.orph_file = open(workdir / "orph.bin", "wb") if raw_nt else None
 
     def write(self, res: dict) -> None:
+        if self.orph_file is not None and "orph_raw" in res and len(res["orph_raw"]):
+            rec = np.zeros(len(res["orph_raw"]), dtype=self.pend_dtype)     # address fields stay 0: unknown
+            rec["raw"], rec["rawq"], rec["rawlen"], rec["hasq"] = (res["orph_raw"], res["orph_rawq"], res["orph_rawlen"],
+                                                                   res["orph_hasq"])
+            self.orph_file.write(rec.tobytes())
         for fields, data, files, dtype, name in ((res["acc_fields"], res["acc_payload"], self.acc_files, self.acc_dtype, "payload"),
                                                   (res["pend_fields"], res["pend_bases"], self.pend_files, self.pend_dtype, "bases")):
             if not len(fields):
@@ -432,11 +456,32 @@ class Spill:
                 files[int(k)].write(rec[b == k].tobytes())
 
     def close(self) -> None:
-        for f in self.acc_files + self.pend_files:
+        for f in self.acc_files + self.pend_files + ([self.orph_file] if self.orph_file is not None else []):
             f.close()
 
     def load(self, b: int) -> tuple[np.ndarray, np.ndarray]:
         return (np.fromfile(self.dir / f"acc{b}.bin", dtype=self.acc_dtype), np.fromfile(self.dir / f"pend{b}.bin", dtype=self.pend_dtype))
+
+    def load_orphans(self) -> np.ndarray:
+        path = self.dir / "orph.bin"
+        return np.fromfile(path, dtype=self.pend_dtype) if path.exists() else np.zeros(0, dtype=self.pend_dtype)
+
+    # after close(): the deferred recovery stage adds verified frames and removes the pending records they came from
+    def append_acc(self, fields: np.ndarray, payload: np.ndarray) -> None:
+        """Verified frames go to the bucket of their *verified* group (never the read's tentative one)."""
+        if not len(fields):
+            return
+        rec = np.zeros(len(fields), dtype=self.acc_dtype)
+        rec["kind"], rec["tag"], rec["group"], rec["symbol"] = fields[:, 0], fields[:, 1], fields[:, 2], fields[:, 3]
+        rec["payload"] = payload
+        b = fields[:, 2] % self.B
+        for k in np.unique(b):
+            with open(self.dir / f"acc{int(k)}.bin", "ab") as f:
+                f.write(rec[b == k].tobytes())
+
+    def rewrite_pend(self, b: int, keep: np.ndarray) -> None:
+        pend = np.fromfile(self.dir / f"pend{b}.bin", dtype=self.pend_dtype)
+        pend[keep].tofile(self.dir / f"pend{b}.bin")
 
 
 # ============================================================================ consensus
@@ -529,8 +574,9 @@ def decode_reads(reads_path: str | os.PathLike, output: str | os.PathLike | None
         stats = Counter()
         indel_stats: Counter = Counter()
         t1 = time.perf_counter()
+        deferred = (smart or softm) and opt.recovery_schedule == "deferred"
         initargs = (lay, opt.band, opt.sync_costs, opt.min_quality, opt.reverse_complement, opt.indel_config if smart else None,
-                    opt.soft_config if softm else None)
+                    opt.soft_config if softm else None, deferred)
 
         def take(res):
             spill.write(res)
@@ -563,6 +609,11 @@ def decode_reads(reads_path: str | os.PathLike, output: str | os.PathLike | None
         stage["pass1_reads"] = time.perf_counter() - t1
         if stats["reads"] == 0:
             raise VNXFormatError("the read file contains no reads", stage="input")
+        if deferred:
+            t1b = time.perf_counter()
+            stats["_schedule"] = _deferred_recovery(spill, lay, opt, stats, indel_stats, initargs[:-1] + (False,),
+                                                    vote=not select)
+            stage["deferred_recovery"] = time.perf_counter() - t1b
         if smart or softm:
             stats["_indel"] = indel_stats          # pass 2 adds its consensus counters; reported as report["indel_recovery"]
         result = _pass2(spill, lay, opt, stats, stage, t0, output, overwrite, partial_dir, select, select_dir, key, passphrase,
@@ -783,6 +834,216 @@ def _smart_consensus(cand_keys, done, starts, ends, keys, pend, lay, opt, stats)
     return out
 
 
+# ============================================================================ deferred per-read recovery (V5)
+_DEFER_CHUNK = 256          # pending reads per recovery task
+
+
+def _group_decodable(codec, syms: dict, k: int, P: int, g: int) -> bool:
+    """The predicate of pass 2's outer decode: would group g decode from these verified symbols?"""
+    if isinstance(codec, CauchyRSCodec):     # MDS erasure code: any k distinct symbols (the codec's own check)
+        n = codec.symbols_for(k)
+        return sum(1 for s in syms if 0 <= s < n) >= k
+    try:
+        if hasattr(codec, "decode_block"):
+            codec.decode_block(syms, k, P, g)
+        else:
+            codec.decode(syms, k, P)
+    except VNXDecodeError:
+        return False
+    return True
+
+
+def _pending_keys(pend: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    keys = np.stack([pend["kind"].astype(np.int64), pend["tag"].astype(np.int64), pend["group"].astype(np.int64),
+                     pend["symbol"].astype(np.int64)], axis=1) if len(pend) else np.zeros((0, 4), dtype=np.int64)
+    alt = np.asarray(pend["alt"], dtype=np.int64) if len(pend) else np.zeros((0, 4), dtype=np.int64)
+    return keys, alt
+
+
+def _targeted(pend: np.ndarray, needed: set) -> np.ndarray:
+    """Pending reads whose header reading — either reading, or its unique one-byte snap — is a needed address."""
+    if not len(pend) or not needed:
+        return np.zeros(len(pend), dtype=bool)
+    keys, alt = _pending_keys(pend)
+    snapped, _ = snap_addresses(keys, needed, alt)
+    return np.fromiter((tuple(k) in needed for k in snapped.tolist()), dtype=bool, count=len(pend))
+
+
+def _group_state(spill: Spill, sb: Superblock, codec, lay: Layout, opt: DecodeOptions, consumed: list,
+                 vote: bool) -> tuple[set, int, int]:
+    """(needed addresses, groups, decodable groups) from the verified frames in the spill.
+
+    vote: also count what pass 2's V4 consensus vote will recover — computed exactly as pass 2 computes it (same known
+    symbols, same missing set, same pending reads), so a group called decodable here is decodable in pass 2, which only
+    adds smart/soft consensus on top. Without it (random access, whose pass 2 uses other missing sets) only single
+    verified reads count, which pass 2 can only extend.
+    """
+    from dataclasses import replace
+    tag = int.from_bytes(sb.archive_id[:2], "big")
+    K, P = sb.K, lay.payload_bytes
+    v4 = replace(opt, indel_recovery="segment", soft_decoding="off")
+    needed: set = set()
+    decodable = 0
+    for b in range(spill.B):
+        acc, pend = spill.load(b)
+        acc = acc[(acc["kind"] == KIND_DATA) & (acc["tag"] == tag) & (acc["group"] < sb.group_count)]
+        symbols, _ = resolve_duplicates(acc)
+        groups_b = list(range(b, sb.group_count, spill.B))
+        if vote and len(pend):
+            missing = set()
+            for g in groups_b:
+                n_sym = codec.symbols_for(group_k(sb.container_size, K, P, g))
+                missing.update((KIND_DATA, tag, g, s) for s in range(n_sym) if (KIND_DATA, tag, g, s) not in symbols)
+            symbols.update(_consensus_symbols(pend[~consumed[b]], symbols, lay, v4, Counter(), missing))
+        by_group: dict[int, dict[int, np.ndarray]] = {}
+        for (kd, tg, g, s), v in symbols.items():
+            if kd == KIND_DATA and tg == tag:
+                by_group.setdefault(g, {})[s] = v
+        for g in groups_b:
+            k = group_k(sb.container_size, K, P, g)
+            have = by_group.get(g, {})
+            if _group_decodable(codec, have, k, P, g):
+                decodable += 1
+            else:
+                needed.update((KIND_DATA, tag, g, s) for s in range(codec.symbols_for(k)) if s not in have)
+    return needed, sb.group_count, decodable
+
+
+def _deferred_recovery(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, indel_stats: Counter,
+                       initargs: tuple, vote: bool = True) -> dict:
+    """Per-read smart/soft recovery after the cheap pass, only where it can still change the result.
+
+    State after the cheap pass (fast + sync paths, both orientations), all from verified frames:
+
+      address RECOVERED   at least one verified copy that survives duplicate resolution (strict majority)
+      address MISSING     expected by the superblock, not recovered
+      group   DECODABLE   its recovered symbols, plus what pass 2's V4 consensus vote will recover from the pending
+                          reads (``_group_state``), already satisfy pass 2's outer decode (``_group_decodable``)
+      group   INCOMPLETE  not decodable yet
+      address NEEDED      MISSING and in an INCOMPLETE group
+      read    TARGETED    pending, and a header reading (or its unique one-byte snap) is a NEEDED address
+      read    UNADDRESSED aligned, failed, no readable header (kept only for round B)
+
+    Rounds, each running the unchanged eager per-read recovery (``_process`` with smart/soft on) on the read's stored
+    orientation:
+
+      S  every pending read whose header says superblock (the superblock defines what is expected)
+      A  TARGETED reads
+      B  only if the superblock is still undecodable or a group is still INCOMPLETE: every read not yet tried,
+         including UNADDRESSED reads and reads whose header points at recovered addresses. A header can be wrong, so
+         while data is missing nothing the eager schedule would have tried is left untried.
+
+    A verified frame is stored under its *verified* address and its pending record is removed, as if pass 1 had
+    accepted it. Reads never tried stay pending for pass 2 exactly like any failed read. Pass 2 is unchanged.
+    """
+    B = spill.B
+    sizes = [(spill.dir / f"pend{b}.bin").stat().st_size // spill.pend_dtype.itemsize for b in range(B)]
+    tried = [np.zeros(n, dtype=bool) for n in sizes]
+    consumed = [np.zeros(n, dtype=bool) for n in sizes]
+    orph = spill.load_orphans()
+    info: dict = {"mode": "deferred", "pending_reads": int(sum(sizes)), "unaddressed_reads": int(len(orph)), "rounds": {}}
+    pool = None
+
+    def recover(recs: np.ndarray, rnd: str) -> np.ndarray:
+        """Eager per-read recovery on stored records; returns the accepted mask and spills the verified frames."""
+        t = time.perf_counter()
+        ok = np.zeros(len(recs), dtype=bool)
+        r = info["rounds"].setdefault(rnd, {"reads": 0, "recovered": 0, "unique_addresses": 0, "seconds": 0.0})
+        if len(recs):
+            nonlocal pool
+            jobs = []
+            for c0 in range(0, len(recs), _DEFER_CHUNK):
+                c = recs[c0:c0 + _DEFER_CHUNK]
+                lens = c["rawlen"].astype(np.int64)
+                codes = np.concatenate([c["raw"][j, : lens[j]] for j in range(len(c))])
+                quals = np.concatenate([c["rawq"][j, : lens[j]] for j in range(len(c))]) if c["hasq"].all() else None
+                jobs.append((codes, lens, quals))
+            if opt.workers == 1:
+                _p_init(*initargs)
+                outs = [_process(*j) for j in jobs]
+            else:
+                if pool is None:
+                    pool = ProcessPoolExecutor(max_workers=opt.workers, initializer=_p_init, initargs=initargs)
+                outs = list(pool.map(_process, *zip(*jobs)))
+            fields, payloads = [], []
+            for c0, out in zip(range(0, len(recs), _DEFER_CHUNK), outs):
+                ok[c0 + out["acc_index"]] = True
+                fields.append(out["acc_fields"])
+                payloads.append(out["acc_payload"])
+                indel_stats.update(out.get("indel", {}))
+                for key in ("smart", "soft"):
+                    if key in out["stats"]:
+                        stats[key] += out["stats"][key]
+            fields_a = np.concatenate(fields)
+            spill.append_acc(fields_a, np.concatenate(payloads))
+            r["recovered"] += int(ok.sum())
+            r["recovered_addresses"] = r.get("recovered_addresses", 0) + len({tuple(f) for f in fields_a.tolist()})
+        r["reads"] += int(len(recs))
+        r["seconds"] = round(r["seconds"] + time.perf_counter() - t, 3)
+        return ok
+
+    def round_over(rnd: str, select) -> None:
+        addrs: set = set()
+        for b in range(B):
+            if not sizes[b]:
+                continue
+            _, pend = spill.load(b)
+            sel = np.flatnonzero(select(b, pend) & ~tried[b])
+            if not sel.size:
+                continue
+            tried[b][sel] = True
+            keys, _ = _pending_keys(pend[sel])
+            addrs.update(map(tuple, keys.tolist()))
+            consumed[b][sel[recover(pend[sel], rnd)]] = True
+        info["rounds"].setdefault(rnd, {"reads": 0, "recovered": 0, "unique_addresses": 0, "seconds": 0.0})
+        info["rounds"][rnd]["unique_addresses"] += len(addrs)
+
+    try:
+        def is_super(b, pend):
+            keys, alt = _pending_keys(pend)
+            return (keys[:, 0] == KIND_SUPER) | (alt[:, 0] == KIND_SUPER)
+
+        round_over("S", is_super)
+        try:
+            sb, _ = _decode_superblock(spill, lay, opt, Counter())
+        except (VNXDecodeError, VNXAddressError):
+            sb = None
+        info["superblock_decoded"] = sb is not None
+        info["v4_vote_counted"] = vote
+        complete = False
+        if sb is not None:
+            codec = make_outer(sb.outer_code, sb.K, sb.M, sb.lt_seed, sb.lt_distribution)
+            needed, groups, dec = _group_state(spill, sb, codec, lay, opt, consumed, vote)
+            info.update(groups=groups, groups_decodable_after_cheap_pass=dec, needed_addresses=len(needed))
+            if needed:
+                round_over("A", lambda b, pend: _targeted(pend, needed))
+                needed, _, dec = _group_state(spill, sb, codec, lay, opt, consumed, vote)
+            info["groups_decodable_after_round_a"] = dec
+            complete = dec == groups
+        info["round_b"] = not complete
+        if not complete:
+            round_over("B", lambda b, pend: np.ones(len(pend), dtype=bool))
+            ok = recover(orph, "B")
+            info["rounds"]["B"]["unaddressed_recovered"] = int(ok.sum())
+    finally:
+        if pool is not None:
+            pool.shutdown()
+    skipped_keys: set = set()
+    skipped = 0
+    for b in range(B):
+        if sizes[b] and not tried[b].all():          # before the rewrite: indices refer to the pass-1 file
+            _, pend = spill.load(b)
+            keys, _ = _pending_keys(pend[~tried[b]])
+            skipped += len(keys)
+            skipped_keys.update(map(tuple, keys.tolist()))
+        if consumed[b].any():
+            spill.rewrite_pend(b, ~consumed[b])
+    info["reads_skipped"] = skipped
+    info["addresses_skipped"] = len(skipped_keys)
+    info["reads_tried"] = int(sum(int(t.sum()) for t in tried)) + (int(len(orph)) if info["round_b"] else 0)
+    return info
+
+
 def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage: dict, t0: float, output, overwrite, partial_dir,
            select, select_dir, key, passphrase, tmp_root) -> DecodeResult:
     t2 = time.perf_counter()
@@ -851,6 +1112,7 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
             run(None, done)
         stage["pass2_decode"] = time.perf_counter() - t2
         indel = stats.pop("_indel", None)
+        schedule = stats.pop("_schedule", None)
         report = {"superblock": {"archive_id": sb.archive_id.hex(), "container_size": sb.container_size, "groups": sb.group_count,
                                  "outer_code": codec.configuration(), "layout": lay.to_dict()},
                   "reads": dict(stats), **sb_info, "duplicate_conflicts": conflicts}
@@ -861,6 +1123,8 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
             report["indel_recovery"] = {"mode": "smart", "config": dict(opt.indel_config.__dict__), **indel}
         if opt.soft_decoding != "off":
             report["soft_decoding"] = {"mode": opt.soft_decoding, "config": dict(opt.soft_config.__dict__), **softd}
+        if opt.indel_recovery == "smart" or opt.soft_decoding != "off":
+            report["recovery_schedule"] = schedule if schedule is not None else {"mode": "eager"}
         if select:
             return _selective(sb, work, fd, run, done, failed, select, select_dir, key, passphrase, overwrite, report, stage, t0)
     finally:
