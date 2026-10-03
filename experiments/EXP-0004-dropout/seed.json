@@ -1,0 +1,7 @@
+{
+  "note": "sweep trial seeds derive from the base seed (vnxdna.v4.sweep._seed)",
+  "seeds": {
+    "channel.seed": 1004,
+    "input.seed": 42
+  }
+}

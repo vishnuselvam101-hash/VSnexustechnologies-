@@ -1,0 +1,196 @@
+{
+  "case": "constraints",
+  "experiment": {
+    "git_commit": "44d3ae932bd4896879fe517d4b7ab52157256da6",
+    "id": "EXP-0014-constraints",
+    "timestamp_utc": "2026-10-03T02:20:17Z",
+    "type": "constraints",
+    "vnx_version": "4.0.0"
+  },
+  "note": "screening changes only the 1-byte scrambler variant inside each frame, so it costs no extra nucleotides; the alternative is to fail explicitly (VNXConstraintError) \u2014 sequences are never emitted unscreened",
+  "profile": "v4-balanced",
+  "results": [
+    {
+      "constraints": {
+        "check_reverse_complement": true,
+        "forbidden_motifs": [],
+        "gc_max_percent": 60,
+        "gc_min_percent": 40,
+        "gc_window_max_percent": 75,
+        "gc_window_min_percent": 25,
+        "gc_window_nt": 0,
+        "max_homopolymer": 4,
+        "max_length": 0,
+        "max_tandem_repeat_nt": 0,
+        "min_length": 0
+      },
+      "name": "default (GC 40-60, homopolymer<=4)",
+      "recoverable_after_screening": true,
+      "seconds": 0.172,
+      "sequence_overhead_nt": 0,
+      "status": "SATISFIED",
+      "strands_needing_rescreen_fraction": 0.4947,
+      "strands_per_second": 115973.0,
+      "variants_max": 15,
+      "variants_mean": 1.013,
+      "violating_after": 0,
+      "violating_before": 9894,
+      "violating_before_fraction": 0.4947,
+      "violations_before_by_rule": {
+        "GC_CONTENT": 3,
+        "HOMOPOLYMER": 9892
+      }
+    },
+    {
+      "constraints": {
+        "check_reverse_complement": true,
+        "forbidden_motifs": [],
+        "gc_max_percent": 70,
+        "gc_min_percent": 30,
+        "gc_window_max_percent": 75,
+        "gc_window_min_percent": 25,
+        "gc_window_nt": 0,
+        "max_homopolymer": 6,
+        "max_length": 0,
+        "max_tandem_repeat_nt": 0,
+        "min_length": 0
+      },
+      "name": "relaxed (GC 30-70, homopolymer<=6)",
+      "recoverable_after_screening": true,
+      "seconds": 0.117,
+      "sequence_overhead_nt": 0,
+      "status": "SATISFIED",
+      "strands_needing_rescreen_fraction": 0.03755,
+      "strands_per_second": 170509.2,
+      "variants_max": 3,
+      "variants_mean": 0.039,
+      "violating_after": 0,
+      "violating_before": 751,
+      "violating_before_fraction": 0.03755,
+      "violations_before_by_rule": {
+        "HOMOPOLYMER": 751
+      }
+    },
+    {
+      "constraints": {
+        "check_reverse_complement": true,
+        "forbidden_motifs": [],
+        "gc_max_percent": 55,
+        "gc_min_percent": 45,
+        "gc_window_max_percent": 75,
+        "gc_window_min_percent": 25,
+        "gc_window_nt": 0,
+        "max_homopolymer": 3,
+        "max_length": 0,
+        "max_tandem_repeat_nt": 0,
+        "min_length": 0
+      },
+      "error": "VNXConstraintError",
+      "message": "8 strand(s) violate the constraints for all 256 scrambler variants",
+      "name": "strict (GC 45-55, homopolymer<=3)",
+      "seconds": 2.29,
+      "status": "UNSATISFIABLE",
+      "violating_before": 20000,
+      "violations_before_by_rule": {
+        "GC_CONTENT": 1115,
+        "HOMOPOLYMER": 20000
+      }
+    },
+    {
+      "constraints": {
+        "check_reverse_complement": true,
+        "forbidden_motifs": [],
+        "gc_max_percent": 60,
+        "gc_min_percent": 40,
+        "gc_window_max_percent": 70,
+        "gc_window_min_percent": 30,
+        "gc_window_nt": 50,
+        "max_homopolymer": 4,
+        "max_length": 0,
+        "max_tandem_repeat_nt": 0,
+        "min_length": 0
+      },
+      "name": "windowed GC (window 50 nt, 30-70)",
+      "recoverable_after_screening": true,
+      "seconds": 0.26,
+      "sequence_overhead_nt": 0,
+      "status": "SATISFIED",
+      "strands_needing_rescreen_fraction": 0.5213,
+      "strands_per_second": 76879.1,
+      "variants_max": 16,
+      "variants_mean": 1.141,
+      "violating_after": 0,
+      "violating_before": 10426,
+      "violating_before_fraction": 0.5213,
+      "violations_before_by_rule": {
+        "GC_CONTENT": 3,
+        "GC_WINDOW": 1316,
+        "HOMOPOLYMER": 9892
+      }
+    },
+    {
+      "constraints": {
+        "check_reverse_complement": true,
+        "forbidden_motifs": [
+          "AAGCTT",
+          "GAATTC",
+          "GGATCC"
+        ],
+        "gc_max_percent": 60,
+        "gc_min_percent": 40,
+        "gc_window_max_percent": 75,
+        "gc_window_min_percent": 25,
+        "gc_window_nt": 0,
+        "max_homopolymer": 4,
+        "max_length": 0,
+        "max_tandem_repeat_nt": 12,
+        "min_length": 0
+      },
+      "name": "motifs (EcoRI, BamHI, HindIII) + tandem<=12",
+      "recoverable_after_screening": true,
+      "seconds": 0.294,
+      "sequence_overhead_nt": 0,
+      "status": "SATISFIED",
+      "strands_needing_rescreen_fraction": 0.58005,
+      "strands_per_second": 67976.6,
+      "variants_max": 19,
+      "variants_mean": 1.415,
+      "violating_after": 0,
+      "violating_before": 11601,
+      "violating_before_fraction": 0.58005,
+      "violations_before_by_rule": {
+        "FORBIDDEN_MOTIF": 3345,
+        "GC_CONTENT": 3,
+        "HOMOPOLYMER": 9892,
+        "TANDEM_REPEAT": 3
+      }
+    },
+    {
+      "constraints": {
+        "check_reverse_complement": true,
+        "forbidden_motifs": [],
+        "gc_max_percent": 52,
+        "gc_min_percent": 48,
+        "gc_window_max_percent": 75,
+        "gc_window_min_percent": 25,
+        "gc_window_nt": 0,
+        "max_homopolymer": 2,
+        "max_length": 0,
+        "max_tandem_repeat_nt": 0,
+        "min_length": 0
+      },
+      "error": "VNXConstraintError",
+      "message": "20000 strand(s) violate the constraints for all 256 scrambler variants",
+      "name": "very strict (GC 48-52, homopolymer<=2)",
+      "seconds": 19.626,
+      "status": "UNSATISFIABLE",
+      "violating_before": 20000,
+      "violations_before_by_rule": {
+        "GC_CONTENT": 10469,
+        "HOMOPOLYMER": 20000
+      }
+    }
+  ],
+  "strand_nt": 296,
+  "strands": 20000
+}
