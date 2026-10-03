@@ -125,7 +125,18 @@ def main() -> None:
     ap.add_argument("--seeds", type=int, default=2)
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--size", type=int, default=32768)
+    ap.add_argument("--control", action="store_true",
+                    help="P3O-EXP-02: eager with batch_reads 256 (the deferred stage's chunk size) vs deferred, to separate "
+                         "saved work from better load balance")
     a = ap.parse_args()
+    global NAME, CHANNELS, COVERAGES, DECODERS
+    if a.control:
+        NAME = "P3O-EXP-02-parallelism-control"
+        CHANNELS = {k: v for k, v in CHANNELS.items() if k != "clean"}
+        COVERAGES = (1, 3, 10)
+        DECODERS = {"V5-hard eager": {"indel_recovery": "smart", "recovery_schedule": "eager"},
+                    "V5-hard eager batch256": {"indel_recovery": "smart", "recovery_schedule": "eager", "batch_reads": 256},
+                    "V5-hard deferred": {"indel_recovery": "smart", "recovery_schedule": "deferred"}}
     t_all = time.perf_counter()
     rows = []
     with tempfile.TemporaryDirectory(prefix="p3o-") as tmp:
@@ -157,6 +168,8 @@ def main() -> None:
                            "false_success": sum(x["false_success"] for x in xs),
                            **{m: [x[m] for x in xs] for m in xs[0] if m not in ("verified", "false_success")}}
             for base in ("V5-hard", "V5-soft-auto"):
+                if f"{base} eager" not in cell:
+                    continue
                 e, f = cell[f"{base} eager"], cell[f"{base} deferred"]
                 cell[f"{base} same_outcome"] = (e["status"] == f["status"] and e["output_sha256"] == f["output_sha256"]
                                                 and e["groups_recovered_fraction"] == f["groups_recovered_fraction"])
