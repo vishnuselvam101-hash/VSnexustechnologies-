@@ -32,3 +32,5 @@ clusters.jsonl
 # V5 native aligner build outputs (built by pip install or python -m vnxdna.v5.native_alignment build)
 src/vnxdna/v5/*.so
 src/vnxdna/v5/native/*.so
+# V6 native read parser and RS decoder (python -m vnxdna.v6.native_reads build / native_rs build)
+src/vnxdna/v6/native/*.so

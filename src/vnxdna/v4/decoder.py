@@ -37,7 +37,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .reads import iter_reads
+from ..v6.native_reads import iter_reads   # V6: native streaming parser, falls back to .reads.iter_reads
 from . import archive as ar
 from . import container as ct
 from .codecs import CauchyRSCodec, make_outer
