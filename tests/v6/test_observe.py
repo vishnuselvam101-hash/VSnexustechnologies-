@@ -96,7 +96,9 @@ def test_cli_events_and_budget(arc, tmp_path):
                                  "--max-recovery-reads", "1000", "--max-wall-seconds", "3600"])
     assert r.exit_code == 0, r.output
     lines = [json.loads(x) for x in ev.read_text().splitlines()]
-    assert lines[-1]["event"] == "decode_end" and all(x["task_id"] == "job7" for x in lines)
+    # the decoder's last event is decode_end; vnx decode then records the command outcome (command_end)
+    assert [x["event"] for x in lines][-2:] == ["decode_end", "command_end"] and all(x["task_id"] == "job7" for x in lines)
+    assert lines[-1]["exit_code"] == 0 and lines[-1]["status"] == "SUCCESS"
     assert hashlib.sha256(out.read_bytes()).digest() == hashlib.sha256((arc / "a.vnx").read_bytes()).digest()
     doc = json.loads(r.output[r.output.index("{"):])
     assert doc["recovery_plan"]["budget"]["max_reads_examined"] == 1000
