@@ -49,6 +49,20 @@ padding.
 publish wrong bytes without a SHA-256 collision (plus HMAC/AES-GCM forgeries when encrypted). Python cannot reliably
 erase keys from memory.
 
+## Test-only keys in the repository (reviewed 2026-10-04)
+
+The secret scan (gitleaks, full history) reports 5 `generic-api-key` findings. The founder and the security review confirmed on 2026-10-04 that none of them is a real secret:
+
+| File : line | What it is | Why it is safe |
+|---|---|---|
+| `tests/fixtures/v0_1/generate_fixtures.py:20` (`TEST_ONLY_FERNET_KEY`) | Fernet key for the v0.1 compatibility fixtures | It's base64url of the text `vnx-dna-test-only-fixture-key!!!`. It's public by design, so the fixtures can be regenerated and decrypted in tests. It protects nothing. |
+| `tests/fixtures/v0_1/fixtures.json:5` (`test_only_fernet_key`) | The same key, recorded in the fixture manifest | Same key as above. |
+| `tests/fixtures/v2_0/SHA256SUMS.json:5` (`"key.hex": …`) | The SHA-256 **checksum** of the fixture file `key.hex` | Not a key at all (false positive). The fixture key in `key.hex` is a test-only key for the v2.0 compatibility archives. |
+
+Each finding appears in two commits (bc0c3de, 137383f) or one (76337d8), which makes 5 history entries. Their gitleaks fingerprints are listed in `.gitleaksignore`, so CI and local scans stay quiet about these exact lines only. A new key in any other place, or a changed value on these lines, is still reported. `vnx-security-scan` still lists them as INFORMATIONAL ("reviewed test key") and never hides them.
+
+**Rules for test keys:** name them `TEST_ONLY_*` or `test_only_*`; derive them from an obviously fake text; never reuse a test key anywhere outside `tests/`; record every new one in this table and in `.gitleaksignore`, with its review date.
+
 ---
 
 # V3 security — unchanged
