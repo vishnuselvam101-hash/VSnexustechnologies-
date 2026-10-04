@@ -686,7 +686,19 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
                 worker_cpu_seconds=round(cpu["seconds"], 3),
                 worker_utilisation=round(cpu["seconds"] / max(1e-9, stage["pass1_reads"] * opt.workers), 4))
         _plan_pass1(planner, opt, stats, deferred)
-        if deferred:
+        recover_groups = None
+        if deferred and select:
+            # random access: smart/soft recovery only for the index groups, then for the stripes of the selected files
+            ra_state: dict = {}
+
+            def recover_groups(groups: set) -> dict:
+                tr = time.perf_counter()
+                info = _deferred_recovery(spill, lay, opt, stats, indel_stats, initargs[:-1] + (False,), vote=False,
+                                          planner=planner, groups=set(groups), state=ra_state)
+                stage["deferred_recovery"] = stage.get("deferred_recovery", 0.0) + time.perf_counter() - tr
+                return info
+            recover_groups.state = ra_state
+        elif deferred:
             t1b = time.perf_counter()
             stats["_schedule"] = _deferred_recovery(spill, lay, opt, stats, indel_stats, initargs[:-1] + (False,),
                                                     vote=not select, planner=planner)
@@ -698,7 +710,7 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
             stats["_indel"] = indel_stats          # pass 2 adds its consensus counters; reported as report["indel_recovery"]
         planner.checkpoint("pass 2 start")
         result = _pass2(spill, lay, opt, stats, stage, t0, output, overwrite, partial_dir, select, select_dir, key, passphrase,
-                        tmp_root, planner, ev)
+                        tmp_root, planner, ev, recover_groups)
         return result
     finally:
         shutil.rmtree(tmp_root, ignore_errors=True)
@@ -975,13 +987,14 @@ def _targeted(pend: np.ndarray, needed: set) -> np.ndarray:
 
 
 def _group_state(spill: Spill, sb: Superblock, codec, lay: Layout, opt: DecodeOptions, consumed: list,
-                 vote: bool) -> tuple[set, int, int]:
+                 vote: bool, groups: set | None = None) -> tuple[set, int, int]:
     """(needed addresses, groups, decodable groups) from the verified frames in the spill.
 
     vote: also count what pass 2's V4 consensus vote will recover — computed exactly as pass 2 computes it (same known
     symbols, same missing set, same pending reads), so a group called decodable here is decodable in pass 2, which only
     adds smart/soft consensus on top. Without it (random access, whose pass 2 uses other missing sets) only single
-    verified reads count, which pass 2 can only extend.
+    verified reads count, which pass 2 can only extend. ``groups``: only these data groups are considered (random
+    access); the group count returned is then the number of those groups.
     """
     from dataclasses import replace
     tag = int.from_bytes(sb.archive_id[:2], "big")
@@ -993,7 +1006,9 @@ def _group_state(spill: Spill, sb: Superblock, codec, lay: Layout, opt: DecodeOp
         acc, pend = spill.load(b)
         acc = acc[(acc["kind"] == KIND_DATA) & (acc["tag"] == tag) & (acc["group"] < sb.group_count)]
         symbols, _ = resolve_duplicates(acc)
-        groups_b = list(range(b, sb.group_count, spill.B))
+        groups_b = [g for g in range(b, sb.group_count, spill.B) if groups is None or g in groups]
+        if not groups_b:
+            continue
         if vote and len(pend):
             missing = set()
             for g in groups_b:
@@ -1011,11 +1026,13 @@ def _group_state(spill: Spill, sb: Superblock, codec, lay: Layout, opt: DecodeOp
                 decodable += 1
             else:
                 needed.update((KIND_DATA, tag, g, s) for s in range(codec.symbols_for(k)) if s not in have)
-    return needed, sb.group_count, decodable
+    total = sb.group_count if groups is None else sum(1 for g in groups if 0 <= g < sb.group_count)
+    return needed, total, decodable
 
 
 def _deferred_recovery(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, indel_stats: Counter,
-                       initargs: tuple, vote: bool = True, planner=None) -> dict:
+                       initargs: tuple, vote: bool = True, planner=None, groups: set | None = None,
+                       state: dict | None = None) -> dict:
     """Per-read smart/soft recovery after the cheap pass, only where it can still change the result.
 
     State after the cheap pass (fast + sync paths, both orientations), all from verified frames:
@@ -1040,13 +1057,24 @@ def _deferred_recovery(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
 
     A verified frame is stored under its *verified* address and its pending record is removed, as if pass 1 had
     accepted it. Reads never tried stay pending for pass 2 exactly like any failed read. Pass 2 is unchanged.
+
+    Random access (V6) calls this once per stage with ``groups`` (first the index groups, then the stripes holding the
+    selected files) and a shared ``state``, so reads tried in one stage are not tried again and later stages only
+    consider what is still untried; groups outside ``groups`` never make round A or B run.
     """
     B = spill.B
     sizes = [(spill.dir / f"pend{b}.bin").stat().st_size // spill.pend_dtype.itemsize for b in range(B)]
-    tried = [np.zeros(n, dtype=bool) for n in sizes]
+    st = state if state is not None else {}
+    if "tried" not in st:
+        st.update(tried=[np.zeros(n, dtype=bool) for n in sizes], orph_done=0, calls=0,
+                  info={"mode": "deferred", "pending_reads": int(sum(sizes)), "rounds": {}})
+    st["calls"] += 1
+    tried = st["tried"]
     consumed = [np.zeros(n, dtype=bool) for n in sizes]
     orph = spill.load_orphans()
-    info: dict = {"mode": "deferred", "pending_reads": int(sum(sizes)), "unaddressed_reads": int(len(orph)), "rounds": {}}
+    info: dict = st["info"]
+    info["unaddressed_reads"] = int(len(orph))
+    first = st["calls"] == 1
     pool = None
     if planner is None:
         from ..v6.recovery import RecoveryPlanner
@@ -1148,9 +1176,11 @@ def _deferred_recovery(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
             keys, alt = _pending_keys(pend)
             return (keys[:, 0] == KIND_SUPER) | (alt[:, 0] == KIND_SUPER)
 
-        planner.decide(modes, True, "round S: pending reads whose header says superblock (the superblock defines what "
-                       "is expected)", {"pending_reads": info["pending_reads"], "unaddressed_reads": info["unaddressed_reads"]})
-        round_over("S", is_super)
+        if first:
+            planner.decide(modes, True, "round S: pending reads whose header says superblock (the superblock defines "
+                           "what is expected)", {"pending_reads": info["pending_reads"],
+                                                 "unaddressed_reads": info["unaddressed_reads"]})
+            round_over("S", is_super)
         try:
             sb, _ = _decode_superblock(spill, lay, opt, Counter())
         except (VNXDecodeError, VNXAddressError):
@@ -1160,15 +1190,17 @@ def _deferred_recovery(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
         complete = False
         if sb is not None:
             codec = make_outer(sb.outer_code, sb.K, sb.M, sb.lt_seed, sb.lt_distribution)
-            needed, groups, dec = _group_state(spill, sb, codec, lay, opt, consumed, vote)
-            info.update(groups=groups, groups_decodable_after_cheap_pass=dec, needed_addresses=len(needed))
-            sig = {"groups": groups, "groups_decodable": dec, "needed_addresses": len(needed)}
+            needed, n_groups, dec = _group_state(spill, sb, codec, lay, opt, consumed, vote, groups)
+            info.update(groups=n_groups, groups_decodable_after_cheap_pass=dec, needed_addresses=len(needed))
+            sig = {"groups": n_groups, "groups_decodable": dec, "needed_addresses": len(needed)}
+            if groups is not None:
+                sig["random_access_stage"] = st["calls"]
             if planner.decide(modes, bool(needed), "round A: reads targeting addresses needed by incomplete groups"
                               if needed else "round A skipped: no address is needed", sig):
                 round_over("A", lambda b, pend: _targeted(pend, needed))
-                needed, _, dec = _group_state(spill, sb, codec, lay, opt, consumed, vote)
+                needed, _, dec = _group_state(spill, sb, codec, lay, opt, consumed, vote, groups)
             info["groups_decodable_after_round_a"] = dec
-            complete = dec == groups
+            complete = dec == n_groups
         info["round_b"] = not complete
         why = ("round B: superblock undecodable after round S" if sb is None else
                f"round B: {info['groups'] - info['groups_decodable_after_round_a']} group(s) still incomplete" if not complete
@@ -1179,17 +1211,19 @@ def _deferred_recovery(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
         if not complete:
             planner.checkpoint("round B")
             round_over("B", lambda b, pend: np.ones(len(pend), dtype=bool))
-            n = planner.admit_reads("B", int(len(orph)))
+            o0 = st["orph_done"]                           # unaddressed reads already tried by an earlier stage
+            n = planner.admit_reads("B", int(len(orph)) - o0)
             examined, found = 0, 0
-            for c0 in range(0, n, _ORPHAN_SLICE):          # bounded memory: one slice of unaddressed reads at a time
-                part = np.array(orph[c0:min(n, c0 + _ORPHAN_SLICE)])
+            for c0 in range(o0, o0 + n, _ORPHAN_SLICE):    # bounded memory: one slice of unaddressed reads at a time
+                part = np.array(orph[c0:min(o0 + n, c0 + _ORPHAN_SLICE)])
                 ok, done_ = recover(part, "B")
                 examined += done_
                 found += int(ok.sum())
                 if done_ < len(part):
-                    planner.unexamined("B", n - c0 - len(part))
+                    planner.unexamined("B", o0 + n - c0 - len(part))
                     break
-            info["rounds"]["B"]["unaddressed_recovered"] = found
+            st["orph_done"] = o0 + examined
+            info["rounds"]["B"]["unaddressed_recovered"] = info["rounds"]["B"].get("unaddressed_recovered", 0) + found
     finally:
         if pool is not None:
             pool.shutdown()
@@ -1203,9 +1237,11 @@ def _deferred_recovery(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
             skipped_keys.update(map(tuple, keys.tolist()))
         if consumed[b].any():
             spill.rewrite_pend(b, ~consumed[b])
+            st["tried_consumed"] = st.get("tried_consumed", 0) + int(consumed[b].sum())
+            tried[b] = tried[b][~consumed[b]]                # keep indices aligned with the rewritten file
     info["reads_skipped"] = skipped
     info["addresses_skipped"] = len(skipped_keys)
-    info["reads_tried"] = int(sum(int(t.sum()) for t in tried)) + (int(examined) if info["round_b"] else 0)
+    info["reads_tried"] = int(sum(int(t.sum()) for t in tried)) + st.get("tried_consumed", 0) + st["orph_done"]
     rounds = info["rounds"]
     planner.outcome(modes, reads_examined=sum(rounds.get(k, {}).get("reads", 0) for k in "SA"),
                     reads_verified=sum(rounds.get(k, {}).get("recovered", 0) for k in "SA"))
@@ -1217,7 +1253,7 @@ def _deferred_recovery(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
 
 
 def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage: dict, t0: float, output, overwrite, partial_dir,
-           select, select_dir, key, passphrase, tmp_root, planner=None, ev=None) -> DecodeResult:
+           select, select_dir, key, passphrase, tmp_root, planner=None, ev=None, recover_groups=None) -> DecodeResult:
     if planner is None:
         from ..v6.recovery import RecoveryPlanner
         planner = RecoveryPlanner()
@@ -1308,7 +1344,20 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
                                                                      if select else "") +
                        ("; V6 stripe/column recovery for rows that fail" if v6 is not None else ""),
                        {"groups": sb.group_count, "total_rows": total, "superblock_version": sb.version})
+        def stripes_of(groups: set) -> set:
+            """Data groups sharing a stripe with ``groups`` (column recovery of a row needs its stripe's rows)."""
+            if v6 is None:
+                return set(groups)
+            geo = sb.geometry()
+            out: set = set()
+            for g in groups:
+                if 0 <= g < sb.group_count:
+                    out.update(geo.stripe_rows(geo.stripe_of(g))[0])
+            return out
+
         if select:
+            if recover_groups is not None:
+                recover_groups(stripes_of(wanted))
             run(wanted, done)
         else:
             run(None, done)
@@ -1339,9 +1388,15 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
             report["recovery_schedule"] = schedule if schedule is not None else {"mode": "eager"}
         report["recovery_plan"] = planner.report()
         if select:
-            res = _selective(sb, work, fd, run, done, failed, select, select_dir, key, passphrase, overwrite, report, stage, t0)
+            recover = None if recover_groups is None else (lambda need: recover_groups(stripes_of(need)))
+            res = _selective(sb, work, fd, run, done, failed, select, select_dir, key, passphrase, overwrite, report, stage, t0,
+                             recover)
             if v6 is not None:
                 res.report["outer_v6"] = v6.report()
+            if recover_groups is not None:
+                res.report["recovery_schedule"] = dict(recover_groups.state.get("info", {}), random_access_stages=
+                                                       recover_groups.state.get("calls", 0))
+            res.report["recovery_plan"] = planner.report()
             return res
     finally:
         os.close(fd)
@@ -1424,7 +1479,8 @@ def _partial(sb: Superblock, work: Path, failed: dict, partial_dir, key, passphr
     return info
 
 
-def _selective(sb, work, fd, run, done, failed, select, select_dir, key, passphrase, overwrite, report, stage, t0) -> DecodeResult:
+def _selective(sb, work, fd, run, done, failed, select, select_dir, key, passphrase, overwrite, report, stage, t0,
+               recover=None) -> DecodeResult:
     """Random access: decode the index groups, then only the groups holding the selected files."""
     K, P = sb.K, sb.layout.payload_bytes
     if failed:
@@ -1438,6 +1494,8 @@ def _selective(sb, work, fd, run, done, failed, select, select_dir, key, passphr
             off, n = c.chunk_range(idx)
             need.update(range(off // (K * P), (off + n - 1) // (K * P) + 1))
     t = time.perf_counter()
+    if recover is not None and need - done:
+        recover(need - done)                     # smart/soft recovery for the selected files' stripes only
     run(need - done, done)
     stage["selective_decode"] = time.perf_counter() - t
     if failed:
