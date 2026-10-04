@@ -172,7 +172,14 @@ class Superblock:
         inv = {v: k_ for k_, v in DIST_IDS.items()}
         if dist not in inv:
             raise VNXFormatError("unknown fountain distribution id", stage="superblock")
-        lay = Layout(p, r, mp4 * 4, ml).validate()
+        # a superblock is untrusted input: every field is checked here so that a CRC-valid forgery is a format error
+        # (and the decoder moves on to the next candidate), never a crash or a configuration error
+        if not 1 <= k or k + m > (256 if code == "cauchy-rs" else 65535):
+            raise VNXFormatError(f"superblock outer code parameters K = {k}, M = {m} are invalid", stage="superblock")
+        try:
+            lay = Layout(p, r, mp4 * 4, ml).validate()
+        except VNXConfigurationError as error:
+            raise VNXFormatError(f"superblock layout is invalid: {error}", stage="superblock") from None
         if groups != -(-size // (k * p)) or index_offset > size:
             raise VNXFormatError("superblock geometry is inconsistent", stage="superblock")
         if data[6] == SB_VERSION:

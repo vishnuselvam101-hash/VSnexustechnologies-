@@ -7,7 +7,9 @@ from __future__ import annotations
 
 import json
 import os
+import struct
 import tracemalloc
+import zlib
 
 import numpy as np
 import pytest
@@ -20,9 +22,10 @@ from vnxdna.v4 import datagen
 from vnxdna.v4 import decoder as de
 from vnxdna.v4 import encoder as en
 from vnxdna.v4.cli import app
+from vnxdna.v4.codecs import CauchyRSCodec
 from vnxdna.v4.constraints import iter_fasta
 from vnxdna.v4.errors import VNXConfigurationError, VNXFormatError, VNXKeyError
-from vnxdna.v4.frame import KIND_SUPER
+from vnxdna.v4.frame import KIND_SUPER, build_strands
 from vnxdna.v6 import outer as ou
 from vnxdna.v6.decode import StripeRecovery
 from vnxdna.v6.observe import JsonlObserver
@@ -344,6 +347,44 @@ def test_partial_decode_with_key_refuses_unencrypted(arc, tmp_path):
     assert "not encrypted" in res.report.get("partial_note", "")
     ok = de.decode_reads(reads, None, de.DecodeOptions(), partial_dir=tmp_path / "p2", key=key, allow_unencrypted=True)
     assert ok.report["files_recovered"]
+
+
+# ---------------------------------------------------------------------------------------------------------------- P-3
+def _forged_superblock_reads(lay, tag: int, patch: dict[int, int]) -> str:
+    aid = tag.to_bytes(2, "big") + bytes(14)
+    raw = bytearray(en.Superblock("cauchy-rs", 64, 16, lay, "dense", 0, aid, 10_000, bytes(32), 9000, 4).pack()[:-4])
+    for i, v in patch.items():
+        raw[i] = v
+    raw = bytes(raw) + struct.pack(">I", zlib.crc32(bytes(raw)))
+    P = lay.payload_bytes
+    ks, ms = en.Superblock.symbols(P)
+    data = np.zeros((ks, P), dtype=np.uint8)
+    data.reshape(-1)[: len(raw)] = np.frombuffer(raw, dtype=np.uint8)
+    coded = CauchyRSCodec(ks, ms).encode(data)
+    strands, _ = build_strands(lay, en.DNAOptions().constraints, tag, KIND_SUPER, np.zeros(ks + ms, dtype=np.int64),
+                               np.arange(ks + ms, dtype=np.int64), coded)
+    acgt = np.frombuffer(b"ACGT", dtype=np.uint8)
+    return "".join(f">forged{i}\n{acgt[row].tobytes().decode()}\n" for i, row in enumerate(strands))
+
+
+def test_superblock_k_zero_is_a_format_error():
+    lay = en.DNAOptions().resolve()[0]
+    raw = bytearray(en.Superblock("cauchy-rs", 64, 16, lay, "dense", 0, bytes(16), 10_000, bytes(32), 9000, 4).pack()[:-4])
+    raw[8] = raw[9] = 0
+    raw = bytes(raw) + struct.pack(">I", zlib.crc32(bytes(raw)))
+    with pytest.raises(VNXFormatError):
+        en.Superblock.unpack(raw)
+
+
+@pytest.mark.parametrize("patch", [{8: 0, 9: 0}, {14: 3}], ids=["K=0", "invalid-layout"])
+def test_forged_superblock_candidate_does_not_abort_decode(arc, tmp_path, patch):
+    lay = en.DNAOptions().resolve()[0]
+    reads = tmp_path / "r.fasta"
+    reads.write_text((arc / "plain.fasta").read_text() + _forged_superblock_reads(lay, 0xBEEF, patch) * 2)
+    res = de.decode_reads(reads, tmp_path / "o.vnx", de.DecodeOptions())
+    assert res.status == "SUCCESS"
+    assert (tmp_path / "o.vnx").read_bytes() == (arc / "plain.vnx").read_bytes()
+    assert "beef" in res.report["archive_tags_seen"]
 
 
 # ---------------------------------------------------------------------------------------------------------------- P-2

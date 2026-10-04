@@ -43,7 +43,7 @@ from . import container as ct
 from .codecs import CauchyRSCodec, make_outer
 from .encoder import SB_BYTES, Superblock, group_k
 from .errors import (VNXAddressError, VNXConfigurationError, VNXDecodeError, VNXFormatError, VNXIntegrityError,
-                     VNXKeyError)
+                     VNXKeyError, VNXUnsupportedVersionError)
 from .frame import HEADER_BYTES, KIND_DATA, KIND_SUPER, PROFILES, Layout, decode_frames, nt_to_bytes, tentative_address
 from .sync import SyncCosts, TemplateAligner, frame_erasures_to_bytes, strip_markers_exact
 from .util import atomic_output, peak_rss_bytes
@@ -753,6 +753,7 @@ def _decode_superblock(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
         symbols.update(_consensus_symbols(pend_sb, symbols, lay, opt, stats))
     tags = sorted({k[1] for k in symbols})
     candidates = {}
+    unsupported = None
     for tag in tags:
         got = {k[3]: v for k, v in symbols.items() if k[1] == tag and k[0] == KIND_SUPER and k[2] == 0 and k[3] < ks + ms}
         if len(got) < ks:
@@ -762,9 +763,14 @@ def _decode_superblock(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
             sb = Superblock.unpack(data[:SB_BYTES])
         except (VNXDecodeError, VNXFormatError):
             continue
+        except VNXUnsupportedVersionError as error:     # a newer archive, or a forgery: other candidates still count
+            unsupported = unsupported or error
+            continue
         if int.from_bytes(sb.archive_id[:2], "big") == tag and sb.layout == lay:
             candidates[tag] = sb
     if not candidates:
+        if unsupported is not None:
+            raise unsupported
         raise VNXDecodeError("no superblock could be decoded (too few superblock strands survived, or the layout is wrong)",
                              stage="superblock", details={"superblock_symbols_seen": len(symbols), "tags_seen": [f"{t:04x}" for t in tags]},
                              hint="check --profile, increase coverage, or confirm the reads come from a VNX4 strand pool")
