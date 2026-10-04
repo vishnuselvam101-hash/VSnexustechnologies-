@@ -36,6 +36,7 @@ class _ParityRows:
         data = np.ascontiguousarray(data, dtype=np.uint8).reshape(self.geo.K, self.geo.P)
         self.present.add(g)
         if self.fd is None:
+            assert self.mem is not None  # in-memory mode: mem is set whenever there is no scratch file
             self.mem[g] = data
         else:
             os.pwrite(self.fd, data.tobytes(), (g - self.geo.G) * self.geo.K * self.geo.P)
@@ -44,6 +45,7 @@ class _ParityRows:
         if g not in self.present:
             raise KeyError(g)
         if self.fd is None:
+            assert self.mem is not None
             return self.mem[g]
         n = self.geo.K * self.geo.P
         return np.frombuffer(os.pread(self.fd, n, (g - self.geo.G) * n), dtype=np.uint8).reshape(self.geo.K, self.geo.P)
