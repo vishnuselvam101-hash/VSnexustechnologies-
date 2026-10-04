@@ -257,13 +257,28 @@ def encode(source: Path = typer.Argument(..., help="A .vnx container, or a file/
            outer_plan: Optional[str] = typer.Option(None, "--outer-plan",
                                                     help="V6 (opt-in): fixed (default) or adaptive."),
            redundancy_budget: Optional[float] = typer.Option(None, "--redundancy-budget",
-                                                             help="V6 adaptive plan: max redundant strands per data strand.")) -> None:
+                                                             help="V6 adaptive plan: max redundant strands per data strand."),
+           redundancy_profile: Optional[str] = typer.Option(
+               None, "--redundancy-profile",
+               help="V6 preset: maximum-density, balanced or maximum-recovery (explicit options override it).")) -> None:
     """Encode a VNX4 container (or files) into DNA strands."""
     def go():
         import tempfile
         from . import archive as ar
         from . import container as ct
         from . import encoder as en
+        nonlocal profile, stripe_depth, column_parity, strand_order
+        if redundancy_profile is not None:
+            from ..v6.profiles import REDUNDANCY_PROFILES
+            from ..v6.errors import V6ConfigurationError
+            if redundancy_profile not in REDUNDANCY_PROFILES:
+                raise V6ConfigurationError(f"unknown redundancy profile {redundancy_profile!r}; "
+                                           f"available: {sorted(REDUNDANCY_PROFILES)}")
+            base = REDUNDANCY_PROFILES[redundancy_profile]
+            profile = profile if profile is not None else base.get("profile")
+            stripe_depth = stripe_depth if stripe_depth is not None else base.get("stripe_depth")
+            column_parity = column_parity if column_parity is not None else base.get("column_parity")
+            strand_order = strand_order if strand_order is not None else base.get("strand_order")
         opts, perf = _dna_opts(config, profile, outer_code, data_symbols, parity_symbols, workers, performance,
                                stripe_depth=stripe_depth, column_parity=column_parity, strand_order=strand_order,
                                outer_plan=outer_plan, redundancy_budget=redundancy_budget)
