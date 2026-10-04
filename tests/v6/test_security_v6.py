@@ -207,6 +207,45 @@ def test_finish_checkpoint_per_stripe(tmp_path):
     assert len(ticks) == 2
 
 
+def test_failed_row_is_not_reprocessed_by_a_later_finish(tmp_path):
+    geo = _geo(D=4, Mc=1)
+    rec = StripeRecovery(geo)
+    fd = os.open(tmp_path / "c.bin", os.O_RDWR | os.O_CREAT, 0o600)
+    try:
+        done = set(range(geo.total_groups))
+        failed: dict = {}
+        rec.row_failed(0, {}, "lost")
+        rec.row_failed(1, {}, "lost")                  # two rows lost in a stripe with one column-parity row
+        rec.finish(fd, lambda todo, d: None, done, failed)
+        assert set(failed) == {0, 1}
+        rec.finish(fd, lambda todo, d: None, done, failed)   # selective decode calls finish again
+        rec.finish(fd, lambda todo, d: None, done, failed)
+    finally:
+        os.close(fd)
+    r = rec.report()
+    assert rec.pending == {}
+    assert r["rows_failed_row_wise"] == 2 and r["data_rows_unrecovered"] == 2 and r["rows_recovered_by_columns"] == 0
+    assert r["stripes_attempted"] == 1
+    assert not set(rec.recovered) & set(failed)
+
+
+def test_unrecovered_parity_rows_counted_once(tmp_path):
+    geo = _geo(D=4, Mc=2)
+    rec = StripeRecovery(geo)
+    par = geo.stripe_rows(0)[1]
+    fd = os.open(tmp_path / "c.bin", os.O_RDWR | os.O_CREAT, 0o600)
+    try:
+        failed: dict = {}
+        for g in (0, 1, 2, *par):
+            rec.row_failed(g, {}, "lost")
+        rec.finish(fd, lambda todo, d: None, set(range(geo.total_groups)), failed)
+        rec.finish(fd, lambda todo, d: None, set(range(geo.total_groups)), failed)
+    finally:
+        os.close(fd)
+    r = rec.report()
+    assert r["rows_failed_row_wise"] == 5 and r["data_rows_unrecovered"] == 3 and r["stripes_attempted"] == 1
+
+
 def test_decoder_interleaved_without_column_parity_reports_failed_group(arc, tmp_path):
     """Superblock v2 with Mc = 0 (automatic depth: one stripe of every group): a lost group is reported, not assembled."""
     s = tmp_path / "s.fasta"

@@ -66,7 +66,8 @@ class StripeRecovery:
         self.parity_rows = _ParityRows(geo, scratch)            # decoded column-parity rows: data (K, P)
         self.stats = StripeStats()
         self.recovered: list[int] = []
-        self.unrecovered: list[int] = []
+        self.unrecovered: list[int] = []                         # data rows that stay failed
+        self.unrecovered_parity: list[int] = []                  # column-parity rows that stay unknown
         self.stripes_attempted = 0
         self.stripes_skipped = 0
         self.expected = 0
@@ -115,8 +116,10 @@ class StripeRecovery:
         stay failed, exactly as if the column code could not recover them. ``checkpoint()`` (the planner's wall-time
         and memory budget) is called before each stripe and may raise to stop the decode.
 
-        Without column parity (Mc = 0) nothing can be recovered by columns: the stripe, whose depth can be every data
-        group of the archive, is never assembled and its rows go straight to failed."""
+        Every pending row leaves ``pending`` here, recovered or not, so a later call (selective decoding runs the row
+        pass and this column pass repeatedly) never processes a row twice and a row is never both failed and
+        recovered. Without column parity (Mc = 0) nothing can be recovered by columns: the stripe, whose depth can be
+        every data group of the archive, is never assembled and its rows go straight to failed."""
         if self._busy or not self.pending:
             return 0
         self._busy = True
@@ -129,10 +132,8 @@ class StripeRecovery:
                     checkpoint()
                 if not Mc:
                     for g in sorted(g for g in self.pending if geo.stripe_of(g) == s):
-                        failed[g] = (f"{self.errors[g]}; no column parity in this archive (Mc = 0), so the column "
-                                     "code cannot recover it")
-                        self.unrecovered.append(g)
-                        del self.pending[g]
+                        self._give_up(g, failed, f"{self.errors[g]}; no column parity in this archive (Mc = 0), so "
+                                                 "the column code cannot recover it")
                     continue
                 data_g, par_g = geo.stripe_rows(s)
                 rows = data_g + par_g
@@ -144,10 +145,8 @@ class StripeRecovery:
                     continue
                 if admit is not None and not admit(s):
                     for g in mine:
-                        if g < geo.G:
-                            failed[g] = f"{self.errors[g]}; stripe {s} not attempted (recovery budget max_outer_stripes)"
-                            self.unrecovered.append(g)
-                        del self.pending[g]
+                        self._give_up(g, failed, f"{self.errors[g]}; stripe {s} not attempted (recovery budget "
+                                                 "max_outer_stripes)")
                     self.stripes_skipped += 1
                     continue
                 self.stripes_attempted += 1
@@ -190,13 +189,21 @@ class StripeRecovery:
                         raw = raw[: max(0, min(len(raw), geo.container_size - start))]
                         os.pwrite(fd, raw, start)
                         written += 1
-                    elif g < geo.G:
-                        failed[g] = (f"{self.errors[g]}; column code (stripe {s}, {D} + {Mc} rows) could not recover "
-                                     "it either")
-                        self.unrecovered.append(g)
+                    else:
+                        self._give_up(g, failed, f"{self.errors[g]}; column code (stripe {s}, {D} + {Mc} rows) could "
+                                                 "not recover it either")
         finally:
             self._busy = False
         return written
+
+    def _give_up(self, g: int, failed: dict, why: str) -> None:
+        """Row g stays unknown: a data row is reported failed; either kind leaves ``pending`` for good."""
+        del self.pending[g]
+        if g < self.geo.G:
+            failed[g] = why
+            self.unrecovered.append(g)
+        else:
+            self.unrecovered_parity.append(g)
 
     def report(self) -> dict:
         geo = self.geo
@@ -207,7 +214,8 @@ class StripeRecovery:
             "symbols_missing": self.expected - self.received,
             "rows_with_loss": self.rows_with_loss, "rows_lost_entirely": self.rows_lost_entirely,
             "max_symbols_lost_in_one_row": self.max_row_loss,
-            "rows_failed_row_wise": len(self.recovered) + len(self.unrecovered) + len(self.pending),
+            "rows_failed_row_wise": len(self.recovered) + len(self.unrecovered) + len(self.unrecovered_parity)
+                                    + len(self.pending),
             "rows_recovered_by_columns": len(self.recovered), "data_rows_recovered_by_columns": len(rec_data),
             "data_rows_unrecovered": len(self.unrecovered),
             "stripes_attempted": self.stripes_attempted, "stripes_skipped_by_budget": self.stripes_skipped,
