@@ -29,6 +29,7 @@ class StripeRecovery:
         self.recovered: list[int] = []
         self.unrecovered: list[int] = []
         self.stripes_attempted = 0
+        self.stripes_skipped = 0
         self.expected = 0
         self.received = 0
         self.rows_with_loss = 0
@@ -68,8 +69,11 @@ class StripeRecovery:
         out.reshape(-1)[: len(raw)] = np.frombuffer(raw, dtype=np.uint8)
         return out
 
-    def finish(self, fd: int, run, done: set, failed: dict) -> int:
-        """Column pass over every stripe with a pending row. Returns the number of data rows written."""
+    def finish(self, fd: int, run, done: set, failed: dict, admit=None) -> int:
+        """Column pass over every stripe with a pending row. Returns the number of data rows written.
+
+        ``admit(stripe) -> bool`` (the recovery planner's outer budget) may refuse a stripe; its failed data rows then
+        stay failed, exactly as if the column code could not recover them."""
         if self._busy or not self.pending:
             return 0
         self._busy = True
@@ -85,6 +89,14 @@ class StripeRecovery:
                     run(todo, done)
                 mine = [g for g in rows if g in self.pending]
                 if not mine:
+                    continue
+                if admit is not None and not admit(s):
+                    for g in mine:
+                        if g < geo.G:
+                            failed[g] = f"{self.errors[g]}; stripe {s} not attempted (recovery budget max_outer_stripes)"
+                            self.unrecovered.append(g)
+                        del self.pending[g]
+                    self.stripes_skipped += 1
                     continue
                 self.stripes_attempted += 1
                 index = {g: r for r, g in enumerate(data_g)}
@@ -145,6 +157,7 @@ class StripeRecovery:
             "rows_failed_row_wise": len(self.recovered) + len(self.unrecovered) + len(self.pending),
             "rows_recovered_by_columns": len(self.recovered), "data_rows_recovered_by_columns": len(rec_data),
             "data_rows_unrecovered": len(self.unrecovered),
-            "stripes_attempted": self.stripes_attempted, "row_decodes": self.stats.row_decodes,
+            "stripes_attempted": self.stripes_attempted, "stripes_skipped_by_budget": self.stripes_skipped,
+            "row_decodes": self.stats.row_decodes,
             "column_decodes": self.stats.column_decodes,
         }

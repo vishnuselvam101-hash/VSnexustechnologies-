@@ -76,6 +76,9 @@ class DecodeOptions:
     # contribute to a group that is not yet decodable (see _deferred_recovery); "eager" = inside pass 1 for every read
     # the V4 paths fail (the Phase 3/4 behaviour). Irrelevant unless smart indel recovery or soft decoding is on.
     recovery_schedule: str = "deferred"
+    # V6: limits on expensive recovery (vnxdna.v6.recovery.RecoveryBudget; None = unlimited, the V5 behaviour). Every
+    # escalation is decided and recorded by vnxdna.v6.recovery.RecoveryPlanner → report["recovery_plan"].
+    recovery_budget: object = None
 
     def validate(self) -> None:
         if not 1 <= self.workers <= 256:
@@ -109,6 +112,12 @@ class DecodeOptions:
             else:
                 self.soft_config = replace(self.soft_config, mode=self.soft_decoding)
             self.soft_config.validate()
+        from ..v6.recovery import RecoveryBudget
+        if self.recovery_budget is None:
+            self.recovery_budget = RecoveryBudget()
+        elif not isinstance(self.recovery_budget, RecoveryBudget):
+            raise VNXConfigurationError("recovery_budget must be a RecoveryBudget")
+        self.recovery_budget.validate()
 
 
 # ============================================================================ layout detection
@@ -557,6 +566,8 @@ def decode_reads(reads_path: str | os.PathLike, output: str | os.PathLike | None
     opt = options or DecodeOptions()
     opt.validate()
     t0 = time.perf_counter()
+    from ..v6.recovery import RecoveryPlanner
+    planner = RecoveryPlanner(opt.recovery_budget, t0)
     stage: dict = {}
     reads_path = Path(reads_path)
     lay = detect_layout(reads_path, opt)
@@ -579,6 +590,7 @@ def decode_reads(reads_path: str | os.PathLike, output: str | os.PathLike | None
                     opt.soft_config if softm else None, deferred)
 
         def take(res):
+            planner.checkpoint("pass 1")
             spill.write(res)
             stats.update(res["stats"])
             indel_stats.update(res.get("indel", {}))
@@ -609,18 +621,43 @@ def decode_reads(reads_path: str | os.PathLike, output: str | os.PathLike | None
         stage["pass1_reads"] = time.perf_counter() - t1
         if stats["reads"] == 0:
             raise VNXFormatError("the read file contains no reads", stage="input")
+        _plan_pass1(planner, opt, stats, deferred)
         if deferred:
             t1b = time.perf_counter()
             stats["_schedule"] = _deferred_recovery(spill, lay, opt, stats, indel_stats, initargs[:-1] + (False,),
-                                                    vote=not select)
+                                                    vote=not select, planner=planner)
             stage["deferred_recovery"] = time.perf_counter() - t1b
         if smart or softm:
             stats["_indel"] = indel_stats          # pass 2 adds its consensus counters; reported as report["indel_recovery"]
+        planner.checkpoint("pass 2 start")
         result = _pass2(spill, lay, opt, stats, stage, t0, output, overwrite, partial_dir, select, select_dir, key, passphrase,
-                        tmp_root)
+                        tmp_root, planner)
         return result
     finally:
         shutil.rmtree(tmp_root, ignore_errors=True)
+
+
+def _plan_pass1(planner, opt: DecodeOptions, stats: Counter, deferred: bool) -> None:
+    """Record pass 1 (FAST, SYNC and, under the eager schedule, SMART/SOFT inline) in the recovery plan."""
+    reads = stats["reads"]
+    planner.decide("FAST", True, "every read: exact-length frame, inner RS + CRC", {"reads": reads})
+    planner.outcome("FAST", reads_verified=stats["fast"])
+    planner.decide("SYNC", True, "reads FAST did not verify: marker-template alignment, indels as erasures",
+                   {"reads_not_fast": reads - stats["fast"]})
+    planner.outcome("SYNC", reads_verified=stats["sync"], reverse_complement=stats["reverse_complement"],
+                    pending_after_confidence_check=stats["pending"], unaligned=stats["unaligned"])
+    smart, soft = opt.indel_recovery == "smart", opt.soft_decoding != "off"
+    if not (smart or soft):
+        planner.decide("SMART", False, "indel_recovery is 'segment' (V4 erasure rule only)")
+        planner.decide("SOFT", False, "soft_decoding is off")
+    elif not deferred:
+        why = "eager schedule: inside pass 1 for every read the hard paths failed (no budget admission)"
+        if smart:
+            planner.decide("SMART", True, why)
+            planner.outcome("SMART", reads_verified=stats["smart"])
+        if soft:
+            planner.decide("SOFT", True, why)
+            planner.outcome("SOFT", reads_verified=stats["soft"])
 
 
 def _decode_superblock(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter) -> tuple[Superblock, dict]:
@@ -910,7 +947,7 @@ def _group_state(spill: Spill, sb: Superblock, codec, lay: Layout, opt: DecodeOp
 
 
 def _deferred_recovery(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, indel_stats: Counter,
-                       initargs: tuple, vote: bool = True) -> dict:
+                       initargs: tuple, vote: bool = True, planner=None) -> dict:
     """Per-read smart/soft recovery after the cheap pass, only where it can still change the result.
 
     State after the cheap pass (fast + sync paths, both orientations), all from verified frames:
@@ -943,11 +980,18 @@ def _deferred_recovery(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
     orph = spill.load_orphans()
     info: dict = {"mode": "deferred", "pending_reads": int(sum(sizes)), "unaddressed_reads": int(len(orph)), "rounds": {}}
     pool = None
+    if planner is None:
+        from ..v6.recovery import RecoveryPlanner
+        planner = RecoveryPlanner()
+    modes = "+".join(m for m, on in (("SMART", opt.indel_recovery == "smart"), ("SOFT", opt.soft_decoding != "off")) if on)
 
-    def recover(recs: np.ndarray, rnd: str) -> np.ndarray:
-        """Eager per-read recovery on stored records; returns the accepted mask and spills the verified frames."""
+    def recover(recs: np.ndarray, rnd: str) -> tuple[np.ndarray, int]:
+        """Eager per-read recovery on stored records; returns the accepted mask and the number of records examined
+        (fewer than ``len(recs)`` only when the wall-time budget cut the round short), and spills the verified
+        frames."""
         t = time.perf_counter()
         ok = np.zeros(len(recs), dtype=bool)
+        examined = len(recs)
         r = info["rounds"].setdefault(rnd, {"reads": 0, "recovered": 0, "unique_addresses": 0, "seconds": 0.0})
         if len(recs):
             nonlocal pool
@@ -961,13 +1005,33 @@ def _deferred_recovery(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
                 codes = np.concatenate([c["raw"][j, : lens[j]] for j in range(len(c))])
                 quals = np.concatenate([c["rawq"][j, : lens[j]] for j in range(len(c))]) if c["hasq"].all() else None
                 jobs.append((codes, lens, quals))
+            timed = planner.budget.max_wall_seconds is not None
             if opt.workers == 1:
                 _p_init(*initargs)
-                outs = [_process(*j) for j in jobs]
+                outs = []
+                for j in jobs:
+                    if timed and planner.out_of_time():
+                        break
+                    outs.append(_process(*j))
             else:
                 if pool is None:
                     pool = ProcessPoolExecutor(max_workers=opt.workers, initializer=_p_init, initargs=initargs)
-                outs = list(pool.map(_process, *zip(*jobs)))
+                if not timed:
+                    outs = list(pool.map(_process, *zip(*jobs)))
+                else:
+                    # bounded window in job order, so a wall-time cut leaves a deterministic prefix examined
+                    outs, window, it = [], deque(), iter(jobs)
+                    for j in it:
+                        window.append(pool.submit(_process, *j))
+                        if len(window) >= 2 * opt.workers:
+                            outs.append(window.popleft().result())
+                            if planner.out_of_time():
+                                break
+                    for f in window:
+                        f.cancel()
+                    while window and not planner.out_of_time():
+                        outs.append(window.popleft().result())
+            examined = min(len(recs), len(outs) * size)
             fields, payloads = [], []
             for c0, out in zip(range(0, len(recs), size), outs):
                 ok[c0 + out["acc_index"]] = True
@@ -977,13 +1041,18 @@ def _deferred_recovery(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
                 for key in ("smart", "soft"):
                     if key in out["stats"]:
                         stats[key] += out["stats"][key]
-            fields_a = np.concatenate(fields)
-            spill.append_acc(fields_a, np.concatenate(payloads))
+            if fields:
+                fields_a = np.concatenate(fields)
+                spill.append_acc(fields_a, np.concatenate(payloads))
+                r["recovered_addresses"] = r.get("recovered_addresses", 0) + len({tuple(f) for f in fields_a.tolist()})
             r["recovered"] += int(ok.sum())
-            r["recovered_addresses"] = r.get("recovered_addresses", 0) + len({tuple(f) for f in fields_a.tolist()})
-        r["reads"] += int(len(recs))
+            if examined < len(recs):
+                planner.unexamined(rnd, len(recs) - examined)
+                planner.exhausted.append({"limit": "max_wall_seconds", "at": f"round {rnd}", "requested": int(len(recs)),
+                                          "admitted": int(examined), "effect": "round cut short; the rest stay pending"})
+        r["reads"] += int(examined)
         r["seconds"] = round(r["seconds"] + time.perf_counter() - t, 3)
-        return ok
+        return ok, examined
 
     def round_over(rnd: str, select) -> None:
         addrs: set = set()
@@ -994,10 +1063,15 @@ def _deferred_recovery(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
             sel = np.flatnonzero(select(b, pend) & ~tried[b])
             if not sel.size:
                 continue
+            sel = sel[: planner.admit_reads(rnd, int(sel.size))]
+            if not sel.size:
+                continue
+            ok, examined = recover(pend[sel], rnd)
+            sel, ok = sel[:examined], ok[:examined]
             tried[b][sel] = True
             keys, _ = _pending_keys(pend[sel])
             addrs.update(map(tuple, keys.tolist()))
-            consumed[b][sel[recover(pend[sel], rnd)]] = True
+            consumed[b][sel[ok]] = True
         info["rounds"].setdefault(rnd, {"reads": 0, "recovered": 0, "unique_addresses": 0, "seconds": 0.0})
         info["rounds"][rnd]["unique_addresses"] += len(addrs)
 
@@ -1006,6 +1080,8 @@ def _deferred_recovery(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
             keys, alt = _pending_keys(pend)
             return (keys[:, 0] == KIND_SUPER) | (alt[:, 0] == KIND_SUPER)
 
+        planner.decide(modes, True, "round S: pending reads whose header says superblock (the superblock defines what "
+                       "is expected)", {"pending_reads": info["pending_reads"], "unaddressed_reads": info["unaddressed_reads"]})
         round_over("S", is_super)
         try:
             sb, _ = _decode_superblock(spill, lay, opt, Counter())
@@ -1018,15 +1094,25 @@ def _deferred_recovery(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
             codec = make_outer(sb.outer_code, sb.K, sb.M, sb.lt_seed, sb.lt_distribution)
             needed, groups, dec = _group_state(spill, sb, codec, lay, opt, consumed, vote)
             info.update(groups=groups, groups_decodable_after_cheap_pass=dec, needed_addresses=len(needed))
-            if needed:
+            sig = {"groups": groups, "groups_decodable": dec, "needed_addresses": len(needed)}
+            if planner.decide(modes, bool(needed), "round A: reads targeting addresses needed by incomplete groups"
+                              if needed else "round A skipped: no address is needed", sig):
                 round_over("A", lambda b, pend: _targeted(pend, needed))
                 needed, _, dec = _group_state(spill, sb, codec, lay, opt, consumed, vote)
             info["groups_decodable_after_round_a"] = dec
             complete = dec == groups
         info["round_b"] = not complete
+        why = ("round B: superblock undecodable after round S" if sb is None else
+               f"round B: {info['groups'] - info['groups_decodable_after_round_a']} group(s) still incomplete" if not complete
+               else "round B skipped: every group decodable")
+        planner.decide("EXPENSIVE", not complete, why, {"superblock_decoded": sb is not None,
+                                                        "groups_incomplete": None if sb is None else
+                                                        info["groups"] - info["groups_decodable_after_round_a"]})
         if not complete:
+            planner.checkpoint("round B")
             round_over("B", lambda b, pend: np.ones(len(pend), dtype=bool))
-            ok = recover(orph, "B")
+            n = planner.admit_reads("B", int(len(orph)))
+            ok, examined = recover(orph[:n], "B")
             info["rounds"]["B"]["unaddressed_recovered"] = int(ok.sum())
     finally:
         if pool is not None:
@@ -1043,12 +1129,22 @@ def _deferred_recovery(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
             spill.rewrite_pend(b, ~consumed[b])
     info["reads_skipped"] = skipped
     info["addresses_skipped"] = len(skipped_keys)
-    info["reads_tried"] = int(sum(int(t.sum()) for t in tried)) + (int(len(orph)) if info["round_b"] else 0)
+    info["reads_tried"] = int(sum(int(t.sum()) for t in tried)) + (int(examined) if info["round_b"] else 0)
+    rounds = info["rounds"]
+    planner.outcome(modes, reads_examined=sum(rounds.get(k, {}).get("reads", 0) for k in "SA"),
+                    reads_verified=sum(rounds.get(k, {}).get("recovered", 0) for k in "SA"))
+    if info["round_b"]:
+        planner.outcome("EXPENSIVE", reads_examined=rounds.get("B", {}).get("reads", 0),
+                        reads_verified=rounds.get("B", {}).get("recovered", 0))
+    planner.checkpoint("deferred recovery end")
     return info
 
 
 def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage: dict, t0: float, output, overwrite, partial_dir,
-           select, select_dir, key, passphrase, tmp_root) -> DecodeResult:
+           select, select_dir, key, passphrase, tmp_root, planner=None) -> DecodeResult:
+    if planner is None:
+        from ..v6.recovery import RecoveryPlanner
+        planner = RecoveryPlanner()
     t2 = time.perf_counter()
     sb, sb_info = _decode_superblock(spill, lay, opt, stats)
     tag = int.from_bytes(sb.archive_id[:2], "big")
@@ -1080,6 +1176,7 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
         def run(groups_filter: set[int] | None, done: set[int]) -> None:
             nonlocal decoded, conflicts
             for b in range(spill.B):
+                planner.checkpoint("pass 2")
                 acc, pend = spill.load(b)
                 acc = acc[(acc["kind"] == KIND_DATA) & (acc["tag"] == tag)]
                 acc = acc[acc["group"] < total]
@@ -1126,14 +1223,20 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
                     os.pwrite(fd, raw, start)
                     decoded += 1
             if v6 is not None:
-                decoded += v6.finish(fd, run, done, failed)
+                decoded += v6.finish(fd, run, done, failed, admit=planner.admit_stripe)
 
         done: set[int] = set()
+        planner.decide("OUTER", True, "row decode of every group" + (" holding the index and the selected files"
+                                                                     if select else "") +
+                       ("; V6 stripe/column recovery for rows that fail" if v6 is not None else ""),
+                       {"groups": sb.group_count, "total_rows": total, "superblock_version": sb.version})
         if select:
             run(wanted, done)
         else:
             run(None, done)
         stage["pass2_decode"] = time.perf_counter() - t2
+        planner.outcome("OUTER", groups_failed=len(failed), consensus_recovered=stats.get("consensus_recovered", 0),
+                        rows_recovered_by_columns=None if v6 is None else len(v6.recovered))
         indel = stats.pop("_indel", None)
         schedule = stats.pop("_schedule", None)
         report = {"superblock": {"archive_id": sb.archive_id.hex(), "container_size": sb.container_size, "groups": sb.group_count,
@@ -1150,6 +1253,7 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
             report["soft_decoding"] = {"mode": opt.soft_decoding, "config": dict(opt.soft_config.__dict__), **softd}
         if opt.indel_recovery == "smart" or opt.soft_decoding != "off":
             report["recovery_schedule"] = schedule if schedule is not None else {"mode": "eager"}
+        report["recovery_plan"] = planner.report()
         if select:
             res = _selective(sb, work, fd, run, done, failed, select, select_dir, key, passphrase, overwrite, report, stage, t0)
             if v6 is not None:
@@ -1161,6 +1265,9 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
     report["groups_failed"] = len(failed)
     report["failed_groups"] = sorted(failed)[:100]
     if failed:
+        planner.decide("REJECT", True, f"{len(failed)} group(s) unrecovered: the container is not published; only files "
+                       "whose every chunk verifies may be extracted", {"groups_failed": len(failed)})
+        report["recovery_plan"] = planner.report()
         report["status"] = "PARTIAL"
         report.update(_partial(sb, work, failed, partial_dir, key, passphrase, overwrite))
         report["stage_seconds"] = stage
@@ -1173,6 +1280,8 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
         while block := f.read(1 << 20):
             h.update(block)
     if h.digest() != sb.container_sha256:
+        planner.decide("REJECT", True, "container SHA-256 differs from the superblock: nothing published")
+        report["recovery_plan"] = planner.report()
         report["status"] = "FAILURE"
         raise VNXIntegrityError("reconstructed container does not match the SHA-256 recorded in the superblock; nothing published",
                                 details=report)
