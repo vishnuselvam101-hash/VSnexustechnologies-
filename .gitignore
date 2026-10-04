@@ -24,6 +24,8 @@ key.txt
 *.partial.ckpt
 *.partial.idx
 *.fastq
+# committed fixtures: the physical-interface examples are test inputs checked against SHA-256 in their manifests
+!experiments/v6/physical/examples/**/*.fastq
 clusters.jsonl
 
 # local benchmark scratch data (never committed)
