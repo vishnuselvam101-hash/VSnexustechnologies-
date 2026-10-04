@@ -1,0 +1,65 @@
+V6 Phase 1 items 6+7 -- inner RS profile BEFORE the native kernel (SIMULATED channel data)
+case: {"channel": {"coverage": 3, "coverage_model": "poisson", "deletion_rate": 0.0005, "dropout_rate": 0.02, "insertion_rate": 0.0005, "seed": 1011, "substitution_rate": 0.002}, "input_size": 4194304, "pattern": "random", "profile": "v4-balanced", "seed": 42, "workers": 1}
+commit 8e517ef9a81a33bd3cf2d0841c7e169ec6289258  dirty=True  cpu Intel(R) Xeon(R) Gold 6240 CPU @ 2.60GHz  python 3.12.3
+alignment backend: native  RS module: vnxdna.v4.rs_fast (VNX_RS_REFERENCE unset)
+
+unprofiled decode wall, median of 3: 10.764 s  (all: 10.764, 10.910, 10.504)
+cProfile decode_reads cumulative: 14.106 s
+inner RS stage (rs_fast.decode_batch cumulative): 4.120 s = 29.2% of the profiled decode
+
+functions inside the inner RS stage (cProfile):
+  decode_batch (rs_fast.py)                     calls    201  tottime   0.0080 s  cumtime   4.1198 s
+  _decode_block (rs_fast.py)                    calls    201  tottime   2.9248 s  cumtime   4.1079 s
+  _syndromes_fast (rs_fast.py)                  calls    402  tottime   0.6133 s  cumtime   0.6145 s
+  _eval_fixed (rs_fast.py)                      calls    603  tottime   0.2010 s  cumtime   0.2447 s
+  _alpha_powers (rs_batch.py)                   calls    201  tottime   0.0026 s  cumtime   0.0034 s
+  _tables (rs_fast.py)                          calls    201  tottime   0.0003 s  cumtime   0.0005 s
+
+captured workload:
+  RS calls 201, codewords 229908, (n, nsym) {(70, 16): 199, (70, 20): 2}, decoded ok 202117 (87.9%)
+  batch size min/median/max 1/198/4000
+  flagged erasures per codeword (count: codewords): 0: 129369, 4: 4133, 6: 67752, 7: 1, 10: 2561, 12: 25398, 16: 694
+
+phase split inside _decode_block, captured workload replayed outside cProfile (whole decode_batch: 4.016 s):
+  1 syndromes + triage                            0.3445 s    8.6%
+  2 erasure locator                               0.1781 s    4.4%
+  3 Berlekamp-Massey                              2.2548 s   56.3%
+  4 Chien search                                  0.1290 s    3.2%
+  5 Forney (omega, evaluations, magnitudes)       0.7773 s   19.4%
+  6 re-check syndromes + scatter                  0.3244 s    8.1%
+
+top 25 by cumulative time (cProfile):
+         11073138 function calls (11073077 primitive calls) in 14.105 seconds
+
+   Ordered by: cumulative time
+   List reduced from 398 to 25 due to restriction <25>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000   14.106   14.106 /root/vnx-dna-lab/v6/src/vnxdna/v4/decoder.py:582(decode_reads)
+        1    0.046    0.046   14.106   14.106 /root/vnx-dna-lab/v6/src/vnxdna/v4/decoder.py:608(_decode_reads)
+       48    0.295    0.006    7.466    0.156 /root/vnx-dna-lab/v6/src/vnxdna/v4/decoder.py:331(_process)
+       96    0.468    0.005    6.917    0.072 /root/vnx-dna-lab/v6/src/vnxdna/v4/decoder.py:186(_try)
+      197    0.091    0.000    4.586    0.023 /root/vnx-dna-lab/v6/src/vnxdna/v4/frame.py:234(decode_frames)
+       54    1.371    0.025    4.441    0.082 /root/vnx-dna-lab/v6/src/vnxdna/v4/reads.py:101(iter_reads)
+       49    0.001    0.000    4.226    0.086 /root/vnx-dna-lab/v6/src/vnxdna/v4/decoder.py:658(batches)
+      201    0.001    0.000    4.127    0.021 /root/vnx-dna-lab/v6/src/vnxdna/v4/codecs.py:353(decode)
+      201    0.002    0.000    4.126    0.021 /root/vnx-dna-lab/v6/benchmarks/v6/native_rs/profile_decode.py:224(capturing)
+      201    0.008    0.000    4.120    0.020 /root/vnx-dna-lab/v6/src/vnxdna/v4/rs_fast.py:65(decode_batch)
+      201    2.925    0.015    4.108    0.020 /root/vnx-dna-lab/v6/src/vnxdna/v4/rs_fast.py:93(_decode_block)
+        1    0.006    0.006    1.700    1.700 /root/vnx-dna-lab/v6/src/vnxdna/v4/decoder.py:1255(_pass2)
+        1    0.080    0.080    1.665    1.665 /root/vnx-dna-lab/v6/src/vnxdna/v4/decoder.py:1290(run)
+       96    0.036    0.000    1.324    0.014 /root/vnx-dna-lab/v6/src/vnxdna/v4/sync.py:89(project)
+       96    1.128    0.012    1.228    0.013 /root/vnx-dna-lab/v6/src/vnxdna/v5/native_alignment.py:193(align_usable)
+       53    0.677    0.013    1.101    0.021 /root/vnx-dna-lab/v6/src/vnxdna/v4/reads.py:83(_batch)
+     1641    0.096    0.000    0.960    0.001 /root/vnx-dna-lab/v6/src/vnxdna/v4/codecs.py:95(decode)
+1220915/1220914    0.310    0.000    0.924    0.000 {built-in method builtins.next}
+     1641    0.135    0.000    0.845    0.001 /root/vnx-dna-lab/v6/src/vnxdna/ecc/cauchy.py:80(decode)
+  1627882    0.347    0.000    0.701    0.000 /root/vnx-dna-lab/v6/src/vnxdna/v4/reads.py:66(_lines)
+      402    0.613    0.002    0.614    0.002 /root/vnx-dna-lab/v6/src/vnxdna/v4/rs_fast.py:47(_syndromes_fast)
+        1    0.022    0.022    0.600    0.600 /root/vnx-dna-lab/v6/src/vnxdna/v4/decoder.py:124(detect_layout)
+    32058    0.513    0.000    0.513    0.000 {method 'reduce' of 'numpy.ufunc' objects}
+      344    0.143    0.000    0.424    0.001 {built-in method numpy.fromiter}
+  1627880    0.360    0.000    0.360    0.000 {method 'rstrip' of 'bytes' objects}
+
+
+

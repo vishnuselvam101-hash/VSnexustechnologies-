@@ -35,7 +35,6 @@ import numpy as np
 import os
 
 from ..ecc import rs_batch
-from . import rs_fast
 from ..ecc.cauchy import CauchyErasureCode
 from ..ecc.inner_rs import _parity_matrix
 from ..ecc import gf256
@@ -354,7 +353,8 @@ class InnerRS:
         """→ (corrected, ok, errata). Bounded distance: corrects iff 2e + f ≤ r; callers must re-check the CRC."""
         if _REFERENCE_RS:
             return rs_batch.decode_batch(codewords, self.r, erasures)
-        return rs_fast.decode_batch(codewords, self.r, erasures)
+        from ..v6 import native_rs          # V6: native kernel (AVX2/scalar), bit-exact with rs_fast, which it falls back to
+        return native_rs.decode_batch(codewords, self.r, erasures)
 
     def capabilities(self) -> dict:
         return {"type": "error-and-erasure", "guarantee": f"2e + f <= {self.r} byte errors e / erasures f per strand",

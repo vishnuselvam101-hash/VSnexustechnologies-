@@ -1,0 +1,44 @@
+V6 Phase 1 items 6+7 -- inner RS profile AFTER: native RS patched into InnerRS.decode in this process (SIMULATED channel data)
+case: {"channel": {"coverage": 3, "coverage_model": "poisson", "deletion_rate": 0.0005, "dropout_rate": 0.02, "insertion_rate": 0.0005, "seed": 1011, "substitution_rate": 0.002}, "input_size": 4194304, "pattern": "random", "profile": "v4-balanced", "seed": 42, "workers": 1}
+commit 8e517ef9a81a33bd3cf2d0841c7e169ec6289258  dirty=True  cpu Intel(R) Xeon(R) Gold 6240 CPU @ 2.60GHz  python 3.12.3
+alignment backend: native  RS backend: avx2 (/root/vnx-dna-lab/v6/src/vnxdna/v6/native/libvnx_rs.so)
+
+unprofiled decode wall, median of 3: 6.821 s  (all: 6.821, 6.955, 6.774)
+cProfile decode_reads cumulative: 10.074 s
+inner RS stage (native_rs.decode_batch cumulative): 0.224 s = 2.2% of the profiled decode
+
+top 25 by cumulative time (cProfile):
+         10865664 function calls (10865603 primitive calls) in 10.074 seconds
+
+   Ordered by: cumulative time
+   List reduced from 396 to 25 due to restriction <25>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000   10.074   10.074 /root/vnx-dna-lab/v6/src/vnxdna/v4/decoder.py:582(decode_reads)
+        1    0.035    0.035   10.074   10.074 /root/vnx-dna-lab/v6/src/vnxdna/v4/decoder.py:608(_decode_reads)
+       54    1.322    0.024    4.338    0.080 /root/vnx-dna-lab/v6/src/vnxdna/v4/reads.py:101(iter_reads)
+       49    0.001    0.000    4.123    0.084 /root/vnx-dna-lab/v6/src/vnxdna/v4/decoder.py:658(batches)
+       48    0.285    0.006    3.792    0.079 /root/vnx-dna-lab/v6/src/vnxdna/v4/decoder.py:331(_process)
+       96    0.455    0.005    3.254    0.034 /root/vnx-dna-lab/v6/src/vnxdna/v4/decoder.py:186(_try)
+        1    0.006    0.006    1.689    1.689 /root/vnx-dna-lab/v6/src/vnxdna/v4/decoder.py:1255(_pass2)
+        1    0.080    0.080    1.655    1.655 /root/vnx-dna-lab/v6/src/vnxdna/v4/decoder.py:1290(run)
+       96    0.034    0.000    1.346    0.014 /root/vnx-dna-lab/v6/src/vnxdna/v4/sync.py:89(project)
+       96    1.154    0.012    1.258    0.013 /root/vnx-dna-lab/v6/src/vnxdna/v5/native_alignment.py:193(align_usable)
+       53    0.686    0.013    1.103    0.021 /root/vnx-dna-lab/v6/src/vnxdna/v4/reads.py:83(_batch)
+     1641    0.099    0.000    0.974    0.001 /root/vnx-dna-lab/v6/src/vnxdna/v4/codecs.py:95(decode)
+1220915/1220914    0.299    0.000    0.886    0.000 {built-in method builtins.next}
+     1641    0.137    0.000    0.856    0.001 /root/vnx-dna-lab/v6/src/vnxdna/ecc/cauchy.py:80(decode)
+      197    0.089    0.000    0.682    0.003 /root/vnx-dna-lab/v6/src/vnxdna/v4/frame.py:234(decode_frames)
+  1627882    0.316    0.000    0.660    0.000 /root/vnx-dna-lab/v6/src/vnxdna/v4/reads.py:66(_lines)
+      344    0.138    0.000    0.405    0.001 {built-in method numpy.fromiter}
+  1627880    0.374    0.000    0.374    0.000 {method 'rstrip' of 'bytes' objects}
+        1    0.024    0.024    0.373    0.373 /root/vnx-dna-lab/v6/src/vnxdna/v4/decoder.py:124(detect_layout)
+        4    0.008    0.002    0.316    0.079 /root/vnx-dna-lab/v6/src/vnxdna/v4/decoder.py:830(_consensus_symbols)
+    10503    0.305    0.000    0.305    0.000 {method 'reduce' of 'numpy.ufunc' objects}
+        3    0.160    0.053    0.293    0.098 /root/vnx-dna-lab/v6/src/vnxdna/v4/decoder.py:784(snap_addresses)
+      394    0.285    0.001    0.289    0.001 /root/vnx-dna-lab/v6/src/vnxdna/v2/crc.py:27(crc32_rows)
+     3248    0.226    0.000    0.271    0.000 /root/vnx-dna-lab/v6/src/vnxdna/ecc/gf256.py:122(matmul_rows)
+       32    0.258    0.008    0.258    0.008 {method 'split' of 'bytes' objects}
+
+
+
