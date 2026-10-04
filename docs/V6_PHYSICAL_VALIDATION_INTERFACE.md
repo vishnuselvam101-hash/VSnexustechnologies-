@@ -67,7 +67,8 @@ and sequencing attestations, sign-off and raw-data location. Placeholders such a
 
 Limits: the validator checks structure and internal consistency only. It cannot show that a record describes a genuine
 experiment, and checksum verification covers only files that are reachable. The schema check is a small built-in implementation
-of the keywords the schemas use; if the `jsonschema` package is installed a test cross-checks it, otherwise that test is skipped.
+of the keywords the schemas use; a test cross-checks it against the `jsonschema` package (part of the `[dev]` extra;
+without it that one test is skipped).
 
 ## Example
 

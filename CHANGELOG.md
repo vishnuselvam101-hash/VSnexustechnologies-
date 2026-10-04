@@ -12,6 +12,8 @@ docs/V6_PHASE1_REPORT.md, format: docs/V6_OUTER_CODE.md.
   length, stripe depth and column parity under a redundancy budget from an analytic dropout bound.
 - New `vnx encode` flags `--stripe-depth`, `--column-parity`, `--strand-order`, `--outer-plan`, `--redundancy-budget`
   and matching `dna.*` configuration keys.
+- `jsonschema>=4.18,<5` added to the `[dev]` extra, so the physical-record schema cross-check runs instead of
+  being skipped.
 
 ## 5.0.0 — 2026-10-04
 
