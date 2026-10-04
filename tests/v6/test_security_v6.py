@@ -387,6 +387,49 @@ def test_forged_superblock_candidate_does_not_abort_decode(arc, tmp_path, patch)
     assert "beef" in res.report["archive_tags_seen"]
 
 
+# ---------------------------------------------------------------------------------------------------------------- P-4
+def test_report_refuses_symlink_and_existing_without_force(arc, tmp_path):
+    victim = tmp_path / "victim.txt"
+    victim.write_text("keep me\n")
+    link = tmp_path / "rep.json"
+    link.symlink_to(victim)
+    r = _cli("decode", arc / "plain.fasta", "-o", tmp_path / "o.vnx", "--report", link)
+    assert r.exit_code in (7, 8), r.output
+    assert victim.read_text() == "keep me\n" and link.is_symlink()
+    existing = tmp_path / "old.json"
+    existing.write_text("old\n")
+    r = _cli("decode", arc / "plain.fasta", "-o", tmp_path / "o2.vnx", "--report", existing)
+    assert r.exit_code == 8, r.output
+    assert existing.read_text() == "old\n"
+    assert not (tmp_path / "o2.vnx").exists()               # refused before decoding, nothing published
+    r = _cli("decode", arc / "plain.fasta", "-o", tmp_path / "o3.vnx", "--report", existing, "--force")
+    assert r.exit_code == 0, r.output
+    assert json.loads(existing.read_text())["status"] == "SUCCESS"
+    assert (existing.stat().st_mode & 0o777) == 0o600
+
+
+@pytest.mark.parametrize("which", ["reads", "key", "output"])
+def test_report_refuses_an_input_file(arc, tmp_path, which):
+    reads = tmp_path / "r.fasta"
+    reads.write_bytes((arc / "enc.fasta").read_bytes())
+    key = tmp_path / "k.key"
+    key.write_bytes((arc / "k.key").read_bytes())
+    out = tmp_path / "o.vnx"
+    out.write_bytes(b"old")
+    target = {"reads": reads, "key": key, "output": out}[which]
+    before = target.read_bytes()
+    r = _cli("decode", reads, "-o", out, "--force", "--key-file", key, "--report", target)
+    assert r.exit_code == 7, r.output
+    assert target.read_bytes() == before
+
+
+def test_report_new_file_mode_0600(arc, tmp_path):
+    rep = tmp_path / "sub" / "rep.json"
+    r = _cli("decode", arc / "plain.fasta", "-o", tmp_path / "o.vnx", "--report", rep)
+    assert r.exit_code == 0, r.output
+    assert (rep.stat().st_mode & 0o777) == 0o600 and json.loads(rep.read_text())["status"] == "SUCCESS"
+
+
 # ---------------------------------------------------------------------------------------------------------------- P-2
 @pytest.mark.parametrize("params", [{"n": 1 << 20, "r": 32, "p": 16}, {"n": 1 << 20, "r": 16, "p": 1},
                                     {"n": 1 << 19, "r": 8, "p": 16}, {"n": 1 << 20, "r": 8, "p": 8}])

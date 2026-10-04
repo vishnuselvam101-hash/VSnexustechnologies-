@@ -328,7 +328,7 @@ def _decode(reads, output, extract_dir, partial_dir, select, profile, workers, p
     if budget:
         from ..v6.recovery import RecoveryBudget
         opts.recovery_budget = RecoveryBudget(**budget)
-    _check_side_files(reads, key_file, output, report, events)
+    _check_side_files(reads, key_file, output, report, events, force)
     if events is None:
         return _decode_run(reads, output, extract_dir, partial_dir, select, opts, force, key_file, passphrase_env, report,
                            None, task_id, allow_unencrypted)[0]
@@ -369,16 +369,22 @@ def _same_file(a: Path, b: Path) -> bool:
     return os.path.realpath(a) == os.path.realpath(b)
 
 
-def _check_side_files(reads, key_file, output, report, events) -> None:
-    """Refuse an --events path that is a symlink or names an input or output of this decode (checked before anything
-    is opened or decoded)."""
-    if events is None:
-        return
-    if os.path.islink(events):
-        raise VNXConfigurationError(f"--events {events} is a symlink; refusing to follow it")
-    for what, other in {"reads": reads, "key file": key_file, "output": output, "report": report}.items():
-        if other is not None and _same_file(Path(events), Path(other)):
-            raise VNXConfigurationError(f"--events {events} is the same file as the {what}")
+def _check_side_files(reads, key_file, output, report, events, force) -> None:
+    """Refuse a --report / --events path that is a symlink or names an input or output of this decode (checked before
+    anything is opened or decoded), and an existing report without --force."""
+    from .errors import VNXOutputError
+    for opt, path in (("--report", report), ("--events", events)):
+        if path is None:
+            continue
+        if os.path.islink(path):
+            raise VNXConfigurationError(f"{opt} {path} is a symlink; refusing to follow it")
+        others = {"reads": reads, "key file": key_file, "output": output,
+                  "report": report if opt == "--events" else None}
+        for what, other in others.items():
+            if other is not None and _same_file(Path(path), Path(other)):
+                raise VNXConfigurationError(f"{opt} {path} is the same file as the {what}")
+    if report is not None and os.path.lexists(report) and not force:
+        raise VNXOutputError(f"report already exists: {report} (use --force to overwrite)")
 
 
 def _decode_run(reads, output, extract_dir, partial_dir, select, opts, force, key_file, passphrase_env, report, observer,
@@ -411,7 +417,9 @@ def _decode_run(reads, output, extract_dir, partial_dir, select, opts, force, ke
                 import shutil
                 shutil.rmtree(tmp, ignore_errors=True)
     if report:
-        report.write_text(json.dumps(res.report, indent=2, sort_keys=True, default=str) + "\n")
+        from .util import atomic_output
+        with atomic_output(report, overwrite=force, mode=0o600) as tmp:
+            tmp.write_text(json.dumps(res.report, indent=2, sort_keys=True, default=str) + "\n")
     _emit({"status": res.status, **res.report})
     return (0 if res.status == "SUCCESS" else EXIT_PARTIAL if res.status == "PARTIAL" else 5), res
 
