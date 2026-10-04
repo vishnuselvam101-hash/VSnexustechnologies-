@@ -21,7 +21,7 @@ from vnxdna.v4 import decoder as de
 from vnxdna.v4 import encoder as en
 from vnxdna.v4.cli import app
 from vnxdna.v4.constraints import iter_fasta
-from vnxdna.v4.errors import VNXConfigurationError, VNXKeyError
+from vnxdna.v4.errors import VNXConfigurationError, VNXFormatError, VNXKeyError
 from vnxdna.v4.frame import KIND_SUPER
 from vnxdna.v6 import outer as ou
 from vnxdna.v6.decode import StripeRecovery
@@ -344,3 +344,34 @@ def test_partial_decode_with_key_refuses_unencrypted(arc, tmp_path):
     assert "not encrypted" in res.report.get("partial_note", "")
     ok = de.decode_reads(reads, None, de.DecodeOptions(), partial_dir=tmp_path / "p2", key=key, allow_unencrypted=True)
     assert ok.report["files_recovered"]
+
+
+# ---------------------------------------------------------------------------------------------------------------- P-2
+@pytest.mark.parametrize("params", [{"n": 1 << 20, "r": 32, "p": 16}, {"n": 1 << 20, "r": 16, "p": 1},
+                                    {"n": 1 << 19, "r": 8, "p": 16}, {"n": 1 << 20, "r": 8, "p": 8}])
+def test_scrypt_parameters_above_caps_rejected_before_derivation(arc, tmp_path, params, monkeypatch):
+    pw_arc = tmp_path / "pw.vnx"
+    ar.build_archive([arc / "in" / "a.bin"], pw_arc, ar.ArchiveOptions(chunk_size=4096, passphrase="pw",
+                                                                         scrypt={"n": 1024, "r": 8, "p": 1}))
+    c = ct.open_container(pw_arc, passphrase="pw")
+    m = json.loads(json.dumps(c.manifest))
+    m["encryption"]["scrypt"] = dict(params)
+    with pytest.raises(VNXFormatError, match="scrypt"):
+        ct.validate_manifest(m)
+
+    def boom(*a, **k):
+        raise AssertionError("scrypt must not run")
+    monkeypatch.setattr(crypto, "Scrypt", boom)
+    with pytest.raises((VNXFormatError, VNXConfigurationError)):
+        crypto.scrypt_master("pw", bytes(16), params)
+
+
+@pytest.mark.parametrize("params", [dict(crypto.SCRYPT_DEFAULT), {"n": 1 << 20, "r": 8, "p": 1},
+                                    {"n": 1 << 18, "r": 8, "p": 16}, {"n": 2, "r": 1, "p": 1}])
+def test_scrypt_parameters_within_caps_accepted(arc, params):
+    c = ct.open_container(arc / "plain.vnx")
+    m = json.loads(json.dumps(c.manifest))
+    m["encryption"] = {"algorithm": "AES-256-GCM", "kdf": "scrypt-hkdf-sha256", "salt": "00" * crypto.SALT_BYTES,
+                       "key_check": "00" * 16, "scrypt": dict(params)}
+    m["required_features"] = sorted(set(m["required_features"]) | {"aes-256-gcm", "kdf-hkdf-sha256", "kdf-scrypt"})
+    ct.validate_manifest(m)

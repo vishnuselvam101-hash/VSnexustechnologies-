@@ -393,7 +393,8 @@ def validate_manifest(m: dict) -> None:
         _require(isinstance(enc.get("key_check"), str) and len(enc["key_check"]) == 32, "encryption.key_check")
         if enc["kdf"] == "scrypt-hkdf-sha256":
             sp = enc.get("scrypt")
-            _require(isinstance(sp, dict) and set(sp) == {"n", "r", "p"} and all(_int(v, 1, 1 << 20) for v in sp.values()), "scrypt")
+            _require(isinstance(sp, dict) and set(sp) == {"n", "r", "p"} and crypto.scrypt_params_ok(sp),
+                     "scrypt parameters outside the caps")
     c = m.get("counts")
     _require(isinstance(c, dict), "counts")
     for k in ("files", "chunks", "chunk_refs", "content_bytes", "stored_bytes"):

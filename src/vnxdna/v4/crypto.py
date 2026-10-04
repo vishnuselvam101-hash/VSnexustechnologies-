@@ -45,6 +45,8 @@ DOMAIN_FILE_TABLE = 1
 DOMAIN_REFS = 2
 SCRYPT_DEFAULT = {"n": 1 << 15, "r": 8, "p": 1}
 SCRYPT_MAX_N = 1 << 20
+SCRYPT_MAX_MEMORY = 1 << 30          # 128·r·N bytes: the scrypt working set a manifest may ask for
+SCRYPT_MAX_WORK = 1 << 25            # N·r·p: the CPU cost a manifest may ask for (2^20·8·1 and 2^18·8·16 fit)
 
 
 def load_key_file(path: str | os.PathLike) -> bytes:
@@ -86,10 +88,24 @@ def generate_key_file(path: str | os.PathLike) -> None:
         f.write(os.urandom(32).hex() + "\n")
 
 
+def scrypt_params_ok(params: dict) -> bool:
+    """scrypt parameters within the caps: N a power of two in [2, 2^20], 1 ≤ r ≤ 32, 1 ≤ p ≤ 16, memory 128·r·N at
+    most 1 GiB and work N·r·p at most 2^25. A manifest is untrusted input, so the caps bound what opening it may cost."""
+    try:
+        n, r, p = (params[k] for k in ("n", "r", "p"))
+    except (KeyError, TypeError):
+        return False
+    if not all(isinstance(v, int) and not isinstance(v, bool) for v in (n, r, p)):
+        return False
+    return (2 <= n <= SCRYPT_MAX_N and not n & (n - 1) and 1 <= r <= 32 and 1 <= p <= 16
+            and 128 * r * n <= SCRYPT_MAX_MEMORY and n * r * p <= SCRYPT_MAX_WORK)
+
+
 def scrypt_master(passphrase: str, salt: bytes, params: dict) -> bytes:
-    n, r, p = int(params["n"]), int(params["r"]), int(params["p"])
-    if n < 2 or n & (n - 1) or n > SCRYPT_MAX_N or not 1 <= r <= 32 or not 1 <= p <= 16:
-        raise VNXConfigurationError(f"unsupported scrypt parameters {params} (N power of two ≤ 2^20, r ≤ 32, p ≤ 16)")
+    if not scrypt_params_ok(params):
+        raise VNXConfigurationError(f"unsupported scrypt parameters {params} (N power of two ≤ 2^20, r ≤ 32, p ≤ 16, "
+                                    "128·r·N ≤ 1 GiB, N·r·p ≤ 2^25)")
+    n, r, p = params["n"], params["r"], params["p"]
     if not passphrase:
         raise VNXKeyError("empty passphrase")
     return Scrypt(salt=salt, length=32, n=n, r=r, p=p).derive(passphrase.encode("utf-8"))
