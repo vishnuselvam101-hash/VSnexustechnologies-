@@ -329,6 +329,7 @@ def _orientation(codes: np.ndarray, lengths: np.ndarray) -> np.ndarray:
 
 
 def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | None) -> dict:
+    cpu0 = time.process_time()
     lay: Layout = _P["lay"]
     offs = np.concatenate([[0], np.cumsum(lengths)])
     reads = [batch_codes[offs[i]:offs[i + 1]] for i in range(lengths.size)]
@@ -423,6 +424,7 @@ def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | N
             # aligned reads without a readable header: the eager schedule tried them in pass 1, so the deferred stage
             # keeps them (address unknown) for its last round
             out["orph_raw"], out["orph_rawq"], out["orph_rawlen"], out["orph_hasq"] = pack(pend[~good])
+    out["cpu_seconds"] = time.process_time() - cpu0          # observability only (never in the report)
     return out
 
 
@@ -562,15 +564,42 @@ class DecodeResult:
 def decode_reads(reads_path: str | os.PathLike, output: str | os.PathLike | None, options: DecodeOptions | None = None, *,
                  overwrite: bool = False, partial_dir: str | os.PathLike | None = None, select: list[str] | None = None,
                  select_dir: str | os.PathLike | None = None, key: bytes | None = None, passphrase: str | None = None,
-                 progress=None, workdir: str | os.PathLike | None = None) -> DecodeResult:
+                 progress=None, workdir: str | os.PathLike | None = None, observer=None,
+                 task_id: str | None = None) -> DecodeResult:
+    """``observer``: optional callable receiving structured events (vnxdna.v6.observe); observability only."""
     opt = options or DecodeOptions()
     opt.validate()
     t0 = time.perf_counter()
+    from ..v6.observe import Events
     from ..v6.recovery import RecoveryPlanner
-    planner = RecoveryPlanner(opt.recovery_budget, t0)
+    ev = Events(observer, task_id, t0)
+    try:
+        res = _decode_reads(reads_path, output, opt, t0, ev, RecoveryPlanner(opt.recovery_budget, t0), overwrite=overwrite,
+                            partial_dir=partial_dir, select=select, select_dir=select_dir, key=key, passphrase=passphrase,
+                            progress=progress, workdir=workdir)
+    except Exception as error:
+        ev.emit("error", getattr(error, "stage", "unknown"), error_class=type(error).__name__, message=str(error)[:500])
+        raise
+    rep_ = res.report
+    ev.emit("decode_end", "output", status=res.status, seconds=round(rep_.get("seconds", 0.0), 4),
+            groups_decoded=rep_.get("groups_decoded"), groups_failed=rep_.get("groups_failed"),
+            peak_rss_bytes=rep_.get("peak_rss_bytes"))
+    return res
+
+
+def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner, *, overwrite, partial_dir, select,
+                  select_dir, key, passphrase, progress, workdir) -> DecodeResult:
     stage: dict = {}
     reads_path = Path(reads_path)
     lay = detect_layout(reads_path, opt)
+    if ev:
+        try:
+            size = reads_path.stat().st_size
+        except OSError:
+            size = None
+        ev.emit("decode_start", "input", reads_bytes=size, workers=opt.workers, batch_reads=opt.batch_reads,
+                strand_nt=lay.strand_nt, indel_recovery=opt.indel_recovery, soft_decoding=opt.soft_decoding,
+                recovery_budget=opt.recovery_budget.to_dict())
     try:
         est_reads = max(1, reads_path.stat().st_size // (lay.strand_nt + 20))
     except OSError as error:
@@ -589,13 +618,24 @@ def decode_reads(reads_path: str | os.PathLike, output: str | os.PathLike | None
         initargs = (lay, opt.band, opt.sync_costs, opt.min_quality, opt.reverse_complement, opt.indel_config if smart else None,
                     opt.soft_config if softm else None, deferred)
 
-        def take(res):
+        cpu = {"seconds": 0.0, "batches": 0}
+
+        def take(res, depth=0):
             planner.checkpoint("pass 1")
             spill.write(res)
             stats.update(res["stats"])
             indel_stats.update(res.get("indel", {}))
+            cpu["seconds"] += res.get("cpu_seconds", 0.0)
+            cpu["batches"] += 1
             if progress:
                 progress({"stage": "pass1", "reads": stats["reads"], "elapsed": time.perf_counter() - t0})
+            if ev and (cpu["batches"] % 16 == 1):
+                wall = max(1e-9, time.perf_counter() - t1)
+                ev.emit("pass1_progress", "pass1", reads_processed=stats["reads"],
+                        reads_accepted=stats["fast"] + stats["sync"], reads_pending=stats["pending"],
+                        reads_rejected=stats["unaligned"], batches=cpu["batches"], queue_depth=depth,
+                        worker_cpu_seconds=round(cpu["seconds"], 3),
+                        worker_utilisation=round(cpu["seconds"] / (wall * opt.workers), 4))
 
         def batches():
             n = 0
@@ -614,24 +654,33 @@ def decode_reads(reads_path: str | os.PathLike, output: str | os.PathLike | None
                 for b in batches():
                     window.append(pool.submit(_process, *b))
                     if len(window) >= 2 * opt.workers:
-                        take(window.popleft().result())
+                        take(window.popleft().result(), len(window))
                 while window:
-                    take(window.popleft().result())
+                    take(window.popleft().result(), len(window))
         spill.close()
         stage["pass1_reads"] = time.perf_counter() - t1
+        stage["pass1_worker_cpu"] = cpu["seconds"]
         if stats["reads"] == 0:
             raise VNXFormatError("the read file contains no reads", stage="input")
+        ev.emit("pass1_end", "pass1", reads_processed=stats["reads"], fast=stats["fast"], sync=stats["sync"],
+                reverse_complement=stats["reverse_complement"], reads_pending=stats["pending"],
+                reads_rejected=stats["unaligned"], orphans=stats["orphans"], seconds=round(stage["pass1_reads"], 4),
+                worker_cpu_seconds=round(cpu["seconds"], 3),
+                worker_utilisation=round(cpu["seconds"] / max(1e-9, stage["pass1_reads"] * opt.workers), 4))
         _plan_pass1(planner, opt, stats, deferred)
         if deferred:
             t1b = time.perf_counter()
             stats["_schedule"] = _deferred_recovery(spill, lay, opt, stats, indel_stats, initargs[:-1] + (False,),
                                                     vote=not select, planner=planner)
             stage["deferred_recovery"] = time.perf_counter() - t1b
+            for rnd, r in stats["_schedule"].get("rounds", {}).items():
+                ev.emit("recovery_round", "recovery", round=rnd, recovery_attempts=r.get("reads", 0),
+                        recovered=r.get("recovered", 0), seconds=r.get("seconds"))
         if smart or softm:
             stats["_indel"] = indel_stats          # pass 2 adds its consensus counters; reported as report["indel_recovery"]
         planner.checkpoint("pass 2 start")
         result = _pass2(spill, lay, opt, stats, stage, t0, output, overwrite, partial_dir, select, select_dir, key, passphrase,
-                        tmp_root, planner)
+                        tmp_root, planner, ev)
         return result
     finally:
         shutil.rmtree(tmp_root, ignore_errors=True)
@@ -1141,12 +1190,14 @@ def _deferred_recovery(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
 
 
 def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage: dict, t0: float, output, overwrite, partial_dir,
-           select, select_dir, key, passphrase, tmp_root, planner=None) -> DecodeResult:
+           select, select_dir, key, passphrase, tmp_root, planner=None, ev=None) -> DecodeResult:
     if planner is None:
         from ..v6.recovery import RecoveryPlanner
         planner = RecoveryPlanner()
     t2 = time.perf_counter()
     sb, sb_info = _decode_superblock(spill, lay, opt, stats)
+    if ev is not None:
+        ev.archive_id = sb.archive_id.hex()
     tag = int.from_bytes(sb.archive_id[:2], "big")
     K, P = sb.K, lay.payload_bytes
     codec = make_outer(sb.outer_code, K, sb.M, sb.lt_seed, sb.lt_distribution)
@@ -1235,6 +1286,12 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
         else:
             run(None, done)
         stage["pass2_decode"] = time.perf_counter() - t2
+        if ev is not None:
+            ev.emit("pass2_end", "outer", groups_total=total, groups_decoded=decoded, groups_failed=len(failed),
+                    consensus_attempted=stats.get("consensus_attempted", 0),
+                    consensus_recovered=stats.get("consensus_recovered", 0),
+                    rows_recovered_by_columns=None if v6 is None else len(v6.recovered),
+                    seconds=round(stage["pass2_decode"], 4))
         planner.outcome("OUTER", groups_failed=len(failed), consensus_recovered=stats.get("consensus_recovered", 0),
                         rows_recovered_by_columns=None if v6 is None else len(v6.recovered))
         indel = stats.pop("_indel", None)
@@ -1279,6 +1336,8 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
     with open(work, "rb") as f:
         while block := f.read(1 << 20):
             h.update(block)
+    if ev is not None:
+        ev.emit("verify", "integrity", sha256_match=h.digest() == sb.container_sha256)
     if h.digest() != sb.container_sha256:
         planner.decide("REJECT", True, "container SHA-256 differs from the superblock: nothing published")
         report["recovery_plan"] = planner.report()

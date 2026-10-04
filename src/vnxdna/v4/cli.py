@@ -312,9 +312,7 @@ def encode(source: Path = typer.Argument(..., help="A .vnx container, or a file/
 
 def _decode(reads, output, extract_dir, partial_dir, select, profile, workers, performance, config, band, min_quality,
             archive_tag, force, key_file, passphrase_env, report, indel_recovery=None, soft_decoding=None,
-            recovery_schedule=None):
-    from . import archive as ar
-    from . import decoder as de
+            recovery_schedule=None, budget=None, events=None, task_id=None):
     from .config import decode_options, load_config, performance as perf
     cfg = load_config(config)
     p = perf(performance or cfg.get("performance"))
@@ -322,12 +320,31 @@ def _decode(reads, output, extract_dir, partial_dir, select, profile, workers, p
                           batch_reads=p["batch_reads"], archive_tag=int(archive_tag, 16) if archive_tag else None,
                           indel_recovery=indel_recovery, soft_decoding=soft_decoding,
                           recovery_schedule=recovery_schedule)
+    if budget:
+        from ..v6.recovery import RecoveryBudget
+        opts.recovery_budget = RecoveryBudget(**budget)
+    observer = None
+    if events is not None:
+        from ..v6.observe import JsonlObserver
+        observer = JsonlObserver(events)
+    try:
+        return _decode_run(reads, output, extract_dir, partial_dir, select, opts, force, key_file, passphrase_env, report,
+                           observer, task_id)
+    finally:
+        if observer is not None:
+            observer.close()
+
+
+def _decode_run(reads, output, extract_dir, partial_dir, select, opts, force, key_file, passphrase_env, report, observer,
+                task_id):
+    from . import archive as ar
+    from . import decoder as de
     key, pw = _keys(key_file, passphrase_env)
     if output is None and extract_dir is None and not select:
         raise VNXConfigurationError("give --output (container), --extract DIR, or --select FILE --extract DIR")
     if select:
         res = de.decode_reads(reads, None, opts, select=select, select_dir=extract_dir or Path("."), key=key, passphrase=pw,
-                              overwrite=force, progress=_progress_cb())
+                              overwrite=force, progress=_progress_cb(), observer=observer, task_id=task_id)
     else:
         import tempfile
         target = output
@@ -337,7 +354,7 @@ def _decode(reads, output, extract_dir, partial_dir, select, profile, workers, p
             target = Path(tmp) / "recovered.vnx"
         try:
             res = de.decode_reads(reads, target, opts, overwrite=force, partial_dir=partial_dir, key=key, passphrase=pw,
-                                  progress=_progress_cb())
+                                  progress=_progress_cb(), observer=observer, task_id=task_id)
             if res.status == "SUCCESS" and extract_dir is not None:
                 res.report["extract"] = ar.extract(target, extract_dir, key=key, passphrase=pw, overwrite=force)
         finally:
@@ -367,11 +384,26 @@ def decode(reads: Path, output: Optional[Path] = typer.Option(None, "--output", 
            soft_decoding: Optional[str] = typer.Option(None, "--soft-decoding",
                                                        help="off (default), erasure (GMD), chase or auto: V5 bounded soft decoding."),
            recovery_schedule: Optional[str] = typer.Option(None, "--recovery-schedule",
-                                                           help="deferred (default) or eager: when V5 per-read smart/soft recovery runs.")) -> None:
+                                                           help="deferred (default) or eager: when V5 per-read smart/soft recovery runs."),
+           max_recovery_reads: Optional[int] = typer.Option(None, "--max-recovery-reads",
+                                                            help="V6 budget: reads examined by smart/soft recovery (all rounds)."),
+           max_round_b_reads: Optional[int] = typer.Option(None, "--max-round-b-reads",
+                                                           help="V6 budget: reads examined by the expensive round B."),
+           max_outer_stripes: Optional[int] = typer.Option(None, "--max-outer-stripes",
+                                                           help="V6 budget: stripes attempted by column recovery."),
+           max_wall_seconds: Optional[float] = typer.Option(None, "--max-wall-seconds",
+                                                            help="V6 budget: stop (nothing published) after this many seconds."),
+           max_rss_mb: Optional[int] = typer.Option(None, "--max-rss-mb",
+                                                    help="V6 budget: stop (nothing published) above this parent peak RSS."),
+           events: Optional[Path] = typer.Option(None, "--events", help="Write structured decode events (JSON lines) here."),
+           task_id: Optional[str] = typer.Option(None, "--task-id", help="Task ID recorded in every event.")) -> None:
     """Reconstruct a verified VNX4 container from DNA reads (FASTA/FASTQ)."""
+    budget = {k: v for k, v in (("max_reads_examined", max_recovery_reads), ("max_round_b_reads", max_round_b_reads),
+                                ("max_outer_stripes", max_outer_stripes), ("max_wall_seconds", max_wall_seconds),
+                                ("max_rss_bytes", None if max_rss_mb is None else max_rss_mb << 20)) if v is not None}
     _run(lambda: _decode(reads, output, extract_dir, partial_dir, select, profile, workers, performance, config, band, min_quality,
                          archive_tag, force, key_file, passphrase_env, report, indel_recovery, soft_decoding,
-                         recovery_schedule))
+                         recovery_schedule, budget, events, task_id))
 
 
 @app.command()
