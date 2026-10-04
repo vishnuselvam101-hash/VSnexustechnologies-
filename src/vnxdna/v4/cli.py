@@ -324,16 +324,33 @@ def _decode(reads, output, extract_dir, partial_dir, select, profile, workers, p
         from ..v6.recovery import RecoveryBudget
         opts.recovery_budget = RecoveryBudget(**budget)
     _check_side_files(reads, key_file, output, report, events)
-    observer = None
-    if events is not None:
-        from ..v6.observe import JsonlObserver
-        observer = JsonlObserver(events)
-    try:
+    if events is None:
         return _decode_run(reads, output, extract_dir, partial_dir, select, opts, force, key_file, passphrase_env, report,
-                           observer, task_id)
+                           None, task_id)[0]
+    import secrets
+    from ..v6.observe import Events, JsonlObserver
+    jsonl = JsonlObserver(events)
+    task_id = task_id or secrets.token_hex(6)
+    last: dict = {}
+
+    def observer(event: dict) -> None:
+        last["event"] = event["event"]
+        jsonl(event)
+    cmd = Events(observer, task_id)
+    try:
+        code, res = _decode_run(reads, output, extract_dir, partial_dir, select, opts, force, key_file, passphrase_env,
+                                report, observer, task_id)
+        cmd.emit("command_end", "command", exit_code=code, status=res.status, extract=res.report.get("extract"))
+        return code
+    except BaseException as error:
+        code = 130 if isinstance(error, KeyboardInterrupt) else getattr(error, "exit_code", 70)
+        if last.get("event") != "error":        # the decoder already recorded its own failure
+            cmd.emit("error", getattr(error, "stage", "command"), error_class=type(error).__name__,
+                     message=str(error)[:500])
+        cmd.emit("command_end", "command", exit_code=code, status="FAILED", error_class=type(error).__name__)
+        raise
     finally:
-        if observer is not None:
-            observer.close()
+        jsonl.close()
 
 
 def _same_file(a: Path, b: Path) -> bool:
@@ -388,7 +405,7 @@ def _decode_run(reads, output, extract_dir, partial_dir, select, opts, force, ke
     if report:
         report.write_text(json.dumps(res.report, indent=2, sort_keys=True, default=str) + "\n")
     _emit({"status": res.status, **res.report})
-    return 0 if res.status == "SUCCESS" else EXIT_PARTIAL if res.status == "PARTIAL" else 5
+    return (0 if res.status == "SUCCESS" else EXIT_PARTIAL if res.status == "PARTIAL" else 5), res
 
 
 @app.command()

@@ -96,3 +96,42 @@ def test_events_new_file_mode_0600_and_append(arc, tmp_path):
     assert (ev.stat().st_mode & 0o777) == 0o600
     assert _cli("decode", arc / "plain.fasta", "-o", tmp_path / "o2.vnx", "--events", ev).exit_code == 0
     assert len(_lines(ev)) == 2 * n                       # an existing regular events file is appended to
+
+
+# ---------------------------------------------------------------------------------------------------------------- V6-2
+def test_cli_events_record_extract_failure(arc, tmp_path):
+    ev = tmp_path / "ev.jsonl"
+    r = _cli("decode", arc / "enc.fasta", "-o", tmp_path / "o.vnx", "--extract", tmp_path / "x",
+             "--key-file", arc / "other.key", "--events", ev, "--task-id", "job9")
+    assert r.exit_code == 4, r.output
+    lines = _lines(ev)
+    names = [e["event"] for e in lines]
+    assert "decode_end" in names and next(e for e in lines if e["event"] == "decode_end")["status"] == "SUCCESS"
+    err = [e for e in lines if e["event"] == "error"]
+    assert err and err[-1]["error_class"] == "VNXKeyError"
+    end = lines[-1]
+    assert end["event"] == "command_end" and end["exit_code"] == 4 and end["status"] == "FAILED"
+    assert end["error_class"] == "VNXKeyError" and all(e["task_id"] == "job9" for e in lines)
+
+
+def test_cli_events_command_end_on_success(arc, tmp_path):
+    ev = tmp_path / "ev.jsonl"
+    r = _cli("decode", arc / "enc.fasta", "-o", tmp_path / "o.vnx", "--extract", tmp_path / "x",
+             "--key-file", arc / "k.key", "--events", ev)
+    assert r.exit_code == 0, r.output
+    lines = _lines(ev)
+    assert [e["event"] for e in lines][-2:] == ["decode_end", "command_end"]
+    assert not any(e["event"] == "error" for e in lines)
+    end = lines[-1]
+    assert end["exit_code"] == 0 and end["status"] == "SUCCESS" and end["extract"]["files"] == 2
+
+
+def test_cli_events_error_not_duplicated(arc, tmp_path):
+    ev = tmp_path / "ev.jsonl"
+    empty = tmp_path / "empty.fastq"
+    empty.write_text("")
+    r = _cli("decode", empty, "-o", tmp_path / "o.vnx", "--events", ev)
+    assert r.exit_code != 0
+    lines = _lines(ev)
+    assert sum(e["event"] == "error" for e in lines) == 1
+    assert lines[-1]["event"] == "command_end" and lines[-1]["exit_code"] == r.exit_code

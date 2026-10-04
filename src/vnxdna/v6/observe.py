@@ -5,6 +5,7 @@ per event, so a tail of the file is always a valid prefix; ``vnx decode --events
 
     ts          UTC ISO-8601 time            task_id     caller-chosen ID (default: random 12 hex)
     event       decode_start | pass1_progress | pass1_end | recovery_round | pass2_end | verify | decode_end | error
+                | command_end (``vnx decode`` only: exit code and final status, after extraction)
     stage       pipeline stage name          elapsed     seconds since decode start
     rss_bytes   parent-process peak RSS      archive_id  once the superblock is known
 
