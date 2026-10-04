@@ -323,6 +323,7 @@ def _decode(reads, output, extract_dir, partial_dir, select, profile, workers, p
     if budget:
         from ..v6.recovery import RecoveryBudget
         opts.recovery_budget = RecoveryBudget(**budget)
+    _check_side_files(reads, key_file, output, report, events)
     observer = None
     if events is not None:
         from ..v6.observe import JsonlObserver
@@ -333,6 +334,29 @@ def _decode(reads, output, extract_dir, partial_dir, select, profile, workers, p
     finally:
         if observer is not None:
             observer.close()
+
+
+def _same_file(a: Path, b: Path) -> bool:
+    """True when two paths name one file: the same inode (hardlinks included) or, if absent, the same resolved path."""
+    try:
+        sa, sb = os.stat(a), os.stat(b)
+        if (sa.st_dev, sa.st_ino) == (sb.st_dev, sb.st_ino):
+            return True
+    except OSError:
+        pass
+    return os.path.realpath(a) == os.path.realpath(b)
+
+
+def _check_side_files(reads, key_file, output, report, events) -> None:
+    """Refuse an --events path that is a symlink or names an input or output of this decode (checked before anything
+    is opened or decoded)."""
+    if events is None:
+        return
+    if os.path.islink(events):
+        raise VNXConfigurationError(f"--events {events} is a symlink; refusing to follow it")
+    for what, other in {"reads": reads, "key file": key_file, "output": output, "report": report}.items():
+        if other is not None and _same_file(Path(events), Path(other)):
+            raise VNXConfigurationError(f"--events {events} is the same file as the {what}")
 
 
 def _decode_run(reads, output, extract_dir, partial_dir, select, opts, force, key_file, passphrase_env, report, observer,

@@ -18,6 +18,7 @@ import datetime as _dt
 import json
 import os
 import secrets
+import stat
 import time
 from pathlib import Path
 
@@ -54,11 +55,26 @@ class Events:
 
 
 class JsonlObserver:
-    """Append events as JSON lines to ``path`` (created with mode 0o600)."""
+    """Append events as JSON lines to ``path`` (created with mode 0o600).
+
+    Only a regular file is accepted: a symlink is refused (``O_NOFOLLOW``) and a FIFO, device or socket is refused
+    after a non-blocking open (a FIFO without a reader would otherwise block the decode forever)."""
 
     def __init__(self, path: str | os.PathLike):
+        from ..v4.errors import VNXConfigurationError
         self.path = Path(path)
-        fd = os.open(self.path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+        flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC
+        try:
+            fd = os.open(self.path, flags, 0o600)
+        except OSError as error:
+            raise VNXConfigurationError(f"cannot open events file {self.path}: {error.strerror}") from None
+        try:
+            if not stat.S_ISREG(os.fstat(fd).st_mode):
+                raise VNXConfigurationError(f"events file {self.path} is not a regular file")
+            os.set_blocking(fd, True)
+        except BaseException:
+            os.close(fd)
+            raise
         self._f = os.fdopen(fd, "a", encoding="utf-8")
 
     def __call__(self, event: dict) -> None:
