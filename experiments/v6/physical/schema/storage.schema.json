@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "storage.schema.json",
+  "title": "Storage conditions",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "duration_days",
+    "encapsulation",
+    "end_date",
+    "medium",
+    "relative_humidity_percent",
+    "start_date",
+    "temperature_c"
+  ],
+  "properties": {
+    "temperature_c": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "relative_humidity_percent": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 100
+    },
+    "medium": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "e.g. dry, buffer, silica; free text"
+    },
+    "encapsulation": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "start_date": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "end_date": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "duration_days": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "notes": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}

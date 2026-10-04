@@ -1,0 +1,141 @@
+{
+  "classification": "SIMULATED",
+  "composition": {
+    "channel_config": {
+      "burst_max_len": 0,
+      "burst_rate": 0.0,
+      "coverage": 10.0,
+      "coverage_dispersion": 5.0,
+      "coverage_model": "poisson",
+      "deletion_rate": 5e-05,
+      "dropout_rate": 0.0,
+      "duplication_rate": 0.02,
+      "gc_bias_optimum": 0.5,
+      "gc_bias_strength": 0.3,
+      "homopolymer_indel_multiplier": 1.0,
+      "homopolymer_min_run": 3,
+      "homopolymer_substitution_multiplier": 1.0,
+      "insertion_rate": 5e-05,
+      "n_rate": 0.0005,
+      "quality_correct": 37,
+      "quality_error": 12,
+      "quality_informative": 0.8,
+      "reverse_complement_rate": 0.5,
+      "seed": 7,
+      "shuffle_window": 0,
+      "substitution_rate": 0.003
+    },
+    "channel_stats": {
+      "bases": 212527,
+      "bursts": 0,
+      "deletions": 9,
+      "dropped": 0,
+      "duplicates": 23,
+      "format": "fastq",
+      "insertions": 9,
+      "n_calls": 94,
+      "reads": 679,
+      "reverse_complement": 334,
+      "strands": 66,
+      "substitutions": 588,
+      "zero_coverage": 0
+    },
+    "loss": {
+      "kept": 66,
+      "loss": {
+        "burst_count": 0,
+        "burst_length": 0,
+        "dropout": 0.0,
+        "seed": 7
+      },
+      "lost": 0,
+      "strands": 66
+    },
+    "loss_layer": "vnxdna.v6.loss",
+    "read_layer": "vnxdna.v4.channel"
+  },
+  "coverage": {
+    "dispersion": 5.0,
+    "gc_bias_optimum": 0.5,
+    "gc_bias_strength": 0.3,
+    "mean": 10.0,
+    "model": "poisson",
+    "realised_reads": 679,
+    "realised_reads_per_input_strand": 10.2879
+  },
+  "decode_result": null,
+  "decoder": null,
+  "git": {
+    "commit": "17c9b5ff89a5a28f6280db8fc33655d010162317",
+    "dirty": true,
+    "dirty_tracked": false
+  },
+  "input": {
+    "file": "strands.fasta",
+    "sha256": "8ecf51abc711e9d24bd1bed509bd2eb1b9dc9ad46b8f394910c56b3b5b44a35a",
+    "strand_length": 313,
+    "strands": 66
+  },
+  "model": {
+    "file": "illumina-like.json",
+    "name": "illumina-like",
+    "parameters": {
+      "channel": {
+        "burst_max_len": 0,
+        "burst_rate": 0.0,
+        "coverage": 10.0,
+        "coverage_dispersion": 5.0,
+        "coverage_model": "poisson",
+        "deletion_rate": 5e-05,
+        "dropout_rate": 0.0,
+        "duplication_rate": 0.02,
+        "gc_bias_optimum": 0.5,
+        "gc_bias_strength": 0.3,
+        "homopolymer_indel_multiplier": 1.0,
+        "homopolymer_min_run": 3,
+        "homopolymer_substitution_multiplier": 1.0,
+        "insertion_rate": 5e-05,
+        "n_rate": 0.0005,
+        "quality_correct": 37,
+        "quality_error": 12,
+        "quality_informative": 0.8,
+        "reverse_complement_rate": 0.5,
+        "shuffle_window": 0,
+        "substitution_rate": 0.003
+      },
+      "loss": {
+        "burst_count": 0,
+        "burst_length": 0,
+        "dropout": 0.0
+      }
+    },
+    "sha256": "27e6cf39ddf20686467c22e7b24b161808612be569021b21e39ce4c3c77c3978",
+    "version": "1.0.0"
+  },
+  "output": {
+    "bytes": 431734,
+    "file": "reads.fastq",
+    "format": "fastq",
+    "reads": 679,
+    "sha256": "3a26ad7ce5579dbbd37daca2721bfdde48b0f3b48892ae762c92f2f87e7798cb"
+  },
+  "quality_model": {
+    "quality_correct": 37,
+    "quality_error": 12,
+    "quality_informative": 0.8
+  },
+  "realised_rates": {
+    "burst_rate": 0.0,
+    "deletion_rate": 4.383230733265799e-05,
+    "duplication_rate": 0.0350609756097561,
+    "insertion_rate": 4.383230733265799e-05,
+    "n_rate": 0.00045780409880776126,
+    "reads_per_input_strand": 10.287878787878787,
+    "reads_per_surviving_strand": 10.287878787878787,
+    "reverse_complement_rate": 0.49189985272459497,
+    "strand_loss_fraction": 0.0,
+    "substitution_rate": 0.0028637107457336556
+  },
+  "seed": 7,
+  "statement": "SIMULATED: software-generated strands and software channel models (vnxdna.v6.loss + vnxdna.v4.channel). No DNA was synthesised, stored or sequenced; not biological validation."
+}

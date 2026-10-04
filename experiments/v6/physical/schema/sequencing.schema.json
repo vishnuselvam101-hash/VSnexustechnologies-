@@ -1,0 +1,214 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sequencing.schema.json",
+  "title": "Sequencing run",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "chemistry_kit",
+    "fastq_files",
+    "instrument",
+    "layout",
+    "platform",
+    "provider_name",
+    "quality",
+    "read_counts",
+    "read_length",
+    "run_date",
+    "run_id"
+  ],
+  "properties": {
+    "provider_name": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "description": "the literal 'none (simulation)' for non-physical records"
+    },
+    "platform": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "instrument": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "chemistry_kit": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "run_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "run_date": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "read_length": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "layout": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "single",
+        "paired",
+        null
+      ]
+    },
+    "fastq_files": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "file_name",
+          "read_count",
+          "read_role",
+          "sha256",
+          "size_bytes"
+        ],
+        "properties": {
+          "file_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          },
+          "sha256": {
+            "anyOf": [
+              {
+                "$ref": "common.schema.json#/$defs/sha256"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "size_bytes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "read_count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "read_role": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "R1",
+              "R2",
+              "single",
+              null
+            ]
+          },
+          "path": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "optional local path (absolute, or relative to the record file); when present and the file exists the validator re-computes SHA-256 and size"
+          }
+        }
+      }
+    },
+    "read_counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "total"
+      ],
+      "properties": {
+        "total": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "passing_filter": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    },
+    "quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mean_q",
+        "percent_q30"
+      ],
+      "properties": {
+        "percent_q30": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "mean_q": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "error_rate_estimate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "error_estimate_method": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  }
+}
