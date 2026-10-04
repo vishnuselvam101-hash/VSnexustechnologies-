@@ -63,6 +63,24 @@ Each finding appears in two commits (bc0c3de, 137383f) or one (76337d8), which m
 
 **Rules for test keys:** name them `TEST_ONLY_*` or `test_only_*`; derive them from an obviously fake text; never reuse a test key anywhere outside `tests/`; record every new one in this table and in `.gitleaksignore`, with its review date.
 
+## MEDIUM scan findings (triaged 2026-10-04)
+
+`vnx-security-scan` (2026-10-04, at 71b9bc0) reported 10 MEDIUM findings: 9 dependency advisories (pip-audit, 5 distinct
+IDs; the scan output lists 4 of them twice for the same installed version) and 1 cppcheck warning. None is reachable from VNX-DNA.
+The pins `cryptography>=44,<47` and `pytest<9` stay until the founder decides to lift them; until then these findings
+are expected in every scan.
+
+| Finding | What it is | Why VNX-DNA is not affected |
+|---|---|---|
+| `cryptography` PYSEC-2026-3552 (CVE-2026-69247, fixed in 50.0.0) | Bleichenbacher oracle in PKCS#7 `EnvelopedData` decryption (`pkcs7_decrypt_*`) | VNX-DNA never uses PKCS#7, S/MIME or RSA. It uses only AES-GCM, HKDF, HMAC, scrypt and SHA-256 (V3/V4) and Fernet (v0.1 compatibility). |
+| `cryptography` PYSEC-2026-3553 (CVE-2026-69249, fixed in 49.0.0) | Exponential path building on certificate chains with duplicate self-signed intermediates (DoS) | VNX-DNA does not verify X.509 certificates. |
+| `cryptography` PYSEC-2026-3554 (CVE-2026-69248, fixed in 49.0.0) | Wildcard DNS SAN escapes a CA's `permittedSubtrees` | VNX-DNA does not verify X.509 certificates. |
+| `cryptography` GHSA-537c-gmf6-5ccf (fixed in 48.0.1) | Wheels bundle OpenSSL with the issues of the [9 June 2026 advisory](https://openssl-library.org/news/secadv/20260609.txt) | Of its 19 issues, the cipher-mode ones are AES-OCB (CVE-2026-45445) and AES-GCM-SIV/AES-SIV (CVE-2026-45446). VNX-DNA uses plain AES-GCM. The rest are in PKCS#7, CMS, X.509, OCSP, ASN.1 certificate parsing, PKCS#12, CMP, CRMF, FFC-DH and QUIC, none of which VNX-DNA calls. |
+| `pytest` PYSEC-2026-1845 (CVE-2025-71176, fixed in 9.0.3) | Predictable `/tmp/pytest-of-{user}` directories let another local user cause DoS or possibly escalate | Development only. It is never installed with the package. It matters only on a shared multi-user host. The lab and CI runners are single-user. |
+| cppcheck `uninitvar` at `src/vnxdna/v5/native/align.c:322` (`Lv`) | "Uninitialized variable: Lv" | A false positive. `Lv` is a vector of `LANES` lanes, and the loop above writes every lane (`Lv[l] = Li` for `l = 0 … LANES-1`) before `dp_group` reads it. cppcheck does not track per-lane writes to GCC vector types. The C code is left unchanged, so the kernel stays bit-exact with its golden hashes. |
+
+Re-check this table when the pins change or a new advisory names an AES-GCM, HKDF, HMAC, scrypt or Fernet code path.
+
 ---
 
 # V3 security — unchanged
