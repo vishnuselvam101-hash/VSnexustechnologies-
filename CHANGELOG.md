@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased — V6 Phase 1 (outer-code resilience)
+
+Opt-in; without the new options encoding is byte-identical to 5.0.0. All results are SIMULATED. Details:
+docs/V6_PHASE1_REPORT.md, format: docs/V6_OUTER_CODE.md.
+
+- **Superblock version 2** with stripes of row groups plus column-parity groups (a product of two Cauchy RS codes),
+  iterative row/column erasure decoding in pass 2, and per-archive strand-loss accounting (`report["outer_v6"]`).
+- **Interleaved strand order** (position-major per stripe, superblock strands spread over the file) for burst loss.
+- **Adaptive outer plan** (`outer_plan="adaptive"`, `--outer-plan adaptive`, `--redundancy-budget`) choosing row
+  length, stripe depth and column parity under a redundancy budget from an analytic dropout bound.
+- New `vnx encode` flags `--stripe-depth`, `--column-parity`, `--strand-order`, `--outer-plan`, `--redundancy-budget`
+  and matching `dna.*` configuration keys.
+
 ## 5.0.0 — 2026-10-04
 
 VNX-DNA V5: adaptive and probabilistic decoding on top of the unchanged V4 format. All results are SIMULATED
