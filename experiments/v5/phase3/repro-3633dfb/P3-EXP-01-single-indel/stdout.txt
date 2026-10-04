@@ -6,4 +6,4 @@ period 32/2 (V4 round 1)   del: cases 1776  V4 ok 1776 erased  32.5 nt | V5-T0 o
 period 32/2 (V4 round 1)   ins: cases 1776  V4 ok 1776 erased  42.3 nt | V5-T0 ok 1776 false 0 erased  40.1 | V5-T0/0.5 ok 1776 false 0 erased  18.3 | V5-T1 ok 1776 false 0 erased   0.0 | V5-T0+Q ok 1776 false 0 erased  30.9 | V5-T1+Q ok 1776 false 0 erased   0.0
 v4-indel (24/3, r=20)      del: cases 1878  V4 ok 1878 erased  25.6 nt | V5-T0 ok 1878 false 0 erased  23.2 | V5-T0/0.5 ok 1878 false 0 erased  13.0 | V5-T1 ok 1878 false 0 erased   3.7 | V5-T0+Q ok 1878 false 0 erased  23.2 | V5-T1+Q ok 1878 false 0 erased   3.7
 v4-indel (24/3, r=20)      ins: cases 1878  V4 ok 1878 erased  32.3 nt | V5-T0 ok 1878 false 0 erased  23.9 | V5-T0/0.5 ok 1878 false 0 erased  13.0 | V5-T1 ok 1878 false 0 erased   0.0 | V5-T0+Q ok 1878 false 0 erased  22.3 | V5-T1+Q ok 1878 false 0 erased   0.0
-wrote /tmp/claude-0/-root/de60d5e2-f354-4c9d-bf9f-805a00057640/scratchpad/p3repro/experiments/v5/phase3/P3-EXP-01-single-indel/results.json
+wrote <scratch>/p3repro/experiments/v5/phase3/P3-EXP-01-single-indel/results.json

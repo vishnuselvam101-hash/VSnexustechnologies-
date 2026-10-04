@@ -8,7 +8,7 @@
 == P3-EXP-01-single-indel (0 dirty before)
 v4-indel (24/3, r=20)      del: cases 1878  V4 ok 1878 erased  25.6 nt | V5-T0 ok 1878 false 0 erased  23.2 | V5-T0/0.5 ok 1878 false 0 erased  13.0 | V5-T1 ok 1878 false 0 erased   3.7 | V5-T0+Q ok 1878 false 0 erased  23.2 | V5-T1+Q ok 1878 false 0 erased   3.7
 v4-indel (24/3, r=20)      ins: cases 1878  V4 ok 1878 erased  32.3 nt | V5-T0 ok 1878 false 0 erased  23.9 | V5-T0/0.5 ok 1878 false 0 erased  13.0 | V5-T1 ok 1878 false 0 erased   0.0 | V5-T0+Q ok 1878 false 0 erased  22.3 | V5-T1+Q ok 1878 false 0 erased   0.0
-wrote /tmp/claude-0/-root/de60d5e2-f354-4c9d-bf9f-805a00057640/scratchpad/p3repro/experiments/v5/phase3/P3-EXP-01-single-indel/results.json
+wrote <scratch>/p3repro/experiments/v5/phase3/P3-EXP-01-single-indel/results.json
 == P3-EXP-02-multi-indel (0 dirty before)
 ins|del-split k=2      V4  250/300  V5  250  false 0  erased/indel V4   0.0  V5   0.0  phases {'T0': 250, 'none': 50}  status {}  0.1s
 marker-adjacent k=2    V4  280/300  V5  299  false 0  erased/indel V4  23.3  V5  20.8  phases {'T0': 299, 'none': 1}  status {'LOW': 518, 'UNRECOVERABLE': 10}  0.3s

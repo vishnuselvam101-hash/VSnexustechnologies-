@@ -1,4 +1,27 @@
-# VNX-DNA 4
+# VNX-DNA 5
+
+**VNX-DNA 5.0** adds an adaptive, probabilistic decoding foundation on top of the unchanged VNX-DNA 4 format
+([completion report](docs/V5_COMPLETION_REPORT.md)). Every V5 result is **SIMULATED** (computational/software
+validation); no DNA has been synthesised, stored or sequenced. The V4 format, codes, cryptography and integrity checks
+are unchanged, and V4 decoding stays the default.
+
+- **Native alignment kernel** (C via ctypes, optional build): bit-exact with the V4 NumPy reference on every golden
+  case, 9.6–11.3× faster aligner; `VNXDNA_ALIGN_BACKEND=auto|native|reference`
+  ([docs/V5_PHASE2_NATIVE_ALIGNMENT.md](docs/V5_PHASE2_NATIVE_ALIGNMENT.md)).
+- **Smart indel recovery** (opt-in, `--indel-recovery smart`): median erased nucleotides per true indel 24 → 4 at
+  coverage 1, fail-closed ([docs/V5_PHASE3_INDEL_RECOVERY.md](docs/V5_PHASE3_INDEL_RECOVERY.md)).
+- **Soft-decision inner decoding** (opt-in, `--soft-decoding erasure|chase|auto`, `--min-quality`): GMD/Chase over the
+  unchanged RS verifier ([docs/V5_PHASE4_REPORT.md](docs/V5_PHASE4_REPORT.md)).
+- **Deferred per-read recovery** (`--recovery-schedule deferred`, default): smart/soft search only where a group is
+  still undecodable ([docs/V5_PHASE3_OPTIMIZATION.md](docs/V5_PHASE3_OPTIMIZATION.md)).
+
+```bash
+vnx decode reads.fastq -o recovered.vnx --indel-recovery smart --soft-decoding auto --min-quality 20
+```
+
+---
+
+# VNX-DNA 4 (format and CLI, unchanged in 5.0)
 
 **A CPU-first, research-grade software stack for DNA data storage.** VNX-DNA 4 packs files and directories into a
 verifiable archive and encodes it as constraint-screened DNA strands. Through a configurable *simulated* storage and

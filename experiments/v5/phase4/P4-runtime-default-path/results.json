@@ -246,7 +246,7 @@
         "verified": true,
         "seconds": 11.028,
         "peak_rss_mb": 141.5,
-        "module": "/tmp/claude-0/-root/4f31a309-e388-45dd-ac1a-98ccc9380d39/scratchpad/p3base/src/vnxdna/__init__.py"
+        "module": "<scratch>/p3base/src/vnxdna/__init__.py"
       },
       {
         "workers": 1,
@@ -268,7 +268,7 @@
         "verified": true,
         "seconds": 10.606,
         "peak_rss_mb": 144.7,
-        "module": "/tmp/claude-0/-root/4f31a309-e388-45dd-ac1a-98ccc9380d39/scratchpad/p3base/src/vnxdna/__init__.py"
+        "module": "<scratch>/p3base/src/vnxdna/__init__.py"
       },
       {
         "workers": 1,
@@ -290,7 +290,7 @@
         "verified": true,
         "seconds": 10.893,
         "peak_rss_mb": 145.0,
-        "module": "/tmp/claude-0/-root/4f31a309-e388-45dd-ac1a-98ccc9380d39/scratchpad/p3base/src/vnxdna/__init__.py"
+        "module": "<scratch>/p3base/src/vnxdna/__init__.py"
       },
       {
         "workers": 1,
@@ -312,7 +312,7 @@
         "verified": true,
         "seconds": 19.572,
         "peak_rss_mb": 155.3,
-        "module": "/tmp/claude-0/-root/4f31a309-e388-45dd-ac1a-98ccc9380d39/scratchpad/p3base/src/vnxdna/__init__.py"
+        "module": "<scratch>/p3base/src/vnxdna/__init__.py"
       },
       {
         "workers": 1,
@@ -334,7 +334,7 @@
         "verified": true,
         "seconds": 19.005,
         "peak_rss_mb": 151.8,
-        "module": "/tmp/claude-0/-root/4f31a309-e388-45dd-ac1a-98ccc9380d39/scratchpad/p3base/src/vnxdna/__init__.py"
+        "module": "<scratch>/p3base/src/vnxdna/__init__.py"
       },
       {
         "workers": 1,
@@ -356,7 +356,7 @@
         "verified": true,
         "seconds": 19.345,
         "peak_rss_mb": 152.0,
-        "module": "/tmp/claude-0/-root/4f31a309-e388-45dd-ac1a-98ccc9380d39/scratchpad/p3base/src/vnxdna/__init__.py"
+        "module": "<scratch>/p3base/src/vnxdna/__init__.py"
       },
       {
         "workers": 1,
@@ -411,7 +411,7 @@
         "verified": true,
         "seconds": 3.894,
         "peak_rss_mb": 160.0,
-        "module": "/tmp/claude-0/-root/4f31a309-e388-45dd-ac1a-98ccc9380d39/scratchpad/p3base/src/vnxdna/__init__.py"
+        "module": "<scratch>/p3base/src/vnxdna/__init__.py"
       },
       {
         "workers": 8,
@@ -433,7 +433,7 @@
         "verified": true,
         "seconds": 3.978,
         "peak_rss_mb": 160.7,
-        "module": "/tmp/claude-0/-root/4f31a309-e388-45dd-ac1a-98ccc9380d39/scratchpad/p3base/src/vnxdna/__init__.py"
+        "module": "<scratch>/p3base/src/vnxdna/__init__.py"
       },
       {
         "workers": 8,
@@ -455,7 +455,7 @@
         "verified": true,
         "seconds": 3.801,
         "peak_rss_mb": 160.2,
-        "module": "/tmp/claude-0/-root/4f31a309-e388-45dd-ac1a-98ccc9380d39/scratchpad/p3base/src/vnxdna/__init__.py"
+        "module": "<scratch>/p3base/src/vnxdna/__init__.py"
       },
       {
         "workers": 8,
@@ -477,7 +477,7 @@
         "verified": true,
         "seconds": 4.596,
         "peak_rss_mb": 211.0,
-        "module": "/tmp/claude-0/-root/4f31a309-e388-45dd-ac1a-98ccc9380d39/scratchpad/p3base/src/vnxdna/__init__.py"
+        "module": "<scratch>/p3base/src/vnxdna/__init__.py"
       },
       {
         "workers": 8,
@@ -499,7 +499,7 @@
         "verified": true,
         "seconds": 4.496,
         "peak_rss_mb": 214.1,
-        "module": "/tmp/claude-0/-root/4f31a309-e388-45dd-ac1a-98ccc9380d39/scratchpad/p3base/src/vnxdna/__init__.py"
+        "module": "<scratch>/p3base/src/vnxdna/__init__.py"
       },
       {
         "workers": 8,
@@ -521,7 +521,7 @@
         "verified": true,
         "seconds": 4.603,
         "peak_rss_mb": 210.8,
-        "module": "/tmp/claude-0/-root/4f31a309-e388-45dd-ac1a-98ccc9380d39/scratchpad/p3base/src/vnxdna/__init__.py"
+        "module": "<scratch>/p3base/src/vnxdna/__init__.py"
       },
       {
         "workers": 8,

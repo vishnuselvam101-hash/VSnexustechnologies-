@@ -1,5 +1,24 @@
 # Changelog
 
+## 5.0.0 — 2026-10-04
+
+VNX-DNA V5: adaptive and probabilistic decoding on top of the unchanged V4 format. All results are SIMULATED
+(computational/software validation); nothing has been synthesised or sequenced. Details: docs/V5_COMPLETION_REPORT.md.
+
+- **Phase 1 — baseline:** V4 frozen and profiled with provenance (benchmarks/v5/); golden projection hashes for the
+  aligner; first bottleneck identified (marker-template alignment, 58 % of single-worker noisy decode).
+- **Phase 2 — native alignment kernel:** C kernel via ctypes (`src/vnxdna/v5/native/align.c`, optional setuptools
+  extension), bit-exact with the V4 NumPy reference (10/10 golden cases, 0 mismatches in 700,000 fuzzed reads,
+  ASan/UBSan clean); backend auto-selection with `VNXDNA_ALIGN_BACKEND`. Aligner 9.6–11.3× faster.
+- **Phase 3 — smart indel recovery:** opt-in `DecodeOptions(indel_recovery="smart")` / `--indel-recovery smart`;
+  bounded local search and consensus realignment, fail-closed. Median erased nt per true indel 24 → 4.
+- **Phase 4 — soft-decision inner decoding:** opt-in `soft_decoding=erasure|chase|auto` / `--soft-decoding`, with
+  `--min-quality`; GMD/Chase candidates checked by the unchanged RS + CRC verifier. 0 false acceptances, 0 false SUCCESS.
+- **Gate A/B:** Phase 4 results reproduced from the clean commit; deferred per-read recovery
+  (`recovery_schedule="deferred"`, default; `eager` available): verified archives/hour 155 → 581 (V5-hard).
+- The package version is now 5.0.0, so new archives record encoder version 5.0.0 and `vnx version` reports 5.0.0.
+  The VNX4 container format (4.0) and strand frame version (4) are unchanged.
+
 ## 4.0.0 — 2026-10-03
 
 VNX-DNA V4: a new format and package (`vnxdna.v4`, CLI `vnx`) on top of the unchanged V3 (format 5, `vnx-dna`).

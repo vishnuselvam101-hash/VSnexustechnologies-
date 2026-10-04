@@ -1,12 +1,12 @@
 == commit c5b68d684c757ece2f9f45084e44c1313bc21cef dirty=0 21:24:35
 == environment
-python 3.12.3 numpy 2.5.3 vnxdna /tmp/claude-0/-root/e89d912b-313e-4a53-bab8-2dd6aab62940/scratchpad/p4clean/src/vnxdna/__init__.py
+python 3.12.3 numpy 2.5.3 vnxdna <scratch>/p4clean/src/vnxdna/__init__.py
 gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
 {
   "requested_backend": "native",
   "active_backend": "native",
   "native_available": true,
-  "library": "/tmp/claude-0/-root/e89d912b-313e-4a53-bab8-2dd6aab62940/scratchpad/p4clean/src/vnxdna/v5/native/libvnx_align.so",
+  "library": "<scratch>/p4clean/src/vnxdna/v5/native/libvnx_align.so",
   "load_error": null,
   "abi_version": 2,
   "error": null,
