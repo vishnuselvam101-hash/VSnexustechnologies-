@@ -7,16 +7,23 @@ from __future__ import annotations
 
 import json
 import os
+import tracemalloc
 
+import numpy as np
 import pytest
 from typer.testing import CliRunner
 
 from vnxdna.v4 import archive as ar
 from vnxdna.v4 import crypto
 from vnxdna.v4 import datagen
+from vnxdna.v4 import decoder as de
 from vnxdna.v4 import encoder as en
 from vnxdna.v4.cli import app
+from vnxdna.v4.constraints import iter_fasta
 from vnxdna.v4.errors import VNXConfigurationError
+from vnxdna.v4.frame import KIND_SUPER
+from vnxdna.v6 import outer as ou
+from vnxdna.v6.decode import StripeRecovery
 from vnxdna.v6.observe import JsonlObserver
 
 
@@ -135,3 +142,106 @@ def test_cli_events_error_not_duplicated(arc, tmp_path):
     lines = _lines(ev)
     assert sum(e["event"] == "error" for e in lines) == 1
     assert lines[-1]["event"] == "command_end" and lines[-1]["exit_code"] == r.exit_code
+
+
+# ---------------------------------------------------------------------------------------------------------------- V6-3 / V6-4
+def _geo(D, Mc, G=40, K=4, M=2, P=50):
+    return ou.Geometry(K, M, D, Mc, P, G * K * P - 7).validate()
+
+
+def test_no_column_parity_finish_does_not_assemble_the_stripe(tmp_path):
+    geo = ou.Geometry(4, 2, 65535, 0, 200, 3000 * 4 * 200).validate()      # one stripe of 3000 data rows
+    rec = StripeRecovery(geo)
+    fd = os.open(tmp_path / "c.bin", os.O_RDWR | os.O_CREAT, 0o600)
+    calls = []
+    try:
+        done = set(range(geo.G))
+        failed: dict = {}
+        rec.row_failed(7, {0: np.zeros(200, np.uint8)}, "too few symbols")
+        done.add(7)
+        tracemalloc.start()
+        written = rec.finish(fd, lambda todo, d: calls.append(set(todo)), done, failed,
+                             admit=lambda s: calls.append(("admit", s)) or True)
+        peak = tracemalloc.get_traced_memory()[1]
+        tracemalloc.stop()
+    finally:
+        os.close(fd)
+    assert written == 0 and set(failed) == {7} and "no column parity" in failed[7]
+    assert peak < 4 << 20, peak                       # the (D + Mc) × (K + M) × P array was 157 MB here
+    assert calls == []                                 # neither the other rows nor the stripe budget were touched
+    r = rec.report()
+    assert r["rows_failed_row_wise"] == 1 and r["data_rows_unrecovered"] == 1 and r["rows_recovered_by_columns"] == 0
+    assert r["stripes_attempted"] == 0
+
+
+def test_no_column_parity_selective_run_is_not_widened(tmp_path):
+    geo = _geo(D=40, Mc=0)
+    rec = StripeRecovery(geo)
+    fd = os.open(tmp_path / "c.bin", os.O_RDWR | os.O_CREAT, 0o600)
+    calls = []
+    try:
+        rec.row_failed(3, {}, "lost")
+        rec.finish(fd, lambda todo, d: calls.append(todo), {3}, {})
+    finally:
+        os.close(fd)
+    assert calls == []
+
+
+def test_finish_checkpoint_per_stripe(tmp_path):
+    geo = _geo(D=4, Mc=2)
+    rec = StripeRecovery(geo)
+    for g in (1, 5, 9):                                # three different stripes
+        rec.row_failed(g, {}, "lost")
+    ticks = []
+
+    def checkpoint():
+        ticks.append(1)
+        if len(ticks) == 2:
+            raise RuntimeError("budget")
+    fd = os.open(tmp_path / "c.bin", os.O_RDWR | os.O_CREAT, 0o600)
+    try:
+        with pytest.raises(RuntimeError, match="budget"):
+            rec.finish(fd, lambda todo, d: d.update(todo), set(range(geo.total_groups)), {}, checkpoint=checkpoint)
+    finally:
+        os.close(fd)
+    assert len(ticks) == 2
+
+
+def test_decoder_interleaved_without_column_parity_reports_failed_group(arc, tmp_path):
+    """Superblock v2 with Mc = 0 (automatic depth: one stripe of every group): a lost group is reported, not assembled."""
+    s = tmp_path / "s.fasta"
+    en.encode_container(arc / "plain.vnx", s, en.DNAOptions(strand_order="interleaved"))
+    reads = tmp_path / "r.fasta"
+    with open(reads, "w") as f:
+        for i, (head, seq) in enumerate(iter_fasta(s)):
+            _, _, kind, g, _ = head.split("|")
+            if not (int(kind) != KIND_SUPER and int(g) == 1):
+                f.write(f">r{i}\n{seq}\n")
+    res = de.decode_reads(reads, tmp_path / "o.vnx", de.DecodeOptions())
+    assert res.status in ("PARTIAL", "FAILURE")
+    assert res.report["failed_groups"] == [1]
+    v6 = res.report["outer_v6"]
+    assert v6["geometry"]["Mc"] == 0 and v6["rows_failed_row_wise"] == 1 and v6["data_rows_unrecovered"] == 1
+    assert not (tmp_path / "o.vnx").exists()
+
+
+def test_decoder_passes_checkpoint_to_finish(arc, tmp_path, monkeypatch):
+    seen = {}
+    orig = StripeRecovery.finish
+
+    def spy(self, *a, **kw):
+        seen.update(kw)
+        return orig(self, *a, **kw)
+    monkeypatch.setattr(StripeRecovery, "finish", spy)
+    s = tmp_path / "s.fasta"
+    en.encode_container(arc / "plain.vnx", s, en.DNAOptions(stripe_depth=4, column_parity=2))
+    reads = tmp_path / "r.fasta"
+    with open(reads, "w") as f:
+        for i, (head, seq) in enumerate(iter_fasta(s)):
+            _, _, kind, g, _ = head.split("|")
+            if not (int(kind) != KIND_SUPER and int(g) == 2):
+                f.write(f">r{i}\n{seq}\n")
+    res = de.decode_reads(reads, tmp_path / "o.vnx", de.DecodeOptions())
+    assert res.status == "SUCCESS"
+    assert callable(seen.get("checkpoint")) and callable(seen.get("admit"))
+    assert (tmp_path / "o.vnx").read_bytes() == (arc / "plain.vnx").read_bytes()

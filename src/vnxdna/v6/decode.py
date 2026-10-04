@@ -108,11 +108,15 @@ class StripeRecovery:
         out.reshape(-1)[: len(raw)] = np.frombuffer(raw, dtype=np.uint8)
         return out
 
-    def finish(self, fd: int, run, done: set, failed: dict, admit=None) -> int:
+    def finish(self, fd: int, run, done: set, failed: dict, admit=None, checkpoint=None) -> int:
         """Column pass over every stripe with a pending row. Returns the number of data rows written.
 
         ``admit(stripe) -> bool`` (the recovery planner's outer budget) may refuse a stripe; its failed data rows then
-        stay failed, exactly as if the column code could not recover them."""
+        stay failed, exactly as if the column code could not recover them. ``checkpoint()`` (the planner's wall-time
+        and memory budget) is called before each stripe and may raise to stop the decode.
+
+        Without column parity (Mc = 0) nothing can be recovered by columns: the stripe, whose depth can be every data
+        group of the archive, is never assembled and its rows go straight to failed."""
         if self._busy or not self.pending:
             return 0
         self._busy = True
@@ -121,6 +125,15 @@ class StripeRecovery:
         written = 0
         try:
             for s in sorted({geo.stripe_of(g) for g in self.pending}):
+                if checkpoint is not None:
+                    checkpoint()
+                if not Mc:
+                    for g in sorted(g for g in self.pending if geo.stripe_of(g) == s):
+                        failed[g] = (f"{self.errors[g]}; no column parity in this archive (Mc = 0), so the column "
+                                     "code cannot recover it")
+                        self.unrecovered.append(g)
+                        del self.pending[g]
+                    continue
                 data_g, par_g = geo.stripe_rows(s)
                 rows = data_g + par_g
                 todo = set(rows) - done
@@ -138,6 +151,8 @@ class StripeRecovery:
                     self.stripes_skipped += 1
                     continue
                 self.stripes_attempted += 1
+                # the column code is a (D + Mc, D) code: a short last stripe keeps its absent data rows as known-zero
+                # padding rows, so the array has D + Mc rows; Mc > 0 implies D + Mc <= 256 (Geometry.validate)
                 index = {g: r for r, g in enumerate(data_g)}
                 index.update({g: D + i for i, g in enumerate(par_g)})
                 pad = stripe_padding(geo, s)
@@ -161,8 +176,7 @@ class StripeRecovery:
                 if full_rows:
                     cw[full_rows] = row_codewords(np.stack(full_data), K, M)
                     known[full_rows] = True
-                if Mc:
-                    cw, known = decode_stripe(cw, known, K, M, D, Mc, self.stats)
+                cw, known = decode_stripe(cw, known, K, M, D, Mc, self.stats)
                 for g in mine:
                     r = index[g]
                     if known[r, :K].all():

@@ -1337,7 +1337,8 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
                     os.pwrite(fd, raw, start)
                     decoded += 1
             if v6 is not None:
-                decoded += v6.finish(fd, run, done, failed, admit=planner.admit_stripe)
+                decoded += v6.finish(fd, run, done, failed, admit=planner.admit_stripe,
+                                     checkpoint=lambda: planner.checkpoint("outer column pass"))
 
         done: set[int] = set()
         planner.decide("OUTER", True, "row decode of every group" + (" holding the index and the selected files"
