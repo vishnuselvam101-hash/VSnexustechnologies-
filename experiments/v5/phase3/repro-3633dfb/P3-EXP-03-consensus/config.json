@@ -1,0 +1,26 @@
+{
+  "input": {
+    "size": 65536,
+    "pattern": "random",
+    "seed": 3301,
+    "sha256": "3eb70cc938f8b4d9b1c5b0f887afb8765783ae56a08e52c9916468258e4f5960"
+  },
+  "profile": "v4-balanced",
+  "coverage": [
+    1,
+    2,
+    3,
+    5,
+    10
+  ],
+  "rates_each": [
+    0.0,
+    0.001,
+    0.002,
+    0.005,
+    0.01
+  ],
+  "seeds_per_cell": 3,
+  "workers": 8,
+  "channel_seed_rule": "33000 + 100\u00b7seed_index + coverage"
+}

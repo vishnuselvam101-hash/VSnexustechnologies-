@@ -1,0 +1,3407 @@
+{
+  "experiment": "P3-EXP-05 V4 vs V5 archives",
+  "simulated": true,
+  "config": {
+    "input": {
+      "size": 262144,
+      "pattern": "random",
+      "seed": 3501
+    },
+    "profile": "v4-balanced (Cauchy RS 64+16)",
+    "channels": {
+      "indel 0.2%+0.2%, cov 1": {
+        "insertion_rate": 0.002,
+        "deletion_rate": 0.002,
+        "coverage": 1
+      },
+      "indel 0.3%+0.3%, cov 1": {
+        "insertion_rate": 0.003,
+        "deletion_rate": 0.003,
+        "coverage": 1
+      },
+      "indel 0.4%+0.4%, cov 1": {
+        "insertion_rate": 0.004,
+        "deletion_rate": 0.004,
+        "coverage": 1
+      },
+      "indel 0.5%+0.5%, cov 1": {
+        "insertion_rate": 0.005,
+        "deletion_rate": 0.005,
+        "coverage": 1
+      },
+      "mixed L3 (0.5% sub, 0.1%+0.1%, 5% dropout), cov 1": {
+        "substitution_rate": 0.005,
+        "insertion_rate": 0.001,
+        "deletion_rate": 0.001,
+        "dropout_rate": 0.05,
+        "coverage": 1
+      },
+      "mixed (0.3% sub, 0.25%+0.25%, 2% dropout), cov 1": {
+        "substitution_rate": 0.003,
+        "insertion_rate": 0.0025,
+        "deletion_rate": 0.0025,
+        "dropout_rate": 0.02,
+        "coverage": 1
+      },
+      "harsh (0.5% sub, 0.6%+0.6%, 2% dropout), Poisson cov 3": {
+        "substitution_rate": 0.005,
+        "insertion_rate": 0.006,
+        "deletion_rate": 0.006,
+        "dropout_rate": 0.02,
+        "coverage": 3,
+        "coverage_model": "poisson"
+      },
+      "EXP-0011 (0.2% sub, 0.05%+0.05%, 2% dropout), Poisson cov 3": {
+        "substitution_rate": 0.002,
+        "insertion_rate": 0.0005,
+        "deletion_rate": 0.0005,
+        "dropout_rate": 0.02,
+        "coverage": 3,
+        "coverage_model": "poisson"
+      }
+    },
+    "seeds_per_channel": 3,
+    "channel_seed_rule": "35000 + 10\u00b7seed_index",
+    "workers": 1,
+    "part_b": {
+      "input": "4 MiB random seed 42",
+      "channel": {
+        "substitution_rate": 0.002,
+        "insertion_rate": 0.0005,
+        "deletion_rate": 0.0005,
+        "dropout_rate": 0.02,
+        "coverage": 3,
+        "coverage_model": "poisson",
+        "seed": 1011
+      },
+      "workers": [
+        1,
+        8
+      ]
+    }
+  },
+  "provenance": {
+    "timestamp_utc": "2026-10-03T09:21:20Z",
+    "vnx_version": "4.0.0",
+    "vnx4_format_version": [
+      4,
+      0
+    ],
+    "git_commit": "3633dfb86e76bb3d0661ecf8bf000cbb2da2359b",
+    "cpu_model": "Intel(R) Xeon(R) Gold 6240 CPU @ 2.60GHz",
+    "logical_cpus": 8,
+    "ram_bytes": 33654890496,
+    "os": "Linux 6.8.0-146-generic",
+    "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "packages": {
+      "numpy": "2.5.3",
+      "cryptography": "46.0.7",
+      "zstandard": "0.25.0",
+      "reedsolo": "1.7.0",
+      "pydantic": "2.13.5",
+      "typer": "0.27.2"
+    },
+    "v4_control_tag": "v4.0.0",
+    "v4_control_commit": "a358ae8284066d0608f329b47a53e55018bbfa79",
+    "commit_under_test": "3633dfb86e76bb3d0661ecf8bf000cbb2da2359b",
+    "worktree_dirty": false,
+    "native_toolchain": {
+      "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+      "rustc": "rustc 1.75.0 (82e1608df 2023-12-21) (built from a source tarball)",
+      "cargo": "cargo 1.75.0"
+    },
+    "cpu_flags": [
+      "avx",
+      "avx2",
+      "avx512bw",
+      "avx512f",
+      "bmi2",
+      "popcnt",
+      "sse4_2"
+    ],
+    "config_sha256": "e46e38cc397889763f7f69ffe2765c5cbd0a50ec1c140bf760e959390737d2f5"
+  },
+  "results": {
+    "summary": {
+      "indel 0.2%+0.2%, cov 1": {
+        "segment": {
+          "verified_success": 3,
+          "trials": 3,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "decode_seconds": [
+            0.772,
+            0.778,
+            0.746
+          ],
+          "peak_rss_mb": [
+            92.4,
+            92.3,
+            92.4
+          ],
+          "reads_smart_path": [
+            null,
+            null,
+            null
+          ],
+          "smart_trials": [
+            null,
+            null,
+            null
+          ],
+          "false_accept_bound_sum": [
+            null,
+            null,
+            null
+          ]
+        },
+        "smart": {
+          "verified_success": 3,
+          "trials": 3,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "decode_seconds": [
+            3.725,
+            3.606,
+            3.428
+          ],
+          "peak_rss_mb": [
+            118.4,
+            118.7,
+            119.2
+          ],
+          "reads_smart_path": [
+            496,
+            543,
+            524
+          ],
+          "smart_trials": [
+            89061,
+            86965,
+            79935
+          ],
+          "false_accept_bound_sum": [
+            1.1777941789654903e-07,
+            1.1776703972256455e-07,
+            1.1647554251192117e-07
+          ]
+        }
+      },
+      "indel 0.3%+0.3%, cov 1": {
+        "segment": {
+          "verified_success": 0,
+          "trials": 3,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            0.7184,
+            0.6408,
+            0.6893
+          ],
+          "decode_seconds": [
+            0.882,
+            0.839,
+            0.888
+          ],
+          "peak_rss_mb": [
+            93.7,
+            93.8,
+            92.1
+          ],
+          "reads_smart_path": [
+            null,
+            null,
+            null
+          ],
+          "smart_trials": [
+            null,
+            null,
+            null
+          ],
+          "false_accept_bound_sum": [
+            null,
+            null,
+            null
+          ]
+        },
+        "smart": {
+          "verified_success": 3,
+          "trials": 3,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "decode_seconds": [
+            8.32,
+            8.476,
+            8.925
+          ],
+          "peak_rss_mb": [
+            122.1,
+            122.2,
+            120.9
+          ],
+          "reads_smart_path": [
+            1130,
+            1114,
+            1142
+          ],
+          "smart_trials": [
+            256024,
+            265059,
+            252994
+          ],
+          "false_accept_bound_sum": [
+            3.3949364793824815e-07,
+            3.024983799794204e-07,
+            3.3289255271918185e-07
+          ]
+        }
+      },
+      "indel 0.4%+0.4%, cov 1": {
+        "segment": {
+          "verified_success": 0,
+          "trials": 3,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            0.0097,
+            0.0291,
+            0.0583
+          ],
+          "decode_seconds": [
+            0.944,
+            0.958,
+            0.912
+          ],
+          "peak_rss_mb": [
+            94.4,
+            94.3,
+            94.3
+          ],
+          "reads_smart_path": [
+            null,
+            null,
+            null
+          ],
+          "smart_trials": [
+            null,
+            null,
+            null
+          ],
+          "false_accept_bound_sum": [
+            null,
+            null,
+            null
+          ]
+        },
+        "smart": {
+          "verified_success": 3,
+          "trials": 3,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "decode_seconds": [
+            16.754,
+            16.878,
+            16.381
+          ],
+          "peak_rss_mb": [
+            123.4,
+            123.1,
+            123.0
+          ],
+          "reads_smart_path": [
+            1682,
+            1737,
+            1725
+          ],
+          "smart_trials": [
+            549954,
+            568960,
+            552596
+          ],
+          "false_accept_bound_sum": [
+            5.890329617089606e-07,
+            5.848773793140877e-07,
+            5.942846100075973e-07
+          ]
+        }
+      },
+      "indel 0.5%+0.5%, cov 1": {
+        "segment": {
+          "verified_success": 0,
+          "trials": 3,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "decode_seconds": [
+            0.999,
+            1.005,
+            1.052
+          ],
+          "peak_rss_mb": [
+            94.2,
+            95.5,
+            94.2
+          ],
+          "reads_smart_path": [
+            null,
+            null,
+            null
+          ],
+          "smart_trials": [
+            null,
+            null,
+            null
+          ],
+          "false_accept_bound_sum": [
+            null,
+            null,
+            null
+          ]
+        },
+        "smart": {
+          "verified_success": 0,
+          "trials": 3,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            0.7282,
+            0.8058,
+            0.699
+          ],
+          "decode_seconds": [
+            24.09,
+            24.764,
+            23.851
+          ],
+          "peak_rss_mb": [
+            125.0,
+            125.2,
+            124.8
+          ],
+          "reads_smart_path": [
+            2020,
+            2119,
+            2092
+          ],
+          "smart_trials": [
+            870465,
+            868292,
+            853060
+          ],
+          "false_accept_bound_sum": [
+            8.775926829070117e-07,
+            8.977765943749983e-07,
+            8.693101813164471e-07
+          ]
+        }
+      },
+      "mixed L3 (0.5% sub, 0.1%+0.1%, 5% dropout), cov 1": {
+        "segment": {
+          "verified_success": 3,
+          "trials": 3,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "decode_seconds": [
+            0.744,
+            0.732,
+            0.774
+          ],
+          "peak_rss_mb": [
+            85.9,
+            86.2,
+            86.0
+          ],
+          "reads_smart_path": [
+            null,
+            null,
+            null
+          ],
+          "smart_trials": [
+            null,
+            null,
+            null
+          ],
+          "false_accept_bound_sum": [
+            null,
+            null,
+            null
+          ]
+        },
+        "smart": {
+          "verified_success": 3,
+          "trials": 3,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "decode_seconds": [
+            1.811,
+            1.834,
+            1.635
+          ],
+          "peak_rss_mb": [
+            106.8,
+            108.5,
+            107.6
+          ],
+          "reads_smart_path": [
+            269,
+            256,
+            269
+          ],
+          "smart_trials": [
+            25695,
+            28944,
+            22228
+          ],
+          "false_accept_bound_sum": [
+            3.009937509377563e-08,
+            2.4615314055007633e-08,
+            2.232125133370412e-08
+          ]
+        }
+      },
+      "mixed (0.3% sub, 0.25%+0.25%, 2% dropout), cov 1": {
+        "segment": {
+          "verified_success": 0,
+          "trials": 3,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            0.7767,
+            0.6311,
+            0.7476
+          ],
+          "decode_seconds": [
+            0.853,
+            0.853,
+            0.856
+          ],
+          "peak_rss_mb": [
+            86.9,
+            86.6,
+            86.7
+          ],
+          "reads_smart_path": [
+            null,
+            null,
+            null
+          ],
+          "smart_trials": [
+            null,
+            null,
+            null
+          ],
+          "false_accept_bound_sum": [
+            null,
+            null,
+            null
+          ]
+        },
+        "smart": {
+          "verified_success": 3,
+          "trials": 3,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "decode_seconds": [
+            6.999,
+            7.367,
+            6.803
+          ],
+          "peak_rss_mb": [
+            114.3,
+            113.9,
+            114.6
+          ],
+          "reads_smart_path": [
+            991,
+            1019,
+            993
+          ],
+          "smart_trials": [
+            203744,
+            213908,
+            191117
+          ],
+          "false_accept_bound_sum": [
+            2.4423600617701314e-07,
+            2.272980260026839e-07,
+            2.2575145755461204e-07
+          ]
+        }
+      },
+      "harsh (0.5% sub, 0.6%+0.6%, 2% dropout), Poisson cov 3": {
+        "segment": {
+          "verified_success": 0,
+          "trials": 3,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            0.0291,
+            0.0097,
+            0.0388
+          ],
+          "decode_seconds": [
+            2.854,
+            2.94,
+            2.894
+          ],
+          "peak_rss_mb": [
+            120.6,
+            115.9,
+            119.5
+          ],
+          "reads_smart_path": [
+            null,
+            null,
+            null
+          ],
+          "smart_trials": [
+            null,
+            null,
+            null
+          ],
+          "false_accept_bound_sum": [
+            null,
+            null,
+            null
+          ]
+        },
+        "smart": {
+          "verified_success": 0,
+          "trials": 3,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            0.932,
+            0.9417,
+            0.9029
+          ],
+          "decode_seconds": [
+            118.876,
+            119.76,
+            118.946
+          ],
+          "peak_rss_mb": [
+            147.4,
+            137.9,
+            143.9
+          ],
+          "reads_smart_path": [
+            7141,
+            7152,
+            7170
+          ],
+          "smart_trials": [
+            4424085,
+            4401368,
+            4337568
+          ],
+          "false_accept_bound_sum": [
+            3.6276678809095126e-06,
+            3.6614173351232307e-06,
+            3.680845048928767e-06
+          ]
+        }
+      },
+      "EXP-0011 (0.2% sub, 0.05%+0.05%, 2% dropout), Poisson cov 3": {
+        "segment": {
+          "verified_success": 3,
+          "trials": 3,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "decode_seconds": [
+            1.124,
+            1.142,
+            1.14
+          ],
+          "peak_rss_mb": [
+            118.3,
+            116.4,
+            118.3
+          ],
+          "reads_smart_path": [
+            null,
+            null,
+            null
+          ],
+          "smart_trials": [
+            null,
+            null,
+            null
+          ],
+          "false_accept_bound_sum": [
+            null,
+            null,
+            null
+          ]
+        },
+        "smart": {
+          "verified_success": 3,
+          "trials": 3,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "decode_seconds": [
+            1.699,
+            1.667,
+            1.752
+          ],
+          "peak_rss_mb": [
+            123.7,
+            123.6,
+            120.5
+          ],
+          "reads_smart_path": [
+            100,
+            116,
+            113
+          ],
+          "smart_trials": [
+            7413,
+            4929,
+            6157
+          ],
+          "false_accept_bound_sum": [
+            1.1656463695915985e-08,
+            9.904980876485962e-09,
+            1.0298672492566435e-08
+          ]
+        }
+      }
+    },
+    "runs": [
+      {
+        "channel_name": "indel 0.2%+0.2%, cov 1",
+        "channel": {
+          "insertion_rate": 0.002,
+          "deletion_rate": 0.002,
+          "coverage": 1,
+          "seed": 35000
+        },
+        "seed_index": 0,
+        "segment": {
+          "status": "SUCCESS",
+          "seconds": 0.772,
+          "peak_rss_mb": 92.4,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": "0fe6270d929e1ff199bc87976fe083a951a66c64a44da1e002b63621075311e9",
+          "verified": true,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 8247,
+              "fast": 2580,
+              "sync": 5024,
+              "reverse_complement": 0,
+              "pending": 603,
+              "orphans": 287,
+              "unaligned": 0,
+              "consensus_attempted": 415,
+              "consensus_recovered": 0,
+              "addresses_snapped": 80
+            },
+            "groups_decoded": 103,
+            "groups_failed": 0,
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "SUCCESS",
+            "stage_seconds": {
+              "pass1_reads": 0.32825599698117003,
+              "pass2_decode": 0.12015889800386503,
+              "verify": 0.0013690780033357441
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 1.0
+        },
+        "smart": {
+          "status": "SUCCESS",
+          "seconds": 3.725,
+          "peak_rss_mb": 118.4,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": "0fe6270d929e1ff199bc87976fe083a951a66c64a44da1e002b63621075311e9",
+          "verified": true,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 8247,
+              "fast": 2580,
+              "sync": 5024,
+              "reverse_complement": 0,
+              "pending": 135,
+              "orphans": 41,
+              "unaligned": 0,
+              "smart": 496,
+              "consensus_attempted": 98,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 0,
+              "addresses_snapped": 10
+            },
+            "groups_decoded": 103,
+            "groups_failed": 0,
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 1153,
+              "phase_none": 657,
+              "trials": 89061,
+              "false_accept_bound": 1.1777941789654903e-07,
+              "windows_UNRECOVERABLE": 730,
+              "phase_T1": 286,
+              "windows_LOW": 1420,
+              "recovered": 496,
+              "v4_erased_nt_recovered_reads": 37672,
+              "v5_erased_nt_recovered_reads": 20268,
+              "windows_localized_by_code": 482,
+              "phase_T0": 112,
+              "windows_MEDIUM": 61,
+              "phase_T2": 98
+            },
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "SUCCESS",
+            "stage_seconds": {
+              "pass1_reads": 3.3338160359999165,
+              "pass2_decode": 0.06475106999278069,
+              "verify": 0.0013613020128104836
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 1.0
+        }
+      },
+      {
+        "channel_name": "indel 0.2%+0.2%, cov 1",
+        "channel": {
+          "insertion_rate": 0.002,
+          "deletion_rate": 0.002,
+          "coverage": 1,
+          "seed": 35010
+        },
+        "seed_index": 1,
+        "segment": {
+          "status": "SUCCESS",
+          "seconds": 0.778,
+          "peak_rss_mb": 92.3,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": "0fe6270d929e1ff199bc87976fe083a951a66c64a44da1e002b63621075311e9",
+          "verified": true,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 8247,
+              "fast": 2494,
+              "sync": 5070,
+              "reverse_complement": 0,
+              "pending": 653,
+              "orphans": 285,
+              "unaligned": 0,
+              "consensus_attempted": 466,
+              "consensus_recovered": 0,
+              "addresses_snapped": 75
+            },
+            "groups_decoded": 103,
+            "groups_failed": 0,
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "SUCCESS",
+            "stage_seconds": {
+              "pass1_reads": 0.3241209080151748,
+              "pass2_decode": 0.1260977640049532,
+              "verify": 0.0013638270029332489
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 1.0
+        },
+        "smart": {
+          "status": "SUCCESS",
+          "seconds": 3.606,
+          "peak_rss_mb": 118.7,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": "0fe6270d929e1ff199bc87976fe083a951a66c64a44da1e002b63621075311e9",
+          "verified": true,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 8247,
+              "fast": 2494,
+              "sync": 5070,
+              "reverse_complement": 0,
+              "pending": 131,
+              "orphans": 41,
+              "unaligned": 0,
+              "smart": 543,
+              "addresses_snapped": 9,
+              "consensus_attempted": 99,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 0
+            },
+            "groups_decoded": 103,
+            "groups_failed": 0,
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 1159,
+              "phase_T1": 352,
+              "trials": 86965,
+              "false_accept_bound": 1.1776703972256455e-07,
+              "windows_LOW": 1494,
+              "recovered": 543,
+              "v4_erased_nt_recovered_reads": 40008,
+              "v5_erased_nt_recovered_reads": 21096,
+              "windows_localized_by_code": 518,
+              "windows_UNRECOVERABLE": 681,
+              "phase_none": 616,
+              "windows_MEDIUM": 67,
+              "phase_T0": 108,
+              "phase_T2": 83
+            },
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "SUCCESS",
+            "stage_seconds": {
+              "pass1_reads": 3.223533557000337,
+              "pass2_decode": 0.06055027700494975,
+              "verify": 0.0013689350162167102
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 1.0
+        }
+      },
+      {
+        "channel_name": "indel 0.2%+0.2%, cov 1",
+        "channel": {
+          "insertion_rate": 0.002,
+          "deletion_rate": 0.002,
+          "coverage": 1,
+          "seed": 35020
+        },
+        "seed_index": 2,
+        "segment": {
+          "status": "SUCCESS",
+          "seconds": 0.746,
+          "peak_rss_mb": 92.4,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": "0fe6270d929e1ff199bc87976fe083a951a66c64a44da1e002b63621075311e9",
+          "verified": true,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 8247,
+              "fast": 2612,
+              "sync": 4960,
+              "reverse_complement": 0,
+              "pending": 629,
+              "orphans": 313,
+              "unaligned": 0,
+              "addresses_snapped": 88,
+              "consensus_attempted": 443,
+              "consensus_recovered": 0
+            },
+            "groups_decoded": 103,
+            "groups_failed": 0,
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "SUCCESS",
+            "stage_seconds": {
+              "pass1_reads": 0.3128073200059589,
+              "pass2_decode": 0.11885536799672991,
+              "verify": 0.0013425610086414963
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 1.0
+        },
+        "smart": {
+          "status": "SUCCESS",
+          "seconds": 3.428,
+          "peak_rss_mb": 119.2,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": "0fe6270d929e1ff199bc87976fe083a951a66c64a44da1e002b63621075311e9",
+          "verified": true,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 8247,
+              "fast": 2612,
+              "sync": 4960,
+              "reverse_complement": 0,
+              "pending": 138,
+              "orphans": 40,
+              "unaligned": 0,
+              "smart": 524,
+              "addresses_snapped": 7,
+              "consensus_attempted": 95,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 0
+            },
+            "groups_decoded": 103,
+            "groups_failed": 0,
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 1161,
+              "phase_none": 637,
+              "trials": 79935,
+              "false_accept_bound": 1.1647554251192117e-07,
+              "windows_UNRECOVERABLE": 712,
+              "windows_LOW": 1488,
+              "phase_T1": 326,
+              "windows_MEDIUM": 53,
+              "recovered": 524,
+              "v4_erased_nt_recovered_reads": 39048,
+              "v5_erased_nt_recovered_reads": 20980,
+              "windows_localized_by_code": 484,
+              "phase_T0": 119,
+              "phase_T2": 79
+            },
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "SUCCESS",
+            "stage_seconds": {
+              "pass1_reads": 3.0526960419956595,
+              "pass2_decode": 0.059183069999562576,
+              "verify": 0.0013823490007780492
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 1.0
+        }
+      },
+      {
+        "channel_name": "indel 0.3%+0.3%, cov 1",
+        "channel": {
+          "insertion_rate": 0.003,
+          "deletion_rate": 0.003,
+          "coverage": 1,
+          "seed": 35000
+        },
+        "seed_index": 0,
+        "segment": {
+          "status": "FAILURE",
+          "seconds": 0.882,
+          "peak_rss_mb": 93.7,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": null,
+          "verified": false,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 8247,
+              "fast": 1518,
+              "sync": 5209,
+              "reverse_complement": 0,
+              "pending": 1410,
+              "orphans": 735,
+              "unaligned": 0,
+              "consensus_attempted": 932,
+              "consensus_recovered": 0,
+              "addresses_snapped": 182
+            },
+            "groups_decoded": 74,
+            "groups_failed": 29,
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "PARTIAL",
+            "stage_seconds": {
+              "pass1_reads": 0.3964146579965018,
+              "pass2_decode": 0.21029992899275385
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 0.7184
+        },
+        "smart": {
+          "status": "SUCCESS",
+          "seconds": 8.32,
+          "peak_rss_mb": 122.1,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": "0fe6270d929e1ff199bc87976fe083a951a66c64a44da1e002b63621075311e9",
+          "verified": true,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 8247,
+              "fast": 1518,
+              "sync": 5209,
+              "reverse_complement": 0,
+              "pending": 358,
+              "orphans": 161,
+              "unaligned": 0,
+              "smart": 1130,
+              "consensus_attempted": 220,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 0,
+              "addresses_snapped": 26
+            },
+            "groups_decoded": 103,
+            "groups_failed": 0,
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 2302,
+              "phase_none": 1172,
+              "trials": 256024,
+              "false_accept_bound": 3.3949364793824815e-07,
+              "windows_LOW": 3477,
+              "windows_MEDIUM": 157,
+              "windows_UNRECOVERABLE": 1285,
+              "phase_T1": 692,
+              "recovered": 1130,
+              "v4_erased_nt_recovered_reads": 87280,
+              "v5_erased_nt_recovered_reads": 44984,
+              "windows_localized_by_code": 1234,
+              "phase_T2": 271,
+              "phase_T0": 167
+            },
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "SUCCESS",
+            "stage_seconds": {
+              "pass1_reads": 7.9478685180074535,
+              "pass2_decode": 0.0943226249946747,
+              "verify": 0.0014278279850259423
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 1.0
+        }
+      },
+      {
+        "channel_name": "indel 0.3%+0.3%, cov 1",
+        "channel": {
+          "insertion_rate": 0.003,
+          "deletion_rate": 0.003,
+          "coverage": 1,
+          "seed": 35010
+        },
+        "seed_index": 1,
+        "segment": {
+          "status": "FAILURE",
+          "seconds": 0.839,
+          "peak_rss_mb": 93.8,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": null,
+          "verified": false,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 8247,
+              "fast": 1435,
+              "sync": 5280,
+              "reverse_complement": 0,
+              "pending": 1426,
+              "orphans": 711,
+              "unaligned": 0,
+              "consensus_attempted": 958,
+              "consensus_recovered": 0,
+              "addresses_snapped": 164
+            },
+            "groups_decoded": 66,
+            "groups_failed": 37,
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "PARTIAL",
+            "stage_seconds": {
+              "pass1_reads": 0.3837712869863026,
+              "pass2_decode": 0.19364433499868028
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 0.6408
+        },
+        "smart": {
+          "status": "SUCCESS",
+          "seconds": 8.476,
+          "peak_rss_mb": 122.2,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": "0fe6270d929e1ff199bc87976fe083a951a66c64a44da1e002b63621075311e9",
+          "verified": true,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 8247,
+              "fast": 1435,
+              "sync": 5280,
+              "reverse_complement": 0,
+              "pending": 381,
+              "orphans": 164,
+              "unaligned": 0,
+              "smart": 1114,
+              "addresses_snapped": 30,
+              "consensus_attempted": 247,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 0
+            },
+            "groups_decoded": 103,
+            "groups_failed": 0,
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 2310,
+              "phase_T1": 708,
+              "trials": 265059,
+              "false_accept_bound": 3.024983799794204e-07,
+              "windows_LOW": 3414,
+              "recovered": 1114,
+              "v4_erased_nt_recovered_reads": 85040,
+              "v5_erased_nt_recovered_reads": 43728,
+              "windows_localized_by_code": 1188,
+              "windows_UNRECOVERABLE": 1280,
+              "phase_T2": 240,
+              "phase_none": 1196,
+              "windows_MEDIUM": 183,
+              "phase_T0": 166,
+              "consensus_groups": 1,
+              "consensus_route_none": 1
+            },
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "SUCCESS",
+            "stage_seconds": {
+              "pass1_reads": 8.094771098985802,
+              "pass2_decode": 0.11364934899029322,
+              "verify": 0.001364438998280093
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 1.0
+        }
+      },
+      {
+        "channel_name": "indel 0.3%+0.3%, cov 1",
+        "channel": {
+          "insertion_rate": 0.003,
+          "deletion_rate": 0.003,
+          "coverage": 1,
+          "seed": 35020
+        },
+        "seed_index": 2,
+        "segment": {
+          "status": "FAILURE",
+          "seconds": 0.888,
+          "peak_rss_mb": 92.1,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": null,
+          "verified": false,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 8247,
+              "fast": 1523,
+              "sync": 5192,
+              "reverse_complement": 0,
+              "pending": 1412,
+              "orphans": 767,
+              "unaligned": 0,
+              "consensus_attempted": 913,
+              "consensus_recovered": 0,
+              "addresses_snapped": 174
+            },
+            "groups_decoded": 71,
+            "groups_failed": 32,
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "PARTIAL",
+            "stage_seconds": {
+              "pass1_reads": 0.3993208229949232,
+              "pass2_decode": 0.2105751329800114
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 0.6893
+        },
+        "smart": {
+          "status": "SUCCESS",
+          "seconds": 8.925,
+          "peak_rss_mb": 120.9,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": "0fe6270d929e1ff199bc87976fe083a951a66c64a44da1e002b63621075311e9",
+          "verified": true,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 8247,
+              "fast": 1523,
+              "sync": 5192,
+              "reverse_complement": 0,
+              "pending": 353,
+              "orphans": 152,
+              "unaligned": 0,
+              "smart": 1142,
+              "consensus_attempted": 216,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 0,
+              "addresses_snapped": 21
+            },
+            "groups_decoded": 103,
+            "groups_failed": 0,
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 2323,
+              "phase_T1": 710,
+              "trials": 252994,
+              "false_accept_bound": 3.3289255271918185e-07,
+              "windows_LOW": 3554,
+              "recovered": 1142,
+              "v4_erased_nt_recovered_reads": 87864,
+              "v5_erased_nt_recovered_reads": 45408,
+              "windows_localized_by_code": 1236,
+              "phase_none": 1181,
+              "windows_UNRECOVERABLE": 1320,
+              "windows_MEDIUM": 170,
+              "phase_T0": 169,
+              "phase_T2": 263
+            },
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "SUCCESS",
+            "stage_seconds": {
+              "pass1_reads": 8.535090225981548,
+              "pass2_decode": 0.10189358098432422,
+              "verify": 0.0014369429845828563
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 1.0
+        }
+      },
+      {
+        "channel_name": "indel 0.4%+0.4%, cov 1",
+        "channel": {
+          "insertion_rate": 0.004,
+          "deletion_rate": 0.004,
+          "coverage": 1,
+          "seed": 35000
+        },
+        "seed_index": 0,
+        "segment": {
+          "status": "FAILURE",
+          "seconds": 0.944,
+          "peak_rss_mb": 94.4,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": null,
+          "verified": false,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 8247,
+              "fast": 955,
+              "sync": 4791,
+              "reverse_complement": 0,
+              "pending": 2297,
+              "orphans": 1206,
+              "unaligned": 1,
+              "consensus_attempted": 1481,
+              "consensus_recovered": 0,
+              "addresses_snapped": 280
+            },
+            "groups_decoded": 1,
+            "groups_failed": 102,
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "PARTIAL",
+            "stage_seconds": {
+              "pass1_reads": 0.4549873119976837,
+              "pass2_decode": 0.23602772201411426
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 0.0097
+        },
+        "smart": {
+          "status": "SUCCESS",
+          "seconds": 16.754,
+          "peak_rss_mb": 123.4,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": "0fe6270d929e1ff199bc87976fe083a951a66c64a44da1e002b63621075311e9",
+          "verified": true,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 8247,
+              "fast": 955,
+              "sync": 4791,
+              "reverse_complement": 0,
+              "pending": 738,
+              "orphans": 397,
+              "unaligned": 1,
+              "smart": 1682,
+              "consensus_attempted": 426,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 0,
+              "addresses_snapped": 69
+            },
+            "groups_decoded": 103,
+            "groups_failed": 0,
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 3751,
+              "phase_none": 2069,
+              "trials": 549954,
+              "false_accept_bound": 5.890329617089606e-07,
+              "windows_LOW": 5902,
+              "windows_MEDIUM": 299,
+              "phase_T1": 942,
+              "windows_UNRECOVERABLE": 2199,
+              "recovered": 1682,
+              "v4_erased_nt_recovered_reads": 129800,
+              "v5_erased_nt_recovered_reads": 63668,
+              "windows_localized_by_code": 2014,
+              "phase_T2": 536,
+              "phase_T0": 204
+            },
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "SUCCESS",
+            "stage_seconds": {
+              "pass1_reads": 16.3492177099979,
+              "pass2_decode": 0.14221352399908938,
+              "verify": 0.0014429110160563141
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 1.0
+        }
+      },
+      {
+        "channel_name": "indel 0.4%+0.4%, cov 1",
+        "channel": {
+          "insertion_rate": 0.004,
+          "deletion_rate": 0.004,
+          "coverage": 1,
+          "seed": 35010
+        },
+        "seed_index": 1,
+        "segment": {
+          "status": "FAILURE",
+          "seconds": 0.958,
+          "peak_rss_mb": 94.3,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": null,
+          "verified": false,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 8247,
+              "fast": 904,
+              "sync": 4765,
+              "reverse_complement": 0,
+              "pending": 2369,
+              "orphans": 1251,
+              "unaligned": 1,
+              "consensus_attempted": 1574,
+              "consensus_recovered": 0,
+              "addresses_snapped": 300
+            },
+            "groups_decoded": 3,
+            "groups_failed": 100,
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "PARTIAL",
+            "stage_seconds": {
+              "pass1_reads": 0.4655499309883453,
+              "pass2_decode": 0.2366893459984567
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 0.0291
+        },
+        "smart": {
+          "status": "SUCCESS",
+          "seconds": 16.878,
+          "peak_rss_mb": 123.1,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": "0fe6270d929e1ff199bc87976fe083a951a66c64a44da1e002b63621075311e9",
+          "verified": true,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 8247,
+              "fast": 904,
+              "sync": 4765,
+              "reverse_complement": 0,
+              "pending": 753,
+              "orphans": 378,
+              "unaligned": 1,
+              "smart": 1737,
+              "consensus_attempted": 469,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 1,
+              "addresses_snapped": 76
+            },
+            "groups_decoded": 103,
+            "groups_failed": 0,
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 3828,
+              "phase_T1": 1027,
+              "trials": 568960,
+              "false_accept_bound": 5.848773793140877e-07,
+              "windows_LOW": 5970,
+              "recovered": 1737,
+              "v4_erased_nt_recovered_reads": 134360,
+              "v5_erased_nt_recovered_reads": 66360,
+              "windows_localized_by_code": 2053,
+              "phase_none": 2091,
+              "windows_MEDIUM": 312,
+              "windows_UNRECOVERABLE": 2236,
+              "phase_T2": 513,
+              "phase_T0": 197,
+              "consensus_groups": 4,
+              "consensus_route_read": 1,
+              "consensus_route_none": 3
+            },
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "SUCCESS",
+            "stage_seconds": {
+              "pass1_reads": 16.28011093600071,
+              "pass2_decode": 0.3333727229910437,
+              "verify": 0.0014017350040376186
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 1.0
+        }
+      },
+      {
+        "channel_name": "indel 0.4%+0.4%, cov 1",
+        "channel": {
+          "insertion_rate": 0.004,
+          "deletion_rate": 0.004,
+          "coverage": 1,
+          "seed": 35020
+        },
+        "seed_index": 2,
+        "segment": {
+          "status": "FAILURE",
+          "seconds": 0.912,
+          "peak_rss_mb": 94.3,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": null,
+          "verified": false,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 8247,
+              "fast": 916,
+              "sync": 4774,
+              "reverse_complement": 0,
+              "pending": 2333,
+              "orphans": 1285,
+              "unaligned": 1,
+              "consensus_attempted": 1484,
+              "consensus_recovered": 0,
+              "addresses_snapped": 276
+            },
+            "groups_decoded": 6,
+            "groups_failed": 97,
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "PARTIAL",
+            "stage_seconds": {
+              "pass1_reads": 0.4475814079924021,
+              "pass2_decode": 0.2189303660125006
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 0.0583
+        },
+        "smart": {
+          "status": "SUCCESS",
+          "seconds": 16.381,
+          "peak_rss_mb": 123.0,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": "0fe6270d929e1ff199bc87976fe083a951a66c64a44da1e002b63621075311e9",
+          "verified": true,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 8247,
+              "fast": 916,
+              "sync": 4774,
+              "reverse_complement": 0,
+              "pending": 753,
+              "orphans": 378,
+              "unaligned": 1,
+              "smart": 1725,
+              "consensus_attempted": 430,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 0,
+              "addresses_snapped": 63
+            },
+            "groups_decoded": 103,
+            "groups_failed": 0,
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 3808,
+              "phase_T1": 1004,
+              "trials": 552596,
+              "false_accept_bound": 5.942846100075973e-07,
+              "windows_LOW": 6040,
+              "recovered": 1725,
+              "v4_erased_nt_recovered_reads": 134048,
+              "v5_erased_nt_recovered_reads": 66068,
+              "windows_localized_by_code": 2068,
+              "phase_none": 2083,
+              "windows_UNRECOVERABLE": 2260,
+              "windows_MEDIUM": 316,
+              "phase_T2": 532,
+              "phase_T0": 189,
+              "consensus_groups": 1,
+              "consensus_route_none": 1
+            },
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "SUCCESS",
+            "stage_seconds": {
+              "pass1_reads": 15.95699526098906,
+              "pass2_decode": 0.16921053701662458,
+              "verify": 0.0013658060051966459
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 1.0
+        }
+      },
+      {
+        "channel_name": "indel 0.5%+0.5%, cov 1",
+        "channel": {
+          "insertion_rate": 0.005,
+          "deletion_rate": 0.005,
+          "coverage": 1,
+          "seed": 35000
+        },
+        "seed_index": 0,
+        "segment": {
+          "status": "FAILURE",
+          "seconds": 0.999,
+          "peak_rss_mb": 94.2,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": null,
+          "verified": false,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 8247,
+              "fast": 613,
+              "sync": 4150,
+              "reverse_complement": 0,
+              "pending": 3171,
+              "orphans": 1747,
+              "unaligned": 5,
+              "consensus_attempted": 1971,
+              "consensus_recovered": 0,
+              "addresses_snapped": 397
+            },
+            "groups_decoded": 0,
+            "groups_failed": 103,
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "PARTIAL",
+            "stage_seconds": {
+              "pass1_reads": 0.4878295539820101,
+              "pass2_decode": 0.27543159399647266
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 0.0
+        },
+        "smart": {
+          "status": "FAILURE",
+          "seconds": 24.09,
+          "peak_rss_mb": 125.0,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": null,
+          "verified": false,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 8247,
+              "fast": 613,
+              "sync": 4150,
+              "reverse_complement": 0,
+              "pending": 1316,
+              "orphans": 748,
+              "unaligned": 5,
+              "smart": 2020,
+              "consensus_attempted": 719,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 1,
+              "addresses_snapped": 126
+            },
+            "groups_decoded": 75,
+            "groups_failed": 28,
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 5311,
+              "phase_none": 3291,
+              "trials": 870465,
+              "false_accept_bound": 8.775926829070117e-07,
+              "windows_UNRECOVERABLE": 3426,
+              "windows_LOW": 8420,
+              "windows_MEDIUM": 462,
+              "phase_T1": 1090,
+              "recovered": 2020,
+              "v4_erased_nt_recovered_reads": 159144,
+              "v5_erased_nt_recovered_reads": 75464,
+              "windows_localized_by_code": 2584,
+              "phase_T2": 747,
+              "phase_T0": 183,
+              "consensus_groups": 3,
+              "consensus_route_none": 2,
+              "consensus_route_read": 1
+            },
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "PARTIAL",
+            "stage_seconds": {
+              "pass1_reads": 23.54983540100511,
+              "pass2_decode": 0.3024206149857491
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 0.7282
+        }
+      },
+      {
+        "channel_name": "indel 0.5%+0.5%, cov 1",
+        "channel": {
+          "insertion_rate": 0.005,
+          "deletion_rate": 0.005,
+          "coverage": 1,
+          "seed": 35010
+        },
+        "seed_index": 1,
+        "segment": {
+          "status": "FAILURE",
+          "seconds": 1.005,
+          "peak_rss_mb": 95.5,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": null,
+          "verified": false,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 8247,
+              "fast": 587,
+              "sync": 4074,
+              "reverse_complement": 0,
+              "pending": 3262,
+              "orphans": 1834,
+              "unaligned": 3,
+              "consensus_attempted": 2094,
+              "consensus_recovered": 0,
+              "addresses_snapped": 435
+            },
+            "groups_decoded": 0,
+            "groups_failed": 103,
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "PARTIAL",
+            "stage_seconds": {
+              "pass1_reads": 0.4890092459972948,
+              "pass2_decode": 0.283153875003336
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 0.0
+        },
+        "smart": {
+          "status": "FAILURE",
+          "seconds": 24.764,
+          "peak_rss_mb": 125.2,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": null,
+          "verified": false,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 8247,
+              "fast": 587,
+              "sync": 4074,
+              "reverse_complement": 0,
+              "pending": 1326,
+              "orphans": 758,
+              "unaligned": 3,
+              "smart": 2119,
+              "consensus_attempted": 749,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 1,
+              "addresses_snapped": 148
+            },
+            "groups_decoded": 83,
+            "groups_failed": 20,
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 5440,
+              "phase_T2": 760,
+              "trials": 868292,
+              "false_accept_bound": 8.977765943749983e-07,
+              "windows_LOW": 8681,
+              "recovered": 2119,
+              "v4_erased_nt_recovered_reads": 167376,
+              "v5_erased_nt_recovered_reads": 80440,
+              "windows_localized_by_code": 2696,
+              "phase_none": 3321,
+              "windows_MEDIUM": 475,
+              "phase_T1": 1176,
+              "windows_UNRECOVERABLE": 3422,
+              "phase_T0": 183,
+              "consensus_groups": 9,
+              "consensus_route_none": 8,
+              "consensus_route_read": 1
+            },
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "PARTIAL",
+            "stage_seconds": {
+              "pass1_reads": 24.054998636012897,
+              "pass2_decode": 0.47627028400893323
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 0.8058
+        }
+      },
+      {
+        "channel_name": "indel 0.5%+0.5%, cov 1",
+        "channel": {
+          "insertion_rate": 0.005,
+          "deletion_rate": 0.005,
+          "coverage": 1,
+          "seed": 35020
+        },
+        "seed_index": 2,
+        "segment": {
+          "status": "FAILURE",
+          "seconds": 1.052,
+          "peak_rss_mb": 94.2,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": null,
+          "verified": false,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 8247,
+              "fast": 553,
+              "sync": 4151,
+              "reverse_complement": 0,
+              "pending": 3215,
+              "orphans": 1852,
+              "unaligned": 9,
+              "consensus_attempted": 1975,
+              "consensus_recovered": 0,
+              "addresses_snapped": 397
+            },
+            "groups_decoded": 0,
+            "groups_failed": 103,
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "PARTIAL",
+            "stage_seconds": {
+              "pass1_reads": 0.5234581459953915,
+              "pass2_decode": 0.2925584949844051
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 0.0
+        },
+        "smart": {
+          "status": "FAILURE",
+          "seconds": 23.851,
+          "peak_rss_mb": 124.8,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": null,
+          "verified": false,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 8247,
+              "fast": 553,
+              "sync": 4151,
+              "reverse_complement": 0,
+              "pending": 1301,
+              "orphans": 766,
+              "unaligned": 9,
+              "smart": 2092,
+              "consensus_attempted": 700,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 0,
+              "addresses_snapped": 136
+            },
+            "groups_decoded": 72,
+            "groups_failed": 31,
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 5383,
+              "phase_T1": 1173,
+              "trials": 853060,
+              "false_accept_bound": 8.693101813164471e-07,
+              "windows_LOW": 8527,
+              "recovered": 2092,
+              "v4_erased_nt_recovered_reads": 165320,
+              "v5_erased_nt_recovered_reads": 80156,
+              "windows_localized_by_code": 2587,
+              "phase_T2": 707,
+              "phase_none": 3291,
+              "windows_MEDIUM": 450,
+              "windows_UNRECOVERABLE": 3499,
+              "phase_T0": 212,
+              "consensus_groups": 1,
+              "consensus_route_none": 1
+            },
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "PARTIAL",
+            "stage_seconds": {
+              "pass1_reads": 23.37101858999813,
+              "pass2_decode": 0.2264025679905899
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 0.699
+        }
+      },
+      {
+        "channel_name": "mixed L3 (0.5% sub, 0.1%+0.1%, 5% dropout), cov 1",
+        "channel": {
+          "substitution_rate": 0.005,
+          "insertion_rate": 0.001,
+          "deletion_rate": 0.001,
+          "dropout_rate": 0.05,
+          "coverage": 1,
+          "seed": 35000
+        },
+        "seed_index": 0,
+        "segment": {
+          "status": "SUCCESS",
+          "seconds": 0.744,
+          "peak_rss_mb": 85.9,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": "0fe6270d929e1ff199bc87976fe083a951a66c64a44da1e002b63621075311e9",
+          "verified": true,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 7839,
+              "fast": 4249,
+              "sync": 3261,
+              "reverse_complement": 0,
+              "pending": 298,
+              "orphans": 128,
+              "unaligned": 0,
+              "addresses_snapped": 72,
+              "consensus_attempted": 218,
+              "consensus_recovered": 0
+            },
+            "groups_decoded": 103,
+            "groups_failed": 0,
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "SUCCESS",
+            "stage_seconds": {
+              "pass1_reads": 0.25999499700265005,
+              "pass2_decode": 0.10056050299317576,
+              "verify": 0.0014426939887925982
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 1.0
+        },
+        "smart": {
+          "status": "SUCCESS",
+          "seconds": 1.811,
+          "peak_rss_mb": 106.8,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": "0fe6270d929e1ff199bc87976fe083a951a66c64a44da1e002b63621075311e9",
+          "verified": true,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 7839,
+              "fast": 4249,
+              "sync": 3261,
+              "reverse_complement": 0,
+              "pending": 54,
+              "orphans": 11,
+              "unaligned": 0,
+              "smart": 269,
+              "addresses_snapped": 9,
+              "consensus_attempted": 40,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 0
+            },
+            "groups_decoded": 103,
+            "groups_failed": 0,
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 590,
+              "phase_T1": 132,
+              "trials": 25695,
+              "false_accept_bound": 3.009937509377563e-08,
+              "windows_LOW": 547,
+              "recovered": 269,
+              "v4_erased_nt_recovered_reads": 17512,
+              "v5_erased_nt_recovered_reads": 8960,
+              "windows_localized_by_code": 176,
+              "windows_UNRECOVERABLE": 350,
+              "phase_none": 321,
+              "phase_T0": 115,
+              "windows_MEDIUM": 52,
+              "phase_T2": 22
+            },
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "SUCCESS",
+            "stage_seconds": {
+              "pass1_reads": 1.3439094710047357,
+              "pass2_decode": 0.07171190099325031,
+              "verify": 0.0013070779968984425
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 1.0
+        }
+      },
+      {
+        "channel_name": "mixed L3 (0.5% sub, 0.1%+0.1%, 5% dropout), cov 1",
+        "channel": {
+          "substitution_rate": 0.005,
+          "insertion_rate": 0.001,
+          "deletion_rate": 0.001,
+          "dropout_rate": 0.05,
+          "coverage": 1,
+          "seed": 35010
+        },
+        "seed_index": 1,
+        "segment": {
+          "status": "SUCCESS",
+          "seconds": 0.732,
+          "peak_rss_mb": 86.2,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": "0fe6270d929e1ff199bc87976fe083a951a66c64a44da1e002b63621075311e9",
+          "verified": true,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 7847,
+              "fast": 4170,
+              "sync": 3370,
+              "reverse_complement": 0,
+              "pending": 283,
+              "orphans": 120,
+              "unaligned": 0,
+              "addresses_snapped": 64,
+              "consensus_attempted": 211,
+              "consensus_recovered": 0
+            },
+            "groups_decoded": 103,
+            "groups_failed": 0,
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "SUCCESS",
+            "stage_seconds": {
+              "pass1_reads": 0.2596837800228968,
+              "pass2_decode": 0.09684451200882904,
+              "verify": 0.0013640760153066367
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 1.0
+        },
+        "smart": {
+          "status": "SUCCESS",
+          "seconds": 1.834,
+          "peak_rss_mb": 108.5,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": "0fe6270d929e1ff199bc87976fe083a951a66c64a44da1e002b63621075311e9",
+          "verified": true,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 7847,
+              "fast": 4170,
+              "sync": 3370,
+              "reverse_complement": 0,
+              "pending": 45,
+              "orphans": 13,
+              "unaligned": 0,
+              "smart": 256,
+              "addresses_snapped": 7,
+              "consensus_attempted": 32,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 0
+            },
+            "groups_decoded": 103,
+            "groups_failed": 0,
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 565,
+              "phase_T1": 134,
+              "trials": 28944,
+              "false_accept_bound": 2.4615314055007633e-08,
+              "windows_LOW": 540,
+              "recovered": 256,
+              "v4_erased_nt_recovered_reads": 16288,
+              "v5_erased_nt_recovered_reads": 8404,
+              "windows_localized_by_code": 172,
+              "phase_none": 309,
+              "windows_UNRECOVERABLE": 348,
+              "windows_MEDIUM": 42,
+              "phase_T0": 103,
+              "phase_T2": 19
+            },
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "SUCCESS",
+            "stage_seconds": {
+              "pass1_reads": 1.3760718989942688,
+              "pass2_decode": 0.07314579898957163,
+              "verify": 0.0013765189796686172
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 1.0
+        }
+      },
+      {
+        "channel_name": "mixed L3 (0.5% sub, 0.1%+0.1%, 5% dropout), cov 1",
+        "channel": {
+          "substitution_rate": 0.005,
+          "insertion_rate": 0.001,
+          "deletion_rate": 0.001,
+          "dropout_rate": 0.05,
+          "coverage": 1,
+          "seed": 35020
+        },
+        "seed_index": 2,
+        "segment": {
+          "status": "SUCCESS",
+          "seconds": 0.774,
+          "peak_rss_mb": 86.0,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": "0fe6270d929e1ff199bc87976fe083a951a66c64a44da1e002b63621075311e9",
+          "verified": true,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 7807,
+              "fast": 4314,
+              "sync": 3179,
+              "reverse_complement": 0,
+              "pending": 288,
+              "orphans": 112,
+              "unaligned": 0,
+              "consensus_attempted": 210,
+              "consensus_recovered": 0,
+              "addresses_snapped": 76
+            },
+            "groups_decoded": 103,
+            "groups_failed": 0,
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "SUCCESS",
+            "stage_seconds": {
+              "pass1_reads": 0.27981741999974474,
+              "pass2_decode": 0.11421316600171849,
+              "verify": 0.001559626980451867
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 1.0
+        },
+        "smart": {
+          "status": "SUCCESS",
+          "seconds": 1.635,
+          "peak_rss_mb": 107.6,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": "0fe6270d929e1ff199bc87976fe083a951a66c64a44da1e002b63621075311e9",
+          "verified": true,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 7807,
+              "fast": 4314,
+              "sync": 3179,
+              "reverse_complement": 0,
+              "pending": 44,
+              "orphans": 6,
+              "unaligned": 0,
+              "smart": 269,
+              "addresses_snapped": 9,
+              "consensus_attempted": 34,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 0
+            },
+            "groups_decoded": 103,
+            "groups_failed": 0,
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 579,
+              "phase_none": 310,
+              "trials": 22228,
+              "false_accept_bound": 2.232125133370412e-08,
+              "windows_UNRECOVERABLE": 374,
+              "phase_T1": 140,
+              "windows_LOW": 531,
+              "recovered": 269,
+              "v4_erased_nt_recovered_reads": 16960,
+              "v5_erased_nt_recovered_reads": 8836,
+              "windows_localized_by_code": 176,
+              "phase_T0": 111,
+              "phase_T2": 18,
+              "windows_MEDIUM": 47
+            },
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "SUCCESS",
+            "stage_seconds": {
+              "pass1_reads": 1.18897698802175,
+              "pass2_decode": 0.07037293000030331,
+              "verify": 0.001351999002508819
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 1.0
+        }
+      },
+      {
+        "channel_name": "mixed (0.3% sub, 0.25%+0.25%, 2% dropout), cov 1",
+        "channel": {
+          "substitution_rate": 0.003,
+          "insertion_rate": 0.0025,
+          "deletion_rate": 0.0025,
+          "dropout_rate": 0.02,
+          "coverage": 1,
+          "seed": 35000
+        },
+        "seed_index": 0,
+        "segment": {
+          "status": "FAILURE",
+          "seconds": 0.853,
+          "peak_rss_mb": 86.9,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": null,
+          "verified": false,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 8083,
+              "fast": 1890,
+              "sync": 4862,
+              "reverse_complement": 0,
+              "pending": 1230,
+              "orphans": 595,
+              "unaligned": 2,
+              "consensus_attempted": 824,
+              "consensus_recovered": 0,
+              "addresses_snapped": 217
+            },
+            "groups_decoded": 80,
+            "groups_failed": 23,
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "PARTIAL",
+            "stage_seconds": {
+              "pass1_reads": 0.357793604984181,
+              "pass2_decode": 0.19381894200341776
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 0.7767
+        },
+        "smart": {
+          "status": "SUCCESS",
+          "seconds": 6.999,
+          "peak_rss_mb": 114.3,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": "0fe6270d929e1ff199bc87976fe083a951a66c64a44da1e002b63621075311e9",
+          "verified": true,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 8083,
+              "fast": 1890,
+              "sync": 4862,
+              "reverse_complement": 0,
+              "pending": 309,
+              "orphans": 119,
+              "unaligned": 2,
+              "smart": 991,
+              "consensus_attempted": 201,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 0,
+              "addresses_snapped": 51
+            },
+            "groups_decoded": 103,
+            "groups_failed": 0,
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 2014,
+              "phase_T1": 603,
+              "trials": 203744,
+              "false_accept_bound": 2.4423600617701314e-07,
+              "windows_LOW": 2871,
+              "recovered": 991,
+              "v4_erased_nt_recovered_reads": 74320,
+              "v5_erased_nt_recovered_reads": 38708,
+              "windows_localized_by_code": 973,
+              "phase_T0": 203,
+              "phase_T2": 185,
+              "phase_none": 1023,
+              "windows_UNRECOVERABLE": 1089,
+              "windows_MEDIUM": 163,
+              "consensus_groups": 2,
+              "consensus_route_none": 2
+            },
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "SUCCESS",
+            "stage_seconds": {
+              "pass1_reads": 6.52853046200471,
+              "pass2_decode": 0.1656956380174961,
+              "verify": 0.001430498989066109
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 1.0
+        }
+      },
+      {
+        "channel_name": "mixed (0.3% sub, 0.25%+0.25%, 2% dropout), cov 1",
+        "channel": {
+          "substitution_rate": 0.003,
+          "insertion_rate": 0.0025,
+          "deletion_rate": 0.0025,
+          "dropout_rate": 0.02,
+          "coverage": 1,
+          "seed": 35010
+        },
+        "seed_index": 1,
+        "segment": {
+          "status": "FAILURE",
+          "seconds": 0.853,
+          "peak_rss_mb": 86.6,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": null,
+          "verified": false,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 8074,
+              "fast": 1812,
+              "sync": 4889,
+              "reverse_complement": 0,
+              "pending": 1270,
+              "orphans": 554,
+              "unaligned": 0,
+              "consensus_attempted": 900,
+              "consensus_recovered": 0,
+              "addresses_snapped": 200
+            },
+            "groups_decoded": 65,
+            "groups_failed": 38,
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "PARTIAL",
+            "stage_seconds": {
+              "pass1_reads": 0.35797368301427923,
+              "pass2_decode": 0.19626807697932236
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 0.6311
+        },
+        "smart": {
+          "status": "SUCCESS",
+          "seconds": 7.367,
+          "peak_rss_mb": 113.9,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": "0fe6270d929e1ff199bc87976fe083a951a66c64a44da1e002b63621075311e9",
+          "verified": true,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 8074,
+              "fast": 1812,
+              "sync": 4889,
+              "reverse_complement": 0,
+              "pending": 325,
+              "orphans": 123,
+              "unaligned": 0,
+              "smart": 1019,
+              "addresses_snapped": 49,
+              "consensus_attempted": 233,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 0
+            },
+            "groups_decoded": 103,
+            "groups_failed": 0,
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 2074,
+              "phase_T1": 620,
+              "trials": 213908,
+              "false_accept_bound": 2.272980260026839e-07,
+              "windows_LOW": 2894,
+              "recovered": 1019,
+              "v4_erased_nt_recovered_reads": 73984,
+              "v5_erased_nt_recovered_reads": 38576,
+              "windows_localized_by_code": 976,
+              "phase_T2": 178,
+              "windows_UNRECOVERABLE": 1112,
+              "phase_none": 1055,
+              "windows_MEDIUM": 166,
+              "phase_T0": 221
+            },
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "SUCCESS",
+            "stage_seconds": {
+              "pass1_reads": 6.9405934200040065,
+              "pass2_decode": 0.0984524849918671,
+              "verify": 0.001380656991386786
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 1.0
+        }
+      },
+      {
+        "channel_name": "mixed (0.3% sub, 0.25%+0.25%, 2% dropout), cov 1",
+        "channel": {
+          "substitution_rate": 0.003,
+          "insertion_rate": 0.0025,
+          "deletion_rate": 0.0025,
+          "dropout_rate": 0.02,
+          "coverage": 1,
+          "seed": 35020
+        },
+        "seed_index": 2,
+        "segment": {
+          "status": "FAILURE",
+          "seconds": 0.856,
+          "peak_rss_mb": 86.7,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": null,
+          "verified": false,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 8077,
+              "fast": 1929,
+              "sync": 4833,
+              "reverse_complement": 0,
+              "pending": 1213,
+              "orphans": 586,
+              "unaligned": 0,
+              "consensus_attempted": 814,
+              "consensus_recovered": 0,
+              "addresses_snapped": 228
+            },
+            "groups_decoded": 77,
+            "groups_failed": 26,
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "PARTIAL",
+            "stage_seconds": {
+              "pass1_reads": 0.3567142440006137,
+              "pass2_decode": 0.1971952950116247
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 0.7476
+        },
+        "smart": {
+          "status": "SUCCESS",
+          "seconds": 6.803,
+          "peak_rss_mb": 114.6,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": "0fe6270d929e1ff199bc87976fe083a951a66c64a44da1e002b63621075311e9",
+          "verified": true,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 8077,
+              "fast": 1929,
+              "sync": 4833,
+              "reverse_complement": 0,
+              "pending": 293,
+              "orphans": 113,
+              "unaligned": 0,
+              "smart": 993,
+              "consensus_attempted": 171,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 0,
+              "addresses_snapped": 35
+            },
+            "groups_decoded": 103,
+            "groups_failed": 0,
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 1967,
+              "phase_T1": 619,
+              "trials": 191117,
+              "false_accept_bound": 2.2575145755461204e-07,
+              "windows_LOW": 2800,
+              "recovered": 993,
+              "v4_erased_nt_recovered_reads": 73112,
+              "v5_erased_nt_recovered_reads": 37684,
+              "windows_localized_by_code": 929,
+              "phase_none": 974,
+              "windows_UNRECOVERABLE": 1053,
+              "windows_MEDIUM": 161,
+              "phase_T0": 219,
+              "phase_T2": 155
+            },
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "SUCCESS",
+            "stage_seconds": {
+              "pass1_reads": 6.388496331986971,
+              "pass2_decode": 0.09789368498604745,
+              "verify": 0.001396519975969568
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 1.0
+        }
+      },
+      {
+        "channel_name": "harsh (0.5% sub, 0.6%+0.6%, 2% dropout), Poisson cov 3",
+        "channel": {
+          "substitution_rate": 0.005,
+          "insertion_rate": 0.006,
+          "deletion_rate": 0.006,
+          "dropout_rate": 0.02,
+          "coverage": 3,
+          "coverage_model": "poisson",
+          "seed": 35000
+        },
+        "seed_index": 0,
+        "segment": {
+          "status": "FAILURE",
+          "seconds": 2.854,
+          "peak_rss_mb": 120.6,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": null,
+          "verified": false,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 24380,
+              "fast": 1020,
+              "sync": 7996,
+              "reverse_complement": 0,
+              "pending": 13560,
+              "orphans": 7618,
+              "unaligned": 38,
+              "consensus_attempted": 1824,
+              "consensus_recovered": 376,
+              "addresses_snapped": 964
+            },
+            "groups_decoded": 3,
+            "groups_failed": 100,
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "PARTIAL",
+            "stage_seconds": {
+              "pass1_reads": 1.594512837997172,
+              "pass2_decode": 0.7744014960189816
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 0.0291
+        },
+        "smart": {
+          "status": "FAILURE",
+          "seconds": 118.876,
+          "peak_rss_mb": 147.4,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": null,
+          "verified": false,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 24380,
+              "fast": 1020,
+              "sync": 7996,
+              "reverse_complement": 0,
+              "pending": 7126,
+              "orphans": 4217,
+              "unaligned": 38,
+              "smart": 7141,
+              "consensus_attempted": 464,
+              "consensus_recovered": 22,
+              "consensus_recovered_smart": 25,
+              "addresses_snapped": 195
+            },
+            "groups_decoded": 96,
+            "groups_failed": 7,
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 24307,
+              "phase_T1": 3919,
+              "trials": 4424085,
+              "false_accept_bound": 3.6276678809095126e-06,
+              "windows_LOW": 35967,
+              "recovered": 7141,
+              "v4_erased_nt_recovered_reads": 544240,
+              "v5_erased_nt_recovered_reads": 249224,
+              "windows_localized_by_code": 9193,
+              "phase_none": 17166,
+              "windows_UNRECOVERABLE": 16930,
+              "phase_T2": 2637,
+              "windows_MEDIUM": 2429,
+              "phase_T0": 585,
+              "consensus_groups": 91,
+              "consensus_route_none": 66,
+              "consensus_route_read": 21,
+              "consensus_route_consensus": 4
+            },
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "PARTIAL",
+            "stage_seconds": {
+              "pass1_reads": 115.12217956100358,
+              "pass2_decode": 3.248318508005468
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 0.932
+        }
+      },
+      {
+        "channel_name": "harsh (0.5% sub, 0.6%+0.6%, 2% dropout), Poisson cov 3",
+        "channel": {
+          "substitution_rate": 0.005,
+          "insertion_rate": 0.006,
+          "deletion_rate": 0.006,
+          "dropout_rate": 0.02,
+          "coverage": 3,
+          "coverage_model": "poisson",
+          "seed": 35010
+        },
+        "seed_index": 1,
+        "segment": {
+          "status": "FAILURE",
+          "seconds": 2.94,
+          "peak_rss_mb": 115.9,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": null,
+          "verified": false,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 24352,
+              "fast": 968,
+              "sync": 7974,
+              "reverse_complement": 0,
+              "pending": 13592,
+              "orphans": 7636,
+              "unaligned": 45,
+              "consensus_attempted": 1858,
+              "consensus_recovered": 398,
+              "addresses_snapped": 948
+            },
+            "groups_decoded": 1,
+            "groups_failed": 102,
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "PARTIAL",
+            "stage_seconds": {
+              "pass1_reads": 1.6769945800187998,
+              "pass2_decode": 0.7647533900162671
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 0.0097
+        },
+        "smart": {
+          "status": "FAILURE",
+          "seconds": 119.76,
+          "peak_rss_mb": 137.9,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": null,
+          "verified": false,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 24352,
+              "fast": 968,
+              "sync": 7974,
+              "reverse_complement": 0,
+              "pending": 7182,
+              "orphans": 4148,
+              "unaligned": 45,
+              "smart": 7152,
+              "consensus_attempted": 486,
+              "consensus_recovered": 23,
+              "consensus_recovered_smart": 27,
+              "addresses_snapped": 195
+            },
+            "groups_decoded": 97,
+            "groups_failed": 6,
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 24341,
+              "phase_none": 17189,
+              "trials": 4401368,
+              "false_accept_bound": 3.6614173351232307e-06,
+              "windows_UNRECOVERABLE": 16942,
+              "phase_T2": 2664,
+              "windows_LOW": 36100,
+              "recovered": 7152,
+              "v4_erased_nt_recovered_reads": 548672,
+              "v5_erased_nt_recovered_reads": 250464,
+              "windows_localized_by_code": 9217,
+              "windows_MEDIUM": 2405,
+              "phase_T1": 3889,
+              "phase_T0": 599,
+              "consensus_groups": 108,
+              "consensus_route_none": 81,
+              "consensus_route_read": 23,
+              "consensus_route_consensus": 4
+            },
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "PARTIAL",
+            "stage_seconds": {
+              "pass1_reads": 115.44669163299841,
+              "pass2_decode": 3.790127305983333
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 0.9417
+        }
+      },
+      {
+        "channel_name": "harsh (0.5% sub, 0.6%+0.6%, 2% dropout), Poisson cov 3",
+        "channel": {
+          "substitution_rate": 0.005,
+          "insertion_rate": 0.006,
+          "deletion_rate": 0.006,
+          "dropout_rate": 0.02,
+          "coverage": 3,
+          "coverage_model": "poisson",
+          "seed": 35020
+        },
+        "seed_index": 2,
+        "segment": {
+          "status": "FAILURE",
+          "seconds": 2.894,
+          "peak_rss_mb": 119.5,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": null,
+          "verified": false,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 24282,
+              "fast": 959,
+              "sync": 7889,
+              "reverse_complement": 0,
+              "pending": 13655,
+              "orphans": 7693,
+              "unaligned": 30,
+              "consensus_attempted": 1864,
+              "consensus_recovered": 410,
+              "addresses_snapped": 958
+            },
+            "groups_decoded": 4,
+            "groups_failed": 99,
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "PARTIAL",
+            "stage_seconds": {
+              "pass1_reads": 1.653409812017344,
+              "pass2_decode": 0.7478214750008192
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 0.0388
+        },
+        "smart": {
+          "status": "FAILURE",
+          "seconds": 118.946,
+          "peak_rss_mb": 143.9,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": null,
+          "verified": false,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 24282,
+              "fast": 959,
+              "sync": 7889,
+              "reverse_complement": 0,
+              "pending": 7236,
+              "orphans": 4261,
+              "unaligned": 30,
+              "smart": 7170,
+              "consensus_attempted": 485,
+              "consensus_recovered": 38,
+              "consensus_recovered_smart": 23,
+              "addresses_snapped": 210
+            },
+            "groups_decoded": 93,
+            "groups_failed": 10,
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 24487,
+              "phase_T2": 2609,
+              "trials": 4337568,
+              "false_accept_bound": 3.680845048928767e-06,
+              "windows_LOW": 36376,
+              "recovered": 7170,
+              "v4_erased_nt_recovered_reads": 548000,
+              "v5_erased_nt_recovered_reads": 252000,
+              "windows_localized_by_code": 9196,
+              "phase_none": 17317,
+              "windows_UNRECOVERABLE": 17127,
+              "windows_MEDIUM": 2318,
+              "phase_T0": 583,
+              "phase_T1": 3978,
+              "consensus_groups": 80,
+              "consensus_route_none": 57,
+              "consensus_route_read": 21,
+              "consensus_route_consensus": 2
+            },
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "PARTIAL",
+            "stage_seconds": {
+              "pass1_reads": 115.50946058900445,
+              "pass2_decode": 2.8851512849796563
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 0.9029
+        }
+      },
+      {
+        "channel_name": "EXP-0011 (0.2% sub, 0.05%+0.05%, 2% dropout), Poisson cov 3",
+        "channel": {
+          "substitution_rate": 0.002,
+          "insertion_rate": 0.0005,
+          "deletion_rate": 0.0005,
+          "dropout_rate": 0.02,
+          "coverage": 3,
+          "coverage_model": "poisson",
+          "seed": 35000
+        },
+        "seed_index": 0,
+        "segment": {
+          "status": "SUCCESS",
+          "seconds": 1.124,
+          "peak_rss_mb": 118.3,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": "0fe6270d929e1ff199bc87976fe083a951a66c64a44da1e002b63621075311e9",
+          "verified": true,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 24380,
+              "fast": 17908,
+              "sync": 6341,
+              "reverse_complement": 0,
+              "pending": 122,
+              "orphans": 46,
+              "unaligned": 0,
+              "addresses_snapped": 4,
+              "consensus_attempted": 6,
+              "consensus_recovered": 0
+            },
+            "groups_decoded": 103,
+            "groups_failed": 0,
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "SUCCESS",
+            "stage_seconds": {
+              "pass1_reads": 0.5819310820079409,
+              "pass2_decode": 0.07244206799077801,
+              "verify": 0.0013179879751987755
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 1.0
+        },
+        "smart": {
+          "status": "SUCCESS",
+          "seconds": 1.699,
+          "peak_rss_mb": 123.7,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": "0fe6270d929e1ff199bc87976fe083a951a66c64a44da1e002b63621075311e9",
+          "verified": true,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 24380,
+              "fast": 17908,
+              "sync": 6341,
+              "reverse_complement": 0,
+              "pending": 29,
+              "orphans": 2,
+              "unaligned": 0,
+              "smart": 100,
+              "addresses_snapped": 0,
+              "consensus_attempted": 1,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 0
+            },
+            "groups_decoded": 103,
+            "groups_failed": 0,
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 623,
+              "phase_none": 523,
+              "trials": 7413,
+              "false_accept_bound": 1.1656463695915985e-08,
+              "windows_UNRECOVERABLE": 634,
+              "windows_LOW": 230,
+              "phase_T0": 59,
+              "recovered": 100,
+              "v4_erased_nt_recovered_reads": 6744,
+              "v5_erased_nt_recovered_reads": 3776,
+              "windows_localized_by_code": 44,
+              "phase_T1": 38,
+              "windows_MEDIUM": 22,
+              "phase_T2": 3
+            },
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "SUCCESS",
+            "stage_seconds": {
+              "pass1_reads": 1.1256877119885758,
+              "pass2_decode": 0.08759582301718183,
+              "verify": 0.0013944820093456656
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 1.0
+        }
+      },
+      {
+        "channel_name": "EXP-0011 (0.2% sub, 0.05%+0.05%, 2% dropout), Poisson cov 3",
+        "channel": {
+          "substitution_rate": 0.002,
+          "insertion_rate": 0.0005,
+          "deletion_rate": 0.0005,
+          "dropout_rate": 0.02,
+          "coverage": 3,
+          "coverage_model": "poisson",
+          "seed": 35010
+        },
+        "seed_index": 1,
+        "segment": {
+          "status": "SUCCESS",
+          "seconds": 1.142,
+          "peak_rss_mb": 116.4,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": "0fe6270d929e1ff199bc87976fe083a951a66c64a44da1e002b63621075311e9",
+          "verified": true,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 24352,
+              "fast": 17767,
+              "sync": 6444,
+              "reverse_complement": 0,
+              "pending": 136,
+              "orphans": 56,
+              "unaligned": 0,
+              "consensus_attempted": 5,
+              "addresses_snapped": 2,
+              "consensus_recovered": 0
+            },
+            "groups_decoded": 103,
+            "groups_failed": 0,
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "SUCCESS",
+            "stage_seconds": {
+              "pass1_reads": 0.6010023840062786,
+              "pass2_decode": 0.07493868801975623,
+              "verify": 0.0013787570060230792
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 1.0
+        },
+        "smart": {
+          "status": "SUCCESS",
+          "seconds": 1.667,
+          "peak_rss_mb": 123.6,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": "0fe6270d929e1ff199bc87976fe083a951a66c64a44da1e002b63621075311e9",
+          "verified": true,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 24352,
+              "fast": 17767,
+              "sync": 6444,
+              "reverse_complement": 0,
+              "pending": 23,
+              "orphans": 0,
+              "unaligned": 0,
+              "smart": 116,
+              "consensus_attempted": 0,
+              "addresses_snapped": 0
+            },
+            "groups_decoded": 103,
+            "groups_failed": 0,
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 573,
+              "phase_none": 457,
+              "trials": 4929,
+              "false_accept_bound": 9.904980876485962e-09,
+              "phase_T0": 67,
+              "windows_LOW": 264,
+              "recovered": 116,
+              "v4_erased_nt_recovered_reads": 8168,
+              "v5_erased_nt_recovered_reads": 4632,
+              "windows_localized_by_code": 51,
+              "windows_UNRECOVERABLE": 540,
+              "phase_T1": 47,
+              "windows_MEDIUM": 20,
+              "phase_T2": 2
+            },
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "SUCCESS",
+            "stage_seconds": {
+              "pass1_reads": 1.100583755003754,
+              "pass2_decode": 0.08202381699811667,
+              "verify": 0.0014129969931673259
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 1.0
+        }
+      },
+      {
+        "channel_name": "EXP-0011 (0.2% sub, 0.05%+0.05%, 2% dropout), Poisson cov 3",
+        "channel": {
+          "substitution_rate": 0.002,
+          "insertion_rate": 0.0005,
+          "deletion_rate": 0.0005,
+          "dropout_rate": 0.02,
+          "coverage": 3,
+          "coverage_model": "poisson",
+          "seed": 35020
+        },
+        "seed_index": 2,
+        "segment": {
+          "status": "SUCCESS",
+          "seconds": 1.14,
+          "peak_rss_mb": 118.3,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": "0fe6270d929e1ff199bc87976fe083a951a66c64a44da1e002b63621075311e9",
+          "verified": true,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 24282,
+              "fast": 17854,
+              "sync": 6291,
+              "reverse_complement": 0,
+              "pending": 128,
+              "orphans": 53,
+              "unaligned": 0,
+              "consensus_attempted": 4,
+              "addresses_snapped": 2,
+              "consensus_recovered": 0
+            },
+            "groups_decoded": 103,
+            "groups_failed": 0,
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "SUCCESS",
+            "stage_seconds": {
+              "pass1_reads": 0.5892963400110602,
+              "pass2_decode": 0.07626345299649984,
+              "verify": 0.0013675049995072186
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 1.0
+        },
+        "smart": {
+          "status": "SUCCESS",
+          "seconds": 1.752,
+          "peak_rss_mb": 120.5,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": "0fe6270d929e1ff199bc87976fe083a951a66c64a44da1e002b63621075311e9",
+          "verified": true,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 24282,
+              "fast": 17854,
+              "sync": 6291,
+              "reverse_complement": 0,
+              "pending": 22,
+              "orphans": 2,
+              "unaligned": 0,
+              "smart": 113,
+              "addresses_snapped": 0
+            },
+            "groups_decoded": 103,
+            "groups_failed": 0,
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 613,
+              "phase_none": 500,
+              "trials": 6157,
+              "false_accept_bound": 1.0298672492566435e-08,
+              "windows_UNRECOVERABLE": 588,
+              "windows_MEDIUM": 17,
+              "windows_LOW": 277,
+              "phase_T1": 41,
+              "recovered": 113,
+              "v4_erased_nt_recovered_reads": 7992,
+              "v5_erased_nt_recovered_reads": 4588,
+              "windows_localized_by_code": 49,
+              "phase_T0": 68,
+              "phase_T2": 4
+            },
+            "superblock": {
+              "container_size": 263441,
+              "groups": 103
+            },
+            "status": "SUCCESS",
+            "stage_seconds": {
+              "pass1_reads": 1.1802695700025652,
+              "pass2_decode": 0.08101205999264494,
+              "verify": 0.0013446139928419143
+            }
+          },
+          "groups": 103,
+          "groups_recovered_fraction": 1.0
+        }
+      }
+    ],
+    "part_b_4mib": [
+      {
+        "workers": 1,
+        "segment": {
+          "status": "SUCCESS",
+          "seconds": 10.87,
+          "peak_rss_mb": 147.4,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": "d8658297886061b9ba2c32cf29014707c7599ca64195e2d4b862df2c9c8c5c77",
+          "verified": true,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 386490,
+              "fast": 283637,
+              "sync": 100484,
+              "reverse_complement": 0,
+              "pending": 2217,
+              "orphans": 839,
+              "unaligned": 0,
+              "consensus_attempted": 100,
+              "consensus_recovered": 0,
+              "addresses_snapped": 16
+            },
+            "groups_decoded": 1640,
+            "groups_failed": 0,
+            "superblock": {
+              "container_size": 4195868,
+              "groups": 1640
+            },
+            "status": "SUCCESS",
+            "stage_seconds": {
+              "pass1_reads": 9.025582681992091,
+              "pass2_decode": 1.3352716740046162,
+              "verify": 0.01209862600080669
+            }
+          },
+          "groups": 1640,
+          "groups_recovered_fraction": 1.0
+        },
+        "smart": {
+          "status": "SUCCESS",
+          "seconds": 19.225,
+          "peak_rss_mb": 151.2,
+          "peak_rss_largest_worker_mb": 0.0,
+          "output_sha256": "d8658297886061b9ba2c32cf29014707c7599ca64195e2d4b862df2c9c8c5c77",
+          "verified": true,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 386490,
+              "fast": 283637,
+              "sync": 100484,
+              "reverse_complement": 0,
+              "pending": 450,
+              "orphans": 55,
+              "unaligned": 0,
+              "smart": 1880,
+              "addresses_snapped": 2,
+              "consensus_attempted": 19,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 0
+            },
+            "groups_decoded": 1640,
+            "groups_failed": 0,
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 9497,
+              "phase_none": 7617,
+              "trials": 95246,
+              "false_accept_bound": 1.5503455951584404e-07,
+              "windows_UNRECOVERABLE": 9265,
+              "phase_T1": 713,
+              "windows_LOW": 4399,
+              "recovered": 1880,
+              "v4_erased_nt_recovered_reads": 127840,
+              "v5_erased_nt_recovered_reads": 74032,
+              "windows_localized_by_code": 803,
+              "phase_T0": 1122,
+              "windows_MEDIUM": 366,
+              "phase_T2": 45
+            },
+            "superblock": {
+              "container_size": 4195868,
+              "groups": 1640
+            },
+            "status": "SUCCESS",
+            "stage_seconds": {
+              "pass1_reads": 17.551797875988996,
+              "pass2_decode": 1.1677206710155588,
+              "verify": 0.011934441979974508
+            }
+          },
+          "groups": 1640,
+          "groups_recovered_fraction": 1.0
+        }
+      },
+      {
+        "workers": 8,
+        "segment": {
+          "status": "SUCCESS",
+          "seconds": 4.342,
+          "peak_rss_mb": 171.6,
+          "peak_rss_largest_worker_mb": 148.1,
+          "output_sha256": "d8658297886061b9ba2c32cf29014707c7599ca64195e2d4b862df2c9c8c5c77",
+          "verified": true,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 386490,
+              "fast": 283637,
+              "sync": 100484,
+              "reverse_complement": 0,
+              "pending": 2217,
+              "orphans": 839,
+              "unaligned": 0,
+              "consensus_attempted": 100,
+              "consensus_recovered": 0,
+              "addresses_snapped": 16
+            },
+            "groups_decoded": 1640,
+            "groups_failed": 0,
+            "superblock": {
+              "container_size": 4195868,
+              "groups": 1640
+            },
+            "status": "SUCCESS",
+            "stage_seconds": {
+              "pass1_reads": 2.60932494699955,
+              "pass2_decode": 1.2523485219862778,
+              "verify": 0.012178319011582062
+            }
+          },
+          "groups": 1640,
+          "groups_recovered_fraction": 1.0
+        },
+        "smart": {
+          "status": "SUCCESS",
+          "seconds": 5.174,
+          "peak_rss_mb": 215.3,
+          "peak_rss_largest_worker_mb": 167.1,
+          "output_sha256": "d8658297886061b9ba2c32cf29014707c7599ca64195e2d4b862df2c9c8c5c77",
+          "verified": true,
+          "false_success": false,
+          "report": {
+            "reads": {
+              "reads": 386490,
+              "fast": 283637,
+              "sync": 100484,
+              "reverse_complement": 0,
+              "pending": 450,
+              "orphans": 55,
+              "unaligned": 0,
+              "smart": 1880,
+              "addresses_snapped": 2,
+              "consensus_attempted": 19,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 0
+            },
+            "groups_decoded": 1640,
+            "groups_failed": 0,
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 9497,
+              "phase_none": 7617,
+              "trials": 95246,
+              "false_accept_bound": 1.5503455951584404e-07,
+              "windows_UNRECOVERABLE": 9265,
+              "phase_T1": 713,
+              "windows_LOW": 4399,
+              "recovered": 1880,
+              "v4_erased_nt_recovered_reads": 127840,
+              "v5_erased_nt_recovered_reads": 74032,
+              "windows_localized_by_code": 803,
+              "phase_T0": 1122,
+              "windows_MEDIUM": 366,
+              "phase_T2": 45
+            },
+            "superblock": {
+              "container_size": 4195868,
+              "groups": 1640
+            },
+            "status": "SUCCESS",
+            "stage_seconds": {
+              "pass1_reads": 3.495207822008524,
+              "pass2_decode": 1.1911617330042645,
+              "verify": 0.01224066800205037
+            }
+          },
+          "groups": 1640,
+          "groups_recovered_fraction": 1.0
+        }
+      }
+    ],
+    "wall_seconds": 656.5
+  }
+}

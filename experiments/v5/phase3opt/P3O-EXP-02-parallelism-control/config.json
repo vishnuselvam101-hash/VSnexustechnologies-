@@ -1,0 +1,51 @@
+{
+  "input": {
+    "size": 32768,
+    "pattern": "random",
+    "seed": 4801
+  },
+  "decoders": {
+    "V5-hard eager": {
+      "indel_recovery": "smart",
+      "recovery_schedule": "eager"
+    },
+    "V5-hard eager batch256": {
+      "indel_recovery": "smart",
+      "recovery_schedule": "eager",
+      "batch_reads": 256
+    },
+    "V5-hard deferred": {
+      "indel_recovery": "smart",
+      "recovery_schedule": "deferred"
+    }
+  },
+  "workers": 8,
+  "seeds": 2,
+  "channel_seed_rule": "44000 + 10\u00b7seed_index",
+  "channels": {
+    "indel-heavy (0.5%+0.5%, sub 0.1%)": {
+      "insertion_rate": 0.005,
+      "deletion_rate": 0.005,
+      "substitution_rate": 0.001,
+      "quality_informative": 0.5
+    },
+    "mixed (0.5%+0.5%, sub 1%)": {
+      "insertion_rate": 0.005,
+      "deletion_rate": 0.005,
+      "substitution_rate": 0.01,
+      "quality_informative": 0.5
+    },
+    "mixed, substitution-heavy (0.25%+0.25%, sub 4%)": {
+      "insertion_rate": 0.0025,
+      "deletion_rate": 0.0025,
+      "substitution_rate": 0.04,
+      "quality_informative": 0.5
+    }
+  },
+  "coverages": [
+    1,
+    3,
+    10
+  ],
+  "coverage_model": "fixed"
+}

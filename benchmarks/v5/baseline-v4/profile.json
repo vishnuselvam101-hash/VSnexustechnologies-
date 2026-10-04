@@ -1,0 +1,626 @@
+{
+  "section": "profile",
+  "simulated": true,
+  "config": {
+    "input_size": 4194304,
+    "pattern": "random",
+    "seed": 42,
+    "profile": "v4-balanced",
+    "workers": 1,
+    "channel": {
+      "substitution_rate": 0.002,
+      "insertion_rate": 0.0005,
+      "deletion_rate": 0.0005,
+      "dropout_rate": 0.02,
+      "coverage": 3,
+      "coverage_model": "poisson",
+      "coverage_dispersion": 5.0,
+      "duplication_rate": 0.0,
+      "homopolymer_min_run": 3,
+      "homopolymer_indel_multiplier": 1.0,
+      "homopolymer_substitution_multiplier": 1.0,
+      "gc_bias_strength": 0.0,
+      "gc_bias_optimum": 0.5,
+      "burst_rate": 0.0,
+      "burst_max_len": 0,
+      "n_rate": 0.0,
+      "reverse_complement_rate": 0.0,
+      "quality_correct": 35,
+      "quality_error": 12,
+      "quality_informative": 0.0,
+      "shuffle_window": 0,
+      "seed": 1011
+    }
+  },
+  "provenance": {
+    "timestamp_utc": "2026-10-03T04:39:48Z",
+    "vnx_version": "4.0.0",
+    "vnx4_format_version": [
+      4,
+      0
+    ],
+    "git_commit": "a358ae8284066d0608f329b47a53e55018bbfa79",
+    "cpu_model": "Intel(R) Xeon(R) Gold 6240 CPU @ 2.60GHz",
+    "logical_cpus": 8,
+    "ram_bytes": 33654890496,
+    "os": "Linux 6.8.0-146-generic",
+    "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "packages": {
+      "numpy": "2.5.3",
+      "cryptography": "46.0.7",
+      "zstandard": "0.25.0",
+      "reedsolo": "1.7.0",
+      "pydantic": "2.13.5",
+      "typer": "0.27.2"
+    },
+    "v4_control_tag": "v4.0.0",
+    "v4_control_commit": "a358ae8284066d0608f329b47a53e55018bbfa79",
+    "commit_under_test": "a358ae8284066d0608f329b47a53e55018bbfa79",
+    "worktree_dirty": false,
+    "native_toolchain": {
+      "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+      "rustc": "rustc 1.75.0 (82e1608df 2023-12-21) (built from a source tarball)",
+      "cargo": "cargo 1.75.0"
+    },
+    "cpu_flags": [
+      "avx",
+      "avx2",
+      "avx512bw",
+      "avx512f",
+      "bmi2",
+      "popcnt",
+      "sse4_2"
+    ],
+    "config_sha256": "c11dfc9b4442276c44874caf61ad4b90293263900e88501e4a2235584a58db6a"
+  },
+  "input_sha256": "d8658297886061b9ba2c32cf29014707c7599ca64195e2d4b862df2c9c8c5c77",
+  "channel_stats": {
+    "strands": 131149,
+    "dropped": 2558,
+    "zero_coverage": 6402,
+    "reads": 386490,
+    "substitutions": 241651,
+    "insertions": 60869,
+    "deletions": 60680,
+    "bursts": 0,
+    "n_calls": 0,
+    "reverse_complement": 0,
+    "duplicates": 0,
+    "bases": 120971559,
+    "workers": 1
+  },
+  "status": "SUCCESS",
+  "container_sha256": "11df854aaa5b86aa39d363aca5f9af894f3299ebe1c43be0389491af542e4f1b",
+  "decode_reads": {
+    "reads": 386490,
+    "fast": 283637,
+    "sync": 100484,
+    "reverse_complement": 0,
+    "pending": 2217,
+    "orphans": 839,
+    "unaligned": 0,
+    "consensus_attempted": 100,
+    "consensus_recovered": 0,
+    "addresses_snapped": 16
+  },
+  "decoder_stage_seconds": {
+    "pass1_reads": 32.3432420490135,
+    "pass2_decode": 1.7130169330048375,
+    "verify": 0.012583931995322928
+  },
+  "profiled_wall_seconds": 34.901,
+  "profiled_function_seconds": 34.9,
+  "by_stage": [
+    {
+      "stage": "marker alignment: DP fill",
+      "seconds": 8.331,
+      "fraction": 0.2387
+    },
+    {
+      "stage": "numpy internals",
+      "seconds": 7.346,
+      "fraction": 0.2105
+    },
+    {
+      "stage": "marker alignment: traceback",
+      "seconds": 6.292,
+      "fraction": 0.1803
+    },
+    {
+      "stage": "inner RS decode",
+      "seconds": 4.361,
+      "fraction": 0.125
+    },
+    {
+      "stage": "other",
+      "seconds": 2.937,
+      "fraction": 0.0842
+    },
+    {
+      "stage": "read parsing",
+      "seconds": 2.862,
+      "fraction": 0.082
+    },
+    {
+      "stage": "pass-1 glue",
+      "seconds": 0.904,
+      "fraction": 0.0259
+    },
+    {
+      "stage": "decoder other",
+      "seconds": 0.349,
+      "fraction": 0.01
+    },
+    {
+      "stage": "CRC",
+      "seconds": 0.332,
+      "fraction": 0.0095
+    },
+    {
+      "stage": "frame parse / descramble",
+      "seconds": 0.324,
+      "fraction": 0.0093
+    },
+    {
+      "stage": "marker alignment: other",
+      "seconds": 0.242,
+      "fraction": 0.0069
+    },
+    {
+      "stage": "duplicate resolution",
+      "seconds": 0.223,
+      "fraction": 0.0064
+    },
+    {
+      "stage": "orientation",
+      "seconds": 0.186,
+      "fraction": 0.0053
+    },
+    {
+      "stage": "inner/outer codec",
+      "seconds": 0.1,
+      "fraction": 0.0029
+    },
+    {
+      "stage": "address snapping",
+      "seconds": 0.1,
+      "fraction": 0.0029
+    },
+    {
+      "stage": "consensus",
+      "seconds": 0.011,
+      "fraction": 0.0003
+    },
+    {
+      "stage": "container verify",
+      "seconds": 0.0,
+      "fraction": 0.0
+    }
+  ],
+  "top_tottime": [
+    {
+      "function": "sync.py:_align",
+      "line": 107,
+      "calls": 143,
+      "tottime": 8.3311,
+      "cumtime": 20.0886
+    },
+    {
+      "function": "sync.py:_traceback",
+      "line": 164,
+      "calls": 143,
+      "tottime": 6.0099,
+      "cumtime": 7.8349
+    },
+    {
+      "function": "rs_fast.py:_decode_block",
+      "line": 93,
+      "calls": 201,
+      "tottime": 3.3959,
+      "cumtime": 4.7726
+    },
+    {
+      "function": "~:<method 'accumulate' of 'numpy.ufunc' objects>",
+      "line": 0,
+      "calls": 44760,
+      "tottime": 2.7295,
+      "cumtime": 2.7295
+    },
+    {
+      "function": "reads.py:iter_reads",
+      "line": 101,
+      "calls": 54,
+      "tottime": 1.5528,
+      "cumtime": 5.1728
+    },
+    {
+      "function": "~:<method 'reduce' of 'numpy.ufunc' objects>",
+      "line": 0,
+      "calls": 225506,
+      "tottime": 0.8312,
+      "cumtime": 0.8312
+    },
+    {
+      "function": "reads.py:_batch",
+      "line": 83,
+      "calls": 53,
+      "tottime": 0.7837,
+      "cumtime": 1.2621
+    },
+    {
+      "function": "rs_fast.py:_syndromes_fast",
+      "line": 47,
+      "calls": 402,
+      "tottime": 0.7163,
+      "cumtime": 0.7179
+    },
+    {
+      "function": "decoder.py:_try",
+      "line": 136,
+      "calls": 96,
+      "tottime": 0.5582,
+      "cumtime": 26.7966
+    },
+    {
+      "function": "~:<method 'astype' of 'numpy.ndarray' objects>",
+      "line": 0,
+      "calls": 141985,
+      "tottime": 0.5097,
+      "cumtime": 0.5097
+    },
+    {
+      "function": "/root/VSnexustechnologies-v5/.venv/lib/python3.12/site-packages/numpy/_core/numeric.py:full",
+      "line": 323,
+      "calls": 91349,
+      "tottime": 0.4713,
+      "cumtime": 0.6003
+    },
+    {
+      "function": "~:<method 'rstrip' of 'bytes' objects>",
+      "line": 0,
+      "calls": 1627880,
+      "tottime": 0.424,
+      "cumtime": 0.424
+    },
+    {
+      "function": "reads.py:_lines",
+      "line": 66,
+      "calls": 1627882,
+      "tottime": 0.3961,
+      "cumtime": 0.8773
+    },
+    {
+      "function": "~:<method 'split' of 'bytes' objects>",
+      "line": 0,
+      "calls": 32,
+      "tottime": 0.3592,
+      "cumtime": 0.3592
+    },
+    {
+      "function": "~:<built-in method builtins.next>",
+      "line": 0,
+      "calls": 1220915,
+      "tottime": 0.3588,
+      "cumtime": 1.1261
+    },
+    {
+      "function": "decoder.py:_process",
+      "line": 215,
+      "calls": 48,
+      "tottime": 0.3462,
+      "cumtime": 27.4348
+    },
+    {
+      "function": "crc.py:crc32_rows",
+      "line": 27,
+      "calls": 394,
+      "tottime": 0.3306,
+      "cumtime": 0.3369
+    },
+    {
+      "function": "~:<built-in method builtins.len>",
+      "line": 0,
+      "calls": 2045321,
+      "tottime": 0.301,
+      "cumtime": 0.301
+    },
+    {
+      "function": "/root/VSnexustechnologies-v5/.venv/lib/python3.12/site-packages/numpy/_core/_methods.py:_clip",
+      "line": 96,
+      "calls": 34597,
+      "tottime": 0.2948,
+      "cumtime": 0.4052
+    },
+    {
+      "function": "sync.py:_mark",
+      "line": 231,
+      "calls": 11790,
+      "tottime": 0.2817,
+      "cumtime": 0.6823
+    },
+    {
+      "function": "~:<method 'startswith' of 'bytes' objects>",
+      "line": 0,
+      "calls": 813944,
+      "tottime": 0.2759,
+      "cumtime": 0.2759
+    },
+    {
+      "function": "/root/VSnexustechnologies-v5/.venv/lib/python3.12/site-packages/numpy/_core/shape_base.py:stack",
+      "line": 378,
+      "calls": 301,
+      "tottime": 0.2386,
+      "cumtime": 0.2693
+    },
+    {
+      "function": "rs_fast.py:_eval_fixed",
+      "line": 55,
+      "calls": 603,
+      "tottime": 0.2378,
+      "cumtime": 0.2882
+    },
+    {
+      "function": "gf256.py:matmul_rows",
+      "line": 122,
+      "calls": 3248,
+      "tottime": 0.2248,
+      "cumtime": 0.2708
+    },
+    {
+      "function": "~:<built-in method numpy.zeros>",
+      "line": 0,
+      "calls": 62413,
+      "tottime": 0.2232,
+      "cumtime": 0.2232
+    },
+    {
+      "function": "decoder.py:resolve_duplicates",
+      "line": 333,
+      "calls": 4,
+      "tottime": 0.2227,
+      "cumtime": 0.2811
+    },
+    {
+      "function": "~:<method 'append' of 'list' objects>",
+      "line": 0,
+      "calls": 904131,
+      "tottime": 0.2023,
+      "cumtime": 0.2023
+    },
+    {
+      "function": "decoder.py:_orientation",
+      "line": 193,
+      "calls": 48,
+      "tottime": 0.1857,
+      "cumtime": 0.2593
+    },
+    {
+      "function": "/root/VSnexustechnologies-v5/.venv/lib/python3.12/site-packages/numpy/_core/numeric.py:flatnonzero",
+      "line": 675,
+      "calls": 68348,
+      "tottime": 0.1561,
+      "cumtime": 0.6389
+    },
+    {
+      "function": "~:<built-in method numpy.fromiter>",
+      "line": 0,
+      "calls": 248,
+      "tottime": 0.1554,
+      "cumtime": 0.4458
+    }
+  ],
+  "top_cumtime": [
+    {
+      "function": "decoder.py:decode_reads",
+      "line": 374,
+      "calls": 1,
+      "tottime": 0.0422,
+      "cumtime": 34.9005
+    },
+    {
+      "function": "decoder.py:_process",
+      "line": 215,
+      "calls": 48,
+      "tottime": 0.3462,
+      "cumtime": 27.4348
+    },
+    {
+      "function": "decoder.py:_try",
+      "line": 136,
+      "calls": 96,
+      "tottime": 0.5582,
+      "cumtime": 26.7966
+    },
+    {
+      "function": "sync.py:project",
+      "line": 85,
+      "calls": 96,
+      "tottime": 0.0996,
+      "cumtime": 20.2537
+    },
+    {
+      "function": "sync.py:_align",
+      "line": 107,
+      "calls": 143,
+      "tottime": 8.3311,
+      "cumtime": 20.0886
+    },
+    {
+      "function": "sync.py:_traceback",
+      "line": 164,
+      "calls": 143,
+      "tottime": 6.0099,
+      "cumtime": 7.8349
+    },
+    {
+      "function": "frame.py:decode_frames",
+      "line": 234,
+      "calls": 197,
+      "tottime": 0.1085,
+      "cumtime": 5.3263
+    },
+    {
+      "function": "reads.py:iter_reads",
+      "line": 101,
+      "calls": 54,
+      "tottime": 1.5528,
+      "cumtime": 5.1728
+    },
+    {
+      "function": "decoder.py:batches",
+      "line": 402,
+      "calls": 49,
+      "tottime": 0.0016,
+      "cumtime": 4.7971
+    },
+    {
+      "function": "codecs.py:decode",
+      "line": 353,
+      "calls": 201,
+      "tottime": 0.0011,
+      "cumtime": 4.7873
+    },
+    {
+      "function": "rs_fast.py:decode_batch",
+      "line": 65,
+      "calls": 201,
+      "tottime": 0.0093,
+      "cumtime": 4.7863
+    },
+    {
+      "function": "rs_fast.py:_decode_block",
+      "line": 93,
+      "calls": 201,
+      "tottime": 3.3959,
+      "cumtime": 4.7726
+    },
+    {
+      "function": "~:<method 'accumulate' of 'numpy.ufunc' objects>",
+      "line": 0,
+      "calls": 44760,
+      "tottime": 2.7295,
+      "cumtime": 2.7295
+    },
+    {
+      "function": "decoder.py:_pass2",
+      "line": 566,
+      "calls": 1,
+      "tottime": 0.0064,
+      "cumtime": 1.7336
+    },
+    {
+      "function": "decoder.py:run",
+      "line": 585,
+      "calls": 1,
+      "tottime": 0.0799,
+      "cumtime": 1.6969
+    },
+    {
+      "function": "reads.py:_batch",
+      "line": 83,
+      "calls": 53,
+      "tottime": 0.7837,
+      "cumtime": 1.2621
+    },
+    {
+      "function": "~:<built-in method builtins.next>",
+      "line": 0,
+      "calls": 1220915,
+      "tottime": 0.3588,
+      "cumtime": 1.1261
+    },
+    {
+      "function": "codecs.py:decode",
+      "line": 95,
+      "calls": 1641,
+      "tottime": 0.0982,
+      "cumtime": 0.9751
+    },
+    {
+      "function": "reads.py:_lines",
+      "line": 66,
+      "calls": 1627882,
+      "tottime": 0.3961,
+      "cumtime": 0.8773
+    },
+    {
+      "function": "cauchy.py:decode",
+      "line": 80,
+      "calls": 1641,
+      "tottime": 0.1379,
+      "cumtime": 0.8574
+    },
+    {
+      "function": "~:<method 'reduce' of 'numpy.ufunc' objects>",
+      "line": 0,
+      "calls": 225506,
+      "tottime": 0.8312,
+      "cumtime": 0.8312
+    },
+    {
+      "function": "decoder.py:detect_layout",
+      "line": 80,
+      "calls": 1,
+      "tottime": 0.0275,
+      "cumtime": 0.8166
+    },
+    {
+      "function": "~:<method 'any' of 'numpy.ndarray' objects>",
+      "line": 0,
+      "calls": 201874,
+      "tottime": 0.142,
+      "cumtime": 0.7441
+    },
+    {
+      "function": "rs_fast.py:_syndromes_fast",
+      "line": 47,
+      "calls": 402,
+      "tottime": 0.7163,
+      "cumtime": 0.7179
+    },
+    {
+      "function": "/root/VSnexustechnologies-v5/.venv/lib/python3.12/site-packages/numpy/_core/fromnumeric.py:_wrapfunc",
+      "line": 48,
+      "calls": 103251,
+      "tottime": 0.0951,
+      "cumtime": 0.706
+    },
+    {
+      "function": "sync.py:_mark",
+      "line": 231,
+      "calls": 11790,
+      "tottime": 0.2817,
+      "cumtime": 0.6823
+    },
+    {
+      "function": "/root/VSnexustechnologies-v5/.venv/lib/python3.12/site-packages/numpy/_core/numeric.py:flatnonzero",
+      "line": 675,
+      "calls": 68348,
+      "tottime": 0.1561,
+      "cumtime": 0.6389
+    },
+    {
+      "function": "/root/VSnexustechnologies-v5/.venv/lib/python3.12/site-packages/numpy/_core/_methods.py:_any",
+      "line": 55,
+      "calls": 201874,
+      "tottime": 0.0863,
+      "cumtime": 0.6021
+    },
+    {
+      "function": "/root/VSnexustechnologies-v5/.venv/lib/python3.12/site-packages/numpy/_core/numeric.py:full",
+      "line": 323,
+      "calls": 91349,
+      "tottime": 0.4713,
+      "cumtime": 0.6003
+    },
+    {
+      "function": "/root/VSnexustechnologies-v5/.venv/lib/python3.12/site-packages/numpy/_core/fromnumeric.py:clip",
+      "line": 2245,
+      "calls": 34597,
+      "tottime": 0.0723,
+      "cumtime": 0.5499
+    }
+  ],
+  "pstats_text": "         13043241 function calls (13043166 primitive calls) in 34.900 seconds\n\n   Ordered by: internal time\n   List reduced from 363 to 25 due to restriction <25>\n\n   ncalls  tottime  percall  cumtime  percall filename:lineno(function)\n      143    8.331    0.058   20.089    0.140 /root/VSnexustechnologies-v5/src/vnxdna/v4/sync.py:107(_align)\n      143    6.010    0.042    7.835    0.055 /root/VSnexustechnologies-v5/src/vnxdna/v4/sync.py:164(_traceback)\n      201    3.396    0.017    4.773    0.024 /root/VSnexustechnologies-v5/src/vnxdna/v4/rs_fast.py:93(_decode_block)\n    44760    2.729    0.000    2.729    0.000 {method 'accumulate' of 'numpy.ufunc' objects}\n       54    1.553    0.029    5.173    0.096 /root/VSnexustechnologies-v5/src/vnxdna/v4/reads.py:101(iter_reads)\n   225506    0.831    0.000    0.831    0.000 {method 'reduce' of 'numpy.ufunc' objects}\n       53    0.784    0.015    1.262    0.024 /root/VSnexustechnologies-v5/src/vnxdna/v4/reads.py:83(_batch)\n      402    0.716    0.002    0.718    0.002 /root/VSnexustechnologies-v5/src/vnxdna/v4/rs_fast.py:47(_syndromes_fast)\n       96    0.558    0.006   26.797    0.279 /root/VSnexustechnologies-v5/src/vnxdna/v4/decoder.py:136(_try)\n   141985    0.510    0.000    0.510    0.000 {method 'astype' of 'numpy.ndarray' objects}\n    91349    0.471    0.000    0.600    0.000 /root/VSnexustechnologies-v5/.venv/lib/python3.12/site-packages/numpy/_core/numeric.py:323(full)\n  1627880    0.424    0.000    0.424    0.000 {method 'rstrip' of 'bytes' objects}\n  1627882    0.396    0.000    0.877    0.000 /root/VSnexustechnologies-v5/src/vnxdna/v4/reads.py:66(_lines)\n       32    0.359    0.011    0.359    0.011 {method 'split' of 'bytes' objects}\n1220915/1220914    0.359    0.000    1.126    0.000 {built-in method builtins.next}\n       48    0.346    0.007   27.435    0.572 /root/VSnexustechnologies-v5/src/vnxdna/v4/decoder.py:215(_process)\n      394    0.331    0.001    0.337    0.001 /root/VSnexustechnologies-v5/src/vnxdna/v2/crc.py:27(crc32_rows)\n  2045321    0.301    0.000    0.301    0.000 {built-in method builtins.len}\n    34597    0.295    0.000    0.405    0.000 /root/VSnexustechnologies-v5/.venv/lib/python3.12/site-packages/numpy/_core/_methods.py:96(_clip)\n    11790    0.282    0.000    0.682    0.000 /root/VSnexustechnologies-v5/src/vnxdna/v4/sync.py:231(_mark)\n   813944    0.276    0.000    0.276    0.000 {method 'startswith' of 'bytes' objects}\n      301    0.239    0.001    0.269    0.001 /root/VSnexustechnologies-v5/.venv/lib/python3.12/site-packages/numpy/_core/shape_base.py:378(stack)\n      603    0.238    0.000    0.288    0.000 /root/VSnexustechnologies-v5/src/vnxdna/v4/rs_fast.py:55(_eval_fixed)\n     3248    0.225    0.000    0.271    0.000 /root/VSnexustechnologies-v5/src/vnxdna/ecc/gf256.py:122(matmul_rows)\n    62413    0.223    0.000    0.223    0.000 {built-in method numpy.zeros}\n\n\n"
+}

@@ -1,0 +1,11 @@
+separated k=2          V4  283/300  V5  296  false 0  erased/indel V4  24.3  V5  21.3  phases {'T0': 296, 'none': 4}  status {'LOW': 542, 'UNRECOVERABLE': 4}  0.3s
+separated k=3          V4  126/300  V5  280  false 0  erased/indel V4  22.3  V5  15.2  phases {'T1': 188, 'T0': 89, 'none': 23}  status {'LOW': 746, 'UNRECOVERABLE': 11}  0.7s
+separated k=4          V4   29/300  V5  235  false 0  erased/indel V4  20.4  V5  10.7  phases {'T1': 54, 'T2': 171, 'none': 67, 'T0': 8}  status {'LOW': 881, 'UNRECOVERABLE': 27}  2.6s
+separated k=5          V4    7/300  V5   50  false 0  erased/indel V4  19.1  V5  16.2  phases {'T1': 11, 'none': 256, 'T2': 33}  status {'LOW': 1053, 'UNRECOVERABLE': 29}  3.0s
+separated k=10         V4    0/300  V5    0  false 0  erased/indel V4  11.3  V5  11.2  phases {'none': 300}  status {'UNRECOVERABLE': 107, 'LOW': 1136}  1.8s
+adjacent k=2           V4  300/300  V5  300  false 0  erased/indel V4  14.8  V5  14.8  phases {'T0': 300}  status {'UNRECOVERABLE': 300}  0.1s
+ins+del-near k=2       V4  300/300  V5  300  false 0  erased/indel V4   0.0  V5   0.0  phases {'T0': 300}  status {}  0.1s
+del+ins-near k=2       V4  300/300  V5  300  false 0  erased/indel V4   0.0  V5   0.0  phases {'T0': 300}  status {}  0.1s
+ins|del-split k=2      V4  250/300  V5  250  false 0  erased/indel V4   0.0  V5   0.0  phases {'T0': 250, 'none': 50}  status {}  0.1s
+marker-adjacent k=2    V4  280/300  V5  299  false 0  erased/indel V4  23.3  V5  20.8  phases {'T0': 299, 'none': 1}  status {'LOW': 518, 'UNRECOVERABLE': 10}  0.3s
+separated+sub k=3      V4   55/300  V5  262  false 0  erased/indel V4  21.8  V5  13.8  phases {'T1': 223, 'none': 39, 'T0': 30, 'T2': 8}  status {'LOW': 720, 'MEDIUM': 9, 'UNRECOVERABLE': 15}  0.9s

@@ -1,0 +1,4 @@
+	User time (seconds): 165.62
+	System time (seconds): 0.40
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 2:45.43
+	Maximum resident set size (kbytes): 308876

@@ -1,0 +1,210 @@
+{
+  "section": "overhead",
+  "simulated": true,
+  "config": {
+    "profiles": [
+      "v4-balanced",
+      "v4-dense",
+      "v4-indel",
+      "v4-archival"
+    ],
+    "measured_input": {
+      "size": 4194304,
+      "pattern": "random",
+      "seed": 42
+    }
+  },
+  "provenance": {
+    "timestamp_utc": "2026-10-03T04:38:59Z",
+    "vnx_version": "4.0.0",
+    "vnx4_format_version": [
+      4,
+      0
+    ],
+    "git_commit": "a358ae8284066d0608f329b47a53e55018bbfa79",
+    "cpu_model": "Intel(R) Xeon(R) Gold 6240 CPU @ 2.60GHz",
+    "logical_cpus": 8,
+    "ram_bytes": 33654890496,
+    "os": "Linux 6.8.0-146-generic",
+    "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "packages": {
+      "numpy": "2.5.3",
+      "cryptography": "46.0.7",
+      "zstandard": "0.25.0",
+      "reedsolo": "1.7.0",
+      "pydantic": "2.13.5",
+      "typer": "0.27.2"
+    },
+    "v4_control_tag": "v4.0.0",
+    "v4_control_commit": "a358ae8284066d0608f329b47a53e55018bbfa79",
+    "commit_under_test": "a358ae8284066d0608f329b47a53e55018bbfa79",
+    "worktree_dirty": false,
+    "native_toolchain": {
+      "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+      "rustc": "rustc 1.75.0 (82e1608df 2023-12-21) (built from a source tarball)",
+      "cargo": "cargo 1.75.0"
+    },
+    "cpu_flags": [
+      "avx",
+      "avx2",
+      "avx512bw",
+      "avx512f",
+      "bmi2",
+      "popcnt",
+      "sse4_2"
+    ],
+    "config_sha256": "307a768cffc59ef131e2225633ba1dc31b045d49107e7023f6a1fc4e6c106b92"
+  },
+  "profiles": [
+    {
+      "profile": "v4-balanced",
+      "layout": {
+        "payload_bytes": 40,
+        "inner_parity": 16,
+        "marker_period": 24,
+        "marker_len": 3,
+        "frame_bytes": 70,
+        "strand_nt": 313,
+        "markers": 11
+      },
+      "outer_K": 64,
+      "outer_M": 16,
+      "strand_nt": 313,
+      "nt_per_payload_byte": 9.7812,
+      "payload_bits_per_nt": 0.8179,
+      "raw_bits_per_nt": 2.0,
+      "nt_per_byte_by_component": {
+        "payload": 4.0,
+        "address_header": 1.0,
+        "crc": 0.4,
+        "inner_rs": 1.6,
+        "markers": 0.825,
+        "outer_parity": 1.9563
+      },
+      "share_of_total": {
+        "payload": 0.4089,
+        "address_header": 0.1022,
+        "crc": 0.0409,
+        "inner_rs": 0.1636,
+        "markers": 0.0843,
+        "outer_parity": 0.2
+      },
+      "constraint_overhead_nt": 0
+    },
+    {
+      "profile": "v4-dense",
+      "layout": {
+        "payload_bytes": 44,
+        "inner_parity": 12,
+        "marker_period": 0,
+        "marker_len": 0,
+        "frame_bytes": 70,
+        "strand_nt": 280,
+        "markers": 0
+      },
+      "outer_K": 64,
+      "outer_M": 16,
+      "strand_nt": 280,
+      "nt_per_payload_byte": 7.9545,
+      "payload_bits_per_nt": 1.0057,
+      "raw_bits_per_nt": 2.0,
+      "nt_per_byte_by_component": {
+        "payload": 4.0,
+        "address_header": 0.9091,
+        "crc": 0.3636,
+        "inner_rs": 1.0909,
+        "markers": 0.0,
+        "outer_parity": 1.5909
+      },
+      "share_of_total": {
+        "payload": 0.5029,
+        "address_header": 0.1143,
+        "crc": 0.0457,
+        "inner_rs": 0.1371,
+        "markers": 0.0,
+        "outer_parity": 0.2
+      },
+      "constraint_overhead_nt": 0
+    },
+    {
+      "profile": "v4-indel",
+      "layout": {
+        "payload_bytes": 36,
+        "inner_parity": 20,
+        "marker_period": 24,
+        "marker_len": 3,
+        "frame_bytes": 70,
+        "strand_nt": 313,
+        "markers": 11
+      },
+      "outer_K": 48,
+      "outer_M": 16,
+      "strand_nt": 313,
+      "nt_per_payload_byte": 11.5926,
+      "payload_bits_per_nt": 0.6901,
+      "raw_bits_per_nt": 2.0,
+      "nt_per_byte_by_component": {
+        "payload": 4.0,
+        "address_header": 1.1111,
+        "crc": 0.4444,
+        "inner_rs": 2.2222,
+        "markers": 0.9167,
+        "outer_parity": 2.8981
+      },
+      "share_of_total": {
+        "payload": 0.345,
+        "address_header": 0.0958,
+        "crc": 0.0383,
+        "inner_rs": 0.1917,
+        "markers": 0.0791,
+        "outer_parity": 0.25
+      },
+      "constraint_overhead_nt": 0
+    },
+    {
+      "profile": "v4-archival",
+      "layout": {
+        "payload_bytes": 36,
+        "inner_parity": 20,
+        "marker_period": 24,
+        "marker_len": 3,
+        "frame_bytes": 70,
+        "strand_nt": 313,
+        "markers": 11
+      },
+      "outer_K": 32,
+      "outer_M": 32,
+      "strand_nt": 313,
+      "nt_per_payload_byte": 17.3889,
+      "payload_bits_per_nt": 0.4601,
+      "raw_bits_per_nt": 2.0,
+      "nt_per_byte_by_component": {
+        "payload": 4.0,
+        "address_header": 1.1111,
+        "crc": 0.4444,
+        "inner_rs": 2.2222,
+        "markers": 0.9167,
+        "outer_parity": 8.6944
+      },
+      "share_of_total": {
+        "payload": 0.23,
+        "address_header": 0.0639,
+        "crc": 0.0256,
+        "inner_rs": 0.1278,
+        "markers": 0.0527,
+        "outer_parity": 0.5
+      },
+      "constraint_overhead_nt": 0
+    }
+  ],
+  "measured_v4_balanced": {
+    "input_sha256": "d8658297886061b9ba2c32cf29014707c7599ca64195e2d4b862df2c9c8c5c77",
+    "input_bytes": 4194304,
+    "container_bytes": 4195868,
+    "strands": 131149,
+    "bases": 41049637,
+    "nt_per_input_byte": 9.787,
+    "strands_sha256": "df10a04dbc43af2324091f2b95b8dc1704595dca7b8a93b9e863e51fc0e630e8"
+  }
+}

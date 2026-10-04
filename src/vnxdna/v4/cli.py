@@ -119,7 +119,17 @@ def main_callback(verbose: bool = typer.Option(False, "--verbose", "-v", help="S
 def version() -> None:
     """Print versions."""
     from .version import FORMAT_VERSION
-    typer.echo(json.dumps({"vnx": __version__, "vnx4_format": list(FORMAT_VERSION), "frame_version": 4}))
+    from ..v5 import native_alignment as na
+    st = na.status()
+    typer.echo(json.dumps({"vnx": __version__, "vnx4_format": list(FORMAT_VERSION), "frame_version": 4,
+                           "alignment_backend": st["active_backend"], "native_alignment": st["native_available"]}))
+
+
+@app.command()
+def native() -> None:
+    """Show whether the native (C) marker aligner is active, which library is loaded and why not if it is not."""
+    from ..v5 import native_alignment as na
+    _emit(na.status())
 
 
 @app.command()
@@ -274,14 +284,17 @@ def encode(source: Path = typer.Argument(..., help="A .vnx container, or a file/
 
 
 def _decode(reads, output, extract_dir, partial_dir, select, profile, workers, performance, config, band, min_quality,
-            archive_tag, force, key_file, passphrase_env, report):
+            archive_tag, force, key_file, passphrase_env, report, indel_recovery=None, soft_decoding=None,
+            recovery_schedule=None):
     from . import archive as ar
     from . import decoder as de
     from .config import decode_options, load_config, performance as perf
     cfg = load_config(config)
     p = perf(performance or cfg.get("performance"))
     opts = decode_options(cfg, profile=profile, workers=workers or p["workers"], band=band, min_quality=min_quality,
-                          batch_reads=p["batch_reads"], archive_tag=int(archive_tag, 16) if archive_tag else None)
+                          batch_reads=p["batch_reads"], archive_tag=int(archive_tag, 16) if archive_tag else None,
+                          indel_recovery=indel_recovery, soft_decoding=soft_decoding,
+                          recovery_schedule=recovery_schedule)
     key, pw = _keys(key_file, passphrase_env)
     if output is None and extract_dir is None and not select:
         raise VNXConfigurationError("give --output (container), --extract DIR, or --select FILE --extract DIR")
@@ -321,10 +334,17 @@ def decode(reads: Path, output: Optional[Path] = typer.Option(None, "--output", 
            min_quality: Optional[int] = typer.Option(None, help="Phred below this → erasure."),
            archive_tag: Optional[str] = typer.Option(None, help="Hex archive tag when a pool holds several archives."),
            force: bool = FORCE_OPT, key_file: Optional[Path] = KEY_OPT, passphrase_env: Optional[str] = PW_OPT,
-           report: Optional[Path] = typer.Option(None, help="Write the JSON report here too.")) -> None:
+           report: Optional[Path] = typer.Option(None, help="Write the JSON report here too."),
+           indel_recovery: Optional[str] = typer.Option(None, "--indel-recovery",
+                                                        help="segment (V4 default) or smart (V5 bounded local indel recovery)."),
+           soft_decoding: Optional[str] = typer.Option(None, "--soft-decoding",
+                                                       help="off (default), erasure (GMD), chase or auto: V5 bounded soft decoding."),
+           recovery_schedule: Optional[str] = typer.Option(None, "--recovery-schedule",
+                                                           help="deferred (default) or eager: when V5 per-read smart/soft recovery runs.")) -> None:
     """Reconstruct a verified VNX4 container from DNA reads (FASTA/FASTQ)."""
     _run(lambda: _decode(reads, output, extract_dir, partial_dir, select, profile, workers, performance, config, band, min_quality,
-                         archive_tag, force, key_file, passphrase_env, report))
+                         archive_tag, force, key_file, passphrase_env, report, indel_recovery, soft_decoding,
+                         recovery_schedule))
 
 
 @app.command()

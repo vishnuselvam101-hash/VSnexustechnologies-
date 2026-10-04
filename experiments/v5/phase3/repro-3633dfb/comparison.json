@@ -1,0 +1,83 @@
+{
+  "P3-EXP-01-single-indel": {
+    "identical_deterministic_fields": true,
+    "differences": [],
+    "n_differences": 0,
+    "repro_commit": "3633dfb86e76bb3d0661ecf8bf000cbb2da2359b",
+    "repro_worktree_dirty": false,
+    "original_commit": "b19cb19e6252fe8718d21ae793bdbe24aa95aa86",
+    "original_worktree_dirty": true
+  },
+  "P3-EXP-02-multi-indel": {
+    "identical_deterministic_fields": true,
+    "differences": [],
+    "n_differences": 0,
+    "repro_commit": "3633dfb86e76bb3d0661ecf8bf000cbb2da2359b",
+    "repro_worktree_dirty": false,
+    "original_commit": "b19cb19e6252fe8718d21ae793bdbe24aa95aa86",
+    "original_worktree_dirty": true
+  },
+  "P3-EXP-03-consensus": {
+    "identical_deterministic_fields": false,
+    "differences": [
+      "results.cells[9].smart.report.indel_recovery.false_accept_bound: 2.277414132915188e-07 != 2.2774141329151866e-07",
+      "results.cells[10].smart.report.indel_recovery.false_accept_bound: 2.1331055442214565e-07 != 2.1331055442214546e-07",
+      "results.cells[11].smart.report.indel_recovery.false_accept_bound: 2.1706922059729897e-07 != 2.1706922059729886e-07",
+      "results.cells[13].smart.report.indel_recovery.false_accept_bound: 4.668579892336427e-07 != 4.6685798923364175e-07",
+      "results.cells[14].smart.report.indel_recovery.false_accept_bound: 4.640679586955657e-07 != 4.6406795869556504e-07",
+      "results.cells[21].smart.report.indel_recovery.false_accept_bound: 7.196265459990595e-08 != 7.196265459990596e-08",
+      "results.cells[23].smart.report.indel_recovery.false_accept_bound: 6.578241869387712e-08 != 6.578241869387713e-08",
+      "results.cells[24].smart.report.indel_recovery.false_accept_bound: 4.4768920355464054e-07 != 4.476892035546399e-07",
+      "results.cells[25].smart.report.indel_recovery.false_accept_bound: 4.76400901064272e-07 != 4.7640090106427174e-07",
+      "results.cells[26].smart.report.indel_recovery.false_accept_bound: 4.4069887925418673e-07 != 4.4069887925418615e-07",
+      "results.cells[27].smart.report.indel_recovery.false_accept_bound: 9.47777525653146e-07 != 9.477775256531468e-07",
+      "results.cells[28].smart.report.indel_recovery.false_accept_bound: 9.090803792785713e-07 != 9.090803792785719e-07",
+      "results.cells[29].smart.report.indel_recovery.false_accept_bound: 9.619816744765988e-07 != 9.619816744766014e-07",
+      "results.cells[36].smart.report.indel_recovery.false_accept_bound: 1.1091564368219629e-07 != 1.1091564368219637e-07",
+      "results.cells[38].smart.report.indel_recovery.false_accept_bound: 9.806696651991462e-08 != 9.806696651991463e-08",
+      "results.cells[39].smart.report.indel_recovery.false_accept_bound: 6.778302395091965e-07 != 6.778302395091971e-07",
+      "results.cells[40].smart.report.indel_recovery.false_accept_bound: 6.766900511583413e-07 != 6.766900511583406e-07",
+      "results.cells[41].smart.report.indel_recovery.false_accept_bound: 6.734499746336041e-07 != 6.734499746336036e-07",
+      "results.cells[42].smart.report.indel_recovery.false_accept_bound: 1.3979363792526766e-06 != 1.39793637925268e-06",
+      "results.cells[43].smart.report.indel_recovery.false_accept_bound: 1.3864437083569042e-06 != 1.3864437083569083e-06",
+      "results.cells[44].smart.report.indel_recovery.false_accept_bound: 1.4029097078784982e-06 != 1.4029097078785018e-06",
+      "results.cells[51].smart.report.indel_recovery.false_accept_bound: 1.6557267864798684e-07 != 1.6557267864798687e-07",
+      "results.cells[54].smart.report.indel_recovery.false_accept_bound: 1.1229303673884792e-06 != 1.122930367388479e-06",
+      "results.cells[55].smart.report.indel_recovery.false_accept_bound: 1.126232348550649e-06 != 1.1262323485506501e-06",
+      "results.cells[56].smart.report.indel_recovery.false_accept_bound: 1.0868268684670059e-06 != 1.0868268684670057e-06",
+      "results.cells[57].smart.report.indel_recovery.false_accept_bound: 2.3442796282776383e-06 != 2.344279628277638e-06",
+      "results.cells[59].smart.report.indel_recovery.false_accept_bound: 2.3161302509775387e-06 != 2.3161302509775455e-06",
+      "results.cells[66].smart.report.indel_recovery.false_accept_bound: 3.139307942754375e-07 != 3.139307942754377e-07",
+      "results.cells[68].smart.report.indel_recovery.false_accept_bound: 3.090060696139992e-07 != 3.090060696139993e-07",
+      "results.cells[69].smart.report.indel_recovery.false_accept_bound: 2.1960560749502157e-06 != 2.1960560749502153e-06",
+      "results.cells[70].smart.report.indel_recovery.false_accept_bound: 2.218250062368239e-06 != 2.21825006236824e-06",
+      "results.cells[71].smart.report.indel_recovery.false_accept_bound: 2.207238841587808e-06 != 2.2072388415878074e-06",
+      "results.cells[72].smart.report.indel_recovery.false_accept_bound: 4.628087430735088e-06 != 4.6280874307350934e-06",
+      "results.cells[73].smart.report.indel_recovery.false_accept_bound: 4.577254410427199e-06 != 4.5772544104272085e-06",
+      "results.cells[74].smart.report.indel_recovery.false_accept_bound: 4.5502002334303245e-06 != 4.55020023343033e-06"
+    ],
+    "n_differences": 35,
+    "repro_commit": "3633dfb86e76bb3d0661ecf8bf000cbb2da2359b",
+    "repro_worktree_dirty": false,
+    "original_commit": "b19cb19e6252fe8718d21ae793bdbe24aa95aa86",
+    "original_worktree_dirty": true
+  },
+  "P3-EXP-04-accounting": {
+    "identical_deterministic_fields": true,
+    "differences": [],
+    "n_differences": 0,
+    "repro_commit": "3633dfb86e76bb3d0661ecf8bf000cbb2da2359b",
+    "repro_worktree_dirty": false,
+    "original_commit": "b19cb19e6252fe8718d21ae793bdbe24aa95aa86",
+    "original_worktree_dirty": true
+  },
+  "P3-EXP-05-v4-vs-v5": {
+    "identical_deterministic_fields": true,
+    "differences": [],
+    "n_differences": 0,
+    "repro_commit": "3633dfb86e76bb3d0661ecf8bf000cbb2da2359b",
+    "repro_worktree_dirty": false,
+    "original_commit": "b19cb19e6252fe8718d21ae793bdbe24aa95aa86",
+    "original_worktree_dirty": true
+  }
+}

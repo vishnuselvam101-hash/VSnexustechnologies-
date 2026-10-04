@@ -1,0 +1,67 @@
+{
+  "layouts": {
+    "v4-balanced (24/3)": {
+      "payload_bytes": 40,
+      "inner_parity": 16,
+      "marker_period": 24,
+      "marker_len": 3,
+      "frame_bytes": 70,
+      "strand_nt": 313,
+      "markers": 11
+    },
+    "period 16/2": {
+      "payload_bytes": 40,
+      "inner_parity": 16,
+      "marker_period": 16,
+      "marker_len": 2,
+      "frame_bytes": 70,
+      "strand_nt": 314,
+      "markers": 17
+    },
+    "period 32/2 (V4 round 1)": {
+      "payload_bytes": 40,
+      "inner_parity": 16,
+      "marker_period": 32,
+      "marker_len": 2,
+      "frame_bytes": 70,
+      "strand_nt": 296,
+      "markers": 8
+    },
+    "v4-indel (24/3, r=20)": {
+      "payload_bytes": 36,
+      "inner_parity": 20,
+      "marker_period": 24,
+      "marker_len": 3,
+      "frame_bytes": 70,
+      "strand_nt": 313,
+      "markers": 11
+    }
+  },
+  "strands_per_layout": 6,
+  "seed": 3101,
+  "positions": "every template position",
+  "band": 6,
+  "quality_model": {
+    "correct": 35,
+    "error": 12,
+    "informative": "inserted base gets Q_ERROR"
+  },
+  "recovery_defaults": {
+    "max_shift": 1,
+    "max_window_segments": 2,
+    "max_candidates": 64,
+    "max_trials": 1024,
+    "max_joint_windows": 2,
+    "max_read_nt": 8256,
+    "trial_batch": 8192,
+    "substitution_prior": 0.005,
+    "keep_byte_error": 0.001,
+    "high_confidence": 0.001,
+    "false_accept_budget": 1e-09,
+    "phases": [
+      "T0",
+      "T1",
+      "T2"
+    ]
+  }
+}

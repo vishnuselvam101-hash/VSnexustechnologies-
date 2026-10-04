@@ -1,0 +1,4609 @@
+{
+  "experiment": "P4-EXP-08-coverage",
+  "simulated": true,
+  "config": {
+    "input": {
+      "size": 32768,
+      "pattern": "random"
+    },
+    "decoders": {
+      "V4": {},
+      "V5-hard": {
+        "indel_recovery": "smart"
+      },
+      "V5-soft-auto": {
+        "indel_recovery": "smart",
+        "soft_decoding": "auto"
+      }
+    },
+    "workers": 8,
+    "seeds": 2,
+    "channel_seed_rule": "44000 + 10\u00b7seed_index",
+    "cells": {
+      "indel 0.5%+0.5% + sub 1%, informative 0.5, cov 1": {
+        "insertion_rate": 0.005,
+        "deletion_rate": 0.005,
+        "substitution_rate": 0.01,
+        "quality_informative": 0.5,
+        "coverage": 1,
+        "coverage_model": "fixed"
+      },
+      "indel 0.5%+0.5% + sub 1%, informative 0.5, cov 2": {
+        "insertion_rate": 0.005,
+        "deletion_rate": 0.005,
+        "substitution_rate": 0.01,
+        "quality_informative": 0.5,
+        "coverage": 2,
+        "coverage_model": "fixed"
+      },
+      "indel 0.5%+0.5% + sub 1%, informative 0.5, cov 3": {
+        "insertion_rate": 0.005,
+        "deletion_rate": 0.005,
+        "substitution_rate": 0.01,
+        "quality_informative": 0.5,
+        "coverage": 3,
+        "coverage_model": "fixed"
+      },
+      "indel 0.5%+0.5% + sub 1%, informative 0.5, cov 5": {
+        "insertion_rate": 0.005,
+        "deletion_rate": 0.005,
+        "substitution_rate": 0.01,
+        "quality_informative": 0.5,
+        "coverage": 5,
+        "coverage_model": "fixed"
+      },
+      "indel 0.5%+0.5% + sub 1%, informative 0.5, cov 10": {
+        "insertion_rate": 0.005,
+        "deletion_rate": 0.005,
+        "substitution_rate": 0.01,
+        "quality_informative": 0.5,
+        "coverage": 10,
+        "coverage_model": "fixed"
+      },
+      "indel 0.25%+0.25% + sub 4%, informative 0.5, cov 1": {
+        "insertion_rate": 0.0025,
+        "deletion_rate": 0.0025,
+        "substitution_rate": 0.04,
+        "quality_informative": 0.5,
+        "coverage": 1,
+        "coverage_model": "fixed"
+      },
+      "indel 0.25%+0.25% + sub 4%, informative 0.5, cov 2": {
+        "insertion_rate": 0.0025,
+        "deletion_rate": 0.0025,
+        "substitution_rate": 0.04,
+        "quality_informative": 0.5,
+        "coverage": 2,
+        "coverage_model": "fixed"
+      },
+      "indel 0.25%+0.25% + sub 4%, informative 0.5, cov 3": {
+        "insertion_rate": 0.0025,
+        "deletion_rate": 0.0025,
+        "substitution_rate": 0.04,
+        "quality_informative": 0.5,
+        "coverage": 3,
+        "coverage_model": "fixed"
+      },
+      "indel 0.25%+0.25% + sub 4%, informative 0.5, cov 5": {
+        "insertion_rate": 0.0025,
+        "deletion_rate": 0.0025,
+        "substitution_rate": 0.04,
+        "quality_informative": 0.5,
+        "coverage": 5,
+        "coverage_model": "fixed"
+      },
+      "indel 0.25%+0.25% + sub 4%, informative 0.5, cov 10": {
+        "insertion_rate": 0.0025,
+        "deletion_rate": 0.0025,
+        "substitution_rate": 0.04,
+        "quality_informative": 0.5,
+        "coverage": 10,
+        "coverage_model": "fixed"
+      }
+    }
+  },
+  "provenance": {
+    "timestamp_utc": "2026-10-03T14:26:19Z",
+    "vnx_version": "4.0.0",
+    "vnx4_format_version": [
+      4,
+      0
+    ],
+    "git_commit": "3633dfb86e76bb3d0661ecf8bf000cbb2da2359b-dirty",
+    "cpu_model": "Intel(R) Xeon(R) Gold 6240 CPU @ 2.60GHz",
+    "logical_cpus": 8,
+    "ram_bytes": 33654890496,
+    "os": "Linux 6.8.0-146-generic",
+    "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "packages": {
+      "numpy": "2.5.3",
+      "cryptography": "46.0.7",
+      "zstandard": "0.25.0",
+      "reedsolo": "1.7.0",
+      "pydantic": "2.13.5",
+      "typer": "0.27.2"
+    },
+    "v4_control_tag": "v4.0.0",
+    "v4_control_commit": "a358ae8284066d0608f329b47a53e55018bbfa79",
+    "commit_under_test": "3633dfb86e76bb3d0661ecf8bf000cbb2da2359b",
+    "worktree_dirty": true,
+    "native_toolchain": {
+      "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+      "rustc": "rustc 1.75.0 (82e1608df 2023-12-21) (built from a source tarball)",
+      "cargo": "cargo 1.75.0"
+    },
+    "cpu_flags": [
+      "avx",
+      "avx2",
+      "avx512bw",
+      "avx512f",
+      "bmi2",
+      "popcnt",
+      "sse4_2"
+    ],
+    "config_sha256": "99dac3411f2898e80234e976e02109991a07aca32ccacd4460352d869ad0b6dd"
+  },
+  "results": {
+    "summary": {
+      "indel 0.5%+0.5% + sub 1%, informative 0.5, cov 1": {
+        "V4": {
+          "verified_success": 0,
+          "trials": 2,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            0.0,
+            0.0
+          ],
+          "seconds": [
+            0.657,
+            0.594
+          ],
+          "cpu_seconds": [
+            2.38,
+            2.33
+          ],
+          "peak_rss_mb": [
+            77.8,
+            78.9
+          ],
+          "reads_soft_path": [
+            null,
+            null
+          ],
+          "consensus_recovered_soft": [
+            null,
+            null
+          ],
+          "consensus_recovered_smart": [
+            null,
+            null
+          ],
+          "soft": [
+            null,
+            null
+          ]
+        },
+        "V5-hard": {
+          "verified_success": 0,
+          "trials": 2,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            0.0714,
+            0.1429
+          ],
+          "seconds": [
+            5.995,
+            6.254
+          ],
+          "cpu_seconds": [
+            7.75,
+            8.03
+          ],
+          "peak_rss_mb": [
+            77.8,
+            78.9
+          ],
+          "reads_soft_path": [
+            null,
+            null
+          ],
+          "consensus_recovered_soft": [
+            null,
+            null
+          ],
+          "consensus_recovered_smart": [
+            3,
+            1
+          ],
+          "soft": [
+            null,
+            null
+          ]
+        },
+        "V5-soft-auto": {
+          "verified_success": 0,
+          "trials": 2,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            0.0714,
+            0.2143
+          ],
+          "seconds": [
+            6.916,
+            7.067
+          ],
+          "cpu_seconds": [
+            8.67,
+            8.81
+          ],
+          "peak_rss_mb": [
+            77.8,
+            78.9
+          ],
+          "reads_soft_path": [
+            24,
+            37
+          ],
+          "consensus_recovered_soft": [
+            0,
+            0
+          ],
+          "consensus_recovered_smart": [
+            2,
+            1
+          ],
+          "soft": [
+            {
+              "mode": "auto",
+              "attempted": 669,
+              "mode_none": 645,
+              "trials": 6375,
+              "candidates": 1540,
+              "false_accept_bound": 8.913534387013268e-08,
+              "entropy_bits_sum": 718.2478351994426,
+              "mode_erasure": 23,
+              "recovered": 24,
+              "accepted_rank_sum": 14,
+              "mode_chase": 1,
+              "consensus_none": 4
+            },
+            {
+              "mode": "auto",
+              "attempted": 711,
+              "mode_none": 674,
+              "trials": 7023,
+              "candidates": 1664,
+              "false_accept_bound": 1.004857286893153e-07,
+              "entropy_bits_sum": 742.6527486938752,
+              "mode_erasure": 34,
+              "recovered": 37,
+              "accepted_rank_sum": 67,
+              "mode_chase": 3,
+              "consensus_none": 5
+            }
+          ]
+        }
+      },
+      "indel 0.5%+0.5% + sub 1%, informative 0.5, cov 2": {
+        "V4": {
+          "verified_success": 0,
+          "trials": 2,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            0.0714,
+            0.0714
+          ],
+          "seconds": [
+            0.726,
+            0.687
+          ],
+          "cpu_seconds": [
+            2.49,
+            2.44
+          ],
+          "peak_rss_mb": [
+            97.8,
+            97.9
+          ],
+          "reads_soft_path": [
+            null,
+            null
+          ],
+          "consensus_recovered_soft": [
+            null,
+            null
+          ],
+          "consensus_recovered_smart": [
+            null,
+            null
+          ],
+          "soft": [
+            null,
+            null
+          ]
+        },
+        "V5-hard": {
+          "verified_success": 2,
+          "trials": 2,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            1.0,
+            1.0
+          ],
+          "seconds": [
+            12.064,
+            12.147
+          ],
+          "cpu_seconds": [
+            13.83,
+            13.9
+          ],
+          "peak_rss_mb": [
+            97.8,
+            97.9
+          ],
+          "reads_soft_path": [
+            null,
+            null
+          ],
+          "consensus_recovered_soft": [
+            null,
+            null
+          ],
+          "consensus_recovered_smart": [
+            7,
+            3
+          ],
+          "soft": [
+            null,
+            null
+          ]
+        },
+        "V5-soft-auto": {
+          "verified_success": 2,
+          "trials": 2,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            1.0,
+            1.0
+          ],
+          "seconds": [
+            13.375,
+            13.28
+          ],
+          "cpu_seconds": [
+            15.1,
+            14.96
+          ],
+          "peak_rss_mb": [
+            97.8,
+            97.9
+          ],
+          "reads_soft_path": [
+            54,
+            69
+          ],
+          "consensus_recovered_soft": [
+            5,
+            3
+          ],
+          "consensus_recovered_smart": [
+            4,
+            3
+          ],
+          "soft": [
+            {
+              "mode": "auto",
+              "attempted": 1325,
+              "mode_none": 1271,
+              "trials": 12518,
+              "candidates": 3064,
+              "false_accept_bound": 1.7428451004792748e-07,
+              "entropy_bits_sum": 1405.331132403278,
+              "mode_erasure": 51,
+              "recovered": 54,
+              "accepted_rank_sum": 37,
+              "mode_chase": 3,
+              "consensus_erasure": 4,
+              "consensus_none": 11,
+              "consensus_chase": 1
+            },
+            {
+              "mode": "auto",
+              "attempted": 1358,
+              "mode_none": 1289,
+              "trials": 13234,
+              "candidates": 3212,
+              "false_accept_bound": 1.9342090302282856e-07,
+              "entropy_bits_sum": 1420.0309954415393,
+              "mode_erasure": 58,
+              "recovered": 69,
+              "accepted_rank_sum": 94,
+              "mode_chase": 11,
+              "consensus_chase": 1,
+              "consensus_none": 13,
+              "consensus_erasure": 2
+            }
+          ]
+        }
+      },
+      "indel 0.5%+0.5% + sub 1%, informative 0.5, cov 3": {
+        "V4": {
+          "verified_success": 0,
+          "trials": 2,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            0.6429,
+            0.7857
+          ],
+          "seconds": [
+            0.791,
+            0.827
+          ],
+          "cpu_seconds": [
+            2.54,
+            2.57
+          ],
+          "peak_rss_mb": [
+            113.9,
+            114.1
+          ],
+          "reads_soft_path": [
+            null,
+            null
+          ],
+          "consensus_recovered_soft": [
+            null,
+            null
+          ],
+          "consensus_recovered_smart": [
+            null,
+            null
+          ],
+          "soft": [
+            null,
+            null
+          ]
+        },
+        "V5-hard": {
+          "verified_success": 2,
+          "trials": 2,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            1.0,
+            1.0
+          ],
+          "seconds": [
+            18.039,
+            16.87
+          ],
+          "cpu_seconds": [
+            19.76,
+            18.58
+          ],
+          "peak_rss_mb": [
+            113.9,
+            114.1
+          ],
+          "reads_soft_path": [
+            null,
+            null
+          ],
+          "consensus_recovered_soft": [
+            null,
+            null
+          ],
+          "consensus_recovered_smart": [
+            5,
+            0
+          ],
+          "soft": [
+            null,
+            null
+          ]
+        },
+        "V5-soft-auto": {
+          "verified_success": 2,
+          "trials": 2,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            1.0,
+            1.0
+          ],
+          "seconds": [
+            21.045,
+            19.935
+          ],
+          "cpu_seconds": [
+            22.81,
+            21.69
+          ],
+          "peak_rss_mb": [
+            113.9,
+            114.1
+          ],
+          "reads_soft_path": [
+            73,
+            97
+          ],
+          "consensus_recovered_soft": [
+            0,
+            1
+          ],
+          "consensus_recovered_smart": [
+            1,
+            0
+          ],
+          "soft": [
+            {
+              "mode": "auto",
+              "attempted": 2043,
+              "mode_none": 1970,
+              "trials": 19698,
+              "candidates": 4856,
+              "false_accept_bound": 2.7695877347255127e-07,
+              "entropy_bits_sum": 2152.3622657320448,
+              "mode_erasure": 65,
+              "recovered": 73,
+              "accepted_rank_sum": 68,
+              "mode_chase": 8,
+              "consensus_none": 13
+            },
+            {
+              "mode": "auto",
+              "attempted": 2071,
+              "mode_none": 1974,
+              "trials": 20375,
+              "candidates": 4808,
+              "false_accept_bound": 2.908938680315955e-07,
+              "entropy_bits_sum": 2162.3457709935897,
+              "mode_erasure": 89,
+              "recovered": 97,
+              "accepted_rank_sum": 119,
+              "mode_chase": 8,
+              "consensus_none": 10,
+              "consensus_erasure": 1
+            }
+          ]
+        }
+      },
+      "indel 0.5%+0.5% + sub 1%, informative 0.5, cov 5": {
+        "V4": {
+          "verified_success": 2,
+          "trials": 2,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            1.0,
+            1.0
+          ],
+          "seconds": [
+            0.994,
+            1.042
+          ],
+          "cpu_seconds": [
+            2.75,
+            2.8
+          ],
+          "peak_rss_mb": [
+            151.3,
+            152.9
+          ],
+          "reads_soft_path": [
+            null,
+            null
+          ],
+          "consensus_recovered_soft": [
+            null,
+            null
+          ],
+          "consensus_recovered_smart": [
+            null,
+            null
+          ],
+          "soft": [
+            null,
+            null
+          ]
+        },
+        "V5-hard": {
+          "verified_success": 2,
+          "trials": 2,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            1.0,
+            1.0
+          ],
+          "seconds": [
+            29.7,
+            29.635
+          ],
+          "cpu_seconds": [
+            31.46,
+            31.38
+          ],
+          "peak_rss_mb": [
+            151.3,
+            152.9
+          ],
+          "reads_soft_path": [
+            null,
+            null
+          ],
+          "consensus_recovered_soft": [
+            null,
+            null
+          ],
+          "consensus_recovered_smart": [
+            3,
+            1
+          ],
+          "soft": [
+            null,
+            null
+          ]
+        },
+        "V5-soft-auto": {
+          "verified_success": 2,
+          "trials": 2,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            1.0,
+            1.0
+          ],
+          "seconds": [
+            31.872,
+            35.297
+          ],
+          "cpu_seconds": [
+            33.66,
+            37.05
+          ],
+          "peak_rss_mb": [
+            151.3,
+            152.9
+          ],
+          "reads_soft_path": [
+            146,
+            176
+          ],
+          "consensus_recovered_soft": [
+            0,
+            0
+          ],
+          "consensus_recovered_smart": [
+            1,
+            0
+          ],
+          "soft": [
+            {
+              "mode": "auto",
+              "attempted": 3471,
+              "mode_none": 3325,
+              "trials": 33019,
+              "candidates": 8060,
+              "false_accept_bound": 4.766415812267834e-07,
+              "entropy_bits_sum": 3683.8167900086723,
+              "mode_erasure": 133,
+              "recovered": 146,
+              "accepted_rank_sum": 178,
+              "mode_chase": 13
+            },
+            {
+              "mode": "auto",
+              "attempted": 3543,
+              "mode_none": 3367,
+              "trials": 34366,
+              "candidates": 8304,
+              "false_accept_bound": 4.94958356934e-07,
+              "entropy_bits_sum": 3692.6118419632926,
+              "mode_erasure": 159,
+              "recovered": 176,
+              "accepted_rank_sum": 231,
+              "mode_chase": 17,
+              "consensus_none": 3
+            }
+          ]
+        }
+      },
+      "indel 0.5%+0.5% + sub 1%, informative 0.5, cov 10": {
+        "V4": {
+          "verified_success": 2,
+          "trials": 2,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            1.0,
+            1.0
+          ],
+          "seconds": [
+            1.407,
+            1.402
+          ],
+          "cpu_seconds": [
+            3.78,
+            3.81
+          ],
+          "peak_rss_mb": [
+            240.0,
+            240.4
+          ],
+          "reads_soft_path": [
+            null,
+            null
+          ],
+          "consensus_recovered_soft": [
+            null,
+            null
+          ],
+          "consensus_recovered_smart": [
+            null,
+            null
+          ],
+          "soft": [
+            null,
+            null
+          ]
+        },
+        "V5-hard": {
+          "verified_success": 2,
+          "trials": 2,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            1.0,
+            1.0
+          ],
+          "seconds": [
+            39.846,
+            40.482
+          ],
+          "cpu_seconds": [
+            56.05,
+            55.99
+          ],
+          "peak_rss_mb": [
+            240.0,
+            240.4
+          ],
+          "reads_soft_path": [
+            null,
+            null
+          ],
+          "consensus_recovered_soft": [
+            null,
+            null
+          ],
+          "consensus_recovered_smart": [
+            0,
+            0
+          ],
+          "soft": [
+            null,
+            null
+          ]
+        },
+        "V5-soft-auto": {
+          "verified_success": 2,
+          "trials": 2,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            1.0,
+            1.0
+          ],
+          "seconds": [
+            45.829,
+            47.552
+          ],
+          "cpu_seconds": [
+            63.64,
+            64.78
+          ],
+          "peak_rss_mb": [
+            240.0,
+            240.4
+          ],
+          "reads_soft_path": [
+            302,
+            328
+          ],
+          "consensus_recovered_soft": [
+            0,
+            0
+          ],
+          "consensus_recovered_smart": [
+            0,
+            0
+          ],
+          "soft": [
+            {
+              "mode": "auto",
+              "attempted": 6821,
+              "mode_none": 6519,
+              "trials": 64844,
+              "candidates": 16036,
+              "false_accept_bound": 9.384175557823836e-07,
+              "entropy_bits_sum": 7151.924069643801,
+              "mode_erasure": 273,
+              "recovered": 302,
+              "accepted_rank_sum": 351,
+              "mode_chase": 29
+            },
+            {
+              "mode": "auto",
+              "attempted": 6842,
+              "mode_none": 6514,
+              "trials": 66124,
+              "candidates": 16236,
+              "false_accept_bound": 9.494702192404014e-07,
+              "entropy_bits_sum": 7131.892813288687,
+              "mode_erasure": 290,
+              "recovered": 328,
+              "accepted_rank_sum": 386,
+              "mode_chase": 38
+            }
+          ]
+        }
+      },
+      "indel 0.25%+0.25% + sub 4%, informative 0.5, cov 1": {
+        "V4": {
+          "verified_success": 0,
+          "trials": 2,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            null,
+            null
+          ],
+          "seconds": [
+            0.555,
+            0.53
+          ],
+          "cpu_seconds": [
+            2.3,
+            2.28
+          ],
+          "peak_rss_mb": [
+            240.4,
+            240.4
+          ],
+          "reads_soft_path": [
+            null,
+            null
+          ],
+          "consensus_recovered_soft": [
+            null,
+            null
+          ],
+          "consensus_recovered_smart": [
+            null,
+            null
+          ],
+          "soft": [
+            null,
+            null
+          ]
+        },
+        "V5-hard": {
+          "verified_success": 0,
+          "trials": 2,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            null,
+            null
+          ],
+          "seconds": [
+            6.648,
+            6.791
+          ],
+          "cpu_seconds": [
+            8.42,
+            8.54
+          ],
+          "peak_rss_mb": [
+            240.4,
+            240.4
+          ],
+          "reads_soft_path": [
+            null,
+            null
+          ],
+          "consensus_recovered_soft": [
+            null,
+            null
+          ],
+          "consensus_recovered_smart": [
+            null,
+            null
+          ],
+          "soft": [
+            null,
+            null
+          ]
+        },
+        "V5-soft-auto": {
+          "verified_success": 0,
+          "trials": 2,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            null,
+            0.0
+          ],
+          "seconds": [
+            8.464,
+            9.356
+          ],
+          "cpu_seconds": [
+            10.13,
+            11.11
+          ],
+          "peak_rss_mb": [
+            240.4,
+            240.4
+          ],
+          "reads_soft_path": [
+            null,
+            120
+          ],
+          "consensus_recovered_soft": [
+            null,
+            0
+          ],
+          "consensus_recovered_smart": [
+            null,
+            0
+          ],
+          "soft": [
+            null,
+            {
+              "mode": "auto",
+              "attempted": 1431,
+              "mode_none": 1311,
+              "trials": 18973,
+              "candidates": 3840,
+              "false_accept_bound": 2.589118412916482e-07,
+              "entropy_bits_sum": 1044.082731443587,
+              "mode_erasure": 116,
+              "recovered": 120,
+              "accepted_rank_sum": 321,
+              "mode_chase": 4,
+              "consensus_none": 14
+            }
+          ]
+        }
+      },
+      "indel 0.25%+0.25% + sub 4%, informative 0.5, cov 2": {
+        "V4": {
+          "verified_success": 0,
+          "trials": 2,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            null,
+            null
+          ],
+          "seconds": [
+            0.673,
+            0.695
+          ],
+          "cpu_seconds": [
+            2.38,
+            2.36
+          ],
+          "peak_rss_mb": [
+            240.4,
+            240.4
+          ],
+          "reads_soft_path": [
+            null,
+            null
+          ],
+          "consensus_recovered_soft": [
+            null,
+            null
+          ],
+          "consensus_recovered_smart": [
+            null,
+            null
+          ],
+          "soft": [
+            null,
+            null
+          ]
+        },
+        "V5-hard": {
+          "verified_success": 0,
+          "trials": 2,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            null,
+            0.0
+          ],
+          "seconds": [
+            13.092,
+            16.139
+          ],
+          "cpu_seconds": [
+            14.86,
+            17.9
+          ],
+          "peak_rss_mb": [
+            240.4,
+            240.4
+          ],
+          "reads_soft_path": [
+            null,
+            null
+          ],
+          "consensus_recovered_soft": [
+            null,
+            null
+          ],
+          "consensus_recovered_smart": [
+            null,
+            4
+          ],
+          "soft": [
+            null,
+            null
+          ]
+        },
+        "V5-soft-auto": {
+          "verified_success": 0,
+          "trials": 2,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            0.0714,
+            0.0714
+          ],
+          "seconds": [
+            18.577,
+            19.421
+          ],
+          "cpu_seconds": [
+            20.34,
+            21.2
+          ],
+          "peak_rss_mb": [
+            240.4,
+            240.4
+          ],
+          "reads_soft_path": [
+            250,
+            244
+          ],
+          "consensus_recovered_soft": [
+            24,
+            28
+          ],
+          "consensus_recovered_smart": [
+            3,
+            1
+          ],
+          "soft": [
+            {
+              "mode": "auto",
+              "attempted": 2798,
+              "mode_none": 2548,
+              "trials": 37321,
+              "candidates": 7208,
+              "false_accept_bound": 5.071341305718889e-07,
+              "entropy_bits_sum": 2067.2378138181266,
+              "mode_erasure": 241,
+              "recovered": 250,
+              "accepted_rank_sum": 743,
+              "mode_chase": 9,
+              "consensus_none": 33,
+              "consensus_erasure": 22,
+              "consensus_chase": 2
+            },
+            {
+              "mode": "auto",
+              "attempted": 2819,
+              "mode_none": 2575,
+              "trials": 37635,
+              "candidates": 7324,
+              "false_accept_bound": 5.044445358773373e-07,
+              "entropy_bits_sum": 2075.727399517944,
+              "mode_erasure": 243,
+              "recovered": 244,
+              "accepted_rank_sum": 606,
+              "mode_chase": 1,
+              "consensus_none": 35,
+              "consensus_erasure": 26,
+              "consensus_chase": 2
+            }
+          ]
+        }
+      },
+      "indel 0.25%+0.25% + sub 4%, informative 0.5, cov 3": {
+        "V4": {
+          "verified_success": 0,
+          "trials": 2,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            null,
+            null
+          ],
+          "seconds": [
+            0.762,
+            0.771
+          ],
+          "cpu_seconds": [
+            2.44,
+            2.56
+          ],
+          "peak_rss_mb": [
+            240.4,
+            240.4
+          ],
+          "reads_soft_path": [
+            null,
+            null
+          ],
+          "consensus_recovered_soft": [
+            null,
+            null
+          ],
+          "consensus_recovered_smart": [
+            null,
+            null
+          ],
+          "soft": [
+            null,
+            null
+          ]
+        },
+        "V5-hard": {
+          "verified_success": 0,
+          "trials": 2,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            0.0,
+            0.0
+          ],
+          "seconds": [
+            23.455,
+            23.592
+          ],
+          "cpu_seconds": [
+            25.21,
+            25.34
+          ],
+          "peak_rss_mb": [
+            240.4,
+            240.4
+          ],
+          "reads_soft_path": [
+            null,
+            null
+          ],
+          "consensus_recovered_soft": [
+            null,
+            null
+          ],
+          "consensus_recovered_smart": [
+            5,
+            2
+          ],
+          "soft": [
+            null,
+            null
+          ]
+        },
+        "V5-soft-auto": {
+          "verified_success": 0,
+          "trials": 2,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            0.0714,
+            0.0714
+          ],
+          "seconds": [
+            27.917,
+            28.143
+          ],
+          "cpu_seconds": [
+            29.66,
+            29.87
+          ],
+          "peak_rss_mb": [
+            240.4,
+            240.4
+          ],
+          "reads_soft_path": [
+            351,
+            352
+          ],
+          "consensus_recovered_soft": [
+            40,
+            37
+          ],
+          "consensus_recovered_smart": [
+            3,
+            1
+          ],
+          "soft": [
+            {
+              "mode": "auto",
+              "attempted": 4216,
+              "mode_none": 3865,
+              "trials": 56763,
+              "candidates": 11052,
+              "false_accept_bound": 7.615661407254585e-07,
+              "entropy_bits_sum": 3106.479719266418,
+              "mode_erasure": 333,
+              "recovered": 351,
+              "accepted_rank_sum": 1023,
+              "mode_chase": 18,
+              "consensus_erasure": 35,
+              "consensus_none": 49,
+              "consensus_chase": 5
+            },
+            {
+              "mode": "auto",
+              "attempted": 4226,
+              "mode_none": 3874,
+              "trials": 57236,
+              "candidates": 11108,
+              "false_accept_bound": 7.606827180877153e-07,
+              "entropy_bits_sum": 3080.9229170301887,
+              "mode_erasure": 342,
+              "recovered": 352,
+              "accepted_rank_sum": 936,
+              "mode_chase": 10,
+              "consensus_none": 58,
+              "consensus_erasure": 34,
+              "consensus_chase": 3
+            }
+          ]
+        }
+      },
+      "indel 0.25%+0.25% + sub 4%, informative 0.5, cov 5": {
+        "V4": {
+          "verified_success": 0,
+          "trials": 2,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            null,
+            0.0
+          ],
+          "seconds": [
+            0.981,
+            1.236
+          ],
+          "cpu_seconds": [
+            2.74,
+            3.02
+          ],
+          "peak_rss_mb": [
+            240.4,
+            240.4
+          ],
+          "reads_soft_path": [
+            null,
+            null
+          ],
+          "consensus_recovered_soft": [
+            null,
+            null
+          ],
+          "consensus_recovered_smart": [
+            null,
+            null
+          ],
+          "soft": [
+            null,
+            null
+          ]
+        },
+        "V5-hard": {
+          "verified_success": 0,
+          "trials": 2,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            0.0714,
+            0.0714
+          ],
+          "seconds": [
+            36.283,
+            37.695
+          ],
+          "cpu_seconds": [
+            38.05,
+            39.45
+          ],
+          "peak_rss_mb": [
+            240.4,
+            240.4
+          ],
+          "reads_soft_path": [
+            null,
+            null
+          ],
+          "consensus_recovered_soft": [
+            null,
+            null
+          ],
+          "consensus_recovered_smart": [
+            10,
+            14
+          ],
+          "soft": [
+            null,
+            null
+          ]
+        },
+        "V5-soft-auto": {
+          "verified_success": 2,
+          "trials": 2,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            1.0,
+            1.0
+          ],
+          "seconds": [
+            44.709,
+            45.447
+          ],
+          "cpu_seconds": [
+            46.43,
+            47.2
+          ],
+          "peak_rss_mb": [
+            240.4,
+            240.4
+          ],
+          "reads_soft_path": [
+            582,
+            589
+          ],
+          "consensus_recovered_soft": [
+            39,
+            41
+          ],
+          "consensus_recovered_smart": [
+            5,
+            5
+          ],
+          "soft": [
+            {
+              "mode": "auto",
+              "attempted": 7055,
+              "mode_none": 6473,
+              "trials": 93815,
+              "candidates": 18516,
+              "false_accept_bound": 1.2582611773510648e-06,
+              "entropy_bits_sum": 5194.515345204087,
+              "mode_erasure": 566,
+              "recovered": 582,
+              "accepted_rank_sum": 1636,
+              "mode_chase": 16,
+              "consensus_erasure": 38,
+              "consensus_none": 52,
+              "consensus_chase": 1
+            },
+            {
+              "mode": "auto",
+              "attempted": 7059,
+              "mode_none": 6470,
+              "trials": 95630,
+              "candidates": 18464,
+              "false_accept_bound": 1.2748181481624646e-06,
+              "entropy_bits_sum": 5157.6422869751095,
+              "mode_erasure": 571,
+              "recovered": 589,
+              "accepted_rank_sum": 1566,
+              "mode_chase": 18,
+              "consensus_none": 46,
+              "consensus_erasure": 37,
+              "consensus_chase": 4
+            }
+          ]
+        }
+      },
+      "indel 0.25%+0.25% + sub 4%, informative 0.5, cov 10": {
+        "V4": {
+          "verified_success": 0,
+          "trials": 2,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            0.6429,
+            0.7143
+          ],
+          "seconds": [
+            1.663,
+            1.685
+          ],
+          "cpu_seconds": [
+            4.27,
+            4.04
+          ],
+          "peak_rss_mb": [
+            240.4,
+            240.5
+          ],
+          "reads_soft_path": [
+            null,
+            null
+          ],
+          "consensus_recovered_soft": [
+            null,
+            null
+          ],
+          "consensus_recovered_smart": [
+            null,
+            null
+          ],
+          "soft": [
+            null,
+            null
+          ]
+        },
+        "V5-hard": {
+          "verified_success": 1,
+          "trials": 2,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            1.0,
+            0.9286
+          ],
+          "seconds": [
+            48.844,
+            50.365
+          ],
+          "cpu_seconds": [
+            66.98,
+            67.89
+          ],
+          "peak_rss_mb": [
+            240.4,
+            240.5
+          ],
+          "reads_soft_path": [
+            null,
+            null
+          ],
+          "consensus_recovered_soft": [
+            null,
+            null
+          ],
+          "consensus_recovered_smart": [
+            9,
+            5
+          ],
+          "soft": [
+            null,
+            null
+          ]
+        },
+        "V5-soft-auto": {
+          "verified_success": 2,
+          "trials": 2,
+          "false_success": 0,
+          "groups_recovered_fraction": [
+            1.0,
+            1.0
+          ],
+          "seconds": [
+            62.539,
+            64.779
+          ],
+          "cpu_seconds": [
+            85.2,
+            87.2
+          ],
+          "peak_rss_mb": [
+            240.4,
+            240.5
+          ],
+          "reads_soft_path": [
+            1165,
+            1194
+          ],
+          "consensus_recovered_soft": [
+            5,
+            6
+          ],
+          "consensus_recovered_smart": [
+            3,
+            2
+          ],
+          "soft": [
+            {
+              "mode": "auto",
+              "attempted": 14019,
+              "mode_none": 12854,
+              "trials": 188659,
+              "candidates": 36968,
+              "false_accept_bound": 2.520542295534906e-06,
+              "entropy_bits_sum": 10243.63088134506,
+              "mode_erasure": 1128,
+              "recovered": 1165,
+              "accepted_rank_sum": 3211,
+              "mode_chase": 37,
+              "consensus_none": 15,
+              "consensus_erasure": 5
+            },
+            {
+              "mode": "auto",
+              "attempted": 14047,
+              "mode_none": 12853,
+              "trials": 189136,
+              "candidates": 37196,
+              "false_accept_bound": 2.5367791525832633e-06,
+              "entropy_bits_sum": 10200.14355486798,
+              "mode_erasure": 1151,
+              "recovered": 1194,
+              "accepted_rank_sum": 3362,
+              "mode_chase": 43,
+              "consensus_none": 21,
+              "consensus_erasure": 6
+            }
+          ]
+        }
+      }
+    },
+    "rows": [
+      {
+        "channel_name": "indel 0.5%+0.5% + sub 1%, informative 0.5, cov 1",
+        "channel": {
+          "insertion_rate": 0.005,
+          "deletion_rate": 0.005,
+          "substitution_rate": 0.01,
+          "quality_informative": 0.5,
+          "coverage": 1,
+          "coverage_model": "fixed",
+          "seed": 44000
+        },
+        "seed_index": 0,
+        "reads_sha256": "c71ac86a02502aa5e95da51367f4493561be6262f8b7f5f26495e9aec86b4aa0",
+        "V4": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 0.657,
+          "cpu_seconds": 2.38,
+          "peak_rss_mb": 77.8,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 1088,
+              "fast": 82,
+              "sync": 340,
+              "reverse_complement": 0,
+              "pending": 567,
+              "orphans": 291,
+              "unaligned": 0,
+              "consensus_attempted": 345,
+              "consensus_recovered": 0,
+              "addresses_snapped": 127
+            },
+            "groups_decoded": 0,
+            "groups_failed": 14,
+            "stage_seconds": {
+              "pass1_reads": 0.527776213013567,
+              "pass2_decode": 0.06148296999162994
+            }
+          },
+          "groups_recovered_fraction": 0.0
+        },
+        "V5-hard": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 5.995,
+          "cpu_seconds": 7.75,
+          "peak_rss_mb": 77.8,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 1088,
+              "fast": 82,
+              "sync": 340,
+              "reverse_complement": 0,
+              "pending": 280,
+              "orphans": 150,
+              "unaligned": 0,
+              "smart": 338,
+              "consensus_attempted": 152,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 3,
+              "addresses_snapped": 60
+            },
+            "groups_decoded": 1,
+            "groups_failed": 13,
+            "stage_seconds": {
+              "pass1_reads": 5.667646953021176,
+              "pass2_decode": 0.27658415300538763
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 1027,
+              "phase_T2": 119,
+              "trials": 206814,
+              "false_accept_bound": 1.1957883381048754e-07,
+              "windows_LOW": 1077,
+              "windows_MEDIUM": 430,
+              "recovered": 338,
+              "v4_erased_nt_recovered_reads": 23760,
+              "v5_erased_nt_recovered_reads": 9952,
+              "windows_localized_by_code": 420,
+              "phase_none": 689,
+              "windows_UNRECOVERABLE": 659,
+              "phase_T1": 182,
+              "windows_HIGH": 16,
+              "phase_T0": 37,
+              "consensus_groups": 8,
+              "consensus_route_read": 3,
+              "consensus_route_none": 5
+            }
+          },
+          "groups_recovered_fraction": 0.0714
+        },
+        "V5-soft-auto": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 6.916,
+          "cpu_seconds": 8.67,
+          "peak_rss_mb": 77.8,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 1088,
+              "fast": 82,
+              "sync": 340,
+              "reverse_complement": 0,
+              "pending": 258,
+              "orphans": 137,
+              "unaligned": 0,
+              "smart": 338,
+              "soft": 24,
+              "consensus_attempted": 138,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 2,
+              "consensus_recovered_soft": 0,
+              "addresses_snapped": 52
+            },
+            "groups_decoded": 1,
+            "groups_failed": 13,
+            "stage_seconds": {
+              "pass1_reads": 6.597170894994633,
+              "pass2_decode": 0.2667205329926219
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 1006,
+              "phase_T2": 119,
+              "trials": 206814,
+              "false_accept_bound": 1.1957883381048754e-07,
+              "windows_LOW": 1074,
+              "windows_MEDIUM": 429,
+              "recovered": 338,
+              "v4_erased_nt_recovered_reads": 23760,
+              "v5_erased_nt_recovered_reads": 9952,
+              "windows_localized_by_code": 420,
+              "phase_none": 668,
+              "windows_UNRECOVERABLE": 630,
+              "phase_T1": 182,
+              "windows_HIGH": 16,
+              "phase_T0": 37,
+              "consensus_groups": 6,
+              "consensus_route_read": 2,
+              "consensus_route_none": 4
+            },
+            "soft_decoding": {
+              "mode": "auto",
+              "attempted": 669,
+              "mode_none": 645,
+              "trials": 6375,
+              "candidates": 1540,
+              "false_accept_bound": 8.913534387013268e-08,
+              "entropy_bits_sum": 718.2478351994426,
+              "mode_erasure": 23,
+              "recovered": 24,
+              "accepted_rank_sum": 14,
+              "mode_chase": 1,
+              "consensus_none": 4
+            }
+          },
+          "groups_recovered_fraction": 0.0714
+        }
+      },
+      {
+        "channel_name": "indel 0.5%+0.5% + sub 1%, informative 0.5, cov 1",
+        "channel": {
+          "insertion_rate": 0.005,
+          "deletion_rate": 0.005,
+          "substitution_rate": 0.01,
+          "quality_informative": 0.5,
+          "coverage": 1,
+          "coverage_model": "fixed",
+          "seed": 44010
+        },
+        "seed_index": 1,
+        "reads_sha256": "63b2478525a2c042e8612b751ac67272caa29cf5614f8eda84f0deff45877ef5",
+        "V4": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 0.594,
+          "cpu_seconds": 2.33,
+          "peak_rss_mb": 78.9,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 1088,
+              "fast": 61,
+              "sync": 346,
+              "reverse_complement": 0,
+              "pending": 560,
+              "orphans": 322,
+              "unaligned": 0,
+              "consensus_attempted": 341,
+              "consensus_recovered": 0,
+              "addresses_snapped": 123
+            },
+            "groups_decoded": 0,
+            "groups_failed": 14,
+            "stage_seconds": {
+              "pass1_reads": 0.4865563750208821,
+              "pass2_decode": 0.05828038800973445
+            }
+          },
+          "groups_recovered_fraction": 0.0
+        },
+        "V5-hard": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 6.254,
+          "cpu_seconds": 8.03,
+          "peak_rss_mb": 78.9,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 1088,
+              "fast": 61,
+              "sync": 346,
+              "reverse_complement": 0,
+              "pending": 284,
+              "orphans": 168,
+              "unaligned": 0,
+              "smart": 328,
+              "consensus_attempted": 159,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 1,
+              "addresses_snapped": 55
+            },
+            "groups_decoded": 2,
+            "groups_failed": 12,
+            "stage_seconds": {
+              "pass1_reads": 5.972955889010336,
+              "pass2_decode": 0.23187209299067035
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 1066,
+              "phase_T1": 173,
+              "trials": 216706,
+              "false_accept_bound": 1.4991911508318692e-07,
+              "windows_MEDIUM": 436,
+              "recovered": 328,
+              "v4_erased_nt_recovered_reads": 23696,
+              "v5_erased_nt_recovered_reads": 10184,
+              "windows_localized_by_code": 415,
+              "phase_none": 738,
+              "windows_UNRECOVERABLE": 699,
+              "windows_LOW": 1162,
+              "phase_T2": 121,
+              "phase_T0": 34,
+              "windows_HIGH": 17,
+              "consensus_groups": 6,
+              "consensus_route_none": 5,
+              "consensus_route_read": 1
+            }
+          },
+          "groups_recovered_fraction": 0.1429
+        },
+        "V5-soft-auto": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 7.067,
+          "cpu_seconds": 8.81,
+          "peak_rss_mb": 78.9,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 1088,
+              "fast": 61,
+              "sync": 346,
+              "reverse_complement": 0,
+              "pending": 255,
+              "orphans": 147,
+              "unaligned": 0,
+              "smart": 328,
+              "soft": 37,
+              "consensus_attempted": 143,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 1,
+              "consensus_recovered_soft": 0,
+              "addresses_snapped": 50
+            },
+            "groups_decoded": 3,
+            "groups_failed": 11,
+            "stage_seconds": {
+              "pass1_reads": 6.772092002007412,
+              "pass2_decode": 0.24776427299366333
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 1038,
+              "phase_T1": 173,
+              "trials": 216705,
+              "false_accept_bound": 1.4991911508307138e-07,
+              "windows_MEDIUM": 434,
+              "recovered": 328,
+              "v4_erased_nt_recovered_reads": 23696,
+              "v5_erased_nt_recovered_reads": 10184,
+              "windows_localized_by_code": 415,
+              "phase_none": 710,
+              "windows_UNRECOVERABLE": 661,
+              "windows_LOW": 1162,
+              "phase_T2": 121,
+              "phase_T0": 34,
+              "windows_HIGH": 17,
+              "consensus_groups": 6,
+              "consensus_route_none": 5,
+              "consensus_route_read": 1
+            },
+            "soft_decoding": {
+              "mode": "auto",
+              "attempted": 711,
+              "mode_none": 674,
+              "trials": 7023,
+              "candidates": 1664,
+              "false_accept_bound": 1.004857286893153e-07,
+              "entropy_bits_sum": 742.6527486938752,
+              "mode_erasure": 34,
+              "recovered": 37,
+              "accepted_rank_sum": 67,
+              "mode_chase": 3,
+              "consensus_none": 5
+            }
+          },
+          "groups_recovered_fraction": 0.2143
+        }
+      },
+      {
+        "channel_name": "indel 0.5%+0.5% + sub 1%, informative 0.5, cov 2",
+        "channel": {
+          "insertion_rate": 0.005,
+          "deletion_rate": 0.005,
+          "substitution_rate": 0.01,
+          "quality_informative": 0.5,
+          "coverage": 2,
+          "coverage_model": "fixed",
+          "seed": 44000
+        },
+        "seed_index": 0,
+        "reads_sha256": "ae1866dc2b2c3fad05a2ea134795125402b7d9e22194fe05ff2de4ded22cfe6f",
+        "V4": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 0.726,
+          "cpu_seconds": 2.49,
+          "peak_rss_mb": 97.8,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 2176,
+              "fast": 152,
+              "sync": 690,
+              "reverse_complement": 0,
+              "pending": 1158,
+              "orphans": 599,
+              "unaligned": 0,
+              "consensus_attempted": 312,
+              "consensus_recovered": 46,
+              "addresses_snapped": 158
+            },
+            "groups_decoded": 1,
+            "groups_failed": 13,
+            "stage_seconds": {
+              "pass1_reads": 0.5390185499854852,
+              "pass2_decode": 0.1021173190092668
+            }
+          },
+          "groups_recovered_fraction": 0.0714
+        },
+        "V5-hard": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "seconds": 12.064,
+          "cpu_seconds": 13.83,
+          "peak_rss_mb": 97.8,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 2176,
+              "fast": 152,
+              "sync": 690,
+              "reverse_complement": 0,
+              "pending": 573,
+              "orphans": 295,
+              "unaligned": 0,
+              "smart": 678,
+              "consensus_attempted": 71,
+              "consensus_recovered": 2,
+              "consensus_recovered_smart": 7,
+              "addresses_snapped": 32
+            },
+            "groups_decoded": 14,
+            "groups_failed": 0,
+            "stage_seconds": {
+              "pass1_reads": 11.23688822099939,
+              "pass2_decode": 0.7336750669928733,
+              "verify": 0.0007763530011288822
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 2044,
+              "phase_T2": 249,
+              "trials": 421173,
+              "false_accept_bound": 2.405933165278968e-07,
+              "windows_MEDIUM": 857,
+              "windows_LOW": 2207,
+              "recovered": 678,
+              "v4_erased_nt_recovered_reads": 47384,
+              "v5_erased_nt_recovered_reads": 20096,
+              "windows_localized_by_code": 861,
+              "phase_none": 1366,
+              "windows_UNRECOVERABLE": 1295,
+              "phase_T1": 363,
+              "phase_T0": 66,
+              "windows_HIGH": 30,
+              "consensus_groups": 25,
+              "consensus_route_read": 7,
+              "consensus_route_none": 18
+            }
+          },
+          "groups_recovered_fraction": 1.0
+        },
+        "V5-soft-auto": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "seconds": 13.375,
+          "cpu_seconds": 15.1,
+          "peak_rss_mb": 97.8,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 2176,
+              "fast": 152,
+              "sync": 690,
+              "reverse_complement": 0,
+              "pending": 526,
+              "orphans": 263,
+              "unaligned": 0,
+              "smart": 678,
+              "soft": 54,
+              "consensus_attempted": 62,
+              "consensus_recovered": 2,
+              "consensus_recovered_smart": 4,
+              "consensus_recovered_soft": 5,
+              "addresses_snapped": 30
+            },
+            "groups_decoded": 14,
+            "groups_failed": 0,
+            "stage_seconds": {
+              "pass1_reads": 12.552560797979822,
+              "pass2_decode": 0.7413537990069017,
+              "verify": 0.0009257479978259653
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 2002,
+              "phase_T2": 249,
+              "trials": 421173,
+              "false_accept_bound": 2.405933165278968e-07,
+              "windows_MEDIUM": 856,
+              "windows_LOW": 2203,
+              "recovered": 678,
+              "v4_erased_nt_recovered_reads": 47384,
+              "v5_erased_nt_recovered_reads": 20096,
+              "windows_localized_by_code": 861,
+              "phase_none": 1324,
+              "windows_UNRECOVERABLE": 1240,
+              "phase_T1": 363,
+              "phase_T0": 66,
+              "windows_HIGH": 30,
+              "consensus_groups": 20,
+              "consensus_route_read": 4,
+              "consensus_route_none": 16
+            },
+            "soft_decoding": {
+              "mode": "auto",
+              "attempted": 1325,
+              "mode_none": 1271,
+              "trials": 12518,
+              "candidates": 3064,
+              "false_accept_bound": 1.7428451004792748e-07,
+              "entropy_bits_sum": 1405.331132403278,
+              "mode_erasure": 51,
+              "recovered": 54,
+              "accepted_rank_sum": 37,
+              "mode_chase": 3,
+              "consensus_erasure": 4,
+              "consensus_none": 11,
+              "consensus_chase": 1
+            }
+          },
+          "groups_recovered_fraction": 1.0
+        }
+      },
+      {
+        "channel_name": "indel 0.5%+0.5% + sub 1%, informative 0.5, cov 2",
+        "channel": {
+          "insertion_rate": 0.005,
+          "deletion_rate": 0.005,
+          "substitution_rate": 0.01,
+          "quality_informative": 0.5,
+          "coverage": 2,
+          "coverage_model": "fixed",
+          "seed": 44010
+        },
+        "seed_index": 1,
+        "reads_sha256": "d7721da0e3cf80f793f4e445eedc31830c0fcca149d9d8238e89e69cff277b1b",
+        "V4": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 0.687,
+          "cpu_seconds": 2.44,
+          "peak_rss_mb": 97.9,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 2176,
+              "fast": 135,
+              "sync": 695,
+              "reverse_complement": 0,
+              "pending": 1141,
+              "orphans": 627,
+              "unaligned": 0,
+              "consensus_attempted": 336,
+              "consensus_recovered": 40,
+              "addresses_snapped": 154
+            },
+            "groups_decoded": 1,
+            "groups_failed": 13,
+            "stage_seconds": {
+              "pass1_reads": 0.5351714489806909,
+              "pass2_decode": 0.07394091400783509
+            }
+          },
+          "groups_recovered_fraction": 0.0714
+        },
+        "V5-hard": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "seconds": 12.147,
+          "cpu_seconds": 13.9,
+          "peak_rss_mb": 97.9,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 2176,
+              "fast": 135,
+              "sync": 695,
+              "reverse_complement": 0,
+              "pending": 564,
+              "orphans": 320,
+              "unaligned": 0,
+              "smart": 670,
+              "consensus_attempted": 82,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 3,
+              "addresses_snapped": 30
+            },
+            "groups_decoded": 14,
+            "groups_failed": 0,
+            "stage_seconds": {
+              "pass1_reads": 11.457772460009437,
+              "pass2_decode": 0.6040721999888774,
+              "verify": 0.0008031089964788407
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 2081,
+              "phase_T1": 367,
+              "trials": 401277,
+              "false_accept_bound": 2.7131213409368774e-07,
+              "windows_MEDIUM": 883,
+              "windows_LOW": 2254,
+              "recovered": 670,
+              "v4_erased_nt_recovered_reads": 47328,
+              "v5_erased_nt_recovered_reads": 20436,
+              "windows_localized_by_code": 817,
+              "phase_none": 1411,
+              "windows_UNRECOVERABLE": 1306,
+              "phase_T2": 225,
+              "windows_HIGH": 29,
+              "phase_T0": 78,
+              "consensus_groups": 19,
+              "consensus_route_none": 16,
+              "consensus_route_read": 2,
+              "consensus_route_consensus": 1
+            }
+          },
+          "groups_recovered_fraction": 1.0
+        },
+        "V5-soft-auto": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "seconds": 13.28,
+          "cpu_seconds": 14.96,
+          "peak_rss_mb": 97.9,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 2176,
+              "fast": 135,
+              "sync": 695,
+              "reverse_complement": 0,
+              "pending": 502,
+              "orphans": 279,
+              "unaligned": 0,
+              "smart": 670,
+              "soft": 69,
+              "consensus_attempted": 69,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 3,
+              "consensus_recovered_soft": 3,
+              "addresses_snapped": 27
+            },
+            "groups_decoded": 14,
+            "groups_failed": 0,
+            "stage_seconds": {
+              "pass1_reads": 12.535506068001268,
+              "pass2_decode": 0.654410576011287,
+              "verify": 0.0007521819788962603
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 2025,
+              "phase_T1": 367,
+              "trials": 401275,
+              "false_accept_bound": 2.7131213409345666e-07,
+              "windows_MEDIUM": 882,
+              "windows_LOW": 2248,
+              "recovered": 670,
+              "v4_erased_nt_recovered_reads": 47328,
+              "v5_erased_nt_recovered_reads": 20436,
+              "windows_localized_by_code": 817,
+              "phase_none": 1355,
+              "windows_UNRECOVERABLE": 1229,
+              "phase_T2": 225,
+              "windows_HIGH": 29,
+              "phase_T0": 78,
+              "consensus_groups": 19,
+              "consensus_route_none": 16,
+              "consensus_route_read": 2,
+              "consensus_route_consensus": 1
+            },
+            "soft_decoding": {
+              "mode": "auto",
+              "attempted": 1358,
+              "mode_none": 1289,
+              "trials": 13234,
+              "candidates": 3212,
+              "false_accept_bound": 1.9342090302282856e-07,
+              "entropy_bits_sum": 1420.0309954415393,
+              "mode_erasure": 58,
+              "recovered": 69,
+              "accepted_rank_sum": 94,
+              "mode_chase": 11,
+              "consensus_chase": 1,
+              "consensus_none": 13,
+              "consensus_erasure": 2
+            }
+          },
+          "groups_recovered_fraction": 1.0
+        }
+      },
+      {
+        "channel_name": "indel 0.5%+0.5% + sub 1%, informative 0.5, cov 3",
+        "channel": {
+          "insertion_rate": 0.005,
+          "deletion_rate": 0.005,
+          "substitution_rate": 0.01,
+          "quality_informative": 0.5,
+          "coverage": 3,
+          "coverage_model": "fixed",
+          "seed": 44000
+        },
+        "seed_index": 0,
+        "reads_sha256": "2c4b4af56733bc4237f9311d0ec0a40ea8240684cba7c1a4002c7aa8cd83fb01",
+        "V4": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 0.791,
+          "cpu_seconds": 2.54,
+          "peak_rss_mb": 113.9,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 3264,
+              "fast": 210,
+              "sync": 1021,
+              "reverse_complement": 0,
+              "pending": 1762,
+              "orphans": 926,
+              "unaligned": 1,
+              "consensus_attempted": 262,
+              "consensus_recovered": 69,
+              "addresses_snapped": 169
+            },
+            "groups_decoded": 9,
+            "groups_failed": 5,
+            "stage_seconds": {
+              "pass1_reads": 0.6040780909825116,
+              "pass2_decode": 0.08022652400541119
+            }
+          },
+          "groups_recovered_fraction": 0.6429
+        },
+        "V5-hard": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "seconds": 18.039,
+          "cpu_seconds": 19.76,
+          "peak_rss_mb": 113.9,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 3264,
+              "fast": 210,
+              "sync": 1021,
+              "reverse_complement": 0,
+              "pending": 879,
+              "orphans": 480,
+              "unaligned": 1,
+              "smart": 1020,
+              "consensus_attempted": 42,
+              "consensus_recovered": 3,
+              "consensus_recovered_smart": 5,
+              "addresses_snapped": 91
+            },
+            "groups_decoded": 14,
+            "groups_failed": 0,
+            "stage_seconds": {
+              "pass1_reads": 16.746514308004407,
+              "pass2_decode": 1.183813095005462,
+              "verify": 0.0008775359892752022
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 3113,
+              "phase_T2": 344,
+              "trials": 624817,
+              "false_accept_bound": 3.7705027846639625e-07,
+              "windows_LOW": 3311,
+              "recovered": 1020,
+              "v4_erased_nt_recovered_reads": 71232,
+              "v5_erased_nt_recovered_reads": 30436,
+              "windows_localized_by_code": 1259,
+              "phase_none": 2093,
+              "windows_MEDIUM": 1344,
+              "windows_UNRECOVERABLE": 2011,
+              "phase_T1": 571,
+              "windows_HIGH": 36,
+              "phase_T0": 105,
+              "consensus_groups": 15,
+              "consensus_route_none": 10,
+              "consensus_route_read": 4,
+              "consensus_route_consensus": 1
+            }
+          },
+          "groups_recovered_fraction": 1.0
+        },
+        "V5-soft-auto": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "seconds": 21.045,
+          "cpu_seconds": 22.81,
+          "peak_rss_mb": 113.9,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 3264,
+              "fast": 210,
+              "sync": 1021,
+              "reverse_complement": 0,
+              "pending": 813,
+              "orphans": 441,
+              "unaligned": 1,
+              "smart": 1020,
+              "soft": 73,
+              "consensus_attempted": 33,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 1,
+              "consensus_recovered_soft": 0,
+              "addresses_snapped": 158
+            },
+            "groups_decoded": 14,
+            "groups_failed": 0,
+            "stage_seconds": {
+              "pass1_reads": 18.813902493013302,
+              "pass2_decode": 2.1094863940088544,
+              "verify": 0.0008616760023869574
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 3060,
+              "phase_T2": 344,
+              "trials": 624816,
+              "false_accept_bound": 3.7704445081922066e-07,
+              "windows_LOW": 3307,
+              "recovered": 1020,
+              "v4_erased_nt_recovered_reads": 71232,
+              "v5_erased_nt_recovered_reads": 30436,
+              "windows_localized_by_code": 1259,
+              "phase_none": 2040,
+              "windows_MEDIUM": 1343,
+              "windows_UNRECOVERABLE": 1936,
+              "phase_T1": 571,
+              "windows_HIGH": 36,
+              "phase_T0": 105,
+              "consensus_groups": 14,
+              "consensus_route_none": 13,
+              "consensus_route_read": 1
+            },
+            "soft_decoding": {
+              "mode": "auto",
+              "attempted": 2043,
+              "mode_none": 1970,
+              "trials": 19698,
+              "candidates": 4856,
+              "false_accept_bound": 2.7695877347255127e-07,
+              "entropy_bits_sum": 2152.3622657320448,
+              "mode_erasure": 65,
+              "recovered": 73,
+              "accepted_rank_sum": 68,
+              "mode_chase": 8,
+              "consensus_none": 13
+            }
+          },
+          "groups_recovered_fraction": 1.0
+        }
+      },
+      {
+        "channel_name": "indel 0.5%+0.5% + sub 1%, informative 0.5, cov 3",
+        "channel": {
+          "insertion_rate": 0.005,
+          "deletion_rate": 0.005,
+          "substitution_rate": 0.01,
+          "quality_informative": 0.5,
+          "coverage": 3,
+          "coverage_model": "fixed",
+          "seed": 44010
+        },
+        "seed_index": 1,
+        "reads_sha256": "910b931c7f496647dd78a5736f2e66d34f2acfa3f7cb2bf8d7b187869c473450",
+        "V4": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 0.827,
+          "cpu_seconds": 2.57,
+          "peak_rss_mb": 114.1,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 3264,
+              "fast": 182,
+              "sync": 1041,
+              "reverse_complement": 0,
+              "pending": 1734,
+              "orphans": 951,
+              "unaligned": 0,
+              "consensus_attempted": 264,
+              "consensus_recovered": 75,
+              "addresses_snapped": 149
+            },
+            "groups_decoded": 11,
+            "groups_failed": 3,
+            "stage_seconds": {
+              "pass1_reads": 0.6251026970276143,
+              "pass2_decode": 0.09081036999123171
+            }
+          },
+          "groups_recovered_fraction": 0.7857
+        },
+        "V5-hard": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "seconds": 16.87,
+          "cpu_seconds": 18.58,
+          "peak_rss_mb": 114.1,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 3264,
+              "fast": 182,
+              "sync": 1041,
+              "reverse_complement": 0,
+              "pending": 865,
+              "orphans": 510,
+              "unaligned": 0,
+              "smart": 993,
+              "consensus_attempted": 43,
+              "consensus_recovered": 5,
+              "consensus_recovered_smart": 0,
+              "addresses_snapped": 41
+            },
+            "groups_decoded": 14,
+            "groups_failed": 0,
+            "stage_seconds": {
+              "pass1_reads": 16.03541664799559,
+              "pass2_decode": 0.714732397987973,
+              "verify": 0.0007817280129529536
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 3138,
+              "phase_T1": 556,
+              "trials": 598975,
+              "false_accept_bound": 4.0006259965706093e-07,
+              "windows_LOW": 3288,
+              "recovered": 993,
+              "v4_erased_nt_recovered_reads": 69280,
+              "v5_erased_nt_recovered_reads": 29864,
+              "windows_localized_by_code": 1218,
+              "phase_none": 2145,
+              "windows_MEDIUM": 1383,
+              "windows_UNRECOVERABLE": 1987,
+              "phase_T2": 331,
+              "phase_T0": 106,
+              "windows_HIGH": 33,
+              "consensus_groups": 10,
+              "consensus_route_none": 10
+            }
+          },
+          "groups_recovered_fraction": 1.0
+        },
+        "V5-soft-auto": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "seconds": 19.935,
+          "cpu_seconds": 21.69,
+          "peak_rss_mb": 114.1,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 3264,
+              "fast": 182,
+              "sync": 1041,
+              "reverse_complement": 0,
+              "pending": 792,
+              "orphans": 446,
+              "unaligned": 0,
+              "smart": 993,
+              "soft": 97,
+              "consensus_attempted": 33,
+              "consensus_recovered": 5,
+              "consensus_recovered_smart": 0,
+              "consensus_recovered_soft": 1,
+              "addresses_snapped": 79
+            },
+            "groups_decoded": 14,
+            "groups_failed": 0,
+            "stage_seconds": {
+              "pass1_reads": 18.609173470002133,
+              "pass2_decode": 1.2141392100020312,
+              "verify": 0.000789376994362101
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 3061,
+              "phase_T1": 556,
+              "trials": 598975,
+              "false_accept_bound": 4.0006259965706093e-07,
+              "windows_LOW": 3279,
+              "recovered": 993,
+              "v4_erased_nt_recovered_reads": 69280,
+              "v5_erased_nt_recovered_reads": 29864,
+              "windows_localized_by_code": 1218,
+              "phase_none": 2068,
+              "windows_MEDIUM": 1381,
+              "windows_UNRECOVERABLE": 1887,
+              "phase_T2": 331,
+              "phase_T0": 106,
+              "windows_HIGH": 33,
+              "consensus_groups": 11,
+              "consensus_route_none": 11
+            },
+            "soft_decoding": {
+              "mode": "auto",
+              "attempted": 2071,
+              "mode_none": 1974,
+              "trials": 20375,
+              "candidates": 4808,
+              "false_accept_bound": 2.908938680315955e-07,
+              "entropy_bits_sum": 2162.3457709935897,
+              "mode_erasure": 89,
+              "recovered": 97,
+              "accepted_rank_sum": 119,
+              "mode_chase": 8,
+              "consensus_none": 10,
+              "consensus_erasure": 1
+            }
+          },
+          "groups_recovered_fraction": 1.0
+        }
+      },
+      {
+        "channel_name": "indel 0.5%+0.5% + sub 1%, informative 0.5, cov 5",
+        "channel": {
+          "insertion_rate": 0.005,
+          "deletion_rate": 0.005,
+          "substitution_rate": 0.01,
+          "quality_informative": 0.5,
+          "coverage": 5,
+          "coverage_model": "fixed",
+          "seed": 44000
+        },
+        "seed_index": 0,
+        "reads_sha256": "b31fbfe69d3349f621989fe37a0ca384f2177693b4703a0f7929d7dd3a6cc0ad",
+        "V4": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "seconds": 0.994,
+          "cpu_seconds": 2.75,
+          "peak_rss_mb": 151.3,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 5440,
+              "fast": 336,
+              "sync": 1709,
+              "reverse_complement": 0,
+              "pending": 2911,
+              "orphans": 1553,
+              "unaligned": 2,
+              "consensus_attempted": 137,
+              "consensus_recovered": 52,
+              "addresses_snapped": 122
+            },
+            "groups_decoded": 14,
+            "groups_failed": 0,
+            "stage_seconds": {
+              "pass1_reads": 0.7525254869833589,
+              "pass2_decode": 0.07191762598813511,
+              "verify": 0.0007645419973414391
+            }
+          },
+          "groups_recovered_fraction": 1.0
+        },
+        "V5-hard": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "seconds": 29.7,
+          "cpu_seconds": 31.46,
+          "peak_rss_mb": 151.3,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 5440,
+              "fast": 336,
+              "sync": 1709,
+              "reverse_complement": 0,
+              "pending": 1458,
+              "orphans": 807,
+              "unaligned": 2,
+              "smart": 1669,
+              "consensus_attempted": 32,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 3,
+              "addresses_snapped": 164
+            },
+            "groups_decoded": 14,
+            "groups_failed": 0,
+            "stage_seconds": {
+              "pass1_reads": 27.402108367998153,
+              "pass2_decode": 2.131595393002499,
+              "verify": 0.0007834539865143597
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 5250,
+              "phase_T2": 544,
+              "trials": 1028290,
+              "false_accept_bound": 6.387136011389933e-07,
+              "windows_LOW": 5602,
+              "recovered": 1669,
+              "v4_erased_nt_recovered_reads": 115400,
+              "v5_erased_nt_recovered_reads": 49460,
+              "windows_localized_by_code": 2038,
+              "phase_none": 3581,
+              "windows_UNRECOVERABLE": 3385,
+              "phase_T1": 950,
+              "windows_MEDIUM": 2168,
+              "windows_HIGH": 61,
+              "phase_T0": 175,
+              "consensus_groups": 6,
+              "consensus_route_read": 3,
+              "consensus_route_none": 3
+            }
+          },
+          "groups_recovered_fraction": 1.0
+        },
+        "V5-soft-auto": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "seconds": 31.872,
+          "cpu_seconds": 33.66,
+          "peak_rss_mb": 151.3,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 5440,
+              "fast": 336,
+              "sync": 1709,
+              "reverse_complement": 0,
+              "pending": 1334,
+              "orphans": 738,
+              "unaligned": 2,
+              "smart": 1669,
+              "soft": 146,
+              "consensus_attempted": 24,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 1,
+              "consensus_recovered_soft": 0,
+              "addresses_snapped": 59
+            },
+            "groups_decoded": 14,
+            "groups_failed": 0,
+            "stage_seconds": {
+              "pass1_reads": 30.935859615012305,
+              "pass2_decode": 0.7569180009886622,
+              "verify": 0.0007774450059514493
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 5136,
+              "phase_T2": 544,
+              "trials": 1028288,
+              "false_accept_bound": 6.387136011387621e-07,
+              "windows_LOW": 5595,
+              "recovered": 1669,
+              "v4_erased_nt_recovered_reads": 115400,
+              "v5_erased_nt_recovered_reads": 49460,
+              "windows_localized_by_code": 2038,
+              "phase_none": 3467,
+              "windows_UNRECOVERABLE": 3231,
+              "phase_T1": 950,
+              "windows_MEDIUM": 2163,
+              "windows_HIGH": 61,
+              "phase_T0": 175,
+              "consensus_groups": 1,
+              "consensus_route_read": 1
+            },
+            "soft_decoding": {
+              "mode": "auto",
+              "attempted": 3471,
+              "mode_none": 3325,
+              "trials": 33019,
+              "candidates": 8060,
+              "false_accept_bound": 4.766415812267834e-07,
+              "entropy_bits_sum": 3683.8167900086723,
+              "mode_erasure": 133,
+              "recovered": 146,
+              "accepted_rank_sum": 178,
+              "mode_chase": 13
+            }
+          },
+          "groups_recovered_fraction": 1.0
+        }
+      },
+      {
+        "channel_name": "indel 0.5%+0.5% + sub 1%, informative 0.5, cov 5",
+        "channel": {
+          "insertion_rate": 0.005,
+          "deletion_rate": 0.005,
+          "substitution_rate": 0.01,
+          "quality_informative": 0.5,
+          "coverage": 5,
+          "coverage_model": "fixed",
+          "seed": 44010
+        },
+        "seed_index": 1,
+        "reads_sha256": "70f0df7a748b4886e18bcbd8f42d5b972df0c74a38d55076041d2bc12fb62af7",
+        "V4": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "seconds": 1.042,
+          "cpu_seconds": 2.8,
+          "peak_rss_mb": 152.9,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 5440,
+              "fast": 309,
+              "sync": 1674,
+              "reverse_complement": 0,
+              "pending": 2949,
+              "orphans": 1611,
+              "unaligned": 2,
+              "consensus_attempted": 180,
+              "consensus_recovered": 64,
+              "addresses_snapped": 146
+            },
+            "groups_decoded": 14,
+            "groups_failed": 0,
+            "stage_seconds": {
+              "pass1_reads": 0.7846085700148251,
+              "pass2_decode": 0.08275403699371964,
+              "verify": 0.0007259420235641301
+            }
+          },
+          "groups_recovered_fraction": 1.0
+        },
+        "V5-hard": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "seconds": 29.635,
+          "cpu_seconds": 31.38,
+          "peak_rss_mb": 152.9,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 5440,
+              "fast": 309,
+              "sync": 1674,
+              "reverse_complement": 0,
+              "pending": 1497,
+              "orphans": 838,
+              "unaligned": 2,
+              "smart": 1667,
+              "consensus_attempted": 31,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 1,
+              "addresses_snapped": 171
+            },
+            "groups_decoded": 14,
+            "groups_failed": 0,
+            "stage_seconds": {
+              "pass1_reads": 27.452326281025307,
+              "pass2_decode": 2.0138658869836945,
+              "verify": 0.0007610649918206036
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 5345,
+              "phase_T1": 906,
+              "trials": 1046399,
+              "false_accept_bound": 6.854693179934161e-07,
+              "windows_LOW": 5668,
+              "windows_MEDIUM": 2268,
+              "recovered": 1667,
+              "v4_erased_nt_recovered_reads": 117936,
+              "v5_erased_nt_recovered_reads": 50236,
+              "windows_localized_by_code": 2068,
+              "phase_none": 3678,
+              "windows_UNRECOVERABLE": 3415,
+              "phase_T2": 581,
+              "phase_T0": 180,
+              "windows_HIGH": 61,
+              "consensus_groups": 5,
+              "consensus_route_none": 4,
+              "consensus_route_read": 1
+            }
+          },
+          "groups_recovered_fraction": 1.0
+        },
+        "V5-soft-auto": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "seconds": 35.297,
+          "cpu_seconds": 37.05,
+          "peak_rss_mb": 152.9,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 5440,
+              "fast": 309,
+              "sync": 1674,
+              "reverse_complement": 0,
+              "pending": 1351,
+              "orphans": 736,
+              "unaligned": 2,
+              "smart": 1667,
+              "soft": 176,
+              "consensus_attempted": 26,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 0,
+              "consensus_recovered_soft": 0,
+              "addresses_snapped": 164
+            },
+            "groups_decoded": 14,
+            "groups_failed": 0,
+            "stage_seconds": {
+              "pass1_reads": 33.101111034018686,
+              "pass2_decode": 2.0227297249948606,
+              "verify": 0.000793228013208136
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 5207,
+              "phase_T1": 906,
+              "trials": 1046395,
+              "false_accept_bound": 6.85469317992954e-07,
+              "windows_LOW": 5662,
+              "windows_MEDIUM": 2264,
+              "recovered": 1667,
+              "v4_erased_nt_recovered_reads": 117936,
+              "v5_erased_nt_recovered_reads": 50236,
+              "windows_localized_by_code": 2068,
+              "phase_none": 3540,
+              "windows_UNRECOVERABLE": 3231,
+              "phase_T2": 581,
+              "phase_T0": 180,
+              "windows_HIGH": 61,
+              "consensus_groups": 3,
+              "consensus_route_none": 3
+            },
+            "soft_decoding": {
+              "mode": "auto",
+              "attempted": 3543,
+              "mode_none": 3367,
+              "trials": 34366,
+              "candidates": 8304,
+              "false_accept_bound": 4.94958356934e-07,
+              "entropy_bits_sum": 3692.6118419632926,
+              "mode_erasure": 159,
+              "recovered": 176,
+              "accepted_rank_sum": 231,
+              "mode_chase": 17,
+              "consensus_none": 3
+            }
+          },
+          "groups_recovered_fraction": 1.0
+        }
+      },
+      {
+        "channel_name": "indel 0.5%+0.5% + sub 1%, informative 0.5, cov 10",
+        "channel": {
+          "insertion_rate": 0.005,
+          "deletion_rate": 0.005,
+          "substitution_rate": 0.01,
+          "quality_informative": 0.5,
+          "coverage": 10,
+          "coverage_model": "fixed",
+          "seed": 44000
+        },
+        "seed_index": 0,
+        "reads_sha256": "5ecc84aadbba3c78b319826d5d6bbb7c448e93a97f1e5509d82c6aa8d5eafeb1",
+        "V4": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "seconds": 1.407,
+          "cpu_seconds": 3.78,
+          "peak_rss_mb": 240.0,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 10880,
+              "fast": 659,
+              "sync": 3421,
+              "reverse_complement": 0,
+              "pending": 5899,
+              "orphans": 3072,
+              "unaligned": 6,
+              "consensus_attempted": 113,
+              "consensus_recovered": 0,
+              "addresses_snapped": 1105
+            },
+            "groups_decoded": 14,
+            "groups_failed": 0,
+            "stage_seconds": {
+              "pass1_reads": 1.025279847002821,
+              "pass2_decode": 0.07437324299826287,
+              "verify": 0.0007879720069468021
+            }
+          },
+          "groups_recovered_fraction": 1.0
+        },
+        "V5-hard": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "seconds": 39.846,
+          "cpu_seconds": 56.05,
+          "peak_rss_mb": 240.0,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 10880,
+              "fast": 659,
+              "sync": 3421,
+              "reverse_complement": 0,
+              "pending": 2937,
+              "orphans": 1600,
+              "unaligned": 6,
+              "smart": 3379,
+              "consensus_attempted": 63,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 0,
+              "addresses_snapped": 0
+            },
+            "groups_decoded": 14,
+            "groups_failed": 0,
+            "stage_seconds": {
+              "pass1_reads": 39.49929112801328,
+              "pass2_decode": 0.027817291003884748,
+              "verify": 0.0007701310096308589
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 10433,
+              "phase_T2": 1112,
+              "trials": 2035485,
+              "false_accept_bound": 1.2759855429193213e-06,
+              "windows_LOW": 10956,
+              "windows_MEDIUM": 4554,
+              "recovered": 3379,
+              "v4_erased_nt_recovered_reads": 235672,
+              "v5_erased_nt_recovered_reads": 100444,
+              "windows_localized_by_code": 4111,
+              "phase_none": 7054,
+              "windows_UNRECOVERABLE": 6699,
+              "phase_T1": 1887,
+              "windows_HIGH": 114,
+              "phase_T0": 380
+            }
+          },
+          "groups_recovered_fraction": 1.0
+        },
+        "V5-soft-auto": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "seconds": 45.829,
+          "cpu_seconds": 63.64,
+          "peak_rss_mb": 240.0,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 10880,
+              "fast": 659,
+              "sync": 3421,
+              "reverse_complement": 0,
+              "pending": 2672,
+              "orphans": 1433,
+              "unaligned": 6,
+              "smart": 3379,
+              "soft": 302,
+              "consensus_attempted": 55,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 0,
+              "consensus_recovered_soft": 0,
+              "addresses_snapped": 0
+            },
+            "groups_decoded": 14,
+            "groups_failed": 0,
+            "stage_seconds": {
+              "pass1_reads": 45.48329506997834,
+              "pass2_decode": 0.025219187984475866,
+              "verify": 0.0007425580115523189
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 10191,
+              "phase_T2": 1112,
+              "trials": 2035426,
+              "false_accept_bound": 1.2756531712357782e-06,
+              "windows_LOW": 10946,
+              "windows_MEDIUM": 4551,
+              "recovered": 3379,
+              "v4_erased_nt_recovered_reads": 235672,
+              "v5_erased_nt_recovered_reads": 100444,
+              "windows_localized_by_code": 4111,
+              "phase_none": 6812,
+              "windows_UNRECOVERABLE": 6382,
+              "phase_T1": 1887,
+              "windows_HIGH": 114,
+              "phase_T0": 380
+            },
+            "soft_decoding": {
+              "mode": "auto",
+              "attempted": 6821,
+              "mode_none": 6519,
+              "trials": 64844,
+              "candidates": 16036,
+              "false_accept_bound": 9.384175557823836e-07,
+              "entropy_bits_sum": 7151.924069643801,
+              "mode_erasure": 273,
+              "recovered": 302,
+              "accepted_rank_sum": 351,
+              "mode_chase": 29
+            }
+          },
+          "groups_recovered_fraction": 1.0
+        }
+      },
+      {
+        "channel_name": "indel 0.5%+0.5% + sub 1%, informative 0.5, cov 10",
+        "channel": {
+          "insertion_rate": 0.005,
+          "deletion_rate": 0.005,
+          "substitution_rate": 0.01,
+          "quality_informative": 0.5,
+          "coverage": 10,
+          "coverage_model": "fixed",
+          "seed": 44010
+        },
+        "seed_index": 1,
+        "reads_sha256": "dba5d148b007050494bd3f9e40d7eeb027000ba11d9bddb046923806f9eeed49",
+        "V4": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "seconds": 1.402,
+          "cpu_seconds": 3.81,
+          "peak_rss_mb": 240.4,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 10880,
+              "fast": 634,
+              "sync": 3420,
+              "reverse_complement": 0,
+              "pending": 5852,
+              "orphans": 3202,
+              "unaligned": 6,
+              "consensus_attempted": 115,
+              "consensus_recovered": 2,
+              "addresses_snapped": 1528
+            },
+            "groups_decoded": 14,
+            "groups_failed": 0,
+            "stage_seconds": {
+              "pass1_reads": 1.0080838270077948,
+              "pass2_decode": 0.07847127597779036,
+              "verify": 0.0007587969885207713
+            }
+          },
+          "groups_recovered_fraction": 1.0
+        },
+        "V5-hard": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "seconds": 40.482,
+          "cpu_seconds": 55.99,
+          "peak_rss_mb": 240.4,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 10880,
+              "fast": 634,
+              "sync": 3420,
+              "reverse_complement": 0,
+              "pending": 2898,
+              "orphans": 1659,
+              "unaligned": 6,
+              "smart": 3373,
+              "consensus_attempted": 50,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 0,
+              "addresses_snapped": 0
+            },
+            "groups_decoded": 14,
+            "groups_failed": 0,
+            "stage_seconds": {
+              "pass1_reads": 40.14315324698691,
+              "pass2_decode": 0.024701282993191853,
+              "verify": 0.000750481995055452
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 10464,
+              "phase_T1": 1862,
+              "trials": 2032524,
+              "false_accept_bound": 1.3474610804370564e-06,
+              "windows_MEDIUM": 4554,
+              "windows_LOW": 11167,
+              "recovered": 3373,
+              "v4_erased_nt_recovered_reads": 236752,
+              "v5_erased_nt_recovered_reads": 101152,
+              "windows_localized_by_code": 4178,
+              "phase_none": 7091,
+              "windows_UNRECOVERABLE": 6597,
+              "phase_T2": 1158,
+              "phase_T0": 353,
+              "windows_HIGH": 121
+            }
+          },
+          "groups_recovered_fraction": 1.0
+        },
+        "V5-soft-auto": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "seconds": 47.552,
+          "cpu_seconds": 64.78,
+          "peak_rss_mb": 240.4,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 10880,
+              "fast": 634,
+              "sync": 3420,
+              "reverse_complement": 0,
+              "pending": 2614,
+              "orphans": 1476,
+              "unaligned": 6,
+              "smart": 3373,
+              "soft": 328,
+              "consensus_attempted": 44,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 0,
+              "consensus_recovered_soft": 0,
+              "addresses_snapped": 0
+            },
+            "groups_decoded": 14,
+            "groups_failed": 0,
+            "stage_seconds": {
+              "pass1_reads": 47.206679625000106,
+              "pass2_decode": 0.026152009988436475,
+              "verify": 0.0008280449837911874
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 10208,
+              "phase_T1": 1862,
+              "trials": 2032470,
+              "false_accept_bound": 1.3474552527837574e-06,
+              "windows_MEDIUM": 4547,
+              "windows_LOW": 11147,
+              "recovered": 3373,
+              "v4_erased_nt_recovered_reads": 236752,
+              "v5_erased_nt_recovered_reads": 101152,
+              "windows_localized_by_code": 4178,
+              "phase_none": 6835,
+              "windows_UNRECOVERABLE": 6263,
+              "phase_T2": 1158,
+              "phase_T0": 353,
+              "windows_HIGH": 121
+            },
+            "soft_decoding": {
+              "mode": "auto",
+              "attempted": 6842,
+              "mode_none": 6514,
+              "trials": 66124,
+              "candidates": 16236,
+              "false_accept_bound": 9.494702192404014e-07,
+              "entropy_bits_sum": 7131.892813288687,
+              "mode_erasure": 290,
+              "recovered": 328,
+              "accepted_rank_sum": 386,
+              "mode_chase": 38
+            }
+          },
+          "groups_recovered_fraction": 1.0
+        }
+      },
+      {
+        "channel_name": "indel 0.25%+0.25% + sub 4%, informative 0.5, cov 1",
+        "channel": {
+          "insertion_rate": 0.0025,
+          "deletion_rate": 0.0025,
+          "substitution_rate": 0.04,
+          "quality_informative": 0.5,
+          "coverage": 1,
+          "coverage_model": "fixed",
+          "seed": 44000
+        },
+        "seed_index": 0,
+        "reads_sha256": "ebad617785c9de87cb228c0da4ee787cda39fa3ebc459528cd9f902cbc8ec93f",
+        "V4": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 0.555,
+          "cpu_seconds": 2.3,
+          "peak_rss_mb": 240.4,
+          "groups": null,
+          "report": {
+            "error": "VNXDecodeError: no superblock could be decoded (too few superblock strands survived, or the layout is wrong)"
+          },
+          "groups_recovered_fraction": null
+        },
+        "V5-hard": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 6.648,
+          "cpu_seconds": 8.42,
+          "peak_rss_mb": 240.4,
+          "groups": null,
+          "report": {
+            "error": "VNXDecodeError: no superblock could be decoded (too few superblock strands survived, or the layout is wrong)"
+          },
+          "groups_recovered_fraction": null
+        },
+        "V5-soft-auto": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 8.464,
+          "cpu_seconds": 10.13,
+          "peak_rss_mb": 240.4,
+          "groups": null,
+          "report": {
+            "error": "VNXDecodeError: no superblock could be decoded (too few superblock strands survived, or the layout is wrong)"
+          },
+          "groups_recovered_fraction": null
+        }
+      },
+      {
+        "channel_name": "indel 0.25%+0.25% + sub 4%, informative 0.5, cov 1",
+        "channel": {
+          "insertion_rate": 0.0025,
+          "deletion_rate": 0.0025,
+          "substitution_rate": 0.04,
+          "quality_informative": 0.5,
+          "coverage": 1,
+          "coverage_model": "fixed",
+          "seed": 44010
+        },
+        "seed_index": 1,
+        "reads_sha256": "3f8da23394be7d668026690f4109fdc2664f407cff31ceb3e14c2ae6ac3b8a58",
+        "V4": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 0.53,
+          "cpu_seconds": 2.28,
+          "peak_rss_mb": 240.4,
+          "groups": null,
+          "report": {
+            "error": "VNXDecodeError: no superblock could be decoded (too few superblock strands survived, or the layout is wrong)"
+          },
+          "groups_recovered_fraction": null
+        },
+        "V5-hard": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 6.791,
+          "cpu_seconds": 8.54,
+          "peak_rss_mb": 240.4,
+          "groups": null,
+          "report": {
+            "error": "VNXDecodeError: no superblock could be decoded (too few superblock strands survived, or the layout is wrong)"
+          },
+          "groups_recovered_fraction": null
+        },
+        "V5-soft-auto": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 9.356,
+          "cpu_seconds": 11.11,
+          "peak_rss_mb": 240.4,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 1088,
+              "fast": 65,
+              "sync": 28,
+              "reverse_complement": 0,
+              "pending": 590,
+              "orphans": 240,
+              "unaligned": 0,
+              "smart": 70,
+              "soft": 120,
+              "consensus_attempted": 265,
+              "consensus_recovered": 0,
+              "consensus_recovered_smart": 0,
+              "consensus_recovered_soft": 0,
+              "addresses_snapped": 137
+            },
+            "groups_decoded": 0,
+            "groups_failed": 14,
+            "stage_seconds": {
+              "pass1_reads": 8.72813521901844,
+              "pass2_decode": 0.5677404089947231
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 1460,
+              "phase_none": 1390,
+              "trials": 253218,
+              "false_accept_bound": 4.870177774051354e-08,
+              "windows_LOW": 860,
+              "windows_MEDIUM": 400,
+              "windows_UNRECOVERABLE": 819,
+              "phase_T2": 23,
+              "recovered": 70,
+              "v4_erased_nt_recovered_reads": 3304,
+              "v5_erased_nt_recovered_reads": 564,
+              "windows_localized_by_code": 88,
+              "phase_T1": 42,
+              "windows_HIGH": 8,
+              "phase_T0": 5,
+              "consensus_groups": 14,
+              "consensus_route_none": 14
+            },
+            "soft_decoding": {
+              "mode": "auto",
+              "attempted": 1431,
+              "mode_none": 1311,
+              "trials": 18973,
+              "candidates": 3840,
+              "false_accept_bound": 2.589118412916482e-07,
+              "entropy_bits_sum": 1044.082731443587,
+              "mode_erasure": 116,
+              "recovered": 120,
+              "accepted_rank_sum": 321,
+              "mode_chase": 4,
+              "consensus_none": 14
+            }
+          },
+          "groups_recovered_fraction": 0.0
+        }
+      },
+      {
+        "channel_name": "indel 0.25%+0.25% + sub 4%, informative 0.5, cov 2",
+        "channel": {
+          "insertion_rate": 0.0025,
+          "deletion_rate": 0.0025,
+          "substitution_rate": 0.04,
+          "quality_informative": 0.5,
+          "coverage": 2,
+          "coverage_model": "fixed",
+          "seed": 44000
+        },
+        "seed_index": 0,
+        "reads_sha256": "e7d57744c6b5e5532b42b41b21079246168a81c6f58153f05ed90c9bd80647df",
+        "V4": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 0.673,
+          "cpu_seconds": 2.38,
+          "peak_rss_mb": 240.4,
+          "groups": null,
+          "report": {
+            "error": "VNXDecodeError: no superblock could be decoded (too few superblock strands survived, or the layout is wrong)"
+          },
+          "groups_recovered_fraction": null
+        },
+        "V5-hard": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 13.092,
+          "cpu_seconds": 14.86,
+          "peak_rss_mb": 240.4,
+          "groups": null,
+          "report": {
+            "error": "VNXDecodeError: no superblock could be decoded (too few superblock strands survived, or the layout is wrong)"
+          },
+          "groups_recovered_fraction": null
+        },
+        "V5-soft-auto": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 18.577,
+          "cpu_seconds": 20.34,
+          "peak_rss_mb": 240.4,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 2176,
+              "fast": 122,
+              "sync": 44,
+              "reverse_complement": 0,
+              "pending": 1169,
+              "orphans": 428,
+              "unaligned": 0,
+              "smart": 197,
+              "soft": 250,
+              "consensus_attempted": 346,
+              "consensus_recovered": 9,
+              "consensus_recovered_smart": 3,
+              "consensus_recovered_soft": 24,
+              "addresses_snapped": 247
+            },
+            "groups_decoded": 1,
+            "groups_failed": 13,
+            "stage_seconds": {
+              "pass1_reads": 16.47995537298266,
+              "pass2_decode": 1.996307714987779
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 2912,
+              "phase_none": 2715,
+              "trials": 505462,
+              "false_accept_bound": 9.243340804704862e-08,
+              "windows_LOW": 1747,
+              "windows_UNRECOVERABLE": 1585,
+              "windows_MEDIUM": 764,
+              "phase_T2": 61,
+              "recovered": 197,
+              "v4_erased_nt_recovered_reads": 8864,
+              "v5_erased_nt_recovered_reads": 1228,
+              "windows_localized_by_code": 249,
+              "phase_T1": 127,
+              "phase_T0": 9,
+              "windows_HIGH": 18,
+              "consensus_groups": 60,
+              "consensus_route_none": 57,
+              "consensus_route_read": 2,
+              "consensus_route_consensus": 1
+            },
+            "soft_decoding": {
+              "mode": "auto",
+              "attempted": 2798,
+              "mode_none": 2548,
+              "trials": 37321,
+              "candidates": 7208,
+              "false_accept_bound": 5.071341305718889e-07,
+              "entropy_bits_sum": 2067.2378138181266,
+              "mode_erasure": 241,
+              "recovered": 250,
+              "accepted_rank_sum": 743,
+              "mode_chase": 9,
+              "consensus_none": 33,
+              "consensus_erasure": 22,
+              "consensus_chase": 2
+            }
+          },
+          "groups_recovered_fraction": 0.0714
+        }
+      },
+      {
+        "channel_name": "indel 0.25%+0.25% + sub 4%, informative 0.5, cov 2",
+        "channel": {
+          "insertion_rate": 0.0025,
+          "deletion_rate": 0.0025,
+          "substitution_rate": 0.04,
+          "quality_informative": 0.5,
+          "coverage": 2,
+          "coverage_model": "fixed",
+          "seed": 44010
+        },
+        "seed_index": 1,
+        "reads_sha256": "235ac07a625bbc7c3fef71491774c31bbc42d9cbd8003f7e691694e719186c49",
+        "V4": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 0.695,
+          "cpu_seconds": 2.36,
+          "peak_rss_mb": 240.4,
+          "groups": null,
+          "report": {
+            "error": "VNXDecodeError: no superblock could be decoded (too few superblock strands survived, or the layout is wrong)"
+          },
+          "groups_recovered_fraction": null
+        },
+        "V5-hard": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 16.139,
+          "cpu_seconds": 17.9,
+          "peak_rss_mb": 240.4,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 2176,
+              "fast": 123,
+              "sync": 43,
+              "reverse_complement": 0,
+              "pending": 1359,
+              "orphans": 472,
+              "unaligned": 0,
+              "smart": 178,
+              "consensus_attempted": 467,
+              "consensus_recovered": 6,
+              "consensus_recovered_smart": 4,
+              "addresses_snapped": 296
+            },
+            "groups_decoded": 0,
+            "groups_failed": 14,
+            "stage_seconds": {
+              "pass1_reads": 13.365985715005081,
+              "pass2_decode": 2.6767941839934792
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 2942,
+              "phase_none": 2764,
+              "trials": 509794,
+              "false_accept_bound": 8.469955031123255e-08,
+              "windows_LOW": 1724,
+              "windows_UNRECOVERABLE": 1641,
+              "phase_T2": 47,
+              "windows_MEDIUM": 783,
+              "recovered": 178,
+              "v4_erased_nt_recovered_reads": 7880,
+              "v5_erased_nt_recovered_reads": 1448,
+              "windows_localized_by_code": 207,
+              "phase_T1": 113,
+              "windows_HIGH": 17,
+              "phase_T0": 18,
+              "consensus_groups": 96,
+              "consensus_route_none": 92,
+              "consensus_route_read": 2,
+              "consensus_route_consensus": 2
+            }
+          },
+          "groups_recovered_fraction": 0.0
+        },
+        "V5-soft-auto": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 19.421,
+          "cpu_seconds": 21.2,
+          "peak_rss_mb": 240.4,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 2176,
+              "fast": 123,
+              "sync": 43,
+              "reverse_complement": 0,
+              "pending": 1176,
+              "orphans": 451,
+              "unaligned": 0,
+              "smart": 178,
+              "soft": 244,
+              "consensus_attempted": 342,
+              "consensus_recovered": 3,
+              "consensus_recovered_smart": 1,
+              "consensus_recovered_soft": 28,
+              "addresses_snapped": 215
+            },
+            "groups_decoded": 1,
+            "groups_failed": 13,
+            "stage_seconds": {
+              "pass1_reads": 17.11458938199212,
+              "pass2_decode": 2.202452416997403
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 2910,
+              "phase_none": 2732,
+              "trials": 509794,
+              "false_accept_bound": 8.469955031123255e-08,
+              "windows_LOW": 1724,
+              "windows_UNRECOVERABLE": 1601,
+              "phase_T2": 47,
+              "windows_MEDIUM": 782,
+              "recovered": 178,
+              "v4_erased_nt_recovered_reads": 7880,
+              "v5_erased_nt_recovered_reads": 1448,
+              "windows_localized_by_code": 207,
+              "phase_T1": 113,
+              "windows_HIGH": 17,
+              "phase_T0": 18,
+              "consensus_groups": 64,
+              "consensus_route_none": 63,
+              "consensus_route_read": 1
+            },
+            "soft_decoding": {
+              "mode": "auto",
+              "attempted": 2819,
+              "mode_none": 2575,
+              "trials": 37635,
+              "candidates": 7324,
+              "false_accept_bound": 5.044445358773373e-07,
+              "entropy_bits_sum": 2075.727399517944,
+              "mode_erasure": 243,
+              "recovered": 244,
+              "accepted_rank_sum": 606,
+              "mode_chase": 1,
+              "consensus_none": 35,
+              "consensus_erasure": 26,
+              "consensus_chase": 2
+            }
+          },
+          "groups_recovered_fraction": 0.0714
+        }
+      },
+      {
+        "channel_name": "indel 0.25%+0.25% + sub 4%, informative 0.5, cov 3",
+        "channel": {
+          "insertion_rate": 0.0025,
+          "deletion_rate": 0.0025,
+          "substitution_rate": 0.04,
+          "quality_informative": 0.5,
+          "coverage": 3,
+          "coverage_model": "fixed",
+          "seed": 44000
+        },
+        "seed_index": 0,
+        "reads_sha256": "8b90a220b9f208de3a0288865fb4d28cec03f5e4862a5d10a986996e1fe2e919",
+        "V4": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 0.762,
+          "cpu_seconds": 2.44,
+          "peak_rss_mb": 240.4,
+          "groups": null,
+          "report": {
+            "error": "VNXDecodeError: no superblock could be decoded (too few superblock strands survived, or the layout is wrong)"
+          },
+          "groups_recovered_fraction": null
+        },
+        "V5-hard": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 23.455,
+          "cpu_seconds": 25.21,
+          "peak_rss_mb": 240.4,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 3264,
+              "fast": 180,
+              "sync": 67,
+              "reverse_complement": 0,
+              "pending": 2065,
+              "orphans": 685,
+              "unaligned": 0,
+              "smart": 292,
+              "consensus_attempted": 484,
+              "consensus_recovered": 31,
+              "consensus_recovered_smart": 5,
+              "addresses_snapped": 399
+            },
+            "groups_decoded": 0,
+            "groups_failed": 14,
+            "stage_seconds": {
+              "pass1_reads": 19.20222962499247,
+              "pass2_decode": 4.119508195028175
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 4428,
+              "phase_none": 4136,
+              "trials": 726111,
+              "false_accept_bound": 1.403420809685137e-07,
+              "windows_MEDIUM": 1143,
+              "windows_UNRECOVERABLE": 2489,
+              "windows_LOW": 2598,
+              "phase_T2": 89,
+              "recovered": 292,
+              "v4_erased_nt_recovered_reads": 12520,
+              "v5_erased_nt_recovered_reads": 1884,
+              "windows_localized_by_code": 369,
+              "phase_T1": 191,
+              "phase_T0": 12,
+              "windows_HIGH": 19,
+              "consensus_groups": 155,
+              "consensus_route_none": 150,
+              "consensus_route_read": 4,
+              "consensus_route_consensus": 1
+            }
+          },
+          "groups_recovered_fraction": 0.0
+        },
+        "V5-soft-auto": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 27.917,
+          "cpu_seconds": 29.66,
+          "peak_rss_mb": 240.4,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 3264,
+              "fast": 180,
+              "sync": 67,
+              "reverse_complement": 0,
+              "pending": 1799,
+              "orphans": 662,
+              "unaligned": 0,
+              "smart": 292,
+              "soft": 351,
+              "consensus_attempted": 315,
+              "consensus_recovered": 18,
+              "consensus_recovered_smart": 3,
+              "consensus_recovered_soft": 40,
+              "addresses_snapped": 244
+            },
+            "groups_decoded": 1,
+            "groups_failed": 13,
+            "stage_seconds": {
+              "pass1_reads": 24.73507243799395,
+              "pass2_decode": 3.043071457010228
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 4376,
+              "phase_none": 4084,
+              "trials": 726111,
+              "false_accept_bound": 1.403420809685137e-07,
+              "windows_MEDIUM": 1141,
+              "windows_UNRECOVERABLE": 2419,
+              "windows_LOW": 2596,
+              "phase_T2": 89,
+              "recovered": 292,
+              "v4_erased_nt_recovered_reads": 12520,
+              "v5_erased_nt_recovered_reads": 1884,
+              "windows_localized_by_code": 369,
+              "phase_T1": 191,
+              "phase_T0": 12,
+              "windows_HIGH": 19,
+              "consensus_groups": 92,
+              "consensus_route_none": 89,
+              "consensus_route_read": 3
+            },
+            "soft_decoding": {
+              "mode": "auto",
+              "attempted": 4216,
+              "mode_none": 3865,
+              "trials": 56763,
+              "candidates": 11052,
+              "false_accept_bound": 7.615661407254585e-07,
+              "entropy_bits_sum": 3106.479719266418,
+              "mode_erasure": 333,
+              "recovered": 351,
+              "accepted_rank_sum": 1023,
+              "mode_chase": 18,
+              "consensus_erasure": 35,
+              "consensus_none": 49,
+              "consensus_chase": 5
+            }
+          },
+          "groups_recovered_fraction": 0.0714
+        }
+      },
+      {
+        "channel_name": "indel 0.25%+0.25% + sub 4%, informative 0.5, cov 3",
+        "channel": {
+          "insertion_rate": 0.0025,
+          "deletion_rate": 0.0025,
+          "substitution_rate": 0.04,
+          "quality_informative": 0.5,
+          "coverage": 3,
+          "coverage_model": "fixed",
+          "seed": 44010
+        },
+        "seed_index": 1,
+        "reads_sha256": "e820d74bd28363d18753a6c858c2df5242c7995121f9fbf7d0a86bc275d424f6",
+        "V4": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 0.771,
+          "cpu_seconds": 2.56,
+          "peak_rss_mb": 240.4,
+          "groups": null,
+          "report": {
+            "error": "VNXDecodeError: no superblock could be decoded (too few superblock strands survived, or the layout is wrong)"
+          },
+          "groups_recovered_fraction": null
+        },
+        "V5-hard": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 23.592,
+          "cpu_seconds": 25.34,
+          "peak_rss_mb": 240.4,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 3264,
+              "fast": 179,
+              "sync": 65,
+              "reverse_complement": 0,
+              "pending": 2025,
+              "orphans": 677,
+              "unaligned": 0,
+              "smart": 276,
+              "consensus_attempted": 535,
+              "consensus_recovered": 14,
+              "consensus_recovered_smart": 2,
+              "addresses_snapped": 397
+            },
+            "groups_decoded": 0,
+            "groups_failed": 14,
+            "stage_seconds": {
+              "pass1_reads": 19.40777311901911,
+              "pass2_decode": 4.045964292978169
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 4430,
+              "phase_none": 4154,
+              "trials": 757950,
+              "false_accept_bound": 1.357145451653274e-07,
+              "windows_LOW": 2537,
+              "windows_MEDIUM": 1201,
+              "windows_UNRECOVERABLE": 2407,
+              "phase_T2": 77,
+              "recovered": 276,
+              "v4_erased_nt_recovered_reads": 12264,
+              "v5_erased_nt_recovered_reads": 1984,
+              "windows_localized_by_code": 333,
+              "phase_T1": 179,
+              "windows_HIGH": 35,
+              "phase_T0": 20,
+              "consensus_groups": 154,
+              "consensus_route_none": 152,
+              "consensus_route_read": 1,
+              "consensus_route_consensus": 1
+            }
+          },
+          "groups_recovered_fraction": 0.0
+        },
+        "V5-soft-auto": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 28.143,
+          "cpu_seconds": 29.87,
+          "peak_rss_mb": 240.4,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 3264,
+              "fast": 179,
+              "sync": 65,
+              "reverse_complement": 0,
+              "pending": 1757,
+              "orphans": 649,
+              "unaligned": 0,
+              "smart": 276,
+              "soft": 352,
+              "consensus_attempted": 346,
+              "consensus_recovered": 8,
+              "consensus_recovered_smart": 1,
+              "consensus_recovered_soft": 37,
+              "addresses_snapped": 255
+            },
+            "groups_decoded": 1,
+            "groups_failed": 13,
+            "stage_seconds": {
+              "pass1_reads": 24.74411859398242,
+              "pass2_decode": 3.2664242520113476
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 4379,
+              "phase_none": 4103,
+              "trials": 757949,
+              "false_accept_bound": 1.3571454516521186e-07,
+              "windows_LOW": 2534,
+              "windows_MEDIUM": 1198,
+              "windows_UNRECOVERABLE": 2342,
+              "phase_T2": 77,
+              "recovered": 276,
+              "v4_erased_nt_recovered_reads": 12264,
+              "v5_erased_nt_recovered_reads": 1984,
+              "windows_localized_by_code": 333,
+              "phase_T1": 179,
+              "windows_HIGH": 35,
+              "phase_T0": 20,
+              "consensus_groups": 96,
+              "consensus_route_none": 95,
+              "consensus_route_read": 1
+            },
+            "soft_decoding": {
+              "mode": "auto",
+              "attempted": 4226,
+              "mode_none": 3874,
+              "trials": 57236,
+              "candidates": 11108,
+              "false_accept_bound": 7.606827180877153e-07,
+              "entropy_bits_sum": 3080.9229170301887,
+              "mode_erasure": 342,
+              "recovered": 352,
+              "accepted_rank_sum": 936,
+              "mode_chase": 10,
+              "consensus_none": 58,
+              "consensus_erasure": 34,
+              "consensus_chase": 3
+            }
+          },
+          "groups_recovered_fraction": 0.0714
+        }
+      },
+      {
+        "channel_name": "indel 0.25%+0.25% + sub 4%, informative 0.5, cov 5",
+        "channel": {
+          "insertion_rate": 0.0025,
+          "deletion_rate": 0.0025,
+          "substitution_rate": 0.04,
+          "quality_informative": 0.5,
+          "coverage": 5,
+          "coverage_model": "fixed",
+          "seed": 44000
+        },
+        "seed_index": 0,
+        "reads_sha256": "af60d623e2e9c7241d127d4bbd219a2672df4a09c896e94e4d29ae267dd4af33",
+        "V4": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 0.981,
+          "cpu_seconds": 2.74,
+          "peak_rss_mb": 240.4,
+          "groups": null,
+          "report": {
+            "error": "VNXDecodeError: no superblock could be decoded (too few superblock strands survived, or the layout is wrong)"
+          },
+          "groups_recovered_fraction": null
+        },
+        "V5-hard": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 36.283,
+          "cpu_seconds": 38.05,
+          "peak_rss_mb": 240.4,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 5440,
+              "fast": 291,
+              "sync": 120,
+              "reverse_complement": 0,
+              "pending": 3448,
+              "orphans": 1137,
+              "unaligned": 0,
+              "smart": 470,
+              "consensus_attempted": 485,
+              "consensus_recovered": 72,
+              "consensus_recovered_smart": 10,
+              "addresses_snapped": 503
+            },
+            "groups_decoded": 1,
+            "groups_failed": 13,
+            "stage_seconds": {
+              "pass1_reads": 30.877568186988356,
+              "pass2_decode": 5.177134901023237
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 7381,
+              "phase_none": 6911,
+              "trials": 1231129,
+              "false_accept_bound": 2.114242045228193e-07,
+              "windows_LOW": 4296,
+              "windows_UNRECOVERABLE": 4115,
+              "windows_MEDIUM": 1880,
+              "phase_T2": 140,
+              "recovered": 470,
+              "v4_erased_nt_recovered_reads": 21048,
+              "v5_erased_nt_recovered_reads": 3268,
+              "windows_localized_by_code": 589,
+              "phase_T1": 309,
+              "windows_HIGH": 50,
+              "phase_T0": 21,
+              "consensus_groups": 206,
+              "consensus_route_none": 196,
+              "consensus_route_read": 4,
+              "consensus_route_consensus": 6
+            }
+          },
+          "groups_recovered_fraction": 0.0714
+        },
+        "V5-soft-auto": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "seconds": 44.709,
+          "cpu_seconds": 46.43,
+          "peak_rss_mb": 240.4,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 5440,
+              "fast": 291,
+              "sync": 120,
+              "reverse_complement": 0,
+              "pending": 2993,
+              "orphans": 1105,
+              "unaligned": 0,
+              "smart": 470,
+              "soft": 582,
+              "consensus_attempted": 280,
+              "consensus_recovered": 32,
+              "consensus_recovered_smart": 5,
+              "consensus_recovered_soft": 39,
+              "addresses_snapped": 246
+            },
+            "groups_decoded": 14,
+            "groups_failed": 0,
+            "stage_seconds": {
+              "pass1_reads": 41.3570563379908,
+              "pass2_decode": 3.137808314000722,
+              "verify": 0.0008675570134073496
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 7300,
+              "phase_none": 6830,
+              "trials": 1231077,
+              "false_accept_bound": 2.1141837687466084e-07,
+              "windows_LOW": 4290,
+              "windows_UNRECOVERABLE": 4002,
+              "windows_MEDIUM": 1878,
+              "phase_T2": 140,
+              "recovered": 470,
+              "v4_erased_nt_recovered_reads": 21048,
+              "v5_erased_nt_recovered_reads": 3268,
+              "windows_localized_by_code": 589,
+              "phase_T1": 309,
+              "windows_HIGH": 50,
+              "phase_T0": 21,
+              "consensus_groups": 96,
+              "consensus_route_none": 91,
+              "consensus_route_read": 3,
+              "consensus_route_consensus": 2
+            },
+            "soft_decoding": {
+              "mode": "auto",
+              "attempted": 7055,
+              "mode_none": 6473,
+              "trials": 93815,
+              "candidates": 18516,
+              "false_accept_bound": 1.2582611773510648e-06,
+              "entropy_bits_sum": 5194.515345204087,
+              "mode_erasure": 566,
+              "recovered": 582,
+              "accepted_rank_sum": 1636,
+              "mode_chase": 16,
+              "consensus_erasure": 38,
+              "consensus_none": 52,
+              "consensus_chase": 1
+            }
+          },
+          "groups_recovered_fraction": 1.0
+        }
+      },
+      {
+        "channel_name": "indel 0.25%+0.25% + sub 4%, informative 0.5, cov 5",
+        "channel": {
+          "insertion_rate": 0.0025,
+          "deletion_rate": 0.0025,
+          "substitution_rate": 0.04,
+          "quality_informative": 0.5,
+          "coverage": 5,
+          "coverage_model": "fixed",
+          "seed": 44010
+        },
+        "seed_index": 1,
+        "reads_sha256": "71c467bc66bebfd91dc1dfa3a23b4590395747e902e46d37221ebb94ac5e1c89",
+        "V4": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 1.236,
+          "cpu_seconds": 3.02,
+          "peak_rss_mb": 240.4,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 5440,
+              "fast": 296,
+              "sync": 115,
+              "reverse_complement": 0,
+              "pending": 3727,
+              "orphans": 1277,
+              "unaligned": 1,
+              "consensus_attempted": 741,
+              "consensus_recovered": 132,
+              "addresses_snapped": 831
+            },
+            "groups_decoded": 0,
+            "groups_failed": 14,
+            "stage_seconds": {
+              "pass1_reads": 0.8464490080077667,
+              "pass2_decode": 0.1671284210169688
+            }
+          },
+          "groups_recovered_fraction": 0.0
+        },
+        "V5-hard": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 37.695,
+          "cpu_seconds": 39.45,
+          "peak_rss_mb": 240.4,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 5440,
+              "fast": 296,
+              "sync": 115,
+              "reverse_complement": 0,
+              "pending": 3350,
+              "orphans": 1155,
+              "unaligned": 1,
+              "smart": 449,
+              "consensus_attempted": 497,
+              "consensus_recovered": 64,
+              "consensus_recovered_smart": 14,
+              "addresses_snapped": 511
+            },
+            "groups_decoded": 1,
+            "groups_failed": 13,
+            "stage_seconds": {
+              "pass1_reads": 31.501546159997815,
+              "pass2_decode": 5.9576639409933705
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 7368,
+              "phase_none": 6919,
+              "trials": 1265554,
+              "false_accept_bound": 2.3017938100529384e-07,
+              "windows_LOW": 4292,
+              "windows_MEDIUM": 1922,
+              "windows_UNRECOVERABLE": 4040,
+              "phase_T2": 129,
+              "recovered": 449,
+              "v4_erased_nt_recovered_reads": 19592,
+              "v5_erased_nt_recovered_reads": 2848,
+              "windows_localized_by_code": 552,
+              "phase_T1": 294,
+              "windows_HIGH": 58,
+              "phase_T0": 26,
+              "consensus_groups": 208,
+              "consensus_route_none": 194,
+              "consensus_route_consensus": 8,
+              "consensus_route_read": 6
+            }
+          },
+          "groups_recovered_fraction": 0.0714
+        },
+        "V5-soft-auto": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "seconds": 45.447,
+          "cpu_seconds": 47.2,
+          "peak_rss_mb": 240.4,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 5440,
+              "fast": 296,
+              "sync": 115,
+              "reverse_complement": 0,
+              "pending": 2881,
+              "orphans": 1109,
+              "unaligned": 1,
+              "smart": 449,
+              "soft": 589,
+              "consensus_attempted": 268,
+              "consensus_recovered": 27,
+              "consensus_recovered_smart": 5,
+              "consensus_recovered_soft": 41,
+              "addresses_snapped": 242
+            },
+            "groups_decoded": 14,
+            "groups_failed": 0,
+            "stage_seconds": {
+              "pass1_reads": 42.144493342988426,
+              "pass2_decode": 3.077947779005626,
+              "verify": 0.0008014450140763074
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 7279,
+              "phase_none": 6830,
+              "trials": 1265548,
+              "false_accept_bound": 2.299465503610623e-07,
+              "windows_LOW": 4287,
+              "windows_MEDIUM": 1917,
+              "windows_UNRECOVERABLE": 3922,
+              "phase_T2": 129,
+              "recovered": 449,
+              "v4_erased_nt_recovered_reads": 19592,
+              "v5_erased_nt_recovered_reads": 2848,
+              "windows_localized_by_code": 552,
+              "phase_T1": 294,
+              "windows_HIGH": 58,
+              "phase_T0": 26,
+              "consensus_groups": 92,
+              "consensus_route_none": 87,
+              "consensus_route_consensus": 2,
+              "consensus_route_read": 3
+            },
+            "soft_decoding": {
+              "mode": "auto",
+              "attempted": 7059,
+              "mode_none": 6470,
+              "trials": 95630,
+              "candidates": 18464,
+              "false_accept_bound": 1.2748181481624646e-06,
+              "entropy_bits_sum": 5157.6422869751095,
+              "mode_erasure": 571,
+              "recovered": 589,
+              "accepted_rank_sum": 1566,
+              "mode_chase": 18,
+              "consensus_none": 46,
+              "consensus_erasure": 37,
+              "consensus_chase": 4
+            }
+          },
+          "groups_recovered_fraction": 1.0
+        }
+      },
+      {
+        "channel_name": "indel 0.25%+0.25% + sub 4%, informative 0.5, cov 10",
+        "channel": {
+          "insertion_rate": 0.0025,
+          "deletion_rate": 0.0025,
+          "substitution_rate": 0.04,
+          "quality_informative": 0.5,
+          "coverage": 10,
+          "coverage_model": "fixed",
+          "seed": 44000
+        },
+        "seed_index": 0,
+        "reads_sha256": "d4cd79ad71162d61286cea6d0fad6c66fdf61cda4d08b9cddbb3e491e70be67c",
+        "V4": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 1.663,
+          "cpu_seconds": 4.27,
+          "peak_rss_mb": 240.4,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 10880,
+              "fast": 562,
+              "sync": 226,
+              "reverse_complement": 0,
+              "pending": 7635,
+              "orphans": 2470,
+              "unaligned": 0,
+              "consensus_attempted": 691,
+              "consensus_recovered": 304,
+              "addresses_snapped": 1218
+            },
+            "groups_decoded": 9,
+            "groups_failed": 5,
+            "stage_seconds": {
+              "pass1_reads": 1.0257812319905497,
+              "pass2_decode": 0.22864856402156875
+            }
+          },
+          "groups_recovered_fraction": 0.6429
+        },
+        "V5-hard": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "seconds": 48.844,
+          "cpu_seconds": 66.98,
+          "peak_rss_mb": 240.4,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 10880,
+              "fast": 562,
+              "sync": 226,
+              "reverse_complement": 0,
+              "pending": 6811,
+              "orphans": 2184,
+              "unaligned": 0,
+              "smart": 1008,
+              "consensus_attempted": 353,
+              "consensus_recovered": 102,
+              "consensus_recovered_smart": 9,
+              "addresses_snapped": 475
+            },
+            "groups_decoded": 14,
+            "groups_failed": 0,
+            "stage_seconds": {
+              "pass1_reads": 45.581823398009874,
+              "pass2_decode": 2.8517854170058854,
+              "verify": 0.0007621580152772367
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 14711,
+              "phase_none": 13703,
+              "trials": 2452157,
+              "false_accept_bound": 4.3954789786515584e-07,
+              "windows_LOW": 8503,
+              "windows_UNRECOVERABLE": 8117,
+              "windows_MEDIUM": 3837,
+              "phase_T2": 284,
+              "recovered": 1008,
+              "v4_erased_nt_recovered_reads": 44056,
+              "v5_erased_nt_recovered_reads": 6832,
+              "windows_localized_by_code": 1228,
+              "phase_T1": 660,
+              "windows_HIGH": 89,
+              "phase_T0": 64,
+              "consensus_groups": 80,
+              "consensus_route_none": 71,
+              "consensus_route_consensus": 4,
+              "consensus_route_read": 5
+            }
+          },
+          "groups_recovered_fraction": 1.0
+        },
+        "V5-soft-auto": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "seconds": 62.539,
+          "cpu_seconds": 85.2,
+          "peak_rss_mb": 240.4,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 10880,
+              "fast": 562,
+              "sync": 226,
+              "reverse_complement": 0,
+              "pending": 5918,
+              "orphans": 2137,
+              "unaligned": 0,
+              "smart": 1008,
+              "soft": 1165,
+              "consensus_attempted": 189,
+              "consensus_recovered": 24,
+              "consensus_recovered_smart": 3,
+              "consensus_recovered_soft": 5,
+              "addresses_snapped": 162
+            },
+            "groups_decoded": 14,
+            "groups_failed": 0,
+            "stage_seconds": {
+              "pass1_reads": 60.837844727997435,
+              "pass2_decode": 1.304856242990354,
+              "verify": 0.0007816930010449141
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 14556,
+              "phase_none": 13548,
+              "trials": 2452128,
+              "false_accept_bound": 4.3954789628059367e-07,
+              "windows_LOW": 8492,
+              "windows_UNRECOVERABLE": 7906,
+              "windows_MEDIUM": 3833,
+              "phase_T2": 284,
+              "recovered": 1008,
+              "v4_erased_nt_recovered_reads": 44056,
+              "v5_erased_nt_recovered_reads": 6832,
+              "windows_localized_by_code": 1228,
+              "phase_T1": 660,
+              "windows_HIGH": 89,
+              "phase_T0": 64,
+              "consensus_groups": 23,
+              "consensus_route_none": 20,
+              "consensus_route_read": 3
+            },
+            "soft_decoding": {
+              "mode": "auto",
+              "attempted": 14019,
+              "mode_none": 12854,
+              "trials": 188659,
+              "candidates": 36968,
+              "false_accept_bound": 2.520542295534906e-06,
+              "entropy_bits_sum": 10243.63088134506,
+              "mode_erasure": 1128,
+              "recovered": 1165,
+              "accepted_rank_sum": 3211,
+              "mode_chase": 37,
+              "consensus_none": 15,
+              "consensus_erasure": 5
+            }
+          },
+          "groups_recovered_fraction": 1.0
+        }
+      },
+      {
+        "channel_name": "indel 0.25%+0.25% + sub 4%, informative 0.5, cov 10",
+        "channel": {
+          "insertion_rate": 0.0025,
+          "deletion_rate": 0.0025,
+          "substitution_rate": 0.04,
+          "quality_informative": 0.5,
+          "coverage": 10,
+          "coverage_model": "fixed",
+          "seed": 44010
+        },
+        "seed_index": 1,
+        "reads_sha256": "ff392215cca91a69c4dcdefa2cf3e3dbd9bfdc23a28a9050217b17f9ed8e4462",
+        "V4": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 1.685,
+          "cpu_seconds": 4.04,
+          "peak_rss_mb": 240.5,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 10880,
+              "fast": 598,
+              "sync": 228,
+              "reverse_complement": 0,
+              "pending": 7525,
+              "orphans": 2520,
+              "unaligned": 1,
+              "consensus_attempted": 657,
+              "consensus_recovered": 271,
+              "addresses_snapped": 1135
+            },
+            "groups_decoded": 10,
+            "groups_failed": 4,
+            "stage_seconds": {
+              "pass1_reads": 1.0281329709978309,
+              "pass2_decode": 0.23077194998040795
+            }
+          },
+          "groups_recovered_fraction": 0.7143
+        },
+        "V5-hard": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "seconds": 50.365,
+          "cpu_seconds": 67.89,
+          "peak_rss_mb": 240.5,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 10880,
+              "fast": 598,
+              "sync": 228,
+              "reverse_complement": 0,
+              "pending": 6757,
+              "orphans": 2250,
+              "unaligned": 1,
+              "smart": 917,
+              "consensus_attempted": 369,
+              "consensus_recovered": 102,
+              "consensus_recovered_smart": 5,
+              "addresses_snapped": 494
+            },
+            "groups_decoded": 13,
+            "groups_failed": 1,
+            "stage_seconds": {
+              "pass1_reads": 46.275826991011854,
+              "pass2_decode": 3.6746328840090428
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 14673,
+              "phase_none": 13756,
+              "trials": 2484757,
+              "false_accept_bound": 4.3961594856674846e-07,
+              "windows_LOW": 8651,
+              "windows_MEDIUM": 3810,
+              "windows_UNRECOVERABLE": 8163,
+              "phase_T2": 257,
+              "recovered": 917,
+              "v4_erased_nt_recovered_reads": 40448,
+              "v5_erased_nt_recovered_reads": 6256,
+              "windows_localized_by_code": 1113,
+              "phase_T1": 599,
+              "windows_HIGH": 83,
+              "phase_T0": 61,
+              "consensus_groups": 98,
+              "consensus_route_none": 93,
+              "consensus_route_consensus": 5
+            }
+          },
+          "groups_recovered_fraction": 0.9286
+        },
+        "V5-soft-auto": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "seconds": 64.779,
+          "cpu_seconds": 87.2,
+          "peak_rss_mb": 240.5,
+          "groups": 14,
+          "report": {
+            "reads": {
+              "reads": 10880,
+              "fast": 598,
+              "sync": 228,
+              "reverse_complement": 0,
+              "pending": 5821,
+              "orphans": 2176,
+              "unaligned": 1,
+              "smart": 917,
+              "soft": 1194,
+              "consensus_attempted": 195,
+              "consensus_recovered": 20,
+              "consensus_recovered_smart": 2,
+              "consensus_recovered_soft": 6,
+              "addresses_snapped": 207
+            },
+            "groups_decoded": 14,
+            "groups_failed": 0,
+            "stage_seconds": {
+              "pass1_reads": 62.16642940498423,
+              "pass2_decode": 2.2016756089869887,
+              "verify": 0.0008367709815502167
+            },
+            "indel_recovery": {
+              "mode": "smart",
+              "attempted": 14482,
+              "phase_none": 13565,
+              "trials": 2484750,
+              "false_accept_bound": 4.393831179224014e-07,
+              "windows_LOW": 8640,
+              "windows_MEDIUM": 3805,
+              "windows_UNRECOVERABLE": 7907,
+              "phase_T2": 257,
+              "recovered": 917,
+              "v4_erased_nt_recovered_reads": 40448,
+              "v5_erased_nt_recovered_reads": 6256,
+              "windows_localized_by_code": 1113,
+              "phase_T1": 599,
+              "windows_HIGH": 83,
+              "phase_T0": 61,
+              "consensus_groups": 29,
+              "consensus_route_none": 27,
+              "consensus_route_consensus": 1,
+              "consensus_route_read": 1
+            },
+            "soft_decoding": {
+              "mode": "auto",
+              "attempted": 14047,
+              "mode_none": 12853,
+              "trials": 189136,
+              "candidates": 37196,
+              "false_accept_bound": 2.5367791525832633e-06,
+              "entropy_bits_sum": 10200.14355486798,
+              "mode_erasure": 1151,
+              "recovered": 1194,
+              "accepted_rank_sum": 3362,
+              "mode_chase": 43,
+              "consensus_none": 21,
+              "consensus_erasure": 6
+            }
+          },
+          "groups_recovered_fraction": 1.0
+        }
+      }
+    ],
+    "wall_seconds": 1090.2
+  }
+}

@@ -28,3 +28,7 @@ clusters.jsonl
 
 # local benchmark scratch data (never committed)
 .bench-tmp/
+
+# V5 native aligner build outputs (built by pip install or python -m vnxdna.v5.native_alignment build)
+src/vnxdna/v5/*.so
+src/vnxdna/v5/native/*.so

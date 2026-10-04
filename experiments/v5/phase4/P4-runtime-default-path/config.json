@@ -1,0 +1,29 @@
+{
+  "input": {
+    "size": 4194304,
+    "pattern": "random",
+    "seed": 42
+  },
+  "channel": {
+    "substitution_rate": 0.002,
+    "insertion_rate": 0.0005,
+    "deletion_rate": 0.0005,
+    "dropout_rate": 0.02,
+    "coverage": 3,
+    "coverage_model": "poisson",
+    "seed": 1011
+  },
+  "reps": 3,
+  "baseline_tree_commit": "3633dfb86e76bb3d0661ecf8bf000cbb2da2359b",
+  "native_lib": "/root/VSnexustechnologies-v5/src/vnxdna/v5/_vnx_align.cpython-312-x86_64-linux-gnu.so",
+  "configs": {
+    "V4 default": {},
+    "V5 smart (Phase 3)": {
+      "indel_recovery": "smart"
+    },
+    "V5 smart + soft auto": {
+      "indel_recovery": "smart",
+      "soft_decoding": "auto"
+    }
+  }
+}

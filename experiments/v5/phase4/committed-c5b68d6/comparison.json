@@ -1,0 +1,175 @@
+{
+  "P4-EXP-01-substitution-sweep": {
+    "A_deterministic_differences": 0,
+    "A_examples": [],
+    "B_float_noise": 0,
+    "B_examples": [],
+    "C_runtime": {
+      "timed_values": 159,
+      "seconds_ratio_new_over_old_median": 0.984,
+      "seconds_ratio_min": 0.723,
+      "seconds_ratio_max": 1.22,
+      "rss_ratio_median": null
+    },
+    "integrity_rerun": {
+      "false": 0
+    },
+    "config_sha256": [
+      "6750353754b62c5122aeb91b9b94aa5e2f9064393ce4f1ad41e3641369d01d05",
+      "6750353754b62c5122aeb91b9b94aa5e2f9064393ce4f1ad41e3641369d01d05"
+    ],
+    "rerun": {
+      "commit_under_test": "c5b68d684c757ece2f9f45084e44c1313bc21cef",
+      "worktree_dirty": false
+    },
+    "published": {
+      "commit_under_test": "3633dfb86e76bb3d0661ecf8bf000cbb2da2359b",
+      "worktree_dirty": true
+    }
+  },
+  "P4-EXP-03-indel-plus-substitution": {
+    "A_deterministic_differences": 0,
+    "A_examples": [],
+    "B_float_noise": 0,
+    "B_examples": [],
+    "C_runtime": {
+      "timed_values": 145,
+      "seconds_ratio_new_over_old_median": 0.979,
+      "seconds_ratio_min": 0.778,
+      "seconds_ratio_max": 1.197,
+      "rss_ratio_median": null
+    },
+    "integrity_rerun": {
+      "false": 0
+    },
+    "config_sha256": [
+      "cba660046c5dbf98f90874f6adc1835cd3bce649040fc6910c286f5a830e5003",
+      "cba660046c5dbf98f90874f6adc1835cd3bce649040fc6910c286f5a830e5003"
+    ],
+    "rerun": {
+      "commit_under_test": "c5b68d684c757ece2f9f45084e44c1313bc21cef",
+      "worktree_dirty": false
+    },
+    "published": {
+      "commit_under_test": "3633dfb86e76bb3d0661ecf8bf000cbb2da2359b",
+      "worktree_dirty": true
+    }
+  },
+  "P4-EXP-04-rs-boundary": {
+    "A_deterministic_differences": 0,
+    "A_examples": [],
+    "B_float_noise": 0,
+    "B_examples": [],
+    "C_runtime": {
+      "timed_values": 1,
+      "seconds_ratio_new_over_old_median": 1.044,
+      "seconds_ratio_min": 1.044,
+      "seconds_ratio_max": 1.044,
+      "rss_ratio_median": null
+    },
+    "integrity_rerun": {
+      "false": 0,
+      "ambiguous": 0,
+      "wrong_but_verified_frames": 0
+    },
+    "config_sha256": [
+      "7bec0882a271274919d13ae54d8c4cf910291c7b27aa7284a1cf0611a45281a8",
+      "7bec0882a271274919d13ae54d8c4cf910291c7b27aa7284a1cf0611a45281a8"
+    ],
+    "rerun": {
+      "commit_under_test": "c5b68d684c757ece2f9f45084e44c1313bc21cef",
+      "worktree_dirty": false
+    },
+    "published": {
+      "commit_under_test": "3633dfb86e76bb3d0661ecf8bf000cbb2da2359b",
+      "worktree_dirty": true
+    }
+  },
+  "P4-EXP-06-adversarial": {
+    "A_deterministic_differences": 0,
+    "A_examples": [],
+    "B_float_noise": 0,
+    "B_examples": [],
+    "C_runtime": {
+      "timed_values": 1,
+      "seconds_ratio_new_over_old_median": 1.047,
+      "seconds_ratio_min": 1.047,
+      "seconds_ratio_max": 1.047,
+      "rss_ratio_median": null
+    },
+    "integrity_rerun": {
+      "false": 0,
+      "ambiguous": 0,
+      "wrong_but_verified_frames": 0,
+      "accepted_wrong_address": 0
+    },
+    "config_sha256": [
+      "7bec0882a271274919d13ae54d8c4cf910291c7b27aa7284a1cf0611a45281a8",
+      "7bec0882a271274919d13ae54d8c4cf910291c7b27aa7284a1cf0611a45281a8"
+    ],
+    "rerun": {
+      "commit_under_test": "c5b68d684c757ece2f9f45084e44c1313bc21cef",
+      "worktree_dirty": false
+    },
+    "published": {
+      "commit_under_test": "3633dfb86e76bb3d0661ecf8bf000cbb2da2359b",
+      "worktree_dirty": true
+    }
+  },
+  "P4-EXP-07-identical-reads": {
+    "A_deterministic_differences": 0,
+    "A_examples": [],
+    "B_float_noise": 0,
+    "B_examples": [],
+    "C_runtime": {
+      "timed_values": 505,
+      "seconds_ratio_new_over_old_median": 1.021,
+      "seconds_ratio_min": 0.869,
+      "seconds_ratio_max": 1.134,
+      "rss_ratio_median": 1.006
+    },
+    "integrity_rerun": {
+      "false_success": 0
+    },
+    "config_sha256": [
+      "a3c4e27e38916d3c0161859e1e677fde508ba5635ccb8e979d888e7bfc1a45df",
+      "a3c4e27e38916d3c0161859e1e677fde508ba5635ccb8e979d888e7bfc1a45df"
+    ],
+    "rerun": {
+      "commit_under_test": "c5b68d684c757ece2f9f45084e44c1313bc21cef",
+      "worktree_dirty": false
+    },
+    "published": {
+      "commit_under_test": "3633dfb86e76bb3d0661ecf8bf000cbb2da2359b",
+      "worktree_dirty": true
+    }
+  },
+  "P4-EXP-08-coverage": {
+    "A_deterministic_differences": 0,
+    "A_examples": [],
+    "B_float_noise": 0,
+    "B_examples": [],
+    "C_runtime": {
+      "timed_values": 241,
+      "seconds_ratio_new_over_old_median": 1.035,
+      "seconds_ratio_min": 0.988,
+      "seconds_ratio_max": 1.313,
+      "rss_ratio_median": 1.012
+    },
+    "integrity_rerun": {
+      "false_success": 0
+    },
+    "config_sha256": [
+      "99dac3411f2898e80234e976e02109991a07aca32ccacd4460352d869ad0b6dd",
+      "99dac3411f2898e80234e976e02109991a07aca32ccacd4460352d869ad0b6dd"
+    ],
+    "rerun": {
+      "commit_under_test": "c5b68d684c757ece2f9f45084e44c1313bc21cef",
+      "worktree_dirty": false
+    },
+    "published": {
+      "commit_under_test": "3633dfb86e76bb3d0661ecf8bf000cbb2da2359b",
+      "worktree_dirty": true
+    }
+  }
+}

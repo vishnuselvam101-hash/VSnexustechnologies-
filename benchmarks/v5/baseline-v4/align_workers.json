@@ -1,0 +1,100 @@
+{
+  "section": "align-workers",
+  "simulated": true,
+  "config": {
+    "layout": {
+      "payload_bytes": 40,
+      "inner_parity": 16,
+      "marker_period": 24,
+      "marker_len": 3,
+      "frame_bytes": 70,
+      "strand_nt": 313,
+      "markers": 11
+    },
+    "channel": {
+      "substitution_rate": 0.005,
+      "insertion_rate": 0.002,
+      "deletion_rate": 0.002
+    },
+    "reads": 32768,
+    "chunk": 2048,
+    "band": 6,
+    "pool_startup_included": true
+  },
+  "provenance": {
+    "timestamp_utc": "2026-10-03T04:38:56Z",
+    "vnx_version": "4.0.0",
+    "vnx4_format_version": [
+      4,
+      0
+    ],
+    "git_commit": "a358ae8284066d0608f329b47a53e55018bbfa79",
+    "cpu_model": "Intel(R) Xeon(R) Gold 6240 CPU @ 2.60GHz",
+    "logical_cpus": 8,
+    "ram_bytes": 33654890496,
+    "os": "Linux 6.8.0-146-generic",
+    "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "packages": {
+      "numpy": "2.5.3",
+      "cryptography": "46.0.7",
+      "zstandard": "0.25.0",
+      "reedsolo": "1.7.0",
+      "pydantic": "2.13.5",
+      "typer": "0.27.2"
+    },
+    "v4_control_tag": "v4.0.0",
+    "v4_control_commit": "a358ae8284066d0608f329b47a53e55018bbfa79",
+    "commit_under_test": "a358ae8284066d0608f329b47a53e55018bbfa79",
+    "worktree_dirty": false,
+    "native_toolchain": {
+      "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+      "rustc": "rustc 1.75.0 (82e1608df 2023-12-21) (built from a source tarball)",
+      "cargo": "cargo 1.75.0"
+    },
+    "cpu_flags": [
+      "avx",
+      "avx2",
+      "avx512bw",
+      "avx512f",
+      "bmi2",
+      "popcnt",
+      "sse4_2"
+    ],
+    "config_sha256": "ef59a9d23c26708b033d717df83c7c9069453208a9b106e9df72c3251571147c"
+  },
+  "rows": [
+    {
+      "workers": 1,
+      "seconds": 4.812,
+      "reads_per_second": 6809.4,
+      "speedup": 1.0,
+      "result_sha256": "8913c84b56efba0275ccb690caa9d6e9b042dba512ce55a33446207cdacc4afb",
+      "identical_to_1_worker": true
+    },
+    {
+      "workers": 2,
+      "seconds": 2.484,
+      "reads_per_second": 13191.2,
+      "speedup": 1.94,
+      "result_sha256": "8913c84b56efba0275ccb690caa9d6e9b042dba512ce55a33446207cdacc4afb",
+      "identical_to_1_worker": true
+    },
+    {
+      "workers": 4,
+      "seconds": 1.251,
+      "reads_per_second": 26186.4,
+      "speedup": 3.85,
+      "result_sha256": "8913c84b56efba0275ccb690caa9d6e9b042dba512ce55a33446207cdacc4afb",
+      "identical_to_1_worker": true
+    },
+    {
+      "workers": 8,
+      "seconds": 0.838,
+      "reads_per_second": 39107.2,
+      "speedup": 5.74,
+      "result_sha256": "8913c84b56efba0275ccb690caa9d6e9b042dba512ce55a33446207cdacc4afb",
+      "identical_to_1_worker": true
+    }
+  ]
+}

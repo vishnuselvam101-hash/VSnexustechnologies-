@@ -1,0 +1,38 @@
+== commit c5b68d684c757ece2f9f45084e44c1313bc21cef dirty=0 21:24:35
+== environment
+python 3.12.3 numpy 2.5.3 vnxdna <scratch>/p4clean/src/vnxdna/__init__.py
+gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+{
+  "requested_backend": "native",
+  "active_backend": "native",
+  "native_available": true,
+  "library": "<scratch>/p4clean/src/vnxdna/v5/native/libvnx_align.so",
+  "load_error": null,
+  "abi_version": 2,
+  "error": null,
+  "domain": {
+    "max_band": 64,
+    "max_template_nt": 8192,
+    "max_cost": 65536,
+    "max_guard": 1024,
+    "read_dtype": "uint8"
+  }
+}
+7005c242a2faf1dc91a1c6341fe6a2de652ae030c6b79efa3d7eb44ce8450fb2  src/vnxdna/v5/native/align.c
+d69de95859f470fda34aca8cc47f6fcd28e8b8aae514ef176c0a0fc81edad5af  src/vnxdna/v5/native/libvnx_align.so
+src tree 35a58d104249560daf5fdc6e267c04d1d7b0236e  tests tree ca1ef40c52b8dc5a08996c1446f305afde6d591d  experiments tree e584a16f84e420b6fb52eeb972e33a0e72167648
+== exp01 (dirty before: 0) 21:24:35
+   exit 0 21:25:52  	Elapsed (wall clock) time (h:mm:ss or m:ss): 1:16.49 	Maximum resident set size (kbytes): 177172 
+== exp03 (dirty before: 0) 21:25:52
+   exit 0 21:35:39  	Elapsed (wall clock) time (h:mm:ss or m:ss): 9:46.72 	Maximum resident set size (kbytes): 189768 
+== exp04 (dirty before: 0) 21:35:39
+   exit 0 21:38:08  	Elapsed (wall clock) time (h:mm:ss or m:ss): 2:29.30 	Maximum resident set size (kbytes): 85620 
+== exp06 (dirty before: 0) 21:38:08
+   exit 0 21:38:22  	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:13.99 	Maximum resident set size (kbytes): 104092 
+== exp07 (dirty before: 0) 21:38:22
+   exit 0 21:46:51  	Elapsed (wall clock) time (h:mm:ss or m:ss): 8:28.54 	Maximum resident set size (kbytes): 142356 
+== exp08 (dirty before: 0) 21:46:51
+   exit 0 22:05:31  	Elapsed (wall clock) time (h:mm:ss or m:ss): 18:40.06 	Maximum resident set size (kbytes): 248896 
+== suite 22:05:31
+   exit 0 997 passed in 674.22s (0:11:14)
+== done dirty=0 22:16:46

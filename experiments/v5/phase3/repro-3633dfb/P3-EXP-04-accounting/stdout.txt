@@ -1,0 +1,8 @@
+0.05%+0.05%                      reads ok V4 4077 V5 4091 (false 0/0)  erased/indel mean V4 28.257 V5-prod 27.951 V5-loc 4.205  {'V4': 78452.6, 'V5': 35623.0}
+0.1%+0.1%                        reads ok V4 4025 V5 4077 (false 0/0)  erased/indel mean V4 27.735 V5-prod 27.123 V5-loc 6.093  {'V4': 53200.5, 'V5': 12929.0}
+0.2%+0.2%                        reads ok V4 3757 V5 4009 (false 0/0)  erased/indel mean V4 27.325 V5-prod 25.448 V5-loc 8.635  {'V4': 37905.6, 'V5': 2587.8}
+0.3%+0.3%                        reads ok V4 3316 V5 3892 (false 0/0)  erased/indel mean V4 26.956 V5-prod 23.313 V5-loc 9.877  {'V4': 33676.4, 'V5': 1026.2}
+0.5%+0.5%                        reads ok V4 2341 V5 3374 (false 0/0)  erased/indel mean V4 26.229 V5-prod 20.223 V5-loc 10.913  {'V4': 29308.1, 'V5': 352.9}
+1%+1%                            reads ok V4  669 V5 1563 (false 0/0)  erased/indel mean V4 24.972 V5-prod 15.459 V5-loc 10.181  {'V4': 27924.4, 'V5': 157.8}
+mixed-L2 (0.5% sub, 0.2%+0.2%)   reads ok V4 3539 V5 3957 (false 0/0)  erased/indel mean V4 27.178 V5-prod 24.275 V5-loc 8.441  {'V4': 34093.3, 'V5': 1603.7}
+records: 20279

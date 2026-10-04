@@ -1,0 +1,194 @@
+{
+  "experiment": "P4-EXP-06-adversarial",
+  "simulated": true,
+  "config": {
+    "layout": {
+      "payload_bytes": 40,
+      "inner_parity": 16,
+      "marker_period": 24,
+      "marker_len": 3,
+      "frame_bytes": 70,
+      "strand_nt": 313,
+      "markers": 11
+    },
+    "frames_per_cell": 500,
+    "seed": 4201,
+    "soft_defaults": {
+      "mode": "auto",
+      "chase_bytes": 4,
+      "chase_values": 2,
+      "max_soft_trials": 64,
+      "max_bytes_per_trial": 4,
+      "false_accept_budget": 1e-09,
+      "default_error": 0.005,
+      "unknown_reliability": 0.0
+    },
+    "hard": "decode_frames (V4 inner RS + CRC), optional min_quality erasures"
+  },
+  "provenance": {
+    "timestamp_utc": "2026-10-03T09:35:20Z",
+    "vnx_version": "4.0.0",
+    "vnx4_format_version": [
+      4,
+      0
+    ],
+    "git_commit": "3633dfb86e76bb3d0661ecf8bf000cbb2da2359b-dirty",
+    "cpu_model": "Intel(R) Xeon(R) Gold 6240 CPU @ 2.60GHz",
+    "logical_cpus": 8,
+    "ram_bytes": 33654890496,
+    "os": "Linux 6.8.0-146-generic",
+    "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "packages": {
+      "numpy": "2.5.3",
+      "cryptography": "46.0.7",
+      "zstandard": "0.25.0",
+      "reedsolo": "1.7.0",
+      "pydantic": "2.13.5",
+      "typer": "0.27.2"
+    },
+    "v4_control_tag": "v4.0.0",
+    "v4_control_commit": "a358ae8284066d0608f329b47a53e55018bbfa79",
+    "commit_under_test": "3633dfb86e76bb3d0661ecf8bf000cbb2da2359b",
+    "worktree_dirty": true,
+    "native_toolchain": {
+      "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+      "rustc": "rustc 1.75.0 (82e1608df 2023-12-21) (built from a source tarball)",
+      "cargo": "cargo 1.75.0"
+    },
+    "cpu_flags": [
+      "avx",
+      "avx2",
+      "avx512bw",
+      "avx512f",
+      "bmi2",
+      "popcnt",
+      "sse4_2"
+    ],
+    "config_sha256": "7bec0882a271274919d13ae54d8c4cf910291c7b27aa7284a1cf0611a45281a8"
+  },
+  "results": {
+    "summary": {
+      "A misleading qualities, e=6": {
+        "verified_correct": 500,
+        "false": 0,
+        "ambiguous": 0,
+        "rejected": 0,
+        "wrong_but_verified_frames": 0,
+        "trials_mean": 9.0,
+        "accepted_rank_mean": 0.0,
+        "entropy_bits_mean": 0.1148,
+        "trials": 4500,
+        "rs_valid_trials": 2356,
+        "rs_valid_rejected_by_crc_or_checks": 624
+      },
+      "A misleading qualities, e=9": {
+        "verified_correct": 6,
+        "false": 0,
+        "ambiguous": 0,
+        "rejected": 494,
+        "wrong_but_verified_frames": 0,
+        "trials_mean": 65.32,
+        "accepted_rank_mean": 1.0,
+        "entropy_bits_mean": 0.1657,
+        "trials": 32658,
+        "rs_valid_trials": 637,
+        "rs_valid_rejected_by_crc_or_checks": 631
+      },
+      "A misleading qualities, e=12": {
+        "verified_correct": 0,
+        "false": 0,
+        "ambiguous": 0,
+        "rejected": 500,
+        "wrong_but_verified_frames": 0,
+        "trials_mean": 66.0,
+        "accepted_rank_mean": 0.0,
+        "entropy_bits_mean": 0.2166,
+        "trials": 33000,
+        "rs_valid_trials": 616,
+        "rs_valid_rejected_by_crc_or_checks": 616
+      },
+      "B wrong candidate more likely than the correct one, e=9": {
+        "verified_correct": 500,
+        "false": 0,
+        "ambiguous": 0,
+        "rejected": 0,
+        "wrong_but_verified_frames": 0,
+        "trials_mean": 9.0,
+        "accepted_rank_mean": 1.0,
+        "entropy_bits_mean": 0.1254,
+        "trials": 4500,
+        "rs_valid_trials": 4000,
+        "rs_valid_rejected_by_crc_or_checks": 0
+      },
+      "B wrong candidate more likely than the correct one, e=12": {
+        "verified_correct": 500,
+        "false": 0,
+        "ambiguous": 0,
+        "rejected": 0,
+        "wrong_but_verified_frames": 0,
+        "trials_mean": 9.0,
+        "accepted_rank_mean": 4.0,
+        "entropy_bits_mean": 0.135,
+        "trials": 4500,
+        "rs_valid_trials": 2500,
+        "rs_valid_rejected_by_crc_or_checks": 0
+      },
+      "C near-identical posteriors (no information)": {
+        "verified_correct": 0,
+        "false": 0,
+        "ambiguous": 0,
+        "rejected": 500,
+        "wrong_but_verified_frames": 0,
+        "trials_mean": 66.0,
+        "accepted_rank_mean": 0.0,
+        "entropy_bits_mean": 1.9994,
+        "trials": 33000,
+        "rs_valid_trials": 9600,
+        "rs_valid_rejected_by_crc_or_checks": 9600
+      },
+      "D random frames, confident qualities": {
+        "verified_correct": 0,
+        "false": 0,
+        "ambiguous": 0,
+        "rejected": 500,
+        "wrong_but_verified_frames": 0,
+        "trials_mean": 66.0,
+        "accepted_rank_mean": 0.0,
+        "entropy_bits_mean": 0.0016,
+        "trials": 33000,
+        "rs_valid_trials": 642,
+        "rs_valid_rejected_by_crc_or_checks": 642
+      },
+      "E decodable frames, wrong expected address": {
+        "verified_correct": 0,
+        "false": 0,
+        "ambiguous": 0,
+        "rejected": 500,
+        "wrong_but_verified_frames": 0,
+        "trials_mean": 66.0,
+        "accepted_rank_mean": 0.0,
+        "entropy_bits_mean": 0.0202,
+        "accepted_wrong_address": 0,
+        "trials": 33000,
+        "rs_valid_trials": 12330,
+        "rs_valid_rejected_by_crc_or_checks": 12330
+      },
+      "F consensus favours another strand (expected = target address)": {
+        "verified_correct": 0,
+        "false": 0,
+        "ambiguous": 0,
+        "rejected": 500,
+        "wrong_but_verified_frames": 0,
+        "trials_mean": 66.0,
+        "accepted_rank_mean": 0.0,
+        "entropy_bits_mean": 0.0081,
+        "accepted_wrong_address": 0,
+        "trials": 33000,
+        "rs_valid_trials": 32000,
+        "rs_valid_rejected_by_crc_or_checks": 32000
+      }
+    },
+    "wall_seconds": 12.8
+  }
+}

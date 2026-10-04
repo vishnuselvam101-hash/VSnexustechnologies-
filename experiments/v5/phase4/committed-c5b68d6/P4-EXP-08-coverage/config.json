@@ -1,0 +1,101 @@
+{
+  "input": {
+    "size": 32768,
+    "pattern": "random"
+  },
+  "decoders": {
+    "V4": {},
+    "V5-hard": {
+      "indel_recovery": "smart"
+    },
+    "V5-soft-auto": {
+      "indel_recovery": "smart",
+      "soft_decoding": "auto"
+    }
+  },
+  "workers": 8,
+  "seeds": 2,
+  "channel_seed_rule": "44000 + 10\u00b7seed_index",
+  "cells": {
+    "indel 0.5%+0.5% + sub 1%, informative 0.5, cov 1": {
+      "insertion_rate": 0.005,
+      "deletion_rate": 0.005,
+      "substitution_rate": 0.01,
+      "quality_informative": 0.5,
+      "coverage": 1,
+      "coverage_model": "fixed"
+    },
+    "indel 0.5%+0.5% + sub 1%, informative 0.5, cov 2": {
+      "insertion_rate": 0.005,
+      "deletion_rate": 0.005,
+      "substitution_rate": 0.01,
+      "quality_informative": 0.5,
+      "coverage": 2,
+      "coverage_model": "fixed"
+    },
+    "indel 0.5%+0.5% + sub 1%, informative 0.5, cov 3": {
+      "insertion_rate": 0.005,
+      "deletion_rate": 0.005,
+      "substitution_rate": 0.01,
+      "quality_informative": 0.5,
+      "coverage": 3,
+      "coverage_model": "fixed"
+    },
+    "indel 0.5%+0.5% + sub 1%, informative 0.5, cov 5": {
+      "insertion_rate": 0.005,
+      "deletion_rate": 0.005,
+      "substitution_rate": 0.01,
+      "quality_informative": 0.5,
+      "coverage": 5,
+      "coverage_model": "fixed"
+    },
+    "indel 0.5%+0.5% + sub 1%, informative 0.5, cov 10": {
+      "insertion_rate": 0.005,
+      "deletion_rate": 0.005,
+      "substitution_rate": 0.01,
+      "quality_informative": 0.5,
+      "coverage": 10,
+      "coverage_model": "fixed"
+    },
+    "indel 0.25%+0.25% + sub 4%, informative 0.5, cov 1": {
+      "insertion_rate": 0.0025,
+      "deletion_rate": 0.0025,
+      "substitution_rate": 0.04,
+      "quality_informative": 0.5,
+      "coverage": 1,
+      "coverage_model": "fixed"
+    },
+    "indel 0.25%+0.25% + sub 4%, informative 0.5, cov 2": {
+      "insertion_rate": 0.0025,
+      "deletion_rate": 0.0025,
+      "substitution_rate": 0.04,
+      "quality_informative": 0.5,
+      "coverage": 2,
+      "coverage_model": "fixed"
+    },
+    "indel 0.25%+0.25% + sub 4%, informative 0.5, cov 3": {
+      "insertion_rate": 0.0025,
+      "deletion_rate": 0.0025,
+      "substitution_rate": 0.04,
+      "quality_informative": 0.5,
+      "coverage": 3,
+      "coverage_model": "fixed"
+    },
+    "indel 0.25%+0.25% + sub 4%, informative 0.5, cov 5": {
+      "insertion_rate": 0.0025,
+      "deletion_rate": 0.0025,
+      "substitution_rate": 0.04,
+      "quality_informative": 0.5,
+      "coverage": 5,
+      "coverage_model": "fixed"
+    },
+    "indel 0.25%+0.25% + sub 4%, informative 0.5, cov 10": {
+      "insertion_rate": 0.0025,
+      "deletion_rate": 0.0025,
+      "substitution_rate": 0.04,
+      "quality_informative": 0.5,
+      "coverage": 10,
+      "coverage_model": "fixed"
+    }
+  }
+}

@@ -58,7 +58,11 @@ class Projection:
 
 
 class TemplateAligner:
-    def __init__(self, layout: Layout, band: int = 6, costs: SyncCosts | None = None):
+    def __init__(self, layout: Layout, band: int = 6, costs: SyncCosts | None = None, backend: str | None = None):
+        # backend: "auto" | "native" | "reference" (None = $VNXDNA_ALIGN_BACKEND, default auto). The NumPy code below
+        # (_align/_traceback) is the reference; the V5 native kernel reproduces it bit for bit (V5 alignment contract).
+        from ..v5 import native_alignment as _na
+        self.backend = _na.resolve_backend(backend)
         self.layout = layout
         self.band = band
         self.costs = costs or SyncCosts()
@@ -97,6 +101,12 @@ class TemplateAligner:
         lengths = np.fromiter((r.size for r in reads), dtype=np.int64, count=n)
         usable = np.abs(lengths - self.T) <= self.band
         idx = np.flatnonzero(usable)
+        if self.backend == "native" and idx.size:
+            from ..v5 import native_alignment as _na
+            res = _na.align_usable(self, [reads[i] for i in idx], None if quals is None else [quals[i] for i in idx], min_quality)
+            if res is not None:      # None: input outside the native domain -> the reference below
+                out_bases[idx], out_er[idx], ok[idx], ins_n[idx], del_n[idx], mm[idx], cost[idx] = res
+                return Projection(out_bases, out_er, ok, ins_n, del_n, mm, cost)
         for start in range(0, idx.size, 2048):
             sel = idx[start:start + 2048]
             res = self._align([reads[i] for i in sel], lengths[sel],

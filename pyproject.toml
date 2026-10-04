@@ -34,6 +34,9 @@ version = {attr = "vnxdna._version.__version__"}
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+"vnxdna.v5" = ["native/*.c"]
+
 [tool.pytest.ini_options]
 pythonpath = ["src", "tests"]
 testpaths = ["tests"]

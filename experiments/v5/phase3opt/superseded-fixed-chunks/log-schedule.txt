@@ -1,0 +1,44 @@
+=== exp 22:17:48
+clean                              cov  1 s0  V4 SUCC 1.0 0.495s  V5-hard eager SUCC 1.0 0.478s  V5-hard deferred SUCC 1.0 0.478s  V5-soft-auto eager SUCC 1.0 0.525s  V5-soft-auto deferred SUCC 1.0 0.501s
+clean                              cov  1 s1  V4 SUCC 1.0 0.476s  V5-hard eager SUCC 1.0 0.522s  V5-hard deferred SUCC 1.0 0.501s  V5-soft-auto eager SUCC 1.0 0.511s  V5-soft-auto deferred SUCC 1.0 0.535s
+clean                              cov  2 s0  V4 SUCC 1.0 0.567s  V5-hard eager SUCC 1.0 0.583s  V5-hard deferred SUCC 1.0 0.577s  V5-soft-auto eager SUCC 1.0 0.579s  V5-soft-auto deferred SUCC 1.0 0.624s
+clean                              cov  2 s1  V4 SUCC 1.0 0.569s  V5-hard eager SUCC 1.0 0.557s  V5-hard deferred SUCC 1.0 0.568s  V5-soft-auto eager SUCC 1.0 0.627s  V5-soft-auto deferred SUCC 1.0 0.623s
+clean                              cov  3 s0  V4 SUCC 1.0 0.667s  V5-hard eager SUCC 1.0 0.691s  V5-hard deferred SUCC 1.0 0.717s  V5-soft-auto eager SUCC 1.0 0.677s  V5-soft-auto deferred SUCC 1.0 0.658s
+clean                              cov  3 s1  V4 SUCC 1.0 0.683s  V5-hard eager SUCC 1.0 0.676s  V5-hard deferred SUCC 1.0 0.684s  V5-soft-auto eager SUCC 1.0 0.732s  V5-soft-auto deferred SUCC 1.0 0.715s
+clean                              cov  5 s0  V4 SUCC 1.0 0.819s  V5-hard eager SUCC 1.0 0.798s  V5-hard deferred SUCC 1.0 0.782s  V5-soft-auto eager SUCC 1.0 0.797s  V5-soft-auto deferred SUCC 1.0 0.803s
+clean                              cov  5 s1  V4 SUCC 1.0 0.752s  V5-hard eager SUCC 1.0 0.769s  V5-hard deferred SUCC 1.0 0.739s  V5-soft-auto eager SUCC 1.0 0.771s  V5-soft-auto deferred SUCC 1.0 0.774s
+clean                              cov 10 s0  V4 SUCC 1.0 0.904s  V5-hard eager SUCC 1.0 0.954s  V5-hard deferred SUCC 1.0 1.015s  V5-soft-auto eager SUCC 1.0 0.915s  V5-soft-auto deferred SUCC 1.0 0.896s
+clean                              cov 10 s1  V4 SUCC 1.0 0.895s  V5-hard eager SUCC 1.0 0.904s  V5-hard deferred SUCC 1.0 0.996s  V5-soft-auto eager SUCC 1.0 0.94s  V5-soft-auto deferred SUCC 1.0 0.924s
+indel-heavy (0.5%+0.5%, sub 0.1%)  cov  1 s0  V4 FAIL 0.0714 0.604s  V5-hard eager FAIL 0.9286 3.782s  V5-hard deferred FAIL 0.9286 4.425s  V5-soft-auto eager FAIL 0.9286 4.593s  V5-soft-auto deferred FAIL 0.9286 4.899s
+indel-heavy (0.5%+0.5%, sub 0.1%)  cov  1 s1  V4 FAIL 0.0714 0.568s  V5-hard eager FAIL 0.7857 4.078s  V5-hard deferred FAIL 0.7857 4.613s  V5-soft-auto eager FAIL 0.9286 4.65s  V5-soft-auto deferred FAIL 0.9286 5.188s
+indel-heavy (0.5%+0.5%, sub 0.1%)  cov  2 s0  V4 FAIL 0.9286 0.687s  V5-hard eager SUCC 1.0 7.961s  V5-hard deferred SUCC 1.0 2.856s  V5-soft-auto eager SUCC 1.0 8.902s  V5-soft-auto deferred SUCC 1.0 2.945s
+indel-heavy (0.5%+0.5%, sub 0.1%)  cov  2 s1  V4 FAIL 0.9286 0.647s  V5-hard eager SUCC 1.0 8.083s  V5-hard deferred SUCC 1.0 3.166s  V5-soft-auto eager SUCC 1.0 8.65s  V5-soft-auto deferred SUCC 1.0 3.11s
+indel-heavy (0.5%+0.5%, sub 0.1%)  cov  3 s0  V4 SUCC 1.0 0.745s  V5-hard eager SUCC 1.0 11.137s  V5-hard deferred SUCC 1.0 2.013s  V5-soft-auto eager SUCC 1.0 12.489s  V5-soft-auto deferred SUCC 1.0 2.027s
+indel-heavy (0.5%+0.5%, sub 0.1%)  cov  3 s1  V4 SUCC 1.0 0.779s  V5-hard eager SUCC 1.0 11.299s  V5-hard deferred SUCC 1.0 1.834s  V5-soft-auto eager SUCC 1.0 12.748s  V5-soft-auto deferred SUCC 1.0 1.946s
+indel-heavy (0.5%+0.5%, sub 0.1%)  cov  5 s0  V4 SUCC 1.0 0.919s  V5-hard eager SUCC 1.0 16.963s  V5-hard deferred SUCC 1.0 6.464s  V5-soft-auto eager SUCC 1.0 18.455s  V5-soft-auto deferred SUCC 1.0 6.523s
+indel-heavy (0.5%+0.5%, sub 0.1%)  cov  5 s1  V4 SUCC 1.0 0.925s  V5-hard eager SUCC 1.0 17.57s  V5-hard deferred SUCC 1.0 5.552s  V5-soft-auto eager SUCC 1.0 20.806s  V5-soft-auto deferred SUCC 1.0 5.637s
+indel-heavy (0.5%+0.5%, sub 0.1%)  cov 10 s0  V4 SUCC 1.0 1.273s  V5-hard eager SUCC 1.0 24.924s  V5-hard deferred SUCC 1.0 3.089s  V5-soft-auto eager SUCC 1.0 29.075s  V5-soft-auto deferred SUCC 1.0 3.225s
+indel-heavy (0.5%+0.5%, sub 0.1%)  cov 10 s1  V4 SUCC 1.0 1.244s  V5-hard eager SUCC 1.0 25.245s  V5-hard deferred SUCC 1.0 2.331s  V5-soft-auto eager SUCC 1.0 29.989s  V5-soft-auto deferred SUCC 1.0 2.555s
+mixed (0.5%+0.5%, sub 1%)          cov  1 s0  V4 FAIL 0.0 0.574s  V5-hard eager FAIL 0.0714 5.996s  V5-hard deferred FAIL 0.0714 6.366s  V5-soft-auto eager FAIL 0.0714 6.64s  V5-soft-auto deferred FAIL 0.0714 6.905s
+mixed (0.5%+0.5%, sub 1%)          cov  1 s1  V4 FAIL 0.0 0.569s  V5-hard eager FAIL 0.1429 6.145s  V5-hard deferred FAIL 0.1429 6.272s  V5-soft-auto eager FAIL 0.2143 7.149s  V5-soft-auto deferred FAIL 0.2143 7.556s
+mixed (0.5%+0.5%, sub 1%)          cov  2 s0  V4 FAIL 0.0714 0.684s  V5-hard eager SUCC 1.0 12.006s  V5-hard deferred SUCC 1.0 8.42s  V5-soft-auto eager SUCC 1.0 13.613s  V5-soft-auto deferred SUCC 1.0 9.144s
+mixed (0.5%+0.5%, sub 1%)          cov  2 s1  V4 FAIL 0.0714 0.672s  V5-hard eager SUCC 1.0 11.625s  V5-hard deferred SUCC 1.0 8.006s  V5-soft-auto eager SUCC 1.0 13.018s  V5-soft-auto deferred SUCC 1.0 9.222s
+mixed (0.5%+0.5%, sub 1%)          cov  3 s0  V4 FAIL 0.6429 0.788s  V5-hard eager SUCC 1.0 17.891s  V5-hard deferred SUCC 1.0 4.986s  V5-soft-auto eager SUCC 1.0 21.03s  V5-soft-auto deferred SUCC 1.0 5.416s
+mixed (0.5%+0.5%, sub 1%)          cov  3 s1  V4 FAIL 0.7857 0.897s  V5-hard eager SUCC 1.0 17.06s  V5-hard deferred SUCC 1.0 4.681s  V5-soft-auto eager SUCC 1.0 19.618s  V5-soft-auto deferred SUCC 1.0 4.872s
+mixed (0.5%+0.5%, sub 1%)          cov  5 s0  V4 SUCC 1.0 1.021s  V5-hard eager SUCC 1.0 29.59s  V5-hard deferred SUCC 1.0 3.083s  V5-soft-auto eager SUCC 1.0 31.903s  V5-soft-auto deferred SUCC 1.0 3.354s
+mixed (0.5%+0.5%, sub 1%)          cov  5 s1  V4 SUCC 1.0 0.988s  V5-hard eager SUCC 1.0 30.002s  V5-hard deferred SUCC 1.0 3.516s  V5-soft-auto eager SUCC 1.0 33.988s  V5-soft-auto deferred SUCC 1.0 3.619s
+mixed (0.5%+0.5%, sub 1%)          cov 10 s0  V4 SUCC 1.0 1.384s  V5-hard eager SUCC 1.0 39.872s  V5-hard deferred SUCC 1.0 5.813s  V5-soft-auto eager SUCC 1.0 46.235s  V5-soft-auto deferred SUCC 1.0 6.306s
+mixed (0.5%+0.5%, sub 1%)          cov 10 s1  V4 SUCC 1.0 1.36s  V5-hard eager SUCC 1.0 41.679s  V5-hard deferred SUCC 1.0 8.179s  V5-soft-auto eager SUCC 1.0 47.819s  V5-soft-auto deferred SUCC 1.0 9.053s
+mixed, substitution-heavy (0.25%+0 cov  1 s0  V4 FAIL None 0.579s  V5-hard eager FAIL None 6.93s  V5-hard deferred FAIL None 4.742s  V5-soft-auto eager FAIL None 8.608s  V5-soft-auto deferred FAIL None 5.671s
+mixed, substitution-heavy (0.25%+0 cov  1 s1  V4 FAIL None 0.576s  V5-hard eager FAIL None 6.866s  V5-hard deferred FAIL None 4.807s  V5-soft-auto eager FAIL 0.0 9.141s  V5-soft-auto deferred FAIL 0.0 6.621s
+mixed, substitution-heavy (0.25%+0 cov  2 s0  V4 FAIL None 0.616s  V5-hard eager FAIL None 13.26s  V5-hard deferred FAIL None 5.457s  V5-soft-auto eager FAIL 0.0714 19.482s  V5-soft-auto deferred FAIL 0.0714 8.684s
+mixed, substitution-heavy (0.25%+0 cov  2 s1  V4 FAIL None 0.649s  V5-hard eager FAIL 0.0 16.061s  V5-hard deferred FAIL 0.0 9.833s  V5-soft-auto eager FAIL 0.0714 20.771s  V5-soft-auto deferred FAIL 0.0714 11.131s
+mixed, substitution-heavy (0.25%+0 cov  3 s0  V4 FAIL None 0.778s  V5-hard eager FAIL 0.0 23.428s  V5-hard deferred FAIL 0.0 10.322s  V5-soft-auto eager FAIL 0.0714 27.691s  V5-soft-auto deferred FAIL 0.0714 11.967s
+mixed, substitution-heavy (0.25%+0 cov  3 s1  V4 FAIL None 0.767s  V5-hard eager FAIL 0.0 23.404s  V5-hard deferred FAIL 0.0 11.993s  V5-soft-auto eager FAIL 0.0714 28.57s  V5-soft-auto deferred FAIL 0.0714 12.553s
+mixed, substitution-heavy (0.25%+0 cov  5 s0  V4 FAIL None 1.015s  V5-hard eager FAIL 0.0714 36.487s  V5-hard deferred FAIL 0.0714 14.635s  V5-soft-auto eager SUCC 1.0 43.239s  V5-soft-auto deferred SUCC 1.0 14.917s
+mixed, substitution-heavy (0.25%+0 cov  5 s1  V4 FAIL 0.0 1.16s  V5-hard eager FAIL 0.0714 37.957s  V5-hard deferred FAIL 0.0714 15.871s  V5-soft-auto eager SUCC 1.0 45.035s  V5-soft-auto deferred SUCC 1.0 15.713s
+mixed, substitution-heavy (0.25%+0 cov 10 s0  V4 FAIL 0.6429 1.585s  V5-hard eager SUCC 1.0 48.948s  V5-hard deferred SUCC 1.0 18.389s  V5-soft-auto eager SUCC 1.0 62.207s  V5-soft-auto deferred SUCC 1.0 10.754s
+mixed, substitution-heavy (0.25%+0 cov 10 s1  V4 FAIL 0.7143 1.643s  V5-hard eager FAIL 0.9286 50.714s  V5-hard deferred FAIL 0.9286 19.014s  V5-soft-auto eager SUCC 1.0 63.971s  V5-soft-auto deferred SUCC 1.0 11.562s
+=== exit 0 22:49:22
+=== suite 22:49:22
+=== suite exit 0 23:00:37 1013 passed in 674.35s (0:11:14)

@@ -1,0 +1,227 @@
+=== exp_read_level.py subs --strands 4096 14:52:03
+sub 0.1% | informative 0.0                   V4 4096  V4+minQ 4096  V4+minQ20 4096  V5-hard 4096  V5-hard+minQ20 4096  V5-soft-erasure 4096  V5-soft-chase 4096  V5-soft-auto 4096  (soft auto 0.035s, V5-hard 0.035s)
+sub 0.1% | informative 0.5                   V4 4096  V4+minQ 4096  V4+minQ20 4096  V5-hard 4096  V5-hard+minQ20 4096  V5-soft-erasure 4096  V5-soft-chase 4096  V5-soft-auto 4096  (soft auto 0.035s, V5-hard 0.036s)
+sub 0.1% | informative 1.0                   V4 4096  V4+minQ 4096  V4+minQ20 4096  V5-hard 4096  V5-hard+minQ20 4096  V5-soft-erasure 4096  V5-soft-chase 4096  V5-soft-auto 4096  (soft auto 0.035s, V5-hard 0.035s)
+sub 0.1% | graded Q                          V4 4096  V4+minQ 4096  V4+minQ20 4096  V5-hard 4096  V5-hard+minQ20 4096  V5-soft-erasure 4096  V5-soft-chase 4096  V5-soft-auto 4096  (soft auto 0.031s, V5-hard 0.035s)
+sub 0.2% | informative 0.0                   V4 4096  V4+minQ 4096  V4+minQ20 4096  V5-hard 4096  V5-hard+minQ20 4096  V5-soft-erasure 4096  V5-soft-chase 4096  V5-soft-auto 4096  (soft auto 0.042s, V5-hard 0.043s)
+sub 0.2% | informative 0.5                   V4 4096  V4+minQ 4096  V4+minQ20 4096  V5-hard 4096  V5-hard+minQ20 4096  V5-soft-erasure 4096  V5-soft-chase 4096  V5-soft-auto 4096  (soft auto 0.043s, V5-hard 0.041s)
+sub 0.2% | informative 1.0                   V4 4096  V4+minQ 4096  V4+minQ20 4096  V5-hard 4096  V5-hard+minQ20 4096  V5-soft-erasure 4096  V5-soft-chase 4096  V5-soft-auto 4096  (soft auto 0.041s, V5-hard 0.042s)
+sub 0.2% | graded Q                          V4 4096  V4+minQ 4096  V4+minQ20 4096  V5-hard 4096  V5-hard+minQ20 4096  V5-soft-erasure 4096  V5-soft-chase 4096  V5-soft-auto 4096  (soft auto 0.041s, V5-hard 0.041s)
+sub 0.5% | informative 0.0                   V4 4096  V4+minQ 4096  V4+minQ20 4096  V5-hard 4096  V5-hard+minQ20 4096  V5-soft-erasure 4096  V5-soft-chase 4096  V5-soft-auto 4096  (soft auto 0.06s, V5-hard 0.061s)
+sub 0.5% | informative 0.5                   V4 4096  V4+minQ 4096  V4+minQ20 4096  V5-hard 4096  V5-hard+minQ20 4096  V5-soft-erasure 4096  V5-soft-chase 4096  V5-soft-auto 4096  (soft auto 0.059s, V5-hard 0.062s)
+sub 0.5% | informative 1.0                   V4 4096  V4+minQ 4096  V4+minQ20 4096  V5-hard 4096  V5-hard+minQ20 4096  V5-soft-erasure 4096  V5-soft-chase 4096  V5-soft-auto 4096  (soft auto 0.059s, V5-hard 0.059s)
+sub 0.5% | graded Q                          V4 4096  V4+minQ 4096  V4+minQ20 4096  V5-hard 4096  V5-hard+minQ20 4096  V5-soft-erasure 4096  V5-soft-chase 4096  V5-soft-auto 4096  (soft auto 0.061s, V5-hard 0.059s)
+sub 1% | informative 0.0                     V4 4088  V4+minQ 4088  V4+minQ20 4088  V5-hard 4088  V5-hard+minQ20 4088  V5-soft-erasure 4088  V5-soft-chase 4088  V5-soft-auto 4088  (soft auto 0.099s, V5-hard 0.088s)
+sub 1% | informative 0.5                     V4 4088  V4+minQ 4095  V4+minQ20 4095  V5-hard 4088  V5-hard+minQ20 4095  V5-soft-erasure 4095  V5-soft-chase 4094  V5-soft-auto 4095  (soft auto 0.092s, V5-hard 0.08s)
+sub 1% | informative 1.0                     V4 4088  V4+minQ 4096  V4+minQ20 4096  V5-hard 4088  V5-hard+minQ20 4096  V5-soft-erasure 4096  V5-soft-chase 4094  V5-soft-auto 4096  (soft auto 0.09s, V5-hard 0.078s)
+sub 1% | graded Q                            V4 4088  V4+minQ 4094  V4+minQ20 4096  V5-hard 4088  V5-hard+minQ20 4096  V5-soft-erasure 4096  V5-soft-chase 4095  V5-soft-auto 4096  (soft auto 0.092s, V5-hard 0.08s)
+sub 2% | informative 0.0                     V4 3689  V4+minQ 3689  V4+minQ20 3689  V5-hard 3689  V5-hard+minQ20 3689  V5-soft-erasure 3694  V5-soft-chase 3717  V5-soft-auto 3718  (soft auto 0.954s, V5-hard 0.179s)
+sub 2% | informative 0.5                     V4 3689  V4+minQ 4024  V4+minQ20 4024  V5-hard 3689  V5-hard+minQ20 4024  V5-soft-erasure 4026  V5-soft-chase 3897  V5-soft-auto 4036  (soft auto 0.648s, V5-hard 0.185s)
+sub 2% | informative 1.0                     V4 3689  V4+minQ 4096  V4+minQ20 4096  V5-hard 3689  V5-hard+minQ20 4096  V5-soft-erasure 4096  V5-soft-chase 3919  V5-soft-auto 4096  (soft auto 0.667s, V5-hard 0.205s)
+sub 2% | graded Q                            V4 3689  V4+minQ 4007  V4+minQ20 4092  V5-hard 3689  V5-hard+minQ20 4092  V5-soft-erasure 4092  V5-soft-chase 3901  V5-soft-auto 4093  (soft auto 0.659s, V5-hard 0.207s)
+sub 3% | informative 0.0                     V4 2410  V4+minQ 2410  V4+minQ20 2410  V5-hard 2410  V5-hard+minQ20 2410  V5-soft-erasure 2417  V5-soft-chase 2492  V5-soft-auto 2493  (soft auto 3.753s, V5-hard 0.685s)
+sub 3% | informative 0.5                     V4 2410  V4+minQ 3505  V4+minQ20 3505  V5-hard 2410  V5-hard+minQ20 3505  V5-soft-erasure 3524  V5-soft-chase 2941  V5-soft-auto 3544  (soft auto 2.512s, V5-hard 0.626s)
+sub 3% | informative 1.0                     V4 2410  V4+minQ 4087  V4+minQ20 4087  V5-hard 2410  V5-hard+minQ20 4087  V5-soft-erasure 4087  V5-soft-chase 3010  V5-soft-auto 4087  (soft auto 2.122s, V5-hard 0.573s)
+sub 3% | graded Q                            V4 2410  V4+minQ 3342  V4+minQ20 3946  V5-hard 2410  V5-hard+minQ20 3946  V5-soft-erasure 3949  V5-soft-chase 3011  V5-soft-auto 3950  (soft auto 2.201s, V5-hard 0.567s)
+=== exit 0 14:53:12
+=== exp_read_level.py indel --strands 4096 14:53:12
+indel 0.1% (ins 0.05% + del 0.05%) + sub 0.1% | informative 0.0 V4 4089  V4+minQ 4089  V4+minQ20 4089  V5-hard 4095  V5-hard+minQ20 4095  V5-soft-erasure 4095  V5-soft-chase 4095  V5-soft-auto 4095  (soft auto 0.087s, V5-hard 0.088s)
+indel 0.1% (ins 0.05% + del 0.05%) + sub 0.1% | informative 0.5 V4 4089  V4+minQ 4089  V4+minQ20 4089  V5-hard 4095  V5-hard+minQ20 4095  V5-soft-erasure 4095  V5-soft-chase 4095  V5-soft-auto 4095  (soft auto 0.086s, V5-hard 0.077s)
+indel 0.1% (ins 0.05% + del 0.05%) + sub 0.1% | informative 1.0 V4 4089  V4+minQ 4089  V4+minQ20 4089  V5-hard 4095  V5-hard+minQ20 4095  V5-soft-erasure 4095  V5-soft-chase 4095  V5-soft-auto 4095  (soft auto 0.087s, V5-hard 0.08s)
+indel 0.1% (ins 0.05% + del 0.05%) + sub 0.1% | graded Q V4 4089  V4+minQ 4089  V4+minQ20 4089  V5-hard 4095  V5-hard+minQ20 4095  V5-soft-erasure 4095  V5-soft-chase 4095  V5-soft-auto 4095  (soft auto 0.087s, V5-hard 0.078s)
+indel 0.2% (ins 0.1% + del 0.1%) + sub 0.2% | informative 0.0 V4 3991  V4+minQ 3991  V4+minQ20 3991  V5-hard 4074  V5-hard+minQ20 4074  V5-soft-erasure 4078  V5-soft-chase 4074  V5-soft-auto 4078  (soft auto 0.361s, V5-hard 0.317s)
+indel 0.2% (ins 0.1% + del 0.1%) + sub 0.2% | informative 0.5 V4 3991  V4+minQ 3998  V4+minQ20 3998  V5-hard 4074  V5-hard+minQ20 4076  V5-soft-erasure 4079  V5-soft-chase 4075  V5-soft-auto 4079  (soft auto 0.358s, V5-hard 0.314s)
+indel 0.2% (ins 0.1% + del 0.1%) + sub 0.2% | informative 1.0 V4 3991  V4+minQ 4006  V4+minQ20 4006  V5-hard 4074  V5-hard+minQ20 4076  V5-soft-erasure 4080  V5-soft-chase 4075  V5-soft-auto 4080  (soft auto 0.35s, V5-hard 0.326s)
+indel 0.2% (ins 0.1% + del 0.1%) + sub 0.2% | graded Q V4 3991  V4+minQ 3995  V4+minQ20 4001  V5-hard 4074  V5-hard+minQ20 4075  V5-soft-erasure 4076  V5-soft-chase 4074  V5-soft-auto 4076  (soft auto 0.37s, V5-hard 0.316s)
+indel 0.5% (ins 0.25% + del 0.25%) + sub 0.5% | informative 0.0 V4 3215  V4+minQ 3215  V4+minQ20 3215  V5-hard 3860  V5-hard+minQ20 3860  V5-soft-erasure 3872  V5-soft-chase 3872  V5-soft-auto 3877  (soft auto 4.567s, V5-hard 4.302s)
+indel 0.5% (ins 0.25% + del 0.25%) + sub 0.5% | informative 0.5 V4 3215  V4+minQ 3279  V4+minQ20 3279  V5-hard 3868  V5-hard+minQ20 3896  V5-soft-erasure 3890  V5-soft-chase 3886  V5-soft-auto 3897  (soft auto 4.57s, V5-hard 4.17s)
+indel 0.5% (ins 0.25% + del 0.25%) + sub 0.5% | informative 1.0 V4 3215  V4+minQ 3379  V4+minQ20 3379  V5-hard 3870  V5-hard+minQ20 3929  V5-soft-erasure 3908  V5-soft-chase 3896  V5-soft-auto 3912  (soft auto 4.462s, V5-hard 4.063s)
+indel 0.5% (ins 0.25% + del 0.25%) + sub 0.5% | graded Q V4 3215  V4+minQ 3281  V4+minQ20 3336  V5-hard 3867  V5-hard+minQ20 3911  V5-soft-erasure 3898  V5-soft-chase 3889  V5-soft-auto 3900  (soft auto 4.626s, V5-hard 4.15s)
+indel 1% (ins 0.5% + del 0.5%) + sub 1% | informative 0.0 V4 1499  V4+minQ 1499  V4+minQ20 1499  V5-hard 2743  V5-hard+minQ20 2743  V5-soft-erasure 2801  V5-soft-chase 2788  V5-soft-auto 2808  (soft auto 21.452s, V5-hard 18.984s)
+indel 1% (ins 0.5% + del 0.5%) + sub 1% | informative 0.5 V4 1499  V4+minQ 1638  V4+minQ20 1638  V5-hard 2761  V5-hard+minQ20 2897  V5-soft-erasure 2871  V5-soft-chase 2857  V5-soft-auto 2881  (soft auto 21.084s, V5-hard 19.333s)
+indel 1% (ins 0.5% + del 0.5%) + sub 1% | informative 1.0 V4 1499  V4+minQ 1842  V4+minQ20 1842  V5-hard 2778  V5-hard+minQ20 3055  V5-soft-erasure 2967  V5-soft-chase 2920  V5-soft-auto 2977  (soft auto 20.916s, V5-hard 18.469s)
+indel 1% (ins 0.5% + del 0.5%) + sub 1% | graded Q V4 1499  V4+minQ 1616  V4+minQ20 1749  V5-hard 2772  V5-hard+minQ20 2976  V5-soft-erasure 2906  V5-soft-chase 2870  V5-soft-auto 2916  (soft auto 20.831s, V5-hard 19.432s)
+=== exit 0 15:01:26
+=== exp_frame_level.py all --frames 500 15:01:26
+EXP-02 k= 1 uninformative hard 500  hard+minQ13 500  hard+minQ20 500  soft-erasure 500  soft-chase 500  soft-auto 500
+EXP-02 k= 1 two-level     hard 500  hard+minQ13 500  hard+minQ20 500  soft-erasure 500  soft-chase 500  soft-auto 500
+EXP-02 k= 1 graded        hard 500  hard+minQ13 500  hard+minQ20 500  soft-erasure 500  soft-chase 500  soft-auto 500
+EXP-02 k= 2 uninformative hard 500  hard+minQ13 500  hard+minQ20 500  soft-erasure 500  soft-chase 500  soft-auto 500
+EXP-02 k= 2 two-level     hard 500  hard+minQ13 500  hard+minQ20 500  soft-erasure 500  soft-chase 500  soft-auto 500
+EXP-02 k= 2 graded        hard 500  hard+minQ13 500  hard+minQ20 500  soft-erasure 500  soft-chase 500  soft-auto 500
+EXP-02 k= 4 uninformative hard 500  hard+minQ13 500  hard+minQ20 500  soft-erasure 500  soft-chase 500  soft-auto 500
+EXP-02 k= 4 two-level     hard 500  hard+minQ13 500  hard+minQ20 500  soft-erasure 500  soft-chase 500  soft-auto 500
+EXP-02 k= 4 graded        hard 500  hard+minQ13 500  hard+minQ20 500  soft-erasure 500  soft-chase 500  soft-auto 500
+EXP-02 k= 6 uninformative hard 500  hard+minQ13 500  hard+minQ20 500  soft-erasure 500  soft-chase 500  soft-auto 500
+EXP-02 k= 6 two-level     hard 500  hard+minQ13 500  hard+minQ20 500  soft-erasure 500  soft-chase 500  soft-auto 500
+EXP-02 k= 6 graded        hard 500  hard+minQ13 500  hard+minQ20 500  soft-erasure 500  soft-chase 500  soft-auto 500
+EXP-02 k= 8 uninformative hard 500  hard+minQ13 500  hard+minQ20 500  soft-erasure 500  soft-chase 500  soft-auto 500
+EXP-02 k= 8 two-level     hard 500  hard+minQ13 500  hard+minQ20 500  soft-erasure 500  soft-chase 500  soft-auto 500
+EXP-02 k= 8 graded        hard 500  hard+minQ13 500  hard+minQ20 500  soft-erasure 500  soft-chase 500  soft-auto 500
+EXP-02 k=10 uninformative hard 31  hard+minQ13 31  hard+minQ20 31  soft-erasure 35  soft-chase 55  soft-auto 56
+EXP-02 k=10 two-level     hard 29  hard+minQ13 500  hard+minQ20 500  soft-erasure 500  soft-chase 270  soft-auto 500
+EXP-02 k=10 graded        hard 41  hard+minQ13 406  hard+minQ20 500  soft-erasure 500  soft-chase 294  soft-auto 500
+EXP-02 k=12 uninformative hard 0  hard+minQ13 0  hard+minQ20 0  soft-erasure 0  soft-chase 0  soft-auto 0
+EXP-02 k=12 two-level     hard 0  hard+minQ13 500  hard+minQ20 500  soft-erasure 500  soft-chase 44  soft-auto 500
+EXP-02 k=12 graded        hard 4  hard+minQ13 156  hard+minQ20 470  soft-erasure 472  soft-chase 38  soft-auto 472
+EXP-04 2e+f=15 e= 2 f=11 uninformative hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=15 e= 2 f=11 informative   hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=15 e= 2 f=11 misleading    hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=15 e= 3 f= 9 uninformative hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=15 e= 3 f= 9 informative   hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=15 e= 3 f= 9 misleading    hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=15 e= 4 f= 7 uninformative hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=15 e= 4 f= 7 informative   hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=15 e= 4 f= 7 misleading    hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=15 e= 5 f= 5 uninformative hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=15 e= 5 f= 5 informative   hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=15 e= 5 f= 5 misleading    hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=15 e= 6 f= 3 uninformative hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=15 e= 6 f= 3 informative   hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=15 e= 6 f= 3 misleading    hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=15 e= 7 f= 1 uninformative hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=15 e= 7 f= 1 informative   hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=15 e= 7 f= 1 misleading    hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 3 f=10 uninformative hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 3 f=10 informative   hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 3 f=10 misleading    hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 4 f= 8 uninformative hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 4 f= 8 informative   hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 4 f= 8 misleading    hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 5 f= 6 uninformative hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 5 f= 6 informative   hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 5 f= 6 misleading    hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 6 f= 4 uninformative hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 6 f= 4 informative   hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 6 f= 4 misleading    hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 7 f= 2 uninformative hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 7 f= 2 informative   hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 7 f= 2 misleading    hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 8 f= 0 uninformative hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 8 f= 0 informative   hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=16 e= 8 f= 0 misleading    hard  500  erasure 500  chase 500  auto 500
+EXP-04 2e+f=17 e= 3 f=11 uninformative hard    0  erasure 3  chase 20  auto 22
+EXP-04 2e+f=17 e= 3 f=11 informative   hard    0  erasure 500  chase 345  auto 500
+EXP-04 2e+f=17 e= 3 f=11 misleading    hard    0  erasure 0  chase 23  auto 23
+EXP-04 2e+f=17 e= 4 f= 9 uninformative hard    0  erasure 1  chase 32  auto 33
+EXP-04 2e+f=17 e= 4 f= 9 informative   hard    0  erasure 500  chase 412  auto 500
+EXP-04 2e+f=17 e= 4 f= 9 misleading    hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=17 e= 5 f= 7 uninformative hard    0  erasure 3  chase 45  auto 46
+EXP-04 2e+f=17 e= 5 f= 7 informative   hard    0  erasure 500  chase 380  auto 500
+EXP-04 2e+f=17 e= 5 f= 7 misleading    hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=17 e= 6 f= 5 uninformative hard    0  erasure 4  chase 51  auto 52
+EXP-04 2e+f=17 e= 6 f= 5 informative   hard    0  erasure 500  chase 408  auto 500
+EXP-04 2e+f=17 e= 6 f= 5 misleading    hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=17 e= 7 f= 3 uninformative hard    0  erasure 6  chase 56  auto 59
+EXP-04 2e+f=17 e= 7 f= 3 informative   hard    0  erasure 500  chase 397  auto 500
+EXP-04 2e+f=17 e= 7 f= 3 misleading    hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=17 e= 8 f= 1 uninformative hard    0  erasure 7  chase 66  auto 67
+EXP-04 2e+f=17 e= 8 f= 1 informative   hard    0  erasure 500  chase 411  auto 500
+EXP-04 2e+f=17 e= 8 f= 1 misleading    hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=18 e= 4 f=10 uninformative hard    0  erasure 3  chase 42  auto 42
+EXP-04 2e+f=18 e= 4 f=10 informative   hard    0  erasure 500  chase 405  auto 500
+EXP-04 2e+f=18 e= 4 f=10 misleading    hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=18 e= 5 f= 8 uninformative hard    0  erasure 3  chase 45  auto 46
+EXP-04 2e+f=18 e= 5 f= 8 informative   hard    0  erasure 500  chase 398  auto 500
+EXP-04 2e+f=18 e= 5 f= 8 misleading    hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=18 e= 6 f= 6 uninformative hard    0  erasure 9  chase 52  auto 55
+EXP-04 2e+f=18 e= 6 f= 6 informative   hard    0  erasure 500  chase 397  auto 500
+EXP-04 2e+f=18 e= 6 f= 6 misleading    hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=18 e= 7 f= 4 uninformative hard    0  erasure 4  chase 57  auto 57
+EXP-04 2e+f=18 e= 7 f= 4 informative   hard    0  erasure 500  chase 386  auto 500
+EXP-04 2e+f=18 e= 7 f= 4 misleading    hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=18 e= 8 f= 2 uninformative hard    0  erasure 11  chase 69  auto 69
+EXP-04 2e+f=18 e= 8 f= 2 informative   hard    0  erasure 500  chase 422  auto 500
+EXP-04 2e+f=18 e= 8 f= 2 misleading    hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=18 e= 9 f= 0 uninformative hard    0  erasure 9  chase 81  auto 83
+EXP-04 2e+f=18 e= 9 f= 0 informative   hard    0  erasure 500  chase 388  auto 500
+EXP-04 2e+f=18 e= 9 f= 0 misleading    hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=20 e= 5 f=10 uninformative hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=20 e= 5 f=10 informative   hard    0  erasure 500  chase 208  auto 500
+EXP-04 2e+f=20 e= 5 f=10 misleading    hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=20 e= 6 f= 8 uninformative hard    0  erasure 0  chase 2  auto 2
+EXP-04 2e+f=20 e= 6 f= 8 informative   hard    0  erasure 500  chase 202  auto 500
+EXP-04 2e+f=20 e= 6 f= 8 misleading    hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=20 e= 7 f= 6 uninformative hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=20 e= 7 f= 6 informative   hard    0  erasure 500  chase 214  auto 500
+EXP-04 2e+f=20 e= 7 f= 6 misleading    hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=20 e= 8 f= 4 uninformative hard    0  erasure 0  chase 3  auto 3
+EXP-04 2e+f=20 e= 8 f= 4 informative   hard    0  erasure 500  chase 210  auto 500
+EXP-04 2e+f=20 e= 8 f= 4 misleading    hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=20 e= 9 f= 2 uninformative hard    0  erasure 0  chase 1  auto 1
+EXP-04 2e+f=20 e= 9 f= 2 informative   hard    0  erasure 500  chase 204  auto 500
+EXP-04 2e+f=20 e= 9 f= 2 misleading    hard    0  erasure 0  chase 0  auto 0
+EXP-04 2e+f=20 e=10 f= 0 uninformative hard    0  erasure 0  chase 1  auto 1
+EXP-04 2e+f=20 e=10 f= 0 informative   hard    0  erasure 500  chase 192  auto 500
+EXP-04 2e+f=20 e=10 f= 0 misleading    hard    0  erasure 0  chase 0  auto 0
+EXP-05 e= 6 0.99/0.0033×3 (truth 0.0033)   hard  500  erasure 500  chase 500  auto 500
+EXP-05 e= 6 0.90/0.033×3 (truth 0.033)     hard  500  erasure 500  chase 500  auto 500
+EXP-05 e= 6 0.70/0.10×3 (truth 0.10)       hard  500  erasure 500  chase 500  auto 500
+EXP-05 e= 6 0.55/0.45/0/0 (truth 0.45)     hard  500  erasure 500  chase 500  auto 500
+EXP-05 e= 6 0.51/0.49/0/0 (truth 0.49)     hard  500  erasure 500  chase 500  auto 500
+EXP-05 e= 6 0.55/0.45/0/0 (truth 0)        hard  500  erasure 500  chase 500  auto 500
+EXP-05 e= 9 0.99/0.0033×3 (truth 0.0033)   hard    0  erasure 4  chase 31  auto 34
+EXP-05 e= 9 0.90/0.033×3 (truth 0.033)     hard    0  erasure 500  chase 396  auto 500
+EXP-05 e= 9 0.70/0.10×3 (truth 0.10)       hard    0  erasure 500  chase 398  auto 500
+EXP-05 e= 9 0.55/0.45/0/0 (truth 0.45)     hard    0  erasure 500  chase 500  auto 500
+EXP-05 e= 9 0.51/0.49/0/0 (truth 0.49)     hard    0  erasure 500  chase 500  auto 500
+EXP-05 e= 9 0.55/0.45/0/0 (truth 0)        hard    0  erasure 500  chase 0  auto 500
+EXP-05 e=10 0.99/0.0033×3 (truth 0.0033)   hard    0  erasure 0  chase 1  auto 1
+EXP-05 e=10 0.90/0.033×3 (truth 0.033)     hard    0  erasure 500  chase 208  auto 500
+EXP-05 e=10 0.70/0.10×3 (truth 0.10)       hard    0  erasure 500  chase 191  auto 500
+EXP-05 e=10 0.55/0.45/0/0 (truth 0.45)     hard    0  erasure 500  chase 500  auto 500
+EXP-05 e=10 0.51/0.49/0/0 (truth 0.49)     hard    0  erasure 500  chase 500  auto 500
+EXP-05 e=10 0.55/0.45/0/0 (truth 0)        hard    0  erasure 500  chase 0  auto 500
+EXP-05 e=12 0.99/0.0033×3 (truth 0.0033)   hard    0  erasure 0  chase 0  auto 0
+EXP-05 e=12 0.90/0.033×3 (truth 0.033)     hard    0  erasure 500  chase 9  auto 500
+EXP-05 e=12 0.70/0.10×3 (truth 0.10)       hard    0  erasure 500  chase 10  auto 500
+EXP-05 e=12 0.55/0.45/0/0 (truth 0.45)     hard    0  erasure 500  chase 500  auto 500
+EXP-05 e=12 0.51/0.49/0/0 (truth 0.49)     hard    0  erasure 500  chase 500  auto 500
+EXP-05 e=12 0.55/0.45/0/0 (truth 0)        hard    0  erasure 500  chase 0  auto 500
+EXP-06 A misleading qualities, e=6                                {'verified_correct': 500, 'false': 0, 'ambiguous': 0, 'rejected': 0, 'wrong_but_verified_frames': 0, 'trials_mean': 9.0, 'accepted_rank_mean': 0.0, 'entropy_bits_mean': 0.1148, 'trials': 4500, 'rs_valid_trials': 2356, 'rs_valid_rejected_by_crc_or_checks': 624}
+EXP-06 A misleading qualities, e=9                                {'verified_correct': 6, 'false': 0, 'ambiguous': 0, 'rejected': 494, 'wrong_but_verified_frames': 0, 'trials_mean': 65.32, 'accepted_rank_mean': 1.0, 'entropy_bits_mean': 0.1657, 'trials': 32658, 'rs_valid_trials': 637, 'rs_valid_rejected_by_crc_or_checks': 631}
+EXP-06 A misleading qualities, e=12                               {'verified_correct': 0, 'false': 0, 'ambiguous': 0, 'rejected': 500, 'wrong_but_verified_frames': 0, 'trials_mean': 66.0, 'accepted_rank_mean': 0.0, 'entropy_bits_mean': 0.2166, 'trials': 33000, 'rs_valid_trials': 616, 'rs_valid_rejected_by_crc_or_checks': 616}
+EXP-06 B wrong candidate more likely than the correct one, e=9    {'verified_correct': 500, 'false': 0, 'ambiguous': 0, 'rejected': 0, 'wrong_but_verified_frames': 0, 'trials_mean': 9.0, 'accepted_rank_mean': 1.0, 'entropy_bits_mean': 0.1254, 'trials': 4500, 'rs_valid_trials': 4000, 'rs_valid_rejected_by_crc_or_checks': 0}
+EXP-06 B wrong candidate more likely than the correct one, e=12   {'verified_correct': 500, 'false': 0, 'ambiguous': 0, 'rejected': 0, 'wrong_but_verified_frames': 0, 'trials_mean': 9.0, 'accepted_rank_mean': 4.0, 'entropy_bits_mean': 0.135, 'trials': 4500, 'rs_valid_trials': 2500, 'rs_valid_rejected_by_crc_or_checks': 0}
+EXP-06 C near-identical posteriors (no information)               {'verified_correct': 0, 'false': 0, 'ambiguous': 0, 'rejected': 500, 'wrong_but_verified_frames': 0, 'trials_mean': 66.0, 'accepted_rank_mean': 0.0, 'entropy_bits_mean': 1.9994, 'trials': 33000, 'rs_valid_trials': 9600, 'rs_valid_rejected_by_crc_or_checks': 9600}
+EXP-06 D random frames, confident qualities                       {'verified_correct': 0, 'false': 0, 'ambiguous': 0, 'rejected': 500, 'wrong_but_verified_frames': 0, 'trials_mean': 66.0, 'accepted_rank_mean': 0.0, 'entropy_bits_mean': 0.0016, 'trials': 33000, 'rs_valid_trials': 642, 'rs_valid_rejected_by_crc_or_checks': 642}
+EXP-06 E decodable frames, wrong expected address                 {'verified_correct': 0, 'false': 0, 'ambiguous': 0, 'rejected': 500, 'wrong_but_verified_frames': 0, 'trials_mean': 66.0, 'accepted_rank_mean': 0.0, 'entropy_bits_mean': 0.0202, 'accepted_wrong_address': 0, 'trials': 33000, 'rs_valid_trials': 12330, 'rs_valid_rejected_by_crc_or_checks': 12330}
+EXP-06 F consensus favours another strand (expected = target address) {'verified_correct': 0, 'false': 0, 'ambiguous': 0, 'rejected': 500, 'wrong_but_verified_frames': 0, 'trials_mean': 66.0, 'accepted_rank_mean': 0.0, 'entropy_bits_mean': 0.0081, 'accepted_wrong_address': 0, 'trials': 33000, 'rs_valid_trials': 32000, 'rs_valid_rejected_by_crc_or_checks': 32000}
+=== exit 0 15:05:20
+=== exp_archive.py exp07 --seeds 3 15:05:20
+sub 3%, informative 0.5, cov 1                                 s0 V4 FAIL 0.0 0.711s  V4+minQ FAIL 0.9231 0.625s  V5-hard FAIL 0.0 1.394s  V5-hard+minQ FAIL 0.9231 0.812s  V5-soft-erasure FAIL 0.9423 2.492s  V5-soft-auto FAIL 0.9423 3.376s
+sub 3%, informative 0.5, cov 1                                 s1 V4 FAIL 0.0 0.67s  V4+minQ FAIL 0.9808 0.634s  V5-hard FAIL 0.0 1.475s  V5-hard+minQ FAIL 0.9808 0.846s  V5-soft-erasure FAIL 0.9808 2.604s  V5-soft-auto OK 1.0 3.328s
+sub 3%, informative 0.5, cov 1                                 s2 V4 FAIL 0.0 0.644s  V4+minQ FAIL 0.9615 0.62s  V5-hard FAIL 0.0 1.406s  V5-hard+minQ FAIL 0.9615 0.788s  V5-soft-erasure FAIL 0.9615 2.405s  V5-soft-auto FAIL 0.9615 2.982s
+sub 4%, informative 1.0, cov 1                                 s0 V4 FAIL None 0.583s  V4+minQ OK 1.0 0.611s  V5-hard FAIL None 1.871s  V5-hard+minQ OK 1.0 0.589s  V5-soft-erasure OK 1.0 4.508s  V5-soft-auto OK 1.0 4.623s
+sub 4%, informative 1.0, cov 1                                 s1 V4 FAIL None 0.601s  V4+minQ OK 1.0 0.597s  V5-hard FAIL None 1.636s  V5-hard+minQ OK 1.0 0.637s  V5-soft-erasure OK 1.0 4.4s  V5-soft-auto OK 1.0 4.676s
+sub 4%, informative 1.0, cov 1                                 s2 V4 FAIL 0.0 0.792s  V4+minQ OK 1.0 0.54s  V5-hard FAIL 0.0 2.501s  V5-hard+minQ OK 1.0 0.578s  V5-soft-erasure OK 1.0 4.442s  V5-soft-auto OK 1.0 4.589s
+sub 2.5%, uninformative, cov 1                                 s0 V4 FAIL 0.25 0.6s  V4+minQ FAIL 0.25 0.603s  V5-hard FAIL 0.25 0.902s  V5-hard+minQ FAIL 0.25 0.992s  V5-soft-erasure FAIL 0.2692 1.742s  V5-soft-auto FAIL 0.2885 2.726s
+sub 2.5%, uninformative, cov 1                                 s1 V4 FAIL 0.3269 0.583s  V4+minQ FAIL 0.3269 0.597s  V5-hard FAIL 0.3269 0.985s  V5-hard+minQ FAIL 0.3269 1.019s  V5-soft-erasure FAIL 0.3462 1.754s  V5-soft-auto FAIL 0.4231 2.727s
+sub 2.5%, uninformative, cov 1                                 s2 V4 FAIL 0.3654 0.588s  V4+minQ FAIL 0.3654 0.596s  V5-hard FAIL 0.3654 0.989s  V5-hard+minQ FAIL 0.3654 0.898s  V5-soft-erasure FAIL 0.3654 1.683s  V5-soft-auto FAIL 0.4808 2.667s
+indel 0.25%+0.25% + sub 0.5%, informative 0.5, cov 1           s0 V4 FAIL 0.5769 0.475s  V4+minQ FAIL 0.7308 0.501s  V5-hard OK 1.0 4.514s  V5-hard+minQ OK 1.0 4.188s  V5-soft-erasure OK 1.0 5.099s  V5-soft-auto OK 1.0 5.552s
+indel 0.25%+0.25% + sub 0.5%, informative 0.5, cov 1           s1 V4 FAIL 0.5769 0.472s  V4+minQ FAIL 0.7115 0.539s  V5-hard OK 1.0 4.675s  V5-hard+minQ OK 1.0 3.983s  V5-soft-erasure OK 1.0 5.016s  V5-soft-auto OK 1.0 5.264s
+indel 0.25%+0.25% + sub 0.5%, informative 0.5, cov 1           s2 V4 FAIL 0.5769 0.475s  V4+minQ FAIL 0.6731 0.492s  V5-hard OK 1.0 4.509s  V5-hard+minQ OK 1.0 4.027s  V5-soft-erasure OK 1.0 5.028s  V5-soft-auto OK 1.0 5.193s
+indel 0.4%+0.4% + sub 1%, informative 0.7, cov 1               s0 V4 FAIL 0.0 0.585s  V4+minQ FAIL 0.0 0.59s  V5-hard FAIL 0.3654 15.711s  V5-hard+minQ FAIL 0.7115 11.653s  V5-soft-erasure FAIL 0.5577 17.443s  V5-soft-auto FAIL 0.5769 18.08s
+indel 0.4%+0.4% + sub 1%, informative 0.7, cov 1               s1 V4 FAIL 0.0 0.584s  V4+minQ FAIL 0.0 0.634s  V5-hard FAIL 0.5385 15.162s  V5-hard+minQ FAIL 0.8462 11.73s  V5-soft-erasure FAIL 0.7308 16.736s  V5-soft-auto FAIL 0.7308 17.265s
+indel 0.4%+0.4% + sub 1%, informative 0.7, cov 1               s2 V4 FAIL 0.0 0.618s  V4+minQ FAIL 0.0 0.636s  V5-hard FAIL 0.5385 15.109s  V5-hard+minQ FAIL 0.7692 11.318s  V5-soft-erasure FAIL 0.6538 16.594s  V5-soft-auto FAIL 0.6538 17.033s
+EXP-0011 (0.2% sub, 0.05%+0.05%, 2% dropout), Poisson cov 3    s0 V4 OK 1.0 0.738s  V4+minQ OK 1.0 0.759s  V5-hard OK 1.0 0.96s  V5-hard+minQ OK 1.0 0.97s  V5-soft-erasure OK 1.0 1.081s  V5-soft-auto OK 1.0 1.124s
+EXP-0011 (0.2% sub, 0.05%+0.05%, 2% dropout), Poisson cov 3    s1 V4 OK 1.0 0.741s  V4+minQ OK 1.0 0.744s  V5-hard OK 1.0 0.964s  V5-hard+minQ OK 1.0 1.026s  V5-soft-erasure OK 1.0 1.099s  V5-soft-auto OK 1.0 1.21s
+EXP-0011 (0.2% sub, 0.05%+0.05%, 2% dropout), Poisson cov 3    s2 V4 OK 1.0 0.743s  V4+minQ OK 1.0 0.764s  V5-hard OK 1.0 1.022s  V5-hard+minQ OK 1.0 0.974s  V5-soft-erasure OK 1.0 1.119s  V5-soft-auto OK 1.0 1.176s
+=== exit 0 15:11:59
+=== exp_archive.py exp08 --seeds 2 15:11:59
+indel 0.5%+0.5% + sub 1%, informative 0.5, cov 1               s0 V4 FAIL 0.0 0.617s  V5-hard FAIL 0.0714 6.011s  V5-soft-auto FAIL 0.0714 7.046s
+indel 0.5%+0.5% + sub 1%, informative 0.5, cov 1               s1 V4 FAIL 0.0 0.633s  V5-hard FAIL 0.1429 6.431s  V5-soft-auto FAIL 0.2143 7.341s
+indel 0.5%+0.5% + sub 1%, informative 0.5, cov 2               s0 V4 FAIL 0.0714 0.74s  V5-hard OK 1.0 12.059s  V5-soft-auto OK 1.0 13.722s
+indel 0.5%+0.5% + sub 1%, informative 0.5, cov 2               s1 V4 FAIL 0.0714 0.77s  V5-hard OK 1.0 11.348s  V5-soft-auto OK 1.0 13.4s
+indel 0.5%+0.5% + sub 1%, informative 0.5, cov 3               s0 V4 FAIL 0.6429 0.826s  V5-hard OK 1.0 17.434s  V5-soft-auto OK 1.0 21.582s
+indel 0.5%+0.5% + sub 1%, informative 0.5, cov 3               s1 V4 FAIL 0.7857 0.811s  V5-hard OK 1.0 16.47s  V5-soft-auto OK 1.0 20.083s
+indel 0.5%+0.5% + sub 1%, informative 0.5, cov 5               s0 V4 OK 1.0 0.998s  V5-hard OK 1.0 29.542s  V5-soft-auto OK 1.0 33.048s
+indel 0.5%+0.5% + sub 1%, informative 0.5, cov 5               s1 V4 OK 1.0 0.999s  V5-hard OK 1.0 29.643s  V5-soft-auto OK 1.0 34.449s
+indel 0.5%+0.5% + sub 1%, informative 0.5, cov 10              s0 V4 OK 1.0 1.42s  V5-hard OK 1.0 39.917s  V5-soft-auto OK 1.0 46.807s
+indel 0.5%+0.5% + sub 1%, informative 0.5, cov 10              s1 V4 OK 1.0 1.351s  V5-hard OK 1.0 40.353s  V5-soft-auto OK 1.0 46.467s
+indel 0.25%+0.25% + sub 4%, informative 0.5, cov 1             s0 V4 FAIL None 0.532s  V5-hard FAIL None 6.766s  V5-soft-auto FAIL None 8.574s
+indel 0.25%+0.25% + sub 4%, informative 0.5, cov 1             s1 V4 FAIL None 0.582s  V5-hard FAIL None 6.752s  V5-soft-auto FAIL 0.0 9.446s
+indel 0.25%+0.25% + sub 4%, informative 0.5, cov 2             s0 V4 FAIL None 0.702s  V5-hard FAIL None 13.47s  V5-soft-auto FAIL 0.0714 18.645s
+indel 0.25%+0.25% + sub 4%, informative 0.5, cov 2             s1 V4 FAIL None 0.638s  V5-hard FAIL 0.0 16.013s  V5-soft-auto FAIL 0.0714 19.22s
+/usr/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 8 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '

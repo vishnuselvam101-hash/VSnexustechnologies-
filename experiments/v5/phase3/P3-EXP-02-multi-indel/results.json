@@ -1,0 +1,497 @@
+{
+  "experiment": "P3-EXP-02 multiple indels",
+  "simulated": true,
+  "config": {
+    "layout": {
+      "payload_bytes": 40,
+      "inner_parity": 16,
+      "marker_period": 24,
+      "marker_len": 3,
+      "frame_bytes": 70,
+      "strand_nt": 313,
+      "markers": 11
+    },
+    "reads_per_case": 300,
+    "seed": 3201,
+    "cases": [
+      [
+        "separated",
+        2
+      ],
+      [
+        "separated",
+        3
+      ],
+      [
+        "separated",
+        4
+      ],
+      [
+        "separated",
+        5
+      ],
+      [
+        "separated",
+        10
+      ],
+      [
+        "adjacent",
+        2
+      ],
+      [
+        "ins+del-near",
+        2
+      ],
+      [
+        "del+ins-near",
+        2
+      ],
+      [
+        "ins|del-split",
+        2
+      ],
+      [
+        "marker-adjacent",
+        2
+      ],
+      [
+        "separated+sub",
+        3
+      ]
+    ],
+    "band": 6,
+    "recovery": {
+      "max_shift": 1,
+      "max_window_segments": 2,
+      "max_candidates": 64,
+      "max_trials": 1024,
+      "max_joint_windows": 2,
+      "max_read_nt": 8256,
+      "trial_batch": 8192,
+      "substitution_prior": 0.005,
+      "keep_byte_error": 0.001,
+      "high_confidence": 0.001,
+      "false_accept_budget": 1e-09,
+      "phases": [
+        "T0",
+        "T1",
+        "T2"
+      ]
+    }
+  },
+  "provenance": {
+    "timestamp_utc": "2026-10-03T07:41:09Z",
+    "vnx_version": "4.0.0",
+    "vnx4_format_version": [
+      4,
+      0
+    ],
+    "git_commit": "b19cb19e6252fe8718d21ae793bdbe24aa95aa86-dirty",
+    "cpu_model": "Intel(R) Xeon(R) Gold 6240 CPU @ 2.60GHz",
+    "logical_cpus": 8,
+    "ram_bytes": 33654890496,
+    "os": "Linux 6.8.0-146-generic",
+    "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "packages": {
+      "numpy": "2.5.3",
+      "cryptography": "46.0.7",
+      "zstandard": "0.25.0",
+      "reedsolo": "1.7.0",
+      "pydantic": "2.13.5",
+      "typer": "0.27.2"
+    },
+    "v4_control_tag": "v4.0.0",
+    "v4_control_commit": "a358ae8284066d0608f329b47a53e55018bbfa79",
+    "commit_under_test": "b19cb19e6252fe8718d21ae793bdbe24aa95aa86",
+    "worktree_dirty": true,
+    "native_toolchain": {
+      "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+      "rustc": "rustc 1.75.0 (82e1608df 2023-12-21) (built from a source tarball)",
+      "cargo": "cargo 1.75.0"
+    },
+    "cpu_flags": [
+      "avx",
+      "avx2",
+      "avx512bw",
+      "avx512f",
+      "bmi2",
+      "popcnt",
+      "sse4_2"
+    ],
+    "config_sha256": "73249d29a5ae6a12b9550eaf101be18e3504c129e4430fd08c5ac9c9479ae206"
+  },
+  "results": {
+    "summary": {
+      "separated k=2": {
+        "reads": 300,
+        "true_indels": 600,
+        "V4_ok": 283,
+        "V5_ok": 296,
+        "V5_alone_ok": 296,
+        "V5_false": 0,
+        "V4_erased_nt_per_indel": 24.32,
+        "V5_erased_nt_per_indel": 21.32,
+        "V5_erased_nt_per_indel_accepted_reads": 21.61,
+        "detected_windows": 546,
+        "window_status": {
+          "LOW": 542,
+          "UNRECOVERABLE": 4
+        },
+        "unrecoverable_reasons": {
+          "net shift 2 exceeds max_shift": 4
+        },
+        "phase": {
+          "T0": 296,
+          "none": 4
+        },
+        "trials": {
+          "n": 300,
+          "mean": 1.0,
+          "median": 1.0,
+          "p95": 1.0,
+          "max": 1.0,
+          "min": 1.0
+        },
+        "false_accept_bound_max": 5.827647175590811e-12,
+        "seconds": 0.272,
+        "reads_per_second_v5": 1101.2
+      },
+      "separated k=3": {
+        "reads": 300,
+        "true_indels": 900,
+        "V4_ok": 126,
+        "V5_ok": 280,
+        "V5_alone_ok": 277,
+        "V5_false": 0,
+        "V4_erased_nt_per_indel": 22.33,
+        "V5_erased_nt_per_indel": 15.18,
+        "V5_erased_nt_per_indel_accepted_reads": 15.54,
+        "detected_windows": 757,
+        "window_status": {
+          "LOW": 746,
+          "UNRECOVERABLE": 11
+        },
+        "unrecoverable_reasons": {
+          "net shift 2 exceeds max_shift": 8,
+          "window spans too many segments": 3
+        },
+        "phase": {
+          "T1": 188,
+          "T0": 89,
+          "none": 23
+        },
+        "trials": {
+          "n": 300,
+          "mean": 43.21,
+          "median": 60.0,
+          "p95": 88.05000000000001,
+          "max": 106.0,
+          "min": 0.0
+        },
+        "false_accept_bound_max": 9.313225746154785e-10,
+        "seconds": 0.7,
+        "reads_per_second_v5": 428.6
+      },
+      "separated k=4": {
+        "reads": 300,
+        "true_indels": 1200,
+        "V4_ok": 29,
+        "V5_ok": 235,
+        "V5_alone_ok": 233,
+        "V5_false": 0,
+        "V4_erased_nt_per_indel": 20.4,
+        "V5_erased_nt_per_indel": 10.66,
+        "V5_erased_nt_per_indel_accepted_reads": 9.73,
+        "detected_windows": 908,
+        "window_status": {
+          "LOW": 881,
+          "UNRECOVERABLE": 27
+        },
+        "unrecoverable_reasons": {
+          "net shift 2 exceeds max_shift": 19,
+          "window spans too many segments": 8
+        },
+        "phase": {
+          "T1": 54,
+          "T2": 171,
+          "none": 67,
+          "T0": 8
+        },
+        "trials": {
+          "n": 300,
+          "mean": 350.817,
+          "median": 171.0,
+          "p95": 1024.0,
+          "max": 1024.0,
+          "min": 0.0
+        },
+        "false_accept_bound_max": 9.998622185829299e-10,
+        "seconds": 2.659,
+        "reads_per_second_v5": 112.8
+      },
+      "separated k=5": {
+        "reads": 300,
+        "true_indels": 1500,
+        "V4_ok": 7,
+        "V5_ok": 50,
+        "V5_alone_ok": 44,
+        "V5_false": 0,
+        "V4_erased_nt_per_indel": 19.1,
+        "V5_erased_nt_per_indel": 16.22,
+        "V5_erased_nt_per_indel_accepted_reads": 5.35,
+        "detected_windows": 1082,
+        "window_status": {
+          "LOW": 1053,
+          "UNRECOVERABLE": 29
+        },
+        "unrecoverable_reasons": {
+          "net shift 2 exceeds max_shift": 17,
+          "window spans too many segments": 12
+        },
+        "phase": {
+          "T1": 11,
+          "none": 256,
+          "T2": 33
+        },
+        "trials": {
+          "n": 300,
+          "mean": 442.73,
+          "median": 25.0,
+          "p95": 1024.0,
+          "max": 1024.0,
+          "min": 0.0
+        },
+        "false_accept_bound_max": 9.313225746154785e-10,
+        "seconds": 2.88,
+        "reads_per_second_v5": 104.1
+      },
+      "separated k=10": {
+        "reads": 300,
+        "true_indels": 3000,
+        "V4_ok": 0,
+        "V5_ok": 0,
+        "V5_alone_ok": 0,
+        "V5_false": 0,
+        "V4_erased_nt_per_indel": 11.27,
+        "V5_erased_nt_per_indel": 11.21,
+        "V5_erased_nt_per_indel_accepted_reads": 0.0,
+        "detected_windows": 1243,
+        "window_status": {
+          "UNRECOVERABLE": 107,
+          "LOW": 1136
+        },
+        "unrecoverable_reasons": {
+          "window spans too many segments": 49,
+          "net shift 2 exceeds max_shift": 58
+        },
+        "phase": {
+          "none": 300
+        },
+        "trials": {
+          "n": 300,
+          "mean": 208.967,
+          "median": 1.0,
+          "p95": 1024.0,
+          "max": 1024.0,
+          "min": 0.0
+        },
+        "false_accept_bound_max": 9.998622185829299e-10,
+        "seconds": 1.802,
+        "reads_per_second_v5": 166.5
+      },
+      "adjacent k=2": {
+        "reads": 300,
+        "true_indels": 600,
+        "V4_ok": 300,
+        "V5_ok": 300,
+        "V5_alone_ok": 300,
+        "V5_false": 0,
+        "V4_erased_nt_per_indel": 14.76,
+        "V5_erased_nt_per_indel": 14.76,
+        "V5_erased_nt_per_indel_accepted_reads": 14.76,
+        "detected_windows": 300,
+        "window_status": {
+          "UNRECOVERABLE": 300
+        },
+        "unrecoverable_reasons": {
+          "net shift 2 exceeds max_shift": 150,
+          "net shift -2 exceeds max_shift": 150
+        },
+        "phase": {
+          "T0": 300
+        },
+        "trials": {
+          "n": 300,
+          "mean": 1.0,
+          "median": 1.0,
+          "p95": 1.0,
+          "max": 1.0,
+          "min": 1.0
+        },
+        "false_accept_bound_max": 5.827647175590811e-12,
+        "seconds": 0.138,
+        "reads_per_second_v5": 2168.9
+      },
+      "ins+del-near k=2": {
+        "reads": 300,
+        "true_indels": 600,
+        "V4_ok": 300,
+        "V5_ok": 300,
+        "V5_alone_ok": 300,
+        "V5_false": 0,
+        "V4_erased_nt_per_indel": 0.0,
+        "V5_erased_nt_per_indel": 0.0,
+        "V5_erased_nt_per_indel_accepted_reads": 0.0,
+        "detected_windows": 0,
+        "window_status": {},
+        "unrecoverable_reasons": {},
+        "phase": {
+          "T0": 300
+        },
+        "trials": {
+          "n": 300,
+          "mean": 1.0,
+          "median": 1.0,
+          "p95": 1.0,
+          "max": 1.0,
+          "min": 1.0
+        },
+        "false_accept_bound_max": 1.1553846227946716e-19,
+        "seconds": 0.106,
+        "reads_per_second_v5": 2821.4
+      },
+      "del+ins-near k=2": {
+        "reads": 300,
+        "true_indels": 600,
+        "V4_ok": 300,
+        "V5_ok": 300,
+        "V5_alone_ok": 300,
+        "V5_false": 0,
+        "V4_erased_nt_per_indel": 0.0,
+        "V5_erased_nt_per_indel": 0.0,
+        "V5_erased_nt_per_indel_accepted_reads": 0.0,
+        "detected_windows": 0,
+        "window_status": {},
+        "unrecoverable_reasons": {},
+        "phase": {
+          "T0": 300
+        },
+        "trials": {
+          "n": 300,
+          "mean": 1.0,
+          "median": 1.0,
+          "p95": 1.0,
+          "max": 1.0,
+          "min": 1.0
+        },
+        "false_accept_bound_max": 1.1553846227946716e-19,
+        "seconds": 0.103,
+        "reads_per_second_v5": 2905.7
+      },
+      "ins|del-split k=2": {
+        "reads": 300,
+        "true_indels": 600,
+        "V4_ok": 250,
+        "V5_ok": 250,
+        "V5_alone_ok": 250,
+        "V5_false": 0,
+        "V4_erased_nt_per_indel": 0.0,
+        "V5_erased_nt_per_indel": 0.0,
+        "V5_erased_nt_per_indel_accepted_reads": 0.0,
+        "detected_windows": 0,
+        "window_status": {},
+        "unrecoverable_reasons": {},
+        "phase": {
+          "T0": 250,
+          "none": 50
+        },
+        "trials": {
+          "n": 300,
+          "mean": 1.0,
+          "median": 1.0,
+          "p95": 1.0,
+          "max": 1.0,
+          "min": 1.0
+        },
+        "false_accept_bound_max": 1.1553846227946716e-19,
+        "seconds": 0.116,
+        "reads_per_second_v5": 2596.7
+      },
+      "marker-adjacent k=2": {
+        "reads": 300,
+        "true_indels": 600,
+        "V4_ok": 280,
+        "V5_ok": 299,
+        "V5_alone_ok": 299,
+        "V5_false": 0,
+        "V4_erased_nt_per_indel": 23.29,
+        "V5_erased_nt_per_indel": 20.81,
+        "V5_erased_nt_per_indel_accepted_reads": 20.88,
+        "detected_windows": 528,
+        "window_status": {
+          "LOW": 518,
+          "UNRECOVERABLE": 10
+        },
+        "unrecoverable_reasons": {
+          "net shift 2 exceeds max_shift": 5,
+          "net shift -2 exceeds max_shift": 5
+        },
+        "phase": {
+          "T0": 299,
+          "none": 1
+        },
+        "trials": {
+          "n": 300,
+          "mean": 1.0,
+          "median": 1.0,
+          "p95": 1.0,
+          "max": 1.0,
+          "min": 1.0
+        },
+        "false_accept_bound_max": 5.827647175590811e-12,
+        "seconds": 0.276,
+        "reads_per_second_v5": 1088.5
+      },
+      "separated+sub k=3": {
+        "reads": 300,
+        "true_indels": 900,
+        "V4_ok": 55,
+        "V5_ok": 262,
+        "V5_alone_ok": 261,
+        "V5_false": 0,
+        "V4_erased_nt_per_indel": 21.76,
+        "V5_erased_nt_per_indel": 13.76,
+        "V5_erased_nt_per_indel_accepted_reads": 13.79,
+        "detected_windows": 744,
+        "window_status": {
+          "LOW": 720,
+          "MEDIUM": 9,
+          "UNRECOVERABLE": 15
+        },
+        "unrecoverable_reasons": {
+          "net shift 2 exceeds max_shift": 8,
+          "window spans too many segments": 7
+        },
+        "phase": {
+          "T1": 223,
+          "none": 39,
+          "T0": 30,
+          "T2": 8
+        },
+        "trials": {
+          "n": 300,
+          "mean": 77.397,
+          "median": 61.5,
+          "p95": 99.05000000000001,
+          "max": 1024.0,
+          "min": 0.0
+        },
+        "false_accept_bound_max": 5.944200119102627e-10,
+        "seconds": 0.857,
+        "reads_per_second_v5": 350.3
+      }
+    },
+    "wall_seconds": 10.5
+  }
+}

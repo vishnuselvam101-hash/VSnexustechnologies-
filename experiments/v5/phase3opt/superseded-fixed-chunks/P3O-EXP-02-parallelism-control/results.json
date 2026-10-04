@@ -1,0 +1,4339 @@
+{
+  "experiment": "P3O-EXP-02-parallelism-control",
+  "simulated": true,
+  "config": {
+    "input": {
+      "size": 32768,
+      "pattern": "random",
+      "seed": 4801
+    },
+    "decoders": {
+      "V5-hard eager": {
+        "indel_recovery": "smart",
+        "recovery_schedule": "eager"
+      },
+      "V5-hard eager batch256": {
+        "indel_recovery": "smart",
+        "recovery_schedule": "eager",
+        "batch_reads": 256
+      },
+      "V5-hard deferred": {
+        "indel_recovery": "smart",
+        "recovery_schedule": "deferred"
+      }
+    },
+    "workers": 8,
+    "seeds": 2,
+    "channel_seed_rule": "44000 + 10\u00b7seed_index",
+    "channels": {
+      "indel-heavy (0.5%+0.5%, sub 0.1%)": {
+        "insertion_rate": 0.005,
+        "deletion_rate": 0.005,
+        "substitution_rate": 0.001,
+        "quality_informative": 0.5
+      },
+      "mixed (0.5%+0.5%, sub 1%)": {
+        "insertion_rate": 0.005,
+        "deletion_rate": 0.005,
+        "substitution_rate": 0.01,
+        "quality_informative": 0.5
+      },
+      "mixed, substitution-heavy (0.25%+0.25%, sub 4%)": {
+        "insertion_rate": 0.0025,
+        "deletion_rate": 0.0025,
+        "substitution_rate": 0.04,
+        "quality_informative": 0.5
+      }
+    },
+    "coverages": [
+      1,
+      3,
+      10
+    ],
+    "coverage_model": "fixed"
+  },
+  "provenance": {
+    "timestamp_utc": "2026-10-03T17:41:11Z",
+    "vnx_version": "4.0.0",
+    "vnx4_format_version": [
+      4,
+      0
+    ],
+    "git_commit": "cab9233ebd0c62ffd078087f4d62c934c7544071",
+    "cpu_model": "Intel(R) Xeon(R) Gold 6240 CPU @ 2.60GHz",
+    "logical_cpus": 8,
+    "ram_bytes": 33654890496,
+    "os": "Linux 6.8.0-146-generic",
+    "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "packages": {
+      "numpy": "2.5.3",
+      "cryptography": "46.0.7",
+      "zstandard": "0.25.0",
+      "reedsolo": "1.7.0",
+      "pydantic": "2.13.5",
+      "typer": "0.27.2"
+    },
+    "v4_control_tag": "v4.0.0",
+    "v4_control_commit": "a358ae8284066d0608f329b47a53e55018bbfa79",
+    "commit_under_test": "cab9233ebd0c62ffd078087f4d62c934c7544071",
+    "worktree_dirty": false,
+    "native_toolchain": {
+      "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+      "rustc": "rustc 1.75.0 (82e1608df 2023-12-21) (built from a source tarball)",
+      "cargo": "cargo 1.75.0"
+    },
+    "cpu_flags": [
+      "avx",
+      "avx2",
+      "avx512bw",
+      "avx512f",
+      "bmi2",
+      "popcnt",
+      "sse4_2"
+    ],
+    "config_sha256": "7eaba6ba3337eceb21750eb0289dd470abec3466fb8376507d4e686cd427865f"
+  },
+  "results": {
+    "summary": {
+      "indel-heavy (0.5%+0.5%, sub 0.1%) | cov 1": {
+        "V5-hard eager": {
+          "verified_success": 0,
+          "trials": 2,
+          "false_success": 0,
+          "status": [
+            "FAILURE",
+            "FAILURE"
+          ],
+          "groups_recovered_fraction": [
+            0.9286,
+            0.7857
+          ],
+          "seconds": [
+            3.622,
+            3.933
+          ],
+          "cpu_seconds": [
+            5.27,
+            5.69
+          ],
+          "peak_rss_mb": [
+            65.0,
+            64.8
+          ],
+          "peak_rss_workers_mb": [
+            86.9,
+            87.1
+          ],
+          "pass1_seconds": [
+            3.46578251599567,
+            3.8096323589852545
+          ],
+          "deferred_seconds": [
+            null,
+            null
+          ],
+          "pass2_seconds": [
+            0.10191510699223727,
+            0.07028732899925672
+          ],
+          "smart_attempts": [
+            709,
+            745
+          ],
+          "reads_recovered_per_read": [
+            {
+              "smart": 287,
+              "soft": null
+            },
+            {
+              "smart": 299,
+              "soft": null
+            }
+          ],
+          "reads_tried": [
+            null,
+            null
+          ],
+          "reads_skipped": [
+            null,
+            null
+          ],
+          "addresses_skipped": [
+            null,
+            null
+          ],
+          "unique_addresses_tried": [
+            null,
+            null
+          ],
+          "addresses_recovered_per_read": [
+            null,
+            null
+          ],
+          "round_b": [
+            null,
+            null
+          ],
+          "groups_decodable_after_cheap_pass": [
+            null,
+            null
+          ],
+          "needed_addresses": [
+            null,
+            null
+          ],
+          "output_sha256": [
+            null,
+            null
+          ]
+        },
+        "V5-hard eager batch256": {
+          "verified_success": 0,
+          "trials": 2,
+          "false_success": 0,
+          "status": [
+            "FAILURE",
+            "FAILURE"
+          ],
+          "groups_recovered_fraction": [
+            0.9286,
+            0.7857
+          ],
+          "seconds": [
+            1.615,
+            1.654
+          ],
+          "cpu_seconds": [
+            7.85,
+            8.14
+          ],
+          "peak_rss_mb": [
+            63.0,
+            62.6
+          ],
+          "peak_rss_workers_mb": [
+            76.0,
+            76.4
+          ],
+          "pass1_seconds": [
+            1.4613231910043396,
+            1.5285265010024887
+          ],
+          "deferred_seconds": [
+            null,
+            null
+          ],
+          "pass2_seconds": [
+            0.1013154269894585,
+            0.07341676799114794
+          ],
+          "smart_attempts": [
+            709,
+            745
+          ],
+          "reads_recovered_per_read": [
+            {
+              "smart": 287,
+              "soft": null
+            },
+            {
+              "smart": 299,
+              "soft": null
+            }
+          ],
+          "reads_tried": [
+            null,
+            null
+          ],
+          "reads_skipped": [
+            null,
+            null
+          ],
+          "addresses_skipped": [
+            null,
+            null
+          ],
+          "unique_addresses_tried": [
+            null,
+            null
+          ],
+          "addresses_recovered_per_read": [
+            null,
+            null
+          ],
+          "round_b": [
+            null,
+            null
+          ],
+          "groups_decodable_after_cheap_pass": [
+            null,
+            null
+          ],
+          "needed_addresses": [
+            null,
+            null
+          ],
+          "output_sha256": [
+            null,
+            null
+          ]
+        },
+        "V5-hard deferred": {
+          "verified_success": 0,
+          "trials": 2,
+          "false_success": 0,
+          "status": [
+            "FAILURE",
+            "FAILURE"
+          ],
+          "groups_recovered_fraction": [
+            0.9286,
+            0.7857
+          ],
+          "seconds": [
+            4.441,
+            4.54
+          ],
+          "cpu_seconds": [
+            7.67,
+            8.14
+          ],
+          "peak_rss_mb": [
+            65.8,
+            65.7
+          ],
+          "peak_rss_workers_mb": [
+            81.0,
+            81.5
+          ],
+          "pass1_seconds": [
+            0.4921797850111034,
+            0.4551519410160836
+          ],
+          "deferred_seconds": [
+            3.777363133005565,
+            3.96582050199504
+          ],
+          "pass2_seconds": [
+            0.11381829401943833,
+            0.06611939298454672
+          ],
+          "smart_attempts": [
+            654,
+            700
+          ],
+          "reads_recovered_per_read": [
+            {
+              "smart": 287,
+              "soft": null
+            },
+            {
+              "smart": 299,
+              "soft": null
+            }
+          ],
+          "reads_tried": [
+            464,
+            490
+          ],
+          "reads_skipped": [
+            0,
+            0
+          ],
+          "addresses_skipped": [
+            0,
+            0
+          ],
+          "unique_addresses_tried": [
+            421,
+            433
+          ],
+          "addresses_recovered_per_read": [
+            287,
+            299
+          ],
+          "round_b": [
+            true,
+            true
+          ],
+          "groups_decodable_after_cheap_pass": [
+            1,
+            1
+          ],
+          "needed_addresses": [
+            439,
+            467
+          ],
+          "output_sha256": [
+            null,
+            null
+          ]
+        },
+        "V5-hard same_outcome": true
+      },
+      "indel-heavy (0.5%+0.5%, sub 0.1%) | cov 3": {
+        "V5-hard eager": {
+          "verified_success": 2,
+          "trials": 2,
+          "false_success": 0,
+          "status": [
+            "SUCCESS",
+            "SUCCESS"
+          ],
+          "groups_recovered_fraction": [
+            1.0,
+            1.0
+          ],
+          "seconds": [
+            11.696,
+            12.026
+          ],
+          "cpu_seconds": [
+            13.48,
+            13.76
+          ],
+          "peak_rss_mb": [
+            86.4,
+            84.8
+          ],
+          "peak_rss_workers_mb": [
+            96.8,
+            96.7
+          ],
+          "pass1_seconds": [
+            10.536777215980692,
+            10.86754800498602
+          ],
+          "deferred_seconds": [
+            null,
+            null
+          ],
+          "pass2_seconds": [
+            1.0362304830050562,
+            1.0436337660066783
+          ],
+          "smart_attempts": [
+            2146,
+            2184
+          ],
+          "reads_recovered_per_read": [
+            {
+              "smart": 813,
+              "soft": null
+            },
+            {
+              "smart": 846,
+              "soft": null
+            }
+          ],
+          "reads_tried": [
+            null,
+            null
+          ],
+          "reads_skipped": [
+            null,
+            null
+          ],
+          "addresses_skipped": [
+            null,
+            null
+          ],
+          "unique_addresses_tried": [
+            null,
+            null
+          ],
+          "addresses_recovered_per_read": [
+            null,
+            null
+          ],
+          "round_b": [
+            null,
+            null
+          ],
+          "groups_decodable_after_cheap_pass": [
+            null,
+            null
+          ],
+          "needed_addresses": [
+            null,
+            null
+          ],
+          "output_sha256": [
+            "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2",
+            "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+          ]
+        },
+        "V5-hard eager batch256": {
+          "verified_success": 2,
+          "trials": 2,
+          "false_success": 0,
+          "status": [
+            "SUCCESS",
+            "SUCCESS"
+          ],
+          "groups_recovered_fraction": [
+            1.0,
+            1.0
+          ],
+          "seconds": [
+            3.474,
+            3.337
+          ],
+          "cpu_seconds": [
+            17.43,
+            17.13
+          ],
+          "peak_rss_mb": [
+            78.8,
+            77.5
+          ],
+          "peak_rss_workers_mb": [
+            77.0,
+            77.0
+          ],
+          "pass1_seconds": [
+            2.3996211559860967,
+            2.2544081090018153
+          ],
+          "deferred_seconds": [
+            null,
+            null
+          ],
+          "pass2_seconds": [
+            0.9654563989897724,
+            0.9677392510056961
+          ],
+          "smart_attempts": [
+            2146,
+            2184
+          ],
+          "reads_recovered_per_read": [
+            {
+              "smart": 813,
+              "soft": null
+            },
+            {
+              "smart": 846,
+              "soft": null
+            }
+          ],
+          "reads_tried": [
+            null,
+            null
+          ],
+          "reads_skipped": [
+            null,
+            null
+          ],
+          "addresses_skipped": [
+            null,
+            null
+          ],
+          "unique_addresses_tried": [
+            null,
+            null
+          ],
+          "addresses_recovered_per_read": [
+            null,
+            null
+          ],
+          "round_b": [
+            null,
+            null
+          ],
+          "groups_decodable_after_cheap_pass": [
+            null,
+            null
+          ],
+          "needed_addresses": [
+            null,
+            null
+          ],
+          "output_sha256": [
+            "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2",
+            "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+          ]
+        },
+        "V5-hard deferred": {
+          "verified_success": 2,
+          "trials": 2,
+          "false_success": 0,
+          "status": [
+            "SUCCESS",
+            "SUCCESS"
+          ],
+          "groups_recovered_fraction": [
+            1.0,
+            1.0
+          ],
+          "seconds": [
+            1.99,
+            1.9
+          ],
+          "cpu_seconds": [
+            4.45,
+            4.3
+          ],
+          "peak_rss_mb": [
+            75.8,
+            75.9
+          ],
+          "peak_rss_workers_mb": [
+            74.0,
+            74.0
+          ],
+          "pass1_seconds": [
+            0.6244553340075072,
+            0.6472189119958784
+          ],
+          "deferred_seconds": [
+            0.5772329610190354,
+            0.6372117289865855
+          ],
+          "pass2_seconds": [
+            0.6775883919908665,
+            0.49291182099841535
+          ],
+          "smart_attempts": [
+            38,
+            32
+          ],
+          "reads_recovered_per_read": [
+            {
+              "smart": 11,
+              "soft": null
+            },
+            {
+              "smart": 18,
+              "soft": null
+            }
+          ],
+          "reads_tried": [
+            24,
+            25
+          ],
+          "reads_skipped": [
+            1254,
+            1274
+          ],
+          "addresses_skipped": [
+            1138,
+            1174
+          ],
+          "unique_addresses_tried": [
+            24,
+            24
+          ],
+          "addresses_recovered_per_read": [
+            11,
+            14
+          ],
+          "round_b": [
+            false,
+            false
+          ],
+          "groups_decodable_after_cheap_pass": [
+            14,
+            14
+          ],
+          "needed_addresses": [
+            0,
+            0
+          ],
+          "output_sha256": [
+            "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2",
+            "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+          ]
+        },
+        "V5-hard same_outcome": true
+      },
+      "indel-heavy (0.5%+0.5%, sub 0.1%) | cov 10": {
+        "V5-hard eager": {
+          "verified_success": 2,
+          "trials": 2,
+          "false_success": 0,
+          "status": [
+            "SUCCESS",
+            "SUCCESS"
+          ],
+          "groups_recovered_fraction": [
+            1.0,
+            1.0
+          ],
+          "seconds": [
+            24.232,
+            25.146
+          ],
+          "cpu_seconds": [
+            34.63,
+            35.69
+          ],
+          "peak_rss_mb": [
+            109.1,
+            110.8
+          ],
+          "peak_rss_workers_mb": [
+            112.8,
+            112.2
+          ],
+          "pass1_seconds": [
+            23.903701233997708,
+            24.79275762900943
+          ],
+          "deferred_seconds": [
+            null,
+            null
+          ],
+          "pass2_seconds": [
+            0.022741061984561384,
+            0.021405444014817476
+          ],
+          "smart_attempts": [
+            7211,
+            7359
+          ],
+          "reads_recovered_per_read": [
+            {
+              "smart": 2761,
+              "soft": null
+            },
+            {
+              "smart": 2860,
+              "soft": null
+            }
+          ],
+          "reads_tried": [
+            null,
+            null
+          ],
+          "reads_skipped": [
+            null,
+            null
+          ],
+          "addresses_skipped": [
+            null,
+            null
+          ],
+          "unique_addresses_tried": [
+            null,
+            null
+          ],
+          "addresses_recovered_per_read": [
+            null,
+            null
+          ],
+          "round_b": [
+            null,
+            null
+          ],
+          "groups_decodable_after_cheap_pass": [
+            null,
+            null
+          ],
+          "needed_addresses": [
+            null,
+            null
+          ],
+          "output_sha256": [
+            "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2",
+            "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+          ]
+        },
+        "V5-hard eager batch256": {
+          "verified_success": 2,
+          "trials": 2,
+          "false_success": 0,
+          "status": [
+            "SUCCESS",
+            "SUCCESS"
+          ],
+          "groups_recovered_fraction": [
+            1.0,
+            1.0
+          ],
+          "seconds": [
+            5.556,
+            5.713
+          ],
+          "cpu_seconds": [
+            39.4,
+            40.97
+          ],
+          "peak_rss_mb": [
+            82.6,
+            82.6
+          ],
+          "peak_rss_workers_mb": [
+            82.6,
+            82.6
+          ],
+          "pass1_seconds": [
+            5.225729265017435,
+            5.383309950004332
+          ],
+          "deferred_seconds": [
+            null,
+            null
+          ],
+          "pass2_seconds": [
+            0.020732310018502176,
+            0.019392577989492565
+          ],
+          "smart_attempts": [
+            7211,
+            7359
+          ],
+          "reads_recovered_per_read": [
+            {
+              "smart": 2761,
+              "soft": null
+            },
+            {
+              "smart": 2860,
+              "soft": null
+            }
+          ],
+          "reads_tried": [
+            null,
+            null
+          ],
+          "reads_skipped": [
+            null,
+            null
+          ],
+          "addresses_skipped": [
+            null,
+            null
+          ],
+          "unique_addresses_tried": [
+            null,
+            null
+          ],
+          "addresses_recovered_per_read": [
+            null,
+            null
+          ],
+          "round_b": [
+            null,
+            null
+          ],
+          "groups_decodable_after_cheap_pass": [
+            null,
+            null
+          ],
+          "needed_addresses": [
+            null,
+            null
+          ],
+          "output_sha256": [
+            "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2",
+            "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+          ]
+        },
+        "V5-hard deferred": {
+          "verified_success": 2,
+          "trials": 2,
+          "false_success": 0,
+          "status": [
+            "SUCCESS",
+            "SUCCESS"
+          ],
+          "groups_recovered_fraction": [
+            1.0,
+            1.0
+          ],
+          "seconds": [
+            3.171,
+            2.465
+          ],
+          "cpu_seconds": [
+            6.19,
+            5.6
+          ],
+          "peak_rss_mb": [
+            113.6,
+            115.7
+          ],
+          "peak_rss_workers_mb": [
+            113.6,
+            115.7
+          ],
+          "pass1_seconds": [
+            1.0546085009991657,
+            1.0309090660011861
+          ],
+          "deferred_seconds": [
+            1.1364211400214117,
+            1.104159578011604
+          ],
+          "pass2_seconds": [
+            0.6749982660112437,
+            0.01781508600106463
+          ],
+          "smart_attempts": [
+            124,
+            126
+          ],
+          "reads_recovered_per_read": [
+            {
+              "smart": 45,
+              "soft": null
+            },
+            {
+              "smart": 61,
+              "soft": null
+            }
+          ],
+          "reads_tried": [
+            85,
+            94
+          ],
+          "reads_skipped": [
+            4238,
+            4327
+          ],
+          "addresses_skipped": [
+            3009,
+            3060
+          ],
+          "unique_addresses_tried": [
+            71,
+            78
+          ],
+          "addresses_recovered_per_read": [
+            28,
+            35
+          ],
+          "round_b": [
+            false,
+            false
+          ],
+          "groups_decodable_after_cheap_pass": [
+            14,
+            14
+          ],
+          "needed_addresses": [
+            0,
+            0
+          ],
+          "output_sha256": [
+            "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2",
+            "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+          ]
+        },
+        "V5-hard same_outcome": true
+      },
+      "mixed (0.5%+0.5%, sub 1%) | cov 1": {
+        "V5-hard eager": {
+          "verified_success": 0,
+          "trials": 2,
+          "false_success": 0,
+          "status": [
+            "FAILURE",
+            "FAILURE"
+          ],
+          "groups_recovered_fraction": [
+            0.0714,
+            0.1429
+          ],
+          "seconds": [
+            6.01,
+            6.597
+          ],
+          "cpu_seconds": [
+            7.77,
+            8.31
+          ],
+          "peak_rss_mb": [
+            67.5,
+            67.5
+          ],
+          "peak_rss_workers_mb": [
+            87.4,
+            87.1
+          ],
+          "pass1_seconds": [
+            5.676474665990099,
+            6.310557173012057
+          ],
+          "deferred_seconds": [
+            null,
+            null
+          ],
+          "pass2_seconds": [
+            0.2811328750103712,
+            0.2360379150195513
+          ],
+          "smart_attempts": [
+            1027,
+            1066
+          ],
+          "reads_recovered_per_read": [
+            {
+              "smart": 338,
+              "soft": null
+            },
+            {
+              "smart": 328,
+              "soft": null
+            }
+          ],
+          "reads_tried": [
+            null,
+            null
+          ],
+          "reads_skipped": [
+            null,
+            null
+          ],
+          "addresses_skipped": [
+            null,
+            null
+          ],
+          "unique_addresses_tried": [
+            null,
+            null
+          ],
+          "addresses_recovered_per_read": [
+            null,
+            null
+          ],
+          "round_b": [
+            null,
+            null
+          ],
+          "groups_decodable_after_cheap_pass": [
+            null,
+            null
+          ],
+          "needed_addresses": [
+            null,
+            null
+          ],
+          "output_sha256": [
+            null,
+            null
+          ]
+        },
+        "V5-hard eager batch256": {
+          "verified_success": 0,
+          "trials": 2,
+          "false_success": 0,
+          "status": [
+            "FAILURE",
+            "FAILURE"
+          ],
+          "groups_recovered_fraction": [
+            0.0714,
+            0.1429
+          ],
+          "seconds": [
+            2.411,
+            2.277
+          ],
+          "cpu_seconds": [
+            10.35,
+            10.34
+          ],
+          "peak_rss_mb": [
+            65.3,
+            65.6
+          ],
+          "peak_rss_workers_mb": [
+            78.1,
+            78.2
+          ],
+          "pass1_seconds": [
+            2.084872938983608,
+            1.9810738480009604
+          ],
+          "deferred_seconds": [
+            null,
+            null
+          ],
+          "pass2_seconds": [
+            0.2735795469779987,
+            0.24132878598175012
+          ],
+          "smart_attempts": [
+            1027,
+            1066
+          ],
+          "reads_recovered_per_read": [
+            {
+              "smart": 338,
+              "soft": null
+            },
+            {
+              "smart": 328,
+              "soft": null
+            }
+          ],
+          "reads_tried": [
+            null,
+            null
+          ],
+          "reads_skipped": [
+            null,
+            null
+          ],
+          "addresses_skipped": [
+            null,
+            null
+          ],
+          "unique_addresses_tried": [
+            null,
+            null
+          ],
+          "addresses_recovered_per_read": [
+            null,
+            null
+          ],
+          "round_b": [
+            null,
+            null
+          ],
+          "groups_decodable_after_cheap_pass": [
+            null,
+            null
+          ],
+          "needed_addresses": [
+            null,
+            null
+          ],
+          "output_sha256": [
+            null,
+            null
+          ]
+        },
+        "V5-hard deferred": {
+          "verified_success": 0,
+          "trials": 2,
+          "false_success": 0,
+          "status": [
+            "FAILURE",
+            "FAILURE"
+          ],
+          "groups_recovered_fraction": [
+            0.0714,
+            0.1429
+          ],
+          "seconds": [
+            6.256,
+            6.544
+          ],
+          "cpu_seconds": [
+            10.36,
+            10.79
+          ],
+          "peak_rss_mb": [
+            68.7,
+            68.6
+          ],
+          "peak_rss_workers_mb": [
+            80.9,
+            80.4
+          ],
+          "pass1_seconds": [
+            0.474220147007145,
+            0.4592237129982095
+          ],
+          "deferred_seconds": [
+            5.452036806993419,
+            5.775844584015431
+          ],
+          "pass2_seconds": [
+            0.2725917569769081,
+            0.257414052990498
+          ],
+          "smart_attempts": [
+            994,
+            1035
+          ],
+          "reads_recovered_per_read": [
+            {
+              "smart": 338,
+              "soft": null
+            },
+            {
+              "smart": 328,
+              "soft": null
+            }
+          ],
+          "reads_tried": [
+            666,
+            681
+          ],
+          "reads_skipped": [
+            0,
+            0
+          ],
+          "addresses_skipped": [
+            0,
+            0
+          ],
+          "unique_addresses_tried": [
+            565,
+            555
+          ],
+          "addresses_recovered_per_read": [
+            338,
+            328
+          ],
+          "round_b": [
+            true,
+            true
+          ],
+          "groups_decodable_after_cheap_pass": [
+            0,
+            0
+          ],
+          "needed_addresses": [
+            652,
+            670
+          ],
+          "output_sha256": [
+            null,
+            null
+          ]
+        },
+        "V5-hard same_outcome": true
+      },
+      "mixed (0.5%+0.5%, sub 1%) | cov 3": {
+        "V5-hard eager": {
+          "verified_success": 2,
+          "trials": 2,
+          "false_success": 0,
+          "status": [
+            "SUCCESS",
+            "SUCCESS"
+          ],
+          "groups_recovered_fraction": [
+            1.0,
+            1.0
+          ],
+          "seconds": [
+            18.015,
+            16.857
+          ],
+          "cpu_seconds": [
+            19.73,
+            18.58
+          ],
+          "peak_rss_mb": [
+            83.4,
+            86.5
+          ],
+          "peak_rss_workers_mb": [
+            97.3,
+            95.9
+          ],
+          "pass1_seconds": [
+            16.747437479993096,
+            16.074015671008965
+          ],
+          "deferred_seconds": [
+            null,
+            null
+          ],
+          "pass2_seconds": [
+            1.1536177759990096,
+            0.663909248978598
+          ],
+          "smart_attempts": [
+            3113,
+            3138
+          ],
+          "reads_recovered_per_read": [
+            {
+              "smart": 1020,
+              "soft": null
+            },
+            {
+              "smart": 993,
+              "soft": null
+            }
+          ],
+          "reads_tried": [
+            null,
+            null
+          ],
+          "reads_skipped": [
+            null,
+            null
+          ],
+          "addresses_skipped": [
+            null,
+            null
+          ],
+          "unique_addresses_tried": [
+            null,
+            null
+          ],
+          "addresses_recovered_per_read": [
+            null,
+            null
+          ],
+          "round_b": [
+            null,
+            null
+          ],
+          "groups_decodable_after_cheap_pass": [
+            null,
+            null
+          ],
+          "needed_addresses": [
+            null,
+            null
+          ],
+          "output_sha256": [
+            "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2",
+            "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+          ]
+        },
+        "V5-hard eager batch256": {
+          "verified_success": 2,
+          "trials": 2,
+          "false_success": 0,
+          "status": [
+            "SUCCESS",
+            "SUCCESS"
+          ],
+          "groups_recovered_fraction": [
+            1.0,
+            1.0
+          ],
+          "seconds": [
+            4.672,
+            4.106
+          ],
+          "cpu_seconds": [
+            24.04,
+            23.36
+          ],
+          "peak_rss_mb": [
+            75.4,
+            78.2
+          ],
+          "peak_rss_workers_mb": [
+            78.8,
+            78.3
+          ],
+          "pass1_seconds": [
+            3.3651589340006467,
+            3.2752960849902593
+          ],
+          "deferred_seconds": [
+            null,
+            null
+          ],
+          "pass2_seconds": [
+            1.1960272669966798,
+            0.7166168620169628
+          ],
+          "smart_attempts": [
+            3113,
+            3138
+          ],
+          "reads_recovered_per_read": [
+            {
+              "smart": 1020,
+              "soft": null
+            },
+            {
+              "smart": 993,
+              "soft": null
+            }
+          ],
+          "reads_tried": [
+            null,
+            null
+          ],
+          "reads_skipped": [
+            null,
+            null
+          ],
+          "addresses_skipped": [
+            null,
+            null
+          ],
+          "unique_addresses_tried": [
+            null,
+            null
+          ],
+          "addresses_recovered_per_read": [
+            null,
+            null
+          ],
+          "round_b": [
+            null,
+            null
+          ],
+          "groups_decodable_after_cheap_pass": [
+            null,
+            null
+          ],
+          "needed_addresses": [
+            null,
+            null
+          ],
+          "output_sha256": [
+            "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2",
+            "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+          ]
+        },
+        "V5-hard deferred": {
+          "verified_success": 2,
+          "trials": 2,
+          "false_success": 0,
+          "status": [
+            "SUCCESS",
+            "SUCCESS"
+          ],
+          "groups_recovered_fraction": [
+            1.0,
+            1.0
+          ],
+          "seconds": [
+            4.923,
+            4.587
+          ],
+          "cpu_seconds": [
+            8.79,
+            7.01
+          ],
+          "peak_rss_mb": [
+            78.7,
+            78.1
+          ],
+          "peak_rss_workers_mb": [
+            80.7,
+            80.8
+          ],
+          "pass1_seconds": [
+            0.6118837099929806,
+            0.6330542690120637
+          ],
+          "deferred_seconds": [
+            2.9402770769956987,
+            2.6364705659798346
+          ],
+          "pass2_seconds": [
+            1.2590467880072538,
+            1.2048580280097667
+          ],
+          "smart_attempts": [
+            507,
+            416
+          ],
+          "reads_recovered_per_read": [
+            {
+              "smart": 177,
+              "soft": null
+            },
+            {
+              "smart": 160,
+              "soft": null
+            }
+          ],
+          "reads_tried": [
+            348,
+            292
+          ],
+          "reads_skipped": [
+            1414,
+            1442
+          ],
+          "addresses_skipped": [
+            1325,
+            1331
+          ],
+          "unique_addresses_tried": [
+            300,
+            258
+          ],
+          "addresses_recovered_per_read": [
+            159,
+            141
+          ],
+          "round_b": [
+            false,
+            false
+          ],
+          "groups_decodable_after_cheap_pass": [
+            9,
+            11
+          ],
+          "needed_addresses": [
+            89,
+            54
+          ],
+          "output_sha256": [
+            "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2",
+            "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+          ]
+        },
+        "V5-hard same_outcome": true
+      },
+      "mixed (0.5%+0.5%, sub 1%) | cov 10": {
+        "V5-hard eager": {
+          "verified_success": 2,
+          "trials": 2,
+          "false_success": 0,
+          "status": [
+            "SUCCESS",
+            "SUCCESS"
+          ],
+          "groups_recovered_fraction": [
+            1.0,
+            1.0
+          ],
+          "seconds": [
+            38.897,
+            40.59
+          ],
+          "cpu_seconds": [
+            54.74,
+            56.04
+          ],
+          "peak_rss_mb": [
+            110.9,
+            112.8
+          ],
+          "peak_rss_workers_mb": [
+            113.3,
+            113.2
+          ],
+          "pass1_seconds": [
+            38.52761281299172,
+            40.239458545984235
+          ],
+          "deferred_seconds": [
+            null,
+            null
+          ],
+          "pass2_seconds": [
+            0.035454194992780685,
+            0.023805948992958292
+          ],
+          "smart_attempts": [
+            10433,
+            10464
+          ],
+          "reads_recovered_per_read": [
+            {
+              "smart": 3379,
+              "soft": null
+            },
+            {
+              "smart": 3373,
+              "soft": null
+            }
+          ],
+          "reads_tried": [
+            null,
+            null
+          ],
+          "reads_skipped": [
+            null,
+            null
+          ],
+          "addresses_skipped": [
+            null,
+            null
+          ],
+          "unique_addresses_tried": [
+            null,
+            null
+          ],
+          "addresses_recovered_per_read": [
+            null,
+            null
+          ],
+          "round_b": [
+            null,
+            null
+          ],
+          "groups_decodable_after_cheap_pass": [
+            null,
+            null
+          ],
+          "needed_addresses": [
+            null,
+            null
+          ],
+          "output_sha256": [
+            "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2",
+            "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+          ]
+        },
+        "V5-hard eager batch256": {
+          "verified_success": 2,
+          "trials": 2,
+          "false_success": 0,
+          "status": [
+            "SUCCESS",
+            "SUCCESS"
+          ],
+          "groups_recovered_fraction": [
+            1.0,
+            1.0
+          ],
+          "seconds": [
+            8.428,
+            8.646
+          ],
+          "cpu_seconds": [
+            60.54,
+            61.72
+          ],
+          "peak_rss_mb": [
+            82.6,
+            82.6
+          ],
+          "peak_rss_workers_mb": [
+            82.6,
+            82.6
+          ],
+          "pass1_seconds": [
+            8.087963481986662,
+            8.293579321005382
+          ],
+          "deferred_seconds": [
+            null,
+            null
+          ],
+          "pass2_seconds": [
+            0.02936753598623909,
+            0.022650349012110382
+          ],
+          "smart_attempts": [
+            10433,
+            10464
+          ],
+          "reads_recovered_per_read": [
+            {
+              "smart": 3379,
+              "soft": null
+            },
+            {
+              "smart": 3373,
+              "soft": null
+            }
+          ],
+          "reads_tried": [
+            null,
+            null
+          ],
+          "reads_skipped": [
+            null,
+            null
+          ],
+          "addresses_skipped": [
+            null,
+            null
+          ],
+          "unique_addresses_tried": [
+            null,
+            null
+          ],
+          "addresses_recovered_per_read": [
+            null,
+            null
+          ],
+          "round_b": [
+            null,
+            null
+          ],
+          "groups_decodable_after_cheap_pass": [
+            null,
+            null
+          ],
+          "needed_addresses": [
+            null,
+            null
+          ],
+          "output_sha256": [
+            "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2",
+            "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+          ]
+        },
+        "V5-hard deferred": {
+          "verified_success": 2,
+          "trials": 2,
+          "false_success": 0,
+          "status": [
+            "SUCCESS",
+            "SUCCESS"
+          ],
+          "groups_recovered_fraction": [
+            1.0,
+            1.0
+          ],
+          "seconds": [
+            6.072,
+            8.432
+          ],
+          "cpu_seconds": [
+            9.25,
+            11.64
+          ],
+          "peak_rss_mb": [
+            116.0,
+            118.6
+          ],
+          "peak_rss_workers_mb": [
+            116.0,
+            118.6
+          ],
+          "pass1_seconds": [
+            1.0738986399956048,
+            1.05391507098102
+          ],
+          "deferred_seconds": [
+            1.7281066580035258,
+            1.6855823259975296
+          ],
+          "pass2_seconds": [
+            2.9570614969998132,
+            5.383267979021184
+          ],
+          "smart_attempts": [
+            210,
+            192
+          ],
+          "reads_recovered_per_read": [
+            {
+              "smart": 57,
+              "soft": null
+            },
+            {
+              "smart": 60,
+              "soft": null
+            }
+          ],
+          "reads_tried": [
+            136,
+            126
+          ],
+          "reads_skipped": [
+            5763,
+            5726
+          ],
+          "addresses_skipped": [
+            4370,
+            4353
+          ],
+          "unique_addresses_tried": [
+            121,
+            113
+          ],
+          "addresses_recovered_per_read": [
+            44,
+            43
+          ],
+          "round_b": [
+            false,
+            false
+          ],
+          "groups_decodable_after_cheap_pass": [
+            14,
+            14
+          ],
+          "needed_addresses": [
+            0,
+            0
+          ],
+          "output_sha256": [
+            "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2",
+            "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+          ]
+        },
+        "V5-hard same_outcome": true
+      },
+      "mixed, substitution-heavy (0.25%+0.25%, sub 4%) | cov 1": {
+        "V5-hard eager": {
+          "verified_success": 0,
+          "trials": 2,
+          "false_success": 0,
+          "status": [
+            "FAILURE",
+            "FAILURE"
+          ],
+          "groups_recovered_fraction": [
+            null,
+            null
+          ],
+          "seconds": [
+            6.745,
+            7.172
+          ],
+          "cpu_seconds": [
+            8.49,
+            8.92
+          ],
+          "peak_rss_mb": [
+            64.8,
+            64.3
+          ],
+          "peak_rss_workers_mb": [
+            85.6,
+            84.9
+          ],
+          "pass1_seconds": [
+            null,
+            null
+          ],
+          "deferred_seconds": [
+            null,
+            null
+          ],
+          "pass2_seconds": [
+            null,
+            null
+          ],
+          "smart_attempts": [
+            null,
+            null
+          ],
+          "reads_recovered_per_read": [
+            {
+              "smart": null,
+              "soft": null
+            },
+            {
+              "smart": null,
+              "soft": null
+            }
+          ],
+          "reads_tried": [
+            null,
+            null
+          ],
+          "reads_skipped": [
+            null,
+            null
+          ],
+          "addresses_skipped": [
+            null,
+            null
+          ],
+          "unique_addresses_tried": [
+            null,
+            null
+          ],
+          "addresses_recovered_per_read": [
+            null,
+            null
+          ],
+          "round_b": [
+            null,
+            null
+          ],
+          "groups_decodable_after_cheap_pass": [
+            null,
+            null
+          ],
+          "needed_addresses": [
+            null,
+            null
+          ],
+          "output_sha256": [
+            null,
+            null
+          ]
+        },
+        "V5-hard eager batch256": {
+          "verified_success": 0,
+          "trials": 2,
+          "false_success": 0,
+          "status": [
+            "FAILURE",
+            "FAILURE"
+          ],
+          "groups_recovered_fraction": [
+            null,
+            null
+          ],
+          "seconds": [
+            2.351,
+            2.192
+          ],
+          "cpu_seconds": [
+            10.67,
+            10.63
+          ],
+          "peak_rss_mb": [
+            60.9,
+            61.0
+          ],
+          "peak_rss_workers_mb": [
+            77.9,
+            78.1
+          ],
+          "pass1_seconds": [
+            null,
+            null
+          ],
+          "deferred_seconds": [
+            null,
+            null
+          ],
+          "pass2_seconds": [
+            null,
+            null
+          ],
+          "smart_attempts": [
+            null,
+            null
+          ],
+          "reads_recovered_per_read": [
+            {
+              "smart": null,
+              "soft": null
+            },
+            {
+              "smart": null,
+              "soft": null
+            }
+          ],
+          "reads_tried": [
+            null,
+            null
+          ],
+          "reads_skipped": [
+            null,
+            null
+          ],
+          "addresses_skipped": [
+            null,
+            null
+          ],
+          "unique_addresses_tried": [
+            null,
+            null
+          ],
+          "addresses_recovered_per_read": [
+            null,
+            null
+          ],
+          "round_b": [
+            null,
+            null
+          ],
+          "groups_decodable_after_cheap_pass": [
+            null,
+            null
+          ],
+          "needed_addresses": [
+            null,
+            null
+          ],
+          "output_sha256": [
+            null,
+            null
+          ]
+        },
+        "V5-hard deferred": {
+          "verified_success": 0,
+          "trials": 2,
+          "false_success": 0,
+          "status": [
+            "FAILURE",
+            "FAILURE"
+          ],
+          "groups_recovered_fraction": [
+            null,
+            null
+          ],
+          "seconds": [
+            4.804,
+            4.897
+          ],
+          "cpu_seconds": [
+            11.4,
+            11.56
+          ],
+          "peak_rss_mb": [
+            65.2,
+            64.6
+          ],
+          "peak_rss_workers_mb": [
+            78.9,
+            78.6
+          ],
+          "pass1_seconds": [
+            null,
+            null
+          ],
+          "deferred_seconds": [
+            null,
+            null
+          ],
+          "pass2_seconds": [
+            null,
+            null
+          ],
+          "smart_attempts": [
+            null,
+            null
+          ],
+          "reads_recovered_per_read": [
+            {
+              "smart": null,
+              "soft": null
+            },
+            {
+              "smart": null,
+              "soft": null
+            }
+          ],
+          "reads_tried": [
+            null,
+            null
+          ],
+          "reads_skipped": [
+            null,
+            null
+          ],
+          "addresses_skipped": [
+            null,
+            null
+          ],
+          "unique_addresses_tried": [
+            null,
+            null
+          ],
+          "addresses_recovered_per_read": [
+            null,
+            null
+          ],
+          "round_b": [
+            null,
+            null
+          ],
+          "groups_decodable_after_cheap_pass": [
+            null,
+            null
+          ],
+          "needed_addresses": [
+            null,
+            null
+          ],
+          "output_sha256": [
+            null,
+            null
+          ]
+        },
+        "V5-hard same_outcome": true
+      },
+      "mixed, substitution-heavy (0.25%+0.25%, sub 4%) | cov 3": {
+        "V5-hard eager": {
+          "verified_success": 0,
+          "trials": 2,
+          "false_success": 0,
+          "status": [
+            "FAILURE",
+            "FAILURE"
+          ],
+          "groups_recovered_fraction": [
+            0.0,
+            0.0
+          ],
+          "seconds": [
+            22.764,
+            24.599
+          ],
+          "cpu_seconds": [
+            24.48,
+            26.34
+          ],
+          "peak_rss_mb": [
+            80.4,
+            81.8
+          ],
+          "peak_rss_workers_mb": [
+            93.7,
+            93.9
+          ],
+          "pass1_seconds": [
+            18.552598997979658,
+            19.822138399002142
+          ],
+          "deferred_seconds": [
+            null,
+            null
+          ],
+          "pass2_seconds": [
+            4.074426146980841,
+            4.632850352005335
+          ],
+          "smart_attempts": [
+            4428,
+            4430
+          ],
+          "reads_recovered_per_read": [
+            {
+              "smart": 292,
+              "soft": null
+            },
+            {
+              "smart": 276,
+              "soft": null
+            }
+          ],
+          "reads_tried": [
+            null,
+            null
+          ],
+          "reads_skipped": [
+            null,
+            null
+          ],
+          "addresses_skipped": [
+            null,
+            null
+          ],
+          "unique_addresses_tried": [
+            null,
+            null
+          ],
+          "addresses_recovered_per_read": [
+            null,
+            null
+          ],
+          "round_b": [
+            null,
+            null
+          ],
+          "groups_decodable_after_cheap_pass": [
+            null,
+            null
+          ],
+          "needed_addresses": [
+            null,
+            null
+          ],
+          "output_sha256": [
+            null,
+            null
+          ]
+        },
+        "V5-hard eager batch256": {
+          "verified_success": 0,
+          "trials": 2,
+          "false_success": 0,
+          "status": [
+            "FAILURE",
+            "FAILURE"
+          ],
+          "groups_recovered_fraction": [
+            0.0,
+            0.0
+          ],
+          "seconds": [
+            7.646,
+            8.294
+          ],
+          "cpu_seconds": [
+            29.08,
+            29.88
+          ],
+          "peak_rss_mb": [
+            71.1,
+            72.6
+          ],
+          "peak_rss_workers_mb": [
+            79.6,
+            78.9
+          ],
+          "pass1_seconds": [
+            3.5757036300201435,
+            3.832688777009025
+          ],
+          "deferred_seconds": [
+            null,
+            null
+          ],
+          "pass2_seconds": [
+            3.926944467006251,
+            4.318209629011108
+          ],
+          "smart_attempts": [
+            4428,
+            4430
+          ],
+          "reads_recovered_per_read": [
+            {
+              "smart": 292,
+              "soft": null
+            },
+            {
+              "smart": 276,
+              "soft": null
+            }
+          ],
+          "reads_tried": [
+            null,
+            null
+          ],
+          "reads_skipped": [
+            null,
+            null
+          ],
+          "addresses_skipped": [
+            null,
+            null
+          ],
+          "unique_addresses_tried": [
+            null,
+            null
+          ],
+          "addresses_recovered_per_read": [
+            null,
+            null
+          ],
+          "round_b": [
+            null,
+            null
+          ],
+          "groups_decodable_after_cheap_pass": [
+            null,
+            null
+          ],
+          "needed_addresses": [
+            null,
+            null
+          ],
+          "output_sha256": [
+            null,
+            null
+          ]
+        },
+        "V5-hard deferred": {
+          "verified_success": 0,
+          "trials": 2,
+          "false_success": 0,
+          "status": [
+            "FAILURE",
+            "FAILURE"
+          ],
+          "groups_recovered_fraction": [
+            0.0,
+            0.0
+          ],
+          "seconds": [
+            10.353,
+            11.944
+          ],
+          "cpu_seconds": [
+            31.22,
+            31.47
+          ],
+          "peak_rss_mb": [
+            82.9,
+            84.2
+          ],
+          "peak_rss_workers_mb": [
+            81.5,
+            83.0
+          ],
+          "pass1_seconds": [
+            0.6427256680035498,
+            0.6600891840062104
+          ],
+          "deferred_seconds": [
+            5.432659201993374,
+            7.080402489984408
+          ],
+          "pass2_seconds": [
+            4.135699013975682,
+            4.06653662599274
+          ],
+          "smart_attempts": [
+            4425,
+            4425
+          ],
+          "reads_recovered_per_read": [
+            {
+              "smart": 292,
+              "soft": null
+            },
+            {
+              "smart": 276,
+              "soft": null
+            }
+          ],
+          "reads_tried": [
+            3017,
+            3020
+          ],
+          "reads_skipped": [
+            0,
+            0
+          ],
+          "addresses_skipped": [
+            0,
+            0
+          ],
+          "unique_addresses_tried": [
+            2214,
+            2171
+          ],
+          "addresses_recovered_per_read": [
+            279,
+            264
+          ],
+          "round_b": [
+            true,
+            true
+          ],
+          "groups_decodable_after_cheap_pass": [
+            null,
+            0
+          ],
+          "needed_addresses": [
+            null,
+            806
+          ],
+          "output_sha256": [
+            null,
+            null
+          ]
+        },
+        "V5-hard same_outcome": true
+      },
+      "mixed, substitution-heavy (0.25%+0.25%, sub 4%) | cov 10": {
+        "V5-hard eager": {
+          "verified_success": 1,
+          "trials": 2,
+          "false_success": 0,
+          "status": [
+            "SUCCESS",
+            "FAILURE"
+          ],
+          "groups_recovered_fraction": [
+            1.0,
+            0.9286
+          ],
+          "seconds": [
+            49.983,
+            52.748
+          ],
+          "cpu_seconds": [
+            68.24,
+            70.6
+          ],
+          "peak_rss_mb": [
+            118.6,
+            118.6
+          ],
+          "peak_rss_workers_mb": [
+            109.8,
+            109.8
+          ],
+          "pass1_seconds": [
+            46.660420778993284,
+            48.45007964898832
+          ],
+          "deferred_seconds": [
+            null,
+            null
+          ],
+          "pass2_seconds": [
+            2.911749339022208,
+            3.886850940005388
+          ],
+          "smart_attempts": [
+            14711,
+            14673
+          ],
+          "reads_recovered_per_read": [
+            {
+              "smart": 1008,
+              "soft": null
+            },
+            {
+              "smart": 917,
+              "soft": null
+            }
+          ],
+          "reads_tried": [
+            null,
+            null
+          ],
+          "reads_skipped": [
+            null,
+            null
+          ],
+          "addresses_skipped": [
+            null,
+            null
+          ],
+          "unique_addresses_tried": [
+            null,
+            null
+          ],
+          "addresses_recovered_per_read": [
+            null,
+            null
+          ],
+          "round_b": [
+            null,
+            null
+          ],
+          "groups_decodable_after_cheap_pass": [
+            null,
+            null
+          ],
+          "needed_addresses": [
+            null,
+            null
+          ],
+          "output_sha256": [
+            "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2",
+            null
+          ]
+        },
+        "V5-hard eager batch256": {
+          "verified_success": 1,
+          "trials": 2,
+          "false_success": 0,
+          "status": [
+            "SUCCESS",
+            "FAILURE"
+          ],
+          "groups_recovered_fraction": [
+            1.0,
+            0.9286
+          ],
+          "seconds": [
+            12.664,
+            13.938
+          ],
+          "cpu_seconds": [
+            72.63,
+            74.78
+          ],
+          "peak_rss_mb": [
+            82.6,
+            82.6
+          ],
+          "peak_rss_workers_mb": [
+            82.6,
+            82.6
+          ],
+          "pass1_seconds": [
+            9.327229923015693,
+            9.888308257010067
+          ],
+          "deferred_seconds": [
+            null,
+            null
+          ],
+          "pass2_seconds": [
+            2.9098280940088443,
+            3.6305364840081893
+          ],
+          "smart_attempts": [
+            14711,
+            14673
+          ],
+          "reads_recovered_per_read": [
+            {
+              "smart": 1008,
+              "soft": null
+            },
+            {
+              "smart": 917,
+              "soft": null
+            }
+          ],
+          "reads_tried": [
+            null,
+            null
+          ],
+          "reads_skipped": [
+            null,
+            null
+          ],
+          "addresses_skipped": [
+            null,
+            null
+          ],
+          "unique_addresses_tried": [
+            null,
+            null
+          ],
+          "addresses_recovered_per_read": [
+            null,
+            null
+          ],
+          "round_b": [
+            null,
+            null
+          ],
+          "groups_decodable_after_cheap_pass": [
+            null,
+            null
+          ],
+          "needed_addresses": [
+            null,
+            null
+          ],
+          "output_sha256": [
+            "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2",
+            null
+          ]
+        },
+        "V5-hard deferred": {
+          "verified_success": 1,
+          "trials": 2,
+          "false_success": 0,
+          "status": [
+            "SUCCESS",
+            "FAILURE"
+          ],
+          "groups_recovered_fraction": [
+            1.0,
+            0.9286
+          ],
+          "seconds": [
+            18.641,
+            19.303
+          ],
+          "cpu_seconds": [
+            78.51,
+            79.09
+          ],
+          "peak_rss_mb": [
+            122.6,
+            122.5
+          ],
+          "peak_rss_workers_mb": [
+            122.6,
+            122.5
+          ],
+          "pass1_seconds": [
+            1.0807858810003381,
+            1.0841777159948833
+          ],
+          "deferred_seconds": [
+            14.297520894004265,
+            14.281836212001508
+          ],
+          "pass2_seconds": [
+            2.84999263798818,
+            3.523231116007082
+          ],
+          "smart_attempts": [
+            14694,
+            14660
+          ],
+          "reads_recovered_per_read": [
+            {
+              "smart": 1008,
+              "soft": null
+            },
+            {
+              "smart": 917,
+              "soft": null
+            }
+          ],
+          "reads_tried": [
+            10092,
+            10053
+          ],
+          "reads_skipped": [
+            0,
+            0
+          ],
+          "addresses_skipped": [
+            0,
+            0
+          ],
+          "unique_addresses_tried": [
+            6732,
+            6700
+          ],
+          "addresses_recovered_per_read": [
+            813,
+            754
+          ],
+          "round_b": [
+            true,
+            true
+          ],
+          "groups_decodable_after_cheap_pass": [
+            9,
+            10
+          ],
+          "needed_addresses": [
+            103,
+            80
+          ],
+          "output_sha256": [
+            "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2",
+            null
+          ]
+        },
+        "V5-hard same_outcome": true
+      }
+    },
+    "rows": [
+      {
+        "channel_name": "indel-heavy (0.5%+0.5%, sub 0.1%)",
+        "coverage": 1,
+        "channel": {
+          "substitution_rate": 0.001,
+          "insertion_rate": 0.005,
+          "deletion_rate": 0.005,
+          "quality_informative": 0.5,
+          "coverage": 1,
+          "coverage_model": "fixed",
+          "seed": 44000
+        },
+        "seed_index": 0,
+        "reads_sha256": "b5af3851ee6ff84e72e8626e7edea02b51fbbaa28e75851c9d4fa297c974ce43",
+        "V5-hard eager": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "groups_recovered_fraction": 0.9286,
+          "seconds": 3.622,
+          "cpu_seconds": 5.27,
+          "peak_rss_mb": 65.0,
+          "peak_rss_workers_mb": 86.9,
+          "pass1_seconds": 3.46578251599567,
+          "deferred_seconds": null,
+          "pass2_seconds": 0.10191510699223727,
+          "smart_attempts": 709,
+          "reads_recovered_per_read": {
+            "smart": 287,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": null
+        },
+        "V5-hard eager batch256": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "groups_recovered_fraction": 0.9286,
+          "seconds": 1.615,
+          "cpu_seconds": 7.85,
+          "peak_rss_mb": 63.0,
+          "peak_rss_workers_mb": 76.0,
+          "pass1_seconds": 1.4613231910043396,
+          "deferred_seconds": null,
+          "pass2_seconds": 0.1013154269894585,
+          "smart_attempts": 709,
+          "reads_recovered_per_read": {
+            "smart": 287,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": null
+        },
+        "V5-hard deferred": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "groups_recovered_fraction": 0.9286,
+          "seconds": 4.441,
+          "cpu_seconds": 7.67,
+          "peak_rss_mb": 65.8,
+          "peak_rss_workers_mb": 81.0,
+          "pass1_seconds": 0.4921797850111034,
+          "deferred_seconds": 3.777363133005565,
+          "pass2_seconds": 0.11381829401943833,
+          "smart_attempts": 654,
+          "reads_recovered_per_read": {
+            "smart": 287,
+            "soft": null
+          },
+          "reads_tried": 464,
+          "reads_skipped": 0,
+          "addresses_skipped": 0,
+          "unique_addresses_tried": 421,
+          "addresses_recovered_per_read": 287,
+          "round_b": true,
+          "groups_decodable_after_cheap_pass": 1,
+          "needed_addresses": 439,
+          "output_sha256": null
+        }
+      },
+      {
+        "channel_name": "indel-heavy (0.5%+0.5%, sub 0.1%)",
+        "coverage": 1,
+        "channel": {
+          "substitution_rate": 0.001,
+          "insertion_rate": 0.005,
+          "deletion_rate": 0.005,
+          "quality_informative": 0.5,
+          "coverage": 1,
+          "coverage_model": "fixed",
+          "seed": 44010
+        },
+        "seed_index": 1,
+        "reads_sha256": "11cc2ffe9c277e209c36f04d3d83b8554dd7227c230f53a00993bae490adeae9",
+        "V5-hard eager": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "groups_recovered_fraction": 0.7857,
+          "seconds": 3.933,
+          "cpu_seconds": 5.69,
+          "peak_rss_mb": 64.8,
+          "peak_rss_workers_mb": 87.1,
+          "pass1_seconds": 3.8096323589852545,
+          "deferred_seconds": null,
+          "pass2_seconds": 0.07028732899925672,
+          "smart_attempts": 745,
+          "reads_recovered_per_read": {
+            "smart": 299,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": null
+        },
+        "V5-hard eager batch256": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "groups_recovered_fraction": 0.7857,
+          "seconds": 1.654,
+          "cpu_seconds": 8.14,
+          "peak_rss_mb": 62.6,
+          "peak_rss_workers_mb": 76.4,
+          "pass1_seconds": 1.5285265010024887,
+          "deferred_seconds": null,
+          "pass2_seconds": 0.07341676799114794,
+          "smart_attempts": 745,
+          "reads_recovered_per_read": {
+            "smart": 299,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": null
+        },
+        "V5-hard deferred": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "groups_recovered_fraction": 0.7857,
+          "seconds": 4.54,
+          "cpu_seconds": 8.14,
+          "peak_rss_mb": 65.7,
+          "peak_rss_workers_mb": 81.5,
+          "pass1_seconds": 0.4551519410160836,
+          "deferred_seconds": 3.96582050199504,
+          "pass2_seconds": 0.06611939298454672,
+          "smart_attempts": 700,
+          "reads_recovered_per_read": {
+            "smart": 299,
+            "soft": null
+          },
+          "reads_tried": 490,
+          "reads_skipped": 0,
+          "addresses_skipped": 0,
+          "unique_addresses_tried": 433,
+          "addresses_recovered_per_read": 299,
+          "round_b": true,
+          "groups_decodable_after_cheap_pass": 1,
+          "needed_addresses": 467,
+          "output_sha256": null
+        }
+      },
+      {
+        "channel_name": "indel-heavy (0.5%+0.5%, sub 0.1%)",
+        "coverage": 3,
+        "channel": {
+          "substitution_rate": 0.001,
+          "insertion_rate": 0.005,
+          "deletion_rate": 0.005,
+          "quality_informative": 0.5,
+          "coverage": 3,
+          "coverage_model": "fixed",
+          "seed": 44000
+        },
+        "seed_index": 0,
+        "reads_sha256": "f70772a5f33ae99535090621839580a31a9eb5c208ca1d6d2c5f84aba6a6bb49",
+        "V5-hard eager": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "groups_recovered_fraction": 1.0,
+          "seconds": 11.696,
+          "cpu_seconds": 13.48,
+          "peak_rss_mb": 86.4,
+          "peak_rss_workers_mb": 96.8,
+          "pass1_seconds": 10.536777215980692,
+          "deferred_seconds": null,
+          "pass2_seconds": 1.0362304830050562,
+          "smart_attempts": 2146,
+          "reads_recovered_per_read": {
+            "smart": 813,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+        },
+        "V5-hard eager batch256": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "groups_recovered_fraction": 1.0,
+          "seconds": 3.474,
+          "cpu_seconds": 17.43,
+          "peak_rss_mb": 78.8,
+          "peak_rss_workers_mb": 77.0,
+          "pass1_seconds": 2.3996211559860967,
+          "deferred_seconds": null,
+          "pass2_seconds": 0.9654563989897724,
+          "smart_attempts": 2146,
+          "reads_recovered_per_read": {
+            "smart": 813,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+        },
+        "V5-hard deferred": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "groups_recovered_fraction": 1.0,
+          "seconds": 1.99,
+          "cpu_seconds": 4.45,
+          "peak_rss_mb": 75.8,
+          "peak_rss_workers_mb": 74.0,
+          "pass1_seconds": 0.6244553340075072,
+          "deferred_seconds": 0.5772329610190354,
+          "pass2_seconds": 0.6775883919908665,
+          "smart_attempts": 38,
+          "reads_recovered_per_read": {
+            "smart": 11,
+            "soft": null
+          },
+          "reads_tried": 24,
+          "reads_skipped": 1254,
+          "addresses_skipped": 1138,
+          "unique_addresses_tried": 24,
+          "addresses_recovered_per_read": 11,
+          "round_b": false,
+          "groups_decodable_after_cheap_pass": 14,
+          "needed_addresses": 0,
+          "output_sha256": "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+        }
+      },
+      {
+        "channel_name": "indel-heavy (0.5%+0.5%, sub 0.1%)",
+        "coverage": 3,
+        "channel": {
+          "substitution_rate": 0.001,
+          "insertion_rate": 0.005,
+          "deletion_rate": 0.005,
+          "quality_informative": 0.5,
+          "coverage": 3,
+          "coverage_model": "fixed",
+          "seed": 44010
+        },
+        "seed_index": 1,
+        "reads_sha256": "8edac509626d2fab751b0cd6f518d7020fac7ddfecb7defb5b3598652ba4a59a",
+        "V5-hard eager": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "groups_recovered_fraction": 1.0,
+          "seconds": 12.026,
+          "cpu_seconds": 13.76,
+          "peak_rss_mb": 84.8,
+          "peak_rss_workers_mb": 96.7,
+          "pass1_seconds": 10.86754800498602,
+          "deferred_seconds": null,
+          "pass2_seconds": 1.0436337660066783,
+          "smart_attempts": 2184,
+          "reads_recovered_per_read": {
+            "smart": 846,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+        },
+        "V5-hard eager batch256": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "groups_recovered_fraction": 1.0,
+          "seconds": 3.337,
+          "cpu_seconds": 17.13,
+          "peak_rss_mb": 77.5,
+          "peak_rss_workers_mb": 77.0,
+          "pass1_seconds": 2.2544081090018153,
+          "deferred_seconds": null,
+          "pass2_seconds": 0.9677392510056961,
+          "smart_attempts": 2184,
+          "reads_recovered_per_read": {
+            "smart": 846,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+        },
+        "V5-hard deferred": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "groups_recovered_fraction": 1.0,
+          "seconds": 1.9,
+          "cpu_seconds": 4.3,
+          "peak_rss_mb": 75.9,
+          "peak_rss_workers_mb": 74.0,
+          "pass1_seconds": 0.6472189119958784,
+          "deferred_seconds": 0.6372117289865855,
+          "pass2_seconds": 0.49291182099841535,
+          "smart_attempts": 32,
+          "reads_recovered_per_read": {
+            "smart": 18,
+            "soft": null
+          },
+          "reads_tried": 25,
+          "reads_skipped": 1274,
+          "addresses_skipped": 1174,
+          "unique_addresses_tried": 24,
+          "addresses_recovered_per_read": 14,
+          "round_b": false,
+          "groups_decodable_after_cheap_pass": 14,
+          "needed_addresses": 0,
+          "output_sha256": "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+        }
+      },
+      {
+        "channel_name": "indel-heavy (0.5%+0.5%, sub 0.1%)",
+        "coverage": 10,
+        "channel": {
+          "substitution_rate": 0.001,
+          "insertion_rate": 0.005,
+          "deletion_rate": 0.005,
+          "quality_informative": 0.5,
+          "coverage": 10,
+          "coverage_model": "fixed",
+          "seed": 44000
+        },
+        "seed_index": 0,
+        "reads_sha256": "7c444e789f765a735b8baf1b25923bf4f8a245d86c176b95e008bbe192b91d27",
+        "V5-hard eager": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "groups_recovered_fraction": 1.0,
+          "seconds": 24.232,
+          "cpu_seconds": 34.63,
+          "peak_rss_mb": 109.1,
+          "peak_rss_workers_mb": 112.8,
+          "pass1_seconds": 23.903701233997708,
+          "deferred_seconds": null,
+          "pass2_seconds": 0.022741061984561384,
+          "smart_attempts": 7211,
+          "reads_recovered_per_read": {
+            "smart": 2761,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+        },
+        "V5-hard eager batch256": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "groups_recovered_fraction": 1.0,
+          "seconds": 5.556,
+          "cpu_seconds": 39.4,
+          "peak_rss_mb": 82.6,
+          "peak_rss_workers_mb": 82.6,
+          "pass1_seconds": 5.225729265017435,
+          "deferred_seconds": null,
+          "pass2_seconds": 0.020732310018502176,
+          "smart_attempts": 7211,
+          "reads_recovered_per_read": {
+            "smart": 2761,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+        },
+        "V5-hard deferred": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "groups_recovered_fraction": 1.0,
+          "seconds": 3.171,
+          "cpu_seconds": 6.19,
+          "peak_rss_mb": 113.6,
+          "peak_rss_workers_mb": 113.6,
+          "pass1_seconds": 1.0546085009991657,
+          "deferred_seconds": 1.1364211400214117,
+          "pass2_seconds": 0.6749982660112437,
+          "smart_attempts": 124,
+          "reads_recovered_per_read": {
+            "smart": 45,
+            "soft": null
+          },
+          "reads_tried": 85,
+          "reads_skipped": 4238,
+          "addresses_skipped": 3009,
+          "unique_addresses_tried": 71,
+          "addresses_recovered_per_read": 28,
+          "round_b": false,
+          "groups_decodable_after_cheap_pass": 14,
+          "needed_addresses": 0,
+          "output_sha256": "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+        }
+      },
+      {
+        "channel_name": "indel-heavy (0.5%+0.5%, sub 0.1%)",
+        "coverage": 10,
+        "channel": {
+          "substitution_rate": 0.001,
+          "insertion_rate": 0.005,
+          "deletion_rate": 0.005,
+          "quality_informative": 0.5,
+          "coverage": 10,
+          "coverage_model": "fixed",
+          "seed": 44010
+        },
+        "seed_index": 1,
+        "reads_sha256": "c0f2f052b162c91190f21281a9a99788e02bdf43077a52c020b83b177d8e1cb5",
+        "V5-hard eager": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "groups_recovered_fraction": 1.0,
+          "seconds": 25.146,
+          "cpu_seconds": 35.69,
+          "peak_rss_mb": 110.8,
+          "peak_rss_workers_mb": 112.2,
+          "pass1_seconds": 24.79275762900943,
+          "deferred_seconds": null,
+          "pass2_seconds": 0.021405444014817476,
+          "smart_attempts": 7359,
+          "reads_recovered_per_read": {
+            "smart": 2860,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+        },
+        "V5-hard eager batch256": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "groups_recovered_fraction": 1.0,
+          "seconds": 5.713,
+          "cpu_seconds": 40.97,
+          "peak_rss_mb": 82.6,
+          "peak_rss_workers_mb": 82.6,
+          "pass1_seconds": 5.383309950004332,
+          "deferred_seconds": null,
+          "pass2_seconds": 0.019392577989492565,
+          "smart_attempts": 7359,
+          "reads_recovered_per_read": {
+            "smart": 2860,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+        },
+        "V5-hard deferred": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "groups_recovered_fraction": 1.0,
+          "seconds": 2.465,
+          "cpu_seconds": 5.6,
+          "peak_rss_mb": 115.7,
+          "peak_rss_workers_mb": 115.7,
+          "pass1_seconds": 1.0309090660011861,
+          "deferred_seconds": 1.104159578011604,
+          "pass2_seconds": 0.01781508600106463,
+          "smart_attempts": 126,
+          "reads_recovered_per_read": {
+            "smart": 61,
+            "soft": null
+          },
+          "reads_tried": 94,
+          "reads_skipped": 4327,
+          "addresses_skipped": 3060,
+          "unique_addresses_tried": 78,
+          "addresses_recovered_per_read": 35,
+          "round_b": false,
+          "groups_decodable_after_cheap_pass": 14,
+          "needed_addresses": 0,
+          "output_sha256": "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+        }
+      },
+      {
+        "channel_name": "mixed (0.5%+0.5%, sub 1%)",
+        "coverage": 1,
+        "channel": {
+          "substitution_rate": 0.01,
+          "insertion_rate": 0.005,
+          "deletion_rate": 0.005,
+          "quality_informative": 0.5,
+          "coverage": 1,
+          "coverage_model": "fixed",
+          "seed": 44000
+        },
+        "seed_index": 0,
+        "reads_sha256": "c71ac86a02502aa5e95da51367f4493561be6262f8b7f5f26495e9aec86b4aa0",
+        "V5-hard eager": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "groups_recovered_fraction": 0.0714,
+          "seconds": 6.01,
+          "cpu_seconds": 7.77,
+          "peak_rss_mb": 67.5,
+          "peak_rss_workers_mb": 87.4,
+          "pass1_seconds": 5.676474665990099,
+          "deferred_seconds": null,
+          "pass2_seconds": 0.2811328750103712,
+          "smart_attempts": 1027,
+          "reads_recovered_per_read": {
+            "smart": 338,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": null
+        },
+        "V5-hard eager batch256": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "groups_recovered_fraction": 0.0714,
+          "seconds": 2.411,
+          "cpu_seconds": 10.35,
+          "peak_rss_mb": 65.3,
+          "peak_rss_workers_mb": 78.1,
+          "pass1_seconds": 2.084872938983608,
+          "deferred_seconds": null,
+          "pass2_seconds": 0.2735795469779987,
+          "smart_attempts": 1027,
+          "reads_recovered_per_read": {
+            "smart": 338,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": null
+        },
+        "V5-hard deferred": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "groups_recovered_fraction": 0.0714,
+          "seconds": 6.256,
+          "cpu_seconds": 10.36,
+          "peak_rss_mb": 68.7,
+          "peak_rss_workers_mb": 80.9,
+          "pass1_seconds": 0.474220147007145,
+          "deferred_seconds": 5.452036806993419,
+          "pass2_seconds": 0.2725917569769081,
+          "smart_attempts": 994,
+          "reads_recovered_per_read": {
+            "smart": 338,
+            "soft": null
+          },
+          "reads_tried": 666,
+          "reads_skipped": 0,
+          "addresses_skipped": 0,
+          "unique_addresses_tried": 565,
+          "addresses_recovered_per_read": 338,
+          "round_b": true,
+          "groups_decodable_after_cheap_pass": 0,
+          "needed_addresses": 652,
+          "output_sha256": null
+        }
+      },
+      {
+        "channel_name": "mixed (0.5%+0.5%, sub 1%)",
+        "coverage": 1,
+        "channel": {
+          "substitution_rate": 0.01,
+          "insertion_rate": 0.005,
+          "deletion_rate": 0.005,
+          "quality_informative": 0.5,
+          "coverage": 1,
+          "coverage_model": "fixed",
+          "seed": 44010
+        },
+        "seed_index": 1,
+        "reads_sha256": "63b2478525a2c042e8612b751ac67272caa29cf5614f8eda84f0deff45877ef5",
+        "V5-hard eager": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "groups_recovered_fraction": 0.1429,
+          "seconds": 6.597,
+          "cpu_seconds": 8.31,
+          "peak_rss_mb": 67.5,
+          "peak_rss_workers_mb": 87.1,
+          "pass1_seconds": 6.310557173012057,
+          "deferred_seconds": null,
+          "pass2_seconds": 0.2360379150195513,
+          "smart_attempts": 1066,
+          "reads_recovered_per_read": {
+            "smart": 328,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": null
+        },
+        "V5-hard eager batch256": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "groups_recovered_fraction": 0.1429,
+          "seconds": 2.277,
+          "cpu_seconds": 10.34,
+          "peak_rss_mb": 65.6,
+          "peak_rss_workers_mb": 78.2,
+          "pass1_seconds": 1.9810738480009604,
+          "deferred_seconds": null,
+          "pass2_seconds": 0.24132878598175012,
+          "smart_attempts": 1066,
+          "reads_recovered_per_read": {
+            "smart": 328,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": null
+        },
+        "V5-hard deferred": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "groups_recovered_fraction": 0.1429,
+          "seconds": 6.544,
+          "cpu_seconds": 10.79,
+          "peak_rss_mb": 68.6,
+          "peak_rss_workers_mb": 80.4,
+          "pass1_seconds": 0.4592237129982095,
+          "deferred_seconds": 5.775844584015431,
+          "pass2_seconds": 0.257414052990498,
+          "smart_attempts": 1035,
+          "reads_recovered_per_read": {
+            "smart": 328,
+            "soft": null
+          },
+          "reads_tried": 681,
+          "reads_skipped": 0,
+          "addresses_skipped": 0,
+          "unique_addresses_tried": 555,
+          "addresses_recovered_per_read": 328,
+          "round_b": true,
+          "groups_decodable_after_cheap_pass": 0,
+          "needed_addresses": 670,
+          "output_sha256": null
+        }
+      },
+      {
+        "channel_name": "mixed (0.5%+0.5%, sub 1%)",
+        "coverage": 3,
+        "channel": {
+          "substitution_rate": 0.01,
+          "insertion_rate": 0.005,
+          "deletion_rate": 0.005,
+          "quality_informative": 0.5,
+          "coverage": 3,
+          "coverage_model": "fixed",
+          "seed": 44000
+        },
+        "seed_index": 0,
+        "reads_sha256": "2c4b4af56733bc4237f9311d0ec0a40ea8240684cba7c1a4002c7aa8cd83fb01",
+        "V5-hard eager": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "groups_recovered_fraction": 1.0,
+          "seconds": 18.015,
+          "cpu_seconds": 19.73,
+          "peak_rss_mb": 83.4,
+          "peak_rss_workers_mb": 97.3,
+          "pass1_seconds": 16.747437479993096,
+          "deferred_seconds": null,
+          "pass2_seconds": 1.1536177759990096,
+          "smart_attempts": 3113,
+          "reads_recovered_per_read": {
+            "smart": 1020,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+        },
+        "V5-hard eager batch256": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "groups_recovered_fraction": 1.0,
+          "seconds": 4.672,
+          "cpu_seconds": 24.04,
+          "peak_rss_mb": 75.4,
+          "peak_rss_workers_mb": 78.8,
+          "pass1_seconds": 3.3651589340006467,
+          "deferred_seconds": null,
+          "pass2_seconds": 1.1960272669966798,
+          "smart_attempts": 3113,
+          "reads_recovered_per_read": {
+            "smart": 1020,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+        },
+        "V5-hard deferred": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "groups_recovered_fraction": 1.0,
+          "seconds": 4.923,
+          "cpu_seconds": 8.79,
+          "peak_rss_mb": 78.7,
+          "peak_rss_workers_mb": 80.7,
+          "pass1_seconds": 0.6118837099929806,
+          "deferred_seconds": 2.9402770769956987,
+          "pass2_seconds": 1.2590467880072538,
+          "smart_attempts": 507,
+          "reads_recovered_per_read": {
+            "smart": 177,
+            "soft": null
+          },
+          "reads_tried": 348,
+          "reads_skipped": 1414,
+          "addresses_skipped": 1325,
+          "unique_addresses_tried": 300,
+          "addresses_recovered_per_read": 159,
+          "round_b": false,
+          "groups_decodable_after_cheap_pass": 9,
+          "needed_addresses": 89,
+          "output_sha256": "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+        }
+      },
+      {
+        "channel_name": "mixed (0.5%+0.5%, sub 1%)",
+        "coverage": 3,
+        "channel": {
+          "substitution_rate": 0.01,
+          "insertion_rate": 0.005,
+          "deletion_rate": 0.005,
+          "quality_informative": 0.5,
+          "coverage": 3,
+          "coverage_model": "fixed",
+          "seed": 44010
+        },
+        "seed_index": 1,
+        "reads_sha256": "910b931c7f496647dd78a5736f2e66d34f2acfa3f7cb2bf8d7b187869c473450",
+        "V5-hard eager": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "groups_recovered_fraction": 1.0,
+          "seconds": 16.857,
+          "cpu_seconds": 18.58,
+          "peak_rss_mb": 86.5,
+          "peak_rss_workers_mb": 95.9,
+          "pass1_seconds": 16.074015671008965,
+          "deferred_seconds": null,
+          "pass2_seconds": 0.663909248978598,
+          "smart_attempts": 3138,
+          "reads_recovered_per_read": {
+            "smart": 993,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+        },
+        "V5-hard eager batch256": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "groups_recovered_fraction": 1.0,
+          "seconds": 4.106,
+          "cpu_seconds": 23.36,
+          "peak_rss_mb": 78.2,
+          "peak_rss_workers_mb": 78.3,
+          "pass1_seconds": 3.2752960849902593,
+          "deferred_seconds": null,
+          "pass2_seconds": 0.7166168620169628,
+          "smart_attempts": 3138,
+          "reads_recovered_per_read": {
+            "smart": 993,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+        },
+        "V5-hard deferred": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "groups_recovered_fraction": 1.0,
+          "seconds": 4.587,
+          "cpu_seconds": 7.01,
+          "peak_rss_mb": 78.1,
+          "peak_rss_workers_mb": 80.8,
+          "pass1_seconds": 0.6330542690120637,
+          "deferred_seconds": 2.6364705659798346,
+          "pass2_seconds": 1.2048580280097667,
+          "smart_attempts": 416,
+          "reads_recovered_per_read": {
+            "smart": 160,
+            "soft": null
+          },
+          "reads_tried": 292,
+          "reads_skipped": 1442,
+          "addresses_skipped": 1331,
+          "unique_addresses_tried": 258,
+          "addresses_recovered_per_read": 141,
+          "round_b": false,
+          "groups_decodable_after_cheap_pass": 11,
+          "needed_addresses": 54,
+          "output_sha256": "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+        }
+      },
+      {
+        "channel_name": "mixed (0.5%+0.5%, sub 1%)",
+        "coverage": 10,
+        "channel": {
+          "substitution_rate": 0.01,
+          "insertion_rate": 0.005,
+          "deletion_rate": 0.005,
+          "quality_informative": 0.5,
+          "coverage": 10,
+          "coverage_model": "fixed",
+          "seed": 44000
+        },
+        "seed_index": 0,
+        "reads_sha256": "5ecc84aadbba3c78b319826d5d6bbb7c448e93a97f1e5509d82c6aa8d5eafeb1",
+        "V5-hard eager": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "groups_recovered_fraction": 1.0,
+          "seconds": 38.897,
+          "cpu_seconds": 54.74,
+          "peak_rss_mb": 110.9,
+          "peak_rss_workers_mb": 113.3,
+          "pass1_seconds": 38.52761281299172,
+          "deferred_seconds": null,
+          "pass2_seconds": 0.035454194992780685,
+          "smart_attempts": 10433,
+          "reads_recovered_per_read": {
+            "smart": 3379,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+        },
+        "V5-hard eager batch256": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "groups_recovered_fraction": 1.0,
+          "seconds": 8.428,
+          "cpu_seconds": 60.54,
+          "peak_rss_mb": 82.6,
+          "peak_rss_workers_mb": 82.6,
+          "pass1_seconds": 8.087963481986662,
+          "deferred_seconds": null,
+          "pass2_seconds": 0.02936753598623909,
+          "smart_attempts": 10433,
+          "reads_recovered_per_read": {
+            "smart": 3379,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+        },
+        "V5-hard deferred": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "groups_recovered_fraction": 1.0,
+          "seconds": 6.072,
+          "cpu_seconds": 9.25,
+          "peak_rss_mb": 116.0,
+          "peak_rss_workers_mb": 116.0,
+          "pass1_seconds": 1.0738986399956048,
+          "deferred_seconds": 1.7281066580035258,
+          "pass2_seconds": 2.9570614969998132,
+          "smart_attempts": 210,
+          "reads_recovered_per_read": {
+            "smart": 57,
+            "soft": null
+          },
+          "reads_tried": 136,
+          "reads_skipped": 5763,
+          "addresses_skipped": 4370,
+          "unique_addresses_tried": 121,
+          "addresses_recovered_per_read": 44,
+          "round_b": false,
+          "groups_decodable_after_cheap_pass": 14,
+          "needed_addresses": 0,
+          "output_sha256": "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+        }
+      },
+      {
+        "channel_name": "mixed (0.5%+0.5%, sub 1%)",
+        "coverage": 10,
+        "channel": {
+          "substitution_rate": 0.01,
+          "insertion_rate": 0.005,
+          "deletion_rate": 0.005,
+          "quality_informative": 0.5,
+          "coverage": 10,
+          "coverage_model": "fixed",
+          "seed": 44010
+        },
+        "seed_index": 1,
+        "reads_sha256": "dba5d148b007050494bd3f9e40d7eeb027000ba11d9bddb046923806f9eeed49",
+        "V5-hard eager": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "groups_recovered_fraction": 1.0,
+          "seconds": 40.59,
+          "cpu_seconds": 56.04,
+          "peak_rss_mb": 112.8,
+          "peak_rss_workers_mb": 113.2,
+          "pass1_seconds": 40.239458545984235,
+          "deferred_seconds": null,
+          "pass2_seconds": 0.023805948992958292,
+          "smart_attempts": 10464,
+          "reads_recovered_per_read": {
+            "smart": 3373,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+        },
+        "V5-hard eager batch256": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "groups_recovered_fraction": 1.0,
+          "seconds": 8.646,
+          "cpu_seconds": 61.72,
+          "peak_rss_mb": 82.6,
+          "peak_rss_workers_mb": 82.6,
+          "pass1_seconds": 8.293579321005382,
+          "deferred_seconds": null,
+          "pass2_seconds": 0.022650349012110382,
+          "smart_attempts": 10464,
+          "reads_recovered_per_read": {
+            "smart": 3373,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+        },
+        "V5-hard deferred": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "groups_recovered_fraction": 1.0,
+          "seconds": 8.432,
+          "cpu_seconds": 11.64,
+          "peak_rss_mb": 118.6,
+          "peak_rss_workers_mb": 118.6,
+          "pass1_seconds": 1.05391507098102,
+          "deferred_seconds": 1.6855823259975296,
+          "pass2_seconds": 5.383267979021184,
+          "smart_attempts": 192,
+          "reads_recovered_per_read": {
+            "smart": 60,
+            "soft": null
+          },
+          "reads_tried": 126,
+          "reads_skipped": 5726,
+          "addresses_skipped": 4353,
+          "unique_addresses_tried": 113,
+          "addresses_recovered_per_read": 43,
+          "round_b": false,
+          "groups_decodable_after_cheap_pass": 14,
+          "needed_addresses": 0,
+          "output_sha256": "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+        }
+      },
+      {
+        "channel_name": "mixed, substitution-heavy (0.25%+0.25%, sub 4%)",
+        "coverage": 1,
+        "channel": {
+          "substitution_rate": 0.04,
+          "insertion_rate": 0.0025,
+          "deletion_rate": 0.0025,
+          "quality_informative": 0.5,
+          "coverage": 1,
+          "coverage_model": "fixed",
+          "seed": 44000
+        },
+        "seed_index": 0,
+        "reads_sha256": "ebad617785c9de87cb228c0da4ee787cda39fa3ebc459528cd9f902cbc8ec93f",
+        "V5-hard eager": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "groups_recovered_fraction": null,
+          "seconds": 6.745,
+          "cpu_seconds": 8.49,
+          "peak_rss_mb": 64.8,
+          "peak_rss_workers_mb": 85.6,
+          "pass1_seconds": null,
+          "deferred_seconds": null,
+          "pass2_seconds": null,
+          "smart_attempts": null,
+          "reads_recovered_per_read": {
+            "smart": null,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": null
+        },
+        "V5-hard eager batch256": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "groups_recovered_fraction": null,
+          "seconds": 2.351,
+          "cpu_seconds": 10.67,
+          "peak_rss_mb": 60.9,
+          "peak_rss_workers_mb": 77.9,
+          "pass1_seconds": null,
+          "deferred_seconds": null,
+          "pass2_seconds": null,
+          "smart_attempts": null,
+          "reads_recovered_per_read": {
+            "smart": null,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": null
+        },
+        "V5-hard deferred": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "groups_recovered_fraction": null,
+          "seconds": 4.804,
+          "cpu_seconds": 11.4,
+          "peak_rss_mb": 65.2,
+          "peak_rss_workers_mb": 78.9,
+          "pass1_seconds": null,
+          "deferred_seconds": null,
+          "pass2_seconds": null,
+          "smart_attempts": null,
+          "reads_recovered_per_read": {
+            "smart": null,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": null
+        }
+      },
+      {
+        "channel_name": "mixed, substitution-heavy (0.25%+0.25%, sub 4%)",
+        "coverage": 1,
+        "channel": {
+          "substitution_rate": 0.04,
+          "insertion_rate": 0.0025,
+          "deletion_rate": 0.0025,
+          "quality_informative": 0.5,
+          "coverage": 1,
+          "coverage_model": "fixed",
+          "seed": 44010
+        },
+        "seed_index": 1,
+        "reads_sha256": "3f8da23394be7d668026690f4109fdc2664f407cff31ceb3e14c2ae6ac3b8a58",
+        "V5-hard eager": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "groups_recovered_fraction": null,
+          "seconds": 7.172,
+          "cpu_seconds": 8.92,
+          "peak_rss_mb": 64.3,
+          "peak_rss_workers_mb": 84.9,
+          "pass1_seconds": null,
+          "deferred_seconds": null,
+          "pass2_seconds": null,
+          "smart_attempts": null,
+          "reads_recovered_per_read": {
+            "smart": null,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": null
+        },
+        "V5-hard eager batch256": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "groups_recovered_fraction": null,
+          "seconds": 2.192,
+          "cpu_seconds": 10.63,
+          "peak_rss_mb": 61.0,
+          "peak_rss_workers_mb": 78.1,
+          "pass1_seconds": null,
+          "deferred_seconds": null,
+          "pass2_seconds": null,
+          "smart_attempts": null,
+          "reads_recovered_per_read": {
+            "smart": null,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": null
+        },
+        "V5-hard deferred": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "groups_recovered_fraction": null,
+          "seconds": 4.897,
+          "cpu_seconds": 11.56,
+          "peak_rss_mb": 64.6,
+          "peak_rss_workers_mb": 78.6,
+          "pass1_seconds": null,
+          "deferred_seconds": null,
+          "pass2_seconds": null,
+          "smart_attempts": null,
+          "reads_recovered_per_read": {
+            "smart": null,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": null
+        }
+      },
+      {
+        "channel_name": "mixed, substitution-heavy (0.25%+0.25%, sub 4%)",
+        "coverage": 3,
+        "channel": {
+          "substitution_rate": 0.04,
+          "insertion_rate": 0.0025,
+          "deletion_rate": 0.0025,
+          "quality_informative": 0.5,
+          "coverage": 3,
+          "coverage_model": "fixed",
+          "seed": 44000
+        },
+        "seed_index": 0,
+        "reads_sha256": "8b90a220b9f208de3a0288865fb4d28cec03f5e4862a5d10a986996e1fe2e919",
+        "V5-hard eager": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "groups_recovered_fraction": 0.0,
+          "seconds": 22.764,
+          "cpu_seconds": 24.48,
+          "peak_rss_mb": 80.4,
+          "peak_rss_workers_mb": 93.7,
+          "pass1_seconds": 18.552598997979658,
+          "deferred_seconds": null,
+          "pass2_seconds": 4.074426146980841,
+          "smart_attempts": 4428,
+          "reads_recovered_per_read": {
+            "smart": 292,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": null
+        },
+        "V5-hard eager batch256": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "groups_recovered_fraction": 0.0,
+          "seconds": 7.646,
+          "cpu_seconds": 29.08,
+          "peak_rss_mb": 71.1,
+          "peak_rss_workers_mb": 79.6,
+          "pass1_seconds": 3.5757036300201435,
+          "deferred_seconds": null,
+          "pass2_seconds": 3.926944467006251,
+          "smart_attempts": 4428,
+          "reads_recovered_per_read": {
+            "smart": 292,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": null
+        },
+        "V5-hard deferred": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "groups_recovered_fraction": 0.0,
+          "seconds": 10.353,
+          "cpu_seconds": 31.22,
+          "peak_rss_mb": 82.9,
+          "peak_rss_workers_mb": 81.5,
+          "pass1_seconds": 0.6427256680035498,
+          "deferred_seconds": 5.432659201993374,
+          "pass2_seconds": 4.135699013975682,
+          "smart_attempts": 4425,
+          "reads_recovered_per_read": {
+            "smart": 292,
+            "soft": null
+          },
+          "reads_tried": 3017,
+          "reads_skipped": 0,
+          "addresses_skipped": 0,
+          "unique_addresses_tried": 2214,
+          "addresses_recovered_per_read": 279,
+          "round_b": true,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": null
+        }
+      },
+      {
+        "channel_name": "mixed, substitution-heavy (0.25%+0.25%, sub 4%)",
+        "coverage": 3,
+        "channel": {
+          "substitution_rate": 0.04,
+          "insertion_rate": 0.0025,
+          "deletion_rate": 0.0025,
+          "quality_informative": 0.5,
+          "coverage": 3,
+          "coverage_model": "fixed",
+          "seed": 44010
+        },
+        "seed_index": 1,
+        "reads_sha256": "e820d74bd28363d18753a6c858c2df5242c7995121f9fbf7d0a86bc275d424f6",
+        "V5-hard eager": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "groups_recovered_fraction": 0.0,
+          "seconds": 24.599,
+          "cpu_seconds": 26.34,
+          "peak_rss_mb": 81.8,
+          "peak_rss_workers_mb": 93.9,
+          "pass1_seconds": 19.822138399002142,
+          "deferred_seconds": null,
+          "pass2_seconds": 4.632850352005335,
+          "smart_attempts": 4430,
+          "reads_recovered_per_read": {
+            "smart": 276,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": null
+        },
+        "V5-hard eager batch256": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "groups_recovered_fraction": 0.0,
+          "seconds": 8.294,
+          "cpu_seconds": 29.88,
+          "peak_rss_mb": 72.6,
+          "peak_rss_workers_mb": 78.9,
+          "pass1_seconds": 3.832688777009025,
+          "deferred_seconds": null,
+          "pass2_seconds": 4.318209629011108,
+          "smart_attempts": 4430,
+          "reads_recovered_per_read": {
+            "smart": 276,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": null
+        },
+        "V5-hard deferred": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "groups_recovered_fraction": 0.0,
+          "seconds": 11.944,
+          "cpu_seconds": 31.47,
+          "peak_rss_mb": 84.2,
+          "peak_rss_workers_mb": 83.0,
+          "pass1_seconds": 0.6600891840062104,
+          "deferred_seconds": 7.080402489984408,
+          "pass2_seconds": 4.06653662599274,
+          "smart_attempts": 4425,
+          "reads_recovered_per_read": {
+            "smart": 276,
+            "soft": null
+          },
+          "reads_tried": 3020,
+          "reads_skipped": 0,
+          "addresses_skipped": 0,
+          "unique_addresses_tried": 2171,
+          "addresses_recovered_per_read": 264,
+          "round_b": true,
+          "groups_decodable_after_cheap_pass": 0,
+          "needed_addresses": 806,
+          "output_sha256": null
+        }
+      },
+      {
+        "channel_name": "mixed, substitution-heavy (0.25%+0.25%, sub 4%)",
+        "coverage": 10,
+        "channel": {
+          "substitution_rate": 0.04,
+          "insertion_rate": 0.0025,
+          "deletion_rate": 0.0025,
+          "quality_informative": 0.5,
+          "coverage": 10,
+          "coverage_model": "fixed",
+          "seed": 44000
+        },
+        "seed_index": 0,
+        "reads_sha256": "d4cd79ad71162d61286cea6d0fad6c66fdf61cda4d08b9cddbb3e491e70be67c",
+        "V5-hard eager": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "groups_recovered_fraction": 1.0,
+          "seconds": 49.983,
+          "cpu_seconds": 68.24,
+          "peak_rss_mb": 118.6,
+          "peak_rss_workers_mb": 109.8,
+          "pass1_seconds": 46.660420778993284,
+          "deferred_seconds": null,
+          "pass2_seconds": 2.911749339022208,
+          "smart_attempts": 14711,
+          "reads_recovered_per_read": {
+            "smart": 1008,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+        },
+        "V5-hard eager batch256": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "groups_recovered_fraction": 1.0,
+          "seconds": 12.664,
+          "cpu_seconds": 72.63,
+          "peak_rss_mb": 82.6,
+          "peak_rss_workers_mb": 82.6,
+          "pass1_seconds": 9.327229923015693,
+          "deferred_seconds": null,
+          "pass2_seconds": 2.9098280940088443,
+          "smart_attempts": 14711,
+          "reads_recovered_per_read": {
+            "smart": 1008,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+        },
+        "V5-hard deferred": {
+          "status": "SUCCESS",
+          "verified": true,
+          "false_success": false,
+          "groups_recovered_fraction": 1.0,
+          "seconds": 18.641,
+          "cpu_seconds": 78.51,
+          "peak_rss_mb": 122.6,
+          "peak_rss_workers_mb": 122.6,
+          "pass1_seconds": 1.0807858810003381,
+          "deferred_seconds": 14.297520894004265,
+          "pass2_seconds": 2.84999263798818,
+          "smart_attempts": 14694,
+          "reads_recovered_per_read": {
+            "smart": 1008,
+            "soft": null
+          },
+          "reads_tried": 10092,
+          "reads_skipped": 0,
+          "addresses_skipped": 0,
+          "unique_addresses_tried": 6732,
+          "addresses_recovered_per_read": 813,
+          "round_b": true,
+          "groups_decodable_after_cheap_pass": 9,
+          "needed_addresses": 103,
+          "output_sha256": "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2"
+        }
+      },
+      {
+        "channel_name": "mixed, substitution-heavy (0.25%+0.25%, sub 4%)",
+        "coverage": 10,
+        "channel": {
+          "substitution_rate": 0.04,
+          "insertion_rate": 0.0025,
+          "deletion_rate": 0.0025,
+          "quality_informative": 0.5,
+          "coverage": 10,
+          "coverage_model": "fixed",
+          "seed": 44010
+        },
+        "seed_index": 1,
+        "reads_sha256": "ff392215cca91a69c4dcdefa2cf3e3dbd9bfdc23a28a9050217b17f9ed8e4462",
+        "V5-hard eager": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "groups_recovered_fraction": 0.9286,
+          "seconds": 52.748,
+          "cpu_seconds": 70.6,
+          "peak_rss_mb": 118.6,
+          "peak_rss_workers_mb": 109.8,
+          "pass1_seconds": 48.45007964898832,
+          "deferred_seconds": null,
+          "pass2_seconds": 3.886850940005388,
+          "smart_attempts": 14673,
+          "reads_recovered_per_read": {
+            "smart": 917,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": null
+        },
+        "V5-hard eager batch256": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "groups_recovered_fraction": 0.9286,
+          "seconds": 13.938,
+          "cpu_seconds": 74.78,
+          "peak_rss_mb": 82.6,
+          "peak_rss_workers_mb": 82.6,
+          "pass1_seconds": 9.888308257010067,
+          "deferred_seconds": null,
+          "pass2_seconds": 3.6305364840081893,
+          "smart_attempts": 14673,
+          "reads_recovered_per_read": {
+            "smart": 917,
+            "soft": null
+          },
+          "reads_tried": null,
+          "reads_skipped": null,
+          "addresses_skipped": null,
+          "unique_addresses_tried": null,
+          "addresses_recovered_per_read": null,
+          "round_b": null,
+          "groups_decodable_after_cheap_pass": null,
+          "needed_addresses": null,
+          "output_sha256": null
+        },
+        "V5-hard deferred": {
+          "status": "FAILURE",
+          "verified": false,
+          "false_success": false,
+          "groups_recovered_fraction": 0.9286,
+          "seconds": 19.303,
+          "cpu_seconds": 79.09,
+          "peak_rss_mb": 122.5,
+          "peak_rss_workers_mb": 122.5,
+          "pass1_seconds": 1.0841777159948833,
+          "deferred_seconds": 14.281836212001508,
+          "pass2_seconds": 3.523231116007082,
+          "smart_attempts": 14660,
+          "reads_recovered_per_read": {
+            "smart": 917,
+            "soft": null
+          },
+          "reads_tried": 10053,
+          "reads_skipped": 0,
+          "addresses_skipped": 0,
+          "unique_addresses_tried": 6700,
+          "addresses_recovered_per_read": 754,
+          "round_b": true,
+          "groups_decodable_after_cheap_pass": 10,
+          "needed_addresses": 80,
+          "output_sha256": null
+        }
+      }
+    ],
+    "encode": {
+      "input_sha256": "30947faa32e04e59b440b77ff315d2e4422d2bb4ed884c7925a57553e4c15bb2",
+      "input_size": 32768,
+      "strands": 1088,
+      "encode": {
+        "output": "/tmp/p3o-bvllf9r4/s.fasta",
+        "format": "fasta",
+        "strands": 1088,
+        "bases": 340544,
+        "strand_nt": 313,
+        "container_bytes": 34063,
+        "content_bytes": 32768,
+        "archive_id": "c31463a35e1ecdc5183c1d237d501c5d",
+        "archive_tag": "c314",
+        "groups": 14,
+        "superblock_strands": 12,
+        "max_scrambler_variant": 13,
+        "file_sha256": "b0a8fcd8ca1787e45fb89723fe74d604624147dc6b6ca50e8d90ddc74d87795b",
+        "seconds": 0.04293042700737715,
+        "container_mb_s": 0.793,
+        "workers": 1
+      }
+    },
+    "wall_seconds": 619.0
+  }
+}

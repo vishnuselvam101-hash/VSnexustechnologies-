@@ -1,0 +1,130 @@
+{
+  "layout": {
+    "payload_bytes": 40,
+    "inner_parity": 16,
+    "marker_period": 24,
+    "marker_len": 3,
+    "frame_bytes": 70,
+    "strand_nt": 313,
+    "markers": 11
+  },
+  "strands": 4096,
+  "strand_seed": 4101,
+  "channel_seed": 4102,
+  "coverage": 1,
+  "points": [
+    [
+      "indel 0.1% (ins 0.05% + del 0.05%) + sub 0.1%",
+      {
+        "insertion_rate": 0.0005,
+        "deletion_rate": 0.0005,
+        "substitution_rate": 0.001
+      }
+    ],
+    [
+      "indel 0.2% (ins 0.1% + del 0.1%) + sub 0.2%",
+      {
+        "insertion_rate": 0.001,
+        "deletion_rate": 0.001,
+        "substitution_rate": 0.002
+      }
+    ],
+    [
+      "indel 0.5% (ins 0.25% + del 0.25%) + sub 0.5%",
+      {
+        "insertion_rate": 0.0025,
+        "deletion_rate": 0.0025,
+        "substitution_rate": 0.005
+      }
+    ],
+    [
+      "indel 1% (ins 0.5% + del 0.5%) + sub 1%",
+      {
+        "insertion_rate": 0.005,
+        "deletion_rate": 0.005,
+        "substitution_rate": 0.01
+      }
+    ]
+  ],
+  "quality_informative": [
+    0.0,
+    0.5,
+    1.0,
+    "graded"
+  ],
+  "configs": {
+    "V4": {
+      "min_q": 0,
+      "smart": false,
+      "soft": null
+    },
+    "V4+minQ": {
+      "min_q": 13,
+      "smart": false,
+      "soft": null
+    },
+    "V4+minQ20": {
+      "min_q": 20,
+      "smart": false,
+      "soft": null
+    },
+    "V5-hard": {
+      "min_q": 0,
+      "smart": true,
+      "soft": null
+    },
+    "V5-hard+minQ20": {
+      "min_q": 20,
+      "smart": true,
+      "soft": null
+    },
+    "V5-soft-erasure": {
+      "min_q": 0,
+      "smart": true,
+      "soft": "erasure"
+    },
+    "V5-soft-chase": {
+      "min_q": 0,
+      "smart": true,
+      "soft": "chase"
+    },
+    "V5-soft-auto": {
+      "min_q": 0,
+      "smart": true,
+      "soft": "auto"
+    },
+    "V5-soft-auto+minQ20": {
+      "min_q": 20,
+      "smart": true,
+      "soft": "auto"
+    }
+  },
+  "soft_defaults": {
+    "mode": "auto",
+    "chase_bytes": 4,
+    "chase_values": 2,
+    "max_soft_trials": 64,
+    "max_bytes_per_trial": 4,
+    "false_accept_budget": 1e-09,
+    "default_error": 0.005,
+    "unknown_reliability": 0.0
+  },
+  "indel_defaults": {
+    "max_shift": 1,
+    "max_window_segments": 2,
+    "max_candidates": 64,
+    "max_trials": 1024,
+    "max_joint_windows": 2,
+    "max_read_nt": 8256,
+    "trial_batch": 8192,
+    "substitution_prior": 0.005,
+    "keep_byte_error": 0.001,
+    "high_confidence": 0.001,
+    "false_accept_budget": 1e-09,
+    "phases": [
+      "T0",
+      "T1",
+      "T2"
+    ]
+  }
+}
