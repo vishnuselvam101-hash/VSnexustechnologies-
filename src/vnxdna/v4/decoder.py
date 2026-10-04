@@ -1054,6 +1054,17 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
     tag = int.from_bytes(sb.archive_id[:2], "big")
     K, P = sb.K, lay.payload_bytes
     codec = make_outer(sb.outer_code, K, sb.M, sb.lt_seed, sb.lt_distribution)
+    # V6 (superblock version 2): column-parity groups G … total − 1 are full rows; rows that fail row-wise are kept
+    # (verified symbols only) for the iterative stripe decoder (vnxdna.v6.decode). Version 1: total = G, as in V4.
+    total = sb.total_groups
+    v6 = None
+    if sb.version != 1:
+        from ..v6.decode import StripeRecovery
+        v6 = StripeRecovery(sb.geometry())
+
+    def row_k(g: int) -> int:
+        return K if g >= sb.group_count else group_k(sb.container_size, K, P, g)
+
     work = Path(tmp_root) / "container.vnx"
     with open(work, "wb") as f:
         f.truncate(sb.container_size)
@@ -1071,26 +1082,26 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
             for b in range(spill.B):
                 acc, pend = spill.load(b)
                 acc = acc[(acc["kind"] == KIND_DATA) & (acc["tag"] == tag)]
-                acc = acc[acc["group"] < sb.group_count]
+                acc = acc[acc["group"] < total]
                 if groups_filter is not None:
                     acc = acc[np.isin(acc["group"], list(groups_filter))]
                 symbols, c = resolve_duplicates(acc)
                 conflicts += c
-                targets_b = [g for g in range(b, sb.group_count, spill.B)
+                targets_b = [g for g in range(b, total, spill.B)
                              if g not in done and (groups_filter is None or g in groups_filter)]
                 missing = set()
                 for g in targets_b:
-                    n_sym = codec.symbols_for(group_k(sb.container_size, K, P, g))
+                    n_sym = codec.symbols_for(row_k(g))
                     missing.update((KIND_DATA, tag, g, s_) for s_ in range(n_sym) if (KIND_DATA, tag, g, s_) not in symbols)
                 symbols.update(_consensus_symbols(pend, symbols, lay, opt, stats, missing))
                 by_group: dict[int, dict[int, np.ndarray]] = {}
                 for (kd, tg, g, s), v in symbols.items():
                     if kd == KIND_DATA and tg == tag:
                         by_group.setdefault(g, {})[s] = v
-                targets = [g for g in range(b, sb.group_count, spill.B)
+                targets = [g for g in range(b, total, spill.B)
                            if g not in done and (groups_filter is None or g in groups_filter)]
                 for g in targets:
-                    k = group_k(sb.container_size, K, P, g)
+                    k = row_k(g)
                     syms = by_group.get(g, {})
                     try:
                         if hasattr(codec, "decode_block"):
@@ -1098,15 +1109,24 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
                         else:
                             data = codec.decode(syms, k, P)
                     except VNXDecodeError as error:
-                        failed[g] = str(error)
                         done.add(g)
+                        if v6 is not None:
+                            v6.row_failed(g, syms, str(error))
+                        else:
+                            failed[g] = str(error)
                         continue
+                    done.add(g)
+                    if v6 is not None:
+                        v6.row_decoded(g, data, syms)
+                        if g >= sb.group_count:
+                            continue
                     raw = data.reshape(-1).tobytes()
                     start = g * K * P
                     raw = raw[: max(0, min(len(raw), sb.container_size - start))]
                     os.pwrite(fd, raw, start)
                     decoded += 1
-                    done.add(g)
+            if v6 is not None:
+                decoded += v6.finish(fd, run, done, failed)
 
         done: set[int] = set()
         if select:
@@ -1119,6 +1139,8 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
         report = {"superblock": {"archive_id": sb.archive_id.hex(), "container_size": sb.container_size, "groups": sb.group_count,
                                  "outer_code": codec.configuration(), "layout": lay.to_dict()},
                   "reads": dict(stats), **sb_info, "duplicate_conflicts": conflicts}
+        if v6 is not None:
+            report["outer_v6"] = v6.report()
         indel = dict(indel or {})
         softd = {k[5:]: v for k, v in indel.items() if k.startswith("soft_")}
         indel = {k: v for k, v in indel.items() if not k.startswith("soft_")}
@@ -1129,7 +1151,10 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
         if opt.indel_recovery == "smart" or opt.soft_decoding != "off":
             report["recovery_schedule"] = schedule if schedule is not None else {"mode": "eager"}
         if select:
-            return _selective(sb, work, fd, run, done, failed, select, select_dir, key, passphrase, overwrite, report, stage, t0)
+            res = _selective(sb, work, fd, run, done, failed, select, select_dir, key, passphrase, overwrite, report, stage, t0)
+            if v6 is not None:
+                res.report["outer_v6"] = v6.report()
+            return res
     finally:
         os.close(fd)
     report["groups_decoded"] = decoded
