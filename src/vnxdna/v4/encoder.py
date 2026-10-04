@@ -11,6 +11,10 @@ Strand order in the output: superblock strands, then groups 0, 1, … with
 symbols in index order. Group g occupies container bytes [g·K·P, (g+1)·K·P),
 so the strands holding any container byte range — and therefore any chunk or
 file (``vnx locate``) — are known without an index file.
+
+V6 (opt-in, ``stripe_depth`` / ``column_parity`` / ``strand_order`` / ``outer_plan``): column-parity groups and
+interleaved strand order, signalled by superblock version 2 (vnxdna.v6, docs/V6_OUTER_CODE.md). Without these
+options the output is unchanged (superblock version 1).
 """
 from __future__ import annotations
 
@@ -35,6 +39,8 @@ from .util import sha256_file
 
 SB_MAGIC = b"VNX4SB"
 SB_VERSION = 1
+SB_VERSION_V6 = 2          # V6 outer code: bytes 18..21 = stripe depth D (u16), column parity Mc (u8), strand order (u8)
+ORDER_IDS = {"sequential": 0, "interleaved": 1}
 SB_BYTES = 96
 DIST_IDS = {"dense": 0, "robust-soliton": 1}
 
@@ -53,6 +59,20 @@ class DNAOptions:
     groups_per_task: int = 64
     fmt: str | None = None
     experimental: bool = False
+    # V6 outer code (opt-in; any of these switches to superblock version 2). stripe_depth 0 = automatic: every data
+    # group in one stripe without column parity, else min(groups, 128). strand_order None = "sequential", or
+    # "interleaved" with outer_plan="adaptive". redundancy_budget (adaptive only) = maximum redundant strands per data
+    # strand; None = the profile's M / K.
+    stripe_depth: int = 0
+    column_parity: int = 0
+    strand_order: str | None = None
+    outer_plan: str = "fixed"
+    redundancy_budget: float | None = None
+
+    @property
+    def v6(self) -> bool:
+        return bool(self.stripe_depth or self.column_parity or self.strand_order not in (None, "sequential")
+                    or self.outer_plan != "fixed")
 
     def resolve(self) -> tuple[Layout, int, int]:
         if self.profile not in PROFILES:
@@ -67,6 +87,22 @@ class DNAOptions:
         if not 1 <= self.workers <= 256:
             raise VNXConfigurationError("workers must be in 1..256")
         self.constraints.validate()
+        if self.outer_plan not in ("fixed", "adaptive"):
+            raise VNXConfigurationError("outer_plan must be 'fixed' or 'adaptive'")
+        if self.redundancy_budget is not None and self.outer_plan != "adaptive":
+            raise VNXConfigurationError("redundancy_budget applies to outer_plan='adaptive' only")
+        if self.redundancy_budget is not None and not 0 < self.redundancy_budget < 4:
+            raise VNXConfigurationError("redundancy_budget must be in (0, 4)")
+        if self.v6:
+            if self.outer_code != "cauchy-rs":
+                raise VNXConfigurationError("the V6 outer options need the cauchy-rs outer code")
+            if self.strand_order not in (None, *ORDER_IDS):
+                raise VNXConfigurationError(f"strand_order must be one of {sorted(ORDER_IDS)}")
+            if not 0 <= self.stripe_depth <= 65535 or not 0 <= self.column_parity <= 255:
+                raise VNXConfigurationError("stripe_depth must be in 0..65535 and column_parity in 0..255")
+            if self.outer_plan == "adaptive" and (self.data_symbols or self.parity_symbols is not None or self.stripe_depth
+                                                  or self.column_parity):
+                raise VNXConfigurationError("outer_plan='adaptive' chooses K, M, stripe depth and column parity itself")
         return lay, k, m
 
 
@@ -83,14 +119,33 @@ class Superblock:
     container_sha256: bytes
     index_offset: int
     group_count: int
+    version: int = SB_VERSION
+    stripe_depth: int = 0           # version 2 only
+    column_parity: int = 0          # version 2 only
+    strand_order: str = "sequential"
+
+    def geometry(self):
+        """The V6 outer geometry (version 2 only)."""
+        from ..v6.outer import Geometry
+        return Geometry(self.K, self.M, self.stripe_depth, self.column_parity, self.layout.payload_bytes,
+                        self.container_size, self.strand_order)
+
+    @property
+    def total_groups(self) -> int:
+        """Data groups plus V6 column-parity groups."""
+        return self.group_count if self.version == SB_VERSION else self.geometry().total_groups
 
     def pack(self) -> bytes:
         code_id = {v: k for k, v in CODE_IDS.items()}[self.outer_code]
         lay = self.layout
-        body = (SB_MAGIC + bytes([SB_VERSION, code_id]) + struct.pack(">HHHBBBB", self.K, self.M, lay.payload_bytes, lay.inner_parity,
-                                                                         lay.marker_period // 4, lay.marker_len,
-                                                                         DIST_IDS[self.lt_distribution])
-                + struct.pack(">I", self.lt_seed) + self.archive_id + struct.pack(">Q", self.container_size) + self.container_sha256
+        if self.version == SB_VERSION:
+            word = struct.pack(">I", self.lt_seed)
+        else:
+            word = struct.pack(">HBB", self.stripe_depth, self.column_parity, ORDER_IDS[self.strand_order])
+        body = (SB_MAGIC + bytes([self.version, code_id]) + struct.pack(">HHHBBBB", self.K, self.M, lay.payload_bytes,
+                                                                          lay.inner_parity, lay.marker_period // 4,
+                                                                          lay.marker_len, DIST_IDS[self.lt_distribution])
+                + word + self.archive_id + struct.pack(">Q", self.container_size) + self.container_sha256
                 + struct.pack(">QI", self.index_offset, self.group_count) + b"\x00\x00")
         assert len(body) == SB_BYTES - 4
         return body + struct.pack(">I", zlib.crc32(body))
@@ -102,7 +157,7 @@ class Superblock:
         data = data[:SB_BYTES]
         if data[:6] != SB_MAGIC or zlib.crc32(data[:-4]) != struct.unpack(">I", data[-4:])[0]:
             raise VNXFormatError("superblock magic/CRC invalid", stage="superblock")
-        if data[6] != SB_VERSION:
+        if data[6] not in (SB_VERSION, SB_VERSION_V6):
             from .errors import VNXUnsupportedVersionError
             raise VNXUnsupportedVersionError(f"unsupported superblock version {data[6]}")
         code = CODE_IDS.get(data[7])
@@ -120,7 +175,18 @@ class Superblock:
         lay = Layout(p, r, mp4 * 4, ml).validate()
         if groups != -(-size // (k * p)) or index_offset > size:
             raise VNXFormatError("superblock geometry is inconsistent", stage="superblock")
-        return cls(code, k, m, lay, inv[dist], seed, aid, size, sha, index_offset, groups)
+        if data[6] == SB_VERSION:
+            return cls(code, k, m, lay, inv[dist], seed, aid, size, sha, index_offset, groups)
+        depth, mc, order = struct.unpack(">HBB", data[18:22])
+        orders = {v: k_ for k_, v in ORDER_IDS.items()}
+        if code != "cauchy-rs" or dist != 0 or order not in orders:
+            raise VNXFormatError("superblock version 2 fields are invalid", stage="superblock")
+        sb = cls(code, k, m, lay, "dense", 0, aid, size, sha, index_offset, groups, SB_VERSION_V6, depth, mc, orders[order])
+        try:
+            sb.geometry().validate()
+        except VNXConfigurationError:
+            raise VNXFormatError("superblock version 2 geometry is invalid", stage="superblock") from None
+        return sb
 
     @staticmethod
     def symbols(payload_bytes: int) -> tuple[int, int]:
@@ -215,6 +281,9 @@ def encode_container(container_path: str | os.PathLike, output: str | os.PathLik
                      overwrite: bool = False, progress=None) -> dict:
     opt = options or DNAOptions()
     lay, K, M = opt.resolve()
+    if opt.v6:
+        from ..v6.encoder import encode_container_v6
+        return encode_container_v6(container_path, output, opt, overwrite=overwrite, progress=progress)
     t0 = time.perf_counter()
     container_path = Path(container_path)
     c = ct.open_container(container_path)        # structural validation (no key needed)

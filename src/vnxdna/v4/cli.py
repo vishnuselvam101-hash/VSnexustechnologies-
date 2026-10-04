@@ -229,13 +229,13 @@ def extract(container: Path, output_dir: Path, names: Optional[List[str]] = type
     _run(go)
 
 
-def _dna_opts(config, profile, outer_code, k, m, workers, performance, experimental=False):
+def _dna_opts(config, profile, outer_code, k, m, workers, performance, experimental=False, **v6):
     from .config import dna_options, load_config, performance as perf
     cfg = load_config(config)
     p = perf(performance or cfg.get("performance"))
     w = workers if workers else p["workers"]
     return dna_options(cfg, profile=profile, outer_code=outer_code, data_symbols=k, parity_symbols=m, workers=w,
-                       groups_per_task=p["groups_per_task"], experimental=experimental or None), p
+                       groups_per_task=p["groups_per_task"], experimental=experimental or None, **v6), p
 
 
 @app.command()
@@ -247,14 +247,26 @@ def encode(source: Path = typer.Argument(..., help="A .vnx container, or a file/
            workers: int = typer.Option(0, "--workers", "-w", help="0 = from the performance profile."),
            performance: Optional[str] = PERF_OPT, config: Optional[Path] = CONFIG_OPT, force: bool = FORCE_OPT,
            keep_archive: Optional[Path] = typer.Option(None, help="When SOURCE is not a container: also keep the .vnx here."),
-           key_file: Optional[Path] = KEY_OPT, passphrase_env: Optional[str] = PW_OPT) -> None:
+           key_file: Optional[Path] = KEY_OPT, passphrase_env: Optional[str] = PW_OPT,
+           stripe_depth: Optional[int] = typer.Option(None, "--stripe-depth",
+                                                      help="V6 (opt-in): data groups per stripe (0 = automatic)."),
+           column_parity: Optional[int] = typer.Option(None, "--column-parity",
+                                                       help="V6 (opt-in): column-parity groups per stripe."),
+           strand_order: Optional[str] = typer.Option(None, "--strand-order",
+                                                      help="V6 (opt-in): sequential or interleaved."),
+           outer_plan: Optional[str] = typer.Option(None, "--outer-plan",
+                                                    help="V6 (opt-in): fixed (default) or adaptive."),
+           redundancy_budget: Optional[float] = typer.Option(None, "--redundancy-budget",
+                                                             help="V6 adaptive plan: max redundant strands per data strand.")) -> None:
     """Encode a VNX4 container (or files) into DNA strands."""
     def go():
         import tempfile
         from . import archive as ar
         from . import container as ct
         from . import encoder as en
-        opts, perf = _dna_opts(config, profile, outer_code, data_symbols, parity_symbols, workers, performance)
+        opts, perf = _dna_opts(config, profile, outer_code, data_symbols, parity_symbols, workers, performance,
+                               stripe_depth=stripe_depth, column_parity=column_parity, strand_order=strand_order,
+                               outer_plan=outer_plan, redundancy_budget=redundancy_budget)
         if opts.outer_code != "cauchy-rs":
             raise VNXConfigurationError("non-default outer codes are experimental: use `vnx experimental encode`")
         is_container = source.is_file() and source.read_bytes()[:8] == ct.MAGIC if source.is_file() and source.stat().st_size >= 8 \
