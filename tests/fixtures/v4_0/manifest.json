@@ -1,0 +1,70 @@
+{
+ "cases": {
+  "archival": {
+   "channel_seed": 40002,
+   "container_sha256": "c4ca86cb914fc47edf786f759aaf18575525215d5a4575c1837017d1f2560dd3",
+   "encrypted": false,
+   "files": {
+    "mixed.bin": "d723e03a502b4080896a29fccec5d30434aabd7e9b85a8a3d96cf07cb98fba71"
+   },
+   "profile": "v4-archival",
+   "reads": 1218,
+   "strand_nt": 313,
+   "strands": 203
+  },
+  "balanced": {
+   "channel_seed": 40001,
+   "container_sha256": "c4ca86cb914fc47edf786f759aaf18575525215d5a4575c1837017d1f2560dd3",
+   "encrypted": false,
+   "files": {
+    "mixed.bin": "d723e03a502b4080896a29fccec5d30434aabd7e9b85a8a3d96cf07cb98fba71"
+   },
+   "profile": "v4-balanced",
+   "reads": 780,
+   "strand_nt": 313,
+   "strands": 130
+  },
+  "encrypted": {
+   "channel_seed": 40003,
+   "container_sha256": "f78b162f56f6d95de33aa68df482ac1f59a7ac5349c40db9fc777b9d8dda055d",
+   "encrypted": true,
+   "files": {
+    "mixed.bin": "d723e03a502b4080896a29fccec5d30434aabd7e9b85a8a3d96cf07cb98fba71"
+   },
+   "profile": "v4-balanced",
+   "reads": 816,
+   "strand_nt": 313,
+   "strands": 136
+  },
+  "multifile": {
+   "channel_seed": 40004,
+   "container_sha256": "1fc2033f24977d841d6e0d569c4fbaed505241b82caba9f1736284b558d751cf",
+   "encrypted": false,
+   "files": {
+    "mixed.bin": "d723e03a502b4080896a29fccec5d30434aabd7e9b85a8a3d96cf07cb98fba71",
+    "random.bin": "66d4aeb28c7acadd88bbb1e1c1ee320edcd89325071a5c2985058da7bfd0905f",
+    "sub/bin.dat": "7a8c19a59296a645e5279037cfe4c6074c93b26646406431991aa25733a69c06",
+    "text.txt": "fbf77b62318773b702e410cd259478e2f3d5c04163833a9c4adbbfd21aeb2f8c"
+   },
+   "profile": "v4-balanced",
+   "reads": 1674,
+   "strand_nt": 313,
+   "strands": 279
+  }
+ },
+ "channel": {
+  "coverage": 6,
+  "coverage_model": "fixed",
+  "deletion_rate": 0.002,
+  "insertion_rate": 0.002,
+  "reverse_complement_rate": 0.1,
+  "seed": 40001,
+  "shuffle_window": 64,
+  "substitution_rate": 0.004
+ },
+ "generated_by_commit": "d235239",
+ "label": "v4.0",
+ "passphrase_for_encrypted_case": "vnx-test-passphrase-NOT-A-SECRET",
+ "statement": "SYNTHETIC SOFTWARE TEST fixtures; no DNA was synthesised or sequenced",
+ "synthetic": true
+}
