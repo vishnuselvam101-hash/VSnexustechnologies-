@@ -474,8 +474,11 @@ class Spill:
         return (np.fromfile(self.dir / f"acc{b}.bin", dtype=self.acc_dtype), np.fromfile(self.dir / f"pend{b}.bin", dtype=self.pend_dtype))
 
     def load_orphans(self) -> np.ndarray:
+        """Read-only memory map of the unaddressed reads (pages are read on demand, so memory stays bounded)."""
         path = self.dir / "orph.bin"
-        return np.fromfile(path, dtype=self.pend_dtype) if path.exists() else np.zeros(0, dtype=self.pend_dtype)
+        if not path.exists() or path.stat().st_size < self.pend_dtype.itemsize:
+            return np.zeros(0, dtype=self.pend_dtype)
+        return np.memmap(path, dtype=self.pend_dtype, mode="r")
 
     # after close(): the deferred recovery stage adds verified frames and removes the pending records they came from
     def append_acc(self, fields: np.ndarray, payload: np.ndarray) -> None:
@@ -554,6 +557,21 @@ def resolve_duplicates(acc: np.ndarray) -> tuple[dict, int]:
 
 
 # ============================================================================ main entry
+def _bucket_count(est_reads: int) -> int:
+    """About 200 000 reads per spill bucket, so pass-2 memory is bounded by one bucket. V4/V5 capped this at 256
+    buckets (unbounded bucket size beyond ~51 M reads); the cap now follows the open-file limit (two files per bucket
+    stay open in pass 1), up to 4096. Below 51 M reads the count is unchanged."""
+    want = max(1, est_reads // 200_000)
+    try:
+        import resource
+        soft = resource.getrlimit(resource.RLIMIT_NOFILE)[0]
+        cap = 4096 if soft == resource.RLIM_INFINITY else max(256, min(4096, (soft - 128) // 2))
+    except (ImportError, OSError, ValueError):
+        cap = 256
+    return int(min(cap, want))
+
+
+
 @dataclass
 class DecodeResult:
     status: str                    # SUCCESS | PARTIAL | FAILURE
@@ -604,7 +622,7 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
         est_reads = max(1, reads_path.stat().st_size // (lay.strand_nt + 20))
     except OSError as error:
         raise VNXFormatError(f"cannot read {reads_path}: {error.strerror or error}") from None
-    buckets = int(min(256, max(1, est_reads // 200_000)))
+    buckets = _bucket_count(est_reads)
     tmp_root = tempfile.mkdtemp(prefix="vnx4-decode-", dir=workdir)
     try:
         smart = opt.indel_recovery == "smart"
@@ -922,6 +940,7 @@ def _smart_consensus(cand_keys, done, starts, ends, keys, pend, lay, opt, stats)
 
 # ============================================================================ deferred per-read recovery (V5)
 _DEFER_CHUNK = 256          # pending reads per recovery task
+_ORPHAN_SLICE = 65536       # unaddressed reads materialised at once in round B
 
 
 def _group_decodable(codec, syms: dict, k: int, P: int, g: int) -> bool:
@@ -1161,8 +1180,16 @@ def _deferred_recovery(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
             planner.checkpoint("round B")
             round_over("B", lambda b, pend: np.ones(len(pend), dtype=bool))
             n = planner.admit_reads("B", int(len(orph)))
-            ok, examined = recover(orph[:n], "B")
-            info["rounds"]["B"]["unaddressed_recovered"] = int(ok.sum())
+            examined, found = 0, 0
+            for c0 in range(0, n, _ORPHAN_SLICE):          # bounded memory: one slice of unaddressed reads at a time
+                part = np.array(orph[c0:min(n, c0 + _ORPHAN_SLICE)])
+                ok, done_ = recover(part, "B")
+                examined += done_
+                found += int(ok.sum())
+                if done_ < len(part):
+                    planner.unexamined("B", n - c0 - len(part))
+                    break
+            info["rounds"]["B"]["unaddressed_recovered"] = found
     finally:
         if pool is not None:
             pool.shutdown()
@@ -1207,7 +1234,7 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
     v6 = None
     if sb.version != 1:
         from ..v6.decode import StripeRecovery
-        v6 = StripeRecovery(sb.geometry())
+        v6 = StripeRecovery(sb.geometry(), Path(tmp_root) / "parity_rows.bin")
 
     def row_k(g: int) -> int:
         return K if g >= sb.group_count else group_k(sb.container_size, K, P, g)
@@ -1318,6 +1345,8 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
             return res
     finally:
         os.close(fd)
+        if v6 is not None:
+            v6.parity_rows.close()
     report["groups_decoded"] = decoded
     report["groups_failed"] = len(failed)
     report["failed_groups"] = sorted(failed)[:100]

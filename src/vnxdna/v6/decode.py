@@ -19,12 +19,51 @@ import numpy as np
 from .outer import Geometry, StripeStats, decode_stripe, row_codewords, stripe_padding
 
 
+class _ParityRows:
+    """Decoded column-parity rows (each K × P bytes). In memory by default; with ``path`` they are kept in a scratch
+    file (row g at offset (g − G)·K·P), so pass-2 memory does not grow with the archive."""
+
+    def __init__(self, geo: Geometry, path: str | os.PathLike | None = None):
+        self.geo = geo
+        self.mem: dict[int, np.ndarray] | None = None if path else {}
+        self.present: set[int] = set()
+        self.fd = os.open(path, os.O_RDWR | os.O_CREAT | os.O_TRUNC, 0o600) if path else None
+
+    def __contains__(self, g: int) -> bool:
+        return g in self.present
+
+    def __setitem__(self, g: int, data: np.ndarray) -> None:
+        data = np.ascontiguousarray(data, dtype=np.uint8).reshape(self.geo.K, self.geo.P)
+        self.present.add(g)
+        if self.fd is None:
+            self.mem[g] = data
+        else:
+            os.pwrite(self.fd, data.tobytes(), (g - self.geo.G) * self.geo.K * self.geo.P)
+
+    def __getitem__(self, g: int) -> np.ndarray:
+        if g not in self.present:
+            raise KeyError(g)
+        if self.fd is None:
+            return self.mem[g]
+        n = self.geo.K * self.geo.P
+        return np.frombuffer(os.pread(self.fd, n, (g - self.geo.G) * n), dtype=np.uint8).reshape(self.geo.K, self.geo.P)
+
+    def __len__(self) -> int:
+        return len(self.present)
+
+    def close(self) -> None:
+        if self.fd is not None:
+            os.close(self.fd)
+            self.fd = None
+
+
 class StripeRecovery:
-    def __init__(self, geo: Geometry):
+    def __init__(self, geo: Geometry, scratch: str | os.PathLike | None = None):
+        """``scratch``: optional file for decoded column-parity rows (bounded memory for large archives)."""
         self.geo = geo
         self.pending: dict[int, dict[int, np.ndarray]] = {}     # row → verified symbols (failed row-wise)
         self.errors: dict[int, str] = {}
-        self.parity_rows: dict[int, np.ndarray] = {}            # decoded column-parity rows: data (K, P)
+        self.parity_rows = _ParityRows(geo, scratch)            # decoded column-parity rows: data (K, P)
         self.stats = StripeStats()
         self.recovered: list[int] = []
         self.unrecovered: list[int] = []
@@ -52,7 +91,7 @@ class StripeRecovery:
     def row_decoded(self, g: int, data: np.ndarray, syms: dict) -> None:
         self._account(g, syms)
         if g >= self.geo.G:
-            self.parity_rows[g] = np.asarray(data, dtype=np.uint8)
+            self.parity_rows[g] = data
 
     def row_failed(self, g: int, syms: dict, error: str) -> None:
         self._account(g, syms)
