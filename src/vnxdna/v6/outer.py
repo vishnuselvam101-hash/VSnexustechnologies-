@@ -376,6 +376,15 @@ def _windows_ok(geo: Geometry, rows: np.ndarray, pos: np.ndarray, pad: np.ndarra
     """Every burst [st, st + L) ∩ stripe (st in starts, clipped to the stripe) leaves all data rows decodable."""
     starts = list(starts)
     n = len(rows)
+    if geo.Mc == 0:
+        # rows only: a row decodes iff it loses at most M of its transmitted symbols (no iteration to model)
+        data_rows = rows < geo.D
+        for st in starts:
+            lo, hi = max(0, st), min(n, st + L)
+            lost = rows[lo:hi][data_rows[lo:hi]]
+            if lost.size and np.bincount(lost).max() > geo.M:
+                return False
+        return True
     for c0 in range(0, len(starts), 256):
         chunk = starts[c0:c0 + 256]
         known = np.broadcast_to(~np.zeros_like(pad), (len(chunk), *pad.shape)).copy()
