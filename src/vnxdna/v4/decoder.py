@@ -42,7 +42,8 @@ from . import archive as ar
 from . import container as ct
 from .codecs import CauchyRSCodec, make_outer
 from .encoder import SB_BYTES, Superblock, group_k
-from .errors import VNXAddressError, VNXConfigurationError, VNXDecodeError, VNXFormatError, VNXIntegrityError
+from .errors import (VNXAddressError, VNXConfigurationError, VNXDecodeError, VNXFormatError, VNXIntegrityError,
+                     VNXKeyError)
 from .frame import HEADER_BYTES, KIND_DATA, KIND_SUPER, PROFILES, Layout, decode_frames, nt_to_bytes, tentative_address
 from .sync import SyncCosts, TemplateAligner, frame_erasures_to_bytes, strip_markers_exact
 from .util import atomic_output, peak_rss_bytes
@@ -583,8 +584,10 @@ def decode_reads(reads_path: str | os.PathLike, output: str | os.PathLike | None
                  overwrite: bool = False, partial_dir: str | os.PathLike | None = None, select: list[str] | None = None,
                  select_dir: str | os.PathLike | None = None, key: bytes | None = None, passphrase: str | None = None,
                  progress=None, workdir: str | os.PathLike | None = None, observer=None,
-                 task_id: str | None = None) -> DecodeResult:
-    """``observer``: optional callable receiving structured events (vnxdna.v6.observe); observability only."""
+                 task_id: str | None = None, allow_unencrypted: bool = False) -> DecodeResult:
+    """``observer``: optional callable receiving structured events (vnxdna.v6.observe); observability only.
+    ``allow_unencrypted``: accept an unencrypted archive although ``key``/``passphrase`` was given (otherwise the
+    selected or partial files are refused, see :func:`vnxdna.v4.container.open_container`)."""
     opt = options or DecodeOptions()
     opt.validate()
     t0 = time.perf_counter()
@@ -594,7 +597,7 @@ def decode_reads(reads_path: str | os.PathLike, output: str | os.PathLike | None
     try:
         res = _decode_reads(reads_path, output, opt, t0, ev, RecoveryPlanner(opt.recovery_budget, t0), overwrite=overwrite,
                             partial_dir=partial_dir, select=select, select_dir=select_dir, key=key, passphrase=passphrase,
-                            progress=progress, workdir=workdir)
+                            progress=progress, workdir=workdir, allow_unencrypted=allow_unencrypted)
     except Exception as error:
         ev.emit("error", getattr(error, "stage", "unknown"), error_class=type(error).__name__, message=str(error)[:500])
         raise
@@ -606,7 +609,7 @@ def decode_reads(reads_path: str | os.PathLike, output: str | os.PathLike | None
 
 
 def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner, *, overwrite, partial_dir, select,
-                  select_dir, key, passphrase, progress, workdir) -> DecodeResult:
+                  select_dir, key, passphrase, progress, workdir, allow_unencrypted=False) -> DecodeResult:
     stage: dict = {}
     reads_path = Path(reads_path)
     lay = detect_layout(reads_path, opt)
@@ -710,7 +713,7 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
             stats["_indel"] = indel_stats          # pass 2 adds its consensus counters; reported as report["indel_recovery"]
         planner.checkpoint("pass 2 start")
         result = _pass2(spill, lay, opt, stats, stage, t0, output, overwrite, partial_dir, select, select_dir, key, passphrase,
-                        tmp_root, planner, ev, recover_groups)
+                        tmp_root, planner, ev, recover_groups, allow_unencrypted)
         return result
     finally:
         shutil.rmtree(tmp_root, ignore_errors=True)
@@ -1253,7 +1256,8 @@ def _deferred_recovery(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
 
 
 def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage: dict, t0: float, output, overwrite, partial_dir,
-           select, select_dir, key, passphrase, tmp_root, planner=None, ev=None, recover_groups=None) -> DecodeResult:
+           select, select_dir, key, passphrase, tmp_root, planner=None, ev=None, recover_groups=None,
+           allow_unencrypted=False) -> DecodeResult:
     if planner is None:
         from ..v6.recovery import RecoveryPlanner
         planner = RecoveryPlanner()
@@ -1391,7 +1395,7 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
         if select:
             recover = None if recover_groups is None else (lambda need: recover_groups(stripes_of(need)))
             res = _selective(sb, work, fd, run, done, failed, select, select_dir, key, passphrase, overwrite, report, stage, t0,
-                             recover)
+                             recover, allow_unencrypted)
             if v6 is not None:
                 res.report["outer_v6"] = v6.report()
             if recover_groups is not None:
@@ -1411,7 +1415,7 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
                        "whose every chunk verifies may be extracted", {"groups_failed": len(failed)})
         report["recovery_plan"] = planner.report()
         report["status"] = "PARTIAL"
-        report.update(_partial(sb, work, failed, partial_dir, key, passphrase, overwrite))
+        report.update(_partial(sb, work, failed, partial_dir, key, passphrase, overwrite, allow_unencrypted))
         report["stage_seconds"] = stage
         report["seconds"] = time.perf_counter() - t0
         report["peak_rss_bytes"] = peak_rss_bytes()
@@ -1442,7 +1446,8 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
     return DecodeResult("SUCCESS", report, str(output) if output else None)
 
 
-def _partial(sb: Superblock, work: Path, failed: dict, partial_dir, key, passphrase, overwrite) -> dict:
+def _partial(sb: Superblock, work: Path, failed: dict, partial_dir, key, passphrase, overwrite,
+             allow_unencrypted=False) -> dict:
     """Recover individually verified files from an incomplete container (only if the index section survived)."""
     K, P = sb.K, sb.layout.payload_bytes
     lost_ranges = [[g * K * P, min(sb.container_size, (g + 1) * K * P)] for g in sorted(failed)]
@@ -1460,7 +1465,10 @@ def _partial(sb: Superblock, work: Path, failed: dict, partial_dir, key, passphr
             f.write(ct.MAGIC + struct.pack(">HHI", FORMAT_VERSION[0], FORMAT_VERSION[1], 0))
         info["header_restored"] = True
     try:
-        c = ct.open_container(work, key=key, passphrase=passphrase, require_key=True)
+        c = ct.open_container(work, key=key, passphrase=passphrase, require_key=True, allow_unencrypted=allow_unencrypted)
+    except VNXKeyError as error:
+        info["partial_note"] = f"no file extracted: {error}"
+        return info
     except Exception as error:  # noqa: BLE001 - report, never publish
         info["partial_note"] = f"index section did not validate: {error}"
         return info
@@ -1475,19 +1483,20 @@ def _partial(sb: Superblock, work: Path, failed: dict, partial_dir, key, passphr
                 break
         (info["files_recovered"] if ok else info["files_lost"]).append(rec.path)
     if partial_dir and info["files_recovered"]:
-        res = ar.extract(work, partial_dir, key=key, passphrase=passphrase, names=info["files_recovered"], overwrite=overwrite)
+        res = ar.extract(work, partial_dir, key=key, passphrase=passphrase, names=info["files_recovered"], overwrite=overwrite,
+                         allow_unencrypted=allow_unencrypted)
         info["partial_extract"] = res
     return info
 
 
 def _selective(sb, work, fd, run, done, failed, select, select_dir, key, passphrase, overwrite, report, stage, t0,
-               recover=None) -> DecodeResult:
+               recover=None, allow_unencrypted=False) -> DecodeResult:
     """Random access: decode the index groups, then only the groups holding the selected files."""
     K, P = sb.K, sb.layout.payload_bytes
     if failed:
         raise VNXDecodeError("the archive index could not be decoded; selective extraction impossible",
                              details={"failed_groups": sorted(failed)[:20]})
-    c = ct.open_container(work, key=key, passphrase=passphrase, require_key=True)
+    c = ct.open_container(work, key=key, passphrase=passphrase, require_key=True, allow_unencrypted=allow_unencrypted)
     need: set[int] = set()
     for name in select:
         rec = c.file(name)
@@ -1501,7 +1510,8 @@ def _selective(sb, work, fd, run, done, failed, select, select_dir, key, passphr
     stage["selective_decode"] = time.perf_counter() - t
     if failed:
         raise VNXDecodeError("groups holding the selected files could not be decoded", details={"failed_groups": sorted(failed)[:20]})
-    res = ar.extract(work, select_dir or ".", key=key, passphrase=passphrase, names=select, overwrite=overwrite)
+    res = ar.extract(work, select_dir or ".", key=key, passphrase=passphrase, names=select, overwrite=overwrite,
+                     allow_unencrypted=allow_unencrypted)
     report.update({"status": "SUCCESS", "selected": select, "groups_decoded": len(done), "groups_total": sb.group_count,
                    "fraction_of_groups_decoded": round(len(done) / sb.group_count, 6), "extract": res, "stage_seconds": stage,
                    "seconds": time.perf_counter() - t0, "peak_rss_bytes": peak_rss_bytes()})

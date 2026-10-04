@@ -103,6 +103,8 @@ def _keys(key_file: Optional[Path], passphrase_env: Optional[str]) -> tuple[byte
 KEY_OPT = typer.Option(None, "--key-file", "-k", help="32-byte key file (raw, 64 hex or 44 base64 characters).")
 PW_OPT = typer.Option(None, "--passphrase-env", help="Name of an environment variable holding a passphrase (scrypt).")
 JSON_OPT = typer.Option(True, "--json/--human", help="Machine-readable JSON (default) or a short human summary.")
+UNENC_OPT = typer.Option(False, "--allow-unencrypted",
+                         help="Accept an unencrypted archive although a key or passphrase was given (refused by default).")
 FORCE_OPT = typer.Option(False, "--force", "-f", help="Overwrite existing outputs.")
 CONFIG_OPT = typer.Option(None, "--config", "-c", help="JSON configuration file (sections archive/dna/constraints/channel/decode).")
 PERF_OPT = typer.Option(None, "--performance", help="Performance profile: safe, balanced, maximum-throughput.")
@@ -173,59 +175,62 @@ def archive(inputs: List[Path] = typer.Argument(..., help="Files and/or director
 
 
 @app.command()
-def inspect(container: Path, key_file: Optional[Path] = KEY_OPT, passphrase_env: Optional[str] = PW_OPT) -> None:
+def inspect(container: Path, key_file: Optional[Path] = KEY_OPT, passphrase_env: Optional[str] = PW_OPT,
+            allow_unencrypted: bool = UNENC_OPT) -> None:
     """Show the manifest and structure of a VNX4 archive."""
     def go():
         from . import archive as ar
         key, pw = _keys(key_file, passphrase_env)
-        _emit(ar.inspect_container(container, key=key, passphrase=pw))
+        _emit(ar.inspect_container(container, key=key, passphrase=pw, allow_unencrypted=allow_unencrypted))
     _run(go)
 
 
 @app.command("list")
 def list_cmd(container: Path, key_file: Optional[Path] = KEY_OPT, passphrase_env: Optional[str] = PW_OPT,
-             as_json: bool = JSON_OPT) -> None:
+             as_json: bool = JSON_OPT, allow_unencrypted: bool = UNENC_OPT) -> None:
     """List archive entries."""
     def go():
         from . import archive as ar
         key, pw = _keys(key_file, passphrase_env)
-        rows = ar.list_container(container, key=key, passphrase=pw)
+        rows = ar.list_container(container, key=key, passphrase=pw, allow_unencrypted=allow_unencrypted)
         _emit({"entries": rows}, "\n".join(f"{r['size']:>14,}  {r['path']}" for r in rows), as_json)
     _run(go)
 
 
 @app.command()
 def verify(container: Path, chunk: Optional[int] = typer.Option(None, "--chunk", help="Verify one chunk by Merkle proof."),
-           key_file: Optional[Path] = KEY_OPT, passphrase_env: Optional[str] = PW_OPT) -> None:
+           key_file: Optional[Path] = KEY_OPT, passphrase_env: Optional[str] = PW_OPT,
+           allow_unencrypted: bool = UNENC_OPT) -> None:
     """Verify an archive (trailer, manifest, Merkle root, every chunk and file hash) or one chunk."""
     def go():
         from . import archive as ar
         key, pw = _keys(key_file, passphrase_env)
-        _emit(ar.verify_container(container, key=key, passphrase=pw, chunk=chunk))
+        _emit(ar.verify_container(container, key=key, passphrase=pw, chunk=chunk, allow_unencrypted=allow_unencrypted))
     _run(go)
 
 
 @app.command()
 def locate(container: Path, name: str, key_file: Optional[Path] = KEY_OPT, passphrase_env: Optional[str] = PW_OPT,
-           profile: Optional[str] = typer.Option(None, "--dna-profile", help="Also give strand groups/records for this layout.")) -> None:
+           profile: Optional[str] = typer.Option(None, "--dna-profile", help="Also give strand groups/records for this layout."),
+           allow_unencrypted: bool = UNENC_OPT) -> None:
     """Locate a file: chunk indices, container byte ranges and (with --dna-profile) strand groups and strand records."""
     def go():
         from . import archive as ar
         key, pw = _keys(key_file, passphrase_env)
-        _emit(ar.locate(container, name, key=key, passphrase=pw, profile=profile))
+        _emit(ar.locate(container, name, key=key, passphrase=pw, profile=profile, allow_unencrypted=allow_unencrypted))
     _run(go)
 
 
 @app.command()
 def extract(container: Path, output_dir: Path, names: Optional[List[str]] = typer.Option(None, "--file", help="Extract only these."),
             key_file: Optional[Path] = KEY_OPT, passphrase_env: Optional[str] = PW_OPT, force: bool = FORCE_OPT,
-            apply_metadata: bool = typer.Option(False, "--apply-metadata")) -> None:
+            apply_metadata: bool = typer.Option(False, "--apply-metadata"), allow_unencrypted: bool = UNENC_OPT) -> None:
     """Extract (every file verified before it is renamed into place)."""
     def go():
         from . import archive as ar
         key, pw = _keys(key_file, passphrase_env)
         _emit(ar.extract(container, output_dir, key=key, passphrase=pw, names=names or None, overwrite=force,
-                         apply_metadata=apply_metadata))
+                         apply_metadata=apply_metadata, allow_unencrypted=allow_unencrypted))
     _run(go)
 
 
@@ -312,7 +317,7 @@ def encode(source: Path = typer.Argument(..., help="A .vnx container, or a file/
 
 def _decode(reads, output, extract_dir, partial_dir, select, profile, workers, performance, config, band, min_quality,
             archive_tag, force, key_file, passphrase_env, report, indel_recovery=None, soft_decoding=None,
-            recovery_schedule=None, budget=None, events=None, task_id=None):
+            recovery_schedule=None, budget=None, events=None, task_id=None, allow_unencrypted=False):
     from .config import decode_options, load_config, performance as perf
     cfg = load_config(config)
     p = perf(performance or cfg.get("performance"))
@@ -326,7 +331,7 @@ def _decode(reads, output, extract_dir, partial_dir, select, profile, workers, p
     _check_side_files(reads, key_file, output, report, events)
     if events is None:
         return _decode_run(reads, output, extract_dir, partial_dir, select, opts, force, key_file, passphrase_env, report,
-                           None, task_id)[0]
+                           None, task_id, allow_unencrypted)[0]
     import secrets
     from ..v6.observe import Events, JsonlObserver
     jsonl = JsonlObserver(events)
@@ -339,7 +344,7 @@ def _decode(reads, output, extract_dir, partial_dir, select, profile, workers, p
     cmd = Events(observer, task_id)
     try:
         code, res = _decode_run(reads, output, extract_dir, partial_dir, select, opts, force, key_file, passphrase_env,
-                                report, observer, task_id)
+                                report, observer, task_id, allow_unencrypted)
         cmd.emit("command_end", "command", exit_code=code, status=res.status, extract=res.report.get("extract"))
         return code
     except BaseException as error:
@@ -377,7 +382,7 @@ def _check_side_files(reads, key_file, output, report, events) -> None:
 
 
 def _decode_run(reads, output, extract_dir, partial_dir, select, opts, force, key_file, passphrase_env, report, observer,
-                task_id):
+                task_id, allow_unencrypted=False):
     from . import archive as ar
     from . import decoder as de
     key, pw = _keys(key_file, passphrase_env)
@@ -385,7 +390,8 @@ def _decode_run(reads, output, extract_dir, partial_dir, select, opts, force, ke
         raise VNXConfigurationError("give --output (container), --extract DIR, or --select FILE --extract DIR")
     if select:
         res = de.decode_reads(reads, None, opts, select=select, select_dir=extract_dir or Path("."), key=key, passphrase=pw,
-                              overwrite=force, progress=_progress_cb(), observer=observer, task_id=task_id)
+                              overwrite=force, progress=_progress_cb(), observer=observer, task_id=task_id,
+                              allow_unencrypted=allow_unencrypted)
     else:
         import tempfile
         target = output
@@ -395,9 +401,11 @@ def _decode_run(reads, output, extract_dir, partial_dir, select, opts, force, ke
             target = Path(tmp) / "recovered.vnx"
         try:
             res = de.decode_reads(reads, target, opts, overwrite=force, partial_dir=partial_dir, key=key, passphrase=pw,
-                                  progress=_progress_cb(), observer=observer, task_id=task_id)
+                                  progress=_progress_cb(), observer=observer, task_id=task_id,
+                                  allow_unencrypted=allow_unencrypted)
             if res.status == "SUCCESS" and extract_dir is not None:
-                res.report["extract"] = ar.extract(target, extract_dir, key=key, passphrase=pw, overwrite=force)
+                res.report["extract"] = ar.extract(target, extract_dir, key=key, passphrase=pw, overwrite=force,
+                                                   allow_unencrypted=allow_unencrypted)
         finally:
             if tmp:
                 import shutil
@@ -437,14 +445,15 @@ def decode(reads: Path, output: Optional[Path] = typer.Option(None, "--output", 
            max_rss_mb: Optional[int] = typer.Option(None, "--max-rss-mb",
                                                     help="V6 budget: stop (nothing published) above this parent peak RSS."),
            events: Optional[Path] = typer.Option(None, "--events", help="Write structured decode events (JSON lines) here."),
-           task_id: Optional[str] = typer.Option(None, "--task-id", help="Task ID recorded in every event.")) -> None:
+           task_id: Optional[str] = typer.Option(None, "--task-id", help="Task ID recorded in every event."),
+           allow_unencrypted: bool = UNENC_OPT) -> None:
     """Reconstruct a verified VNX4 container from DNA reads (FASTA/FASTQ)."""
     budget = {k: v for k, v in (("max_reads_examined", max_recovery_reads), ("max_round_b_reads", max_round_b_reads),
                                 ("max_outer_stripes", max_outer_stripes), ("max_wall_seconds", max_wall_seconds),
                                 ("max_rss_bytes", None if max_rss_mb is None else max_rss_mb << 20)) if v is not None}
     _run(lambda: _decode(reads, output, extract_dir, partial_dir, select, profile, workers, performance, config, band, min_quality,
                          archive_tag, force, key_file, passphrase_env, report, indel_recovery, soft_decoding,
-                         recovery_schedule, budget, events, task_id))
+                         recovery_schedule, budget, events, task_id, allow_unencrypted))
 
 
 @app.command()

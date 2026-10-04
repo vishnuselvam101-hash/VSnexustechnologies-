@@ -14,13 +14,14 @@ import pytest
 from typer.testing import CliRunner
 
 from vnxdna.v4 import archive as ar
+from vnxdna.v4 import container as ct
 from vnxdna.v4 import crypto
 from vnxdna.v4 import datagen
 from vnxdna.v4 import decoder as de
 from vnxdna.v4 import encoder as en
 from vnxdna.v4.cli import app
 from vnxdna.v4.constraints import iter_fasta
-from vnxdna.v4.errors import VNXConfigurationError
+from vnxdna.v4.errors import VNXConfigurationError, VNXKeyError
 from vnxdna.v4.frame import KIND_SUPER
 from vnxdna.v6 import outer as ou
 from vnxdna.v6.decode import StripeRecovery
@@ -284,3 +285,62 @@ def test_decoder_passes_checkpoint_to_finish(arc, tmp_path, monkeypatch):
     assert res.status == "SUCCESS"
     assert callable(seen.get("checkpoint")) and callable(seen.get("admit"))
     assert (tmp_path / "o.vnx").read_bytes() == (arc / "plain.vnx").read_bytes()
+
+
+# ---------------------------------------------------------------------------------------------------------------- P-1
+def test_api_refuses_key_for_unencrypted_archive(arc, tmp_path):
+    key = crypto.load_key_file(arc / "k.key")
+    with pytest.raises(VNXKeyError, match="not encrypted"):
+        ar.extract(arc / "plain.vnx", tmp_path / "x", key=key)
+    assert not (tmp_path / "x").exists() or not any((tmp_path / "x").rglob("*.bin"))
+    with pytest.raises(VNXKeyError):
+        ar.extract(arc / "plain.vnx", tmp_path / "y", passphrase="pw")
+    with pytest.raises(VNXKeyError):
+        ar.verify_container(arc / "plain.vnx", key=key)
+    with pytest.raises(VNXKeyError):
+        ar.list_container(arc / "plain.vnx", key=key)
+    with pytest.raises(VNXKeyError):
+        ct.open_container(arc / "plain.vnx", key=key)
+    res = ar.extract(arc / "plain.vnx", tmp_path / "z", key=key, allow_unencrypted=True)
+    assert res["files"] == 2
+    assert ar.verify_container(arc / "plain.vnx", key=key, allow_unencrypted=True)["status"] == "VERIFIED"
+    assert ar.extract(arc / "plain.vnx", tmp_path / "w")["files"] == 2      # no key: unchanged
+    assert ar.extract(arc / "enc.vnx", tmp_path / "e", key=key)["files"] == 2
+
+
+def test_cli_refuses_key_for_unencrypted_archive(arc, tmp_path):
+    k = arc / "k.key"
+    assert _cli("extract", arc / "plain.vnx", tmp_path / "x", "--key-file", k).exit_code == 4
+    assert _cli("verify", arc / "plain.vnx", "--key-file", k).exit_code == 4
+    r = _cli("decode", arc / "plain.fasta", "-o", tmp_path / "o.vnx", "--extract", tmp_path / "d", "--key-file", k)
+    assert r.exit_code == 4, r.output
+    assert not (tmp_path / "d").exists() or not any((tmp_path / "d").rglob("*.bin"))
+    r = _cli("decode", arc / "plain.fasta", "--select", "in/a.bin", "--extract", tmp_path / "s", "--key-file", k)
+    assert r.exit_code == 4, r.output
+    env = {"VNX_PW": "secret"}
+    assert _cli("extract", arc / "plain.vnx", tmp_path / "p", "--passphrase-env", "VNX_PW", env=env).exit_code == 4
+    # explicit opt-in
+    assert _cli("extract", arc / "plain.vnx", tmp_path / "x2", "--key-file", k, "--allow-unencrypted").exit_code == 0
+    assert _cli("verify", arc / "plain.vnx", "--key-file", k, "--allow-unencrypted").exit_code == 0
+    r = _cli("decode", arc / "plain.fasta", "-o", tmp_path / "o2.vnx", "--extract", tmp_path / "d2", "--key-file", k,
+             "--allow-unencrypted")
+    assert r.exit_code == 0, r.output
+    assert (tmp_path / "d2" / "in" / "a.bin").read_bytes() == (arc / "in" / "a.bin").read_bytes()
+    r = _cli("decode", arc / "plain.fasta", "--select", "in/a.bin", "--extract", tmp_path / "s2", "--key-file", k,
+             "--allow-unencrypted")
+    assert r.exit_code == 0, r.output
+
+
+def test_partial_decode_with_key_refuses_unencrypted(arc, tmp_path):
+    key = crypto.load_key_file(arc / "k.key")
+    reads = tmp_path / "r.fasta"
+    with open(reads, "w") as f:                       # group 0 lost entirely (file data; the index survives)
+        for i, (head, seq) in enumerate(iter_fasta(arc / "plain.fasta")):
+            _, _, kind, g, _ = head.split("|")
+            if not (int(kind) != KIND_SUPER and int(g) == 0):
+                f.write(f">r{i}\n{seq}\n")
+    res = de.decode_reads(reads, None, de.DecodeOptions(), partial_dir=tmp_path / "p", key=key)
+    assert res.report.get("files_recovered") == []
+    assert "not encrypted" in res.report.get("partial_note", "")
+    ok = de.decode_reads(reads, None, de.DecodeOptions(), partial_dir=tmp_path / "p2", key=key, allow_unencrypted=True)
+    assert ok.report["files_recovered"]

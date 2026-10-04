@@ -366,13 +366,13 @@ def iter_file(c: ct.Container, rec: ct.FileRecord) -> Iterator[bytes]:
 
 # ============================================================================ verify / inspect / locate
 def verify_container(path: str | os.PathLike, *, key: bytes | None = None, passphrase: str | None = None,
-                     chunk: int | None = None, deep: bool = True) -> dict:
+                     chunk: int | None = None, deep: bool = True, allow_unencrypted: bool = False) -> dict:
     """Verify structure + manifest + Merkle root, the whole-file trailer digest, every chunk and every file hash.
 
     With ``chunk`` only that chunk is checked, through its Merkle inclusion proof.
     """
     t0 = time.perf_counter()
-    c = ct.open_container(path, key=key, passphrase=passphrase)
+    c = ct.open_container(path, key=key, passphrase=passphrase, allow_unencrypted=allow_unencrypted)
     report: dict = {"path": str(path), "archive_id": c.manifest["archive_id"], "merkle_root": c.manifest["integrity"]["merkle_root"],
                     "encrypted": c.encrypted, "key_supplied": c.sealer is not None, "checks": {}}
     leaves = ct.leaf_hashes(c.chunk_table_bytes)
@@ -438,8 +438,9 @@ def verify_container(path: str | os.PathLike, *, key: bytes | None = None, passp
     return report
 
 
-def inspect_container(path: str | os.PathLike, *, key: bytes | None = None, passphrase: str | None = None) -> dict:
-    c = ct.open_container(path, key=key, passphrase=passphrase)
+def inspect_container(path: str | os.PathLike, *, key: bytes | None = None, passphrase: str | None = None,
+                      allow_unencrypted: bool = False) -> dict:
+    c = ct.open_container(path, key=key, passphrase=passphrase, allow_unencrypted=allow_unencrypted)
     m = c.manifest
     out = {"path": str(path), "container_bytes": c.size, "container_sha256_trailer": c.trailer_sha256.hex(), "manifest": m,
            "readable_file_table": bool(c.files) or m["counts"]["files"] == 0}
@@ -449,8 +450,9 @@ def inspect_container(path: str | os.PathLike, *, key: bytes | None = None, pass
     return out
 
 
-def list_container(path: str | os.PathLike, *, key: bytes | None = None, passphrase: str | None = None) -> list[dict]:
-    c = ct.open_container(path, key=key, passphrase=passphrase, require_key=True)
+def list_container(path: str | os.PathLike, *, key: bytes | None = None, passphrase: str | None = None,
+                   allow_unencrypted: bool = False) -> list[dict]:
+    c = ct.open_container(path, key=key, passphrase=passphrase, require_key=True, allow_unencrypted=allow_unencrypted)
     return [r.to_dict() for r in c.files]
 
 
@@ -470,10 +472,10 @@ def dna_location(ranges: list[list[int]], profile: str, container_size: int) -> 
 
 
 def locate(path: str | os.PathLike, name: str, *, key: bytes | None = None, passphrase: str | None = None,
-           profile: str | None = None) -> dict:
+           profile: str | None = None, allow_unencrypted: bool = False) -> dict:
     """Where a file's bytes live: chunk indices and container byte ranges (input to selective DNA decoding)."""
     t0 = time.perf_counter()
-    c = ct.open_container(path, key=key, passphrase=passphrase, require_key=True)
+    c = ct.open_container(path, key=key, passphrase=passphrase, require_key=True, allow_unencrypted=allow_unencrypted)
     rec = c.file(name)
     idx = c.file_chunks(rec)
     ranges = [list(c.chunk_range(int(i))) for i in idx]
@@ -503,10 +505,11 @@ def _safe_target(root: Path, rel: str) -> Path:
 
 
 def extract(path: str | os.PathLike, output_dir: str | os.PathLike, *, key: bytes | None = None, passphrase: str | None = None,
-            names: list[str] | None = None, overwrite: bool = False, apply_metadata: bool = False) -> dict:
+            names: list[str] | None = None, overwrite: bool = False, apply_metadata: bool = False,
+            allow_unencrypted: bool = False) -> dict:
     """Extract all or selected files. Every file is verified (chunk IDs + file SHA-256) before it is renamed into place."""
     t0 = time.perf_counter()
-    c = ct.open_container(path, key=key, passphrase=passphrase, require_key=True)
+    c = ct.open_container(path, key=key, passphrase=passphrase, require_key=True, allow_unencrypted=allow_unencrypted)
     root = Path(output_dir)
     root.mkdir(parents=True, exist_ok=True)
     root = root.resolve()

@@ -281,8 +281,12 @@ def read_header_trailer(path: Path) -> tuple[int, tuple, bytes, bytes]:
 
 
 def open_container(path: str | os.PathLike, *, key: bytes | None = None, passphrase: str | None = None,
-                   require_key: bool = False) -> Container:
-    """Open and validate structure, manifest, tables and Merkle root. ``key``/``passphrase`` unlock sealed tables."""
+                   require_key: bool = False, allow_unencrypted: bool = False) -> Container:
+    """Open and validate structure, manifest, tables and Merkle root. ``key``/``passphrase`` unlock sealed tables.
+
+    A key or passphrase given for an unencrypted archive is refused (:class:`VNXKeyError`) unless ``allow_unencrypted``:
+    the caller expects encrypted content, and an unencrypted archive substituted for it (an encryption downgrade) would
+    otherwise be accepted silently, its manifest protected only by an unkeyed digest."""
     path = Path(path)
     size, (body, ct, ft, rf, mn), mac, digest = read_header_trailer(path)
     with open(path, "rb") as f:
@@ -295,6 +299,9 @@ def open_container(path: str | os.PathLike, *, key: bytes | None = None, passphr
     validate_manifest(m)
     sealer = None
     enc = m["encryption"]
+    if enc["algorithm"] == "none" and (key is not None or passphrase is not None) and not allow_unencrypted:
+        raise VNXKeyError("a key or passphrase was given but this archive is not encrypted (possible encryption "
+                          "downgrade); pass --allow-unencrypted to accept it", stage="crypto")
     if enc["algorithm"] != "none":
         if key is None and passphrase is None:
             if require_key:
