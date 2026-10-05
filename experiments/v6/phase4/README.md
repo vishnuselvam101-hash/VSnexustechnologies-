@@ -15,6 +15,13 @@ Code: `phase4.py` (harness: paired arms on the same reads, ground-truth observer
 `verdict.py`, `cost.py`, `cnr_ids.py`. Decoder change: `DecodeOptions.consensus_weighting` (`count` default, `quality`
 opt-in), `src/vnxdna/recovery/consensus.py::consensus_quality_weighted`; tests `tests/v6/test_consensus_weighting.py`.
 
+**Correction (Phase 10 documentation audit).** P4-EXP-04 recorded peak RSS with `wait4` `ru_maxrss`. On Linux an exec'd
+child inherits the spawning parent's high-water mark, so that column reports the harness's own size and its equal values
+per pair do not show that the option leaves memory unchanged. The corrected method (the child records its own
+`VmHWM`) is in `experiments/v6/align-band/README.md` ("Deviations from the pre-registration", item 1); P4-EXP-04 has not been re-run with it.
+The Phase 4 memory claim is therefore withdrawn; the time column is not affected. Criterion C6 of P4-EXP-02 used this
+column and is unreliable for the same reason. Result files are unchanged.
+
 ## Directive §9/§10 questions, answered from these results
 
 | question | answer (source) |
@@ -22,7 +29,7 @@ opt-in), `src/vnxdna/recovery/consensus.py::consensus_quality_weighted`; tests `
 | Where do alignment errors occur? | Before alignment: reads beyond the band of 6 (nanopore-like 64 %, deletion/insertion-heavy 35 %; P4-EXP-01). Inside consensus: undetected wrong bytes spread evenly over frame segments 2-10 (9-12 % each), few in the header segments (2-6 %, reads are grouped by header) (P4-EXP-01). On real nanopore reads insertions are about twice as frequent at both strand ends (P4-EXP-03) |
 | Failure modes | (1) band/superblock (nanopore-like; deletion-heavy at coverage ≤ 3); (2) strand loss above outer parity (dropout-20, burst-loss, `s184` at 10 % dropout); (3) addresses not reaching pass 2 at low coverage; (4) consensus-limited groups. Opt-in smart+soft removes (4) wherever it was the only mode, at 3-10 times the time; nothing tested removes (1)-(3) (P4-EXP-01) |
 | Ambiguity | count vote: split → erasure (1-vs-1 always); weighted vote: split resolved by quality, tie → erasure. With constant qualities the weighted vote resolves plurality splits and creates errors (P4-EXP-02) |
-| Complexity / memory | weighted vote O(m · L · 4) per address, as the count vote; pass 1 uses the path aligner and gathers qualities (+32-42 % wall time at 1 MiB); pending records +285 bytes (v4-balanced) on disk; peak RSS unchanged (P4-EXP-04) |
+| Complexity / memory | weighted vote O(m · L · 4) per address, as the count vote; pass 1 uses the path aligner and gathers qualities (+32-42 % wall time at 1 MiB); pending records +285 bytes (v4-balanced) on disk; peak RSS not established (P4-EXP-04, see correction below) |
 | Interaction with RS | every consensus frame is still inner-RS + CRC verified; turning erasures into errors costs 2 instead of 1 of the r = 16 budget; net effect measured as attempts within 2e + f ≤ r (+5.4 per primary trial) |
 | Interaction with synchronisation | the weighted vote only re-weights bases the marker alignment already placed; indel-erased segments stay erased; it does not help reads outside the band |
 | Interaction with soft decisions | smart/soft already combine per-read quality evidence in their own soft consensus (`_soft_consensus`); the weighted vote is the cheap hard path only and was tested with soft decoding off |
