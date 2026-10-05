@@ -1,5 +1,23 @@
 # Changelog
 
+## Unreleased (6.0.0.dev0) — V6 Phase 3 (channel-model framework)
+
+Plan: docs/V6_ARCHITECTURE.md §8 Phase 3; docs/CHANNEL_MODEL.md. Formats unchanged. Every channel result is SIMULATED.
+
+- **`vnx.channel-model/1`**: staged channel models (synthesis → storage → amplification → sequencing) with independent
+  parameters, per-position error profiles, 4×4 substitution matrices, deletion-run lengths, coverage fixed / Poisson /
+  negative binomial / lognormal, `data_source` (SIMULATED, SYNTHETIC, LABORATORY, PHYSICAL_VALIDATION),
+  `evidence_class` and provenance. The 14 Phase 1 models ship as /1 package data; `/0` files and V4 `ChannelConfig`
+  JSON are read and converted exactly; unknown schema majors exit 6 `SCHEMA_UNSUPPORTED`.
+- **`vnxdna.simulation`**: generic error models (substitution, insertion, deletion, dropout, coverage, quality,
+  composite), the staged simulator, Monte Carlo trials and parameter sweeps; every run returns
+  `vnx.simulation-metadata/1` (model, parameters, versions, seed, input/output SHA-256).
+- **CLI/SDK**: `vnx channel simulate --model NAME[@VERSION] --seed N` (named models with loss and bursts; `--param`,
+  `--metadata`), `vnx channel models | show | convert | sweep`; `sdk.simulate(model=...)`, `sdk.channel_*`.
+- **Compatibility**: EXP-SIM-1 (experiments/v6/phase3/EXP-SIM-1): 210/210 cells (14 models × 3 strand files × 5 seeds)
+  give byte-identical reads to the current simulator, as /0 and as /1. Old `ChannelConfig` JSON gives byte-identical
+  output (tests/simulation/test_sim_compat.py).
+
 ## Unreleased (6.0.0.dev0) — V6 Phase 2 (codec/API refactor, version fixes, P1 bugs)
 
 Plan: docs/V6_ARCHITECTURE.md §7–§8; formats unchanged (goldens v4_0, v5_0, v6_0 decode bit-exactly). Channel results
