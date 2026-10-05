@@ -11,7 +11,9 @@ train/dev/held-out split is defined in this directory: the V7 protocol defines i
 - `sources.json`: the hand-written part (URLs, licences, notes).
 - `build_manifest.py`: standard library only; recomputes everything else from the data directory.
   `python experiments/v7/datasets/build_manifest.py` rewrites the manifest, `--check` recomputes and compares byte for byte
-  (about 50 s). Download timestamps are read from `<file>.downloaded_utc` next to each data file.
+  (about 50 s). Download timestamps are read from `<file>.downloaded_utc` next to each data file. For the CNR and
+  DT4DDS files these stamps were written after the download from each file's modification time (UTC), i.e. when the
+  download completed; the D03 stamps were written at download start.
 
 | dataset | files used | data state | references | reads | quality |
 |---|---|---|---|---|---|
