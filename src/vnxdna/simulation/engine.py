@@ -29,6 +29,7 @@ import time
 from collections import deque
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 
@@ -403,7 +404,7 @@ def simulate_file(strands, output, model: ChannelModel, seed: int, *, fmt: str |
     pool_n = surviving if pool_strands is None else pool_strands
     totals.update({"pool_strands": pool_n, "storage_lost": pool_n - surviving})
     meta = metadata(model, seed, strands, output, fmt, totals, overrides=overrides)
-    body = dict(totals)
+    body: dict[str, Any] = dict(totals)
     body.update({"output": str(output), "format": fmt, "seconds": seconds, "workers": workers,
                  "reads_per_second": round(count / seconds, 1) if seconds else None,
                  "bases_per_second": round(totals.get("bases", 0) / seconds, 1) if seconds else None,

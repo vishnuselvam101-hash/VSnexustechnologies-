@@ -222,7 +222,7 @@ class SubstitutionModel(ErrorModel):
         out = base.copy()
         idx = np.nonzero(hit)
         if self.matrix is not None:
-            out[idx] = sample_targets(base[idx], self.cm, rng)
+            out[idx] = sample_targets(base[idx], cumulative_matrix(self.matrix), rng)
         else:
             out[idx] = ((base[idx].astype(np.int64) + rng.integers(1, 4, idx[0].size)) % 4).astype(np.uint8)
         return out
@@ -494,6 +494,7 @@ def per_base_errors(base: np.ndarray, lengths: np.ndarray | None, rates: tuple, 
                 is_del[r, s:s + ln] = True
             bursts = int(burst.size)
     if events is not None and events.any():
+        assert aux is not None and dele is not None, "clustered deletions need the auxiliary generator"
         rows, cols = np.nonzero(events)
         runs = aux.geometric(1.0 / dele.run_mean, rows.size)
         starts = np.concatenate([[0], np.cumsum(runs)[:-1]])
@@ -505,10 +506,12 @@ def per_base_errors(base: np.ndarray, lengths: np.ndarray | None, rates: tuple, 
         is_del &= valid
     subbed = np.where(is_sub, (base + rng.integers(1, 4, (m, w))) % 4, base).astype(np.uint8)
     if sub is not None and sub.matrix is not None and is_sub.any():
+        assert aux is not None, "a substitution matrix needs the auxiliary generator"
         idx = np.nonzero(is_sub)
-        subbed[idx] = sample_targets(base[idx], sub.cm, aux)
+        subbed[idx] = sample_targets(base[idx], cumulative_matrix(sub.matrix), aux)
     ins_base = rng.integers(0, 4, (m, w)).astype(np.uint8)
     if ins is not None and ins.base_weights is not None and is_ins.any():
+        assert aux is not None, "insertion base weights need the auxiliary generator"
         idx = np.nonzero(is_ins)
         ins_base[idx] = aux.choice(4, size=idx[0].size, p=np.asarray(ins.base_weights, dtype=np.float64)).astype(np.uint8)
     slots = np.stack([ins_base, subbed], axis=2).reshape(m, 2 * w)
