@@ -75,3 +75,65 @@ jobs:
           python -m vnxdna.v6.native_rs build
       - name: fuzz smoke (Python targets + libFuzzer ASan/UBSan harnesses; skipped if clang has no libFuzzer)
         run: python -m pytest tests/fuzz -q
+
+  # ---- directive §23 jobs (V6). Separate jobs: they never change the `test` job above. Heavy benchmarks are not run in CI.
+  mypy:
+    # static analysis: the V6 packages listed under [tool.mypy] in pyproject.toml (the clean set). Packages with open
+    # errors (vnxdna.archive, sync, recovery, pipeline, benchmark and the legacy v2/v4/ecc code) are not gated yet.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with: {python-version: '3.12'}
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev]' 'mypy==2.4.0'
+      - run: mypy
+
+  sanitizers:
+    # ASan+UBSan builds (gcc; clang ASan+UBSan and UBSan trap mode) of all three native kernels (align, reads, rs),
+    # each running its native equivalence tests, a differential stress fuzz against the reference and an ASan canary
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with: {python-version: '3.12'}
+      - name: clang and its sanitizer runtimes
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends clang libclang-rt-dev
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev]'
+      - run: bash tools/sanitizers.sh "$RUNNER_TEMP/sanitizers"
+
+  conformance:
+    # conformance vectors (spec §6) through the CLI on both backends; each must answer CONFORMANT (exit 0)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with: {python-version: '3.12'}
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev]'
+      - run: python -m vnxdna.native --require-native
+      - run: vnx conformance --backend native
+      - run: vnx conformance --backend reference
+
+  benchmark-smoke:
+    # a tiny benchmark run (64 KB): it must run and emit valid JSON with lossless end-to-end cases. No timing thresholds.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with: {python-version: '3.12'}
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev]'
+      - run: vnx benchmark --size 64KB --output "$RUNNER_TEMP/bench.json"
+      - run: python tools/check_benchmark_json.py "$RUNNER_TEMP/bench.json"
+
+  docs:
+    # relative links in README.md and docs/**/*.md must resolve
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with: {python-version: '3.12'}
+      - run: python tools/check_doc_links.py
