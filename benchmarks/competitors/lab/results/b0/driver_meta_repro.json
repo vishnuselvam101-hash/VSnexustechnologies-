@@ -1,0 +1,24 @@
+{
+ "started_utc": "2026-10-05T01:45:24.160705Z",
+ "argv": [
+  "run_b0.py",
+  "/root/vnx-dna-lab/bench-lab/benchmarks/competitors/lab/configs/repro_published_style.json",
+  "/root/vnx-dna-lab/bench-tools/lab-runs/b0-repro"
+ ],
+ "config_sha256": "dec76aeda852ba54be5e106da1006c021233b442012e3bf0558ad4df09da702c",
+ "input": "/root/vnx-dna-lab/bench-tools/fml-ethz__dt4dds-benchmark@0928fd7f26/input_files/random/5kB",
+ "input_sha256": "d93e1d3044d9e2db984addaf9544fb4be1c77784b45103f1c77c4f37a4b4ccfe",
+ "input_bytes": 5120,
+ "step_timeout_s": 900,
+ "loadavg_start": [
+  6.1298828125,
+  8.845703125,
+  9.59619140625
+ ],
+ "ended_utc": "2026-10-05T02:15:43.060313Z",
+ "loadavg_end": [
+  4.3310546875,
+  7.45947265625,
+  8.7666015625
+ ]
+}
