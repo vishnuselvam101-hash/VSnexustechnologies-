@@ -1,0 +1,1070 @@
+{
+ "datasets": {
+  "cnr": {
+   "accession": null,
+   "clusters": {
+    "cluster_size": {
+     "max": 164,
+     "mean": 26.9709,
+     "median": 21,
+     "min": 0,
+     "p95": 68
+    },
+    "clusters": 10000,
+    "clusters_with_ge_10_reads": 8978,
+    "empty_clusters": 16,
+    "matches_reference_count": true,
+    "reads": 269709
+   },
+   "coverage_note": "Per-cluster read counts are in the manifest (cluster_size); reads are pre-clustered so coverage per reference is observed directly, but clustering drops outlier reads",
+   "data_state": "processed: basecalled reads, already clustered by reference (reference = cluster centre); original FASTQ not published",
+   "download_urls": [
+    "https://raw.githubusercontent.com/microsoft/clustered-nanopore-reads-dataset/main/Centers.txt",
+    "https://raw.githubusercontent.com/microsoft/clustered-nanopore-reads-dataset/main/Clusters.txt",
+    "https://raw.githubusercontent.com/microsoft/clustered-nanopore-reads-dataset/main/LICENSE",
+    "https://raw.githubusercontent.com/microsoft/clustered-nanopore-reads-dataset/main/README.md"
+   ],
+   "files": [
+    {
+     "bytes": 1120000,
+     "download_utc": null,
+     "path": "cnr/Centers.txt",
+     "sha256": "b70e723ef0d83a88f7b3e483b932b0279628a0eae39cb4e41d99b9e367c5341e"
+    },
+    {
+     "bytes": 30452518,
+     "download_utc": null,
+     "path": "cnr/Clusters.txt",
+     "sha256": "7c2e27b497762ed3bb01a2d27ed09ca2291d590a0a7534a25307876d76b6ca22"
+    },
+    {
+     "bytes": 1141,
+     "download_utc": null,
+     "path": "cnr/LICENSE",
+     "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+     "bytes": 4767,
+     "download_utc": null,
+     "path": "cnr/README.md",
+     "sha256": "c82f85b0d05bdf8a25347a6b22413f47d4bb1d60c337ba4da999867af067907e"
+    }
+   ],
+   "library_prep": "Amplified products ligated to ONT adapters; reads clustered with the algorithm of Rashtchian et al. (NIPS 2017)",
+   "licence": "MIT (GitHub API and LICENSE file); keep copyright and licence notice when reusing",
+   "name": "Clustered Nanopore Reads (CNR)",
+   "platform": "Twist Bioscience synthesis, PCR, Oxford Nanopore MinION (LQK-LSK109 ligation kit); basecaller not stated",
+   "publication": "Srinivasavaradhan, Gopi, Pfister, Yekhanin. Trellis BMA: coded trace reconstruction on IDS channels for DNA storage. ISIT 2021, arXiv:2107.06440",
+   "quality_scores": false,
+   "reads": {
+    "format": "text, one read per line, clusters separated by '=' lines",
+    "length": {
+     "max": 115,
+     "mean": 109.6853,
+     "median": 110,
+     "min": 106,
+     "n": 269709,
+     "p95": 114
+    },
+    "quality": {
+     "available": false
+    },
+    "records": 269709
+   },
+   "references": {
+    "count": 10000,
+    "distinct": 10000,
+    "length": {
+     "max": 110,
+     "mean": 110.0,
+     "median": 110,
+     "min": 110,
+     "n": 10000,
+     "p95": 110
+    }
+   },
+   "source": "GitHub: microsoft/clustered-nanopore-reads-dataset",
+   "url": "https://github.com/microsoft/clustered-nanopore-reads-dataset",
+   "usage_constraints": "Dataset README note of 2024-08-12: the 10,000 centres are not uniformly random (long-range dependencies from a generation error), so clustering may have produced malformed clusters. Empty clusters mean dropout or clustering failure (not distinguishable)."
+  },
+  "d03-nanopore": {
+   "accession": "Zenodo 10943282",
+   "coverage_note": "Per-cluster read counts are in the manifest; empty clusters are listed per file",
+   "data_state": "processed: basecalled reads, primer-located and segmented, clustered by nearest reference (Levenshtein); FASTQ not included",
+   "download_urls": [
+    "https://zenodo.org/api/records/10943282/files/clustered_read_segments.tar.gz/content",
+    "https://zenodo.org/api/records/10943282/files/oligos.fasta/content",
+    "https://zenodo.org/api/records/10943282/files/primers_synthesis.fasta/content"
+   ],
+   "files": [
+    {
+     "bytes": 138068568,
+     "download_utc": "2026-10-05T14:54:42Z",
+     "md5_matches_source": true,
+     "path": "d03/clustered_read_segments.tar.gz",
+     "published_md5": "f770288541b9afcc49675587e61509d4",
+     "sha256": "0dce3c652196ad288c6cd1d1cb6129b0c2b09b24e0be6ae392d01deade94b894"
+    },
+    {
+     "bytes": 14671450,
+     "download_utc": "2026-10-05T14:56:28Z",
+     "md5_matches_source": true,
+     "path": "d03/oligos.fasta",
+     "published_md5": "591dc7072ff5802274f32399d541d4b5",
+     "sha256": "fe3d211f9aa78eb45090b1e35e47dd4f086b5b9326972402308ab3db0b8c6b00"
+    },
+    {
+     "bytes": 303,
+     "download_utc": "2026-10-05T14:56:27Z",
+     "md5_matches_source": true,
+     "path": "d03/primers_synthesis.fasta",
+     "published_md5": "88b8e4369a0abb6a792a0e121450e6cb",
+     "sha256": "019319440519d2a4a0d617f1fbf50f37ad50e1c87bb62f656574d01647ea7495"
+    }
+   ],
+   "groups": {
+    "file-0_acc-false_passQ-true/backward": {
+     "RX": {
+      "bytes": 15368790,
+      "format": "text, one read segment per line, clusters separated by '=' lines",
+      "length": {
+       "max": 165,
+       "mean": 148.2965,
+       "median": 148,
+       "min": 135,
+       "n": 96385,
+       "p95": 154
+      },
+      "member": "./backward/RX__file=0_accBaCa=false_passQ=true_filter=true_backward_.txt",
+      "quality": {
+       "available": false
+      },
+      "sha256": "1622221715df3b54b167779694482ac0937b34cd17b26cec828073798fc261c5"
+     },
+     "TX": {
+      "bytes": 4618939,
+      "distinct_references": 30589,
+      "length": {
+       "max": 150,
+       "mean": 150.0,
+       "median": 150,
+       "min": 150,
+       "n": 30589,
+       "p95": 150
+      },
+      "member": "./backward/TX__file=0_accBaCa=false_passQ=true_filter=true_backward_.txt",
+      "references": 30589,
+      "sha256": "5d128abc1a00645ec54f14c0b9abfdb30c4c370915cd402ef68fd632ca90c1b0"
+     },
+     "accurate_basecaller": false,
+     "clusters": {
+      "cluster_size": {
+       "max": 20,
+       "mean": 3.151,
+       "median": 3,
+       "min": 0,
+       "p95": 8
+      },
+      "clusters": 30589,
+      "clusters_with_ge_10_reads": 532,
+      "empty_clusters": 2873,
+      "matches_reference_count": true,
+      "reads": 96385
+     },
+     "direction": "backward",
+     "file": 0,
+     "inner_archive": "file-0_acc-false_passQ-true.tar.gz",
+     "inner_archive_sha256": "02f50f9dd167458c359cb675d25fc843a83a4f96f709bca1a558dccda3fefdb1",
+     "pass_q": true
+    },
+    "file-0_acc-false_passQ-true/forward": {
+     "RX": {
+      "bytes": 25898039,
+      "format": "text, one read segment per line, clusters separated by '=' lines",
+      "length": {
+       "max": 165,
+       "mean": 148.4736,
+       "median": 149,
+       "min": 135,
+       "n": 166713,
+       "p95": 154
+      },
+      "member": "./forward/RX__file=0_accBaCa=false_passQ=true_filter=true_forward_.txt",
+      "quality": {
+       "available": false
+      },
+      "sha256": "7893f494d18307dc8ce33dcb6069a78cabe3505b1e5ff19821061ceed357d656"
+     },
+     "TX": {
+      "bytes": 4618939,
+      "distinct_references": 30589,
+      "length": {
+       "max": 150,
+       "mean": 150.0,
+       "median": 150,
+       "min": 150,
+       "n": 30589,
+       "p95": 150
+      },
+      "member": "./forward/TX__file=0_accBaCa=false_passQ=true_filter=true_forward_.txt",
+      "references": 30589,
+      "sha256": "0fb28d96c4f5cd8b608cb2f0f10d3414469ae2d62d69c3576e80d1d115f659e6"
+     },
+     "accurate_basecaller": false,
+     "clusters": {
+      "cluster_size": {
+       "max": 35,
+       "mean": 5.4501,
+       "median": 5,
+       "min": 0,
+       "p95": 12
+      },
+      "clusters": 30589,
+      "clusters_with_ge_10_reads": 3988,
+      "empty_clusters": 1074,
+      "matches_reference_count": true,
+      "reads": 166713
+     },
+     "direction": "forward",
+     "file": 0,
+     "inner_archive": "file-0_acc-false_passQ-true.tar.gz",
+     "inner_archive_sha256": "02f50f9dd167458c359cb675d25fc843a83a4f96f709bca1a558dccda3fefdb1",
+     "pass_q": true
+    },
+    "file-0_acc-true_passQ-true/backward": {
+     "RX": {
+      "bytes": 29971797,
+      "format": "text, one read segment per line, clusters separated by '=' lines",
+      "length": {
+       "max": 165,
+       "mean": 149.1611,
+       "median": 150,
+       "min": 135,
+       "n": 193079,
+       "p95": 153
+      },
+      "member": "./backward/RX__file=0_accBaCa=true_passQ=true_filter=true_backward_.txt",
+      "quality": {
+       "available": false
+      },
+      "sha256": "a724f62f73ff56897c74b872f0e407bd927f64c8c8712d13a1933ee3599638c5"
+     },
+     "TX": {
+      "bytes": 4618939,
+      "distinct_references": 30589,
+      "length": {
+       "max": 150,
+       "mean": 150.0,
+       "median": 150,
+       "min": 150,
+       "n": 30589,
+       "p95": 150
+      },
+      "member": "./backward/TX__file=0_accBaCa=true_passQ=true_filter=true_backward_.txt",
+      "references": 30589,
+      "sha256": "5d128abc1a00645ec54f14c0b9abfdb30c4c370915cd402ef68fd632ca90c1b0"
+     },
+     "accurate_basecaller": true,
+     "clusters": {
+      "cluster_size": {
+       "max": 35,
+       "mean": 6.312,
+       "median": 6,
+       "min": 0,
+       "p95": 14
+      },
+      "clusters": 30589,
+      "clusters_with_ge_10_reads": 5658,
+      "empty_clusters": 809,
+      "matches_reference_count": true,
+      "reads": 193079
+     },
+     "direction": "backward",
+     "file": 0,
+     "inner_archive": "file-0_acc-true_passQ-true.tar.gz",
+     "inner_archive_sha256": "d2c1d52e497043406dc3f5cefb0769c3346763b6a6fd5e00b88d7a072d8041be",
+     "pass_q": true
+    },
+    "file-0_acc-true_passQ-true/forward": {
+     "RX": {
+      "bytes": 37747911,
+      "format": "text, one read segment per line, clusters separated by '=' lines",
+      "length": {
+       "max": 165,
+       "mean": 149.3786,
+       "median": 150,
+       "min": 135,
+       "n": 244510,
+       "p95": 153
+      },
+      "member": "./forward/RX__file=0_accBaCa=true_passQ=true_filter=true_forward_.txt",
+      "quality": {
+       "available": false
+      },
+      "sha256": "aefaf4b9fbb1d7c0ac2146df244116a54db1d5245d2da020e0585a1c8034653c"
+     },
+     "TX": {
+      "bytes": 4618939,
+      "distinct_references": 30589,
+      "length": {
+       "max": 150,
+       "mean": 150.0,
+       "median": 150,
+       "min": 150,
+       "n": 30589,
+       "p95": 150
+      },
+      "member": "./forward/TX__file=0_accBaCa=true_passQ=true_filter=true_forward_.txt",
+      "references": 30589,
+      "sha256": "0fb28d96c4f5cd8b608cb2f0f10d3414469ae2d62d69c3576e80d1d115f659e6"
+     },
+     "accurate_basecaller": true,
+     "clusters": {
+      "cluster_size": {
+       "max": 43,
+       "mean": 7.9934,
+       "median": 7,
+       "min": 0,
+       "p95": 17
+      },
+      "clusters": 30589,
+      "clusters_with_ge_10_reads": 9683,
+      "empty_clusters": 535,
+      "matches_reference_count": true,
+      "reads": 244510
+     },
+     "direction": "forward",
+     "file": 0,
+     "inner_archive": "file-0_acc-true_passQ-true.tar.gz",
+     "inner_archive_sha256": "d2c1d52e497043406dc3f5cefb0769c3346763b6a6fd5e00b88d7a072d8041be",
+     "pass_q": true
+    },
+    "file-1_acc-false_passQ-true/backward": {
+     "RX": {
+      "bytes": 59200837,
+      "format": "text, one read segment per line, clusters separated by '=' lines",
+      "length": {
+       "max": 165,
+       "mean": 147.8981,
+       "median": 148,
+       "min": 135,
+       "n": 391019,
+       "p95": 153
+      },
+      "member": "./backward/RX__file=1_accBaCa=false_passQ=true_filter=true_backward_.txt",
+      "quality": {
+       "available": false
+      },
+      "sha256": "4ed4b478a8fbc87b08e9208d44dc3714d1afecd445702346d8b011e5abb19948"
+     },
+     "TX": {
+      "bytes": 4618939,
+      "distinct_references": 30589,
+      "length": {
+       "max": 150,
+       "mean": 150.0,
+       "median": 150,
+       "min": 150,
+       "n": 30589,
+       "p95": 150
+      },
+      "member": "./backward/TX__file=1_accBaCa=false_passQ=true_filter=true_backward_.txt",
+      "references": 30589,
+      "sha256": "242331b5472a8afd7b0ade7e65ccbe18cfc2fba4c6276070a1c2c67b8c095202"
+     },
+     "accurate_basecaller": false,
+     "clusters": {
+      "cluster_size": {
+       "max": 96,
+       "mean": 12.783,
+       "median": 11,
+       "min": 0,
+       "p95": 28
+      },
+      "clusters": 30589,
+      "clusters_with_ge_10_reads": 18128,
+      "empty_clusters": 361,
+      "matches_reference_count": true,
+      "reads": 391019
+     },
+     "direction": "backward",
+     "file": 1,
+     "inner_archive": "file-1_acc-false_passQ-true.tar.gz",
+     "inner_archive_sha256": "b6ac6d67e5d7964d6cf15bd1b6abafd9ad379659f7091c4d05b8b8eda80c4550",
+     "pass_q": true
+    },
+    "file-1_acc-false_passQ-true/forward": {
+     "RX": {
+      "bytes": 36874099,
+      "format": "text, one read segment per line, clusters separated by '=' lines",
+      "length": {
+       "max": 165,
+       "mean": 147.2625,
+       "median": 147,
+       "min": 135,
+       "n": 242106,
+       "p95": 153
+      },
+      "member": "./forward/RX__file=1_accBaCa=false_passQ=true_filter=true_forward_.txt",
+      "quality": {
+       "available": false
+      },
+      "sha256": "2c187cb1c8fb3e68c2543bde68db959cfc6ba9ac1280e0a2b18b2f3e2802935f"
+     },
+     "TX": {
+      "bytes": 4618939,
+      "distinct_references": 30589,
+      "length": {
+       "max": 150,
+       "mean": 150.0,
+       "median": 150,
+       "min": 150,
+       "n": 30589,
+       "p95": 150
+      },
+      "member": "./forward/TX__file=1_accBaCa=false_passQ=true_filter=true_forward_.txt",
+      "references": 30589,
+      "sha256": "813b32879de9394d300c75e2c47f4cca7331002c6f9a93179c28a22fb573f590"
+     },
+     "accurate_basecaller": false,
+     "clusters": {
+      "cluster_size": {
+       "max": 61,
+       "mean": 7.9148,
+       "median": 7,
+       "min": 0,
+       "p95": 19
+      },
+      "clusters": 30589,
+      "clusters_with_ge_10_reads": 9469,
+      "empty_clusters": 940,
+      "matches_reference_count": true,
+      "reads": 242106
+     },
+     "direction": "forward",
+     "file": 1,
+     "inner_archive": "file-1_acc-false_passQ-true.tar.gz",
+     "inner_archive_sha256": "b6ac6d67e5d7964d6cf15bd1b6abafd9ad379659f7091c4d05b8b8eda80c4550",
+     "pass_q": true
+    },
+    "file-1_acc-true_passQ-true/backward": {
+     "RX": {
+      "bytes": 91368314,
+      "format": "text, one read segment per line, clusters separated by '=' lines",
+      "length": {
+       "max": 165,
+       "mean": 149.0332,
+       "median": 150,
+       "min": 135,
+       "n": 602463,
+       "p95": 153
+      },
+      "member": "./backward/RX__file=1_accBaCa=true_passQ=true_filter=true_backward_.txt",
+      "quality": {
+       "available": false
+      },
+      "sha256": "a29cdf2172f8d37cff06eb30b50c2ca14069246c678931ab548aebbc000c8362"
+     },
+     "TX": {
+      "bytes": 4618939,
+      "distinct_references": 30589,
+      "length": {
+       "max": 150,
+       "mean": 150.0,
+       "median": 150,
+       "min": 150,
+       "n": 30589,
+       "p95": 150
+      },
+      "member": "./backward/TX__file=1_accBaCa=true_passQ=true_filter=true_backward_.txt",
+      "references": 30589,
+      "sha256": "242331b5472a8afd7b0ade7e65ccbe18cfc2fba4c6276070a1c2c67b8c095202"
+     },
+     "accurate_basecaller": true,
+     "clusters": {
+      "cluster_size": {
+       "max": 128,
+       "mean": 19.6954,
+       "median": 17,
+       "min": 0,
+       "p95": 44
+      },
+      "clusters": 30589,
+      "clusters_with_ge_10_reads": 24112,
+      "empty_clusters": 470,
+      "matches_reference_count": true,
+      "reads": 602463
+     },
+     "direction": "backward",
+     "file": 1,
+     "inner_archive": "file-1_acc-true_passQ-true.tar.gz",
+     "inner_archive_sha256": "fce0390b837062c533151855ce3dea1f995e0778986b46a223dea5f3a1ddb71f",
+     "pass_q": true
+    },
+    "file-1_acc-true_passQ-true/forward": {
+     "RX": {
+      "bytes": 75055947,
+      "format": "text, one read segment per line, clusters separated by '=' lines",
+      "length": {
+       "max": 165,
+       "mean": 148.9457,
+       "median": 149,
+       "min": 135,
+       "n": 494026,
+       "p95": 152
+      },
+      "member": "./forward/RX__file=1_accBaCa=true_passQ=true_filter=true_forward_.txt",
+      "quality": {
+       "available": false
+      },
+      "sha256": "987be741d474e19b798e95c364facd1725da58b12358fca1b8192f441bcf52aa"
+     },
+     "TX": {
+      "bytes": 4618939,
+      "distinct_references": 30589,
+      "length": {
+       "max": 150,
+       "mean": 150.0,
+       "median": 150,
+       "min": 150,
+       "n": 30589,
+       "p95": 150
+      },
+      "member": "./forward/TX__file=1_accBaCa=true_passQ=true_filter=true_forward_.txt",
+      "references": 30589,
+      "sha256": "813b32879de9394d300c75e2c47f4cca7331002c6f9a93179c28a22fb573f590"
+     },
+     "accurate_basecaller": true,
+     "clusters": {
+      "cluster_size": {
+       "max": 109,
+       "mean": 16.1504,
+       "median": 14,
+       "min": 0,
+       "p95": 38
+      },
+      "clusters": 30589,
+      "clusters_with_ge_10_reads": 20901,
+      "empty_clusters": 549,
+      "matches_reference_count": true,
+      "reads": 494026
+     },
+     "direction": "forward",
+     "file": 1,
+     "inner_archive": "file-1_acc-true_passQ-true.tar.gz",
+     "inner_archive_sha256": "fce0390b837062c533151855ce3dea1f995e0778986b46a223dea5f3a1ddb71f",
+     "pass_q": true
+    },
+    "file-2_acc-false_passQ-true/backward": {
+     "RX": {
+      "bytes": 91360552,
+      "format": "text, one read segment per line, clusters separated by '=' lines",
+      "length": {
+       "max": 165,
+       "mean": 146.4186,
+       "median": 147,
+       "min": 135,
+       "n": 613096,
+       "p95": 152
+      },
+      "member": "./backward/RX__file=2_accBaCa=false_passQ=true_filter=true_backward_.txt",
+      "quality": {
+       "available": false
+      },
+      "sha256": "a76f0e3ff2230df7f60126d00ca6d78f99704a6d5ea9860828664405613781ab"
+     },
+     "TX": {
+      "bytes": 4618788,
+      "distinct_references": 30588,
+      "length": {
+       "max": 150,
+       "mean": 150.0,
+       "median": 150,
+       "min": 150,
+       "n": 30588,
+       "p95": 150
+      },
+      "member": "./backward/TX__file=2_accBaCa=false_passQ=true_filter=true_backward_.txt",
+      "references": 30588,
+      "sha256": "c7974166a140c73f8f0751526a4eddab534c1fc694e6e52b75360b814c805edd"
+     },
+     "accurate_basecaller": false,
+     "clusters": {
+      "cluster_size": {
+       "max": 194,
+       "mean": 20.0437,
+       "median": 18,
+       "min": 0,
+       "p95": 41
+      },
+      "clusters": 30588,
+      "clusters_with_ge_10_reads": 25912,
+      "empty_clusters": 189,
+      "matches_reference_count": true,
+      "reads": 613096
+     },
+     "direction": "backward",
+     "file": 2,
+     "inner_archive": "file-2_acc-false_passQ-true.tar.gz",
+     "inner_archive_sha256": "e4975503e661a44b5681b37231c4a78e4254182b2d08a986772a2f88a385729a",
+     "pass_q": true
+    },
+    "file-2_acc-false_passQ-true/forward": {
+     "RX": {
+      "bytes": 95503181,
+      "format": "text, one read segment per line, clusters separated by '=' lines",
+      "length": {
+       "max": 165,
+       "mean": 146.2728,
+       "median": 147,
+       "min": 135,
+       "n": 641832,
+       "p95": 152
+      },
+      "member": "./forward/RX__file=2_accBaCa=false_passQ=true_filter=true_forward_.txt",
+      "quality": {
+       "available": false
+      },
+      "sha256": "f18e593ba29e0251e03b84377477bf913de4704f4438e308bf33081e5614bf44"
+     },
+     "TX": {
+      "bytes": 4618788,
+      "distinct_references": 30588,
+      "length": {
+       "max": 150,
+       "mean": 150.0,
+       "median": 150,
+       "min": 150,
+       "n": 30588,
+       "p95": 150
+      },
+      "member": "./forward/TX__file=2_accBaCa=false_passQ=true_filter=true_forward_.txt",
+      "references": 30588,
+      "sha256": "ab354e30af93d17433284018128d348f4fbaec61423bc58a2925251cd0b145a0"
+     },
+     "accurate_basecaller": false,
+     "clusters": {
+      "cluster_size": {
+       "max": 200,
+       "mean": 20.9831,
+       "median": 19,
+       "min": 0,
+       "p95": 43
+      },
+      "clusters": 30588,
+      "clusters_with_ge_10_reads": 26345,
+      "empty_clusters": 181,
+      "matches_reference_count": true,
+      "reads": 641832
+     },
+     "direction": "forward",
+     "file": 2,
+     "inner_archive": "file-2_acc-false_passQ-true.tar.gz",
+     "inner_archive_sha256": "e4975503e661a44b5681b37231c4a78e4254182b2d08a986772a2f88a385729a",
+     "pass_q": true
+    },
+    "file-2_acc-true_passQ-true/backward": {
+     "RX": {
+      "bytes": 71585997,
+      "format": "text, one read segment per line, clusters separated by '=' lines",
+      "length": {
+       "max": 165,
+       "mean": 149.2114,
+       "median": 150,
+       "min": 135,
+       "n": 470052,
+       "p95": 153
+      },
+      "member": "./backward/RX__file=2_accBaCa=true_passQ=true_filter=true_backward_.txt",
+      "quality": {
+       "available": false
+      },
+      "sha256": "65d43b92c9664e4c8dd2ce26b9918b9f2d93017dd8f9c7c25bad3309ee9bc59a"
+     },
+     "TX": {
+      "bytes": 4618788,
+      "distinct_references": 30588,
+      "length": {
+       "max": 150,
+       "mean": 150.0,
+       "median": 150,
+       "min": 150,
+       "n": 30588,
+       "p95": 150
+      },
+      "member": "./backward/TX__file=2_accBaCa=true_passQ=true_filter=true_backward_.txt",
+      "references": 30588,
+      "sha256": "c7974166a140c73f8f0751526a4eddab534c1fc694e6e52b75360b814c805edd"
+     },
+     "accurate_basecaller": true,
+     "clusters": {
+      "cluster_size": {
+       "max": 150,
+       "mean": 15.3672,
+       "median": 14,
+       "min": 0,
+       "p95": 31
+      },
+      "clusters": 30588,
+      "clusters_with_ge_10_reads": 22697,
+      "empty_clusters": 230,
+      "matches_reference_count": true,
+      "reads": 470052
+     },
+     "direction": "backward",
+     "file": 2,
+     "inner_archive": "file-2_acc-true_passQ-true.tar.gz",
+     "inner_archive_sha256": "9c9a60cf2e9a06609ace2af9876ac867b182a4173997ab9c45cd87c8daefe4e2",
+     "pass_q": true
+    },
+    "file-2_acc-true_passQ-true/forward": {
+     "RX": {
+      "bytes": 65943551,
+      "format": "text, one read segment per line, clusters separated by '=' lines",
+      "length": {
+       "max": 165,
+       "mean": 149.2071,
+       "median": 150,
+       "min": 135,
+       "n": 432501,
+       "p95": 153
+      },
+      "member": "./forward/RX__file=2_accBaCa=true_passQ=true_filter=true_forward_.txt",
+      "quality": {
+       "available": false
+      },
+      "sha256": "aa5403a56d6061a0a8223885301eca94d1462e78aec7ded97d8e9b4d70ba5bd2"
+     },
+     "TX": {
+      "bytes": 4618788,
+      "distinct_references": 30588,
+      "length": {
+       "max": 150,
+       "mean": 150.0,
+       "median": 150,
+       "min": 150,
+       "n": 30588,
+       "p95": 150
+      },
+      "member": "./forward/TX__file=2_accBaCa=true_passQ=true_filter=true_forward_.txt",
+      "references": 30588,
+      "sha256": "ab354e30af93d17433284018128d348f4fbaec61423bc58a2925251cd0b145a0"
+     },
+     "accurate_basecaller": true,
+     "clusters": {
+      "cluster_size": {
+       "max": 128,
+       "mean": 14.1396,
+       "median": 13,
+       "min": 0,
+       "p95": 29
+      },
+      "clusters": 30588,
+      "clusters_with_ge_10_reads": 21202,
+      "empty_clusters": 252,
+      "matches_reference_count": true,
+      "reads": 432501
+     },
+     "direction": "forward",
+     "file": 2,
+     "inner_archive": "file-2_acc-true_passQ-true.tar.gz",
+     "inner_archive_sha256": "9c9a60cf2e9a06609ace2af9876ac867b182a4173997ab9c45cd87c8daefe4e2",
+     "pass_q": true
+    }
+   },
+   "library_prep": "Strand = 20-nt primer + 110-nt payload + 20-nt primer = 150 nt; forward and backward (reverse-complemented orientation) segments are separate files",
+   "licence": "CC BY 4.0 (Zenodo API); attribution required",
+   "name": "Nanopore end-to-end coding scheme experimental data (clustered read segments, passQ-true groups)",
+   "oligo_pool": {
+    "distinct_sequences": 91766,
+    "format": "FASTA",
+    "length": {
+     "max": 150,
+     "mean": 150.0,
+     "median": 150,
+     "min": 150,
+     "n": 91766,
+     "p95": 150
+    },
+    "quality": {
+     "available": false
+    },
+    "records": 91766
+   },
+   "platform": "GenScript synthesis, PCR, Oxford Nanopore MinION; guppy basecalling, accurate (acc=true) vs fast (acc=false); passQ-true = reads passing the Q>=8 filter",
+   "primers": [
+    [
+     "0 file 0 forward",
+     "AGTGCAACAAGTCAATCCGT"
+    ],
+    [
+     "1 file 0 reverse (reverse complemented)",
+     "AACAAGACTTTCGGAGCGTT"
+    ],
+    [
+     "2 file 1 forward",
+     "TCGAAAGCGTGGACAAACAA"
+    ],
+    [
+     "3 file 1 reverse (reverse complemented)",
+     "AAGCCGAATTAAAGCGCACT"
+    ],
+    [
+     "4 file 2 forward",
+     "TGCCAATAAGTCTTGCGGAA"
+    ],
+    [
+     "5 file 2 reverse (reverse complemented)",
+     "CGAAATCAAGGAACGGTGGA"
+    ]
+   ],
+   "publication": "Welter, Sokolovskii, Heinis, Wachter-Zeh, Rosnes, Graell i Amat. An End-to-End Coding Scheme for DNA-Based Data Storage With Nanopore-Sequenced Reads. IEEE J. Sel. Areas Inf. Theory 7:17-32 (2026), doi:10.1109/JSAIT.2026.3655592; arXiv:2406.12955",
+   "quality_scores": false,
+   "reference_overlap": {
+    "distinct_canonical_references_over_all_used_groups": 91766,
+    "distinct_canonical_references_per_file": {
+     "0": 30589,
+     "1": 30589,
+     "2": 30588
+    },
+    "note": "canonical = lexicographic minimum of a sequence and its reverse complement (backward groups list the reverse-complemented reference). A file's references are one third of the pool; groups of one file share its references (fast/accurate basecaller, forward/backward), so a reference-disjoint split must group by canonical reference, not by group",
+    "oligo_pool_distinct": 91766,
+    "pairwise_shared_between_files": {
+     "0-1": 0,
+     "0-2": 0,
+     "1-2": 0
+    }
+   },
+   "skipped_inner_archives": [
+    {
+     "bytes": 6024967,
+     "inner_archive": "file-0_acc-false_passQ-false.tar.gz",
+     "reason": "passQ-false (reads failing the Q>=8 filter)",
+     "sha256": "e302f1f255e543276297bc109693c9876dbdf083b7da5e84a2f4981bbfafd00a",
+     "used": false
+    },
+    {
+     "bytes": 5046443,
+     "inner_archive": "file-0_acc-true_passQ-false.tar.gz",
+     "reason": "passQ-false (reads failing the Q>=8 filter)",
+     "sha256": "e7ce5a0699c8da1416b2ed61b004f3c79a2aff642ab04c5d4f32da8ca57186ba",
+     "used": false
+    },
+    {
+     "bytes": 10808276,
+     "inner_archive": "file-1_acc-false_passQ-false.tar.gz",
+     "reason": "passQ-false (reads failing the Q>=8 filter)",
+     "sha256": "861bbca19271aec12268963d29fa6eba0ac184842b4c89fe1d6f791735422707",
+     "used": false
+    },
+    {
+     "bytes": 3989517,
+     "inner_archive": "file-1_acc-true_passQ-false.tar.gz",
+     "reason": "passQ-false (reads failing the Q>=8 filter)",
+     "sha256": "c98a36384fbd7821828fe0c9d2863d99059524220b53afca9169d394fec8b3b5",
+     "used": false
+    },
+    {
+     "bytes": 9892619,
+     "inner_archive": "file-2_acc-false_passQ-false.tar.gz",
+     "reason": "passQ-false (reads failing the Q>=8 filter)",
+     "sha256": "5ad08da89703c9cf09a4e5fe90f853fe31a33c559b2608503b21d316d9e3c809",
+     "used": false
+    },
+    {
+     "bytes": 7049952,
+     "inner_archive": "file-2_acc-true_passQ-false.tar.gz",
+     "reason": "passQ-false (reads failing the Q>=8 filter)",
+     "sha256": "9634244d8b6a674f02f2ffbc6dc06f7efdc41986a689556a69db286b657fa3ed",
+     "used": false
+    }
+   ],
+   "source": "Zenodo record 10943282",
+   "url": "https://doi.org/10.5281/zenodo.10943282",
+   "usage_constraints": "Segments with |drift| > 15 nt or missing primers were excluded by the authors, so the edit-distance tail and truncation are under-observed. Groups are disjoint read sets of the same oligo pool: references repeat across files and groups, so a reference-disjoint split must be made on reference sequence, not on file. Whole archive is 138 MB (below the 2 GB limit), so it was downloaded."
+  },
+  "dt4dds-twist": {
+   "accession": "PRJEB65931; runs ERR12033806, ERR12033810, ERR12033850",
+   "coverage_note": "Raw reads are not assigned to references in this step; nominal_reads_per_design = reads / designs is a depth proxy only",
+   "data_state": "raw: demultiplexed FASTQ from ENA, unmapped, untrimmed",
+   "design": {
+    "committable": false,
+    "distinct_sequences": 12000,
+    "file": "dt4dds/design_files_Twist_GCfix_0a.fasta",
+    "format": "FASTA",
+    "length": {
+     "max": 108,
+     "mean": 108.0,
+     "median": 108,
+     "min": 108,
+     "n": 12000,
+     "p95": 108
+    },
+    "quality": {
+     "available": false
+    },
+    "records": 12000
+   },
+   "download_urls": [
+    "https://ftp.sra.ebi.ac.uk/vol1/fastq/ERR120/006/ERR12033806/ERR12033806_1.fastq.gz",
+    "https://ftp.sra.ebi.ac.uk/vol1/fastq/ERR120/010/ERR12033810/ERR12033810_1.fastq.gz",
+    "https://ftp.sra.ebi.ac.uk/vol1/fastq/ERR120/050/ERR12033850/ERR12033850_1.fastq.gz",
+    "https://raw.githubusercontent.com/fml-ethz/dt4dds_notebooks/master/data/Aging/0a_Twist_GCfix/design_files.fasta"
+   ],
+   "files": [
+    {
+     "bytes": 61926123,
+     "download_utc": null,
+     "md5_matches_source": true,
+     "path": "dt4dds/ERR12033806_1.fastq.gz",
+     "published_md5": "50711e496dfc4e661b5543b6f2c7f48d",
+     "sha256": "ae9e1c27c7618b9178de58e656d7c8a04ea13375f1189beb416a7fe6dd25ae37"
+    },
+    {
+     "bytes": 68155347,
+     "download_utc": null,
+     "md5_matches_source": true,
+     "path": "dt4dds/ERR12033810_1.fastq.gz",
+     "published_md5": "1f242501fb98e4c36b05e89fa8b79cee",
+     "sha256": "62c6f931cfbca225d97cec0d4a72bb508d82db52e5e5753a4ec678f8d1572b26"
+    },
+    {
+     "bytes": 19042851,
+     "download_utc": null,
+     "md5_matches_source": true,
+     "path": "dt4dds/ERR12033850_1.fastq.gz",
+     "published_md5": "434c817ac7c620ee28c32426a43f39c5",
+     "sha256": "2f33f1b4c86efd4a985623bc169e3888081f012a9f2f61fe45195211f75bda60"
+    },
+    {
+     "bytes": 1416000,
+     "download_utc": null,
+     "path": "dt4dds/design_files_Twist_GCfix_0a.fasta",
+     "sha256": "ce0baf4f1ff35967c1c3cf52e3e96d51e6202319c8b413356d51904e474d188b"
+    }
+   ],
+   "library_prep": "Aging_0a/0b are the unaged baselines (replicates); PhiX run is the matching sequencing-only control",
+   "licence": "Reads: INSDC, no explicit licence (INSDC places no restriction on use). Design FASTA: dt4dds_notebooks repository has no licence, so it must not be committed or redistributed; only its SHA-256 and counts are recorded. dt4dds code is GPL-3.0: external tool only, never copied into this MIT tree",
+   "name": "DT4DDS Twist_GCfix Aging_0a / 0b replicates, plus PhiX spike-in run (R1 only)",
+   "platform": "Twist Bioscience synthesis (GC-constrained pool, 12,000 designs x 108 nt data region), KAPA PCR, Illumina iSeq 100 2x150 (reads also contain priming regions)",
+   "publication": "Gimpel et al. Characterizing and mitigating errors and biases in DNA data storage (DT4DDS). Nat Commun 14:6026 (2023), doi:10.1038/s41467-023-41729-1",
+   "quality_scores": true,
+   "runs": {
+    "ERR12033806": {
+     "accession": "ERR12033806",
+     "ena_read_count_both_mates": 1928408,
+     "format": "FASTQ (gzip)",
+     "length": {
+      "max": 150,
+      "mean": 150.0,
+      "median": 150,
+      "min": 150,
+      "n": 964204,
+      "p95": 150
+     },
+     "library": "experimental_Aging_0a_Twist_GCfix",
+     "malformed_records": 0,
+     "mate": "R1",
+     "nominal_reads_per_design": 80.35,
+     "quality": {
+      "available": true,
+      "binned": true,
+      "distinct_values": 3,
+      "encoding": "Phred+33",
+      "fraction_ge_30": 0.8878,
+      "max": 37,
+      "mean": 34.751,
+      "min": 11,
+      "values": [
+       11,
+       25,
+       37
+      ]
+     },
+     "r1_equals_half_of_ena_count": true,
+     "records": 964204,
+     "role": "baseline replicate a",
+     "sample": "Twist_GCfix"
+    },
+    "ERR12033810": {
+     "accession": "ERR12033810",
+     "ena_read_count_both_mates": 2123834,
+     "format": "FASTQ (gzip)",
+     "length": {
+      "max": 150,
+      "mean": 150.0,
+      "median": 150,
+      "min": 150,
+      "n": 1061917,
+      "p95": 150
+     },
+     "library": "experimental_Aging_0b_Twist_GCfix",
+     "malformed_records": 0,
+     "mate": "R1",
+     "nominal_reads_per_design": 88.49,
+     "quality": {
+      "available": true,
+      "binned": true,
+      "distinct_values": 3,
+      "encoding": "Phred+33",
+      "fraction_ge_30": 0.8886,
+      "max": 37,
+      "mean": 34.755,
+      "min": 11,
+      "values": [
+       11,
+       25,
+       37
+      ]
+     },
+     "r1_equals_half_of_ena_count": true,
+     "records": 1061917,
+     "role": "baseline replicate b",
+     "sample": "Twist_GCfix"
+    },
+    "ERR12033850": {
+     "accession": "ERR12033850",
+     "ena_read_count_both_mates": 535162,
+     "format": "FASTQ (gzip)",
+     "length": {
+      "max": 150,
+      "mean": 150.0,
+      "median": 150,
+      "min": 150,
+      "n": 267581,
+      "p95": 150
+     },
+     "library": "phix_Twist_Twist_GCfix_aging",
+     "malformed_records": 0,
+     "mate": "R1",
+     "quality": {
+      "available": true,
+      "binned": true,
+      "distinct_values": 3,
+      "encoding": "Phred+33",
+      "fraction_ge_30": 0.788,
+      "max": 37,
+      "mean": 32.445,
+      "min": 11,
+      "values": [
+       11,
+       25,
+       37
+      ]
+     },
+     "r1_equals_half_of_ena_count": true,
+     "records": 267581,
+     "role": "PhiX sequencing-only control",
+     "sample": "PhiX"
+    }
+   },
+   "source": "ENA project PRJEB65931 (INSDC); design FASTA from GitHub fml-ethz/dt4dds_notebooks",
+   "url": "https://www.ebi.ac.uk/ena/browser/view/PRJEB65931",
+   "usage_constraints": "Only R1 of each paired run is downloaded (R2 not used in this step). Design FASTA of Aging_0a is used for both 0a and 0b (same Twist_GCfix pool design per the registry; not verified for 0b separately). PhiX run has no designed strands: reference is the PhiX174 genome (NC_001422.1, 5,386 bp, not downloaded here)"
+  }
+ },
+ "evidence_class": "PUBLIC-DATA-DERIVED",
+ "recompute": "python experiments/v7/datasets/build_manifest.py --check",
+ "schema": "vnx.dataset-manifest/1",
+ "statement": "Every dataset was produced by another group; VNX-DNA has synthesised, stored and sequenced nothing. Data live outside the repository. No train/dev/held-out split is defined here."
+}

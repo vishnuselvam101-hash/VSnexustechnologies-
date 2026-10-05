@@ -1,0 +1,51 @@
+{
+  "schema": "vnx.dataset-sources/1",
+  "note": "Hand-written metadata (URLs, licences, platform notes). Hashes, counts and length statistics are NOT here: build_manifest.py recomputes them from the data directory. Checked 2026-10-05 against the Zenodo, ENA and GitHub APIs.",
+  "datasets": {
+    "cnr": {
+      "name": "Clustered Nanopore Reads (CNR)",
+      "source": "GitHub: microsoft/clustered-nanopore-reads-dataset",
+      "url": "https://github.com/microsoft/clustered-nanopore-reads-dataset",
+      "download_urls": ["https://raw.githubusercontent.com/microsoft/clustered-nanopore-reads-dataset/main/Centers.txt", "https://raw.githubusercontent.com/microsoft/clustered-nanopore-reads-dataset/main/Clusters.txt", "https://raw.githubusercontent.com/microsoft/clustered-nanopore-reads-dataset/main/LICENSE", "https://raw.githubusercontent.com/microsoft/clustered-nanopore-reads-dataset/main/README.md"],
+      "publication": "Srinivasavaradhan, Gopi, Pfister, Yekhanin. Trellis BMA: coded trace reconstruction on IDS channels for DNA storage. ISIT 2021, arXiv:2107.06440",
+      "accession": null,
+      "licence": "MIT (GitHub API and LICENSE file); keep copyright and licence notice when reusing",
+      "usage_constraints": "Dataset README note of 2024-08-12: the 10,000 centres are not uniformly random (long-range dependencies from a generation error), so clustering may have produced malformed clusters. Empty clusters mean dropout or clustering failure (not distinguishable).",
+      "platform": "Twist Bioscience synthesis, PCR, Oxford Nanopore MinION (LQK-LSK109 ligation kit); basecaller not stated",
+      "library_prep": "Amplified products ligated to ONT adapters; reads clustered with the algorithm of Rashtchian et al. (NIPS 2017)",
+      "data_state": "processed: basecalled reads, already clustered by reference (reference = cluster centre); original FASTQ not published",
+      "quality_scores": false,
+      "coverage_note": "Per-cluster read counts are in the manifest (cluster_size); reads are pre-clustered so coverage per reference is observed directly, but clustering drops outlier reads"
+    },
+    "dt4dds-twist": {
+      "name": "DT4DDS Twist_GCfix Aging_0a / 0b replicates, plus PhiX spike-in run (R1 only)",
+      "source": "ENA project PRJEB65931 (INSDC); design FASTA from GitHub fml-ethz/dt4dds_notebooks",
+      "url": "https://www.ebi.ac.uk/ena/browser/view/PRJEB65931",
+      "download_urls": ["https://ftp.sra.ebi.ac.uk/vol1/fastq/ERR120/006/ERR12033806/ERR12033806_1.fastq.gz", "https://ftp.sra.ebi.ac.uk/vol1/fastq/ERR120/010/ERR12033810/ERR12033810_1.fastq.gz", "https://ftp.sra.ebi.ac.uk/vol1/fastq/ERR120/050/ERR12033850/ERR12033850_1.fastq.gz", "https://raw.githubusercontent.com/fml-ethz/dt4dds_notebooks/master/data/Aging/0a_Twist_GCfix/design_files.fasta"],
+      "publication": "Gimpel et al. Characterizing and mitigating errors and biases in DNA data storage (DT4DDS). Nat Commun 14:6026 (2023), doi:10.1038/s41467-023-41729-1",
+      "accession": "PRJEB65931; runs ERR12033806, ERR12033810, ERR12033850",
+      "licence": "Reads: INSDC, no explicit licence (INSDC places no restriction on use). Design FASTA: dt4dds_notebooks repository has no licence, so it must not be committed or redistributed; only its SHA-256 and counts are recorded. dt4dds code is GPL-3.0: external tool only, never copied into this MIT tree",
+      "usage_constraints": "Only R1 of each paired run is downloaded (R2 not used in this step). Design FASTA of Aging_0a is used for both 0a and 0b (same Twist_GCfix pool design per the registry; not verified for 0b separately). PhiX run has no designed strands: reference is the PhiX174 genome (NC_001422.1, 5,386 bp, not downloaded here)",
+      "platform": "Twist Bioscience synthesis (GC-constrained pool, 12,000 designs x 108 nt data region), KAPA PCR, Illumina iSeq 100 2x150 (reads also contain priming regions)",
+      "library_prep": "Aging_0a/0b are the unaged baselines (replicates); PhiX run is the matching sequencing-only control",
+      "data_state": "raw: demultiplexed FASTQ from ENA, unmapped, untrimmed",
+      "quality_scores": true,
+      "coverage_note": "Raw reads are not assigned to references in this step; nominal_reads_per_design = reads / designs is a depth proxy only"
+    },
+    "d03-nanopore": {
+      "name": "Nanopore end-to-end coding scheme experimental data (clustered read segments, passQ-true groups)",
+      "source": "Zenodo record 10943282",
+      "url": "https://doi.org/10.5281/zenodo.10943282",
+      "download_urls": ["https://zenodo.org/api/records/10943282/files/clustered_read_segments.tar.gz/content", "https://zenodo.org/api/records/10943282/files/oligos.fasta/content", "https://zenodo.org/api/records/10943282/files/primers_synthesis.fasta/content"],
+      "publication": "Welter, Sokolovskii, Heinis, Wachter-Zeh, Rosnes, Graell i Amat. An End-to-End Coding Scheme for DNA-Based Data Storage With Nanopore-Sequenced Reads. IEEE J. Sel. Areas Inf. Theory 7:17-32 (2026), doi:10.1109/JSAIT.2026.3655592; arXiv:2406.12955",
+      "accession": "Zenodo 10943282",
+      "licence": "CC BY 4.0 (Zenodo API); attribution required",
+      "usage_constraints": "Segments with |drift| > 15 nt or missing primers were excluded by the authors, so the edit-distance tail and truncation are under-observed. Groups are disjoint read sets of the same oligo pool: references repeat across files and groups, so a reference-disjoint split must be made on reference sequence, not on file. Whole archive is 138 MB (below the 2 GB limit), so it was downloaded.",
+      "platform": "GenScript synthesis, PCR, Oxford Nanopore MinION; guppy basecalling, accurate (acc=true) vs fast (acc=false); passQ-true = reads passing the Q>=8 filter",
+      "library_prep": "Strand = 20-nt primer + 110-nt payload + 20-nt primer = 150 nt; forward and backward (reverse-complemented orientation) segments are separate files",
+      "data_state": "processed: basecalled reads, primer-located and segmented, clustered by nearest reference (Levenshtein); FASTQ not included",
+      "quality_scores": false,
+      "coverage_note": "Per-cluster read counts are in the manifest; empty clusters are listed per file"
+    }
+  }
+}
