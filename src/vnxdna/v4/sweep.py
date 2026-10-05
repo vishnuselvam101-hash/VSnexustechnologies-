@@ -27,7 +27,7 @@ import time
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
-from . import archive as ar
+from vnxdna.archive import operations as ar
 from . import channel as ch
 from . import datagen
 from . import decoder as de

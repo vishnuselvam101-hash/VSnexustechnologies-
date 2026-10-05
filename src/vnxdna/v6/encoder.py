@@ -17,14 +17,14 @@ from pathlib import Path
 import numpy as np
 
 from ..v2.strandio import StrandWriter, format_for_output
-from ..v4 import container as ct
-from ..v4.codecs import CauchyRSCodec
+from vnxdna.archive import container as ct
+from vnxdna.codec.codecs import CauchyRSCodec
 from ..v4.constraints import ConstraintConfig
 from ..v4.encoder import _ASCII, DNAOptions, SB_VERSION_V6, Superblock, _labels
 from vnxdna.core.errors import VNXConfigurationError
 from ..v4.frame import KIND_DATA, KIND_SUPER, Layout, build_strands
 from vnxdna.core.util import sha256_file
-from .outer import Geometry, column_parity_rows, plan, row_codewords
+from vnxdna.codec.outer import Geometry, column_parity_rows, plan, row_codewords
 
 _W: dict = {}
 

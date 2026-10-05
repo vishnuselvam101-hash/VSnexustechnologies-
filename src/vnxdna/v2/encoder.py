@@ -67,29 +67,8 @@ def used_data_shards(stored_size: int, row: int, stripe_count: int, k: int, p: i
     return -(-tail // p)
 
 
-_PARITY_TABLES: dict[tuple[int, int], np.ndarray] = {}
-
-
-def cauchy_parity(code: CauchyErasureCode, data: np.ndarray) -> np.ndarray:
-    """Outer parity (S, M, L) for data (S, K, L); equal to ``CauchyErasureCode.encode`` (tested).
-
-    Loops over the K data columns with one (M, 256) table gather each, which is
-    several times faster than the generic GF(256) matrix product for K ≥ 32.
-    """
-    s, k, length = data.shape
-    m = code.parity_shards
-    if m == 0:
-        return np.zeros((s, 0, length), dtype=np.uint8)
-    key = (k, m)
-    if key not in _PARITY_TABLES:
-        from ..ecc import gf256
-        coeff = np.asarray([code.generator_row(k + i) for i in range(m)], dtype=np.uint8)  # (M, K)
-        _PARITY_TABLES[key] = np.ascontiguousarray(gf256.MUL[coeff.T])  # (K, M, 256)
-    tables = _PARITY_TABLES[key]
-    out = np.zeros((m, s, length), dtype=np.uint8)
-    for c in range(k):
-        out ^= tables[c][:, data[:, c, :]]
-    return out.transpose(1, 0, 2)
+# moved to vnxdna.codec.cauchy (V6 Phase 2, M2) so that the vnx codec does not import this V2 module
+from ..codec.cauchy import _PARITY_TABLES, cauchy_parity  # noqa: E402,F401
 
 
 def stripe_rows(stored: bytes, code: CauchyErasureCode, p: int, first_stripe: int, *, shorten: bool):

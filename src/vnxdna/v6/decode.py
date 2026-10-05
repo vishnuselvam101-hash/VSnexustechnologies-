@@ -16,7 +16,7 @@ import os
 
 import numpy as np
 
-from .outer import Geometry, StripeStats, decode_stripe, row_codewords, stripe_padding
+from vnxdna.codec.outer import Geometry, StripeStats, decode_stripe, row_codewords, stripe_padding
 
 
 class _ParityRows:

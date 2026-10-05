@@ -39,9 +39,9 @@ from pathlib import Path
 import numpy as np
 
 from vnxdna.native.reads import iter_reads  # V6: native streaming parser, falls back to .reads.iter_reads
-from . import archive as ar
-from . import container as ct
-from .codecs import CauchyRSCodec, make_outer
+from vnxdna.archive import operations as ar
+from vnxdna.archive import container as ct
+from vnxdna.codec.codecs import CauchyRSCodec, make_outer
 from .encoder import SB_BYTES, Superblock, group_k
 from vnxdna.core.errors import (VNXAddressError, VNXConfigurationError, VNXDecodeError, VNXFormatError,
     VNXIntegrityError, VNXKeyError, VNXUnsupportedVersionError)

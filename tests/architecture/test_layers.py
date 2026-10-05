@@ -48,14 +48,6 @@ TOP_LEVEL = {"vnxdna._version": "core", "vnxdna._native_build": "native"}
 
 #: modules not yet moved -> the package they move to (V6_ARCHITECTURE §2 table). Shrinks with every M-step.
 PENDING = {
-    "vnxdna.errors": "core", "vnxdna.provenance": "core", "vnxdna.v4.errors": "core", "vnxdna.v4.version": "core",
-    "vnxdna.v4.util": "core", "vnxdna.v2.crc": "core", "vnxdna.v6.observe": "core", "vnxdna.v6.errors": "core",
-    "vnxdna.native": "native", "vnxdna.v5.native_alignment": "native", "vnxdna.v6.native_reads": "native",
-    "vnxdna.v6.native_rs": "native",
-    "vnxdna.v4.container": "archive", "vnxdna.v4.archive": "archive", "vnxdna.v4.crypto": "archive",
-    "vnxdna.v4.merkle": "archive", "vnxdna.container.compression": "archive",
-    "vnxdna.ecc.gf256": "codec", "vnxdna.ecc.cauchy": "codec", "vnxdna.ecc.rs_batch": "codec", "vnxdna.v4.codecs": "codec",
-    "vnxdna.v4.rs_fast": "codec", "vnxdna.v6.outer": "codec", "vnxdna.v6.profiles": "codec",
     "vnxdna.v4.frame": "dnaenc", "vnxdna.v4.constraints": "dnaenc", "vnxdna.v4.reads": "dnaenc", "vnxdna.v2.strandio": "dnaenc",
     "vnxdna.v4.sync": "sync", "vnxdna.v5.indel": "sync",
     "vnxdna.v5.soft": "recovery", "vnxdna.v6.decode": "recovery", "vnxdna.v6.recovery": "recovery",

@@ -42,7 +42,7 @@ from vnxdna import _native_build as _nb
 from vnxdna.core._alias import lazy_module
 
 # the NumPy reference lives in the codec layer; it is resolved by name on first use (V6_ARCHITECTURE §3, R1/R5)
-rs_fast = lazy_module("vnxdna.v4.rs_fast")
+rs_fast = lazy_module("vnxdna.codec.rs_fast")
 
 ABI_VERSION = 1
 LEVELS = {"scalar": 1, "avx2": 2, "avx512": 3}

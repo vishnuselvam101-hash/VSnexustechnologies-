@@ -30,8 +30,8 @@ from pathlib import Path
 import numpy as np
 
 from ..v2.strandio import StrandWriter, format_for_output
-from . import container as ct
-from .codecs import CODE_IDS, CauchyRSCodec, make_outer
+from vnxdna.archive import container as ct
+from vnxdna.codec.codecs import CODE_IDS, CauchyRSCodec, make_outer
 from .constraints import ConstraintConfig
 from vnxdna.core.errors import VNXConfigurationError, VNXFormatError
 from .frame import KIND_DATA, KIND_SUPER, PROFILES, Layout, build_strands
@@ -126,7 +126,7 @@ class Superblock:
 
     def geometry(self):
         """The V6 outer geometry (version 2 only)."""
-        from ..v6.outer import Geometry
+        from vnxdna.codec.outer import Geometry
         return Geometry(self.K, self.M, self.stripe_depth, self.column_parity, self.layout.payload_bytes,
                         self.container_size, self.strand_order)
 

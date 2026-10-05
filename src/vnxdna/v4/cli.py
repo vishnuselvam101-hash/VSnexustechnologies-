@@ -90,7 +90,7 @@ def _run(fn):
 
 
 def _keys(key_file: Optional[Path], passphrase_env: Optional[str]) -> tuple[bytes | None, str | None]:
-    from .crypto import load_key_file
+    from vnxdna.archive.crypto import load_key_file
     key = load_key_file(key_file) if key_file else None
     pw = None
     if passphrase_env:
@@ -144,7 +144,7 @@ def native() -> None:
 def keygen(output: Path = typer.Argument(..., help="New key file (mode 0600; refuses to overwrite).")) -> None:
     """Generate a random 32-byte key file."""
     def go():
-        from .crypto import generate_key_file
+        from vnxdna.archive.crypto import generate_key_file
         try:
             generate_key_file(output)
         except FileExistsError:
@@ -164,7 +164,7 @@ def archive(inputs: List[Path] = typer.Argument(..., help="Files and/or director
             config: Optional[Path] = CONFIG_OPT, as_json: bool = JSON_OPT) -> None:
     """Create a VNX4 archive: vnx archive ./dataset archive.vnx"""
     def go():
-        from . import archive as ar
+        from vnxdna.archive import operations as ar
         from .config import load_config, performance as perf
         if len(inputs) < 2:
             raise VNXConfigurationError("usage: vnx archive INPUT... OUTPUT.vnx")
@@ -185,7 +185,7 @@ def inspect(container: Path, key_file: Optional[Path] = KEY_OPT, passphrase_env:
             allow_unencrypted: bool = UNENC_OPT) -> None:
     """Show the manifest and structure of a VNX4 archive."""
     def go():
-        from . import archive as ar
+        from vnxdna.archive import operations as ar
         key, pw = _keys(key_file, passphrase_env)
         _emit(ar.inspect_container(container, key=key, passphrase=pw, allow_unencrypted=allow_unencrypted))
     _run(go)
@@ -196,7 +196,7 @@ def list_cmd(container: Path, key_file: Optional[Path] = KEY_OPT, passphrase_env
              as_json: bool = JSON_OPT, allow_unencrypted: bool = UNENC_OPT) -> None:
     """List archive entries."""
     def go():
-        from . import archive as ar
+        from vnxdna.archive import operations as ar
         key, pw = _keys(key_file, passphrase_env)
         rows = ar.list_container(container, key=key, passphrase=pw, allow_unencrypted=allow_unencrypted)
         _emit({"entries": rows}, "\n".join(f"{r['size']:>14,}  {r['path']}" for r in rows), as_json)
@@ -209,7 +209,7 @@ def verify(container: Path, chunk: Optional[int] = typer.Option(None, "--chunk",
            allow_unencrypted: bool = UNENC_OPT) -> None:
     """Verify an archive (trailer, manifest, Merkle root, every chunk and file hash) or one chunk."""
     def go():
-        from . import archive as ar
+        from vnxdna.archive import operations as ar
         key, pw = _keys(key_file, passphrase_env)
         _emit(ar.verify_container(container, key=key, passphrase=pw, chunk=chunk, allow_unencrypted=allow_unencrypted))
     _run(go)
@@ -221,7 +221,7 @@ def locate(container: Path, name: str, key_file: Optional[Path] = KEY_OPT, passp
            allow_unencrypted: bool = UNENC_OPT) -> None:
     """Locate a file: chunk indices, container byte ranges and (with --dna-profile) strand groups and strand records."""
     def go():
-        from . import archive as ar
+        from vnxdna.archive import operations as ar
         key, pw = _keys(key_file, passphrase_env)
         _emit(ar.locate(container, name, key=key, passphrase=pw, profile=profile, allow_unencrypted=allow_unencrypted))
     _run(go)
@@ -233,7 +233,7 @@ def extract(container: Path, output_dir: Path, names: Optional[List[str]] = type
             apply_metadata: bool = typer.Option(False, "--apply-metadata"), allow_unencrypted: bool = UNENC_OPT) -> None:
     """Extract (every file verified before it is renamed into place)."""
     def go():
-        from . import archive as ar
+        from vnxdna.archive import operations as ar
         key, pw = _keys(key_file, passphrase_env)
         _emit(ar.extract(container, output_dir, key=key, passphrase=pw, names=names or None, overwrite=force,
                          apply_metadata=apply_metadata, allow_unencrypted=allow_unencrypted))
@@ -275,21 +275,17 @@ def encode(source: Path = typer.Argument(..., help="A .vnx container, or a file/
     """Encode a VNX4 container (or files) into DNA strands."""
     def go():
         import tempfile
-        from . import archive as ar
-        from . import container as ct
+        from vnxdna.archive import operations as ar
+        from vnxdna.archive import container as ct
         from . import encoder as en
         nonlocal profile, stripe_depth, column_parity, strand_order
         if redundancy_profile is not None:
-            from ..v6.profiles import REDUNDANCY_PROFILES
-            from vnxdna.core.errors import V6ConfigurationError
-            if redundancy_profile not in REDUNDANCY_PROFILES:
-                raise V6ConfigurationError(f"unknown redundancy profile {redundancy_profile!r}; "
-                                           f"available: {sorted(REDUNDANCY_PROFILES)}")
-            base = REDUNDANCY_PROFILES[redundancy_profile]
-            profile = profile if profile is not None else base.get("profile")
-            stripe_depth = stripe_depth if stripe_depth is not None else base.get("stripe_depth")
-            column_parity = column_parity if column_parity is not None else base.get("column_parity")
-            strand_order = strand_order if strand_order is not None else base.get("strand_order")
+            from vnxdna.codec.profiles import merge     # the single profile merge (explicit options win)
+            given = {k: v for k, v in (("profile", profile), ("stripe_depth", stripe_depth), ("column_parity", column_parity),
+                                       ("strand_order", strand_order)) if v is not None}
+            merged = merge(redundancy_profile, given)
+            profile, stripe_depth = merged.get("profile"), merged.get("stripe_depth")
+            column_parity, strand_order = merged.get("column_parity"), merged.get("strand_order")
         opts, perf = _dna_opts(config, profile, outer_code, data_symbols, parity_symbols, workers, performance,
                                stripe_depth=stripe_depth, column_parity=column_parity, strand_order=strand_order,
                                outer_plan=outer_plan, redundancy_budget=redundancy_budget)
@@ -395,7 +391,7 @@ def _check_side_files(reads, key_file, output, report, events, force) -> None:
 
 def _decode_run(reads, output, extract_dir, partial_dir, select, opts, force, key_file, passphrase_env, report, observer,
                 task_id, allow_unencrypted=False):
-    from . import archive as ar
+    from vnxdna.archive import operations as ar
     from . import decoder as de
     key, pw = _keys(key_file, passphrase_env)
     if output is None and extract_dir is None and not select:

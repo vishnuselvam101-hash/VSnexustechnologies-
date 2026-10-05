@@ -29,7 +29,7 @@ from dataclasses import asdict, dataclass
 import numpy as np
 
 from vnxdna.core.crc import crc32_bytes_be, crc32_rows
-from .codecs import InnerRS
+from vnxdna.codec.codecs import InnerRS
 from .constraints import ConstraintConfig, satisfied_batch, to_codes
 from vnxdna.core.errors import VNXConfigurationError, VNXConstraintError
 from vnxdna.core.version import FRAME_VERSION

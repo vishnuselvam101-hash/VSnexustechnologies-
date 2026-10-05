@@ -25,7 +25,7 @@ from pathlib import Path
 
 import numpy as np
 
-from . import archive as ar
+from vnxdna.archive import operations as ar
 from . import channel as ch
 from . import datagen
 from . import decoder as de
@@ -149,8 +149,8 @@ def stages(size: int = 4 << 20, seed: int = 1, profile: str = "v4-balanced") -> 
     import zstandard
     from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-    from . import merkle
-    from .codecs import CauchyRSCodec, InnerRS
+    from vnxdna.archive import merkle
+    from vnxdna.codec.codecs import CauchyRSCodec, InnerRS
     from .constraints import ConstraintConfig, satisfied_batch
     from .frame import PROFILES, build_strands, decode_frames, insert_markers, bytes_to_nt, nt_to_bytes
     from .sync import TemplateAligner, frame_erasures_to_bytes
@@ -249,7 +249,7 @@ def codec_compare(k: int = 256, budget: float = 0.25, symbol_bytes: int = 40, lo
     The same total data (``k`` × rs-group multiples) and the same parity budget are used for every code; a trial
     succeeds when all data symbols are recovered. Reports success rates, encode/decode time per MB.
     """
-    from .codecs import CauchyRSCodec, LTFountainCodec
+    from vnxdna.codec.codecs import CauchyRSCodec, LTFountainCodec
     rng_master = np.random.default_rng(seed)
     total_k = int(np.lcm.reduce([k] + [g[0] for g in rs_groups]))
     while total_k < 1000:

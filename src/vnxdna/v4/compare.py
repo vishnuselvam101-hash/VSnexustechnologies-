@@ -23,7 +23,7 @@ from pathlib import Path
 
 import numpy as np
 
-from . import archive as ar
+from vnxdna.archive import operations as ar
 from . import channel as ch
 from . import datagen
 from . import decoder as de
@@ -157,7 +157,7 @@ def constraint_study(n_strands: int = 20000, seed: int = 3, profile: str = "v4-b
     """Constraint violations before (variant 0 = plain scrambling) and after screening, variants needed, time, recoverability."""
     from .constraints import ConstraintConfig, violations_batch
     from .frame import PROFILES, build_strands, decode_frames, nt_to_bytes, insert_markers, bytes_to_nt, plain_rows, keystreams
-    from .codecs import InnerRS
+    from vnxdna.codec.codecs import InnerRS
     from .sync import strip_markers_exact
     lay = PROFILES[profile][0]
     rng = np.random.default_rng(seed)

@@ -30,8 +30,8 @@ from ..core._alias import lazy_module
 
 KERNELS = ("align", "reads", "rs")
 _ENV_LIB = {"align": "VNXDNA_NATIVE_LIB", "reads": "VNXDNA_READS_LIB", "rs": "VNXDNA_RS_LIB"}
-_REFERENCE = {"align": "vnxdna.v4.sync", "reads": "vnxdna.v4.reads", "rs": "vnxdna.v4.rs_fast"}
-_CODECS = "vnxdna.v4.codecs"      # InnerRS; its VNX_RS_REFERENCE switch (read at import) bypasses the RS kernel
+_REFERENCE = {"align": "vnxdna.v4.sync", "reads": "vnxdna.v4.reads", "rs": "vnxdna.v4.rs_fast"}   # reported names: the stable (old) paths
+_CODECS = "vnxdna.codec.codecs"      # InnerRS; its VNX_RS_REFERENCE switch (read at import) bypasses the RS kernel
 
 
 def _module(kernel: str):
