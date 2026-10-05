@@ -89,3 +89,23 @@ the bit-identical NumPy references run. `python -m vnxdna.native` (or `vnx nativ
 uses, and decode reports record it in `native_backends`. The environment variables that select backends
 (`VNXDNA_ALIGN_BACKEND`, `VNXDNA_READS_BACKEND`, `VNXDNA_RS_BACKEND`, `VNX_RS_REFERENCE`, the `*_LIB` paths,
 `VNXDNA_NATIVE_STRICT`) are documented in [NATIVE_KERNELS.md](NATIVE_KERNELS.md).
+
+## `vnx` (V6): security and archive-ID options
+
+`vnx --help` and `vnx <command> --help` list every option of the V4–V6 tool. These options were added in V6 Phase 6
+(findings in [security/V6_SECURITY_MODEL.md](security/V6_SECURITY_MODEL.md)). Errors are `vnx.error/1` JSON on stderr.
+
+| option | commands | effect | on failure |
+|---|---|---|---|
+| `--max-container-bytes N` | `decode` | Refuse a superblock that claims a container larger than N bytes. The check runs in the superblock stage, before anything is sized or decoded. Default 4 GiB (4294967296). Raise it for larger genuine archives (V6-SEC-01). Config file: `decode.max_container_bytes`. | exit 3, `RESOURCE_LIMIT` |
+| `--expect-archive-id HEX32` | `decode`, `extract` | Refuse any archive with another 16-byte archive ID. For decode, the superblock is checked before pass 2 and the recovered manifest before SUCCESS. In a pool that holds several archives, the expected ID also selects its archive (unless `--archive-tag` is given) (V6-SEC-03). | exit 1, `ARCHIVE_MISMATCH` |
+| `--expect-sha256 HEX64` | `decode`, `extract` | Refuse a container whose SHA-256 (of the whole `.vnx` file, as `sha256sum` prints it) differs. For decode, the superblock's container SHA-256 is checked before pass 2. This is the only binding check for a clear archive, whose archive ID anyone can forge (FC-8) (V6-SEC-03). | exit 1, `ARCHIVE_MISMATCH` |
+| `--allow-unencrypted` | `decode`, `extract`, `encode`, `inspect`, `list`, `verify`, `locate` | Accept an unencrypted archive although `--key-file`/`--passphrase-env` was given. Without it, the archive is refused as a possible encryption downgrade. Since V6-SEC-02 this also applies to a full `decode -o` (the recovered container is opened with the key before SUCCESS) and to `encode` of a `.vnx` source. | exit 4, `KEY_FOR_UNENCRYPTED` |
+| `--archive-id options\|content` | `archive` | How an unencrypted archive's ID is derived: `options` gives `options-v1` (the default, unchanged); `content` gives `content-v1` (spec §2.3.2: options, Merkle root and file-table hash). Refused for encrypted archives, which always get a random ID. Config file: `archive.archive_id`. | exit 7, `CONFIGURATION_ERROR` |
+
+Malformed `--expect-*` values are refused with exit 7 (`CONFIGURATION_ERROR`). With `--expect-*` options, the result
+carries `"expected": {"archive_id": …, "container_sha256": …}`. `extract` always reports the manifest `archive_id`,
+and reports `container_sha256` when `--expect-sha256` is given. A decode report already has
+`superblock.archive_id` and `container_sha256`; record them in your catalogue to use with `--expect-*` later.
+`vnx verify` recomputes a `content-v1` ID. A mismatch is the warning `ARCHIVE_ID_DERIVATION_MISMATCH`, not an error,
+because the ID is a name, not a digest.

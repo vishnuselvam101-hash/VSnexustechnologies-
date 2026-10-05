@@ -129,7 +129,7 @@ keys. The bytes MUST equal their own canonical re-serialisation. Fields (all req
 |---|---|
 | `format` | `"VNX4"` |
 | `format_version` | `[4, 0]` (major MUST equal 4; minor MUST be ≤ the reader's) |
-| `archive_id` | 32 lowercase hex characters (16 bytes). Unencrypted: `SHA-256("VNX4 archive-id\0" ‖ options ‖ entry list)[:16]` (deterministic); encrypted: random |
+| `archive_id` | 32 lowercase hex characters (16 bytes). Unencrypted: by default `options-v1` = `SHA-256("VNX4 archive-id\0" ‖ options ‖ entry list)[:16]` (deterministic); opt-in (6.x writers) `content-v1` = `SHA-256("VNX6 archive-id\0" ‖ options ‖ merkle_root ‖ SHA-256(file table))[:16]` (VNX-DNA spec V6 §2.3.2; the derivation is named in `extensions.vnx.archive_id_derivation`, which readers may ignore: the format is unchanged); encrypted: random |
 | `created_at` | `null` (reserved; a timestamp would break determinism) |
 | `encoder` | `{"name": "vnxdna", "version": "4.0.0"}` (informational) |
 | `required_features` | sorted list from: `vnx4-container`, `chunk-fixed`, `merkle-rfc6962-sha256`, `dedup-content-address`, `zstd`, `aes-256-gcm`, `kdf-hkdf-sha256`, `kdf-scrypt`. An unknown feature MUST be rejected as unsupported |

@@ -86,20 +86,17 @@ Re-check this table when the pins change or a new advisory names an AES-GCM, HKD
 ## V6 security model and fuzzing (Phase 6, 2026-10-05)
 
 The V6 threat model is [security/V6_SECURITY_MODEL.md](security/V6_SECURITY_MODEL.md), and the fuzz campaign is
-[security/V6_FUZZ_REPORT.md](security/V6_FUZZ_REPORT.md). There is no CRITICAL or HIGH finding.
+[security/V6_FUZZ_REPORT.md](security/V6_FUZZ_REPORT.md). There is no CRITICAL or HIGH finding, and no open MEDIUM finding.
 
 **Open findings:**
 
 | ID | Severity | Finding |
 |---|---|---|
-| V6-SEC-01 | MEDIUM | A forged superblock can claim a huge container, and decode time grows with the claimed group count. |
-| V6-SEC-02 | MEDIUM | A full `vnx decode` ignores a given key, so a downgraded (unencrypted) pool decodes to SUCCESS. Extract still refuses it. |
-| V6-SEC-03 | MEDIUM | No expected-archive check, so substitution or rollback is possible. |
 | V6-SEC-05 | LOW | The manifest shown without a key is unauthenticated. |
 | V6-SEC-06 | LOW | The spec §2.3.3 report fields are missing. |
 | V6-SEC-09 | LOW | Implicit native buffer sizes. |
 | V6-SEC-10 | LOW | Extract has a TOCTOU window and a prefix containment check. |
-| V6-SEC-11 | LOW | Deterministic clear IDs and 16-bit tags. |
+| V6-SEC-11 | LOW | 16-bit tags (pool collision rule: Phase 7). The opt-in `content-v1` ID now exists (`vnx archive --archive-id content`); the default options-v1 ID still depends only on options, paths and sizes. |
 | V6-SEC-13 | LOW | No AEAD index-binding test. |
 | V6-SEC-15 | INFO | Passphrases are not Unicode-normalised. |
 | V6-SEC-21 | INFO | The superblock's reserved bytes are not checked. |
@@ -110,6 +107,21 @@ The V6 threat model is [security/V6_SECURITY_MODEL.md](security/V6_SECURITY_MODE
 - V6-SEC-16, V6-SEC-17, V6-SEC-20.
 
 **Waiting for a push:** V6-SEC-12, the CI jobs for gitleaks, pip-audit and the fuzz smoke.
+
+**Fixed in `work/v6-secfix`, each with a test written first that failed before the fix:**
+- V6-SEC-01 (MEDIUM): a superblock claiming a container above `--max-container-bytes` (default 4 GiB; SDK
+  `DecodeOptions.max_container_bytes`) is refused in the superblock stage, before the work file is sized or any group is
+  walked: `RESOURCE_LIMIT`, exit 3 (`tests/v6/test_security_sec01_container_cap.py`).
+- V6-SEC-02 (MEDIUM): with `--key-file`/`--passphrase-env`, a full `vnx decode -o` opens the recovered container with
+  the key (key check, manifest MAC) before SUCCESS, and refuses an unencrypted archive (`KEY_FOR_UNENCRYPTED`, exit 4)
+  unless `--allow-unencrypted`, like extract. `vnx encode` of a container source does the same
+  (`tests/v6/test_security_sec02_full_decode_key.py`).
+- V6-SEC-03 (MEDIUM): `--expect-archive-id` / `--expect-sha256` on `vnx decode` and `vnx extract` (SDK
+  `expect_archive_id` / `expect_sha256`) refuse any other archive with `ARCHIVE_MISMATCH` (exit 1), and nothing is
+  published. Decode checks the superblock before pass 2 and the recovered manifest before SUCCESS. For a clear
+  archive only `--expect-sha256` binds the content (FC-8: a forger can choose any archive ID); for an encrypted archive
+  opened with its key the manifest archive ID is MAC-authenticated, so `--expect-archive-id` detects rollback under the
+  same key (`tests/v6/test_security_sec03_expectations.py`).
 
 **Fixed in `work/v6-security`, each with a regression test written first:**
 - V6-SEC-04: type-confused manifest fields;
