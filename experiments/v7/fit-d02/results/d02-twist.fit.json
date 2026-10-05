@@ -1,0 +1,235 @@
+{
+ "assigned_reads": 579639,
+ "assignment": {
+  "ERR12033806": {
+   "ambiguous": 0,
+   "assigned": 961190,
+   "dropped_not_in_split": 384565,
+   "no_seed": 1587,
+   "reads": 964204,
+   "reverse_strand": 1421,
+   "too_distant": 1427
+  },
+  "ERR12033810": {
+   "ambiguous": 1,
+   "assigned": 1059330,
+   "dropped_not_in_split": 422719,
+   "no_seed": 1313,
+   "reads": 1061917,
+   "reverse_strand": 2021,
+   "too_distant": 1273
+  }
+ },
+ "bootstrap": 200,
+ "designs": 7236,
+ "environment": {
+  "cpu_count": 8,
+  "git": {
+   "commit": "a343252551a427ea156f719c613e058a235b9bd5",
+   "dirty": false
+  },
+  "implementation": "CPython",
+  "libraries": {
+   "cryptography": "46.0.7",
+   "numpy": "2.5.3",
+   "reedsolo": "unknown",
+   "zstandard": "0.25.0"
+  },
+  "machine": "x86_64",
+  "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+  "processor": "x86_64",
+  "python": "3.12.3",
+  "software": {
+   "edlib": "1.3.9.post1",
+   "numpy": "2.5.3",
+   "python": "3.12.3",
+   "vnxdna": "6.0.0.dev0"
+  },
+  "vnxdna_version": "6.0.0.dev0"
+ },
+ "evidence_class": "PUBLIC-DATA-DERIVED",
+ "job": "d02-twist",
+ "model_file": "fit-d02/models/illumina-iseq-twist-fit.json",
+ "model_sha256": "23681972e183c4b0fcc11cd65235aa5b07a6cecde3d54bd09d55bf0d9b916301",
+ "peak_rss_mb_self_plus_children": 4233.3,
+ "phix": {
+  "ci95": {
+   "base_weights": {
+    "hi": [
+     0.345420838034304,
+     0.21883969700294814,
+     0.33738623057252404,
+     0.2985321979640329
+    ],
+    "lo": [
+     0.2695379917651348,
+     0.12683120566986136,
+     0.23685334103545758,
+     0.19487130896137225
+    ]
+   },
+   "deletion_bases_rate": [
+    2.7762144194100917e-05,
+    3.761747901847775e-05
+   ],
+   "deletion_rate": [
+    2.6778411515388335e-05,
+    3.586841542160085e-05
+   ],
+   "deletion_run_mean": [
+    1.0269028127649154,
+    1.0674679670378882
+   ],
+   "insertion_bases_rate": [
+    0.00015029413418084117,
+    0.0005559559403184338
+   ],
+   "insertion_rate": [
+    0.00010382552767849854,
+    0.00018654199205300656
+   ],
+   "matrix": {
+    "hi": [
+     [
+      0.0,
+      0.020079621280460425,
+      0.5413092463357883,
+      0.7393748967053536
+     ],
+     [
+      0.13536996038250745,
+      0.0,
+      0.0691914821840798,
+      0.9204967517893716
+     ],
+     [
+      0.8819063527183851,
+      0.10200841262362988,
+      0.0,
+      0.2063606243926455
+     ],
+     [
+      0.15498614874819466,
+      0.7959623015873015,
+      0.5897557328743144,
+      0.0
+     ]
+    ],
+    "lo": [
+     [
+      0.0,
+      0.005749696270714124,
+      0.2484749990566032,
+      0.4460757518724912
+     ],
+     [
+      0.05163544549288685,
+      0.0,
+      0.02598481024715204,
+      0.7988377270165073
+     ],
+     [
+      0.6861245644899145,
+      0.037422049541446345,
+      0.0,
+      0.07890652862889985
+     ],
+     [
+      0.03995376510462718,
+      0.2535974911497924,
+      0.16692277167277167,
+      0.0
+     ]
+    ]
+   },
+   "substitution_rate": [
+    0.001157917820710593,
+    0.0023354017704877847
+   ]
+  },
+  "genome_sha256": "caa155c83967cc080f4f188f14f1f28c18d77448e87c3d00d3579ed348f4de2a",
+  "mapped_reads": 114427,
+  "reference_bases": 12354663,
+  "stats": {
+   "mapped": 114427,
+   "reads": 267581,
+   "too_distant": 4289,
+   "unmapped": 148865
+  },
+  "values": {
+   "base_weights": [
+    0.30563490002596727,
+    0.1765775123344586,
+    0.2708387431835887,
+    0.24694884445598544
+   ],
+   "deletion_bases_rate": 3.221455736995821e-05,
+   "deletion_rate": 3.08395521708495e-05,
+   "deletion_run_mean": 1.044587148173401,
+   "insertion_bases_rate": 0.0003117041719389675,
+   "insertion_rate": 0.0001373570448663796,
+   "matrix": [
+    [
+     0.0,
+     0.01029277218664227,
+     0.40141811527904847,
+     0.5882891125343093
+    ],
+    [
+     0.07875664358189724,
+     0.0,
+     0.03945885005636979,
+     0.881784506361733
+    ],
+    [
+     0.8242115683778815,
+     0.056851930420025454,
+     0.0,
+     0.11893650120209305
+    ],
+    [
+     0.07253171538885825,
+     0.6478212906784335,
+     0.2796469939327082,
+     0.0
+    ]
+   ],
+   "substitution_rate": 0.0017222647028089719
+  }
+ },
+ "seconds": {
+  "assign_and_tally": 179.0,
+  "fit_bootstrap_calibration": 31.8
+ },
+ "seed": 20261005,
+ "split": "FIT",
+ "stage_split": {
+  "phix_events_per_site": {
+   "deletion": 3.08395521708495e-05,
+   "insertion": 0.0001373570448663796,
+   "substitution": 0.0017222647028089719
+  },
+  "sequencing_scale": {
+   "deletion": 0.06007644803279804,
+   "insertion": 1.0,
+   "substitution": 0.2734712099868741
+  },
+  "synthesis_residual": {
+   "deletion": 0.00045408327795327713,
+   "insertion": 0.0,
+   "substitution": 0.004606989877240152
+  },
+  "total_events_per_site": {
+   "deletion": 0.0005133384742389064,
+   "insertion": 9.448138463749246e-05,
+   "substitution": 0.006297791650139831
+  }
+ },
+ "synthesis_after_calibration": {
+  "deletion": 0.00045408327795327713,
+  "insertion": 0.0,
+  "substitution": 0.004606989877240152
+ },
+ "title": "DT4DDS Twist_GCfix Aging_0a/0b (R1) with PhiX stage split",
+ "workers": 6
+}
