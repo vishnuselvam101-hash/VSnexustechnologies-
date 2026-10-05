@@ -6,6 +6,8 @@ Layout (one directory per experiment)::
         README.md          purpose, method, result summary, limitations (written by a human; a results section is appended)
         config.json        the complete experiment definition (input generator, codes, channel, sweep, trials, seed)
         environment.json   machine and software (written by ``vnx experiment run``)
+        manifest.json      the ``vnx.experiment/1`` manifest (:mod:`vnxdna.benchmark.manifest`; ``vnx experiment
+                           reproduce manifest.json`` re-runs it and compares the result hash)
         input.sha256       SHA-256 of the generated input
         seed.json          every seed used
         results.json       machine-readable results (all trials, no filtering)
@@ -119,6 +121,14 @@ def run(config_path: str | os.PathLike, workdir: str | None = None, progress=Non
     sha = res.get("input_sha256") or next((r.get("input_sha256") for r in res.get("runs", []) if r.get("input_sha256")), None)
     if sha:
         (d / "input.sha256").write_text(f"{sha}  generated:{json.dumps(cfg.get('input') or cfg.get('run', {}), sort_keys=True)}\n")
+    from vnxdna.benchmark import manifest
+    try:
+        doc = manifest.experiment_manifest(cfg, res)
+    except manifest.ManifestError as error:     # e.g. a non-integer seed: the experiment ran, but has no manifest
+        res["manifest"] = {"written": False, "error": str(error)}
+    else:
+        manifest.write(doc, d / "manifest.json", overwrite=True)
+        res["manifest"] = {"written": True, "path": str(d / "manifest.json"), "result_hash": doc["result_hash"]}
     return res
 
 
@@ -130,6 +140,10 @@ def _deterministic(obj, path=""):
     if isinstance(obj, list):
         return [_deterministic(v, path) for v in obj]
     return obj
+
+
+#: public name: the fields an experiment must reproduce exactly (the ``result_hash`` of a manifest is computed over these)
+deterministic = _deterministic
 
 
 def reproduce(directory: str | os.PathLike, workdir: str | None = None) -> dict:

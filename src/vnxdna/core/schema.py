@@ -13,7 +13,7 @@ SCHEMA_DIR = Path(__file__).with_name("schemas")
 IDS = {"vnx.result/1": "result", "vnx.error/1": "error", "vnx.decode-report/1": "decode-report", "vnx.event/1": "event",
        "vnx.version/1": "version", "vnx.probe/1": "probe", "vnx.export-package/1": "export-package",
        "vnx.import-package/1": "import-package", "vnx.channel-model/1": "channel-model",
-       "vnx.simulation-metadata/1": "simulation-metadata"}
+       "vnx.simulation-metadata/1": "simulation-metadata", "vnx.experiment/1": "experiment"}
 
 
 @lru_cache(maxsize=None)
