@@ -78,11 +78,14 @@ class Spill:
 
 
 # ============================================================================ main entry
+READS_PER_BUCKET = 200_000
+
+
 def _bucket_count(est_reads: int) -> int:
     """About 200 000 reads per spill bucket, so pass-2 memory is bounded by one bucket. V4/V5 capped this at 256
     buckets (unbounded bucket size beyond ~51 M reads); the cap now follows the open-file limit (two files per bucket
     stay open in pass 1), up to 4096. Below 51 M reads the count is unchanged."""
-    want = max(1, est_reads // 200_000)
+    want = max(1, est_reads // READS_PER_BUCKET)
     try:
         import resource
         soft = resource.getrlimit(resource.RLIMIT_NOFILE)[0]
