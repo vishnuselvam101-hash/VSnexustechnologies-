@@ -637,12 +637,13 @@ def fuzz_decode(data: bytes) -> None:
     inp = Input(data)
     mode = inp.u8()
     if mode & 1:
-        lines = seed["fasta"].split(b"\n")
+        records = [b">" + r for r in seed["fasta"].split(b">") if r]
         rng = np.random.default_rng(inp.u32())
-        keep = [ln for ln in lines if not (ln and inp.u8() % 16 == 0)]   # drop lines (dropout / truncation)
+        keep = [r for r in records if inp.u8() % 16 != 15]             # drop strands (dropout)
         if mode & 2:
-            rng.shuffle(keep)
-        blob = bytearray(b"\n".join(keep))
+            keep = [keep[i] for i in rng.permutation(len(keep))]       # reorder strands
+            keep += [keep[i] for i in rng.integers(0, len(keep), inp.u8() % 8)] if keep else []  # duplicates
+        blob = bytearray(b"".join(keep))
         for _ in range(inp.u8() % 64):                                  # byte edits: substitutions, junk, indels
             if not blob:
                 break
