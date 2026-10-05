@@ -151,8 +151,8 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
                         row = {"k": k, "symbols": codec.symbols_for(k), "verified_pass1": n_pass1.get(g, 0),
                                "from_consensus": len(syms) - n_pass1.get(g, 0) - from_cluster.get(g, 0),
                                "have": len(syms)}
-                        if cluster is not None:
-                            row["from_cluster"] = from_cluster.get(g, 0)
+                        if from_cluster.get(g, 0):
+                            row["from_cluster"] = from_cluster[g]
                             sc.add("outer_ecc", "symbols_from_cluster", row["from_cluster"])
                         sc.add("outer_ecc", "rows_attempted")
                         sc.add("outer_ecc", "symbols_verified_pass1", row["verified_pass1"])
