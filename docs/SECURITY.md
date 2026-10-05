@@ -16,7 +16,9 @@ the divider.
   archive.
 * **Nonces.** `domain ‖ index` under a key derived from a fresh 16-byte random salt per archive, so no (key, nonce)
   pair repeats. The associated data binds the archive ID, domain, index and count, so reordering, splicing or swapping
-  chunks between archives fails authentication.
+  chunks between archives fails authentication. For body chunks the count field is 0 (the writer streams, so the total
+  is unknown while sealing; `v4/archive.py:265`): a dropped or appended chunk is caught by the chunk table, whose
+  SHA-256 is in the HMAC-authenticated manifest, not by the AEAD.
 * **Unencrypted archives** detect accidents (SHA-256 everywhere, Merkle root), not deliberate tampering: an attacker
   can rebuild every hash. The null-encryption mode provides **no confidentiality**.
 
