@@ -31,6 +31,7 @@ import shutil
 import tempfile
 import time
 from collections import Counter, deque
+from collections.abc import Callable
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -691,13 +692,15 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
         _plan_pass1(planner, opt, stats, deferred)
         recover_groups = None
         if deferred and select:
-            # random access: smart/soft recovery only for the index groups, then for the stripes of the selected files
+            # random access: smart/soft recovery only for the index groups, then for the stripes of the selected files.
+            # The first stage runs before pass 2 decodes the superblock, so round S precedes it as in a full decode.
             ra_state: dict = {}
 
-            def recover_groups(groups: set) -> dict:
+            def recover_groups(groups) -> dict:
                 tr = time.perf_counter()
                 info = _deferred_recovery(spill, lay, opt, stats, indel_stats, initargs[:-1] + (False,), vote=False,
-                                          planner=planner, groups=set(groups), state=ra_state)
+                                          planner=planner, groups=groups if callable(groups) else set(groups),
+                                          state=ra_state)
                 stage["deferred_recovery"] = stage.get("deferred_recovery", 0.0) + time.perf_counter() - tr
                 return info
             recover_groups.state = ra_state
@@ -1040,8 +1043,8 @@ def _group_state(spill: Spill, sb: Superblock, codec, lay: Layout, opt: DecodeOp
 
 
 def _deferred_recovery(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, indel_stats: Counter,
-                       initargs: tuple, vote: bool = True, planner=None, groups: set | None = None,
-                       state: dict | None = None) -> dict:
+                       initargs: tuple, vote: bool = True, planner=None,
+                       groups: set | Callable[[Superblock], set] | None = None, state: dict | None = None) -> dict:
     """Per-read smart/soft recovery after the cheap pass, only where it can still change the result.
 
     State after the cheap pass (fast + sync paths, both orientations), all from verified frames:
@@ -1069,7 +1072,9 @@ def _deferred_recovery(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
 
     Random access (V6) calls this once per stage with ``groups`` (first the index groups, then the stripes holding the
     selected files) and a shared ``state``, so reads tried in one stage are not tried again and later stages only
-    consider what is still untried; groups outside ``groups`` never make round A or B run.
+    consider what is still untried; groups outside ``groups`` never make round A or B run. ``groups`` may be a function
+    of the superblock: random access cannot know its first stage's groups (the index) before the superblock is decoded,
+    and the superblock must be decoded after round S, exactly as in a full decode (job #56).
     """
     B = spill.B
     sizes = [(spill.dir / f"pend{b}.bin").stat().st_size // spill.pend_dtype.itemsize for b in range(B)]
@@ -1196,6 +1201,8 @@ def _deferred_recovery(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
             sb = None
         info["superblock_decoded"] = sb is not None
         info["v4_vote_counted"] = vote
+        if callable(groups):
+            groups = set(groups(sb)) if sb is not None else None
         complete = False
         if sb is not None:
             codec = make_outer(sb.outer_code, sb.K, sb.M, sb.lt_seed, sb.lt_distribution)
@@ -1261,6 +1268,24 @@ def _deferred_recovery(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
     return info
 
 
+def _index_groups(sb: Superblock, payload_bytes: int) -> set[int]:
+    """Groups random access decodes first: the index section plus the group holding the container header."""
+    return set(range(sb.index_offset // (sb.K * payload_bytes), sb.group_count)) | {0}
+
+
+def _stripe_groups(sb: Superblock, groups: set) -> set:
+    """Data groups sharing a stripe with ``groups`` (column recovery of a row needs its stripe's rows); V4/V5
+    superblocks (version 1) have no stripes."""
+    if sb.version == 1:
+        return set(groups)
+    geo = sb.geometry()
+    out: set = set()
+    for g in groups:
+        if 0 <= g < sb.group_count:
+            out.update(geo.stripe_rows(geo.stripe_of(g))[0])
+    return out
+
+
 def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage: dict, t0: float, output, overwrite, partial_dir,
            select, select_dir, key, passphrase, tmp_root, planner=None, ev=None, recover_groups=None,
            allow_unencrypted=False) -> DecodeResult:
@@ -1268,6 +1293,10 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
         from ..v6.recovery import RecoveryPlanner
         planner = RecoveryPlanner()
     t2 = time.perf_counter()
+    if select and recover_groups is not None:
+        # random access, first stage: round S (superblock reads) must run before the superblock is decoded, exactly as
+        # in a full decode; the stage's groups (the index's stripes) are only known once round S has decoded it
+        recover_groups(lambda sb_: _stripe_groups(sb_, _index_groups(sb_, lay.payload_bytes)))
     sb, sb_info = _decode_superblock(spill, lay, opt, stats)
     if ev is not None:
         ev.archive_id = sb.archive_id.hex()
@@ -1292,9 +1321,8 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
     decoded = 0
     conflicts = 0
     wanted: set[int] | None = None
-    tail_groups = set(range(sb.index_offset // (K * P), sb.group_count))
     if select:
-        wanted = set(tail_groups) | {0}   # the index section plus the group holding the container header
+        wanted = _index_groups(sb, P)
     fd = os.open(work, os.O_RDWR)
     try:
         def run(groups_filter: set[int] | None, done: set[int]) -> None:
@@ -1356,20 +1384,10 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
                        ("; V6 stripe/column recovery for rows that fail" if v6 is not None else ""),
                        {"groups": sb.group_count, "total_rows": total, "superblock_version": sb.version})
         def stripes_of(groups: set) -> set:
-            """Data groups sharing a stripe with ``groups`` (column recovery of a row needs its stripe's rows)."""
-            if v6 is None:
-                return set(groups)
-            geo = sb.geometry()
-            out: set = set()
-            for g in groups:
-                if 0 <= g < sb.group_count:
-                    out.update(geo.stripe_rows(geo.stripe_of(g))[0])
-            return out
+            return _stripe_groups(sb, groups)
 
         if select:
-            if recover_groups is not None:
-                recover_groups(stripes_of(wanted))
-            run(wanted, done)
+            run(wanted, done)          # the first random-access recovery stage (the index's stripes) ran above
         else:
             run(None, done)
         stage["pass2_decode"] = time.perf_counter() - t2
