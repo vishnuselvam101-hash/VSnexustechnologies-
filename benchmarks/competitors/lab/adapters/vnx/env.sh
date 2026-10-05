@@ -3,7 +3,10 @@
 VNX_ADAPTER_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VNX_REPO="${VNX_REPO:-$(cd "$VNX_ADAPTER_DIR/../../../../.." && pwd)}"
 export PYTHONPATH="$VNX_REPO/src"
-VNX_PY="${VNX_PY:-/root/vnx-dna-lab/.venv/bin/python}"
+# VNX_PY selects the interpreter; default: the lab virtualenv when present, else python3 on PATH
+if [ -z "${VNX_PY:-}" ]; then
+  if [ -x /root/vnx-dna-lab/.venv/bin/python ]; then VNX_PY=/root/vnx-dna-lab/.venv/bin/python; else VNX_PY="$(command -v python3 || command -v python)"; fi
+fi
 VNX_CLI=("$VNX_PY" -m vnxdna.v4.cli)
 # refuse to run against any other vnxdna than the one in this checkout
 _where="$("$VNX_PY" -c 'import vnxdna;print(vnxdna.__file__)')"

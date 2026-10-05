@@ -1,7 +1,9 @@
 """Tests for the benchmark-lab files under benchmarks/competitors/lab (aggregation maths and the licence boundary)."""
 import importlib.util
+import os
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 LAB = Path(__file__).resolve().parents[2] / "benchmarks" / "competitors" / "lab"
@@ -56,11 +58,12 @@ def test_adapter_scripts_roundtrip_text_io(tmp_path):
     data = bytes((i * 31 + 7) % 256 for i in range(3000))
     src = tmp_path / "in.bin"; src.write_bytes(data)
     seq = tmp_path / "seq.txt"; out = tmp_path / "out.bin"
-    subprocess.run([str(LAB / "adapters/vnx/encode.sh"), str(src), str(seq), "s184"], check=True)
+    env = {**os.environ, "VNX_PY": sys.executable}  # the interpreter running the tests, on any host
+    subprocess.run([str(LAB / "adapters/vnx/encode.sh"), str(src), str(seq), "s184"], check=True, env=env)
     lines = seq.read_text().split("\n")
     assert lines[-1] == "" and all(re.fullmatch(r"[ACGT]+", l) for l in lines[:-1]) and len({len(l) for l in lines[:-1]}) == 1
     reads = tmp_path / "reads.txt"; reads.write_text("\n".join(lines[:-1] * 2) + "\n")
-    subprocess.run([str(LAB / "adapters/vnx/decode.sh"), str(reads), str(out), "s184", "7"], check=True)
+    subprocess.run([str(LAB / "adapters/vnx/decode.sh"), str(reads), str(out), "s184", "7"], check=True, env=env)
     assert out.read_bytes() == data
 
 
