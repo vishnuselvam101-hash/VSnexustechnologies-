@@ -122,10 +122,13 @@ def verify(container: PathLike, *, key: bytes | None = None, passphrase: str | N
 
 def extract(container: PathLike, output_dir: PathLike, *, files: Sequence[str] | None = None, key: bytes | None = None,
             passphrase: str | None = None, overwrite: bool = False, apply_metadata: bool = False,
-            allow_unencrypted: bool = False) -> ExtractResult:
+            allow_unencrypted: bool = False, expect_archive_id: str | bytes | None = None,
+            expect_sha256: str | bytes | None = None) -> ExtractResult:
+    """Extract verified files. ``expect_archive_id`` / ``expect_sha256`` refuse any other archive (V6-SEC-03)."""
     t0 = time.perf_counter()
     body = _ar.extract(container, output_dir, key=key, passphrase=passphrase, names=list(files) if files else None,
-                       overwrite=overwrite, apply_metadata=apply_metadata, allow_unencrypted=allow_unencrypted)
+                       overwrite=overwrite, apply_metadata=apply_metadata, allow_unencrypted=allow_unencrypted,
+                       expect_archive_id=expect_archive_id, expect_sha256=expect_sha256)
     return ExtractResult("extract", "SUCCESS", body, inputs=(file_ref("container", container),),
                          outputs=(file_ref("directory", output_dir),), formats=_archive_formats(),
                          seconds=time.perf_counter() - t0)
@@ -214,17 +217,23 @@ def decode(reads: PathLike, output: PathLike | None = None, *, options: DecodeOp
            select: Sequence[str] | None = None, extract_to: PathLike | None = None, partial_dir: PathLike | None = None,
            key: bytes | None = None, passphrase: str | None = None, allow_unencrypted: bool = False,
            budget: RecoveryBudget | None = None, overwrite: bool = False, observer=None, task_id: str | None = None,
-           progress=None, input_hash: bool = True) -> DecodeResult:
+           progress=None, input_hash: bool = True, expect_archive_id: str | bytes | None = None,
+           expect_sha256: str | bytes | None = None) -> DecodeResult:
     """Reads → verified container (D0–D13), optionally extracted (D14); ``select`` = random access to some files.
 
     status SUCCESS | PARTIAL | FAILURE. A FAILURE without an exception carries ``error`` (INSUFFICIENT_REDUNDANCY).
     An encrypted archive decoded without a key publishes the verified ciphertext container: ``encrypted: true``,
-    ``content_verified: false`` (spec §2.3.3)."""
+    ``content_verified: false`` (spec §2.3.3). ``expect_archive_id`` / ``expect_sha256`` (override the options' values)
+    refuse any other archive with ``ARCHIVE_MISMATCH`` (V6-SEC-03); a key or passphrase is checked against the recovered
+    container, and an unencrypted one is refused unless ``allow_unencrypted`` (V6-SEC-02)."""
+    from dataclasses import replace
     t0 = time.perf_counter()
     opts = options or DecodeOptions()
     if budget is not None:
-        from dataclasses import replace
         opts = replace(opts, recovery_budget=budget)      # never modify the caller's options
+    if expect_archive_id is not None or expect_sha256 is not None:
+        opts = replace(opts, **{k: v for k, v in (("expect_archive_id", expect_archive_id),
+                                                  ("expect_sha256", expect_sha256)) if v is not None})
     if output is None and extract_to is None and not select:
         raise VNXConfigurationError("give an output container, an extraction directory, or files to select")
     hasher = InputHasher("reads", [reads], enabled=input_hash)

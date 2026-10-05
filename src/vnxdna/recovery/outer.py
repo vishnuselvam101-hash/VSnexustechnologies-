@@ -14,7 +14,7 @@ import numpy as np
 from vnxdna.archive import container as ct, operations as ar
 from vnxdna.codec.codecs import make_outer
 from vnxdna.core.errors import VNXDecodeError, VNXIntegrityError, VNXKeyError
-from vnxdna.core.util import atomic_output, peak_rss_bytes
+from vnxdna.core.util import archive_mismatch, atomic_output, peak_rss_bytes
 from vnxdna.core.version import FRAME_VERSION, codec_id
 from vnxdna.dnaenc.layout import KIND_DATA, Layout
 from vnxdna.recovery.consensus import _consensus_symbols, resolve_duplicates
@@ -22,6 +22,14 @@ from vnxdna.recovery.options import DecodeOptions, DecodeResult
 from vnxdna.recovery.spill import Spill
 from vnxdna.recovery.superblock import _decode_superblock
 from vnxdna.dnaenc.superblock import Superblock, group_k
+
+
+def _check_manifest_id(c, opt: DecodeOptions) -> None:
+    """V6-SEC-03: the recovered manifest must carry the expected archive ID too (the superblock was checked before pass
+    2). For an encrypted archive opened with its key the manifest is MAC-authenticated, so this detects rollback to
+    another archive under the same key; for a clear archive use the container SHA-256 (FC-8)."""
+    if opt.expect_archive_id is not None and c.archive_id.hex() != opt.expect_archive_id:
+        raise archive_mismatch("archive ID", opt.expect_archive_id, c.archive_id.hex(), "integrity")
 
 
 def _index_groups(sb: Superblock, payload_bytes: int) -> set[int]:
@@ -192,7 +200,7 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
         if select:
             recover = None if recover_groups is None else (lambda need: recover_groups(stripes_of(need)))
             res = _selective(sb, work, fd, run, done, failed, select, select_dir, key, passphrase, overwrite, report, stage, t0,
-                             recover, allow_unencrypted)
+                             recover, allow_unencrypted, opt)
             if v6 is not None:
                 res.report["outer_v6"] = v6.report()
             if recover_groups is not None:
@@ -212,7 +220,7 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
                        "whose every chunk verifies may be extracted", {"groups_failed": len(failed)})
         report["recovery_plan"] = planner.report()
         report["status"] = "PARTIAL"
-        report.update(_partial(sb, work, failed, partial_dir, key, passphrase, overwrite, allow_unencrypted))
+        report.update(_partial(sb, work, failed, partial_dir, key, passphrase, overwrite, allow_unencrypted, opt))
         report["stage_seconds"] = stage
         report["seconds"] = time.perf_counter() - t0
         report["peak_rss_bytes"] = peak_rss_bytes()
@@ -239,7 +247,10 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
         report["key_checked"] = opened.sealer is not None
     else:
         opened = ct.open_container(work)
+    _check_manifest_id(opened, opt)
     report["encrypted"] = opened.encrypted
+    if opt.expect_archive_id is not None or opt.expect_sha256 is not None:
+        report["expected"] = {"archive_id": opt.expect_archive_id, "container_sha256": opt.expect_sha256}
     stage["verify"] = time.perf_counter() - t3
     report["container_sha256"] = h.hexdigest()
     report["status"] = "SUCCESS"
@@ -253,8 +264,9 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
 
 
 def _partial(sb: Superblock, work: Path, failed: dict, partial_dir, key, passphrase, overwrite,
-             allow_unencrypted=False) -> dict:
+             allow_unencrypted=False, opt: DecodeOptions | None = None) -> dict:
     """Recover individually verified files from an incomplete container (only if the index section survived)."""
+    opt = opt or DecodeOptions()
     K, P = sb.K, sb.layout.payload_bytes
     lost_ranges = [[g * K * P, min(sb.container_size, (g + 1) * K * P)] for g in sorted(failed)]
     info: dict = {"lost_container_ranges": lost_ranges[:100], "files_recovered": [], "files_lost": []}
@@ -272,6 +284,12 @@ def _partial(sb: Superblock, work: Path, failed: dict, partial_dir, key, passphr
         info["header_restored"] = True
     try:
         c = ct.open_container(work, key=key, passphrase=passphrase, require_key=True, allow_unencrypted=allow_unencrypted)
+        _check_manifest_id(c, opt)
+    except VNXIntegrityError as error:
+        if error.code == "ARCHIVE_MISMATCH":
+            raise
+        info["partial_note"] = f"index section did not validate: {error}"
+        return info
     except VNXKeyError as error:
         info["partial_note"] = f"no file extracted: {error}"
         return info
@@ -297,13 +315,15 @@ def _partial(sb: Superblock, work: Path, failed: dict, partial_dir, key, passphr
 
 
 def _selective(sb, work, fd, run, done, failed, select, select_dir, key, passphrase, overwrite, report, stage, t0,
-               recover=None, allow_unencrypted=False) -> DecodeResult:
+               recover=None, allow_unencrypted=False, opt: DecodeOptions | None = None) -> DecodeResult:
     """Random access: decode the index groups, then only the groups holding the selected files."""
+    opt = opt or DecodeOptions()
     K, P = sb.K, sb.layout.payload_bytes
     if failed:
         raise VNXDecodeError("the archive index could not be decoded; selective extraction impossible",
                              details={"failed_groups": sorted(failed)[:20]})
     c = ct.open_container(work, key=key, passphrase=passphrase, require_key=True, allow_unencrypted=allow_unencrypted)
+    _check_manifest_id(c, opt)
     report["encrypted"] = c.encrypted
     need: set[int] = set()
     for name in select:

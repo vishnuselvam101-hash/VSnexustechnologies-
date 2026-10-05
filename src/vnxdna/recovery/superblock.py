@@ -7,6 +7,7 @@ from collections import Counter
 import numpy as np
 
 from vnxdna.codec.codecs import CauchyRSCodec
+from vnxdna.core.util import archive_mismatch
 from vnxdna.core.errors import (VNXAddressError, VNXDecodeError, VNXFormatError, VNXResourceError,
                                VNXUnsupportedVersionError)
 from vnxdna.dnaenc.layout import KIND_SUPER, Layout
@@ -133,17 +134,28 @@ def _decode_superblock(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
                              stage="superblock", details={"superblock_symbols_seen": len(symbols), "tags_seen": [f"{t:04x}" for t in tags]},
                              hint="check --profile, increase coverage, or confirm the reads come from a VNX4 strand pool",
                              code="NO_SUPERBLOCK")
-    if opt.archive_tag is not None:
-        if opt.archive_tag not in candidates:
+    want = opt.archive_tag
+    if want is None and opt.expect_archive_id is not None:
+        # V6-SEC-03: the expected archive ID names its tag (bytes 0-1); absent from the pool means another archive
+        want = int(opt.expect_archive_id[:4], 16)
+        if want not in candidates:
+            raise archive_mismatch("archive tag", opt.expect_archive_id[:4],
+                                   ",".join(f"{t:04x}" for t in sorted(candidates)), "superblock")
+    if want is not None:
+        if want not in candidates:
             raise VNXAddressError(f"archive tag {opt.archive_tag:04x} not found; pools present: {[f'{t:04x}' for t in candidates]}",
                                   code="ARCHIVE_TAG_NOT_FOUND")
-        tag = opt.archive_tag
+        tag = want
     elif len(candidates) > 1:
         raise VNXAddressError(f"the reads contain several archives {[f'{t:04x}' for t in candidates]}; choose one with --archive-tag",
                               code="MULTIPLE_ARCHIVES")
     else:
         tag = next(iter(candidates))
     sb = candidates[tag]
+    if opt.expect_archive_id is not None and sb.archive_id.hex() != opt.expect_archive_id:
+        raise archive_mismatch("archive ID", opt.expect_archive_id, sb.archive_id.hex(), "superblock")
+    if opt.expect_sha256 is not None and sb.container_sha256.hex() != opt.expect_sha256:
+        raise archive_mismatch("container SHA-256", opt.expect_sha256, sb.container_sha256.hex(), "superblock")
     if sb.container_size > opt.max_container_bytes:
         # V6-SEC-01: the claim is untrusted (a CRC-valid forgery chooses it). Refused here, for every caller (pass 2,
         # the deferred smart/soft schedule, random access), before the work file is sized or any group is walked, so

@@ -107,6 +107,10 @@ V6_STRIPE = typer.Option(None, "--stripe-depth", help="V6 (opt-in): data groups 
 V6_COLUMN = typer.Option(None, "--column-parity", help="V6 (opt-in): column-parity groups per stripe.")
 V6_ORDER = typer.Option(None, "--strand-order", help="V6 (opt-in): sequential or interleaved.")
 V6_PLAN = typer.Option(None, "--outer-plan", help="V6 (opt-in): fixed (default) or adaptive.")
+EXPECT_ID_OPT = typer.Option(None, "--expect-archive-id",
+                             help="Refuse any other archive (32 hex characters; exit 1 ARCHIVE_MISMATCH).")
+EXPECT_SHA_OPT = typer.Option(None, "--expect-sha256",
+                              help="Refuse a container whose SHA-256 differs (64 hex characters; exit 1 ARCHIVE_MISMATCH).")
 
 
 @app.callback()
@@ -222,12 +226,14 @@ def locate(container: Path, name: str, key_file: Optional[Path] = KEY_OPT, passp
 @app.command()
 def extract(container: Path, output_dir: Path, names: Optional[List[str]] = typer.Option(None, "--file", help="Extract only these."),
             key_file: Optional[Path] = KEY_OPT, passphrase_env: Optional[str] = PW_OPT, force: bool = FORCE_OPT,
-            apply_metadata: bool = typer.Option(False, "--apply-metadata"), allow_unencrypted: bool = UNENC_OPT) -> None:
+            apply_metadata: bool = typer.Option(False, "--apply-metadata"), allow_unencrypted: bool = UNENC_OPT,
+            expect_archive_id: Optional[str] = EXPECT_ID_OPT, expect_sha256: Optional[str] = EXPECT_SHA_OPT) -> None:
     """Extract (every file verified before it is renamed into place)."""
     def go():
         key, pw = sdk.load_keys(key_file, passphrase_env)
         _out(sdk.extract(container, output_dir, files=names or None, key=key, passphrase=pw, overwrite=force,
-                         apply_metadata=apply_metadata, allow_unencrypted=allow_unencrypted))
+                         apply_metadata=apply_metadata, allow_unencrypted=allow_unencrypted,
+                         expect_archive_id=expect_archive_id, expect_sha256=expect_sha256))
     _run(go)
 
 
@@ -394,6 +400,7 @@ def decode(reads: Path, output: Optional[Path] = typer.Option(None, "--output", 
            max_container_bytes: Optional[int] = typer.Option(
                None, "--max-container-bytes",
                help="Refuse a superblock claiming a larger container (default 4 GiB; exit 3 RESOURCE_LIMIT)."),
+           expect_archive_id: Optional[str] = EXPECT_ID_OPT, expect_sha256: Optional[str] = EXPECT_SHA_OPT,
            no_input_hash: bool = typer.Option(False, "--no-input-hash", help="Do not compute the SHA-256 of the read file.")
            ) -> None:
     """Reconstruct a verified VNX4 container from DNA reads (FASTA/FASTQ)."""
@@ -406,7 +413,8 @@ def decode(reads: Path, output: Optional[Path] = typer.Option(None, "--output", 
         opts = decode_options_for(config, performance, workers=workers, archive_tag=archive_tag, budget=budget,
                                   profile=profile, band=band, min_quality=min_quality, indel_recovery=indel_recovery,
                                   soft_decoding=soft_decoding, recovery_schedule=recovery_schedule,
-                                  max_container_bytes=max_container_bytes)
+                                  max_container_bytes=max_container_bytes, expect_archive_id=expect_archive_id,
+                                  expect_sha256=expect_sha256)
         return _decode(reads, output, extract_dir, partial_dir, select, opts, force, key_file, passphrase_env, report, events,
                        task_id, allow_unencrypted, not no_input_hash)
     _run(go)

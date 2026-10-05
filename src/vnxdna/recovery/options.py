@@ -45,6 +45,11 @@ class DecodeOptions:
     recovery_budget: object = None
     # V6-SEC-01: refuse a superblock claiming a larger container (checked before pass 2 sizes or walks anything)
     max_container_bytes: int = DEFAULT_MAX_CONTAINER_BYTES
+    # V6-SEC-03: the archive the caller expects (hex). Checked against the superblock before pass 2 and against the
+    # recovered manifest before SUCCESS; anything else is ARCHIVE_MISMATCH (exit 1), nothing published. A given
+    # archive ID also selects its archive tag in a pool holding several archives (unless archive_tag is set).
+    expect_archive_id: str | None = None        # 16-byte archive ID (manifest/superblock), 32 hex characters
+    expect_sha256: str | None = None            # SHA-256 of the whole container file, 64 hex characters
 
     def validate(self) -> None:
         if not 1 <= self.workers <= 256:
@@ -58,6 +63,9 @@ class DecodeOptions:
         if (not isinstance(self.max_container_bytes, int) or isinstance(self.max_container_bytes, bool)
                 or self.max_container_bytes < 1):
             raise VNXConfigurationError("max_container_bytes must be a positive integer (bytes)")
+        from vnxdna.core.util import expected_hex
+        self.expect_archive_id = expected_hex(self.expect_archive_id, 16, "expect_archive_id")
+        self.expect_sha256 = expected_hex(self.expect_sha256, 32, "expect_sha256")
         if self.indel_recovery not in ("segment", "smart"):
             raise VNXConfigurationError("indel_recovery must be 'segment' (V4) or 'smart' (V5)")
         if self.indel_recovery == "smart":

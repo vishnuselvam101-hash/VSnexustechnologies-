@@ -499,10 +499,29 @@ def _safe_target(root: Path, rel: str) -> Path:
 
 def extract(path: str | os.PathLike, output_dir: str | os.PathLike, *, key: bytes | None = None, passphrase: str | None = None,
             names: list[str] | None = None, overwrite: bool = False, apply_metadata: bool = False,
-            allow_unencrypted: bool = False) -> dict:
-    """Extract all or selected files. Every file is verified (chunk IDs + file SHA-256) before it is renamed into place."""
+            allow_unencrypted: bool = False, expect_archive_id: str | bytes | None = None,
+            expect_sha256: str | bytes | None = None) -> dict:
+    """Extract all or selected files. Every file is verified (chunk IDs + file SHA-256) before it is renamed into place.
+
+    V6-SEC-03: ``expect_sha256`` (SHA-256 of the whole container file) and ``expect_archive_id`` refuse any other
+    archive (``ARCHIVE_MISMATCH``) before anything is written. For an encrypted archive opened with its key the archive
+    ID is MAC-authenticated (rollback under the same key is detected); for a clear archive only the SHA-256 binds the
+    content (FC-8). The file is hashed before it is opened: a concurrent local writer (A4) is out of scope."""
+    from vnxdna.core.util import archive_mismatch, expected_hex, sha256_file
     t0 = time.perf_counter()
+    want_id = expected_hex(expect_archive_id, 16, "expect_archive_id")
+    want_sha = expected_hex(expect_sha256, 32, "expect_sha256")
+    got_sha = None
+    if want_sha is not None:
+        try:
+            got_sha = sha256_file(path)
+        except OSError as error:
+            raise VNXFormatError(f"cannot read {path}: {error.strerror or error}") from None
+        if got_sha != want_sha:
+            raise archive_mismatch("container SHA-256", want_sha, got_sha, "integrity")
     c = ct.open_container(path, key=key, passphrase=passphrase, require_key=True, allow_unencrypted=allow_unencrypted)
+    if want_id is not None and c.archive_id.hex() != want_id:
+        raise archive_mismatch("archive ID", want_id, c.archive_id.hex(), "integrity")
     root = Path(output_dir)
     root.mkdir(parents=True, exist_ok=True)
     root = root.resolve()
@@ -535,4 +554,10 @@ def extract(path: str | os.PathLike, output_dir: str | os.PathLike, *, key: byte
         if apply_metadata and rec.mtime_ns:
             os.utime(target, ns=(rec.mtime_ns, rec.mtime_ns))
         done.append(rec.path)
-    return {"status": "EXTRACTED", "files": len(done), "bytes": processed, "output": str(root), "seconds": time.perf_counter() - t0}
+    out = {"status": "EXTRACTED", "files": len(done), "bytes": processed, "output": str(root),
+           "archive_id": c.archive_id.hex(), "seconds": time.perf_counter() - t0}
+    if got_sha is not None:
+        out["container_sha256"] = got_sha
+    if want_id is not None or want_sha is not None:
+        out["expected"] = {"archive_id": want_id, "container_sha256": want_sha}
+    return out
