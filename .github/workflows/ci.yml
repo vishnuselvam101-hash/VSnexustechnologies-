@@ -91,7 +91,7 @@ jobs:
       - run: mypy
 
   sanitizers:
-    # ASan+UBSan builds (gcc; clang ASan+UBSan and UBSan trap mode) of all three native kernels (align, reads, rs),
+    # ASan+UBSan builds (gcc; clang ASan+UBSan and UBSan trap mode) of all four native kernels (align, reads, rs, cluster),
     # each running its native equivalence tests, a differential stress fuzz against the reference and an ASan canary
     runs-on: ubuntu-latest
     steps:

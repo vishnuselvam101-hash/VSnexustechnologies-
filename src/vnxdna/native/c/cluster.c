@@ -59,7 +59,7 @@ int vnx_cl_sketch(int64_t n, int64_t width, const uint8_t *raw, int64_t raw_len,
     if (n > 0 && (!raw || !lengths || !hashes || !orient)) return CL_EARG;
     if (width > 0 && n > raw_len / width) return CL_EARG; /* n rows of width codes must lie inside raw */
     uint64_t seeds[256];
-    for (int i = 0; i < s; i++) seeds[i] = splitmix64(0x56584E37ULL + (uint64_t)i);
+    for (int i = 0; i < s; i++) seeds[i] = splitmix64((uint64_t)0x56584E37u + (uint64_t)i);
     const uint64_t mask = (k == 32) ? ~0ULL : ((1ULL << (2 * k)) - 1);
     uint64_t best[256];
     for (int64_t r = 0; r < n; r++) {
