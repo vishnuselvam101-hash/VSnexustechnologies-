@@ -162,6 +162,57 @@ stated there). A model that fails M2, M3 or M8 is labelled **INADEQUATE** in its
 is not used to choose decoder parameters. It may still be run, labelled, as a stress condition. The once-only
 validation of frozen F against HELD-OUT after the PREREG commit is reported, never acted on.
 
+### 5.5 Amendment 2: read-level rate heterogeneity and matched read selection
+
+Amendment 2 (2026-10-05, after the first DEV validation of model F and before any refit; no held-out file opened; the
+M1-M10 thresholds of plan 3.4 and the gating set M2, M3, M8 are unchanged).
+
+**Finding.** All six F models of the first round (CNR with two alignment conventions; D03 HAC and fast, forward and
+backward) failed M2 and M3 on DEV; M8 passed for all. D02 (Twist, Illumina) failed M3 only among the gating metrics
+(exact-length share 94.1 % simulated vs 95.3 % real) and fails M5 badly (deletion run-length TV 0.28: a heavy tail of long
+deletions that one geometric run length cannot follow; the burst estimator of plan 3.3 for that tail is not implemented
+and is **not** part of this amendment). The diagnosis below was made on the **FIT** split only, comparing FIT reads with
+reads simulated from F for FIT references through the same alignment pipeline:
+
+1. *Over-dispersed per-read error counts.* The per-read unit-cost edit distance has the right mean but a much larger
+   variance than the independent-site model produces: variance / mean 4.00 real vs 1.21 simulated (D03 HAC forward),
+   2.23 vs 1.06 (D03 fast forward), 1.71 vs 1.30 (CNR); means agree within 1 %. Some reads are much noisier than others.
+   This is read-level correlation of errors, one of the effects section 5.1 says must be represented or labelled.
+2. *Length-selected reads.* Every CNR FIT read has length - 110 in [-4, +5] (a selection made by the dataset's
+   clustering pipeline; it is observed, not documented), and D03 read segments are censored at |length - 150| <= 15
+   (documented; plan 3.3). The first round compared these selected real reads with unselected simulated reads, so M3
+   compared two different populations.
+
+**Changes** (apply to every dataset and job; recorded in each model and results file):
+
+- **A2.1 Model class.** An opt-in `/2` field `stages.sequencing.read_heterogeneity = {"distribution": "gamma",
+  "shape": k}`: each simulated read draws one multiplier m ~ Gamma(k, 1/k) (mean 1, variance 1/k) that scales all of
+  its per-site substitution, insertion and deletion probabilities (each site's total clipped at 0.95). One parameter.
+  It is HONOURED by the simulator; `/1` cannot express it, so conversion to `/1` is refused when it is set; a model without
+  it is unchanged byte for byte. **Estimation, FIT only:** the moment estimator s2 = max(0, var - var0) / mean^2 of the
+  per-read edit distance of the tallied reads, where var0 is the variance the same reads would have with equal rates (the
+  compound-Poisson variance of the observed substitutions, insertion runs and deletion runs, each run counting its length
+  squared); the field is used if s2 > 0.01. The simulation calibration that already matches the FIT rates then also matches the simulated FIT edit-distance variance to the real FIT variance
+  (s2 <- s2 + (var_real - var_sim) / mean^2, with the existing damping). Basis `estimated`; 95 % CI = bootstrap over
+  references of the moment estimator, scaled by the calibration factor. The multiplier acts on the sequencing stage;
+  in the two-stage D02 model (PhiX split) the synthesis stage is not scaled. Read-level heterogeneity in this
+  model absorbs every source of read-to-read variation (reads of hard references, partly mis-assigned reads); it is
+  not a claim about one physical mechanism.
+- **A2.2 Matched read selection.** Wherever real and simulated reads are compared (simulation calibration, M1-M7, M10),
+  both pass through the same read-length selection: the closed range of (read length - L) observed over **all FIT reads**
+  of the dataset (CNR [-4, +5]; D03 [-15, +15], equal to the documented censoring). Real reads lie inside it by
+  construction, so only simulated reads are removed. D02 (Illumina, fixed-length reads aligned semi-globally) has no
+  selection. M8 keeps unselected simulated clusters (as in round 1). M3 is also reported without the selection
+  (`M3_unselected`, not gating), so the effect of A2.2 is visible.
+- **A2.3 Procedure.** Every job is refit on FIT with A2.1 and A2.2 and validated once on DEV. Both rounds are reported
+  (round 1 in `experiments/v7/fit-<dataset>/`, round 2 in `experiments/v7/fit-<dataset>/a2/`, models version 2.0.0).
+  This is a second look at DEV: DEV was used to detect the round-1 failure, though not to estimate anything. A model
+  that still fails M2, M3 or M8 stays INADEQUATE; no further model-class change is made on the basis of these DEV
+  results in V7 Phase D. The independent check remains the once-only held-out validation after the PREREG commit (4.2).
+- **Limitation.** A model fitted to length-selected reads describes the selected reads. Simulating it without the
+  selection (for example on 313-nt VNX strands) gives reads with the fitted error process and no length selection; this is
+  stated with every SIMULATED-on-fitted result.
+
 ## 6. Outcomes and false SUCCESS
 
 Each decode is classified by comparing the decoder's claim with ground truth (the original input bytes, SHA-256).
