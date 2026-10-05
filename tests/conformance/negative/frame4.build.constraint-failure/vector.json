@@ -1,0 +1,39 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "frame4.build.constraint-failure",
+ "stage": "E13",
+ "formats": {
+  "frame": 4,
+  "superblock": null,
+  "container": null
+ },
+ "kind": "negative",
+ "operation": "frame4.build",
+ "params": {
+  "profile": "v4-balanced",
+  "tag": 4660,
+  "kind": 0,
+  "group": 0,
+  "symbol": 0,
+  "constraints": {
+   "gc_min_percent": 100,
+   "gc_max_percent": 100
+  }
+ },
+ "inputs": {
+  "payload": {
+   "path": "payload.dat",
+   "sha256": "2c34ce1df23b838c5abf2a7f6437cca3d3067ed509ff25f11df6b11b582b51eb"
+  }
+ },
+ "expected": {
+  "error": {
+   "code": "CONSTRAINT_ERROR",
+   "category": "CONFIGURATION_ERROR",
+   "exit_code": 7,
+   "retryable": false
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

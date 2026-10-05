@@ -1,0 +1,39 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "e2e.encode.v6_0.max-recovery",
+ "stage": "E7-E14",
+ "formats": {
+  "frame": 4,
+  "superblock": 2,
+  "container": [
+   4,
+   0
+  ]
+ },
+ "kind": "positive",
+ "operation": "e2e.encode",
+ "params": {
+  "dna_options": {
+   "column_parity": 2,
+   "outer_plan": "fixed",
+   "profile": "v4-archival",
+   "redundancy_budget": null,
+   "strand_order": "interleaved",
+   "stripe_depth": 8
+  }
+ },
+ "inputs": {
+  "container": {
+   "path": "../../../fixtures/v6_0/max-recovery.vnx",
+   "sha256": "65d12d3551de00a90c1e3b0502493ee05090fa0c300aa583235f443855a2df30"
+  }
+ },
+ "expected": {
+  "outputs": {
+   "strands_sha256": "befacab56c9399eb2883de8dd7365a1915d1d53ac8afb6fd20860d4fcc943002",
+   "strands": 820
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

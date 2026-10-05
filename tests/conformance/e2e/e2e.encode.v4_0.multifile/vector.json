@@ -1,0 +1,34 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "e2e.encode.v4_0.multifile",
+ "stage": "E7-E14",
+ "formats": {
+  "frame": 4,
+  "superblock": 1,
+  "container": [
+   4,
+   0
+  ]
+ },
+ "kind": "positive",
+ "operation": "e2e.encode",
+ "params": {
+  "dna_options": {
+   "profile": "v4-balanced"
+  }
+ },
+ "inputs": {
+  "container": {
+   "path": "../../../fixtures/v4_0/multifile.vnx",
+   "sha256": "1fc2033f24977d841d6e0d569c4fbaed505241b82caba9f1736284b558d751cf"
+  }
+ },
+ "expected": {
+  "outputs": {
+   "strands_sha256": "d9e56be1dcfd229825d0ea218e5125faaea0a899d3299ff90aca4d0d0d91a163",
+   "strands": 279
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

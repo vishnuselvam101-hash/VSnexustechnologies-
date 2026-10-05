@@ -1,0 +1,29 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "e2e.decode.frame-nibble7-pool",
+ "stage": "D1",
+ "formats": {
+  "frame": 7,
+  "superblock": null,
+  "container": null
+ },
+ "kind": "negative",
+ "operation": "e2e.decode",
+ "params": {},
+ "inputs": {
+  "reads": {
+   "path": "../probe.nibble7/reads.fasta",
+   "sha256": "45f735ca07dd7bec03699937ceec58fc458294331bac8f4c82085d175c1eacea"
+  }
+ },
+ "expected": {
+  "error": {
+   "code": "FRAME_VERSION_UNSUPPORTED",
+   "category": "UNSUPPORTED_FORMAT",
+   "exit_code": 6,
+   "retryable": false
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

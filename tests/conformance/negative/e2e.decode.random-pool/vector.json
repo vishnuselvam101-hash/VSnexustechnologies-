@@ -1,0 +1,29 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "e2e.decode.random-pool",
+ "stage": "D1",
+ "formats": {
+  "frame": null,
+  "superblock": null,
+  "container": null
+ },
+ "kind": "negative",
+ "operation": "e2e.decode",
+ "params": {},
+ "inputs": {
+  "reads": {
+   "path": "../probe.random/reads.fasta",
+   "sha256": "ac3278e1cec87a0976e5d0bc16981705f7078b9382daa5e344cc4ec1441e7586"
+  }
+ },
+ "expected": {
+  "error": {
+   "code": "LAYOUT_UNDETECTED",
+   "category": "INVALID_INPUT",
+   "exit_code": 3,
+   "retryable": false
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

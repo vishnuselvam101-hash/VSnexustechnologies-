@@ -1,0 +1,40 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "rs.decode.r08.erasures",
+ "stage": "D5",
+ "formats": {
+  "frame": null,
+  "superblock": null,
+  "container": null
+ },
+ "kind": "positive",
+ "operation": "rs.decode",
+ "params": {
+  "r": 8,
+  "erasures": [
+   3,
+   4,
+   6,
+   7,
+   19,
+   20,
+   35,
+   37
+  ]
+ },
+ "inputs": {
+  "codeword": {
+   "path": "codeword.dat",
+   "sha256": "8a6fa77f9c294f3b49e6a1cc9d8f1d301967576e0fc9d48bcfe50d73b5b81fbc"
+  }
+ },
+ "expected": {
+  "outputs": {
+   "ok": true,
+   "corrected_hex": "53050e5b7f13d12ab791c37b031824d0fac44a8d8aada937b0525317a250882e5bdff6404b2e",
+   "errata": 8
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

@@ -1,0 +1,39 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "aead.open.wrong-count",
+ "stage": "D14",
+ "formats": {
+  "frame": null,
+  "superblock": null,
+  "container": [
+   4,
+   0
+  ]
+ },
+ "kind": "negative",
+ "operation": "aead.open",
+ "params": {
+  "master_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+  "salt_hex": "65666768696a6b6c6d6e6f7071727374",
+  "archive_id_hex": "0102030405060708090a0b0c0d0e0f10",
+  "domain": 0,
+  "index": 3,
+  "count": 1
+ },
+ "inputs": {
+  "ciphertext": {
+   "path": "ciphertext.dat",
+   "sha256": "c47558df0291d61e05b2ae61696d78bcbe1e57b6b4f210a06d09a29a551dedcd"
+  }
+ },
+ "expected": {
+  "error": {
+   "code": "INTEGRITY_ERROR",
+   "category": "VERIFICATION_FAILED",
+   "exit_code": 1,
+   "retryable": false
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

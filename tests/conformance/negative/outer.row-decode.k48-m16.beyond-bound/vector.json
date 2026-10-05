@@ -1,0 +1,83 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "outer.row-decode.k48-m16.beyond-bound",
+ "stage": "D10",
+ "formats": {
+  "frame": null,
+  "superblock": null,
+  "container": null
+ },
+ "kind": "negative",
+ "operation": "outer.row_decode",
+ "params": {
+  "K": 48,
+  "M": 16,
+  "P": 4,
+  "k": 48,
+  "present": [
+   0,
+   1,
+   2,
+   3,
+   5,
+   6,
+   7,
+   8,
+   10,
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17,
+   18,
+   19,
+   20,
+   21,
+   24,
+   26,
+   28,
+   29,
+   30,
+   31,
+   32,
+   33,
+   35,
+   36,
+   37,
+   38,
+   39,
+   40,
+   41,
+   42,
+   43,
+   44,
+   45,
+   48,
+   50,
+   51,
+   53,
+   55,
+   57,
+   59,
+   60
+  ]
+ },
+ "inputs": {
+  "symbols": {
+   "path": "symbols.dat",
+   "sha256": "ad8ff4c098510b876758b1f9a9fdbf976e7f3a522da30e2443052e73f6744b9c"
+  }
+ },
+ "expected": {
+  "error": {
+   "code": "INSUFFICIENT_REDUNDANCY",
+   "category": "INSUFFICIENT_REDUNDANCY",
+   "exit_code": 5,
+   "retryable": true
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

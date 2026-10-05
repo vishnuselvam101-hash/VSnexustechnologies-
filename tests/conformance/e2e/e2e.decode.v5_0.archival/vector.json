@@ -1,0 +1,33 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "e2e.decode.v5_0.archival",
+ "stage": "D0-D14",
+ "formats": {
+  "frame": 4,
+  "superblock": 1,
+  "container": [
+   4,
+   0
+  ]
+ },
+ "kind": "positive",
+ "operation": "e2e.decode",
+ "params": {},
+ "inputs": {
+  "reads": {
+   "path": "../../../fixtures/v5_0/archival.reads.fastq.gz",
+   "sha256": "9341e42d83e6c6d1bdb9428c2e761e1693378b9c82594213395cc5127f07ef09"
+  }
+ },
+ "expected": {
+  "outputs": {
+   "status": "SUCCESS",
+   "container_sha256": "94faeab5740cc190a5482f174ba14627b8fb14c82e81a2be51f373491e3fb4bf",
+   "files": {
+    "mixed.bin": "04e761c43adc743c6ffdd2228ef0780b4f96382583c691e3f388a7f8e6393592"
+   }
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

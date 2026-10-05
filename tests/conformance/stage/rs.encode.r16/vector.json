@@ -1,0 +1,28 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "rs.encode.r16",
+ "stage": "E11",
+ "formats": {
+  "frame": null,
+  "superblock": null,
+  "container": null
+ },
+ "kind": "positive",
+ "operation": "rs.encode",
+ "params": {
+  "r": 16
+ },
+ "inputs": {
+  "message": {
+   "path": "message.dat",
+   "sha256": "3ffa7a99f90897b19bf7fdc683f82eb89884fe262c3d6a34ddea0615b480adc7"
+  }
+ },
+ "expected": {
+  "outputs": {
+   "parity_hex": "5e7b71ac2c7529222f8dd095f79e645a"
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

@@ -1,0 +1,34 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "e2e.encode.v4_0.archival",
+ "stage": "E7-E14",
+ "formats": {
+  "frame": 4,
+  "superblock": 1,
+  "container": [
+   4,
+   0
+  ]
+ },
+ "kind": "positive",
+ "operation": "e2e.encode",
+ "params": {
+  "dna_options": {
+   "profile": "v4-archival"
+  }
+ },
+ "inputs": {
+  "container": {
+   "path": "../../../fixtures/v4_0/archival.vnx",
+   "sha256": "c4ca86cb914fc47edf786f759aaf18575525215d5a4575c1837017d1f2560dd3"
+  }
+ },
+ "expected": {
+  "outputs": {
+   "strands_sha256": "7be35bb92e7c15d31b95f97eff43d32f6c8efb8cd8a01d0fc084be6482aa6fee",
+   "strands": 203
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}
