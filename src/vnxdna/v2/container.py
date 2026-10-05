@@ -39,6 +39,7 @@ import tempfile
 import threading
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import BinaryIO
 
 from ..errors import InvalidInputError, MetadataError, OutputError, UnsupportedFormatError
 from .manifest import INDEX_DTYPE, MAX_CHUNKS, PLAIN_DTYPE
@@ -91,17 +92,18 @@ class ContainerWriter:
         # named temporary file: a fixed name was opened with O_TRUNC through any symlink planted there, and an input
         # that happened to be called ``<output>.partial`` was truncated (V3 release review).
         self.resumable = resumable
-        self.partial = self.target.with_name(self.target.name + ".partial") if resumable else None
+        self.partial: Path | None = self.target.with_name(self.target.name + ".partial") if resumable else None
         self.overwrite = overwrite
         self.file_hash = hashlib.sha256()
         self.body_hash = hashlib.sha256()
         self.body_bytes = 0
-        self.handle = None
+        self.handle: BinaryIO | None = None
 
     def start_fresh(self) -> None:
         try:
             self.target.parent.mkdir(parents=True, exist_ok=True)
             if self.resumable:
+                assert self.partial is not None  # set in __init__ for a resumable writer
                 fd = os.open(self.partial, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0), 0o600)
             else:
                 fd, tmp = tempfile.mkstemp(prefix="." + self.target.name + ".", suffix=".partial", dir=self.target.parent)
@@ -115,6 +117,7 @@ class ContainerWriter:
 
     def resume_at(self, body_bytes: int) -> None:
         """Reopen an existing partial file, truncated to ``body_bytes`` of body, and rehash its prefix."""
+        assert self.partial is not None  # only a resumable writer is resumed
         try:
             fd = os.open(self.partial, os.O_RDWR)
         except OSError as error:
@@ -165,7 +168,7 @@ class ContainerWriter:
 
     def finish(self, manifest_bytes: bytes, index_bytes: bytes, plain_bytes: bytes) -> dict:
         """Write the footer and trailer, fsync, and atomically rename to the target."""
-        assert self.handle is not None
+        assert self.handle is not None and self.partial is not None  # both exist once start_fresh/resume_at ran
         footer = manifest_bytes + index_bytes + plain_bytes
         tail = (self.body_bytes.to_bytes(8, "big") + len(manifest_bytes).to_bytes(4, "big") + len(index_bytes).to_bytes(4, "big")
                 + len(plain_bytes).to_bytes(4, "big") + (0).to_bytes(4, "big") + TRAILER_MAGIC)
