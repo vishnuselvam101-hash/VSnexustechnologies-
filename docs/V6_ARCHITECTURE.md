@@ -417,6 +417,8 @@ noisy decode is within ±5 % of the pre-refactor commit (bench-compare "NO-CHANG
 | `tests/conformance/` with the required vectors (spec §6.2) and `vnx conformance` (spec §6.3) | `vnx conformance` is CONFORMANT for both `--backend native` and `--backend reference`; each negative vector produces exactly its code and exit code |
 | `vnx.experiment/1` manifest; `vnx experiment reproduce` checks software, spec, backends, seeds and input hashes before rerunning | Reproducing one committed Phase 1 experiment cell gives identical decode outcomes |
 
+As built (Phase 8 part 2): `vnx experiment reproduce` refuses before rerunning only when the input hash differs; software, spec, backend, commit and simulator differences are reported, and the result hash is the verdict (docs/CONFORMANCE.md, docs/REPRODUCIBILITY.md). The committed acceptance fixture is one EXP-SIM-1 (Phase 3) cell, which reproduces its recorded read SHA-256; the Phase 1 scripts do not write manifests yet (docs/V6_DEFERRED.md).
+
 **Out of V6:** frame 6, superblock 3, primers, short profiles (V7); the wide class, hierarchical index and pool catalogue
 (V8); Sector Zero/One writers (V9, needs DDSA IDs); vendor adapters (V11). Spec §3.5–§3.8 fixes their layouts so that this
 later work only adds code.

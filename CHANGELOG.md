@@ -43,6 +43,12 @@ synthesised, stored or sequenced. Deferred work and the reason for each item: do
   docs/LAB_INTERFACE.md, docs/DDSA_MAPPING.md (mapping table only; no Sector Zero/One output).
 - **Conformance (Phase 8, part 1).** 222 vectors (129 positive, 93 negative; tests/conformance/index.json), a packaged
   22-vector subset, `vnx conformance [--backend native|reference]`, property tests.
+- **Reproducibility (Phase 8, part 2).** `vnx.experiment/1` experiment manifests (`vnxdna.benchmark.manifest`: strict
+  validator with typed errors, writer, JSON Schema) for two kinds, `channel-simulation` and `experiment`.
+  `vnx channel simulate --manifest FILE`; `vnx experiment run` also writes `manifest.json`;
+  `vnx experiment reproduce MANIFEST [--input F] [--workers N]` re-runs and exits 0 only if the result hash matches
+  (1 if not). docs/CONFORMANCE.md covers the vectors, how to run and add them, and the manifest workflow. A committed
+  manifest of one EXP-SIM-1 cell reproduces its recorded read-file SHA-256 (SIMULATED).
 - **Benchmark lab B0 (Phase 9, first stage).** VNX-DNA as an external codec in `dt4dds-benchmark` beside DNA-RS, DNA
   Fountain and DNA-Aeon: 280 trials, not the published protocol (benchmarks/competitors/lab/README.md). 0 false SUCCESS
   in 157 VNX-DNA trials (SIMULATED); weaker than DNA-RS at 10 % dropout and at 1 % errors near 1 bit/nt (same README).
@@ -71,8 +77,7 @@ synthesised, stored or sequenced. Deferred work and the reason for each item: do
 
 - The simulated nanopore-like model decodes 0/20 at coverage 3, 5 and 10 (default and retry band). The measured causes
   (header address, whole-segment erasure) are V7 work.
-- Not implemented: the `vnx.experiment/1` manifest and docs/CONFORMANCE.md (Phase 8, part 2); encode events; MSan and
-  non-x86 builds; fuzz campaigns of one CPU-hour per target; open LOW findings in the security model. Open defects:
+- Not implemented: encode events; MSan and non-x86 builds; fuzz campaigns of one CPU-hour per target; open LOW findings in the security model. Open defects:
   `vnx locate` on V6 striped pools (job #62), `--select` when some failed groups lie outside the index (job #66).
 - No physical validation of any kind.
 

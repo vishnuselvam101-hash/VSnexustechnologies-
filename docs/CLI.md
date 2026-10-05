@@ -127,8 +127,9 @@ prints its JSON. Exit codes are the table above. Errors are `vnx.error/1` JSON o
 | `decode READS -o OUT.vnx` | reads to a verified container; `--extract DIR`, `--select FILE`, `--partial-dir DIR`, `--report FILE`, `--events FILE` |
 | `inspect`, `list`, `verify`, `locate`, `extract` | read a container or a read file; `inspect` also answers whether a read file is readable (frame and layout probe) |
 | `validate STRANDS` | constraint diagnostics (JSON) |
-| `channel simulate`, `models`, `show`, `convert`, `sweep` | the SIMULATED channel (`vnx.channel-model/1`); `--model NAME[@VERSION]`, `--seed`, `--coverage`, `--param PATH=JSON`, `--metadata FILE` |
-| `benchmark`, `sweep`, `experiment run`, `experiment reproduce`, `generate`, `profiles` | benchmarks and experiments ([BENCHMARKING.md](BENCHMARKING.md)) |
+| `channel simulate`, `models`, `show`, `convert`, `sweep` | the SIMULATED channel (`vnx.channel-model/1`); `--model NAME[@VERSION]`, `--seed`, `--coverage`, `--param PATH=JSON`, `--metadata FILE`, `--manifest FILE` (`vnx.experiment/1`, with `--experiment-id ID`) |
+| `benchmark`, `sweep`, `experiment run`, `experiment reproduce`, `generate`, `profiles` | benchmarks and experiments ([BENCHMARKING.md](BENCHMARKING.md)); `experiment run` also writes `manifest.json` (`vnx.experiment/1`) |
+| `experiment reproduce MANIFEST [--input F] [--workers N]` | re-run a `vnx.experiment/1` manifest ([CONFORMANCE.md](CONFORMANCE.md)): exit 0 if input and result hash match, 1 if either differs, 3 malformed manifest or missing input, 6 unsupported manifest schema, 7 `--input`/`--workers` with a directory. Given a directory, it compares every deterministic field as before |
 | `conformance` | run the conformance vectors; `--vectors DIR`, `--select ID`, `--backend auto`, `native` or `reference`; exit 0 only if CONFORMANT |
 | `version`, `native` | `vnx.version/1` (software, spec and format versions) and the native kernel status |
 | `keygen FILE` | a new key file |
