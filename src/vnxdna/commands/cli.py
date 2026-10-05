@@ -211,7 +211,7 @@ def locate(container: Path, name: str, key_file: Optional[Path] = KEY_OPT, passp
            allow_unencrypted: bool = UNENC_OPT) -> None:
     """Locate a file: chunk indices, container byte ranges and (with --dna-profile) strand groups and strand records.
 
-    The strand mapping exists for the V4/V5 layout only; V6 outer-code options (superblock version 2) are refused."""
+    Give the same DNA options as `vnx encode` (V4/V5 layout or V6 outer code): the records are those of that strand file."""
     def go():
         key, pw = sdk.load_keys(key_file, passphrase_env)
         explicit = {k: v for k, v in (("data_symbols", data_symbols), ("parity_symbols", parity_symbols),
