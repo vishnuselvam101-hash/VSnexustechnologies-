@@ -1,4 +1,10 @@
-"""Which backend every native (C) kernel uses: one place for diagnostics and provenance.
+"""Layer 1 (V6_ARCHITECTURE §2): the native (C) kernels, their loaders, and which backend every kernel uses.
+
+Kernel bindings: :mod:`vnxdna.native.align` (marker aligner), :mod:`vnxdna.native.reads` (read parser),
+:mod:`vnxdna.native.rs` (inner RS decoder). Their bit-exact NumPy references live in higher layers and are resolved
+by module name (``vnxdna.core._alias.lazy_module``), so this package imports nothing above ``vnxdna.core``.
+The C sources and the libraries stay in ``vnxdna/v5/native`` and ``vnxdna/v6/native`` (extension names
+``vnxdna.v5._vnx_align``, ``vnxdna.v6._vnx_reads``, ``vnxdna.v6._vnx_rs``), so installed layouts are unchanged.
 
 :func:`native_status` returns, for each kernel, the backend that actually runs (``native`` or ``reference``), the SIMD
 level (RS decoder), the library path and where it came from, the ABI version and why the native library is not used
@@ -8,9 +14,9 @@ and in the ``decode_start`` event. ``python -m vnxdna.native`` prints :func:`nat
 
 Kernels::
 
-    align   V5 marker-template aligner     vnxdna.v5.native_alignment   reference: vnxdna.v4.sync (NumPy)
-    reads   V6 FASTQ/FASTA read parser     vnxdna.v6.native_reads       reference: vnxdna.v4.reads
-    rs      V6 inner RS (GF(256)) decoder  vnxdna.v6.native_rs          reference: vnxdna.v4.rs_fast (NumPy)
+    align   V5 marker-template aligner     vnxdna.native.align   (old path vnxdna.v5.native_alignment)   reference: TemplateAligner (NumPy)
+    reads   V6 FASTQ/FASTA read parser     vnxdna.native.reads   (old path vnxdna.v6.native_reads)       reference: the Python parser
+    rs      V6 inner RS (GF(256)) decoder  vnxdna.native.rs      (old path vnxdna.v6.native_rs)          reference: rs_fast (NumPy)
 
 Backend environment variables are documented in docs/NATIVE_KERNELS.md. Nothing here raises: an invalid backend
 variable is reported in ``error`` (the decode itself would raise it).
@@ -20,18 +26,21 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+from ..core._alias import lazy_module
+
 KERNELS = ("align", "reads", "rs")
 _ENV_LIB = {"align": "VNXDNA_NATIVE_LIB", "reads": "VNXDNA_READS_LIB", "rs": "VNXDNA_RS_LIB"}
-_REFERENCE = {"align": "vnxdna.v4.sync", "reads": "vnxdna.v4.reads", "rs": "vnxdna.v4.rs_fast"}
+_REFERENCE = {"align": "vnxdna.v4.sync", "reads": "vnxdna.v4.reads", "rs": "vnxdna.v4.rs_fast"}   # reported names: the stable (old) paths
+_CODECS = "vnxdna.codec.codecs"      # InnerRS; its VNX_RS_REFERENCE switch (read at import) bypasses the RS kernel
 
 
 def _module(kernel: str):
     if kernel == "align":
-        from .v5 import native_alignment as m
+        from . import align as m
     elif kernel == "reads":
-        from .v6 import native_reads as m
+        from . import reads as m
     elif kernel == "rs":
-        from .v6 import native_rs as m
+        from . import rs as m
     else:
         raise ValueError(f"unknown kernel {kernel!r}; one of {KERNELS}")
     return m
@@ -67,7 +76,7 @@ def kernel_status(kernel: str) -> dict:
            "reference": _REFERENCE[kernel], "load_error": st.get("load_error"), "error": st.get("error")}
     out["library_older_than_source"] = _stale(m, out["library_origin"], out["library"])
     if kernel == "rs":
-        from .v4 import codecs
+        codecs = lazy_module(_CODECS)
         if codecs._REFERENCE_RS:        # VNX_RS_REFERENCE=1 (read at import): InnerRS bypasses native_rs entirely
             out.update(backend="reference", requested="VNX_RS_REFERENCE=1", reference="vnxdna.ecc.rs_batch")
         out["simd_level"] = active if out["backend"] == "native" else None
@@ -84,7 +93,7 @@ def kernel_status(kernel: str) -> dict:
 
 def native_status() -> dict:
     """Backend of every native kernel (see the module docstring); never raises."""
-    from ._version import __version__
+    from .._version import __version__
     kernels = {}
     for k in KERNELS:
         try:
@@ -117,5 +126,3 @@ def main(argv: list[str] | None = None) -> int:
     return 0 if st["all_native"] or "--require-native" not in args else 1
 
 
-if __name__ == "__main__":
-    raise SystemExit(main())

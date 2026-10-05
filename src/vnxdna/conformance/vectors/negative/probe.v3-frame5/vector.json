@@ -1,0 +1,29 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "probe.v3-frame5",
+ "stage": "D1",
+ "formats": {
+  "frame": 5,
+  "superblock": null,
+  "container": null
+ },
+ "kind": "negative",
+ "operation": "probe",
+ "params": {},
+ "inputs": {
+  "reads": {
+   "path": "reads.fasta",
+   "sha256": "166c624d4ca7a6a8c738ee97c861ed25a6906baada5c30b3b3f64864f797f344"
+  }
+ },
+ "expected": {
+  "error": {
+   "code": "LEGACY_FORMAT",
+   "category": "UNSUPPORTED_FORMAT",
+   "exit_code": 6,
+   "retryable": false
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

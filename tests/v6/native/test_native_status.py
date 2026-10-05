@@ -167,7 +167,8 @@ def test_restrict_hook_is_test_only():
         for i, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
             if re.search(r"restrict_levels", line):
                 hits.append((p.relative_to(ROOT).as_posix(), line.strip()))
-    assert {f for f, _ in hits} == {"src/vnxdna/v6/native_rs.py"}, hits
+    # the RS binding's file (src/vnxdna/v6/native_rs.py before V6 Phase 2; the old path is now an alias of it)
+    assert {f for f, _ in hits} == {Path(nrs.__file__).resolve().relative_to(ROOT).as_posix()}, hits
     calls = [line for _, line in hits if "restrict_levels(" in line and not line.startswith("def ")]
     assert calls == ["lib.vnx_rs_restrict_levels(-1 if names is None else sum(1 << LEVELS[k] for k in names))"], calls
 
@@ -208,7 +209,9 @@ def test_loaders_find_the_packaged_extension_name(kernel, monkeypatch, tmp_path)
     m, env, _ = MODULES[kernel]
     ext_name = {"align": "vnxdna.v5._vnx_align", "reads": "vnxdna.v6._vnx_reads", "rs": "vnxdna.v6._vnx_rs"}[kernel]
     assert ext_name in nb.KERNELS
-    assert ext_name.rsplit(".", 1)[0] == m.__name__.rsplit(".", 1)[0]             # same package as the loader
+    # the loader searches the directory setup.py builds the extension into (since V6 Phase 2 the loader module itself
+    # lives in vnxdna.native, while the C source, library and extension stay in vnxdna/v5 and vnxdna/v6)
+    assert Path(*ext_name.split(".")[:-1]) == m._HERE.relative_to(Path(vnxdna.__file__).resolve().parents[1])
     ext = tmp_path / (ext_name.rsplit(".", 1)[1] + (sysconfig.get_config_var("EXT_SUFFIX") or ".so"))
     ext.write_bytes(b"")
     monkeypatch.setattr(m, "_HERE", tmp_path)

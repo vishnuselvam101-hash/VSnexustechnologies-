@@ -1,0 +1,10 @@
+{
+ "experiment": "EXP-PROBE-1",
+ "evidence_class": "SIMULATED",
+ "pool_bytes": 900000,
+ "models": ["clean", "illumina-like", "nanopore-like", "mixed-harsh", "deletion-heavy", "dropout-20"],
+ "coverages": [1, 3, 10],
+ "sample_sizes": [64, 1000, 20000],
+ "seeds": 20,
+ "seed_base": 7200
+}

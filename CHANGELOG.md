@@ -1,5 +1,33 @@
 # Changelog
 
+## Unreleased (6.0.0.dev0) — V6 Phase 2 (codec/API refactor, version fixes, P1 bugs)
+
+Plan: docs/V6_ARCHITECTURE.md §7–§8; formats unchanged (goldens v4_0, v5_0, v6_0 decode bit-exactly). Channel results
+are SIMULATED.
+
+- **Layered packages** `vnxdna.core`, `native`, `archive`, `codec`, `dnaenc`, `sync`, `recovery`, `pipeline`,
+  `simulation`, `benchmark`, `sdk`, `conformance`, `commands` (moves M1–M5). Every old module path (`vnxdna.v4.*`,
+  `v5.*`, `v6.*`, `errors`, `provenance`, `native`, …) still imports: whole-module moves are aliases of the same module
+  object, split modules (`v4.frame`, `v4.encoder`, `v4.decoder`, `v6.profiles`) are façades. `tests/architecture`
+  checks the public paths and the layer rules (no rule violation, no import cycle).
+- **`vnxdna.sdk`**, the stable Python API, returning `vnx.result/1` envelopes (software, spec, backends with ABI and
+  library SHA-256, input/output SHA-256, formats, timings, resources). The `vnx` CLI (`vnxdna.commands`) is a thin layer
+  over it; stdout keeps every 5.x field next to the envelope.
+- **Stable error codes** (spec §10) in every error (`vnx.error/1`); exit code 10 reserved for provider errors.
+- **Version axes**: `vnx version` emits `vnx.version/1`; new archives carry `extensions.vnx` (spec §2.3.1;
+  `ArchiveOptions(writer_provenance=False)` writes the 5.x layout).
+- **Probe and dispatch** (spec §3.10): unknown frame versions exit 6 `FRAME_VERSION_UNSUPPORTED` (not retryable), V1/V3
+  pools exit 6 `LEGACY_FORMAT`, unrecognisable reads exit 3 `LAYOUT_UNDETECTED`; `vnx inspect` answers "can I read
+  this?" for read files. EXP-PROBE-1: experiments/v6/phase2/EXP-PROBE-1.
+- **JSON Schemas** in `vnxdna/core/schemas` (result, error, decode report, events, version, probe); `--events` lines are
+  `vnx.event/1` with `seq`, `run_id`, `run_start`, `superblock` and the report hash on `command_end`.
+- **Conformance runner** `vnx conformance` with a packaged vector subset (spec §6).
+- Fixes: `--performance bogus` is exit 7 (was 70); `vnx encode` passes archive options through or refuses them;
+  `locate --dna-profile` refuses V6 outer-code layouts (exit 7) and handles custom K/M; archive-tag collisions are
+  refused as `ARCHIVE_TAG_AMBIGUOUS` (exit 3); random access snaps reads like a full decode. The decode outcome is
+  tested to be independent of the spill bucket count; consensus internals are not (see tests/v6/test_spill_independence.py).
+- `--report` files are now the `vnx.decode-report/1` envelope; the 5.x report fields stay at the top level.
+
 ## Unreleased — V6 Phase 1 (outer-code resilience)
 
 Opt-in; without the new options encoding is byte-identical to 5.0.0. All results are SIMULATED. Details:

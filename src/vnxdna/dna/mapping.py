@@ -27,16 +27,8 @@ import numpy as np
 
 from ..errors import ConfigurationError, InvalidDNAError
 
-BASES = "ACGT"
-INVALID = 4
-_ASCII_TO_CODE = np.full(256, 255, dtype=np.uint8)
-for _code, _base in enumerate(BASES):
-    _ASCII_TO_CODE[ord(_base)] = _code
-    _ASCII_TO_CODE[ord(_base.lower())] = _code
-_ASCII_TO_CODE[ord("N")] = INVALID
-_ASCII_TO_CODE[ord("n")] = INVALID
-_CODE_TO_ASCII = np.frombuffer(b"ACGTN", dtype=np.uint8)
-_COMPLEMENT = np.array([3, 2, 1, 0, INVALID], dtype=np.uint8)
+# the base tables moved verbatim to vnxdna.dnaenc.mapping (V6 Phase 2, M3); same objects
+from ..dnaenc.mapping import _ASCII_TO_CODE, _CODE_TO_ASCII, _COMPLEMENT, BASES, INVALID  # noqa: E402,F401
 
 
 def to_codes(sequence: str) -> np.ndarray:

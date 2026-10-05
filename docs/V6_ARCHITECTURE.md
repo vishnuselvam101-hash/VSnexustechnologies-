@@ -8,6 +8,22 @@
   - the research-gate roadmap and product strategy (branch `work/research-gate`).
 - Every channel result referred to here is **SIMULATED**. No DNA has been synthesised, stored or sequenced by VNX-DNA.
 
+- **Phase 2 status (6.0.0.dev0, branch `work/v6-refactor`):** items 2.1–2.8 implemented. Deviations from this plan,
+  each forced by the layer rules or by measurement:
+  - the C sources, in-place libraries and pip extension names stay in `vnxdna/v5` and `vnxdna/v6` (only the bindings
+    moved to `vnxdna.native`); the bindings reach their NumPy references by module name (`core._alias.lazy_module`);
+  - `Superblock` lives in `dnaenc.superblock`, not `codec` (it embeds the strand `Layout`); `codec.profiles` holds the
+    redundancy-profile data and the single merge, and the `DNAOptions` builders are in `pipeline.profiles`;
+  - GF(256), Cauchy RS and the batch RS reference moved to `codec`; the inner-RS parity matrix is computed without
+    `reedsolo` (`codec.inner_parity`, equal to the V1 one for every parity size);
+  - the read file's SHA-256 is computed in a helper thread during D0, not inline in the parser;
+  - the probe decides on variant-consistent nibble shares ≥ 30 % (spec §3.10 implementation notes);
+  - `run_start` carries the inputs without hashes; the hashes are on `command_end`;
+  - item 2.8: the decode *outcome* is independent of the spill bucket count, the report's consensus internals are not
+    (cross-group snaps stay within a bucket); open for a decision;
+  - EXP-PROBE-1 (item 2.5) fails its "0 refusals" criterion in 60 nanopore-like samples of 64 reads that no layout
+    decodes; it conflicts with "0 acceptances" at that sample size (experiments/v6/phase2/EXP-PROBE-1/README.md).
+
 ## 1. Problem statement (from the audit)
 
 1. **The "V4" package is not a frozen baseline.** V5 and V6 behaviour is patched into it in place, and the cycles v4↔v5 and

@@ -1,6 +1,4 @@
-"""V4 format identifiers. The software version is the package version (the encoder recorded in new archives)."""
-from .._version import __version__
+"""Moved to :mod:`vnxdna.core.version` (V6 Phase 2, M1); this old path is an alias of the same module object."""
+from vnxdna.core._alias import alias_module
 
-__all__ = ["__version__", "FORMAT_VERSION", "FRAME_VERSION"]
-FORMAT_VERSION = (4, 0)   # VNX4 container major, minor
-FRAME_VERSION = 4         # strand frame version nibble
+alias_module(__name__, "vnxdna.core.version")

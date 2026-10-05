@@ -1,0 +1,67 @@
+0/4320 cells, 10 s
+100/4320 cells, 31 s
+200/4320 cells, 59 s
+300/4320 cells, 78 s
+400/4320 cells, 101 s
+500/4320 cells, 147 s
+600/4320 cells, 198 s
+700/4320 cells, 236 s
+800/4320 cells, 262 s
+900/4320 cells, 297 s
+1000/4320 cells, 316 s
+1100/4320 cells, 332 s
+1200/4320 cells, 353 s
+1300/4320 cells, 376 s
+1400/4320 cells, 392 s
+1500/4320 cells, 413 s
+1600/4320 cells, 438 s
+1700/4320 cells, 462 s
+1800/4320 cells, 480 s
+1900/4320 cells, 502 s
+2000/4320 cells, 565 s
+2100/4320 cells, 632 s
+2200/4320 cells, 689 s
+2300/4320 cells, 749 s
+2400/4320 cells, 775 s
+2500/4320 cells, 796 s
+2600/4320 cells, 817 s
+2700/4320 cells, 845 s
+2800/4320 cells, 866 s
+2900/4320 cells, 887 s
+3000/4320 cells, 901 s
+3100/4320 cells, 919 s
+3200/4320 cells, 933 s
+3300/4320 cells, 949 s
+3400/4320 cells, 968 s
+3500/4320 cells, 988 s
+3600/4320 cells, 1005 s
+3700/4320 cells, 1029 s
+3800/4320 cells, 1057 s
+3900/4320 cells, 1079 s
+4000/4320 cells, 1102 s
+4100/4320 cells, 1127 s
+4200/4320 cells, 1155 s
+4300/4320 cells, 1176 s
+{
+ "false_refusals_of_supported": 60,
+ "wrong_layout_of_supported": 0,
+ "supported_accepted_without_a_verified_frame": {
+  "cells": 1327,
+  "by_model": {
+   "clean": 0,
+   "illumina-like": 0,
+   "nanopore-like": 1242,
+   "mixed-harsh": 13,
+   "deletion-heavy": 72,
+   "dropout-20": 0
+  },
+  "layout_correct": 769
+ },
+ "acceptances_of_unsupported": 0,
+ "unsupported_identified_n_ge_1000": {
+  "correct": 2880,
+  "cells": 2880,
+  "share": 1.0
+ },
+ "pass": false
+}

@@ -422,6 +422,21 @@ it returns without verifying any frame (`decoder.py:154-155`). That is why a poo
      SHOULD add the hint "possible tag collision" to any later failure.
    - Superblock symbol conflicts are reported in the result, as now (`decoder.py:785`).
 
+**Implementation notes (6.0.0.dev0, V6 Phase 2; `vnxdna.recovery.probe`).** Measured on the probe test pools and in
+EXP-PROBE-1 (SIMULATED):
+
+- *Consistency, not frequency.* Byte 1 is `(version << 4 | kind) ⊕ keystream(domain, b0)[0]`, and most strands use
+  scrambler variant 0, so a structured pool shows one nibble in about half of its reads in every *foreign* domain too
+  (0.39–0.57 measured; the V3 test pool shows nibble 4 in the `"VNX4 scrambler"` domain in 55 % of its reads). A domain
+  therefore "shows" nibble u only if u holds ≥ 30 % of the reads *and* ≥ 30 % of the reads whose variant byte is not
+  the most common one (own domain ≈ 1.0, foreign ≤ 0.1, random ≈ 1/8). 30 % instead of 50 %: noisy own-domain shares
+  are 0.5–0.6 (nanopore-like).
+- *n counts molecules.* Step 6 needs ≥ 64 distinct molecules (reads keyed by their first and last 24 nt), so coverage
+  copies of a few random strands are not refused as a frame version.
+- *Step 4 fallback.* If no exact-length read verifies, the vote is repeated through the sync path (marker alignment).
+  If still nothing verifies but frame version 4 is evident, the best-fitting candidate is used instead of a refusal; the
+  decoder verifies every frame as always (equal-length layouts are then indistinguishable, and such pools do not decode).
+
 **Complexity.** The probe costs O(n · d · h): n sampled reads, d = 3 domains, h primer hypotheses. Each probe is one byte
 lookup from a 256 × 3 table of precomputed keystream bytes. Verification is unchanged: O(candidates × min(n, 4,000)) frame
 decodes. Primer trimming in pass 1 costs O(reads × (Lf + Lr) × band) with banded edit distance.
@@ -851,6 +866,11 @@ manifest.json   strands.fasta[.gz]   order.csv   SHA256SUMS   [sector-zero.fasta
 | `OUTPUT_ERROR` | OUTPUT_ERROR | 8 | no | |
 | `PROVIDER_ERROR` | PROVIDER_ERROR (new) | 10 | provider-defined | §9.2 |
 | `INTERNAL_ERROR` | INTERNAL_ERROR | 70 | no | bug |
+
+Codes added by the implementation for errors the table does not name (category and exit code as shown):
+`ADDRESS_ERROR` (INVALID_INPUT, 3), `RESOURCE_LIMIT` (INVALID_INPUT, 3), `INTEGRITY_ERROR` (VERIFICATION_FAILED, 1;
+any digest mismatch other than the whole-container one) and `INTERNAL_ERROR` for unexpected exceptions. `KEY_REQUIRED`
+does not exist: a missing key is `WRONG_KEY`. Errors of the frozen V1–V3 classes use their category as the code.
 
 During the deprecation period, the error JSON keeps `error_class` (`v4/errors.py:37`) in addition to `code`. Only `code`
 is stable.
