@@ -256,3 +256,17 @@ def test_cli_read_clustering(pools, tmp_path):
     from vnxdna.sdk.config import decode_options_for
     assert decode_options_for(None, None).read_clustering == "off"
     assert decode_options_for(None, None, read_clustering="fallback").read_clustering == "fallback"
+
+
+def test_random_access_with_clustering_on(pools, tmp_path):
+    """--select reads the index and the selected file's groups; with clustering the same fill-only rule applies."""
+    p = pools["reads"]["helped"]
+    out = tmp_path / "sel"
+    claim, res, err = decode_claim(lambda: de.decode_reads(p, None, de.DecodeOptions(read_clustering="fallback"),
+                                                          select=["in.bin"], select_dir=out), None,
+                                   select_dir=out, selective=True)
+    import hashlib
+    truth = {"in.bin": hashlib.sha256((pools["dir"] / "in.bin").read_bytes()).hexdigest()}
+    oc = classify_outcome(claim, truth)
+    assert oc["outcome"] == EXACT, (oc, err)
+    assert res.report["clustering"]["status"] == "ran"

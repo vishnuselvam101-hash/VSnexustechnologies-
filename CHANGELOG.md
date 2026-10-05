@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Added
+
+- **V7 item A reference (opt-in, EXPERIMENTAL): header-independent read clustering with fill-only merge.**
+  `DecodeOptions(read_clustering="fallback")` / `vnx decode --read-clustering fallback`; the default `off` is the 6.0
+  decode path byte for byte. Pass 1 keeps every unverified read in an unplaced-read store (budget 4,000,000 reads);
+  a lazy stage D7c clusters them by k-mer sketches and banded edit distance, builds a per-cluster consensus with
+  forward-backward certain calls (indels erase only the positions their placement affects), and accepts frames only
+  after inner RS + CRC-32. Cluster frames fill only superblock symbols and data addresses the 6.0 path left
+  unresolved (FC-9); the container SHA-256 still decides SUCCESS. Python/NumPy reference (native kernels: step A2);
+  design `docs/V7_ARCHITECTURE.md` §5, deviations in the module docstrings; smoke run
+  `experiments/v7/a1-smoke/README.md` (EXPERIMENTAL, SIMULATED, no efficacy claim). Formats unchanged.
+
 ### Fixed
 
 - **Random access with failed groups outside the selection (job #66).** On a V6 stripe archive the column pass decodes

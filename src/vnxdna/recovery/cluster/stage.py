@@ -36,17 +36,18 @@ CONSENSUS_BATCH = 256
 
 
 def cluster_frames(reads: list, lay: Layout, cfg: ClusterConfig, marker_mismatch: int = 4, counts: Counter | None = None,
-                   cons: Counter | None = None, checkpoint=None) -> tuple[list[dict], dict | None]:
+                   cons: Counter | None = None, checkpoint=None, raw: np.ndarray | None = None) -> tuple[list[dict], dict | None]:
     """Reads (any order and orientation) → verified cluster frames, in cluster-ID order, and the work budget that
-    stopped the stage (None if none did). Every frame passed inner RS + CRC-32; nothing here trusts a read's header."""
+    stopped the stage (None if none did). Every frame passed inner RS + CRC-32; nothing here trusts a read's header.
+    ``raw``: the reads as a zero-padded (n, W) matrix when the caller already has one (the store's memory map)."""
     counts = Counter() if counts is None else counts
     cons = Counter() if cons is None else cons
     n = len(reads)
     lens = np.fromiter((r.size for r in reads), dtype=np.int64, count=n)
-    width = int(lens.max(initial=1))
-    raw = np.full((n, max(1, width)), 4, dtype=np.uint8)
-    for i, r in enumerate(reads):
-        raw[i, : r.size] = r
+    if raw is None:
+        raw = np.full((n, max(1, int(lens.max(initial=1)))), 4, dtype=np.uint8)
+        for i, r in enumerate(reads):
+            raw[i, : r.size] = r
     hashes, orient = sketch_reads(raw, lens, cfg.k, cfg.sketch_size)
     cl = cluster_reads(reads, hashes, orient, cfg)
     counts.update(cl.counts)
@@ -138,7 +139,8 @@ class ClusterStage:
         lens = np.asarray(recs["len"], dtype=np.int64) if n else np.zeros(0, dtype=np.int64)
         reads = [np.array(recs["raw"][i, : lens[i]], dtype=np.uint8) for i in range(n)]
         check = (lambda: self.planner.checkpoint("read clustering consensus")) if self.planner is not None else None
-        frames, budget = cluster_frames(reads, self.lay, self.cfg, self.marker_mismatch, self.counts, self.cons, check)
+        frames, budget = cluster_frames(reads, self.lay, self.cfg, self.marker_mismatch, self.counts, self.cons, check,
+                                        raw=recs["raw"] if n else None)
         if budget is not None:
             self.budget.append(budget)
             if budget["limit"] == "max_candidate_pairs":
