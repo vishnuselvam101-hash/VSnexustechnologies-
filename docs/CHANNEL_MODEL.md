@@ -1,13 +1,182 @@
 # Channel models
 
-This page has two parts. **V4 channel** (`vnx channel simulate`, `vnxdna.v4.channel`) comes first. The **V3 channel**
-(`vnx-dna sequence`, format 5) follows unchanged below the divider.
+This page has three parts. The **V6 channel-model framework** (`vnx.channel-model/1`, `vnxdna.simulation`, V6 Phase 3)
+comes first. The **V4 channel** (`vnxdna.simulation.channel`, formerly `vnxdna.v4.channel`) follows; the V6 framework
+reproduces it byte for byte. The **V3 channel** (`vnx-dna sequence`, format 5) follows unchanged below the divider.
 
-> **SIMULATED.** Both channels are configurable, seeded stress generators for the decoders. Neither is fitted to a
-> synthesis chemistry or a sequencing platform. Recovery measured with them describes this software under the stated
-> parameters, not physical DNA storage. No physical experiment has been performed.
+> **SIMULATED.** All channels here are configurable, seeded software models used to test the decoders. None is fitted
+> to a synthesis chemistry, a storage condition or a sequencing platform. Recovery measured with them describes this
+> software under the stated parameters, not physical DNA storage. No DNA has been synthesised, stored, amplified or
+> sequenced by VNX-DNA. Reads simulated from any model are SIMULATED, whatever the origin of the model's parameters.
 
-## V4 channel
+## V6 channel-model framework (`vnx.channel-model/1`)
+
+A channel model is a JSON document with four stages that have independent parameters:
+
+```
+strands ─► synthesis ─► storage ─► amplification ─► sequencing ─► reads (FASTQ/FASTA) + vnx.simulation-metadata/1
+```
+
+Code: `vnxdna.simulation.model` (documents), `errormodels` (error models), `engine` (simulator), `registry` (shipped
+models), `montecarlo` (trials and sweeps). JSON Schemas: `vnx.channel-model/1` and `vnx.simulation-metadata/1` in
+`vnxdna/core/schemas` (`vnxdna.core.schema.validate`). The layer rule R2 holds: no codec layer (`core` … `pipeline`)
+imports `vnxdna.simulation` (`tests/architecture/test_layers.py`).
+
+### Document
+
+| key | meaning |
+|---|---|
+| `schema` | `"vnx.channel-model/1"` |
+| `name`, `version` | identifier `[a-z0-9][a-z0-9._+-]*` and semantic version. A version is an identifier and is never refused |
+| `description`, `note` | free text; `note` says whether the parameters are fitted (and to what) or synthetic |
+| `data_source` | where the **parameter values** come from: `SIMULATED` (synthetic stress settings), `SYNTHETIC` (software test data), `LABORATORY` (fitted to laboratory or public sequencing data), `PHYSICAL_VALIDATION` (a VNX physical validation round) |
+| `evidence_class` | label of the parameter file (spec §9.3 vocabulary). Allowed: SIMULATED → `SIMULATED`; SYNTHETIC → `SYNTHETIC SOFTWARE TEST`; LABORATORY → `PUBLIC-DATA-DERIVED` or `REAL PHYSICAL RESULT`; PHYSICAL_VALIDATION → `REAL PHYSICAL RESULT` |
+| `provenance` | `converted_from` (schema, file, SHA-256 of the source bytes), `datasets` (each with `accession` and the `sha256` of the data used; required for LABORATORY and PHYSICAL_VALIDATION), `fitter`, `references`, `derived` (every parameter change made from another model: source `name@version`, its SHA-256, label, changes) |
+| `stages` | the four stage objects below. A reader fills omitted fields with their defaults (identity: no errors, coverage 1); the canonical form, and the model SHA-256 (of its canonical JSON), has every field |
+
+Error-model objects used in several stages:
+
+- **substitution** `{"rate", "matrix", "from_multipliers"}`: per-base rate; `matrix` is 4×4 P(to | from, substitution)
+  with rows and columns A, C, G, T, diagonal 0, rows summing to 1 (`null` = uniform over the other three bases);
+  `from_multipliers` multiplies the rate by the original base (`null` = 1, 1, 1, 1).
+- **insertion** `{"rate", "base_weights"}`: per-base rate of inserting one base *before* the position; `base_weights` =
+  P(inserted base) (`null` = uniform).
+- **deletion** `{"rate", "run_length": {"distribution": "single" | "geometric", "mean"}}`: `rate` is the per-base rate of
+  deletion **events** (run starts). A geometric run removes Geometric(1/mean) consecutive bases (mean ≥ 1), so the
+  expected deleted fraction is about `rate × mean`.
+- **position_profile** `null` or `{"basis": "absolute" | "relative", "substitution", "insertion", "deletion"}`: per-position
+  rate multipliers (each list may be `null`). `absolute`: entry i applies to position i, the last entry beyond the list.
+  `relative`: B equal-width bins over each sequence's own length.
+
+| stage | field | default | model |
+|---|---|---|---|
+| synthesis | `dropout_rate` | 0 | strand species absent from the pool (Bernoulli per strand; V4 `dropout_rate`) |
+| | `substitution`, `insertion`, `deletion`, `position_profile` | 0 | errors per base **per molecule**, shared by every read of that molecule; not reflected in quality |
+| | `truncation` `{"rate", "min_fraction"}` | 0, 0.5 | an incomplete product keeps a 3′ suffix of uniform length in [⌈min_fraction·n⌉, n−1] |
+| | `yield_sigma` | 0 | synthesis bias: per-strand abundance × LogNormal(−σ²/2, σ) (mean 1) |
+| | `molecules_per_strand` | 1 | independent molecule variants per strand (1–64); each read samples an intact variant uniformly |
+| storage | `strand_loss` `{"rate", "burst_count", "burst_length"}` | 0, 0, 0 | pool-order strand loss: i.i.d. plus contiguous runs (`vnxdna.simulation.loss`, the Phase 1 `loss` section) |
+| | `retention` | 1 | fraction of molecules retained: multiplies the expected coverage |
+| | `damage` (substitution) | 0 | degradation: per-base damage on molecules (e.g. a C>T/G>A matrix with `from_multipliers` [0, 1, 1, 0]) |
+| | `breakage_rate` | 0 | degradation: per-base break; a broken molecule is unreadable (P(intact) = (1 − b)ⁿ); a strand with no intact molecule gives no reads |
+| | `contamination_rate` | 0 | expected fraction (≤ 0.5) of output reads that are foreign uniform random sequences of the strand length |
+| amplification | `gc_bias` `{"strength", "optimum"}` | 0, 0.5 | coverage weight exp(−s·((gc − optimum)/0.1)²) (V4 GC bias) |
+| | `efficiency_sigma` | 0 | uneven representation: per-strand weight × LogNormal(−σ²/2, σ) |
+| | `cycles`, `substitution_per_cycle` | 0 | polymerase substitutions, rate × cycles per base per read |
+| | `duplicate_rate` | 0 | PCR duplicates: an extra read of the same molecule, with its own sequencing errors |
+| sequencing | `coverage` `{"model", "mean", "dispersion", "sigma"}` | fixed, 1, 5, 0 | reads per strand: `fixed` (integer; Poisson when any abundance weight applies, as in V4), `poisson`, `negative-binomial` (Gamma–Poisson, shape `dispersion`), `lognormal` (Poisson(mean × LogNormal(−σ²/2, σ))) |
+| | `substitution`, `insertion`, `deletion`, `position_profile` | 0 | per base per read, jointly: one uniform u per position decides deletion, insertion or substitution (V4 rule) |
+| | `homopolymer` `{"min_run", "indel_multiplier", "substitution_multiplier"}` | 3, 1, 1 | rates multiplied inside runs ≥ min_run |
+| | `bursts` `{"rate", "max_length"}` | 0, 0 | per read, one contiguous deletion of 1…max_length bases |
+| | `n_rate`, `reverse_complement_rate` | 0 | base called N; read reported on the opposite strand |
+| | `quality` `{"correct", "error", "informative", "sd", "position_slope"}` | 35, 12, 0, 0, 0 | Phred scores: `error` on an erroneous base with probability `informative`; then Gaussian variation `sd` and a decrease of `position_slope` per base along the read as reported, rounded and clipped to 0–93 |
+| | `read_length` `{"max_length", "truncation_rate", "min_fraction"}` | null, 0, 0.5 | reads cut to `max_length`; with probability `truncation_rate` a read keeps a uniform prefix in [⌈min_fraction·n⌉, n−1] |
+| | `duplicate_rate` | 0 | identical copy of a read, errors included (V4 duplication) |
+| | `missing_read_rate` | 0 | read lost after sequencing (failed call, filtering) |
+| | `shuffle_window` | 0 | seeded shuffle of reads within windows (0 = strand order) |
+
+Validation refuses unknown keys, wrong types and out-of-range values (exit 7, `CONFIGURATION_ERROR`), and the sum of a
+stage's substitution, insertion and deletion rates above 0.5.
+
+**Fields for fitting to public data (roadmap V7).** The research gate (`research/competitive-2026-10-05/40-datasets.md`,
+plan (a)) asked for per-position profiles, a 4×4 substitution matrix, a deletion-run length, lognormal coverage, a
+synthesis-versus-sequencing split and provenance. They are all in `/1`: `position_profile` (absolute or binned), `matrix`
+plus `from_multipliers`, `deletion.run_length`, `coverage.model: "lognormal"` with `sigma`, the `synthesis` stage
+(errors shared by the reads of a molecule) versus the `sequencing` stage (independent per read), and
+`data_source`/`evidence_class`/`provenance.datasets`. A fitted parameter file would be `data_source: "LABORATORY"`,
+`evidence_class: "PUBLIC-DATA-DERIVED"`; reads simulated from it are still SIMULATED. No model has been fitted yet.
+
+### Reading rules (spec §4.1, §4.5)
+
+| input | read as |
+|---|---|
+| `"schema": "vnx.channel-model/1"` | /1 |
+| no `schema`, with `name`, `loss`, `channel` (the Phase 1 files) | `/0`, converted exactly: `loss` → `storage.strand_loss`; `channel.dropout_rate` → `synthesis.dropout_rate`; `gc_bias_*` → `amplification.gc_bias`; every other field → `sequencing` |
+| no `schema` otherwise, or `vnx.channel-config/0` or `/1` | a V4 `ChannelConfig` (its own validation, unchanged; its `seed` is the default seed) |
+| any other `vnx.channel-model/N` or `vnx.channel-config/N`, or another schema | refused: `SCHEMA_UNSUPPORTED`, exit 6 |
+
+`/1 → /0` is available when a model uses only V4 mechanisms (`ChannelModel.to_v0()`, `vnx channel show NAME --schema
+vnx.channel-model/0`); otherwise it is refused with the list of parameters `/0` cannot express.
+
+### Shipped models
+
+`vnx channel models` lists them; `vnx channel show NAME[@VERSION]` prints one. The 14 Phase 1 models (clean,
+substitution-heavy, insertion-heavy, deletion-heavy, mixed-mild, mixed-harsh, dropout-5, dropout-10, dropout-20,
+burst-loss, uneven-coverage, quality-degradation, illumina-like, nanopore-like; all 1.0.0) ship as package data in
+canonical /1 form (`src/vnxdna/simulation/models`), each with the SHA-256 of its /0 source in
+`provenance.converted_from`. All are `data_source: SIMULATED`; "illumina-like" and "nanopore-like" follow qualitative
+descriptions only and are not fitted to any platform. `NAME` means the highest shipped version of that name;
+`NAME@VERSION` an exact one; a path any readable file.
+
+### Error-model interface
+
+`vnxdna.simulation.errormodels.ErrorModel`: `kind`, `parameters()`, `active`, `apply(pool, rng)` on a `SequencePool`
+(padded sequences, lengths, source strand, optional qualities, event counts). Implementations: `SubstitutionModel`,
+`InsertionModel`, `DeletionModel`, `DropoutModel`, `CoverageModel`, `QualityModel`, and `CompositeModel`, which applies
+models in order and applies adjacent substitution/insertion/deletion models jointly (competing events per position, as
+in V4). Each can be used alone on a pool; the engine builds them from the stage objects.
+
+### Determinism and compatibility
+
+- Pool-level strand loss uses `default_rng([seed, 0x56360001])` (as `vnxdna.simulation.loss`). The surviving strands are
+  processed in batches of 1,024.
+- Batch b draws every V4 mechanism from `default_rng([seed, b])` **in the V4 order**. Every other mechanism draws from a
+  stage generator `default_rng([seed, b, tag])` (synthesis, storage, amplification and sequencing tags in
+  `engine.TAG_*`). Shuffle windows use `default_rng([seed, 0x5F5F])`.
+- Consequences: a model that uses only V4 mechanisms (all 14 shipped models, every V4 `ChannelConfig`) gives the V4
+  reads byte for byte; switching on an extension does not re-randomise the V4 events (for example a substitution matrix
+  changes only which base is substituted, contamination only appends reads); the output is a pure function of
+  (strands, model, seed) and independent of the worker count.
+- Evidence (SIMULATED, software reproducibility only): **EXP-SIM-1** (`experiments/v6/phase3/EXP-SIM-1`, clean commit
+  54ce9bc): 14 models × 3 strand files × 5 seeds, the current simulator versus the engine with the /0 file and with the
+  shipped /1 model: **210/210 cells with identical read-file SHA-256**. Regression tests: `tests/simulation/test_sim_compat.py`
+  (also 3 workers, and old `ChannelConfig` JSON against `vnxdna.simulation.channel.simulate_file`).
+
+### Metadata (`vnx.simulation-metadata/1`)
+
+Every simulation returns, in the result body under `metadata` (and in a file with `--metadata PATH`): `data_source:
+"SIMULATED"`, `evidence_class: "SIMULATED"`, a statement; the `seed`; the model (`name`, `version`, schema, the schema it
+was read as, SHA-256, source file and its SHA-256, the parameter file's `data_source`, `evidence_class`, `provenance`);
+the full `parameters` and any `overrides`; the generator layout (`rng`); `versions` (software, simulator 1.0.0, model and
+metadata schema, NumPy, Python); input (file, SHA-256, strands, strand length); output (file, SHA-256, bytes, format,
+reads); and event counts (`stats`: the V4 counters plus synthesis/storage/amplification/sequencing extension counters and
+`storage_lost`).
+
+### Use
+
+```
+vnx channel simulate strands.fasta reads.fastq --model illumina-like --seed 7
+vnx channel simulate strands.fasta reads.fastq --model burst-loss@1.0.0 --seed 7 --metadata reads.meta.json
+vnx channel simulate strands.fasta reads.fastq --model nanopore-like --seed 7 \
+    --param sequencing.coverage='{"model": "lognormal", "mean": 20, "dispersion": 5, "sigma": 0.58}'
+vnx channel simulate strands.fasta reads.fastq --config channel.json        # V4 ChannelConfig: the V4 reads, byte for byte
+vnx channel convert experiments/v6/channel/models/clean.json clean.v1.json   # /0 or ChannelConfig → canonical /1
+vnx channel sweep strands.fasta --model clean --out-dir runs --trials 20 --base-seed 100 \
+    --grid sequencing.substitution.rate='[0.001, 0.005, 0.01]' -o sweep.json
+```
+
+`--seed`, `--coverage`, `--substitution-rate`, `--insertion-rate`, `--deletion-rate` and `--dropout-rate` apply to
+models as to `ChannelConfig` (a non-integer coverage on a fixed-coverage model switches it to Poisson, as in V4);
+`--param PATH=JSON` changes any /1 parameter. Changed parameters are recorded in `provenance.derived` and in the
+metadata `overrides`. Python: `sdk.simulate(strands, reads, model="illumina-like", seed=7)`, `sdk.channel_models()`,
+`sdk.channel_model(ref)`, `sdk.channel_convert(src, dst)`, `sdk.channel_sweep(...)`.
+
+**Monte Carlo and sweeps** (`vnxdna.simulation.montecarlo`). `monte_carlo(model, strands, out_dir, trials, base_seed)`
+runs seeds `base_seed + i` and summarises the realised rates (mean, sd, min, max); an optional `evaluate(reads, metadata)`
+callback (for example a decode) is stored per trial. `sweep(model, strands, out_dir, grid)` runs one Monte Carlo per
+point of a grid of dotted parameter paths; every point is a derived model, validated before the first run. Output:
+`vnx.channel-sweep/1` with every trial's read SHA-256 and metadata.
+
+### Not modelled (NOT VALIDATED against any platform)
+
+Context-dependent error rates beyond homopolymer runs and the per-base-from multipliers; chimeras; primer and adapter
+sequences; PCR amplification dynamics (efficiency per cycle, jackpotting, lineage-shared PCR errors); strand-specific
+or time-dependent decay laws; paired-end reads. The parameter values of every shipped model are stress settings.
+
+## V4 channel (`vnxdna.simulation.channel`)
+
+The V6 framework reads every V4 `ChannelConfig` and reproduces its reads byte for byte (above). The V4 module is unchanged.
+
 
 Each strand goes through: dropout → coverage (number of reads) → per-read errors → optional N calls, quality scores,
 reverse complement → optional duplication → output (FASTQ or FASTA, optionally shuffled in windows).

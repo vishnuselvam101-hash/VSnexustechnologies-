@@ -1,0 +1,144 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "urn:vnx:vnx.simulation-metadata/1",
+ "title": "Metadata of one channel simulation (docs/CHANNEL_MODEL.md): model, parameters, versions, seed, input and output",
+ "type": "object",
+ "required": [
+  "schema",
+  "data_source",
+  "evidence_class",
+  "statement",
+  "seed",
+  "model",
+  "parameters",
+  "overrides",
+  "rng",
+  "versions",
+  "input",
+  "output",
+  "stats"
+ ],
+ "properties": {
+  "schema": {
+   "const": "vnx.simulation-metadata/1"
+  },
+  "data_source": {
+   "const": "SIMULATED"
+  },
+  "evidence_class": {
+   "const": "SIMULATED"
+  },
+  "statement": {
+   "type": "string"
+  },
+  "seed": {
+   "type": "integer",
+   "minimum": 0
+  },
+  "model": {
+   "type": "object",
+   "required": [
+    "name",
+    "version",
+    "schema",
+    "read_as",
+    "sha256",
+    "data_source",
+    "evidence_class",
+    "provenance"
+   ],
+   "properties": {
+    "name": {
+     "type": "string"
+    },
+    "version": {
+     "type": "string"
+    },
+    "schema": {
+     "const": "vnx.channel-model/1"
+    },
+    "read_as": {
+     "type": "string"
+    },
+    "sha256": {
+     "type": "string",
+     "pattern": "^[0-9a-f]{64}$"
+    },
+    "data_source": {
+     "enum": [
+      "SIMULATED",
+      "SYNTHETIC",
+      "LABORATORY",
+      "PHYSICAL_VALIDATION"
+     ]
+    },
+    "evidence_class": {
+     "type": "string"
+    },
+    "provenance": {
+     "type": "object"
+    },
+    "source": {
+     "type": [
+      "object",
+      "null"
+     ]
+    }
+   }
+  },
+  "parameters": {
+   "$ref": "urn:vnx:vnx.channel-model/1#/properties/stages"
+  },
+  "overrides": {
+   "type": "object"
+  },
+  "rng": {
+   "type": "object"
+  },
+  "versions": {
+   "type": "object",
+   "required": [
+    "software",
+    "simulator",
+    "simulator_version",
+    "model_schema",
+    "numpy",
+    "python"
+   ]
+  },
+  "input": {
+   "type": "object",
+   "required": [
+    "file",
+    "sha256",
+    "strands",
+    "strand_length"
+   ]
+  },
+  "output": {
+   "type": "object",
+   "required": [
+    "file",
+    "sha256",
+    "bytes",
+    "format",
+    "reads"
+   ],
+   "properties": {
+    "sha256": {
+     "type": "string",
+     "pattern": "^[0-9a-f]{64}$"
+    },
+    "format": {
+     "enum": [
+      "fastq",
+      "fasta"
+     ]
+    }
+   }
+  },
+  "stats": {
+   "type": "object"
+  }
+ }
+}

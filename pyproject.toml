@@ -39,6 +39,7 @@ where = ["src"]
 "vnxdna.v6" = ["native/*.c"]
 "vnxdna.core" = ["schemas/*.json"]
 "vnxdna.physical" = ["schemas/*.json"]
+"vnxdna.simulation" = ["models/*.json"]
 "vnxdna.conformance" = ["vectors/**/*"]
 
 [tool.pytest.ini_options]

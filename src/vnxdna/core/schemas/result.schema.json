@@ -45,7 +45,9 @@
     "validate",
     "generate",
     "profiles",
-    "native"
+    "native",
+    "channel-model",
+    "channel-sweep"
    ]
   },
   "status": {
