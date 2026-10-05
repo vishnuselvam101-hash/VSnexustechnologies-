@@ -1,6 +1,5 @@
 """Tests for the benchmark-lab files under benchmarks/competitors/lab (aggregation maths and the licence boundary)."""
 import importlib.util
-import json
 import re
 import subprocess
 from pathlib import Path
