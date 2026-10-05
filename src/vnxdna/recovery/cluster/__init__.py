@@ -1,6 +1,8 @@
 """V7 item A (opt-in): header-independent read clustering, per-cluster consensus and fill-only merge.
 
-Decode stage D7c ``cluster`` (V7_ARCHITECTURE §3, §5). Python/NumPy reference; native kernels are a later step.
+Decode stage D7c ``cluster`` (V7_ARCHITECTURE §3, §5). The NumPy code here is the reference; the sketch, candidate,
+distance, verification and forward-backward steps run in the native kernel ``vnxdna.native.cluster`` when it is
+available (``VNXDNA_CLUSTER_BACKEND``), with identical results.
 
 * :mod:`.store`      the unplaced-read store written in pass 1 (§5.1)
 * :mod:`.sketch`     canonical k-mer MinHash sketches (§5.2 step 1)

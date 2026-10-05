@@ -1,13 +1,14 @@
 """Layer 1 (V6_ARCHITECTURE §2): the native (C) kernels, their loaders, and which backend every kernel uses.
 
 Kernel bindings: :mod:`vnxdna.native.align` (marker aligner), :mod:`vnxdna.native.reads` (read parser),
-:mod:`vnxdna.native.rs` (inner RS decoder). Their bit-exact NumPy references live in higher layers and are resolved
+:mod:`vnxdna.native.rs` (inner RS decoder), :mod:`vnxdna.native.cluster` (V7 read clustering). Their bit-exact NumPy references live in higher layers and are resolved
 by module name (``vnxdna.core._alias.lazy_module``), so this package imports nothing above ``vnxdna.core``.
 The C sources and the libraries stay in ``vnxdna/v5/native`` and ``vnxdna/v6/native`` (extension names
-``vnxdna.v5._vnx_align``, ``vnxdna.v6._vnx_reads``, ``vnxdna.v6._vnx_rs``), so installed layouts are unchanged.
+``vnxdna.v5._vnx_align``, ``vnxdna.v6._vnx_reads``, ``vnxdna.v6._vnx_rs``), so installed layouts are unchanged. The V7 cluster kernel's source
+is ``vnxdna/native/c/cluster.c`` (extension ``vnxdna._vnx_cluster``).
 
 :func:`native_status` returns, for each kernel, the backend that actually runs (``native`` or ``reference``), the SIMD
-level (RS decoder), the library path and where it came from, the ABI version and why the native library is not used
+level (RS decoder; forward-backward level of the cluster kernel), the library path and where it came from, the ABI version and why the native library is not used
 when it is not. :func:`backend_summary` is the compact form recorded in decode reports (``report["native_backends"]``)
 and in the ``decode_start`` event. ``python -m vnxdna.native`` prints :func:`native_status` as JSON
 (``--require-native`` exits 1 unless every kernel runs natively, e.g. as a post-install check).
@@ -17,6 +18,7 @@ Kernels::
     align   V5 marker-template aligner     vnxdna.native.align   (old path vnxdna.v5.native_alignment)   reference: TemplateAligner (NumPy)
     reads   V6 FASTQ/FASTA read parser     vnxdna.native.reads   (old path vnxdna.v6.native_reads)       reference: the Python parser
     rs      V6 inner RS (GF(256)) decoder  vnxdna.native.rs      (old path vnxdna.v6.native_rs)          reference: rs_fast (NumPy)
+    cluster V7 read clustering + consensus vnxdna.native.cluster                                         reference: vnxdna.recovery.cluster (NumPy)
 
 Backend environment variables are documented in docs/NATIVE_KERNELS.md. Nothing here raises: an invalid backend
 variable is reported in ``error`` (the decode itself would raise it).
@@ -29,9 +31,10 @@ from pathlib import Path
 
 from ..core._alias import lazy_module
 
-KERNELS = ("align", "reads", "rs")
-_ENV_LIB = {"align": "VNXDNA_NATIVE_LIB", "reads": "VNXDNA_READS_LIB", "rs": "VNXDNA_RS_LIB"}
-_REFERENCE = {"align": "vnxdna.v4.sync", "reads": "vnxdna.v4.reads", "rs": "vnxdna.v4.rs_fast"}   # reported names: the stable (old) paths
+KERNELS = ("align", "reads", "rs", "cluster")
+_ENV_LIB = {"align": "VNXDNA_NATIVE_LIB", "reads": "VNXDNA_READS_LIB", "rs": "VNXDNA_RS_LIB", "cluster": "VNXDNA_CLUSTER_LIB"}
+_REFERENCE = {"align": "vnxdna.v4.sync", "reads": "vnxdna.v4.reads", "rs": "vnxdna.v4.rs_fast",
+              "cluster": "vnxdna.recovery.cluster"}   # reported names: the stable (old) paths
 _CODECS = "vnxdna.codec.codecs"      # InnerRS; its VNX_RS_REFERENCE switch (read at import) bypasses the RS kernel
 
 
@@ -78,6 +81,8 @@ def kernel_status(kernel: str) -> dict:
         out.update(supported_levels=st.get("supported_levels"), cpu_levels=st.get("cpu_levels"),
                    levels_restricted=st.get("levels_restricted"), fallback_reason=st.get("fallback_reason"),
                    auto_policy=st.get("auto_policy"))
+    elif kernel == "cluster" and out["backend"] == "native":
+        out["simd_level"] = st.get("fb_level")
     elif kernel == "align" and out["backend"] == "native":
         try:
             out["simd_lanes"] = int(m._load().vnx_align_lanes())
