@@ -165,7 +165,7 @@ def archive(inputs: List[Path] = typer.Argument(..., help="Files and/or director
     """Create a VNX4 archive: vnx archive ./dataset archive.vnx"""
     def go():
         from vnxdna.archive import operations as ar
-        from .config import load_config, performance as perf
+        from vnxdna.sdk.config import load_config, performance as perf
         if len(inputs) < 2:
             raise VNXConfigurationError("usage: vnx archive INPUT... OUTPUT.vnx")
         cfg = load_config(config).get("archive", {})
@@ -241,7 +241,7 @@ def extract(container: Path, output_dir: Path, names: Optional[List[str]] = type
 
 
 def _dna_opts(config, profile, outer_code, k, m, workers, performance, experimental=False, **v6):
-    from .config import dna_options, load_config, performance as perf
+    from vnxdna.sdk.config import dna_options, load_config, performance as perf
     cfg = load_config(config)
     p = perf(performance or cfg.get("performance"))
     w = workers if workers else p["workers"]
@@ -320,7 +320,7 @@ def encode(source: Path = typer.Argument(..., help="A .vnx container, or a file/
 def _decode(reads, output, extract_dir, partial_dir, select, profile, workers, performance, config, band, min_quality,
             archive_tag, force, key_file, passphrase_env, report, indel_recovery=None, soft_decoding=None,
             recovery_schedule=None, budget=None, events=None, task_id=None, allow_unencrypted=False):
-    from .config import decode_options, load_config, performance as perf
+    from vnxdna.sdk.config import decode_options, load_config, performance as perf
     cfg = load_config(config)
     p = perf(performance or cfg.get("performance"))
     opts = decode_options(cfg, profile=profile, workers=workers or p["workers"], band=band, min_quality=min_quality,
@@ -495,7 +495,7 @@ def channel_simulate(strands: Path, output: Path, config: Optional[Path] = typer
                      workers: int = typer.Option(1, "--workers", "-w"), force: bool = FORCE_OPT) -> None:
     """Simulate storage + sequencing (SIMULATION): strands → reads (FASTQ/FASTA)."""
     def go():
-        from . import channel as ch
+        from vnxdna.simulation import channel as ch
         cfg = ch.ChannelConfig.load(config) if config else ch.ChannelConfig()
         for name, v in (("seed", seed), ("coverage", coverage), ("substitution_rate", substitution_rate),
                         ("insertion_rate", insertion_rate), ("deletion_rate", deletion_rate), ("dropout_rate", dropout_rate)):
@@ -513,7 +513,7 @@ def benchmark(profile: str = typer.Option("balanced", "--profile", help="safe, b
               human: bool = typer.Option(False, "--human")) -> None:
     """Run the benchmark suite (stage throughput + clean/noisy end-to-end); JSON (+ .md next to --output)."""
     def go():
-        from . import bench, datagen
+        from vnxdna.benchmark import bench, datagen
         doc = bench.run_suite(profile, tuple(datagen.parse_size(s) for s in size), str(output) if output else None)
         if human:
             typer.echo(bench.markdown_report(doc["results"]))
@@ -526,7 +526,7 @@ def benchmark(profile: str = typer.Option("balanced", "--profile", help="safe, b
 def sweep(config: Path, output: Optional[Path] = typer.Option(None, "--output", "-o")) -> None:
     """Run an error sweep (experiment config with a "sweep" section); prints the recovery curve."""
     def go():
-        from . import experiment, sweep as sw
+        from vnxdna.benchmark import experiment, sweep as sw
         cfg = experiment.load(config) if json.loads(config.read_text()).get("type") else json.loads(config.read_text())
         res = sw.run_sweep(cfg, progress=_progress_cb())
         if output:
@@ -539,7 +539,7 @@ def sweep(config: Path, output: Optional[Path] = typer.Option(None, "--output", 
 def experiment_run(config: Path) -> None:
     """Run an experiment; writes environment.json, seed.json, input.sha256 and results.json next to the config."""
     def go():
-        from . import experiment
+        from vnxdna.benchmark import experiment
         res = experiment.run(config, progress=_progress_cb())
         _emit({"status": "DONE", "directory": str(config.parent), "experiment": res.get("experiment")})
     _run(go)
@@ -549,7 +549,7 @@ def experiment_run(config: Path) -> None:
 def experiment_reproduce(directory: Path) -> None:
     """Re-run an experiment directory and compare all deterministic results."""
     def go():
-        from . import experiment
+        from vnxdna.benchmark import experiment
         rep = experiment.reproduce(directory)
         _emit(rep)
         return 0 if rep["reproduced"] else 1
@@ -560,7 +560,7 @@ def experiment_reproduce(directory: Path) -> None:
 def generate(output: Path, size: str = typer.Option("1MB"), pattern: str = typer.Option("mixed"), seed: int = typer.Option(42)) -> None:
     """Generate deterministic test data (random, text, repetitive, binary, mixed)."""
     def go():
-        from . import datagen
+        from vnxdna.benchmark import datagen
         _emit({"output": str(output), "size": datagen.parse_size(size), "pattern": pattern, "seed": seed,
                "sha256": datagen.generate(output, datagen.parse_size(size), pattern, seed)})
     _run(go)
@@ -569,7 +569,7 @@ def generate(output: Path, size: str = typer.Option("1MB"), pattern: str = typer
 @app.command()
 def profiles() -> None:
     """List strand layout profiles and performance profiles."""
-    from .config import PERFORMANCE_PROFILES
+    from vnxdna.sdk.config import PERFORMANCE_PROFILES
     from vnxdna.dnaenc.layout import PROFILES
     out = {"layouts": {n: {**lay.to_dict(), "outer_K": k, "outer_M": m} for n, (lay, k, m) in PROFILES.items()},
            "performance": PERFORMANCE_PROFILES}
@@ -598,7 +598,7 @@ def experimental_encode(source: Path, output: Path, outer_code: str = typer.Opti
 def experimental_codec_compare(trials: int = typer.Option(100), output: Optional[Path] = typer.Option(None, "--output", "-o")) -> None:
     """EXPERIMENTAL: compare outer codes at the same redundancy budget under i.i.d. loss."""
     def go():
-        from . import bench
+        from vnxdna.benchmark import bench
         res = bench.codec_compare(trials=trials)
         if output:
             output.write_text(json.dumps(res, indent=2) + "\n")

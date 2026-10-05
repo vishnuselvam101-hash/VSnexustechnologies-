@@ -9,10 +9,6 @@
    "why": "locate --dna-profile maps chunks to DNA groups with the V4 geometry (moves out of the archive layer; bug 2.7)"
   },
   {
-   "violation": "R1 vnxdna.v4.bench -> vnxdna.v4.config",
-   "why": "the benchmark reads the CLI performance profiles from v4.config (config moves to sdk.config, M5)"
-  },
-  {
    "violation": "R6 vnxdna.v4.cli -> vnxdna.archive.container",
    "why": "the CLI still does pipeline work and imports the layers directly (rewritten on the SDK, M5)"
   },
@@ -22,6 +18,22 @@
   },
   {
    "violation": "R6 vnxdna.v4.cli -> vnxdna.archive.operations",
+   "why": "the CLI still does pipeline work and imports the layers directly (rewritten on the SDK, M5)"
+  },
+  {
+   "violation": "R6 vnxdna.v4.cli -> vnxdna.benchmark.bench",
+   "why": "the CLI still does pipeline work and imports the layers directly (rewritten on the SDK, M5)"
+  },
+  {
+   "violation": "R6 vnxdna.v4.cli -> vnxdna.benchmark.datagen",
+   "why": "the CLI still does pipeline work and imports the layers directly (rewritten on the SDK, M5)"
+  },
+  {
+   "violation": "R6 vnxdna.v4.cli -> vnxdna.benchmark.experiment",
+   "why": "the CLI still does pipeline work and imports the layers directly (rewritten on the SDK, M5)"
+  },
+  {
+   "violation": "R6 vnxdna.v4.cli -> vnxdna.benchmark.sweep",
    "why": "the CLI still does pipeline work and imports the layers directly (rewritten on the SDK, M5)"
   },
   {
@@ -49,32 +61,8 @@
    "why": "the CLI still does pipeline work and imports the layers directly (rewritten on the SDK, M5)"
   },
   {
-   "violation": "R6 vnxdna.v4.cli -> vnxdna.v4.bench",
+   "violation": "R6 vnxdna.v4.cli -> vnxdna.simulation.channel",
    "why": "the CLI still does pipeline work and imports the layers directly (rewritten on the SDK, M5)"
-  },
-  {
-   "violation": "R6 vnxdna.v4.cli -> vnxdna.v4.channel",
-   "why": "the CLI still does pipeline work and imports the layers directly (rewritten on the SDK, M5)"
-  },
-  {
-   "violation": "R6 vnxdna.v4.cli -> vnxdna.v4.datagen",
-   "why": "the CLI still does pipeline work and imports the layers directly (rewritten on the SDK, M5)"
-  },
-  {
-   "violation": "R6 vnxdna.v4.cli -> vnxdna.v4.experiment",
-   "why": "the CLI still does pipeline work and imports the layers directly (rewritten on the SDK, M5)"
-  },
-  {
-   "violation": "R6 vnxdna.v4.cli -> vnxdna.v4.sweep",
-   "why": "the CLI still does pipeline work and imports the layers directly (rewritten on the SDK, M5)"
-  },
-  {
-   "violation": "R7 vnxdna.v4.bench -> vnxdna.v4.decoder",
-   "why": "v4 modules not yet moved (bench/sweep/compare/cli/config; M5) still import the decoder/encoder facades"
-  },
-  {
-   "violation": "R7 vnxdna.v4.bench -> vnxdna.v4.encoder",
-   "why": "v4 modules not yet moved (bench/sweep/compare/cli/config; M5) still import the decoder/encoder facades"
   },
   {
    "violation": "R7 vnxdna.v4.cli -> vnxdna.v4.decoder",
@@ -82,22 +70,6 @@
   },
   {
    "violation": "R7 vnxdna.v4.cli -> vnxdna.v4.encoder",
-   "why": "v4 modules not yet moved (bench/sweep/compare/cli/config; M5) still import the decoder/encoder facades"
-  },
-  {
-   "violation": "R7 vnxdna.v4.compare -> vnxdna.v4.decoder",
-   "why": "v4 modules not yet moved (bench/sweep/compare/cli/config; M5) still import the decoder/encoder facades"
-  },
-  {
-   "violation": "R7 vnxdna.v4.compare -> vnxdna.v4.encoder",
-   "why": "v4 modules not yet moved (bench/sweep/compare/cli/config; M5) still import the decoder/encoder facades"
-  },
-  {
-   "violation": "R7 vnxdna.v4.sweep -> vnxdna.v4.decoder",
-   "why": "v4 modules not yet moved (bench/sweep/compare/cli/config; M5) still import the decoder/encoder facades"
-  },
-  {
-   "violation": "R7 vnxdna.v4.sweep -> vnxdna.v4.encoder",
    "why": "v4 modules not yet moved (bench/sweep/compare/cli/config; M5) still import the decoder/encoder facades"
   }
  ],
@@ -108,13 +80,6 @@
     "dnaenc"
    ],
    "why": "locate --dna-profile (fixed in M2/2.7)"
-  },
-  {
-   "edge": [
-    "benchmark",
-    "sdk"
-   ],
-   "why": "bench imports v4.config (fixed in M5)"
   }
  ]
 }

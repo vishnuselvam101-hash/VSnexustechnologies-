@@ -48,10 +48,7 @@ TOP_LEVEL = {"vnxdna._version": "core", "vnxdna._native_build": "native"}
 
 #: modules not yet moved -> the package they move to (V6_ARCHITECTURE §2 table). Shrinks with every M-step.
 PENDING = {
-    "vnxdna.v4.channel": "simulation", "vnxdna.v6.loss": "simulation",
-    "vnxdna.v4.bench": "benchmark", "vnxdna.v4.experiment": "benchmark", "vnxdna.v4.sweep": "benchmark",
-    "vnxdna.v4.datagen": "benchmark", "vnxdna.v4.compare": "benchmark",
-    "vnxdna.v4.config": "sdk", "vnxdna.v4.cli": "commands",
+    "vnxdna.v4.cli": "commands",
 }
 #: the version packages' own __init__ files only re-export; they are neither layer code nor legacy
 VERSION_PACKAGES = ("vnxdna.v4", "vnxdna.v5", "vnxdna.v5.indel", "vnxdna.v5.soft", "vnxdna.v6")
