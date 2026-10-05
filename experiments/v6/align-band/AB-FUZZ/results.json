@@ -1,0 +1,41 @@
+{
+ "experiment": "AB-FUZZ",
+ "classification": "SYNTHETIC reads; native vs reference comparison MEASURED",
+ "args": {
+  "rounds": 400,
+  "reads": 256,
+  "seed": 80080,
+  "out": "experiments/v6/align-band/AB-FUZZ/results.json"
+ },
+ "counts": {
+  "reads": 102400,
+  "in_band": 22028,
+  "window": 70395,
+  "beyond": 9977,
+  "path_reads": 25600
+ },
+ "mismatches": 0,
+ "failure": null,
+ "band_retry_pairs_drawn": 303,
+ "library": "/root/vnx-dna-lab/v6-align-band/src/vnxdna/v5/native/libvnx_align.so",
+ "seconds": 146.5,
+ "environment": {
+  "vnxdna_version": "6.0.0.dev0",
+  "git": {
+   "commit": "f96d3c01f6694da63a7174b1bfbc9ca13d247044",
+   "dirty": false
+  },
+  "python": "3.12.3",
+  "implementation": "CPython",
+  "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+  "machine": "x86_64",
+  "processor": "x86_64",
+  "cpu_count": 8,
+  "libraries": {
+   "numpy": "2.5.3",
+   "reedsolo": "unknown",
+   "zstandard": "0.25.0",
+   "cryptography": "46.0.7"
+  }
+ }
+}
