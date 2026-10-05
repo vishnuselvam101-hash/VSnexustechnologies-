@@ -33,12 +33,30 @@ SEEDS = [81000, 81001, 81002]
 ARMS = {"default": [], "retry16": ["--retry-band", "16"]}
 
 
-def run_child(args: list[str]) -> tuple[int, float, int]:
+# The child reports its own VmHWM (/proc/self/status: the high-water mark of the address space created by exec). The
+# wait4 ru_maxrss of a posix_spawn child is NOT that decode's peak: Linux carries the spawning parent's high-water mark
+# into the exec'd process (exec_mmap -> setmax_mm_hiwater_rss), so every decode smaller than this parent reported the
+# parent's RSS. Both are recorded; the criterion uses VmHWM (deviation from PREREG §3, listed in the README).
+CHILD = """
+import runpy, sys
+sys.argv = ["vnx"] + sys.argv[2:]
+try:
+    runpy.run_module("vnxdna.v4.cli", run_name="__main__")
+finally:
+    hwm = [l for l in open("/proc/self/status") if l.startswith("VmHWM:")][0].split()[1]
+    open(HWM_PATH, "w").write(hwm)
+"""
+
+
+def run_child(args: list[str], hwm_path: Path) -> tuple[int, float, int, int]:
     t = time.perf_counter()
     env = dict(os.environ, PYTHONPATH=str(REPO / "src"))
-    pid = os.posix_spawn(sys.executable, [sys.executable, "-m", "vnxdna.v4.cli", *args], env)
+    code = CHILD.replace("HWM_PATH", repr(str(hwm_path)))
+    pid = os.posix_spawn(sys.executable, [sys.executable, "-c", code, "-", *args], env)
     _, status, ru = os.wait4(pid, 0)
-    return os.waitstatus_to_exitcode(status), time.perf_counter() - t, ru.ru_maxrss * 1024
+    hwm = int(hwm_path.read_text()) * 1024
+    hwm_path.unlink()
+    return os.waitstatus_to_exitcode(status), time.perf_counter() - t, hwm, ru.ru_maxrss * 1024
 
 
 def main(argv=None) -> int:
@@ -60,11 +78,12 @@ def main(argv=None) -> int:
                 order = list(ARMS) if i % 2 == 0 else list(ARMS)[::-1]
                 for arm in order:
                     o = tmp / f"o-{arm}.vnx"
-                    code, secs, rss = run_child(["decode", str(reads), "-o", str(o), "--force", "--workers", "1",
-                                                 "--no-input-hash", *ARMS[arm]])
+                    code, secs, rss, ru_maxrss = run_child(["decode", str(reads), "-o", str(o), "--force", "--workers", "1",
+                                                            "--no-input-hash", *ARMS[arm]], tmp / "hwm.txt")
                     ok = code == 0 and o.exists() and chn.sha256_file(o) == info["container_sha256"]
                     rows.append({"model": model, "seed": seed, "arm": arm, "exit": code, "exact": ok,
-                                 "wall_seconds": round(secs, 3), "peak_rss_bytes": rss})
+                                 "wall_seconds": round(secs, 3), "peak_rss_bytes": rss,
+                                 "wait4_ru_maxrss_bytes": ru_maxrss})
                     if o.exists():
                         o.unlink()
                 reads.unlink()
