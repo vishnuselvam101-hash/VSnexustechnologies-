@@ -387,6 +387,9 @@ def decode(reads: Path, output: Optional[Path] = typer.Option(None, "--output", 
                                                        help="off (default), erasure (GMD), chase or auto: V5 bounded soft decoding."),
            recovery_schedule: Optional[str] = typer.Option(None, "--recovery-schedule",
                                                            help="deferred (default) or eager: when V5 per-read smart/soft recovery runs."),
+           consensus_weighting: Optional[str] = typer.Option(
+               None, "--consensus-weighting",
+               help="count (V4 vote, default) or quality: pass-2 consensus weighted by Phred quality (opt-in)."),
            max_recovery_reads: Optional[int] = typer.Option(None, "--max-recovery-reads",
                                                             help="V6 budget: reads examined by smart/soft recovery (all rounds)."),
            max_round_b_reads: Optional[int] = typer.Option(None, "--max-round-b-reads",
@@ -416,7 +419,7 @@ def decode(reads: Path, output: Optional[Path] = typer.Option(None, "--output", 
         opts = decode_options_for(config, performance, workers=workers, archive_tag=archive_tag, budget=budget,
                                   profile=profile, band=band, min_quality=min_quality, indel_recovery=indel_recovery,
                                   soft_decoding=soft_decoding, recovery_schedule=recovery_schedule,
-                                  max_container_bytes=max_container_bytes, expect_archive_id=expect_archive_id,
+                                  consensus_weighting=consensus_weighting, max_container_bytes=max_container_bytes, expect_archive_id=expect_archive_id,
                                   expect_sha256=expect_sha256)
         return _decode(reads, output, extract_dir, partial_dir, select, opts, force, key_file, passphrase_env, report, events,
                        task_id, allow_unencrypted, not no_input_hash)

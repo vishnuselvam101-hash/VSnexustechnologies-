@@ -24,6 +24,11 @@ class DecodeOptions:
     min_quality: int = 0                # bases below this Phred score become erasures (soft-information hook)
     reverse_complement: bool = True
     consensus_threshold: float = 0.6    # minimum posterior for a consensus base; below → erasure
+    # V6 Phase 4 (opt-in): how pass-2 consensus weighs the pending reads of one address. "count" = the V4 vote (one
+    # vote per read base, the default); "quality" = each projected base weighted by its own Phred quality
+    # (recovery.consensus.consensus_quality_weighted; a Phred-interpreted score, not a calibrated probability). Groups
+    # whose reads carry no qualities (FASTA) fall back to "count". Verification is unchanged.
+    consensus_weighting: str = "count"
     max_pending_per_address: int = 64
     archive_tag: int | None = None
     sync_costs: SyncCosts = field(default_factory=SyncCosts)
@@ -75,6 +80,8 @@ class DecodeOptions:
             elif not isinstance(self.indel_config, IndelRecoveryConfig):
                 raise VNXConfigurationError("indel_config must be an IndelRecoveryConfig")
             self.indel_config.validate()
+        if self.consensus_weighting not in ("count", "quality"):
+            raise VNXConfigurationError("consensus_weighting must be 'count' (V4 vote) or 'quality'")
         if self.recovery_schedule not in ("deferred", "eager"):
             raise VNXConfigurationError("recovery_schedule must be 'deferred' or 'eager'")
         if self.soft_decoding not in ("off", "erasure", "chase", "auto"):
