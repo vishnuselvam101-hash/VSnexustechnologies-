@@ -216,3 +216,26 @@ def test_truncated_cluster_file_is_rejected(pool):
     with pytest.raises(Exception):
         consensus_file(tmp / "t.jsonl", tmp / "x.fasta")
     assert not (tmp / "x.fasta").exists()
+
+
+def test_fallback_without_a_verifying_member_writes_the_invalid_consensus(pool):
+    # A cluster that counts verified reads but none of whose reads verifies again (e.g. edited after clustering) used
+    # to crash consensus with AttributeError; it is written as an "invalid" consensus, as without the fallback.
+    import json
+    tmp, _ = pool
+    sequence_file(tmp / "s.fasta", tmp / "r.fastq", SequencingConfig(seed=3, coverage=3))
+    cluster_file(tmp / "r.fastq", tmp / "c.jsonl", workers=1)
+    lines = (tmp / "c.jsonl").read_text().splitlines()
+    for i, line in enumerate(lines):
+        rec = json.loads(line)
+        if "reads" in rec and rec.get("verified", 0):
+            rec["reads"] = ["ACGT" * 5 for _ in rec["reads"]]
+            rec.pop("quals", None)
+            lines[i] = json.dumps(rec)
+            target = rec["id"]
+            break
+    (tmp / "e.jsonl").write_text("\n".join(lines) + "\n")
+    res = consensus_file(tmp / "e.jsonl", tmp / "e.fasta")
+    labels = [ln for ln in (tmp / "e.fasta").read_text().splitlines() if ln.startswith(f">c{target};")]
+    assert len(labels) == 1 and labels[0].endswith(";invalid")
+    assert res["stats"]["consensus_unverified_written"] >= 1
