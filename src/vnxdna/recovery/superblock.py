@@ -54,7 +54,9 @@ def _colliding_superblocks(values: dict, ks: int, ms: int, lay: Layout, tag: int
 def _decode_superblock(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter) -> tuple[Superblock, dict]:
     acc, pend = spill.load(0)
     acc_sb = acc[acc["kind"] == KIND_SUPER]
-    pend_sb = pend[pend["kind"] == KIND_SUPER]
+    # superblock symbols are group 0; a pending kind-1 record of another group has a corrupted header that can never
+    # verify as a superblock frame, and which bucket it sits in depends on the bucket count (V6 Phase 2.8)
+    pend_sb = pend[(pend["kind"] == KIND_SUPER) & (pend["group"] == 0)]
     symbols, conflicts = resolve_duplicates(acc_sb)
     ks, ms = Superblock.symbols(lay.payload_bytes)
     # consensus rescue for superblock symbols that no single read delivered

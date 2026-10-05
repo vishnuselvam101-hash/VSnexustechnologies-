@@ -76,7 +76,8 @@ def _addr_bytes(key: tuple) -> bytes:
     return bytes([(4 << 4) | (kind & 15)]) + int(tag).to_bytes(2, "big") + int(group).to_bytes(4, "big") + int(symbol).to_bytes(2, "big")
 
 
-def snap_addresses(keys: np.ndarray, missing: set, alt: np.ndarray | None = None) -> tuple[np.ndarray, int]:
+def snap_addresses(keys: np.ndarray, missing: set, alt: np.ndarray | None = None, *,
+                   keep_group: bool = False) -> tuple[np.ndarray, int]:
     """Map tentative addresses to the unique missing address within one header byte.
 
     Each read can carry two readings of its header (``keys`` from the indel-corrected projection, ``alt`` from the raw
@@ -85,6 +86,11 @@ def snap_addresses(keys: np.ndarray, missing: set, alt: np.ndarray | None = None
     unchanged; reads matching nothing (or several) are left as they are and later ignored. A wrong snap can only
     cost a consensus vote: every recovered frame is still RS- and CRC-verified, and the address it decodes to must
     equal the group's address.
+
+    ``keep_group``: only addresses of the read's own (tentative) group qualify. Pass 2 spills pending reads by that
+    group into ``group mod B`` buckets and snaps per bucket, so without this a snap's candidates (and hence the
+    consensus) would depend on the bucket count B, i.e. on RLIMIT_NOFILE (V6 Phase 2.8). With it the candidates are the
+    same for every B.
     """
     if not missing or not len(keys):
         return keys, 0
@@ -101,7 +107,7 @@ def snap_addresses(keys: np.ndarray, missing: set, alt: np.ndarray | None = None
         key, akey = tuple(row), tuple(arow)
         if key in missing:
             continue
-        if akey in missing:
+        if akey in missing and (not keep_group or akey[2] == key[2]):
             out[i] = akey
             snapped += 1
             continue
@@ -113,8 +119,8 @@ def snap_addresses(keys: np.ndarray, missing: set, alt: np.ndarray | None = None
             for b in {b1, b2}:
                 for pos in range(9):
                     cands.update(index.get((pos, b[:pos] + b[pos + 1:]), ()))
-            good = [m for m in cands
-                    if sum(1 for x, y, z in zip(_addr_bytes(m), b1, b2) if x != y and x != z) <= 1]
+            good = [m for m in cands if (not keep_group or m[2] == key[2])
+                    and sum(1 for x, y, z in zip(_addr_bytes(m), b1, b2) if x != y and x != z) <= 1]
             hit = cache[ck] = good[0] if len(good) == 1 else False
         if hit:
             out[i] = hit
@@ -136,7 +142,7 @@ def _consensus_symbols(pend: np.ndarray, known: dict, lay: Layout, opt: DecodeOp
                      pend["symbol"].astype(np.int64)], axis=1)
     if missing is not None:
         alt = np.asarray(pend["alt"], dtype=np.int64) if "alt" in pend.dtype.names else None
-        keys, snapped = snap_addresses(keys, missing if snap_to is None else snap_to, alt)
+        keys, snapped = snap_addresses(keys, missing if snap_to is None else snap_to, alt, keep_group=True)
         stats["addresses_snapped"] += snapped
         wanted = np.fromiter((tuple(k) in missing for k in keys.tolist()), dtype=bool, count=len(keys))
         keys, pend = keys[wanted], pend[wanted]
