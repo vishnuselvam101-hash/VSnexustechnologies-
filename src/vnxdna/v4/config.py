@@ -93,7 +93,7 @@ def performance(name: str | None) -> dict:
 
 
 def dna_options(cfg: dict, **overrides):
-    from .encoder import DNAOptions
+    from vnxdna.pipeline.encode import DNAOptions
     sec = dict(cfg.get("dna", {}))
     sec.update({k: v for k, v in overrides.items() if v is not None})
     lay = sec.pop("layout", None)
@@ -105,7 +105,7 @@ def dna_options(cfg: dict, **overrides):
 
 
 def decode_options(cfg: dict, **overrides):
-    from .decoder import DecodeOptions
+    from vnxdna.recovery.options import DecodeOptions
     sec = dict(cfg.get("decode", {}))
     sec.update({k: v for k, v in overrides.items() if v is not None})
     lay = cfg.get("dna", {}).get("layout")

@@ -48,8 +48,6 @@ TOP_LEVEL = {"vnxdna._version": "core", "vnxdna._native_build": "native"}
 
 #: modules not yet moved -> the package they move to (V6_ARCHITECTURE §2 table). Shrinks with every M-step.
 PENDING = {
-    "vnxdna.v5.soft": "recovery", "vnxdna.v6.decode": "recovery", "vnxdna.v6.recovery": "recovery",
-    "vnxdna.v4.decoder": "pipeline", "vnxdna.v4.encoder": "pipeline", "vnxdna.v6.encoder": "pipeline",
     "vnxdna.v4.channel": "simulation", "vnxdna.v6.loss": "simulation",
     "vnxdna.v4.bench": "benchmark", "vnxdna.v4.experiment": "benchmark", "vnxdna.v4.sweep": "benchmark",
     "vnxdna.v4.datagen": "benchmark", "vnxdna.v4.compare": "benchmark",

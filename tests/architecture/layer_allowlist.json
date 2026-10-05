@@ -5,7 +5,7 @@
    "why": "locate --dna-profile maps chunks to DNA groups with the V4 geometry (moves out of the archive layer; bug 2.7)"
   },
   {
-   "violation": "R1 vnxdna.archive.operations -> vnxdna.v4.encoder",
+   "violation": "R1 vnxdna.archive.operations -> vnxdna.dnaenc.superblock",
    "why": "locate --dna-profile maps chunks to DNA groups with the V4 geometry (moves out of the archive layer; bug 2.7)"
   },
   {
@@ -45,6 +45,10 @@
    "why": "the CLI still does pipeline work and imports the layers directly (rewritten on the SDK, M5)"
   },
   {
+   "violation": "R6 vnxdna.v4.cli -> vnxdna.recovery.planner",
+   "why": "the CLI still does pipeline work and imports the layers directly (rewritten on the SDK, M5)"
+  },
+  {
    "violation": "R6 vnxdna.v4.cli -> vnxdna.v4.bench",
    "why": "the CLI still does pipeline work and imports the layers directly (rewritten on the SDK, M5)"
   },
@@ -57,14 +61,6 @@
    "why": "the CLI still does pipeline work and imports the layers directly (rewritten on the SDK, M5)"
   },
   {
-   "violation": "R6 vnxdna.v4.cli -> vnxdna.v4.decoder",
-   "why": "the CLI still does pipeline work and imports the layers directly (rewritten on the SDK, M5)"
-  },
-  {
-   "violation": "R6 vnxdna.v4.cli -> vnxdna.v4.encoder",
-   "why": "the CLI still does pipeline work and imports the layers directly (rewritten on the SDK, M5)"
-  },
-  {
    "violation": "R6 vnxdna.v4.cli -> vnxdna.v4.experiment",
    "why": "the CLI still does pipeline work and imports the layers directly (rewritten on the SDK, M5)"
   },
@@ -73,8 +69,36 @@
    "why": "the CLI still does pipeline work and imports the layers directly (rewritten on the SDK, M5)"
   },
   {
-   "violation": "R6 vnxdna.v4.cli -> vnxdna.v6.recovery",
-   "why": "the CLI still does pipeline work and imports the layers directly (rewritten on the SDK, M5)"
+   "violation": "R7 vnxdna.v4.bench -> vnxdna.v4.decoder",
+   "why": "v4 modules not yet moved (bench/sweep/compare/cli/config; M5) still import the decoder/encoder facades"
+  },
+  {
+   "violation": "R7 vnxdna.v4.bench -> vnxdna.v4.encoder",
+   "why": "v4 modules not yet moved (bench/sweep/compare/cli/config; M5) still import the decoder/encoder facades"
+  },
+  {
+   "violation": "R7 vnxdna.v4.cli -> vnxdna.v4.decoder",
+   "why": "v4 modules not yet moved (bench/sweep/compare/cli/config; M5) still import the decoder/encoder facades"
+  },
+  {
+   "violation": "R7 vnxdna.v4.cli -> vnxdna.v4.encoder",
+   "why": "v4 modules not yet moved (bench/sweep/compare/cli/config; M5) still import the decoder/encoder facades"
+  },
+  {
+   "violation": "R7 vnxdna.v4.compare -> vnxdna.v4.decoder",
+   "why": "v4 modules not yet moved (bench/sweep/compare/cli/config; M5) still import the decoder/encoder facades"
+  },
+  {
+   "violation": "R7 vnxdna.v4.compare -> vnxdna.v4.encoder",
+   "why": "v4 modules not yet moved (bench/sweep/compare/cli/config; M5) still import the decoder/encoder facades"
+  },
+  {
+   "violation": "R7 vnxdna.v4.sweep -> vnxdna.v4.decoder",
+   "why": "v4 modules not yet moved (bench/sweep/compare/cli/config; M5) still import the decoder/encoder facades"
+  },
+  {
+   "violation": "R7 vnxdna.v4.sweep -> vnxdna.v4.encoder",
+   "why": "v4 modules not yet moved (bench/sweep/compare/cli/config; M5) still import the decoder/encoder facades"
   }
  ],
  "cycle_edges": [
@@ -82,13 +106,6 @@
    "edge": [
     "archive",
     "dnaenc"
-   ],
-   "why": "locate --dna-profile (fixed in M2/2.7)"
-  },
-  {
-   "edge": [
-    "archive",
-    "pipeline"
    ],
    "why": "locate --dna-profile (fixed in M2/2.7)"
   },

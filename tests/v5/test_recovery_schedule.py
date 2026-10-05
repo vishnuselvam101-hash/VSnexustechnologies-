@@ -113,12 +113,18 @@ def _scenario(arc, name, drop=(), damaged=(), extra=(), copies=2):
 
 
 def _decode(path, out=None, buckets=None, monkeypatch=None, **kw):
+    made = []
     if buckets is not None:
         class Forced(de.Spill):
             def __init__(self, workdir, _b, *a, **k):
+                made.append(buckets)
                 super().__init__(workdir, buckets, *a, **k)
-        monkeypatch.setattr(de, "Spill", Forced)
+        # since V6 Phase 2 the decode orchestration lives in vnxdna.pipeline.decode (vnxdna.v4.decoder is a facade):
+        # patch the name where decode_reads looks it up, and check that the patch was hit
+        from vnxdna.pipeline import decode as pipeline_decode
+        monkeypatch.setattr(pipeline_decode, "Spill", Forced)
     res = de.decode_reads(path, out, de.DecodeOptions(**kw), overwrite=True)
+    assert made == ([] if buckets is None else [buckets])
     rep = {k: v for k, v in res.report.items() if k not in ("stage_seconds", "seconds", "peak_rss_bytes")}
     if "indel_recovery" in rep:          # a float sum whose order depends on batching (as in test_indel_decoder)
         rep["indel_recovery"] = {k: v for k, v in rep["indel_recovery"].items() if k != "false_accept_bound"}

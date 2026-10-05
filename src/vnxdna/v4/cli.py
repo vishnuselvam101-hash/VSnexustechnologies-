@@ -328,7 +328,7 @@ def _decode(reads, output, extract_dir, partial_dir, select, profile, workers, p
                           indel_recovery=indel_recovery, soft_decoding=soft_decoding,
                           recovery_schedule=recovery_schedule)
     if budget:
-        from ..v6.recovery import RecoveryBudget
+        from vnxdna.recovery.planner import RecoveryBudget
         opts.recovery_budget = RecoveryBudget(**budget)
     _check_side_files(reads, key_file, output, report, events, force)
     if events is None:

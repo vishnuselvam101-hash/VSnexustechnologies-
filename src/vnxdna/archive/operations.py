@@ -459,7 +459,7 @@ def list_container(path: str | os.PathLike, *, key: bytes | None = None, passphr
 def dna_location(ranges: list[list[int]], profile: str, container_size: int) -> dict:
     """Strand groups and strand-file record ranges holding container byte ranges (no index file needed: group g covers
     container bytes [g·K·P, (g+1)·K·P); strand records are the superblock strands, then each group's K+M symbols)."""
-    from vnxdna.v4.encoder import Superblock
+    from vnxdna.dnaenc.superblock import Superblock
     from vnxdna.dnaenc.layout import PROFILES
     lay, k, m = PROFILES[profile]
     span = k * lay.payload_bytes

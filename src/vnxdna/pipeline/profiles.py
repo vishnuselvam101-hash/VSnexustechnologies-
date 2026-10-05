@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from vnxdna.codec.profiles import REDUNDANCY_PROFILES, merge
-from vnxdna.v4.encoder import DNAOptions
+from vnxdna.pipeline.encode import DNAOptions
 from vnxdna.dnaenc.layout import PROFILES
 
 __all__ = ["REDUNDANCY_PROFILES", "dna_options", "describe"]
