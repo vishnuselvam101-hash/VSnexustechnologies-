@@ -28,7 +28,7 @@ Design, criteria and analysis code were committed before the run: `../PREREG.md`
 | C3 | cells with a gain (interval excludes 0) | none of 38 cells | (no gain claimed) |
 | C4 | no harm | no cell with upper bound < 0; pooled control +0.0062 [−0.0076, +0.0204] (105 vs 104 of 160); pooled regression +0.0036 [−0.0044, +0.0116] (182 vs 181 of 280) | **ACCEPT** |
 | C5 | mechanism: more multi-read attempts within 2e + f ≤ r | +5.38 attempts per primary trial, 95 % CI [4.59, 6.17] | **ACCEPT** |
-| C6 | cost: median decode-time ratio ≤ 1.30, fresh-process peak-RSS ratio ≤ 1.15 | 1.288 (in-process, shared CPU); peak RSS ratio 1.000 in all 6 pairs (P4-EXP-04) | **ACCEPT** (narrowly; see below) |
+| C6 | cost: median decode-time ratio ≤ 1.30, fresh-process peak-RSS ratio ≤ 1.15 | 1.288 (in-process, shared CPU); peak RSS ratio 1.000 in all 6 pairs (P4-EXP-04; **withdrawn**: the RSS reading is invalid, see `../README.md` correction) | **ACCEPT** on time only (narrowly; see below) |
 | C7 | determinism, workers 1 vs 4 | 15/15 identical | **ACCEPT** |
 
 **Default-change rule** (C1, C2, C4, C6, C7 all ACCEPT): **not satisfied** (C2 REJECT). The option stays opt-in.

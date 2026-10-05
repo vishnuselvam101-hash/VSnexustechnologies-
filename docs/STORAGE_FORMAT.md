@@ -108,3 +108,16 @@ See [V2_FORMAT.md §4.4](V2_FORMAT.md#44-store-checkpoint). New in V3:
 | V2 reads V3 archives | yes, except encrypted archives whose store was resumed (they declare `final-seal-epoch-v3` and V2 refuses them with exit 6) |
 | V3 reads V1 (format 4) and legacy V0.1 archives | yes, unchanged V1 code ([COMPATIBILITY.md](COMPATIBILITY.md)) |
 | migration | not needed for V2 archives; `vnx-dna migrate` converts V1 → format 5 |
+
+## 7. VNX4 containers in VNX-DNA 6
+
+This page describes the V3 decisions (archive format 5). The current format is VNX4, written by `vnx` since 4.0:
+[VNX4_FORMAT.md](VNX4_FORMAT.md) (container 4.0, frame 4, superblock 1), [V6_OUTER_CODE.md](V6_OUTER_CODE.md)
+(superblock 2) and, as the single normative text for 6.x, [spec/VNX-DNA-SPEC-V6.md](spec/VNX-DNA-SPEC-V6.md). In 6.x the
+container format does not change. What is new:
+
+* `extensions.vnx` in the manifest records the writing software and specification version (spec §2.3.1), on by default;
+* the archive ID of an unencrypted archive is `options-v1` by default; `content-v1` is opt-in (spec §2.3.2,
+  [COMPATIBILITY.md](COMPATIBILITY.md));
+* frame 6, superblock 3, primers and the wide address class are specified but not implemented
+  ([V6_DEFERRED.md](V6_DEFERRED.md)).

@@ -18,6 +18,11 @@ Command: `PYTHONPATH=src nice -n 10 python experiments/v6/phase4/cost.py --out e
 | mixed-harsh | 61001 | 24.5 / 362.3 / failed (exit 5) | 34.9 / 362.3 / failed (exit 5) | 1.42 | 1.000 |
 | mixed-harsh | 61002 | 24.5 / 363.6 / failed (exit 5) | 34.1 / 363.6 / **exact** | 1.39 | 1.000 |
 
+**Correction (Phase 10 documentation audit): the RSS columns below are not valid.** `wait4` `ru_maxrss` of an exec'd child
+inherits the parent's high-water mark on Linux, so the values show the harness's own size, not the decode's. See
+`experiments/v6/align-band/README.md`, "Deviations from the pre-registration", item 1. The time columns and ratios stand.
+The sentence that follows is kept as originally written and is withdrawn.
+
 False SUCCESS: 0. Peak RSS is identical per pair: the peak is reached in a phase the option does not change (the extra
 285 bytes per pending record are written to the spill files). The wall-time cost is 32-42 %. One 1 MiB mixed-harsh seed
 decoded only with the weighted vote; 3 seeds are not evidence of a gain (pre-registered efficacy is P4-EXP-02 C2) but
