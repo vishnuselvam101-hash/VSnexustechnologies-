@@ -78,8 +78,9 @@ jobs:
 
   # ---- directive §23 jobs (V6). Separate jobs: they never change the `test` job above. Heavy benchmarks are not run in CI.
   mypy:
-    # static analysis: the V6 packages listed under [tool.mypy] in pyproject.toml (the clean set). Packages with open
-    # errors (vnxdna.archive, sync, recovery, pipeline, benchmark and the legacy v2/v4/ecc code) are not gated yet.
+    # static analysis: the packages listed under [tool.mypy] in pyproject.toml (the clean set: the V6 packages and the
+    # legacy v2/v4/ecc decoders). Packages with open errors (vnxdna.archive, sync, recovery, pipeline, benchmark) are
+    # not gated yet.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
