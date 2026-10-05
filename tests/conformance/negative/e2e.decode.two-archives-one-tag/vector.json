@@ -1,0 +1,29 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "e2e.decode.two-archives-one-tag",
+ "stage": "D8",
+ "formats": {
+  "frame": 4,
+  "superblock": 1,
+  "container": null
+ },
+ "kind": "negative",
+ "operation": "e2e.decode",
+ "params": {},
+ "inputs": {
+  "reads": {
+   "path": "reads.dat",
+   "sha256": "75b7bee2e17a4a0aeec02f411924c8141d72021b211ab92bfa575ca81d1e74ea"
+  }
+ },
+ "expected": {
+  "error": {
+   "code": "ARCHIVE_TAG_AMBIGUOUS",
+   "category": "INVALID_INPUT",
+   "exit_code": 3,
+   "retryable": false
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

@@ -1,0 +1,31 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "outer.row-encode.short.k64-m16-k37",
+ "stage": "E8",
+ "formats": {
+  "frame": null,
+  "superblock": null,
+  "container": null
+ },
+ "kind": "positive",
+ "operation": "outer.row_encode",
+ "params": {
+  "K": 64,
+  "M": 16,
+  "P": 4,
+  "k": 37
+ },
+ "inputs": {
+  "data": {
+   "path": "data.dat",
+   "sha256": "7db47580dca2310101c99a8e75af412170c84517c4d042cde86562f86157c233"
+  }
+ },
+ "expected": {
+  "outputs": {
+   "parity_hex": "15ce88cfa7a7bbd30b365a554d7605d5236bfb8aad9ffe4358c0f0348e1fc6c961072139bac836af5e69fe05ceb6cd97e0cfb6078a032d849d8e11d1cb2c783d"
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

@@ -1,0 +1,39 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "frame4.parse.r08.kind1",
+ "stage": "D5",
+ "formats": {
+  "frame": 4,
+  "superblock": null,
+  "container": null
+ },
+ "kind": "positive",
+ "operation": "frame4.parse",
+ "params": {
+  "layout": {
+   "payload_bytes": 36,
+   "inner_parity": 8,
+   "marker_period": 24,
+   "marker_len": 3
+  }
+ },
+ "inputs": {
+  "strand": {
+   "path": "strand.dat",
+   "sha256": "4290cf50ee133a88fe1c6216471095457e96750d249115dbf4f01a09fafd8104"
+  }
+ },
+ "expected": {
+  "outputs": {
+   "accepted": true,
+   "kind": 1,
+   "tag": 4660,
+   "group": 0,
+   "symbol": 2,
+   "payload_sha256": "cf041300d581be172011e3f0a6b68d023f31b990787a4eda84ebbd653b1d7e6d",
+   "errata": 0
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

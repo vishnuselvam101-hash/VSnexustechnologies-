@@ -4,6 +4,6 @@ indel-aware reconstruction, pluggable outer codes, benchmarks and reproducible e
 V3 (format 5, ``vnx-dna``) is unchanged and remains available; V4 is a separate format (``vnx``).
 Everything here is software and simulation; nothing has been synthesised or sequenced.
 """
-from .version import FORMAT_VERSION, __version__
+from vnxdna.core.version import FORMAT_VERSION, __version__
 
 __all__ = ["__version__", "FORMAT_VERSION"]

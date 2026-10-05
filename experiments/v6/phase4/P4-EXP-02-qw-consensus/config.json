@@ -1,0 +1,610 @@
+{
+ "experiment": "P4-EXP-02-qw-consensus",
+ "classification": "SIMULATED",
+ "purpose": "Pre-registered paired comparison of the opt-in quality-weighted pass-2 consensus (consensus_weighting=quality) against the V4 count vote (default). See ../PREREG.md.",
+ "prereg": "experiments/v6/phase4/PREREG.md",
+ "data_seed": 6201,
+ "base_seed": 52000,
+ "seeds": 20,
+ "arms": {
+  "count": {},
+  "quality": {
+   "consensus_weighting": "quality"
+  },
+  "quality-w4": {
+   "consensus_weighting": "quality",
+   "workers": 4
+  }
+ },
+ "baseline": "count",
+ "decode_workers": 1,
+ "cells": [
+  {
+   "id": "P/substitution-heavy-cov2.5",
+   "panel": "primary",
+   "model": {
+    "base": "substitution-heavy",
+    "name": "substitution-heavy-cov2.5",
+    "channel": {
+     "coverage": 2.5
+    }
+   },
+   "size": 20000,
+   "seeds": 40,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "P/substitution-heavy-cov3",
+   "panel": "primary",
+   "model": {
+    "base": "substitution-heavy",
+    "name": "substitution-heavy-cov3",
+    "channel": {
+     "coverage": 3.0
+    }
+   },
+   "size": 20000,
+   "seeds": 40,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "P/substitution-heavy-cov3.5",
+   "panel": "primary",
+   "model": {
+    "base": "substitution-heavy",
+    "name": "substitution-heavy-cov3.5",
+    "channel": {
+     "coverage": 3.5
+    }
+   },
+   "size": 20000,
+   "seeds": 40,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "P/mixed-harsh-cov4",
+   "panel": "primary",
+   "model": {
+    "base": "mixed-harsh",
+    "name": "mixed-harsh-cov4",
+    "channel": {
+     "coverage": 4.0
+    }
+   },
+   "size": 20000,
+   "seeds": 40,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "P/mixed-harsh-cov6",
+   "panel": "primary",
+   "model": {
+    "base": "mixed-harsh",
+    "name": "mixed-harsh-cov6",
+    "channel": {
+     "coverage": 6.0
+    }
+   },
+   "size": 20000,
+   "seeds": 40,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "P/mixed-harsh-cov8",
+   "panel": "primary",
+   "model": {
+    "base": "mixed-harsh",
+    "name": "mixed-harsh-cov8",
+    "channel": {
+     "coverage": 8.0
+    }
+   },
+   "size": 20000,
+   "seeds": 40,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "P/quality-degradation-cov2",
+   "panel": "primary",
+   "model": {
+    "base": "quality-degradation",
+    "name": "quality-degradation-cov2",
+    "channel": {
+     "coverage": 2.0
+    }
+   },
+   "size": 20000,
+   "seeds": 40,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "P/quality-degradation-cov2.5",
+   "panel": "primary",
+   "model": {
+    "base": "quality-degradation",
+    "name": "quality-degradation-cov2.5",
+    "channel": {
+     "coverage": 2.5
+    }
+   },
+   "size": 20000,
+   "seeds": 40,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "P/quality-degradation-cov3",
+   "panel": "primary",
+   "model": {
+    "base": "quality-degradation",
+    "name": "quality-degradation-cov3",
+    "channel": {
+     "coverage": 3.0
+    }
+   },
+   "size": 20000,
+   "seeds": 40,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "P/mixed-mild-cov2",
+   "panel": "primary",
+   "model": {
+    "base": "mixed-mild",
+    "name": "mixed-mild-cov2",
+    "channel": {
+     "coverage": 2.0
+    }
+   },
+   "size": 20000,
+   "seeds": 40,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "P/mixed-mild-cov2.5",
+   "panel": "primary",
+   "model": {
+    "base": "mixed-mild",
+    "name": "mixed-mild-cov2.5",
+    "channel": {
+     "coverage": 2.5
+    }
+   },
+   "size": 20000,
+   "seeds": 40,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "P/illumina-like-cov1.5",
+   "panel": "primary",
+   "model": {
+    "base": "illumina-like",
+    "name": "illumina-like-cov1.5",
+    "channel": {
+     "coverage": 1.5
+    }
+   },
+   "size": 20000,
+   "seeds": 40,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "P/illumina-like-cov2",
+   "panel": "primary",
+   "model": {
+    "base": "illumina-like",
+    "name": "illumina-like-cov2",
+    "channel": {
+     "coverage": 2.0
+    }
+   },
+   "size": 20000,
+   "seeds": 40,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "C/deletion-heavy",
+   "panel": "control",
+   "model": "deletion-heavy",
+   "size": 20000,
+   "seeds": 20,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "C/insertion-heavy",
+   "panel": "control",
+   "model": "insertion-heavy",
+   "size": 20000,
+   "seeds": 20,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "C/deletion-heavy-cov15",
+   "panel": "control",
+   "model": {
+    "base": "deletion-heavy",
+    "name": "deletion-heavy-cov15",
+    "channel": {
+     "coverage": 15.0
+    }
+   },
+   "size": 20000,
+   "seeds": 20,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "C/insertion-heavy-cov15",
+   "panel": "control",
+   "model": {
+    "base": "insertion-heavy",
+    "name": "insertion-heavy-cov15",
+    "channel": {
+     "coverage": 15.0
+    }
+   },
+   "size": 20000,
+   "seeds": 20,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "C/uneven-coverage",
+   "panel": "control",
+   "model": "uneven-coverage",
+   "size": 20000,
+   "seeds": 20,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "C/s184/b0like-e1-cov5-drop0",
+   "panel": "control",
+   "model": {
+    "base": "clean",
+    "name": "b0like-e1-cov5-drop0",
+    "description": "B0-like: 1 % per-base errors split 53/45/2 sub/del/ins (the ETH protocol composition), fixed coverage, i.i.d. strand dropout, constant qualities",
+    "channel": {
+     "substitution_rate": 0.0053,
+     "deletion_rate": 0.0045,
+     "insertion_rate": 0.0002,
+     "coverage": 5.0,
+     "coverage_model": "fixed"
+    },
+    "loss": {
+     "dropout": 0.0
+    }
+   },
+   "size": 19456,
+   "seeds": 20,
+   "layout": {
+    "payload_bytes": 28,
+    "inner_parity": 4,
+    "marker_period": 0,
+    "marker_len": 0
+   },
+   "data_symbols": 64,
+   "parity_symbols": 8,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "C/s184/b0like-e1-cov10-drop0",
+   "panel": "control",
+   "model": {
+    "base": "clean",
+    "name": "b0like-e1-cov10-drop0",
+    "description": "B0-like: 1 % per-base errors split 53/45/2 sub/del/ins (the ETH protocol composition), fixed coverage, i.i.d. strand dropout, constant qualities",
+    "channel": {
+     "substitution_rate": 0.0053,
+     "deletion_rate": 0.0045,
+     "insertion_rate": 0.0002,
+     "coverage": 10.0,
+     "coverage_model": "fixed"
+    },
+    "loss": {
+     "dropout": 0.0
+    }
+   },
+   "size": 19456,
+   "seeds": 20,
+   "layout": {
+    "payload_bytes": 28,
+    "inner_parity": 4,
+    "marker_period": 0,
+    "marker_len": 0
+   },
+   "data_symbols": 64,
+   "parity_symbols": 8,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "C/v4-balanced/b0like-e1-cov5-drop0",
+   "panel": "control",
+   "model": {
+    "base": "clean",
+    "name": "b0like-e1-cov5-drop0",
+    "description": "B0-like: 1 % per-base errors split 53/45/2 sub/del/ins (the ETH protocol composition), fixed coverage, i.i.d. strand dropout, constant qualities",
+    "channel": {
+     "substitution_rate": 0.0053,
+     "deletion_rate": 0.0045,
+     "insertion_rate": 0.0002,
+     "coverage": 5.0,
+     "coverage_model": "fixed"
+    },
+    "loss": {
+     "dropout": 0.0
+    }
+   },
+   "size": 19456,
+   "seeds": 20,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "R/burst-loss",
+   "panel": "regression",
+   "model": "burst-loss",
+   "size": 20000,
+   "seeds": 20,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "R/clean",
+   "panel": "regression",
+   "model": "clean",
+   "size": 20000,
+   "seeds": 20,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "R/deletion-heavy",
+   "panel": "regression",
+   "model": "deletion-heavy",
+   "size": 20000,
+   "seeds": 20,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "R/dropout-10",
+   "panel": "regression",
+   "model": "dropout-10",
+   "size": 20000,
+   "seeds": 20,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "R/dropout-20",
+   "panel": "regression",
+   "model": "dropout-20",
+   "size": 20000,
+   "seeds": 20,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "R/dropout-5",
+   "panel": "regression",
+   "model": "dropout-5",
+   "size": 20000,
+   "seeds": 20,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "R/illumina-like",
+   "panel": "regression",
+   "model": "illumina-like",
+   "size": 20000,
+   "seeds": 20,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "R/insertion-heavy",
+   "panel": "regression",
+   "model": "insertion-heavy",
+   "size": 20000,
+   "seeds": 20,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "R/mixed-harsh",
+   "panel": "regression",
+   "model": "mixed-harsh",
+   "size": 20000,
+   "seeds": 20,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "R/mixed-mild",
+   "panel": "regression",
+   "model": "mixed-mild",
+   "size": 20000,
+   "seeds": 20,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "R/nanopore-like",
+   "panel": "regression",
+   "model": "nanopore-like",
+   "size": 20000,
+   "seeds": 20,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "R/quality-degradation",
+   "panel": "regression",
+   "model": "quality-degradation",
+   "size": 20000,
+   "seeds": 20,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "R/substitution-heavy",
+   "panel": "regression",
+   "model": "substitution-heavy",
+   "size": 20000,
+   "seeds": 20,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "R/uneven-coverage",
+   "panel": "regression",
+   "model": "uneven-coverage",
+   "size": 20000,
+   "seeds": 20,
+   "arms": [
+    "count",
+    "quality"
+   ]
+  },
+  {
+   "id": "D/substitution-heavy-cov3",
+   "panel": "determinism",
+   "model": {
+    "base": "substitution-heavy",
+    "name": "substitution-heavy-cov3",
+    "channel": {
+     "coverage": 3.0
+    }
+   },
+   "size": 20000,
+   "seeds": 5,
+   "arms": [
+    "count",
+    "quality",
+    "quality-w4"
+   ]
+  },
+  {
+   "id": "D/mixed-harsh-cov6",
+   "panel": "determinism",
+   "model": {
+    "base": "mixed-harsh",
+    "name": "mixed-harsh-cov6",
+    "channel": {
+     "coverage": 6.0
+    }
+   },
+   "size": 20000,
+   "seeds": 5,
+   "arms": [
+    "count",
+    "quality",
+    "quality-w4"
+   ]
+  },
+  {
+   "id": "D/quality-degradation-cov2.5",
+   "panel": "determinism",
+   "model": {
+    "base": "quality-degradation",
+    "name": "quality-degradation-cov2.5",
+    "channel": {
+     "coverage": 2.5
+    }
+   },
+   "size": 20000,
+   "seeds": 5,
+   "arms": [
+    "count",
+    "quality",
+    "quality-w4"
+   ]
+  }
+ ]
+}

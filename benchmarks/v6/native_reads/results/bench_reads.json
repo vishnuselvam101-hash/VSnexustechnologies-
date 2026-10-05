@@ -1,0 +1,76 @@
+{
+  "benchmark": "v6 native streaming read parser vs v4 reference (synthetic FASTQ, page-cache warm)",
+  "git_commit": "8e517ef9a81a33bd3cf2d0841c7e169ec6289258",
+  "git_dirty": true,
+  "cpu_model": "Intel(R) Xeon(R) Gold 6240 CPU @ 2.60GHz",
+  "cpu_count": 8,
+  "compiler": "cc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+  "cflags": [
+    "-O3",
+    "-std=c11",
+    "-fPIC",
+    "-shared",
+    "-Wall",
+    "-Wextra",
+    "-Werror"
+  ],
+  "python": "3.12.3",
+  "numpy": "2.5.3",
+  "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+  "library": "/root/vnx-dna-lab/v6/src/vnxdna/v6/native/libvnx_reads.so",
+  "library_sha256": "ba66ab119d502406be9371fc2edfea3c1e5fe630f9fd9d74034bea4308aa7050",
+  "kernel_source_sha256": "ac42a8253989ad91bf85827f522bf431859dbb012cf8494c6cd1b1a696743ef1",
+  "file_bytes": 269795708,
+  "file_mib": 257.3,
+  "batch": 8192,
+  "repeats": 3,
+  "outputs_identical": true,
+  "results": {
+    "reference": {
+      "seconds": [
+        2.235573662997922,
+        2.1843108890170697,
+        2.219606841012137
+      ],
+      "median_seconds": 2.2196,
+      "mb_per_s": 121.6,
+      "mib_per_s": 115.9,
+      "reads_per_s": 291569,
+      "peak_rss_mib": 106.4,
+      "rss_at_start_mib": 43.8,
+      "reads": 647168,
+      "nt": 129128897,
+      "batches": 79,
+      "output_sha256": "1a66b9ef5b5e36e7f14d7d69211f87053c42bcd2258f8d4a65a134b432158082"
+    },
+    "native": {
+      "seconds": [
+        0.4618138369987719,
+        0.4647119769942947,
+        0.446938636014238
+      ],
+      "median_seconds": 0.4618,
+      "mb_per_s": 584.2,
+      "mib_per_s": 557.1,
+      "reads_per_s": 1401361,
+      "peak_rss_mib": 46.9,
+      "rss_at_start_mib": 43.8,
+      "reads": 647168,
+      "nt": 129128897,
+      "batches": 79,
+      "output_sha256": "1a66b9ef5b5e36e7f14d7d69211f87053c42bcd2258f8d4a65a134b432158082"
+    }
+  },
+  "speedup_median": 4.81,
+  "loadavg_1_5_15_start": [
+    4.2,
+    5.67,
+    7.54
+  ],
+  "loadavg_1_5_15_end": [
+    4.83,
+    5.68,
+    7.49
+  ],
+  "date_utc": "2026-10-04T05:19:55Z"
+}

@@ -1,0 +1,417 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "urn:vnx:vnx.export-package/1",
+ "title": "VNX Export Package manifest (spec §9.3): strands + order file + manifest for a synthesis provider. Not a physical result.",
+ "type": "object",
+ "additionalProperties": false,
+ "required": [
+  "schema",
+  "package_id",
+  "created_by",
+  "provider_target",
+  "evidence_class",
+  "statement",
+  "vendor_constraints",
+  "archives",
+  "checks",
+  "files"
+ ],
+ "$defs": {
+  "sha256": {
+   "type": "string",
+   "pattern": "^[0-9a-f]{64}$"
+  },
+  "provider": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "name",
+    "version",
+    "interface"
+   ],
+   "properties": {
+    "name": {
+     "type": "string",
+     "minLength": 1
+    },
+    "version": {
+     "type": "string",
+     "minLength": 1
+    },
+    "interface": {
+     "const": "vnx.provider/1"
+    }
+   }
+  },
+  "file": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "name",
+    "role",
+    "sha256",
+    "bytes"
+   ],
+   "properties": {
+    "name": {
+     "type": "string",
+     "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "role": {
+     "enum": [
+      "strands",
+      "order",
+      "ddsa-sector-zero",
+      "ddsa-sector-one"
+     ]
+    },
+    "sha256": {
+     "$ref": "#/$defs/sha256"
+    },
+    "bytes": {
+     "type": "integer",
+     "minimum": 0
+    }
+   }
+  },
+  "check": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "id",
+    "status"
+   ],
+   "properties": {
+    "id": {
+     "type": "string",
+     "minLength": 1
+    },
+    "status": {
+     "enum": [
+      "PASS",
+      "WARN",
+      "FAIL"
+     ]
+    },
+    "limit": {
+     "type": [
+      "integer",
+      "null"
+     ]
+    },
+    "value": {
+     "type": [
+      "integer",
+      "null"
+     ]
+    },
+    "config": {
+     "type": [
+      "object",
+      "null"
+     ]
+    },
+    "details": {
+     "type": [
+      "object",
+      "null"
+     ]
+    }
+   }
+  },
+  "archive": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "archive_id",
+    "container_sha256",
+    "container_size",
+    "encrypted",
+    "codec",
+    "frame_version",
+    "superblock_version",
+    "strand_profile",
+    "layout",
+    "outer",
+    "pool_tag",
+    "primer_id",
+    "primers",
+    "strand_count",
+    "strand_nt",
+    "strands_sha256",
+    "first_strand"
+   ],
+   "properties": {
+    "archive_id": {
+     "type": "string",
+     "pattern": "^[0-9a-f]{32}$"
+    },
+    "container_sha256": {
+     "$ref": "#/$defs/sha256"
+    },
+    "container_size": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "encrypted": {
+     "type": "boolean"
+    },
+    "codec": {
+     "type": "string",
+     "pattern": "^f[0-9]+-sb[0-9]+-[a-z0-9-]+$"
+    },
+    "frame_version": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "superblock_version": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "strand_profile": {
+     "type": "string",
+     "minLength": 1
+    },
+    "redundancy_profile": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "layout": {
+     "type": "object",
+     "additionalProperties": false,
+     "required": [
+      "P",
+      "r",
+      "marker_period",
+      "marker_len"
+     ],
+     "properties": {
+      "P": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "r": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "marker_period": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "marker_len": {
+       "type": "integer",
+       "minimum": 0
+      }
+     }
+    },
+    "outer": {
+     "type": "object",
+     "additionalProperties": false,
+     "required": [
+      "name",
+      "K",
+      "M",
+      "D",
+      "Mc",
+      "order"
+     ],
+     "properties": {
+      "name": {
+       "type": "string"
+      },
+      "K": {
+       "type": "integer",
+       "minimum": 1
+      },
+      "M": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "D": {
+       "type": "integer",
+       "minimum": 1
+      },
+      "Mc": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "order": {
+       "enum": [
+        "sequential",
+        "interleaved"
+       ]
+      }
+     }
+    },
+    "pool_tag": {
+     "type": "integer",
+     "minimum": 0,
+     "maximum": 4294967295,
+     "description": "frame tag; for frame 4 the first 2 bytes of the archive ID"
+    },
+    "primer_id": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "minimum": 0
+    },
+    "primers": {
+     "type": "null",
+     "description": "primer flanks are SPECIFIED, NOT IMPLEMENTED (spec §3.6, V7)"
+    },
+    "strand_count": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "strand_nt": {
+     "type": "object",
+     "additionalProperties": false,
+     "required": [
+      "min",
+      "max"
+     ],
+     "properties": {
+      "min": {
+       "type": "integer",
+       "minimum": 1
+      },
+      "max": {
+       "type": "integer",
+       "minimum": 1
+      }
+     }
+    },
+    "strands_sha256": {
+     "$ref": "#/$defs/sha256",
+     "description": "SHA-256 of this archive's strand file as encoded"
+    },
+    "first_strand": {
+     "type": "integer",
+     "minimum": 0,
+     "description": "index of this archive's first strand in strands.fasta"
+    }
+   }
+  }
+ },
+ "properties": {
+  "schema": {
+   "const": "vnx.export-package/1"
+  },
+  "package_id": {
+   "$ref": "#/$defs/sha256",
+   "description": "SHA-256 of the canonical manifest without this field"
+  },
+  "created_by": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "software",
+    "spec"
+   ],
+   "properties": {
+    "software": {
+     "type": "string"
+    },
+    "spec": {
+     "type": "string"
+    }
+   }
+  },
+  "provider_target": {
+   "$ref": "#/$defs/provider"
+  },
+  "evidence_class": {
+   "enum": [
+    "SIMULATED",
+    "SYNTHETIC SOFTWARE TEST",
+    "PUBLIC-DATA-DERIVED",
+    "REAL PHYSICAL RESULT"
+   ]
+  },
+  "statement": {
+   "type": "string",
+   "minLength": 1
+  },
+  "vendor_constraints": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "max_strand_nt",
+    "min_strand_nt",
+    "alphabet",
+    "max_pool_strands",
+    "gc_min_percent",
+    "gc_max_percent",
+    "max_homopolymer",
+    "primers_supported"
+   ],
+   "properties": {
+    "max_strand_nt": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "min_strand_nt": {
+     "type": "integer",
+     "minimum": 0
+    },
+    "alphabet": {
+     "const": "ACGT"
+    },
+    "max_pool_strands": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "minimum": 1
+    },
+    "gc_min_percent": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "minimum": 0
+    },
+    "gc_max_percent": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "minimum": 0
+    },
+    "max_homopolymer": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "minimum": 1
+    },
+    "primers_supported": {
+     "type": "boolean"
+    }
+   }
+  },
+  "archives": {
+   "type": "array",
+   "minItems": 1,
+   "items": {
+    "$ref": "#/$defs/archive"
+   }
+  },
+  "checks": {
+   "type": "array",
+   "items": {
+    "$ref": "#/$defs/check"
+   }
+  },
+  "files": {
+   "type": "array",
+   "minItems": 2,
+   "items": {
+    "$ref": "#/$defs/file"
+   }
+  }
+ }
+}

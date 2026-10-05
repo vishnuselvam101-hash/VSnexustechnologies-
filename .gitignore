@@ -24,6 +24,8 @@ key.txt
 *.partial.ckpt
 *.partial.idx
 *.fastq
+# committed fixtures: the physical-interface examples are test inputs checked against SHA-256 in their manifests
+!experiments/v6/physical/examples/**/*.fastq
 clusters.jsonl
 
 # local benchmark scratch data (never committed)
@@ -32,3 +34,14 @@ clusters.jsonl
 # V5 native aligner build outputs (built by pip install or python -m vnxdna.v5.native_alignment build)
 src/vnxdna/v5/*.so
 src/vnxdna/v5/native/*.so
+# V6 native read parser and RS decoder (pip install, or python -m vnxdna.v6.native_reads build / native_rs build)
+src/vnxdna/v6/native/*.so
+src/vnxdna/v6/*.so
+
+# throwaway install-test virtual environments
+.tmp-venvs/
+# fuzz campaign outputs (fuzz/run.sh): working corpora, crash files, logs
+fuzz/out/
+
+# runtime artefact written by a third-party benchmark codec
+seen_barocdes.json

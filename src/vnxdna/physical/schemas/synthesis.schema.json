@@ -1,0 +1,236 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "synthesis.schema.json",
+  "title": "Synthesis order and provider",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "delivery_date",
+    "library_ids",
+    "oligo_pool_id",
+    "order_id",
+    "ordered_fasta",
+    "provider_name",
+    "provider_qc",
+    "strand_count",
+    "strand_ids",
+    "strand_length_nt",
+    "synthesis_date",
+    "synthesis_platform",
+    "vnx_source"
+  ],
+  "properties": {
+    "provider_name": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "description": "synthesis provider; the literal 'none (simulation)' for non-physical records"
+    },
+    "order_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "synthesis_platform": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "oligo_pool_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "library_ids": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "strand_ids": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "strand IDs or an ID range summary list"
+    },
+    "strand_count": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "strand_length_nt": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "synthesis_date": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "delivery_date": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "provider_qc": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "summary"
+      ],
+      "properties": {
+        "summary": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "report_file": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "report_sha256": {
+          "anyOf": [
+            {
+              "$ref": "common.schema.json#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "yield_ug": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    },
+    "ordered_fasta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "file_name",
+        "sha256"
+      ],
+      "properties": {
+        "file_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sha256": {
+          "anyOf": [
+            {
+              "$ref": "common.schema.json#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "strand_count": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "path": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "vnx_source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "commit",
+        "encoder_options",
+        "profile",
+        "vnx_version"
+      ],
+      "properties": {
+        "vnx_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "commit": {
+          "anyOf": [
+            {
+              "$ref": "common.schema.json#/$defs/git_commit"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "working_tree_dirty": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "profile": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "encoder_options": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "encode_command": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "description": "VNX-DNA commit, profile and options that produced the ordered strands"
+    }
+  }
+}

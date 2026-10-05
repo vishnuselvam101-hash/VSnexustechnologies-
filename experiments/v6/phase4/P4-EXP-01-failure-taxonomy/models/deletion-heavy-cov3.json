@@ -1,0 +1,40 @@
+{
+  "name": "deletion-heavy-cov3",
+  "version": "1.0.0",
+  "classification": "SIMULATED",
+  "description": "derived from deletion-heavy 1.0.0",
+  "note": "Phase 4 derived stress profile (SIMULATED); not fitted to any measured platform.",
+  "loss": {
+    "dropout": 0.0,
+    "burst_count": 0,
+    "burst_length": 0
+  },
+  "channel": {
+    "substitution_rate": 0.002,
+    "insertion_rate": 0.002,
+    "deletion_rate": 0.02,
+    "dropout_rate": 0.0,
+    "coverage": 3.0,
+    "coverage_model": "poisson",
+    "coverage_dispersion": 5.0,
+    "duplication_rate": 0.0,
+    "homopolymer_min_run": 3,
+    "homopolymer_indel_multiplier": 1.0,
+    "homopolymer_substitution_multiplier": 1.0,
+    "gc_bias_strength": 0.0,
+    "gc_bias_optimum": 0.5,
+    "burst_rate": 0.0,
+    "burst_max_len": 0,
+    "n_rate": 0.0,
+    "reverse_complement_rate": 0.0,
+    "quality_correct": 35,
+    "quality_error": 12,
+    "quality_informative": 0.0,
+    "shuffle_window": 0
+  },
+  "derived_from": {
+    "name": "deletion-heavy",
+    "version": "1.0.0",
+    "sha256": "cef8c8e5a44991e97198d0a9b0a35a7d10d83bad3f551b2e596da1fc67049d83"
+  }
+}

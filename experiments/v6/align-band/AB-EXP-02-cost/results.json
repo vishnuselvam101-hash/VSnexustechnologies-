@@ -1,0 +1,422 @@
+{
+ "experiment": "AB-EXP-02-cost",
+ "classification": "SIMULATED channel; time and peak RSS MEASURED",
+ "statement": "SIMULATED: software-generated strands and software channel models (vnxdna.v6.loss + vnxdna.v4.channel). No DNA was synthesised, stored or sequenced; not biological validation.",
+ "size": 1048576,
+ "setup": {
+  "container_sha256": "c22ed91f47eaf54800ffe691e9c7a4f2c7c058a6e7a632665dd2f16b388938c7",
+  "container_bytes": 1049956,
+  "payload_sha256": "3d6a834d335348cc7090c778778fe52f2a13317fb8b8194cd9677e76a1db0abc",
+  "strand_count": 32837,
+  "strand_nt": 313,
+  "nt_per_container_byte": 9.789,
+  "encode_seconds": 0.41
+ },
+ "models": [
+  "mixed-mild",
+  "illumina-like",
+  "deletion-heavy",
+  "nanopore-like"
+ ],
+ "seeds": [
+  81000,
+  81001,
+  81002
+ ],
+ "git": {
+  "commit": "f96d3c01f6694da63a7174b1bfbc9ca13d247044",
+  "dirty": true,
+  "dirty_tracked": true
+ },
+ "environment": {
+  "vnxdna_version": "6.0.0.dev0",
+  "git": {
+   "commit": "f96d3c01f6694da63a7174b1bfbc9ca13d247044",
+   "dirty": true
+  },
+  "python": "3.12.3",
+  "implementation": "CPython",
+  "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+  "machine": "x86_64",
+  "processor": "x86_64",
+  "cpu_count": 8,
+  "libraries": {
+   "numpy": "2.5.3",
+   "reedsolo": "unknown",
+   "zstandard": "0.25.0",
+   "cryptography": "46.0.7"
+  }
+ },
+ "load_average": [
+  4.85400390625,
+  6.18505859375,
+  6.02880859375
+ ],
+ "rows": [
+  {
+   "model": "mixed-mild",
+   "seed": 81000,
+   "arm": "default",
+   "exit": 0,
+   "exact": true,
+   "wall_seconds": 5.702,
+   "peak_rss_bytes": 103870464,
+   "wait4_ru_maxrss_bytes": 296808448
+  },
+  {
+   "model": "mixed-mild",
+   "seed": 81000,
+   "arm": "retry16",
+   "exit": 0,
+   "exact": true,
+   "wall_seconds": 5.367,
+   "peak_rss_bytes": 97841152,
+   "wait4_ru_maxrss_bytes": 296808448
+  },
+  {
+   "model": "mixed-mild",
+   "seed": 81001,
+   "arm": "retry16",
+   "exit": 0,
+   "exact": true,
+   "wall_seconds": 5.397,
+   "peak_rss_bytes": 103985152,
+   "wait4_ru_maxrss_bytes": 299819008
+  },
+  {
+   "model": "mixed-mild",
+   "seed": 81001,
+   "arm": "default",
+   "exit": 0,
+   "exact": true,
+   "wall_seconds": 5.295,
+   "peak_rss_bytes": 113291264,
+   "wait4_ru_maxrss_bytes": 299819008
+  },
+  {
+   "model": "mixed-mild",
+   "seed": 81002,
+   "arm": "default",
+   "exit": 0,
+   "exact": true,
+   "wall_seconds": 5.459,
+   "peak_rss_bytes": 113135616,
+   "wait4_ru_maxrss_bytes": 300494848
+  },
+  {
+   "model": "mixed-mild",
+   "seed": 81002,
+   "arm": "retry16",
+   "exit": 0,
+   "exact": true,
+   "wall_seconds": 5.561,
+   "peak_rss_bytes": 103755776,
+   "wait4_ru_maxrss_bytes": 300494848
+  },
+  {
+   "model": "illumina-like",
+   "seed": 81000,
+   "arm": "default",
+   "exit": 0,
+   "exact": true,
+   "wall_seconds": 3.559,
+   "peak_rss_bytes": 106926080,
+   "wait4_ru_maxrss_bytes": 300494848
+  },
+  {
+   "model": "illumina-like",
+   "seed": 81000,
+   "arm": "retry16",
+   "exit": 0,
+   "exact": true,
+   "wall_seconds": 3.556,
+   "peak_rss_bytes": 105529344,
+   "wait4_ru_maxrss_bytes": 300494848
+  },
+  {
+   "model": "illumina-like",
+   "seed": 81001,
+   "arm": "retry16",
+   "exit": 0,
+   "exact": true,
+   "wall_seconds": 3.604,
+   "peak_rss_bytes": 103559168,
+   "wait4_ru_maxrss_bytes": 300494848
+  },
+  {
+   "model": "illumina-like",
+   "seed": 81001,
+   "arm": "default",
+   "exit": 0,
+   "exact": true,
+   "wall_seconds": 3.644,
+   "peak_rss_bytes": 104828928,
+   "wait4_ru_maxrss_bytes": 300494848
+  },
+  {
+   "model": "illumina-like",
+   "seed": 81002,
+   "arm": "default",
+   "exit": 0,
+   "exact": true,
+   "wall_seconds": 3.547,
+   "peak_rss_bytes": 111702016,
+   "wait4_ru_maxrss_bytes": 300498944
+  },
+  {
+   "model": "illumina-like",
+   "seed": 81002,
+   "arm": "retry16",
+   "exit": 0,
+   "exact": true,
+   "wall_seconds": 3.693,
+   "peak_rss_bytes": 115245056,
+   "wait4_ru_maxrss_bytes": 300498944
+  },
+  {
+   "model": "deletion-heavy",
+   "seed": 81000,
+   "arm": "default",
+   "exit": 5,
+   "exact": false,
+   "wall_seconds": 15.025,
+   "peak_rss_bytes": 162058240,
+   "wait4_ru_maxrss_bytes": 300498944
+  },
+  {
+   "model": "deletion-heavy",
+   "seed": 81000,
+   "arm": "retry16",
+   "exit": 5,
+   "exact": false,
+   "wall_seconds": 22.303,
+   "peak_rss_bytes": 198225920,
+   "wait4_ru_maxrss_bytes": 300498944
+  },
+  {
+   "model": "deletion-heavy",
+   "seed": 81001,
+   "arm": "retry16",
+   "exit": 5,
+   "exact": false,
+   "wall_seconds": 22.021,
+   "peak_rss_bytes": 217489408,
+   "wait4_ru_maxrss_bytes": 300498944
+  },
+  {
+   "model": "deletion-heavy",
+   "seed": 81001,
+   "arm": "default",
+   "exit": 5,
+   "exact": false,
+   "wall_seconds": 15.228,
+   "peak_rss_bytes": 172904448,
+   "wait4_ru_maxrss_bytes": 300498944
+  },
+  {
+   "model": "deletion-heavy",
+   "seed": 81002,
+   "arm": "default",
+   "exit": 5,
+   "exact": false,
+   "wall_seconds": 14.887,
+   "peak_rss_bytes": 172777472,
+   "wait4_ru_maxrss_bytes": 300498944
+  },
+  {
+   "model": "deletion-heavy",
+   "seed": 81002,
+   "arm": "retry16",
+   "exit": 5,
+   "exact": false,
+   "wall_seconds": 22.289,
+   "peak_rss_bytes": 206540800,
+   "wait4_ru_maxrss_bytes": 300498944
+  },
+  {
+   "model": "nanopore-like",
+   "seed": 81000,
+   "arm": "default",
+   "exit": 5,
+   "exact": false,
+   "wall_seconds": 12.494,
+   "peak_rss_bytes": 102776832,
+   "wait4_ru_maxrss_bytes": 425070592
+  },
+  {
+   "model": "nanopore-like",
+   "seed": 81000,
+   "arm": "retry16",
+   "exit": 5,
+   "exact": false,
+   "wall_seconds": 26.978,
+   "peak_rss_bytes": 122781696,
+   "wait4_ru_maxrss_bytes": 425070592
+  },
+  {
+   "model": "nanopore-like",
+   "seed": 81001,
+   "arm": "retry16",
+   "exit": 5,
+   "exact": false,
+   "wall_seconds": 27.234,
+   "peak_rss_bytes": 118370304,
+   "wait4_ru_maxrss_bytes": 430092288
+  },
+  {
+   "model": "nanopore-like",
+   "seed": 81001,
+   "arm": "default",
+   "exit": 5,
+   "exact": false,
+   "wall_seconds": 12.664,
+   "peak_rss_bytes": 102445056,
+   "wait4_ru_maxrss_bytes": 430092288
+  },
+  {
+   "model": "nanopore-like",
+   "seed": 81002,
+   "arm": "default",
+   "exit": 5,
+   "exact": false,
+   "wall_seconds": 12.272,
+   "peak_rss_bytes": 104480768,
+   "wait4_ru_maxrss_bytes": 430977024
+  },
+  {
+   "model": "nanopore-like",
+   "seed": 81002,
+   "arm": "retry16",
+   "exit": 5,
+   "exact": false,
+   "wall_seconds": 27.518,
+   "peak_rss_bytes": 122585088,
+   "wait4_ru_maxrss_bytes": 430977024
+  }
+ ],
+ "pairs": [
+  {
+   "model": "mixed-mild",
+   "seed": 81000,
+   "rss_ratio": 0.942,
+   "time_ratio": 0.9412,
+   "exact": {
+    "default": true,
+    "retry16": true
+   }
+  },
+  {
+   "model": "mixed-mild",
+   "seed": 81001,
+   "rss_ratio": 0.9179,
+   "time_ratio": 1.0193,
+   "exact": {
+    "retry16": true,
+    "default": true
+   }
+  },
+  {
+   "model": "mixed-mild",
+   "seed": 81002,
+   "rss_ratio": 0.9171,
+   "time_ratio": 1.0187,
+   "exact": {
+    "default": true,
+    "retry16": true
+   }
+  },
+  {
+   "model": "illumina-like",
+   "seed": 81000,
+   "rss_ratio": 0.9869,
+   "time_ratio": 0.9992,
+   "exact": {
+    "default": true,
+    "retry16": true
+   }
+  },
+  {
+   "model": "illumina-like",
+   "seed": 81001,
+   "rss_ratio": 0.9879,
+   "time_ratio": 0.989,
+   "exact": {
+    "retry16": true,
+    "default": true
+   }
+  },
+  {
+   "model": "illumina-like",
+   "seed": 81002,
+   "rss_ratio": 1.0317,
+   "time_ratio": 1.0412,
+   "exact": {
+    "default": true,
+    "retry16": true
+   }
+  },
+  {
+   "model": "deletion-heavy",
+   "seed": 81000,
+   "rss_ratio": 1.2232,
+   "time_ratio": 1.4844,
+   "exact": {
+    "default": false,
+    "retry16": false
+   }
+  },
+  {
+   "model": "deletion-heavy",
+   "seed": 81001,
+   "rss_ratio": 1.2579,
+   "time_ratio": 1.4461,
+   "exact": {
+    "retry16": false,
+    "default": false
+   }
+  },
+  {
+   "model": "deletion-heavy",
+   "seed": 81002,
+   "rss_ratio": 1.1954,
+   "time_ratio": 1.4972,
+   "exact": {
+    "default": false,
+    "retry16": false
+   }
+  },
+  {
+   "model": "nanopore-like",
+   "seed": 81000,
+   "rss_ratio": 1.1946,
+   "time_ratio": 2.1593,
+   "exact": {
+    "default": false,
+    "retry16": false
+   }
+  },
+  {
+   "model": "nanopore-like",
+   "seed": 81001,
+   "rss_ratio": 1.1555,
+   "time_ratio": 2.1505,
+   "exact": {
+    "retry16": false,
+    "default": false
+   }
+  },
+  {
+   "model": "nanopore-like",
+   "seed": 81002,
+   "rss_ratio": 1.1733,
+   "time_ratio": 2.2423,
+   "exact": {
+    "default": false,
+    "retry16": false
+   }
+  }
+ ],
+ "max_rss_ratio": 1.2579,
+ "median_time_ratio": 1.4461,
+ "false_success": 0
+}

@@ -68,42 +68,8 @@ def header_bytes() -> bytes:
     return MAGIC + FILE_VERSION.to_bytes(2, "big") + (0).to_bytes(2, "big") + (0).to_bytes(4, "big")
 
 
-def publish(tmp: Path, target: Path, *, overwrite: bool) -> None:
-    """Rename a finished temporary file into place.
-
-    Without ``overwrite`` the file is hard-linked (fails if ``target`` appeared
-    meanwhile) instead of renamed, so a file created after the up-front
-    existence check is never replaced silently. File systems without hard
-    links fall back to the rename.
-    """
-    if overwrite:
-        os.replace(tmp, target)
-        return
-    try:
-        os.link(tmp, target)
-    except FileExistsError:
-        raise OutputError(f"output already exists: {target} (created while this command ran; use --force to overwrite)") from None
-    except OSError:
-        # hard links unsupported here (EPERM, EXDEV, ENOTSUP, ENOSYS, EINVAL, EACCES on some FUSE/SMB mounts ...):
-        # fall back to a checked rename (a file created in the instant between the check and the rename is replaced)
-        if target.exists():
-            raise OutputError(f"output already exists: {target} (created while this command ran; use --force to overwrite)") from None
-        os.replace(tmp, target)
-        return
-    os.unlink(tmp)
-
-
-def fsync_dir(path: Path) -> None:
-    try:
-        fd = os.open(path, os.O_RDONLY)
-    except OSError:
-        return
-    try:
-        os.fsync(fd)
-    except OSError:
-        pass
-    finally:
-        os.close(fd)
+# publish and fsync_dir moved verbatim to vnxdna.core.fsio (V6 Phase 2, M3); re-imported so V2 code and tests are unchanged
+from ..core.fsio import fsync_dir, publish  # noqa: E402,F401
 
 
 class ContainerWriter:

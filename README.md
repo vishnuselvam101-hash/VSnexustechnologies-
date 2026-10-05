@@ -1,3 +1,137 @@
+# VNX-DNA 6
+
+**VNX-DNA 6.0.0 (unreleased; this tree is `6.0.0.dev0`)** is a CPU-only software stack for the digital side of DNA
+data storage. It packs files and directories into a verifiable archive, encodes the archive as constraint-screened DNA
+strands, can pass the strands through a configurable *simulated* storage and sequencing channel, and reconstructs the
+archive from noisy reads. It reports success only after SHA-256 and Merkle verification, and otherwise writes nothing
+(or, for PARTIAL recovery, only files that verified individually).
+
+> **Scope: SIMULATED, NOT PHYSICALLY VALIDATED.** Every channel result in this repository comes from software strands
+> through a software channel. No strand has been synthesised, stored, amplified or sequenced by VNX-DNA, and none of
+> the 14 shipped channel models is fitted to a measured platform. Nothing here shows physical DNA storage, synthesis or
+> sequencing yields, storage lifetime, cost, or production readiness. See [docs/LIMITATIONS.md](docs/LIMITATIONS.md).
+
+The current product is two interfaces over one codec:
+
+* the **`vnx` command line** (`vnxdna.commands`), a thin layer that makes one SDK call per command and prints JSON;
+* the **`vnxdna.sdk` Python API**, the stable surface (`archive`, `encode`, `decode`, `inspect`, `verify`, `extract`,
+  `simulate`, `benchmark`, `conformance`, `version`, ...), returning `vnx.result/1` envelopes and raising typed errors
+  with stable codes.
+
+The formats are unchanged from VNX-DNA 4 and 5 (VNX4 container, strand frame 4, superblocks 1 and 2); V4 and V5
+archives and reads keep decoding. The `vnx-dna` tool (V1-V3, format 5) is still installed and unchanged. Design:
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md); normative text: [docs/spec/VNX-DNA-SPEC-V6.md](docs/spec/VNX-DNA-SPEC-V6.md);
+changes: [CHANGELOG.md](CHANGELOG.md).
+
+## Install for VNX-DNA 6 (Linux, Python >= 3.12)
+
+```bash
+python3 -m venv .venv && . .venv/bin/activate
+pip install .                    # builds the three native kernels when a C compiler works; '.[dev]' adds the test tools
+python -m vnxdna.native          # per-kernel backend, SIMD level, ABI and any load error (JSON)
+vnx version                      # software, specification and format versions
+```
+
+The aligner, FASTQ/FASTA read parser and inner Reed-Solomon decoder have optional C kernels. Without a compiler, or if
+one kernel fails to build, installation still succeeds and the bit-identical NumPy references run, only slower
+(`python -m vnxdna.native --require-native` exits 1 unless every kernel is native). The kernels were built and tested on x86-64 only. For an editable checkout, build the
+kernels in place with the commands in [docs/NATIVE_KERNELS.md](docs/NATIVE_KERNELS.md). A decode report records the
+backends that ran.
+
+## Quick start: VNX-DNA 6
+
+```bash
+vnx archive ./dataset archive.vnx                       # files and directories to a verified VNX4 archive
+vnx verify archive.vnx
+vnx encode archive.vnx strands.fasta                    # DNA strands (default profile v4-balanced, 313 nt, sync markers)
+vnx validate strands.fasta                              # constraint diagnostics (JSON)
+vnx channel models                                      # the shipped channel models (every one SIMULATED)
+vnx channel simulate strands.fasta reads.fastq --model illumina-like --coverage 10 --seed 7     # SIMULATED reads
+vnx decode reads.fastq -o recovered.vnx --extract ./restored --report decode.json              # verified reconstruction
+vnx inspect reads.fastq                                 # can this build read this file? (frame and layout probe)
+vnx conformance                                         # run the conformance vectors; exit 0 only if CONFORMANT
+```
+
+The same from Python:
+
+```python
+from vnxdna import sdk
+
+enc = sdk.encode("archive.vnx", "strands.fasta", dna=sdk.DNAOptions(profile="v4-balanced"))
+sdk.simulate("strands.fasta", "reads.fastq", model="illumina-like", seed=7, coverage=10)       # SIMULATED
+res = sdk.decode("reads.fastq", "recovered.vnx")        # status SUCCESS, PARTIAL or FAILURE; vnx.result/1 envelope
+```
+
+Opt-in decoder options (all off by default): `--indel-recovery smart`, `--soft-decoding auto`,
+`--consensus-weighting quality`, `--retry-band 16`. Their measured effects, and why none is a default, are in
+[docs/CLI.md](docs/CLI.md) and [docs/V6_DEFERRED.md](docs/V6_DEFERRED.md). Exit codes: 0 success, 1 verification failed,
+3 invalid input, 4 key/authentication, 5 insufficient redundancy, 6 unsupported format, 7 configuration, 8 output,
+9 PARTIAL, 10 provider error, 70 internal error ([docs/CLI.md](docs/CLI.md)).
+
+## What is SIMULATED, VERIFIED, THEORETICAL
+
+| Label | Meaning | Examples in this repository |
+|---|---|---|
+| **VERIFIED** | checked by a committed test or script | native kernels equal their NumPy references (golden cases and fuzzing, [NATIVE_KERNELS.md](docs/NATIVE_KERNELS.md)); the golden archives `v4_0`, `v5_0`, `v6_0` decode; 226 conformance vectors ([BENCHMARKING.md](docs/BENCHMARKING.md)) |
+| **SIMULATED** | software strands through a software channel | every recovery rate, threshold and benchmark-lab number below |
+| **MEASURED** | time or memory on the development host (shared, x86-64) | installed-path decode 10.8 s to 5.3 s (2.04x) after pip builds the kernels: one host, one workload ([benchmarks/v6/native_packaging/README.md](benchmarks/v6/native_packaging/README.md)) |
+| **PUBLIC-DATA-DERIVED** | statistics from another group's public reads | per-read error rates of the public nanopore CNR dataset ([experiments/v6/phase4/P4-EXP-03-cnr-ids/README.md](experiments/v6/phase4/P4-EXP-03-cnr-ids/README.md)) |
+| **THEORETICAL** | specified or computed, not run | frame 6, superblock 3, primers, the wide address class ([docs/spec/VNX-DNA-SPEC-V6.md](docs/spec/VNX-DNA-SPEC-V6.md) §3.5-§3.8) |
+| **PHYSICAL** | real DNA | none |
+
+Results (SIMULATED unless labelled; each from a committed file):
+
+* **Outer code under strand loss.** The V6 product code (opt-in) decodes 20/20 seeds up to 16 % i.i.d. strand loss,
+  against 7 % for the V5 code, at a redundant-strand overhead of 0.249 against 0.251
+  ([experiments/v6/phase1/summary.md](experiments/v6/phase1/summary.md)).
+* **No silent wrong output.** 0 false SUCCESS in 1,450 decodes (failure taxonomy), 1,965 decodes (quality-weighted
+  consensus comparison) and 1,910 decodes (retry-band comparison), and in 157 benchmark-lab trials
+  ([experiments/v6/phase4/README.md](experiments/v6/phase4/README.md),
+  [experiments/v6/align-band/README.md](experiments/v6/align-band/README.md),
+  [benchmarks/competitors/lab/README.md](benchmarks/competitors/lab/README.md)).
+* **Benchmark lab B0.** VNX-DNA run beside DNA-RS, DNA Fountain and DNA-Aeon in the ETH `dt4dds-benchmark` harness (280
+  trials; i.i.d. channel; 3 seeds per point; not the published protocol). VNX-DNA returned no wrong output with exit 0;
+  DNA-RS did in 2 trials and DNA Fountain in 16. VNX-DNA was weaker at 10 % dropout, at 1 % errors near 1 bit/nt and near
+  1.5 bit/nt (SIMULATED), and writes longer strands (14 bytes of header and CRC in every strand). Table and caveats:
+  [benchmarks/competitors/lab/README.md](benchmarks/competitors/lab/README.md).
+* **Not decoded.** The simulated nanopore-like model decoded 0/20 at coverage 3, 5 and 10 and 0/10 at coverage 15 and
+  30, with or without the opt-in retry band ([experiments/v6/align-band/README.md](experiments/v6/align-band/README.md));
+  the measured causes and the V7 plan are in [docs/V6_DEFERRED.md](docs/V6_DEFERRED.md) section 2.
+
+## V6 documentation
+
+[Architecture](docs/ARCHITECTURE.md) · [Specification](docs/spec/VNX-DNA-SPEC-V6.md) ·
+[Design and migration plan](docs/V6_ARCHITECTURE.md) · [Baseline audit](docs/V6_BASELINE_AUDIT.md) ·
+[Outer code](docs/V6_OUTER_CODE.md) · [Channel models](docs/CHANNEL_MODEL.md) ·
+[Native kernels](docs/NATIVE_KERNELS.md) · [Interoperability](docs/INTEROPERABILITY.md) ·
+[Laboratory interface](docs/LAB_INTERFACE.md) · [DDSA mapping](docs/DDSA_MAPPING.md) ·
+[Security model](docs/security/V6_SECURITY_MODEL.md) · [Fuzz report](docs/security/V6_FUZZ_REPORT.md) ·
+[CLI](docs/CLI.md) · [Compatibility](docs/COMPATIBILITY.md) · [Storage format](docs/STORAGE_FORMAT.md) ·
+[Conformance](docs/CONFORMANCE.md) · [Benchmarking](docs/BENCHMARKING.md) · [Deferred work](docs/V6_DEFERRED.md) ·
+[Implementation summary](docs/V6_IMPLEMENTATION_SUMMARY.md) · [Completion report](docs/V6_COMPLETION_REPORT.md) ·
+[Competitive research](docs/research/V6_COMPETITIVE_RESEARCH.md) · [Technical research](docs/research/V6_TECHNICAL_RESEARCH.md)
+
+## Limitations of VNX-DNA 6
+
+- **Software only.** No wet-lab synthesis or sequencing; the channel models are stress models, not platform models.
+  Provider integration exists only for a software reference simulator ([docs/INTEROPERABILITY.md](docs/INTEROPERABILITY.md));
+  there are no vendor adapters, no primers and no DDSA Sector Zero/One output.
+- **Nanopore-like reads are not decoded** in any tested simulated condition; the B0 benchmark is small and not the
+  published protocol; most opt-in options are unproven as defaults ([docs/V6_DEFERRED.md](docs/V6_DEFERRED.md)).
+- **Address space and strand length.** The default strand is 313 nt (353 nt with two 20-nt primers, over a 350-nt pool
+  limit); one archive addresses about 11 TB by the 4-byte group index (THEORETICAL arithmetic in
+  [docs/COMPETITIVE_GAP_ANALYSIS.md](docs/COMPETITIVE_GAP_ANALYSIS.md)).
+- **Open items:** MSan and non-x86 builds were not run; open LOW findings are listed in [docs/security/V6_SECURITY_MODEL.md](docs/security/V6_SECURITY_MODEL.md).
+
+---
+
+# Earlier versions
+
+The text below is the README of VNX-DNA 5, 4 and 3 and is kept as written. Commands under "V4 quick start" and the V3
+sections still work as described.
+
+---
+
 # VNX-DNA 5
 
 **VNX-DNA 5.0** adds an adaptive, probabilistic decoding foundation on top of the unchanged VNX-DNA 4 format

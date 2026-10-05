@@ -1,0 +1,42 @@
+V6 Phase 1 items 6+7 -- native inner RS (src/vnxdna/v6/native/rs.c): sanitizer, valgrind and warning report
+date (UTC): 2026-10-04T05:18:59Z   host CPU: Intel(R) Xeon(R) Gold 6240 CPU @ 2.60GHz
+produced by: bash benchmarks/v6/native_rs/sanitizers.sh <workdir> 600  (output below verbatim, colour codes stripped)
+
+kernel source sha256: 5f88202c1975172f5d1614298d7f1b58e732068d83b546f52c410234637251f0
+gcc:   gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+clang: Ubuntu clang version 18.1.3 (1ubuntu1)
+commit: 8e517ef9a81a33bd3cf2d0841c7e169ec6289258  dirty: 1 tracked files modified
+== warnings (-O3 -Wall -Wextra -Wconversion -Wsign-conversion -Wshadow -Wpedantic)
+gcc: exit=0 warnings=0
+clang: exit=0 warnings=0
+gcc -fanalyzer: exit=0 warnings=0
+== sanitizer builds
+gcc-asan-ubsan: native RS tests exit=0 (119 passed in 68.84s (0:01:08))
+gcc-asan-ubsan: stress fuzz exit=0 {"rounds": 600, "seed": 7, "levels": ["scalar", "avx2", "avx512"], "words": 42034, "comparisons": 126102, "mismatches": 0, "reference_ok": 27327, "codes": 395, "seconds": 48.87, "native_status": {"lib
+clang-asan-ubsan: native RS tests exit=0 (119 passed in 63.50s (0:01:03))
+clang-asan-ubsan: stress fuzz exit=0 {"rounds": 600, "seed": 7, "levels": ["scalar", "avx2", "avx512"], "words": 42034, "comparisons": 126102, "mismatches": 0, "reference_ok": 27327, "codes": 395, "seconds": 37.04, "native_status": {"lib
+clang-ubsan-trap: native RS tests exit=0 (119 passed in 36.20s)
+clang-ubsan-trap: stress fuzz exit=0 {"rounds": 600, "seed": 7, "levels": ["scalar", "avx2", "avx512"], "words": 42034, "comparisons": 126102, "mismatches": 0, "reference_ok": 27327, "codes": 395, "seconds": 21.2, "native_status": {"libr
+gcc canary: AddressSanitizer fired as expected
+clang canary: AddressSanitizer fired as expected
+overall: PASS
+
+== valgrind memcheck (valgrind-3.22.0), gcc -O1 -g build, PYTHONMALLOC=malloc, --error-exitcode=9 --leak-check=no
+command: VNXDNA_RS_LIB=<vg.so> valgrind ... python benchmarks/v6/native_rs/stress_fuzz.py --rounds 60 --seed 11
+exit=0, valgrind errors reported: 0
+{"rounds": 60, "seed": 11, "levels": ["scalar", "avx2"], "words": 3691, "comparisons": 7382, "mismatches": 0, "reference_ok": 2556, "codes": 43, "seconds": 58.26, "native_status": {"library": "/root/v
+note: valgrind's virtual CPU does not report AVX-512, so under valgrind the library exposes scalar + avx2 only
+      (this also exercises the runtime detection: the avx512 level was correctly unavailable).
+
+== full-size differential fuzz, optimised build (-O3, the shipped flags), final source
+{"rounds": 2000, "seed": 1, "levels": ["scalar", "avx2", "avx512"], "words": 150222, "comparisons": 450666, "mismatches": 0, "reference_ok": 98398, "codes": 1258, "seconds": 64.1, "nati
+{"rounds": 2000, "seed": 2, "levels": ["scalar", "avx2", "avx512"], "words": 159017, "comparisons": 477051, "mismatches": 0, "reference_ok": 104318, "codes": 1225, "seconds": 65.6, "nat
+
+== what was NOT covered / caveats
+- Whether ASan instruments the AVX-512 masked tail loads/stores (_mm512_maskz_loadu_epi8 / _mm512_mask_storeu_epi8)
+  was not verified; the masked-out lanes are never accessed by the hardware, by construction of the mask.
+- valgrind could not run the AVX-512 level (unsupported by valgrind); AVX-512 is covered by gcc/clang ASan+UBSan,
+  clang UBSan-trap and the bit-exact fuzz above.
+- MSan (uninitialised reads) was not run: it needs an instrumented Python/NumPy.
+- Only x86-64 was tested; the non-x86 build path (scalar only) was not compiled on another architecture (a clang
+  --target=aarch64 syntax check could not run: no aarch64 libc headers on this host).

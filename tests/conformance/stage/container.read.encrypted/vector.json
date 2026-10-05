@@ -1,0 +1,54 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "container.read.encrypted",
+ "stage": "D14",
+ "formats": {
+  "frame": null,
+  "superblock": null,
+  "container": [
+   4,
+   0
+  ]
+ },
+ "kind": "positive",
+ "operation": "container.read",
+ "params": {
+  "key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
+ },
+ "inputs": {
+  "container": {
+   "path": "container.dat",
+   "sha256": "810bb680c7c004fea1b02abb93d755085516df73992bbba2e30f9020148a1e2e"
+  }
+ },
+ "expected": {
+  "outputs": {
+   "status": "VERIFIED",
+   "archive_id": "0102030405060708090a0b0c0d0e0f10",
+   "merkle_root": "eeb071421d0bf96db226701eb1e9b001532348f34dcc73ef0d90219dae1f48c7",
+   "encrypted": true,
+   "files": [
+    {
+     "path": "data/a.txt",
+     "type": 0,
+     "size": 9000,
+     "sha256": "cea3e01bcc2d49bd2373b1456d47fb216d12a65f2206f44bfdeb86dba1a190ef"
+    },
+    {
+     "path": "data/dup.txt",
+     "type": 0,
+     "size": 9000,
+     "sha256": "cea3e01bcc2d49bd2373b1456d47fb216d12a65f2206f44bfdeb86dba1a190ef"
+    },
+    {
+     "path": "data/sub/b.bin",
+     "type": 0,
+     "size": 5000,
+     "sha256": "18bb64839d70677c5ea27d1783bec24e1eaadb6fb600163329129d4221849e4b"
+    }
+   ]
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

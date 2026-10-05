@@ -1,0 +1,1104 @@
+{
+ "simulated": true,
+ "backends": [
+  "reference",
+  "scalar",
+  "avx2",
+  "avx512"
+ ],
+ "reps": 7,
+ "cpu": {
+  "model": "Intel(R) Xeon(R) Gold 6240 CPU @ 2.60GHz",
+  "relevant_flags": [
+   "avx",
+   "avx2",
+   "avx512bw",
+   "avx512dq",
+   "avx512f",
+   "avx512vl",
+   "bmi2",
+   "popcnt",
+   "sse2",
+   "sse4_2",
+   "ssse3"
+  ],
+  "gfni": false,
+  "logical_cpus": 8
+ },
+ "build": {
+  "compiler": "/usr/bin/cc",
+  "version": "cc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+  "cflags": [
+   "-O3",
+   "-std=c11",
+   "-fPIC",
+   "-shared",
+   "-Wall",
+   "-Wextra",
+   "-Werror"
+  ],
+  "library": "/root/vnx-dna-lab/v6/src/vnxdna/v6/native/libvnx_rs.so",
+  "library_sha256": "40411a2f59d9ad7bde7448cfd744d73df5fa67dde629378b399003c29ca47be2",
+  "source_sha256": "5f88202c1975172f5d1614298d7f1b58e732068d83b546f52c410234637251f0"
+ },
+ "native_status": {
+  "requested_backend": "auto",
+  "active_backend": "avx2",
+  "fallback_reason": null,
+  "error": null,
+  "native_available": true,
+  "library": "/root/vnx-dna-lab/v6/src/vnxdna/v6/native/libvnx_rs.so",
+  "load_error": null,
+  "abi_version": 1,
+  "supported_levels": [
+   "scalar",
+   "avx2",
+   "avx512"
+  ],
+  "cpu_levels": [
+   "scalar",
+   "avx2",
+   "avx512"
+  ],
+  "auto_policy": "avx2 > scalar > reference; avx512 only when forced (measured 0.97x of avx2 on Xeon Gold 6240)",
+  "reference": "vnxdna.v4.rs_fast"
+ },
+ "python": "3.12.3",
+ "numpy": "2.5.3",
+ "loadavg_before": [
+  3.66,
+  6.72,
+  8.35
+ ],
+ "keep_rule": "median ratio >= 1.1 and non-overlapping rep ranges",
+ "provenance": {
+  "timestamp_utc": "2026-10-04T05:14:55Z",
+  "vnx_version": "5.0.0",
+  "vnx4_format_version": [
+   4,
+   0
+  ],
+  "git_commit": "8e517ef9a81a33bd3cf2d0841c7e169ec6289258-dirty",
+  "cpu_model": "Intel(R) Xeon(R) Gold 6240 CPU @ 2.60GHz",
+  "logical_cpus": 8,
+  "ram_bytes": 33654890496,
+  "os": "Linux 6.8.0-146-generic",
+  "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+  "python": "3.12.3",
+  "packages": {
+   "numpy": "2.5.3",
+   "cryptography": "46.0.7",
+   "zstandard": "0.25.0",
+   "reedsolo": "1.7.0",
+   "pydantic": "2.13.5",
+   "typer": "0.27.2"
+  },
+  "v4_control_tag": "v4.0.0",
+  "v4_control_commit": "a358ae8284066d0608f329b47a53e55018bbfa79",
+  "commit_under_test": "8e517ef9a81a33bd3cf2d0841c7e169ec6289258",
+  "worktree_dirty": true,
+  "native_toolchain": {
+   "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+   "rustc": "rustc 1.75.0 (82e1608df 2023-12-21) (built from a source tarball)",
+   "cargo": "cargo 1.75.0"
+  },
+  "cpu_flags": [
+   "avx",
+   "avx2",
+   "avx512bw",
+   "avx512f",
+   "bmi2",
+   "popcnt",
+   "sse4_2"
+  ],
+  "config_sha256": "a111d5ba1a3b7b04a9b360e14d38bca815514f8a93876de896f3896a16bab5ec"
+ },
+ "micro": [
+  {
+   "workload": "captured decode workload",
+   "workload_sha256": "e19d5a330b47fdbab9398dcee4e0d9162817d4a73ca14d92a6a16593128aa0e4",
+   "outputs_identical_to_reference": true,
+   "calls": 201,
+   "words": 229908,
+   "backends": {
+    "reference": {
+     "wall_s": {
+      "median": 4.019158,
+      "min": 3.916976,
+      "max": 5.009717,
+      "reps": [
+       4.019158,
+       3.924027,
+       3.97025,
+       4.779612,
+       5.009717,
+       4.575918,
+       3.916976
+      ]
+     },
+     "cpu_s": {
+      "median": 3.967869,
+      "min": 3.905735,
+      "max": 4.044837,
+      "reps": [
+       3.992163,
+       3.919573,
+       3.967869,
+       3.946724,
+       4.044837,
+       3.970174,
+       3.905735
+      ]
+     },
+     "words_per_s": 57203,
+     "speedup_vs_reference": 1.0
+    },
+    "scalar": {
+     "wall_s": {
+      "median": 0.454315,
+      "min": 0.448748,
+      "max": 0.486917,
+      "reps": [
+       0.448748,
+       0.449999,
+       0.454315,
+       0.486917,
+       0.464127,
+       0.481357,
+       0.44936
+      ]
+     },
+     "cpu_s": {
+      "median": 0.451307,
+      "min": 0.448743,
+      "max": 0.479492,
+      "reps": [
+       0.448743,
+       0.449886,
+       0.453645,
+       0.45869,
+       0.451307,
+       0.479492,
+       0.449271
+      ]
+     },
+     "words_per_s": 506054,
+     "speedup_vs_reference": 8.85
+    },
+    "avx2": {
+     "wall_s": {
+      "median": 0.195902,
+      "min": 0.185759,
+      "max": 0.23977,
+      "reps": [
+       0.187315,
+       0.23977,
+       0.197353,
+       0.205739,
+       0.191108,
+       0.185759,
+       0.195902
+      ]
+     },
+     "cpu_s": {
+      "median": 0.188396,
+      "min": 0.185254,
+      "max": 0.195749,
+      "reps": [
+       0.186834,
+       0.187287,
+       0.195749,
+       0.188603,
+       0.188396,
+       0.185254,
+       0.191193
+      ]
+     },
+     "words_per_s": 1173587,
+     "speedup_vs_reference": 20.52
+    },
+    "avx512": {
+     "wall_s": {
+      "median": 0.209051,
+      "min": 0.192747,
+      "max": 0.224511,
+      "reps": [
+       0.194243,
+       0.210656,
+       0.200137,
+       0.224511,
+       0.209051,
+       0.192747,
+       0.211534
+      ]
+     },
+     "cpu_s": {
+      "median": 0.196288,
+      "min": 0.191733,
+      "max": 0.203449,
+      "reps": [
+       0.193988,
+       0.203449,
+       0.200112,
+       0.196288,
+       0.195172,
+       0.191733,
+       0.203194
+      ]
+     },
+     "words_per_s": 1099770,
+     "speedup_vs_reference": 19.23
+    }
+   },
+   "simd_keep": {
+    "avx2_vs_scalar": {
+     "median_ratio": 2.319,
+     "ranges_separated": true,
+     "measurably_faster": true
+    },
+    "avx512_vs_avx2": {
+     "median_ratio": 0.937,
+     "ranges_separated": false,
+     "measurably_faster": false
+    },
+    "avx512_vs_scalar": {
+     "median_ratio": 2.173,
+     "ranges_separated": true,
+     "measurably_faster": true
+    }
+   }
+  },
+  {
+   "workload": "(70,16) within",
+   "workload_sha256": null,
+   "outputs_identical_to_reference": true,
+   "calls": 1,
+   "words": 8192,
+   "backends": {
+    "reference": {
+     "wall_s": {
+      "median": 0.131136,
+      "min": 0.128234,
+      "max": 0.133995,
+      "reps": [
+       0.133995,
+       0.132297,
+       0.133462,
+       0.128234,
+       0.130891,
+       0.128893,
+       0.131136
+      ]
+     },
+     "cpu_s": {
+      "median": 0.127195,
+      "min": 0.126106,
+      "max": 0.129116,
+      "reps": [
+       0.129116,
+       0.126999,
+       0.127195,
+       0.126458,
+       0.128474,
+       0.126106,
+       0.127952
+      ]
+     },
+     "words_per_s": 62469,
+     "speedup_vs_reference": 1.0
+    },
+    "scalar": {
+     "wall_s": {
+      "median": 0.018349,
+      "min": 0.017831,
+      "max": 0.019057,
+      "reps": [
+       0.018267,
+       0.018756,
+       0.018349,
+       0.019057,
+       0.017831,
+       0.018697,
+       0.017961
+      ]
+     },
+     "cpu_s": {
+      "median": 0.017943,
+      "min": 0.017627,
+      "max": 0.018028,
+      "reps": [
+       0.017943,
+       0.018028,
+       0.017879,
+       0.017962,
+       0.017712,
+       0.018026,
+       0.017627
+      ]
+     },
+     "words_per_s": 446455,
+     "speedup_vs_reference": 7.15
+    },
+    "avx2": {
+     "wall_s": {
+      "median": 0.007425,
+      "min": 0.007008,
+      "max": 0.008486,
+      "reps": [
+       0.007247,
+       0.008486,
+       0.00743,
+       0.007395,
+       0.007008,
+       0.007425,
+       0.007529
+      ]
+     },
+     "cpu_s": {
+      "median": 0.007273,
+      "min": 0.007011,
+      "max": 0.007467,
+      "reps": [
+       0.007194,
+       0.007467,
+       0.007384,
+       0.007273,
+       0.007011,
+       0.007242,
+       0.007323
+      ]
+     },
+     "words_per_s": 1103300,
+     "speedup_vs_reference": 17.66
+    },
+    "avx512": {
+     "wall_s": {
+      "median": 0.007943,
+      "min": 0.00781,
+      "max": 0.008182,
+      "reps": [
+       0.008057,
+       0.008182,
+       0.007847,
+       0.007882,
+       0.00781,
+       0.008088,
+       0.007943
+      ]
+     },
+     "cpu_s": {
+      "median": 0.007884,
+      "min": 0.007721,
+      "max": 0.008043,
+      "reps": [
+       0.007919,
+       0.007936,
+       0.007822,
+       0.007884,
+       0.007721,
+       0.008043,
+       0.00787
+      ]
+     },
+     "words_per_s": 1031348,
+     "speedup_vs_reference": 16.51
+    }
+   },
+   "simd_keep": {
+    "avx2_vs_scalar": {
+     "median_ratio": 2.471,
+     "ranges_separated": true,
+     "measurably_faster": true
+    },
+    "avx512_vs_avx2": {
+     "median_ratio": 0.935,
+     "ranges_separated": false,
+     "measurably_faster": false
+    },
+    "avx512_vs_scalar": {
+     "median_ratio": 2.31,
+     "ranges_separated": true,
+     "measurably_faster": true
+    }
+   }
+  },
+  {
+   "workload": "(70,16) mixed",
+   "workload_sha256": null,
+   "outputs_identical_to_reference": true,
+   "calls": 1,
+   "words": 8192,
+   "backends": {
+    "reference": {
+     "wall_s": {
+      "median": 0.139079,
+      "min": 0.138138,
+      "max": 0.141202,
+      "reps": [
+       0.141022,
+       0.138177,
+       0.139427,
+       0.141202,
+       0.139079,
+       0.138138,
+       0.138647
+      ]
+     },
+     "cpu_s": {
+      "median": 0.139044,
+      "min": 0.138143,
+      "max": 0.141207,
+      "reps": [
+       0.140022,
+       0.138183,
+       0.139433,
+       0.141207,
+       0.139044,
+       0.138143,
+       0.138637
+      ]
+     },
+     "words_per_s": 58902,
+     "speedup_vs_reference": 1.0
+    },
+    "scalar": {
+     "wall_s": {
+      "median": 0.022994,
+      "min": 0.022949,
+      "max": 0.023571,
+      "reps": [
+       0.022987,
+       0.023571,
+       0.022949,
+       0.022994,
+       0.023326,
+       0.023034,
+       0.022956
+      ]
+     },
+     "cpu_s": {
+      "median": 0.022998,
+      "min": 0.022952,
+      "max": 0.023576,
+      "reps": [
+       0.022991,
+       0.023576,
+       0.022952,
+       0.022998,
+       0.023331,
+       0.023037,
+       0.022959
+      ]
+     },
+     "words_per_s": 356267,
+     "speedup_vs_reference": 6.05
+    },
+    "avx2": {
+     "wall_s": {
+      "median": 0.011356,
+      "min": 0.01124,
+      "max": 0.011758,
+      "reps": [
+       0.011288,
+       0.011758,
+       0.011252,
+       0.01124,
+       0.011544,
+       0.011356,
+       0.011363
+      ]
+     },
+     "cpu_s": {
+      "median": 0.011359,
+      "min": 0.011242,
+      "max": 0.011761,
+      "reps": [
+       0.011291,
+       0.011761,
+       0.011254,
+       0.011242,
+       0.011547,
+       0.011359,
+       0.011366
+      ]
+     },
+     "words_per_s": 721381,
+     "speedup_vs_reference": 12.25
+    },
+    "avx512": {
+     "wall_s": {
+      "median": 0.012108,
+      "min": 0.012073,
+      "max": 0.012281,
+      "reps": [
+       0.012108,
+       0.012258,
+       0.012076,
+       0.012171,
+       0.012101,
+       0.012073,
+       0.012281
+      ]
+     },
+     "cpu_s": {
+      "median": 0.012111,
+      "min": 0.012074,
+      "max": 0.012285,
+      "reps": [
+       0.012111,
+       0.012262,
+       0.012078,
+       0.012174,
+       0.012104,
+       0.012074,
+       0.012285
+      ]
+     },
+     "words_per_s": 676577,
+     "speedup_vs_reference": 11.49
+    }
+   },
+   "simd_keep": {
+    "avx2_vs_scalar": {
+     "median_ratio": 2.025,
+     "ranges_separated": true,
+     "measurably_faster": true
+    },
+    "avx512_vs_avx2": {
+     "median_ratio": 0.938,
+     "ranges_separated": false,
+     "measurably_faster": false
+    },
+    "avx512_vs_scalar": {
+     "median_ratio": 1.899,
+     "ranges_separated": true,
+     "measurably_faster": true
+    }
+   }
+  },
+  {
+   "workload": "(70,16) beyond",
+   "workload_sha256": null,
+   "outputs_identical_to_reference": true,
+   "calls": 1,
+   "words": 8192,
+   "backends": {
+    "reference": {
+     "wall_s": {
+      "median": 0.149432,
+      "min": 0.140607,
+      "max": 0.165416,
+      "reps": [
+       0.155329,
+       0.143698,
+       0.140607,
+       0.144299,
+       0.149432,
+       0.165416,
+       0.150318
+      ]
+     },
+     "cpu_s": {
+      "median": 0.139956,
+      "min": 0.138248,
+      "max": 0.162188,
+      "reps": [
+       0.139956,
+       0.13908,
+       0.138453,
+       0.138248,
+       0.141807,
+       0.162188,
+       0.14675
+      ]
+     },
+     "words_per_s": 54821,
+     "speedup_vs_reference": 1.0
+    },
+    "scalar": {
+     "wall_s": {
+      "median": 0.017332,
+      "min": 0.016901,
+      "max": 0.020303,
+      "reps": [
+       0.017247,
+       0.017332,
+       0.017147,
+       0.018946,
+       0.020303,
+       0.018487,
+       0.016901
+      ]
+     },
+     "cpu_s": {
+      "median": 0.016944,
+      "min": 0.01683,
+      "max": 0.018367,
+      "reps": [
+       0.016904,
+       0.016944,
+       0.016941,
+       0.017072,
+       0.017848,
+       0.018367,
+       0.01683
+      ]
+     },
+     "words_per_s": 472652,
+     "speedup_vs_reference": 8.62
+    },
+    "avx2": {
+     "wall_s": {
+      "median": 0.00731,
+      "min": 0.007164,
+      "max": 0.008996,
+      "reps": [
+       0.007164,
+       0.007686,
+       0.007272,
+       0.00731,
+       0.007843,
+       0.008996,
+       0.007217
+      ]
+     },
+     "cpu_s": {
+      "median": 0.007153,
+      "min": 0.007064,
+      "max": 0.007847,
+      "reps": [
+       0.007069,
+       0.007101,
+       0.007153,
+       0.007312,
+       0.007847,
+       0.007329,
+       0.007064
+      ]
+     },
+     "words_per_s": 1120657,
+     "speedup_vs_reference": 20.44
+    },
+    "avx512": {
+     "wall_s": {
+      "median": 0.007829,
+      "min": 0.007659,
+      "max": 0.008475,
+      "reps": [
+       0.007659,
+       0.007829,
+       0.007687,
+       0.008316,
+       0.008475,
+       0.007859,
+       0.007747
+      ]
+     },
+     "cpu_s": {
+      "median": 0.007617,
+      "min": 0.007517,
+      "max": 0.008422,
+      "reps": [
+       0.007517,
+       0.007625,
+       0.007597,
+       0.007617,
+       0.008422,
+       0.007862,
+       0.007571
+      ]
+     },
+     "words_per_s": 1046366,
+     "speedup_vs_reference": 19.09
+    }
+   },
+   "simd_keep": {
+    "avx2_vs_scalar": {
+     "median_ratio": 2.371,
+     "ranges_separated": true,
+     "measurably_faster": true
+    },
+    "avx512_vs_avx2": {
+     "median_ratio": 0.934,
+     "ranges_separated": false,
+     "measurably_faster": false
+    },
+    "avx512_vs_scalar": {
+     "median_ratio": 2.214,
+     "ranges_separated": true,
+     "measurably_faster": true
+    }
+   }
+  },
+  {
+   "workload": "(70,16) garbage",
+   "workload_sha256": null,
+   "outputs_identical_to_reference": true,
+   "calls": 1,
+   "words": 8192,
+   "backends": {
+    "reference": {
+     "wall_s": {
+      "median": 0.14879,
+      "min": 0.143332,
+      "max": 0.151963,
+      "reps": [
+       0.147814,
+       0.147571,
+       0.143332,
+       0.14879,
+       0.151963,
+       0.150246,
+       0.150074
+      ]
+     },
+     "cpu_s": {
+      "median": 0.145652,
+      "min": 0.139177,
+      "max": 0.14918,
+      "reps": [
+       0.142637,
+       0.143107,
+       0.139177,
+       0.145652,
+       0.14753,
+       0.14918,
+       0.149114
+      ]
+     },
+     "words_per_s": 55057,
+     "speedup_vs_reference": 1.0
+    },
+    "scalar": {
+     "wall_s": {
+      "median": 0.017608,
+      "min": 0.01698,
+      "max": 0.022626,
+      "reps": [
+       0.017261,
+       0.01698,
+       0.017305,
+       0.022626,
+       0.017804,
+       0.01763,
+       0.017608
+      ]
+     },
+     "cpu_s": {
+      "median": 0.017536,
+      "min": 0.016883,
+      "max": 0.017763,
+      "reps": [
+       0.016929,
+       0.016883,
+       0.017069,
+       0.017536,
+       0.017763,
+       0.017633,
+       0.017612
+      ]
+     },
+     "words_per_s": 465243,
+     "speedup_vs_reference": 8.45
+    },
+    "avx2": {
+     "wall_s": {
+      "median": 0.00747,
+      "min": 0.007229,
+      "max": 0.008187,
+      "reps": [
+       0.007323,
+       0.007229,
+       0.007403,
+       0.008187,
+       0.007547,
+       0.007864,
+       0.00747
+      ]
+     },
+     "cpu_s": {
+      "median": 0.007472,
+      "min": 0.007065,
+      "max": 0.007867,
+      "reps": [
+       0.007326,
+       0.007065,
+       0.007342,
+       0.007742,
+       0.007549,
+       0.007867,
+       0.007472
+      ]
+     },
+     "words_per_s": 1096653,
+     "speedup_vs_reference": 19.92
+    },
+    "avx512": {
+     "wall_s": {
+      "median": 0.008017,
+      "min": 0.007714,
+      "max": 0.009276,
+      "reps": [
+       0.007776,
+       0.007714,
+       0.009276,
+       0.008003,
+       0.008061,
+       0.008267,
+       0.008017
+      ]
+     },
+     "cpu_s": {
+      "median": 0.007992,
+      "min": 0.007569,
+      "max": 0.008271,
+      "reps": [
+       0.007569,
+       0.007598,
+       0.008054,
+       0.008005,
+       0.007987,
+       0.008271,
+       0.007992
+      ]
+     },
+     "words_per_s": 1021829,
+     "speedup_vs_reference": 18.56
+    }
+   },
+   "simd_keep": {
+    "avx2_vs_scalar": {
+     "median_ratio": 2.357,
+     "ranges_separated": true,
+     "measurably_faster": true
+    },
+    "avx512_vs_avx2": {
+     "median_ratio": 0.932,
+     "ranges_separated": false,
+     "measurably_faster": false
+    },
+    "avx512_vs_scalar": {
+     "median_ratio": 2.196,
+     "ranges_separated": true,
+     "measurably_faster": true
+    }
+   }
+  },
+  {
+   "workload": "(255,32) mixed",
+   "workload_sha256": null,
+   "outputs_identical_to_reference": true,
+   "calls": 1,
+   "words": 4096,
+   "backends": {
+    "reference": {
+     "wall_s": {
+      "median": 0.242724,
+      "min": 0.239741,
+      "max": 0.281533,
+      "reps": [
+       0.239741,
+       0.241764,
+       0.242476,
+       0.242724,
+       0.281533,
+       0.263243,
+       0.2636
+      ]
+     },
+     "cpu_s": {
+      "median": 0.242291,
+      "min": 0.239337,
+      "max": 0.276266,
+      "reps": [
+       0.239337,
+       0.241117,
+       0.242291,
+       0.241902,
+       0.276266,
+       0.262758,
+       0.262861
+      ]
+     },
+     "words_per_s": 16875,
+     "speedup_vs_reference": 1.0
+    },
+    "scalar": {
+     "wall_s": {
+      "median": 0.059338,
+      "min": 0.057963,
+      "max": 0.071395,
+      "reps": [
+       0.057963,
+       0.058867,
+       0.058328,
+       0.059338,
+       0.062182,
+       0.071395,
+       0.062015
+      ]
+     },
+     "cpu_s": {
+      "median": 0.059257,
+      "min": 0.057921,
+      "max": 0.062096,
+      "reps": [
+       0.057921,
+       0.058816,
+       0.058244,
+       0.059257,
+       0.061742,
+       0.062096,
+       0.061719
+      ]
+     },
+     "words_per_s": 69028,
+     "speedup_vs_reference": 4.09
+    },
+    "avx2": {
+     "wall_s": {
+      "median": 0.022715,
+      "min": 0.020963,
+      "max": 0.023422,
+      "reps": [
+       0.020963,
+       0.02166,
+       0.021448,
+       0.022866,
+       0.022986,
+       0.023422,
+       0.022715
+      ]
+     },
+     "cpu_s": {
+      "median": 0.022282,
+      "min": 0.020965,
+      "max": 0.023032,
+      "reps": [
+       0.020965,
+       0.021662,
+       0.021233,
+       0.022282,
+       0.022925,
+       0.023032,
+       0.02267
+      ]
+     },
+     "words_per_s": 180321,
+     "speedup_vs_reference": 10.69
+    },
+    "avx512": {
+     "wall_s": {
+      "median": 0.026543,
+      "min": 0.025971,
+      "max": 0.031105,
+      "reps": [
+       0.025971,
+       0.026543,
+       0.026149,
+       0.031105,
+       0.028038,
+       0.02772,
+       0.026361
+      ]
+     },
+     "cpu_s": {
+      "median": 0.026546,
+      "min": 0.025974,
+      "max": 0.030853,
+      "reps": [
+       0.025974,
+       0.026546,
+       0.026116,
+       0.030853,
+       0.027886,
+       0.027659,
+       0.026221
+      ]
+     },
+     "words_per_s": 154316,
+     "speedup_vs_reference": 9.14
+    }
+   },
+   "simd_keep": {
+    "avx2_vs_scalar": {
+     "median_ratio": 2.612,
+     "ranges_separated": true,
+     "measurably_faster": true
+    },
+    "avx512_vs_avx2": {
+     "median_ratio": 0.856,
+     "ranges_separated": false,
+     "measurably_faster": false
+    },
+    "avx512_vs_scalar": {
+     "median_ratio": 2.236,
+     "ranges_separated": true,
+     "measurably_faster": true
+    }
+   }
+  }
+ ],
+ "decision": {
+  "avx2_vs_scalar": {
+   "median_ratio": 2.319,
+   "ranges_separated": true,
+   "measurably_faster": true
+  },
+  "avx512_vs_avx2": {
+   "median_ratio": 0.937,
+   "ranges_separated": false,
+   "measurably_faster": false
+  },
+  "avx512_vs_scalar": {
+   "median_ratio": 2.173,
+   "ranges_separated": true,
+   "measurably_faster": true
+  }
+ },
+ "e2e": {
+  "case": {
+   "substitution_rate": 0.002,
+   "insertion_rate": 0.0005,
+   "deletion_rate": 0.0005,
+   "dropout_rate": 0.02,
+   "coverage": 3,
+   "coverage_model": "poisson",
+   "seed": 1011,
+   "input_size": 4194304,
+   "profile": "v4-balanced",
+   "workers": 1
+  },
+  "wiring": "codecs.InnerRS.decode patched inside the benchmark process only",
+  "container_identical": true,
+  "wall_s": {
+   "reference (rs_fast)": {
+    "median": 10.894745,
+    "min": 10.577161,
+    "max": 11.297271,
+    "reps": [
+     11.297271,
+     10.577161,
+     10.894745
+    ]
+   },
+   "native (avx2)": {
+    "median": 7.032866,
+    "min": 6.723555,
+    "max": 7.059624,
+    "reps": [
+     7.059624,
+     6.723555,
+     7.032866
+    ]
+   }
+  },
+  "speedup": 1.549,
+  "seconds_saved": 3.862
+ },
+ "loadavg_after": [
+  6.48,
+  6.84,
+  8.2
+ ]
+}

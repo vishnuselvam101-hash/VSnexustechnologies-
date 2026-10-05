@@ -1,0 +1,72 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "urn:vnx:vnx.version/1",
+ "title": "vnx version (spec \u00a74.2)",
+ "type": "object",
+ "required": [
+  "schema",
+  "software",
+  "spec",
+  "container",
+  "frame",
+  "superblock",
+  "codecs",
+  "backends",
+  "python",
+  "platform"
+ ],
+ "properties": {
+  "schema": {
+   "const": "vnx.version/1"
+  },
+  "software": {
+   "type": "string"
+  },
+  "spec": {
+   "type": "string"
+  },
+  "container": {
+   "type": "object",
+   "required": [
+    "read",
+    "write"
+   ]
+  },
+  "frame": {
+   "type": "object",
+   "required": [
+    "read",
+    "write",
+    "legacy_detected"
+   ]
+  },
+  "superblock": {
+   "type": "object",
+   "required": [
+    "read",
+    "write"
+   ]
+  },
+  "codecs": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   }
+  },
+  "backends": {
+   "type": "object",
+   "required": [
+    "align",
+    "reads",
+    "rs"
+   ]
+  },
+  "python": {
+   "type": "string"
+  },
+  "platform": {
+   "type": "string"
+  }
+ },
+ "additionalProperties": true
+}

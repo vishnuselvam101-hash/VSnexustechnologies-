@@ -1,0 +1,204 @@
+{
+ "experiment": "P4-EXP-04-cost",
+ "classification": "SIMULATED channel; time and peak RSS MEASURED",
+ "statement": "SIMULATED: software-generated strands and software channel models (vnxdna.v6.loss + vnxdna.v4.channel). No DNA was synthesised, stored or sequenced; not biological validation.",
+ "size": 1048576,
+ "setup": {
+  "container_sha256": "c22ed91f47eaf54800ffe691e9c7a4f2c7c058a6e7a632665dd2f16b388938c7",
+  "container_bytes": 1049956,
+  "payload_sha256": "3d6a834d335348cc7090c778778fe52f2a13317fb8b8194cd9677e76a1db0abc",
+  "strand_count": 32837,
+  "strand_nt": 313,
+  "nt_per_container_byte": 9.789,
+  "encode_seconds": 0.401
+ },
+ "models": [
+  "mixed-mild",
+  "mixed-harsh"
+ ],
+ "seeds": [
+  61000,
+  61001,
+  61002
+ ],
+ "git": {
+  "commit": "6b6b7db6e44f113469d0857572228c5d015df708",
+  "dirty": true,
+  "dirty_tracked": false
+ },
+ "environment": {
+  "vnxdna_version": "6.0.0.dev0",
+  "git": {
+   "commit": "6b6b7db6e44f113469d0857572228c5d015df708",
+   "dirty": false
+  },
+  "python": "3.12.3",
+  "implementation": "CPython",
+  "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+  "machine": "x86_64",
+  "processor": "x86_64",
+  "cpu_count": 8,
+  "libraries": {
+   "numpy": "2.5.3",
+   "reedsolo": "unknown",
+   "zstandard": "0.25.0",
+   "cryptography": "46.0.7"
+  }
+ },
+ "load_average": [
+  2.66748046875,
+  4.830078125,
+  6.369140625
+ ],
+ "rows": [
+  {
+   "model": "mixed-mild",
+   "seed": 61000,
+   "arm": "count",
+   "exit": 0,
+   "exact": true,
+   "wall_seconds": 5.56,
+   "peak_rss_bytes": 296624128
+  },
+  {
+   "model": "mixed-mild",
+   "seed": 61000,
+   "arm": "quality",
+   "exit": 0,
+   "exact": true,
+   "wall_seconds": 7.334,
+   "peak_rss_bytes": 296624128
+  },
+  {
+   "model": "mixed-mild",
+   "seed": 61001,
+   "arm": "quality",
+   "exit": 0,
+   "exact": true,
+   "wall_seconds": 7.129,
+   "peak_rss_bytes": 298532864
+  },
+  {
+   "model": "mixed-mild",
+   "seed": 61001,
+   "arm": "count",
+   "exit": 0,
+   "exact": true,
+   "wall_seconds": 5.189,
+   "peak_rss_bytes": 298532864
+  },
+  {
+   "model": "mixed-mild",
+   "seed": 61002,
+   "arm": "count",
+   "exit": 0,
+   "exact": true,
+   "wall_seconds": 5.466,
+   "peak_rss_bytes": 299085824
+  },
+  {
+   "model": "mixed-mild",
+   "seed": 61002,
+   "arm": "quality",
+   "exit": 0,
+   "exact": true,
+   "wall_seconds": 7.429,
+   "peak_rss_bytes": 299085824
+  },
+  {
+   "model": "mixed-harsh",
+   "seed": 61000,
+   "arm": "count",
+   "exit": 5,
+   "exact": false,
+   "wall_seconds": 25.124,
+   "peak_rss_bytes": 379883520
+  },
+  {
+   "model": "mixed-harsh",
+   "seed": 61000,
+   "arm": "quality",
+   "exit": 5,
+   "exact": false,
+   "wall_seconds": 33.913,
+   "peak_rss_bytes": 379883520
+  },
+  {
+   "model": "mixed-harsh",
+   "seed": 61001,
+   "arm": "quality",
+   "exit": 5,
+   "exact": false,
+   "wall_seconds": 34.925,
+   "peak_rss_bytes": 379883520
+  },
+  {
+   "model": "mixed-harsh",
+   "seed": 61001,
+   "arm": "count",
+   "exit": 5,
+   "exact": false,
+   "wall_seconds": 24.539,
+   "peak_rss_bytes": 379883520
+  },
+  {
+   "model": "mixed-harsh",
+   "seed": 61002,
+   "arm": "count",
+   "exit": 5,
+   "exact": false,
+   "wall_seconds": 24.529,
+   "peak_rss_bytes": 381239296
+  },
+  {
+   "model": "mixed-harsh",
+   "seed": 61002,
+   "arm": "quality",
+   "exit": 0,
+   "exact": true,
+   "wall_seconds": 34.058,
+   "peak_rss_bytes": 381239296
+  }
+ ],
+ "pairs": [
+  {
+   "model": "mixed-mild",
+   "seed": 61000,
+   "rss_ratio": 1.0,
+   "time_ratio": 1.3191
+  },
+  {
+   "model": "mixed-mild",
+   "seed": 61001,
+   "rss_ratio": 1.0,
+   "time_ratio": 1.3739
+  },
+  {
+   "model": "mixed-mild",
+   "seed": 61002,
+   "rss_ratio": 1.0,
+   "time_ratio": 1.3591
+  },
+  {
+   "model": "mixed-harsh",
+   "seed": 61000,
+   "rss_ratio": 1.0,
+   "time_ratio": 1.3498
+  },
+  {
+   "model": "mixed-harsh",
+   "seed": 61001,
+   "rss_ratio": 1.0,
+   "time_ratio": 1.4232
+  },
+  {
+   "model": "mixed-harsh",
+   "seed": 61002,
+   "rss_ratio": 1.0,
+   "time_ratio": 1.3885
+  }
+ ],
+ "max_rss_ratio": 1.0,
+ "median_time_ratio": 1.3739,
+ "false_success": 0
+}

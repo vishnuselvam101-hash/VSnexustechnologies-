@@ -1,0 +1,29 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "e2e.decode.read-over-100000-nt",
+ "stage": "D0",
+ "formats": {
+  "frame": null,
+  "superblock": null,
+  "container": null
+ },
+ "kind": "negative",
+ "operation": "e2e.decode",
+ "params": {},
+ "inputs": {
+  "reads": {
+   "path": "reads.dat",
+   "sha256": "23e5e2c08d10c0436af18a6678472a79bf036988715df74948659e324ccb5047"
+  }
+ },
+ "expected": {
+  "error": {
+   "code": "RESOURCE_LIMIT",
+   "category": "INVALID_INPUT",
+   "exit_code": 3,
+   "retryable": false
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

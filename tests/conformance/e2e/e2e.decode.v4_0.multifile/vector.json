@@ -1,0 +1,36 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "e2e.decode.v4_0.multifile",
+ "stage": "D0-D14",
+ "formats": {
+  "frame": 4,
+  "superblock": 1,
+  "container": [
+   4,
+   0
+  ]
+ },
+ "kind": "positive",
+ "operation": "e2e.decode",
+ "params": {},
+ "inputs": {
+  "reads": {
+   "path": "../../../fixtures/v4_0/multifile.reads.fastq.gz",
+   "sha256": "089a11418561b206a10884fc5eef60fcda73d2169f6146daf3cba88fca1a043c"
+  }
+ },
+ "expected": {
+  "outputs": {
+   "status": "SUCCESS",
+   "container_sha256": "1fc2033f24977d841d6e0d569c4fbaed505241b82caba9f1736284b558d751cf",
+   "files": {
+    "mixed.bin": "d723e03a502b4080896a29fccec5d30434aabd7e9b85a8a3d96cf07cb98fba71",
+    "random.bin": "66d4aeb28c7acadd88bbb1e1c1ee320edcd89325071a5c2985058da7bfd0905f",
+    "sub/bin.dat": "7a8c19a59296a645e5279037cfe4c6074c93b26646406431991aa25733a69c06",
+    "text.txt": "fbf77b62318773b702e410cd259478e2f3d5c04163833a9c4adbbfd21aeb2f8c"
+   }
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

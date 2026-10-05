@@ -73,7 +73,11 @@ def test_fresh_v3_stores_equal_v2_output_except_the_encoder_version(tmp_path):
         return dict(zip(lines[0::2], lines[1::2]))  # label -> sequence; labels are vnx5:<tag>:<d|m>:<stripe>:<shard>
 
     new_strands, old_strands = records(tmp_path / "plain.fasta"), records(FIX / "plain.fasta")
-    assert new_strands.keys() == old_strands.keys()
     data = [label for label in old_strands if ":d:" in label]
+    assert sorted(label for label in new_strands if ":d:" in label) == sorted(data)
+    if len(__version__) == len("2.0.0"):
+        # same manifest length: the metadata strand set is the same too (5.0.0 asserted this unconditionally; a longer
+        # version string such as 6.0.0.dev0 makes the manifest, and so its metadata stripe count, longer)
+        assert new_strands.keys() == old_strands.keys()
     assert data and all(new_strands[label] == old_strands[label] for label in data)  # data strands identical
     # only metadata strands (which carry the manifest, and so the encoder version) may differ

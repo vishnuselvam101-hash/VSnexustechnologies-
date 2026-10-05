@@ -1,0 +1,190 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "attestations.schema.json",
+  "title": "Attestations",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "decode",
+    "raw_data_location",
+    "sequencing",
+    "signed_off_by",
+    "storage",
+    "synthesis"
+  ],
+  "properties": {
+    "synthesis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "date",
+        "performed_by"
+      ],
+      "properties": {
+        "performed_by": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "organisation": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "date": {
+          "anyOf": [
+            {
+              "$ref": "common.schema.json#/$defs/date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "storage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "date",
+        "performed_by"
+      ],
+      "properties": {
+        "performed_by": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "organisation": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "date": {
+          "anyOf": [
+            {
+              "$ref": "common.schema.json#/$defs/date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "sequencing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "date",
+        "performed_by"
+      ],
+      "properties": {
+        "performed_by": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "organisation": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "date": {
+          "anyOf": [
+            {
+              "$ref": "common.schema.json#/$defs/date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "decode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "date",
+        "performed_by"
+      ],
+      "properties": {
+        "performed_by": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "organisation": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "date": {
+          "anyOf": [
+            {
+              "$ref": "common.schema.json#/$defs/date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "signed_off_by": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "date",
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "role": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "date": {
+          "anyOf": [
+            {
+              "$ref": "common.schema.json#/$defs/date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "raw_data_location": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "description": "where the raw run data (FASTQ, instrument output) is kept"
+    }
+  }
+}

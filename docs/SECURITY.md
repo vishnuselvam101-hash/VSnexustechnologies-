@@ -16,7 +16,9 @@ the divider.
   archive.
 * **Nonces.** `domain ‖ index` under a key derived from a fresh 16-byte random salt per archive, so no (key, nonce)
   pair repeats. The associated data binds the archive ID, domain, index and count, so reordering, splicing or swapping
-  chunks between archives fails authentication.
+  chunks between archives fails authentication. For body chunks the count field is 0 (the writer streams, so the total
+  is unknown while sealing; `v4/archive.py:265`): a dropped or appended chunk is caught by the chunk table, whose
+  SHA-256 is in the HMAC-authenticated manifest, not by the AEAD.
 * **Unencrypted archives** detect accidents (SHA-256 everywhere, Merkle root), not deliberate tampering: an attacker
   can rebuild every hash. The null-encryption mode provides **no confidentiality**.
 
@@ -48,6 +50,84 @@ padding.
 **Limits.** A malicious read file can make decoding fail or run slowly (denial of service). It cannot make V4
 publish wrong bytes without a SHA-256 collision (plus HMAC/AES-GCM forgeries when encrypted). Python cannot reliably
 erase keys from memory.
+
+## Test-only keys in the repository (reviewed 2026-10-04)
+
+The secret scan (gitleaks, full history) reports 5 `generic-api-key` findings. The founder and the security review confirmed on 2026-10-04 that none of them is a real secret:
+
+| File : line | What it is | Why it is safe |
+|---|---|---|
+| `tests/fixtures/v0_1/generate_fixtures.py:20` (`TEST_ONLY_FERNET_KEY`) | Fernet key for the v0.1 compatibility fixtures | It's base64url of the text `vnx-dna-test-only-fixture-key!!!`. It's public by design, so the fixtures can be regenerated and decrypted in tests. It protects nothing. |
+| `tests/fixtures/v0_1/fixtures.json:5` (`test_only_fernet_key`) | The same key, recorded in the fixture manifest | Same key as above. |
+| `tests/fixtures/v2_0/SHA256SUMS.json:5` (`"key.hex": …`) | The SHA-256 **checksum** of the fixture file `key.hex` | Not a key at all (false positive). The fixture key in `key.hex` is a test-only key for the v2.0 compatibility archives. |
+
+Each finding appears in two commits (bc0c3de, 137383f) or one (76337d8), which makes 5 history entries. Their gitleaks fingerprints are listed in `.gitleaksignore`, so CI and local scans stay quiet about these exact lines only. A new key in any other place, or a changed value on these lines, is still reported. `vnx-security-scan` still lists them as INFORMATIONAL ("reviewed test key") and never hides them.
+
+**Rules for test keys:** name them `TEST_ONLY_*` or `test_only_*`; derive them from an obviously fake text; never reuse a test key anywhere outside `tests/`; record every new one in this table and in `.gitleaksignore`, with its review date.
+
+## MEDIUM scan findings (triaged 2026-10-04)
+
+`vnx-security-scan` (2026-10-04, at 71b9bc0) reported 10 MEDIUM findings: 9 dependency advisories (pip-audit, 5 distinct
+IDs; the scan output lists 4 of them twice for the same installed version) and 1 cppcheck warning. None is reachable from VNX-DNA.
+The pins `cryptography>=44,<47` and `pytest<9` stay until the founder decides to lift them; until then these findings
+are expected in every scan.
+
+| Finding | What it is | Why VNX-DNA is not affected |
+|---|---|---|
+| `cryptography` PYSEC-2026-3552 (CVE-2026-69247, fixed in 50.0.0) | Bleichenbacher oracle in PKCS#7 `EnvelopedData` decryption (`pkcs7_decrypt_*`) | VNX-DNA never uses PKCS#7, S/MIME or RSA. It uses only AES-GCM, HKDF, HMAC, scrypt and SHA-256 (V3/V4) and Fernet (v0.1 compatibility). |
+| `cryptography` PYSEC-2026-3553 (CVE-2026-69249, fixed in 49.0.0) | Exponential path building on certificate chains with duplicate self-signed intermediates (DoS) | VNX-DNA does not verify X.509 certificates. |
+| `cryptography` PYSEC-2026-3554 (CVE-2026-69248, fixed in 49.0.0) | Wildcard DNS SAN escapes a CA's `permittedSubtrees` | VNX-DNA does not verify X.509 certificates. |
+| `cryptography` GHSA-537c-gmf6-5ccf (fixed in 48.0.1) | Wheels bundle OpenSSL with the issues of the [9 June 2026 advisory](https://openssl-library.org/news/secadv/20260609.txt) | Of its 19 issues, the cipher-mode ones are AES-OCB (CVE-2026-45445) and AES-GCM-SIV/AES-SIV (CVE-2026-45446). VNX-DNA uses plain AES-GCM. The rest are in PKCS#7, CMS, X.509, OCSP, ASN.1 certificate parsing, PKCS#12, CMP, CRMF, FFC-DH and QUIC, none of which VNX-DNA calls. |
+| `pytest` PYSEC-2026-1845 (CVE-2025-71176, fixed in 9.0.3) | Predictable `/tmp/pytest-of-{user}` directories let another local user cause DoS or possibly escalate | Development only. It is never installed with the package. It matters only on a shared multi-user host. The lab and CI runners are single-user. |
+| cppcheck `uninitvar` at `src/vnxdna/v5/native/align.c:322` (`Lv`) | "Uninitialized variable: Lv" | A false positive. `Lv` is a vector of `LANES` lanes, and the loop above writes every lane (`Lv[l] = Li` for `l = 0 … LANES-1`) before `dp_group` reads it. cppcheck does not track per-lane writes to GCC vector types. The C code is left unchanged, so the kernel stays bit-exact with its golden hashes. |
+
+Re-check this table when the pins change or a new advisory names an AES-GCM, HKDF, HMAC, scrypt or Fernet code path.
+
+## V6 security model and fuzzing (Phase 6, 2026-10-05)
+
+The V6 threat model is [security/V6_SECURITY_MODEL.md](security/V6_SECURITY_MODEL.md), and the fuzz campaign is
+[security/V6_FUZZ_REPORT.md](security/V6_FUZZ_REPORT.md). There is no CRITICAL or HIGH finding, and no open MEDIUM finding.
+
+**Open findings:**
+
+| ID | Severity | Finding |
+|---|---|---|
+| V6-SEC-05 | LOW | The manifest shown without a key is unauthenticated. |
+| V6-SEC-06 | LOW | The spec §2.3.3 report fields are missing. |
+| V6-SEC-09 | LOW | Implicit native buffer sizes. |
+| V6-SEC-10 | LOW | Extract has a TOCTOU window and a prefix containment check. |
+| V6-SEC-11 | LOW | 16-bit tags (pool collision rule: Phase 7). The opt-in `content-v1` ID now exists (`vnx archive --archive-id content`); the default options-v1 ID still depends only on options, paths and sizes. |
+| V6-SEC-13 | LOW | No AEAD index-binding test. |
+| V6-SEC-15 | INFO | Passphrases are not Unicode-normalised. |
+| V6-SEC-21 | INFO | The superblock's reserved bytes are not checked. |
+
+**Accepted:**
+- V6-SEC-07: the scrypt default awaits a founder decision.
+- V6-SEC-08: library paths taken from the environment, and the RS test hook.
+- V6-SEC-16, V6-SEC-17, V6-SEC-20.
+
+**Waiting for a push:** V6-SEC-12, the CI jobs for gitleaks, pip-audit and the fuzz smoke.
+
+**Fixed in `work/v6-secfix`, each with a test written first that failed before the fix:**
+- V6-SEC-01 (MEDIUM): a superblock claiming a container above `--max-container-bytes` (default 4 GiB; SDK
+  `DecodeOptions.max_container_bytes`) is refused in the superblock stage, before the work file is sized or any group is
+  walked: `RESOURCE_LIMIT`, exit 3 (`tests/v6/test_security_sec01_container_cap.py`).
+- V6-SEC-02 (MEDIUM): with `--key-file`/`--passphrase-env`, a full `vnx decode -o` opens the recovered container with
+  the key (key check, manifest MAC) before SUCCESS, and refuses an unencrypted archive (`KEY_FOR_UNENCRYPTED`, exit 4)
+  unless `--allow-unencrypted`, like extract. `vnx encode` of a container source does the same
+  (`tests/v6/test_security_sec02_full_decode_key.py`).
+- V6-SEC-03 (MEDIUM): `--expect-archive-id` / `--expect-sha256` on `vnx decode` and `vnx extract` (SDK
+  `expect_archive_id` / `expect_sha256`) refuse any other archive with `ARCHIVE_MISMATCH` (exit 1), and nothing is
+  published. Decode checks the superblock before pass 2 and the recovered manifest before SUCCESS. For a clear
+  archive only `--expect-sha256` binds the content (FC-8: a forger can choose any archive ID); for an encrypted archive
+  opened with its key the manifest archive ID is MAC-authenticated, so `--expect-archive-id` detects rollback under the
+  same key (`tests/v6/test_security_sec03_expectations.py`).
+
+**Fixed in `work/v6-security`, each with a regression test written first:**
+- V6-SEC-04: type-confused manifest fields;
+- V6-SEC-22: deeply nested manifest JSON;
+- V6-SEC-23: unbounded RS table caches;
+- V6-SEC-14: this page's AAD sentence.
 
 ---
 

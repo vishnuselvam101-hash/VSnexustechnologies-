@@ -1,0 +1,254 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "urn:vnx:vnx.experiment/1",
+ "title": "Experiment manifest (docs/CONFORMANCE.md): what one SIMULATED experiment depends on and the hash of its result",
+ "description": "Structural schema. vnxdna.benchmark.manifest.validate additionally checks the cross-field rules (model SHA-256, input_hash of an experiment configuration, seed and workers consistency).",
+ "type": "object",
+ "required": [
+  "schema",
+  "experiment_id",
+  "kind",
+  "source_class",
+  "input_hash",
+  "codec_version",
+  "commit",
+  "simulator_version",
+  "seed",
+  "parameters",
+  "hardware",
+  "workers",
+  "result_hash"
+ ],
+ "additionalProperties": false,
+ "properties": {
+  "schema": {
+   "const": "vnx.experiment/1"
+  },
+  "experiment_id": {
+   "type": "string",
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._:+-]{0,127}$"
+  },
+  "kind": {
+   "enum": [
+    "channel-simulation",
+    "experiment"
+   ]
+  },
+  "source_class": {
+   "const": "SIMULATED"
+  },
+  "input_hash": {
+   "type": "string",
+   "pattern": "^[0-9a-f]{64}$"
+  },
+  "result_hash": {
+   "type": "string",
+   "pattern": "^[0-9a-f]{64}$"
+  },
+  "result_hash_of": {
+   "type": "string"
+  },
+  "created_utc": {
+   "type": "string"
+  },
+  "statement": {
+   "type": "string"
+  },
+  "codec_version": {
+   "type": "object",
+   "required": [
+    "software",
+    "spec"
+   ],
+   "additionalProperties": false,
+   "properties": {
+    "software": {
+     "type": "string",
+     "pattern": "^[0-9A-Za-z][0-9A-Za-z.+_-]{0,63}$"
+    },
+    "spec": {
+     "type": "string",
+     "pattern": "^[0-9A-Za-z][0-9A-Za-z.+_-]{0,63}$"
+    },
+    "backends": {
+     "type": "object",
+     "additionalProperties": {
+      "type": [
+       "string",
+       "null"
+      ]
+     }
+    }
+   }
+  },
+  "commit": {
+   "type": [
+    "string",
+    "null"
+   ],
+   "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?(-dirty)?$"
+  },
+  "simulator_version": {
+   "type": "object",
+   "required": [
+    "simulator",
+    "version",
+    "model_schema",
+    "model"
+   ],
+   "additionalProperties": false,
+   "properties": {
+    "simulator": {
+     "type": "string"
+    },
+    "version": {
+     "type": "string",
+     "pattern": "^[0-9A-Za-z][0-9A-Za-z.+_-]{0,63}$"
+    },
+    "model_schema": {
+     "type": "string"
+    },
+    "model": {
+     "oneOf": [
+      {
+       "type": "null"
+      },
+      {
+       "type": "object",
+       "required": [
+        "name",
+        "version",
+        "sha256"
+       ],
+       "additionalProperties": false,
+       "properties": {
+        "name": {
+         "type": "string"
+        },
+        "version": {
+         "type": "string",
+         "pattern": "^[0-9A-Za-z][0-9A-Za-z.+_-]{0,63}$"
+        },
+        "sha256": {
+         "type": "string",
+         "pattern": "^[0-9a-f]{64}$"
+        }
+       }
+      }
+     ]
+    }
+   }
+  },
+  "seed": {
+   "type": "integer",
+   "minimum": 0,
+   "maximum": 9223372036854775807
+  },
+  "workers": {
+   "type": "integer",
+   "minimum": 1,
+   "maximum": 1024
+  },
+  "hardware": {
+   "type": "object",
+   "required": [
+    "cpu_model",
+    "logical_cpus"
+   ],
+   "properties": {
+    "cpu_model": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "logical_cpus": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "minimum": 1
+    }
+   }
+  },
+  "parameters": {
+   "type": "object"
+  }
+ },
+ "allOf": [
+  {
+   "if": {
+    "properties": {
+     "kind": {
+      "const": "channel-simulation"
+     }
+    }
+   },
+   "then": {
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "required": [
+       "model",
+       "input",
+       "format"
+      ],
+      "additionalProperties": false,
+      "properties": {
+       "model": {
+        "$ref": "urn:vnx:vnx.channel-model/1"
+       },
+       "input": {
+        "type": "object",
+        "required": [
+         "file"
+        ],
+        "additionalProperties": false,
+        "properties": {
+         "file": {
+          "type": "string",
+          "minLength": 1
+         }
+        }
+       },
+       "format": {
+        "enum": [
+         "fasta",
+         "fastq"
+        ]
+       }
+      }
+     }
+    }
+   }
+  },
+  {
+   "if": {
+    "properties": {
+     "kind": {
+      "const": "experiment"
+     }
+    }
+   },
+   "then": {
+    "properties": {
+     "parameters": {
+      "type": "object",
+      "required": [
+       "config"
+      ],
+      "additionalProperties": false,
+      "properties": {
+       "config": {
+        "type": "object",
+        "required": [
+         "type"
+        ]
+       }
+      }
+     }
+    }
+   }
+  }
+ ]
+}

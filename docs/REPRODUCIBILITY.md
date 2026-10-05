@@ -26,6 +26,12 @@ on the machine. It exits 0 only if everything matches. Determinism holds for the
 that changes encoding or simulation can legitimately change results; the git commit in `environment.json`
 identifies the code.
 
+**Manifests (V6).** `vnx experiment run` also writes `manifest.json`, a `vnx.experiment/1` manifest. It records the
+experiment ID, source class, input hash, codec version, commit, simulator version, seed, parameters, hardware, workers
+and result hash. `vnx channel simulate ... --manifest FILE` writes one for a single SIMULATED channel run.
+`vnx experiment reproduce MANIFEST` re-runs a manifest and exits 0 only if the result hash matches. Format, validation
+rules and exit codes: [CONFORMANCE.md](CONFORMANCE.md).
+
 Benchmarks: `vnx benchmark --profile balanced --output bench.json` writes JSON (with environment and resolved
 configuration) plus a Markdown table next to it. The V3 baseline is reproduced by
 `python benchmarks/baseline/v3/run_v3_baseline.py`.

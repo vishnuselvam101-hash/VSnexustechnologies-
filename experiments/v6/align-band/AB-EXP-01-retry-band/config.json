@@ -1,0 +1,888 @@
+{
+ "experiment": "AB-EXP-01-retry-band",
+ "classification": "SIMULATED",
+ "purpose": "Pre-registered paired comparison of the opt-in retry band (DecodeOptions.retry_band=16) against the stock decoder (band 6, no retry) on every named channel model and the B0-like s184 profile at coverage 3/5/10 (job #80). See ../PREREG.md.",
+ "data_seed": 6201,
+ "base_seed": 80000,
+ "seeds": 20,
+ "arms": {
+  "default": {},
+  "retry16": {
+   "retry_band": 16
+  },
+  "retry16-w4": {
+   "retry_band": 16,
+   "workers": 4
+  },
+  "smart-auto": {
+   "indel_recovery": "smart",
+   "soft_decoding": "auto"
+  },
+  "smart-auto-retry16": {
+   "indel_recovery": "smart",
+   "soft_decoding": "auto",
+   "retry_band": 16
+  }
+ },
+ "baseline": "default",
+ "decode_workers": 1,
+ "cells": [
+  {
+   "id": "G/burst-loss/cov3",
+   "group": "grid",
+   "model": {
+    "base": "burst-loss",
+    "name": "burst-loss-cov3",
+    "channel": {
+     "coverage": 3.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/burst-loss/cov5",
+   "group": "grid",
+   "model": {
+    "base": "burst-loss",
+    "name": "burst-loss-cov5",
+    "channel": {
+     "coverage": 5.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/burst-loss/cov10",
+   "group": "grid",
+   "model": {
+    "base": "burst-loss",
+    "name": "burst-loss-cov10",
+    "channel": {
+     "coverage": 10.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/clean/cov3",
+   "group": "grid",
+   "model": {
+    "base": "clean",
+    "name": "clean-cov3",
+    "channel": {
+     "coverage": 3.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/clean/cov5",
+   "group": "grid",
+   "model": {
+    "base": "clean",
+    "name": "clean-cov5",
+    "channel": {
+     "coverage": 5.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/clean/cov10",
+   "group": "grid",
+   "model": {
+    "base": "clean",
+    "name": "clean-cov10",
+    "channel": {
+     "coverage": 10.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/deletion-heavy/cov3",
+   "group": "grid",
+   "model": {
+    "base": "deletion-heavy",
+    "name": "deletion-heavy-cov3",
+    "channel": {
+     "coverage": 3.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/deletion-heavy/cov5",
+   "group": "grid",
+   "model": {
+    "base": "deletion-heavy",
+    "name": "deletion-heavy-cov5",
+    "channel": {
+     "coverage": 5.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/deletion-heavy/cov10",
+   "group": "grid",
+   "model": {
+    "base": "deletion-heavy",
+    "name": "deletion-heavy-cov10",
+    "channel": {
+     "coverage": 10.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/dropout-10/cov3",
+   "group": "grid",
+   "model": {
+    "base": "dropout-10",
+    "name": "dropout-10-cov3",
+    "channel": {
+     "coverage": 3.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/dropout-10/cov5",
+   "group": "grid",
+   "model": {
+    "base": "dropout-10",
+    "name": "dropout-10-cov5",
+    "channel": {
+     "coverage": 5.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/dropout-10/cov10",
+   "group": "grid",
+   "model": {
+    "base": "dropout-10",
+    "name": "dropout-10-cov10",
+    "channel": {
+     "coverage": 10.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/dropout-20/cov3",
+   "group": "grid",
+   "model": {
+    "base": "dropout-20",
+    "name": "dropout-20-cov3",
+    "channel": {
+     "coverage": 3.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/dropout-20/cov5",
+   "group": "grid",
+   "model": {
+    "base": "dropout-20",
+    "name": "dropout-20-cov5",
+    "channel": {
+     "coverage": 5.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/dropout-20/cov10",
+   "group": "grid",
+   "model": {
+    "base": "dropout-20",
+    "name": "dropout-20-cov10",
+    "channel": {
+     "coverage": 10.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/dropout-5/cov3",
+   "group": "grid",
+   "model": {
+    "base": "dropout-5",
+    "name": "dropout-5-cov3",
+    "channel": {
+     "coverage": 3.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/dropout-5/cov5",
+   "group": "grid",
+   "model": {
+    "base": "dropout-5",
+    "name": "dropout-5-cov5",
+    "channel": {
+     "coverage": 5.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/dropout-5/cov10",
+   "group": "grid",
+   "model": {
+    "base": "dropout-5",
+    "name": "dropout-5-cov10",
+    "channel": {
+     "coverage": 10.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/illumina-like/cov3",
+   "group": "grid",
+   "model": {
+    "base": "illumina-like",
+    "name": "illumina-like-cov3",
+    "channel": {
+     "coverage": 3.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/illumina-like/cov5",
+   "group": "grid",
+   "model": {
+    "base": "illumina-like",
+    "name": "illumina-like-cov5",
+    "channel": {
+     "coverage": 5.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/illumina-like/cov10",
+   "group": "grid",
+   "model": {
+    "base": "illumina-like",
+    "name": "illumina-like-cov10",
+    "channel": {
+     "coverage": 10.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/insertion-heavy/cov3",
+   "group": "grid",
+   "model": {
+    "base": "insertion-heavy",
+    "name": "insertion-heavy-cov3",
+    "channel": {
+     "coverage": 3.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/insertion-heavy/cov5",
+   "group": "grid",
+   "model": {
+    "base": "insertion-heavy",
+    "name": "insertion-heavy-cov5",
+    "channel": {
+     "coverage": 5.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/insertion-heavy/cov10",
+   "group": "grid",
+   "model": {
+    "base": "insertion-heavy",
+    "name": "insertion-heavy-cov10",
+    "channel": {
+     "coverage": 10.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/mixed-harsh/cov3",
+   "group": "grid",
+   "model": {
+    "base": "mixed-harsh",
+    "name": "mixed-harsh-cov3",
+    "channel": {
+     "coverage": 3.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/mixed-harsh/cov5",
+   "group": "grid",
+   "model": {
+    "base": "mixed-harsh",
+    "name": "mixed-harsh-cov5",
+    "channel": {
+     "coverage": 5.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/mixed-harsh/cov10",
+   "group": "grid",
+   "model": {
+    "base": "mixed-harsh",
+    "name": "mixed-harsh-cov10",
+    "channel": {
+     "coverage": 10.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/mixed-mild/cov3",
+   "group": "grid",
+   "model": {
+    "base": "mixed-mild",
+    "name": "mixed-mild-cov3",
+    "channel": {
+     "coverage": 3.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/mixed-mild/cov5",
+   "group": "grid",
+   "model": {
+    "base": "mixed-mild",
+    "name": "mixed-mild-cov5",
+    "channel": {
+     "coverage": 5.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/mixed-mild/cov10",
+   "group": "grid",
+   "model": {
+    "base": "mixed-mild",
+    "name": "mixed-mild-cov10",
+    "channel": {
+     "coverage": 10.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/nanopore-like/cov3",
+   "group": "grid",
+   "model": {
+    "base": "nanopore-like",
+    "name": "nanopore-like-cov3",
+    "channel": {
+     "coverage": 3.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/nanopore-like/cov5",
+   "group": "grid",
+   "model": {
+    "base": "nanopore-like",
+    "name": "nanopore-like-cov5",
+    "channel": {
+     "coverage": 5.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/nanopore-like/cov10",
+   "group": "grid",
+   "model": {
+    "base": "nanopore-like",
+    "name": "nanopore-like-cov10",
+    "channel": {
+     "coverage": 10.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/quality-degradation/cov3",
+   "group": "grid",
+   "model": {
+    "base": "quality-degradation",
+    "name": "quality-degradation-cov3",
+    "channel": {
+     "coverage": 3.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/quality-degradation/cov5",
+   "group": "grid",
+   "model": {
+    "base": "quality-degradation",
+    "name": "quality-degradation-cov5",
+    "channel": {
+     "coverage": 5.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/quality-degradation/cov10",
+   "group": "grid",
+   "model": {
+    "base": "quality-degradation",
+    "name": "quality-degradation-cov10",
+    "channel": {
+     "coverage": 10.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/substitution-heavy/cov3",
+   "group": "grid",
+   "model": {
+    "base": "substitution-heavy",
+    "name": "substitution-heavy-cov3",
+    "channel": {
+     "coverage": 3.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/substitution-heavy/cov5",
+   "group": "grid",
+   "model": {
+    "base": "substitution-heavy",
+    "name": "substitution-heavy-cov5",
+    "channel": {
+     "coverage": 5.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/substitution-heavy/cov10",
+   "group": "grid",
+   "model": {
+    "base": "substitution-heavy",
+    "name": "substitution-heavy-cov10",
+    "channel": {
+     "coverage": 10.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/uneven-coverage/cov3",
+   "group": "grid",
+   "model": {
+    "base": "uneven-coverage",
+    "name": "uneven-coverage-cov3",
+    "channel": {
+     "coverage": 3.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/uneven-coverage/cov5",
+   "group": "grid",
+   "model": {
+    "base": "uneven-coverage",
+    "name": "uneven-coverage-cov5",
+    "channel": {
+     "coverage": 5.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/uneven-coverage/cov10",
+   "group": "grid",
+   "model": {
+    "base": "uneven-coverage",
+    "name": "uneven-coverage-cov10",
+    "channel": {
+     "coverage": 10.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/b0like-s184/cov3",
+   "group": "grid",
+   "model": {
+    "base": "clean",
+    "name": "b0like-e1-cov3-drop0",
+    "description": "B0-like: 1 % per-base errors split 53/45/2 sub/del/ins (the ETH protocol composition), fixed coverage, no dropout, constant qualities",
+    "channel": {
+     "substitution_rate": 0.0053,
+     "deletion_rate": 0.0045,
+     "insertion_rate": 0.0002,
+     "coverage": 3.0,
+     "coverage_model": "fixed"
+    },
+    "loss": {
+     "dropout": 0.0
+    }
+   },
+   "size": 19456,
+   "layout": {
+    "payload_bytes": 28,
+    "inner_parity": 4,
+    "marker_period": 0,
+    "marker_len": 0
+   },
+   "data_symbols": 64,
+   "parity_symbols": 8,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/b0like-s184/cov5",
+   "group": "grid",
+   "model": {
+    "base": "clean",
+    "name": "b0like-e1-cov5-drop0",
+    "description": "B0-like: 1 % per-base errors split 53/45/2 sub/del/ins (the ETH protocol composition), fixed coverage, no dropout, constant qualities",
+    "channel": {
+     "substitution_rate": 0.0053,
+     "deletion_rate": 0.0045,
+     "insertion_rate": 0.0002,
+     "coverage": 5.0,
+     "coverage_model": "fixed"
+    },
+    "loss": {
+     "dropout": 0.0
+    }
+   },
+   "size": 19456,
+   "layout": {
+    "payload_bytes": 28,
+    "inner_parity": 4,
+    "marker_period": 0,
+    "marker_len": 0
+   },
+   "data_symbols": 64,
+   "parity_symbols": 8,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "G/b0like-s184/cov10",
+   "group": "grid",
+   "model": {
+    "base": "clean",
+    "name": "b0like-e1-cov10-drop0",
+    "description": "B0-like: 1 % per-base errors split 53/45/2 sub/del/ins (the ETH protocol composition), fixed coverage, no dropout, constant qualities",
+    "channel": {
+     "substitution_rate": 0.0053,
+     "deletion_rate": 0.0045,
+     "insertion_rate": 0.0002,
+     "coverage": 10.0,
+     "coverage_model": "fixed"
+    },
+    "loss": {
+     "dropout": 0.0
+    }
+   },
+   "size": 19456,
+   "layout": {
+    "payload_bytes": 28,
+    "inner_parity": 4,
+    "marker_period": 0,
+    "marker_len": 0
+   },
+   "data_symbols": 64,
+   "parity_symbols": 8,
+   "arms": [
+    "default",
+    "retry16"
+   ]
+  },
+  {
+   "id": "D/deletion-heavy/cov5",
+   "group": "determinism",
+   "model": {
+    "base": "deletion-heavy",
+    "name": "deletion-heavy-cov5",
+    "channel": {
+     "coverage": 5.0
+    }
+   },
+   "size": 20000,
+   "seeds": 5,
+   "arms": [
+    "retry16",
+    "retry16-w4"
+   ]
+  },
+  {
+   "id": "D/nanopore-like/cov10",
+   "group": "determinism",
+   "model": {
+    "base": "nanopore-like",
+    "name": "nanopore-like-cov10",
+    "channel": {
+     "coverage": 10.0
+    }
+   },
+   "size": 20000,
+   "seeds": 5,
+   "arms": [
+    "retry16",
+    "retry16-w4"
+   ]
+  },
+  {
+   "id": "D/mixed-mild/cov5",
+   "group": "determinism",
+   "model": {
+    "base": "mixed-mild",
+    "name": "mixed-mild-cov5",
+    "channel": {
+     "coverage": 5.0
+    }
+   },
+   "size": 20000,
+   "seeds": 5,
+   "arms": [
+    "retry16",
+    "retry16-w4"
+   ]
+  },
+  {
+   "id": "X/nanopore-like/cov15",
+   "group": "exploratory",
+   "model": {
+    "base": "nanopore-like",
+    "name": "nanopore-like-cov15",
+    "channel": {
+     "coverage": 15.0
+    }
+   },
+   "size": 20000,
+   "seeds": 10,
+   "arms": [
+    "default",
+    "retry16",
+    "smart-auto",
+    "smart-auto-retry16"
+   ]
+  },
+  {
+   "id": "X/nanopore-like/cov30",
+   "group": "exploratory",
+   "model": {
+    "base": "nanopore-like",
+    "name": "nanopore-like-cov30",
+    "channel": {
+     "coverage": 30.0
+    }
+   },
+   "size": 20000,
+   "seeds": 10,
+   "arms": [
+    "default",
+    "retry16",
+    "smart-auto",
+    "smart-auto-retry16"
+   ]
+  }
+ ]
+}

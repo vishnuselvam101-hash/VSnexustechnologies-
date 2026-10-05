@@ -1,0 +1,472 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "urn:vnx:vnx.decode-report/1",
+ "title": "VNX-DNA decode report file (--report; V6_ARCHITECTURE \u00a75.1)",
+ "type": "object",
+ "required": [
+  "schema",
+  "kind",
+  "status",
+  "software",
+  "spec",
+  "provenance",
+  "inputs",
+  "outputs",
+  "formats",
+  "timings",
+  "resources",
+  "result",
+  "warnings",
+  "error"
+ ],
+ "properties": {
+  "schema": {
+   "const": "vnx.decode-report/1"
+  },
+  "kind": {
+   "const": "decode"
+  },
+  "status": {
+   "type": "string",
+   "description": "SUCCESS | PARTIAL | FAILURE (decode); SUCCESS | FAILURE (other kinds). 6.x keeps the 5.x value of commands that had one: VERIFIED (verify), OK (keygen), DONE (experiment run), CONFORMANT/NONCONFORMANT is inside result for conformance",
+   "enum": [
+    "SUCCESS",
+    "PARTIAL",
+    "FAILURE",
+    "VERIFIED",
+    "OK",
+    "DONE",
+    "EXTRACTED"
+   ]
+  },
+  "software": {
+   "type": "object",
+   "required": [
+    "name",
+    "version"
+   ],
+   "properties": {
+    "name": {
+     "const": "vnxdna"
+    },
+    "version": {
+     "type": "string"
+    }
+   }
+  },
+  "spec": {
+   "type": "string",
+   "pattern": "^[0-9]+\\.[0-9]+$"
+  },
+  "provenance": {
+   "type": "object",
+   "required": [
+    "git_commit",
+    "git_dirty",
+    "python",
+    "platform",
+    "backends",
+    "config_sha256",
+    "seeds"
+   ],
+   "properties": {
+    "git_commit": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "git_dirty": {
+     "type": [
+      "boolean",
+      "null"
+     ]
+    },
+    "python": {
+     "type": "string"
+    },
+    "platform": {
+     "type": "string"
+    },
+    "backends": {
+     "type": "object",
+     "required": [
+      "align",
+      "reads",
+      "rs"
+     ],
+     "properties": {
+      "align": {
+       "type": "object",
+       "required": [
+        "active"
+       ],
+       "properties": {
+        "active": {
+         "enum": [
+          "native",
+          "reference",
+          null
+         ]
+        },
+        "abi": {
+         "type": [
+          "integer",
+          "null"
+         ]
+        },
+        "level": {
+         "type": [
+          "string",
+          "null"
+         ]
+        },
+        "lib_sha256": {
+         "type": [
+          "string",
+          "null"
+         ],
+         "pattern": "^[0-9a-f]{64}$"
+        },
+        "origin": {
+         "type": [
+          "string",
+          "null"
+         ]
+        },
+        "error": {
+         "type": "string"
+        }
+       }
+      },
+      "reads": {
+       "type": "object",
+       "required": [
+        "active"
+       ],
+       "properties": {
+        "active": {
+         "enum": [
+          "native",
+          "reference",
+          null
+         ]
+        },
+        "abi": {
+         "type": [
+          "integer",
+          "null"
+         ]
+        },
+        "level": {
+         "type": [
+          "string",
+          "null"
+         ]
+        },
+        "lib_sha256": {
+         "type": [
+          "string",
+          "null"
+         ],
+         "pattern": "^[0-9a-f]{64}$"
+        },
+        "origin": {
+         "type": [
+          "string",
+          "null"
+         ]
+        },
+        "error": {
+         "type": "string"
+        }
+       }
+      },
+      "rs": {
+       "type": "object",
+       "required": [
+        "active"
+       ],
+       "properties": {
+        "active": {
+         "enum": [
+          "native",
+          "reference",
+          null
+         ]
+        },
+        "abi": {
+         "type": [
+          "integer",
+          "null"
+         ]
+        },
+        "level": {
+         "type": [
+          "string",
+          "null"
+         ]
+        },
+        "lib_sha256": {
+         "type": [
+          "string",
+          "null"
+         ],
+         "pattern": "^[0-9a-f]{64}$"
+        },
+        "origin": {
+         "type": [
+          "string",
+          "null"
+         ]
+        },
+        "error": {
+         "type": "string"
+        }
+       }
+      }
+     }
+    },
+    "config_sha256": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "pattern": "^[0-9a-f]{64}$"
+    },
+    "seeds": {
+     "type": "object"
+    }
+   }
+  },
+  "inputs": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "role",
+     "path",
+     "bytes",
+     "sha256"
+    ],
+    "properties": {
+     "role": {
+      "type": "string"
+     },
+     "path": {
+      "type": "string"
+     },
+     "bytes": {
+      "type": [
+       "integer",
+       "null"
+      ],
+      "minimum": 0
+     },
+     "sha256": {
+      "type": [
+       "string",
+       "null"
+      ],
+      "pattern": "^[0-9a-f]{64}$"
+     }
+    }
+   }
+  },
+  "outputs": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "role",
+     "path",
+     "bytes",
+     "sha256"
+    ],
+    "properties": {
+     "role": {
+      "type": "string"
+     },
+     "path": {
+      "type": "string"
+     },
+     "bytes": {
+      "type": [
+       "integer",
+       "null"
+      ],
+      "minimum": 0
+     },
+     "sha256": {
+      "type": [
+       "string",
+       "null"
+      ],
+      "pattern": "^[0-9a-f]{64}$"
+     }
+    }
+   }
+  },
+  "formats": {
+   "type": "object",
+   "properties": {
+    "container": {
+     "type": [
+      "array",
+      "null"
+     ]
+    },
+    "frame_version": {
+     "type": [
+      "integer",
+      "null"
+     ]
+    },
+    "superblock_version": {
+     "type": [
+      "integer",
+      "null"
+     ]
+    },
+    "codec": {
+     "type": [
+      "string",
+      "null"
+     ]
+    }
+   }
+  },
+  "timings": {
+   "type": "object",
+   "required": [
+    "seconds"
+   ],
+   "properties": {
+    "seconds": {
+     "type": [
+      "number",
+      "null"
+     ]
+    },
+    "stage_seconds": {
+     "type": "object"
+    }
+   }
+  },
+  "resources": {
+   "type": "object",
+   "required": [
+    "peak_rss_bytes",
+    "peak_rss_scope",
+    "workers"
+   ],
+   "properties": {
+    "peak_rss_bytes": {
+     "type": [
+      "integer",
+      "null"
+     ]
+    },
+    "peak_rss_scope": {
+     "const": "parent"
+    },
+    "workers": {
+     "type": [
+      "integer",
+      "null"
+     ]
+    }
+   }
+  },
+  "result": {
+   "type": "object",
+   "description": "Kind-specific body. The fields below are optional; when present they have these types (V6 Phase 6 security fields).",
+   "properties": {
+    "expected": {
+     "type": "object",
+     "description": "V6-SEC-03: the expectations given (--expect-archive-id / --expect-sha256); present only when given, and only on success (any mismatch is the error ARCHIVE_MISMATCH)",
+     "required": [
+      "archive_id",
+      "container_sha256"
+     ],
+     "properties": {
+      "archive_id": {
+       "oneOf": [
+        {
+         "type": "string",
+         "pattern": "^[0-9a-f]{32}$"
+        },
+        {
+         "type": "null"
+        }
+       ]
+      },
+      "container_sha256": {
+       "oneOf": [
+        {
+         "type": "string",
+         "pattern": "^[0-9a-f]{64}$"
+        },
+        {
+         "type": "null"
+        }
+       ]
+      }
+     },
+     "additionalProperties": false
+    },
+    "key_checked": {
+     "type": "boolean",
+     "description": "V6-SEC-02 (decode): a key or passphrase was given and the recovered container was opened with it (true: key check and manifest MAC verified; false: unencrypted archive accepted with --allow-unencrypted)"
+    },
+    "archive_id": {
+     "type": "string",
+     "pattern": "^[0-9a-f]{32}$",
+     "description": "extract, verify, archive: the manifest archive ID (for the key holder's catalogue, V6-SEC-03)"
+    },
+    "container_sha256": {
+     "type": "string",
+     "pattern": "^[0-9a-f]{64}$",
+     "description": "SHA-256 of the whole container file (decode: recovered container; extract: only with --expect-sha256)"
+    }
+   },
+   "additionalProperties": true
+  },
+  "warnings": {
+   "type": "array"
+  },
+  "error": {
+   "oneOf": [
+    {
+     "type": "null"
+    },
+    {
+     "$ref": "urn:vnx:vnx.error/1"
+    }
+   ]
+  }
+ },
+ "allOf": [
+  {
+   "if": {
+    "properties": {
+     "kind": {
+      "const": "decode"
+     },
+     "status": {
+      "const": "FAILURE"
+     }
+    }
+   },
+   "then": {
+    "properties": {
+     "error": {
+      "$ref": "urn:vnx:vnx.error/1"
+     }
+    }
+   }
+  }
+ ],
+ "additionalProperties": true,
+ "description": "In 6.x the CLI also mirrors the 5.x top-level fields of each command next to the envelope; where both define a key the 5.x value is kept."
+}

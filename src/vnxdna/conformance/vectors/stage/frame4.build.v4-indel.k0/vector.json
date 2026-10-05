@@ -1,0 +1,33 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "frame4.build.v4-indel.k0",
+ "stage": "E10-E13",
+ "formats": {
+  "frame": 4,
+  "superblock": null,
+  "container": null
+ },
+ "kind": "positive",
+ "operation": "frame4.build",
+ "params": {
+  "profile": "v4-indel",
+  "tag": 4660,
+  "kind": 0,
+  "group": 7,
+  "symbol": 3
+ },
+ "inputs": {
+  "payload": {
+   "path": "payload.dat",
+   "sha256": "6f0e0e270b2e015fd6ded3c20292f7ffdceb1b87b89fbe8c5e027b5d8b4f69bf"
+  }
+ },
+ "expected": {
+  "outputs": {
+   "strand_sha256": "39d076c9a73efc98cad07f7ca8d451c422273a818a49d00b29f38ca9c80ad5ce",
+   "variant": 0
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

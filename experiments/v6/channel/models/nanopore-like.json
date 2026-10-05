@@ -1,0 +1,35 @@
+{
+  "name": "nanopore-like",
+  "version": "1.0.0",
+  "classification": "SIMULATED",
+  "description": "Qualitative nanopore-like stress profile: indel-dominated, homopolymer-sensitive, uneven coverage, lower quality, reads on both strands.",
+  "note": "Synthetic stress profile; parameters are not fitted to any measured platform.",
+  "loss": {
+    "dropout": 0.0,
+    "burst_count": 0,
+    "burst_length": 0
+  },
+  "channel": {
+    "substitution_rate": 0.02,
+    "insertion_rate": 0.01,
+    "deletion_rate": 0.03,
+    "dropout_rate": 0.0,
+    "coverage": 15.0,
+    "coverage_model": "negative-binomial",
+    "coverage_dispersion": 4.0,
+    "duplication_rate": 0.0,
+    "homopolymer_min_run": 3,
+    "homopolymer_indel_multiplier": 3.0,
+    "homopolymer_substitution_multiplier": 1.5,
+    "gc_bias_strength": 0.0,
+    "gc_bias_optimum": 0.5,
+    "burst_rate": 0.005,
+    "burst_max_len": 6,
+    "n_rate": 0.001,
+    "reverse_complement_rate": 0.5,
+    "quality_correct": 15,
+    "quality_error": 7,
+    "quality_informative": 0.5,
+    "shuffle_window": 0
+  }
+}

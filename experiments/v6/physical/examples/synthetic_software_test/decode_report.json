@@ -1,0 +1,48 @@
+{
+  "decoder_options": {
+    "archive_tag": null,
+    "band": 6,
+    "batch_reads": 8192,
+    "consensus_threshold": 0.6,
+    "indel_config": null,
+    "indel_recovery": "segment",
+    "layout": null,
+    "max_pending_per_address": 64,
+    "max_reads": 2000000000,
+    "min_quality": 0,
+    "profile": null,
+    "recovery_budget": {
+      "max_outer_stripes": null,
+      "max_reads_examined": null,
+      "max_round_b_reads": null,
+      "max_rss_bytes": null,
+      "max_wall_seconds": null
+    },
+    "recovery_schedule": "deferred",
+    "reverse_complement": true,
+    "soft_config": null,
+    "soft_decoding": "off",
+    "sync_costs": {
+      "deletion": 6,
+      "guard_segments": 0,
+      "insertion": 6,
+      "marker_deletion_extra": 1,
+      "marker_mismatch": 4
+    },
+    "workers": 1
+  },
+  "model": "illumina-like",
+  "reads": 679,
+  "report": {
+    "container_sha256": "919aa041e5ed06cacf1273558518ae1880431f5cb60cb4d18c2250fa25f035f7",
+    "duplicate_conflicts": 0,
+    "groups_decoded": 1,
+    "groups_failed": 0,
+    "peak_rss_bytes": 75030528,
+    "seconds": 0.10496040899306536,
+    "status": "SUCCESS",
+    "superblock_conflicts": 0
+  },
+  "seed": 7,
+  "status": "SUCCESS"
+}

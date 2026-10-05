@@ -36,7 +36,7 @@ DNA strand pool. Either one is a complete archive on its own.
 | requirement | how format 5 meets it |
 |---|---|
 | versioning | container version (2), `format_version` (5), frame version nibble (5), `required_features`; unknown values are refused with exit 6 |
-| deterministic serialisation | canonical JSON (sorted keys, no floats, no duplicate keys, bytes must equal their re-serialisation); fixed-width binary tables; content-derived archive ID when unencrypted; `created_at` null by default |
+| deterministic serialisation | canonical JSON (sorted keys, no floats, no duplicate keys, bytes must equal their re-serialisation); fixed-width binary tables; deterministic archive ID when unencrypted (`options-v1` by default; opt-in `content-v1`, derived from the content, spec V6 §2.3.2); `created_at` null by default |
 | integrity verification | trailer SHA-256 (file), `stored_sha256` (body), SHA-256 per stored chunk, SHA-256 per plaintext chunk, object SHA-256; HMAC-SHA256 and AES-GCM tags when encrypted |
 | corruption detection | every layer above; per strand CRC-32 and inner RS |
 | explicit metadata | the manifest records every parameter needed to decode; decoding never depends on the profile table |
@@ -108,3 +108,16 @@ See [V2_FORMAT.md §4.4](V2_FORMAT.md#44-store-checkpoint). New in V3:
 | V2 reads V3 archives | yes, except encrypted archives whose store was resumed (they declare `final-seal-epoch-v3` and V2 refuses them with exit 6) |
 | V3 reads V1 (format 4) and legacy V0.1 archives | yes, unchanged V1 code ([COMPATIBILITY.md](COMPATIBILITY.md)) |
 | migration | not needed for V2 archives; `vnx-dna migrate` converts V1 → format 5 |
+
+## 7. VNX4 containers in VNX-DNA 6
+
+This page describes the V3 decisions (archive format 5). The current format is VNX4, written by `vnx` since 4.0:
+[VNX4_FORMAT.md](VNX4_FORMAT.md) (container 4.0, frame 4, superblock 1), [V6_OUTER_CODE.md](V6_OUTER_CODE.md)
+(superblock 2) and, as the single normative text for 6.x, [spec/VNX-DNA-SPEC-V6.md](spec/VNX-DNA-SPEC-V6.md). In 6.x the
+container format does not change. What is new:
+
+* `extensions.vnx` in the manifest records the writing software and specification version (spec §2.3.1), on by default;
+* the archive ID of an unencrypted archive is `options-v1` by default; `content-v1` is opt-in (spec §2.3.2,
+  [COMPATIBILITY.md](COMPATIBILITY.md));
+* frame 6, superblock 3, primers and the wide address class are specified but not implemented
+  ([V6_DEFERRED.md](V6_DEFERRED.md)).

@@ -1,0 +1,12 @@
+# Reviewed test-only keys and false positives (2026-10-04). See docs/SECURITY.md, "Test-only keys in the repository".
+# Fingerprint = commit:file:rule:line. Only these exact findings are ignored; anything new is still reported.
+bc0c3de4bcddd564993eb1ba307eed8b2a19ac5e:tests/fixtures/v0_1/generate_fixtures.py:generic-api-key:20
+137383fd62dd2a26ea85a71f0c7eb317a6ee98cc:tests/fixtures/v0_1/generate_fixtures.py:generic-api-key:20
+bc0c3de4bcddd564993eb1ba307eed8b2a19ac5e:tests/fixtures/v0_1/fixtures.json:generic-api-key:5
+137383fd62dd2a26ea85a71f0c7eb317a6ee98cc:tests/fixtures/v0_1/fixtures.json:generic-api-key:5
+76337d8fc516ca51577921b27cc81c8d2374df88:tests/fixtures/v2_0/SHA256SUMS.json:generic-api-key:5
+# V6 (2026-10-05): conformance AEAD vectors carry key_check_hex of the published test key; operations.py:470 is a function name.
+a0256800d3e54a3dc373af756ad81c0cbe04c8c7:tests/conformance/stage/aead.seal.domain2/vector.json:generic-api-key:31
+a0256800d3e54a3dc373af756ad81c0cbe04c8c7:tests/conformance/stage/aead.seal.domain0/vector.json:generic-api-key:31
+a0256800d3e54a3dc373af756ad81c0cbe04c8c7:tests/conformance/stage/aead.seal.domain1/vector.json:generic-api-key:31
+551ddabf186aa08ef98ce66070209c365a71e78c:src/vnxdna/conformance/operations.py:generic-api-key:470

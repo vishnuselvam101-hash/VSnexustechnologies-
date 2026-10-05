@@ -1,0 +1,128 @@
+{
+  "data_source": "SIMULATED",
+  "description": "Harsh mixed errors: indel-rich, homopolymer-sensitive, per-read bursts, strand loss, reverse-complement reads.",
+  "evidence_class": "SIMULATED",
+  "name": "mixed-harsh",
+  "note": "Synthetic stress profile; parameters are not fitted to any measured platform.",
+  "provenance": {
+    "converted_from": {
+      "file": "mixed-harsh.json",
+      "schema": "vnx.channel-model/0",
+      "sha256": "3bf8b3975d061d142d2ae859f35d7b67786a20f21f71c845cd55356c3e17e223"
+    },
+    "datasets": [],
+    "derived": [],
+    "fitter": null,
+    "references": []
+  },
+  "schema": "vnx.channel-model/1",
+  "stages": {
+    "amplification": {
+      "cycles": 0,
+      "duplicate_rate": 0.0,
+      "efficiency_sigma": 0.0,
+      "gc_bias": {
+        "optimum": 0.5,
+        "strength": 0.0
+      },
+      "substitution_per_cycle": {
+        "from_multipliers": null,
+        "matrix": null,
+        "rate": 0.0
+      }
+    },
+    "sequencing": {
+      "bursts": {
+        "max_length": 5,
+        "rate": 0.01
+      },
+      "coverage": {
+        "dispersion": 5.0,
+        "mean": 15.0,
+        "model": "poisson",
+        "sigma": 0.0
+      },
+      "deletion": {
+        "rate": 0.005,
+        "run_length": {
+          "distribution": "single",
+          "mean": 1.0
+        }
+      },
+      "duplicate_rate": 0.05,
+      "homopolymer": {
+        "indel_multiplier": 2.0,
+        "min_run": 3,
+        "substitution_multiplier": 1.5
+      },
+      "insertion": {
+        "base_weights": null,
+        "rate": 0.005
+      },
+      "missing_read_rate": 0.0,
+      "n_rate": 0.002,
+      "position_profile": null,
+      "quality": {
+        "correct": 30,
+        "error": 8,
+        "informative": 0.6,
+        "position_slope": 0.0,
+        "sd": 0.0
+      },
+      "read_length": {
+        "max_length": null,
+        "min_fraction": 0.5,
+        "truncation_rate": 0.0
+      },
+      "reverse_complement_rate": 0.1,
+      "shuffle_window": 0,
+      "substitution": {
+        "from_multipliers": null,
+        "matrix": null,
+        "rate": 0.02
+      }
+    },
+    "storage": {
+      "breakage_rate": 0.0,
+      "contamination_rate": 0.0,
+      "damage": {
+        "from_multipliers": null,
+        "matrix": null,
+        "rate": 0.0
+      },
+      "retention": 1.0,
+      "strand_loss": {
+        "burst_count": 0,
+        "burst_length": 0,
+        "rate": 0.05
+      }
+    },
+    "synthesis": {
+      "deletion": {
+        "rate": 0.0,
+        "run_length": {
+          "distribution": "single",
+          "mean": 1.0
+        }
+      },
+      "dropout_rate": 0.0,
+      "insertion": {
+        "base_weights": null,
+        "rate": 0.0
+      },
+      "molecules_per_strand": 1,
+      "position_profile": null,
+      "substitution": {
+        "from_multipliers": null,
+        "matrix": null,
+        "rate": 0.0
+      },
+      "truncation": {
+        "min_fraction": 0.5,
+        "rate": 0.0
+      },
+      "yield_sigma": 0.0
+    }
+  },
+  "version": "1.0.0"
+}

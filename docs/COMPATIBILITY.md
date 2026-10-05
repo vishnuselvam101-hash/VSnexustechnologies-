@@ -90,3 +90,32 @@ A decoder rejects:
 
 A future format must change one of these rather than reinterpret an existing field. `extensions` is the only place
 where optional, ignorable data may be added, and it is still covered by the digest and HMAC.
+
+## VNX4 archive IDs in 6.x (`content-v1`, V6 Phase 6)
+
+The opt-in `content-v1` archive ID (`vnx archive --archive-id content`, spec V6 §2.3.2) changes neither the VNX4 format
+nor any default output. Only the 16-byte `archive_id` value and `extensions.vnx.archive_id_derivation` differ; the
+header, body, chunk table, file table and reference table are byte-identical to an `options-v1` build of the same input
+(`tests/compat/test_archive_id_content_v1.py::test_identical_body_and_tables_under_both_derivations`). The released 5.0.0
+reader (6aef3f4) opens, verifies and extracts such an archive and decodes its strands
+(`::test_released_5_0_0_reader_opens_a_content_v1_archive`). The default stays `options-v1`.
+
+## VNX-DNA 5 to 6
+
+**Decision: no format change.** 6.x writes and reads the VNX4 container, strand frame 4 and superblocks 1 and 2.
+Frame 6 and superblock 3 are specified for V7 and are not implemented ([V6_DEFERRED.md](V6_DEFERRED.md)).
+
+| direction | result | evidence |
+|---|---|---|
+| 6.x decodes archives and reads written by 4.0 and 5.0 | yes: the golden fixtures `tests/fixtures/v4_0`, `v5_0` and `v6_0` are decoded, and the current encoder reproduces their strands byte for byte | `tests/compat/test_v4_v5_archives.py`, `tests/compat/test_v6_golden.py` |
+| a 6.x container differs from a 5.0.0 container of the same input | yes by default: 6.x adds an `extensions.vnx` block (software and specification version); `ArchiveOptions(writer_provenance=False)` writes the 5.x layout. The block sits in the ignorable `extensions` object | spec §2.3.1; CHANGELOG |
+| 5.0 and 4.0 read 6.x containers | specified to stay readable because `extensions` is ignorable; the committed test covers the opt-in `content-v1` archive ID with the released 5.0.0 reader | spec §2.3.1; `tests/compat/test_archive_id_content_v1.py` |
+| 6.x on a pool with an unknown frame version | refused: exit 6 `FRAME_VERSION_UNSUPPORTED`, not retryable | spec §3.10 |
+| 6.x on a V1 or V3 pool | refused: exit 6 `LEGACY_FORMAT`; use `vnx-dna` | spec §3.10 |
+| 6.x on reads whose layout cannot be detected | refused: exit 3 `LAYOUT_UNDETECTED` | spec §3.10 |
+| opt-in redundancy profile `high-dropout` (strand profile `v6-high-dropout`, 256 nt) | frame 4 and superblock 1 with existing layout options, so the format is unchanged. It is never selected by default. 6.x detects the layout from read length. Readers before 6.0 do not know the profile name and cannot auto-detect the layout. Decoding such strands with an earlier reader and an explicit layout has not been tested | `tests/v6/test_redundancy_profiles.py`; spec §3.7, §7.2 |
+| Python imports | every `vnxdna.v4.*`, `v5.*`, `v6.*`, `errors`, `provenance` and `native` path still imports (module aliases and facades) | `tests/architecture/test_public_paths.py` |
+| CLI | the 5.x JSON fields stay at the top level of every output; `vnx.result/1` envelope added; `--report` files are `vnx.decode-report/1` with the 5.x fields at the top level; exit codes 9 and 10 | CHANGELOG; [CLI.md](CLI.md) |
+
+The one test that pinned the 5.0.0 container SHA-256 was replaced by section-wise assertions before the version bump
+(decision 1 in [V6_ARCHITECTURE.md](V6_ARCHITECTURE.md)).

@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sample.schema.json",
+  "title": "Sample and chain of custody",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "chain_of_custody",
+    "description",
+    "library_id",
+    "sample_id"
+  ],
+  "properties": {
+    "sample_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "library_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "description": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "chain_of_custody": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "date",
+          "performed_by",
+          "step"
+        ],
+        "properties": {
+          "step": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          },
+          "from": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "to": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "date": {
+            "anyOf": [
+              {
+                "$ref": "common.schema.json#/$defs/date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "performed_by": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

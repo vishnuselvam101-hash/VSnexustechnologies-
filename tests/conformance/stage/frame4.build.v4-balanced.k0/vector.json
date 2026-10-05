@@ -1,0 +1,33 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "frame4.build.v4-balanced.k0",
+ "stage": "E10-E13",
+ "formats": {
+  "frame": 4,
+  "superblock": null,
+  "container": null
+ },
+ "kind": "positive",
+ "operation": "frame4.build",
+ "params": {
+  "profile": "v4-balanced",
+  "tag": 4660,
+  "kind": 0,
+  "group": 7,
+  "symbol": 3
+ },
+ "inputs": {
+  "payload": {
+   "path": "payload.dat",
+   "sha256": "513ab46f0c9a372aca7341d28c3d192c174e3798666c680762c7eb6210aa4392"
+  }
+ },
+ "expected": {
+  "outputs": {
+   "strand_sha256": "8f7093f29c9a07d95549f4900c457c0410488b806c13b94140aed0c4c4446ff7",
+   "variant": 0
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

@@ -1,0 +1,28 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "crc32.rows.001",
+ "stage": "E10",
+ "formats": {
+  "frame": null,
+  "superblock": null,
+  "container": null
+ },
+ "kind": "positive",
+ "operation": "crc32",
+ "params": {
+  "rows_hex": "bae52ec53864299ee38a0722146e84fb33fee46a120e8f7a26192f45540afa4403f13b4f7759ab4f6de0fcce942f7c4fdb09862d6e21adb86e23471dbad6d05a940cfcf87636d9aff3cb36c27271bc007092392c4c845a54a9994cb781a5e015ca23b8ab2da5dc51a57c3b8ceff4c62983b44d5b1c0c5d2cc431e651f75b9da3328a7d3a76f08829ff0146272a36b65275ebf5",
+  "row_bytes": 49
+ },
+ "inputs": {},
+ "expected": {
+  "outputs": {
+   "crc32": [
+    "1f86b9d8",
+    "f15d8b20",
+    "8879a251"
+   ]
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

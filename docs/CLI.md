@@ -1,4 +1,7 @@
-# CLI reference (V3)
+# CLI reference
+
+This page documents the V1-V3 `vnx-dna` tool (sections below, V3 wording kept) and, in the section "`vnx` (V6)" near the
+end, the current `vnx` tool. `vnx --help` and `vnx <command> --help` are authoritative for every `vnx` option.
 
 `vnx-dna --help` shows the workflow, and `vnx-dna <command> --help` lists every option. Commands print a short
 summary. `--json` prints the full machine-readable report, and `--report FILE` saves it. Outputs, including
@@ -76,8 +79,69 @@ contiguous run of up to N lost or extra bases), `--archive-tag HEX8` (V3: choose
 | 6 | UNSUPPORTED_FORMAT | unknown container/format version or required feature; a legacy archive given to a main command |
 | 7 | CONFIGURATION_ERROR | invalid parameters, unsatisfiable constraints |
 | 8 | OUTPUT_ERROR | output or report exists (no `--force`), not writable, disk full, file too large, read-only file system (V3: these OS errors were exit 70) |
+| 9 | PARTIAL (`vnx` only) | DNA decode recovered only some files; each written file is individually verified, the others are listed in the report |
+| 10 | PROVIDER_ERROR (`vnx` only, V6) | a physical-provider operation failed (`vnxdna.providers`; today only the ReferenceSimulatorProvider exists): damaged tube, unknown pool, closed provider |
 | 70 | INTERNAL_ERROR | a bug; set `VNXDNA_DEBUG=1` for a traceback |
 | 130 | interrupted | Ctrl-C, SIGTERM or SIGHUP (`kill`, `timeout`, `docker stop`, a closed terminal): worker processes are stopped, partial outputs and temporary directories are removed (`store` leaves a resumable checkpoint). Worker processes also exit by themselves if the command is killed with SIGKILL, and an interrupt never waits for running workers (V3 release review) |
 | 141 | output closed | standard output was closed early (e.g. `vnx-dna … | head -1`); V3 exits quietly instead of reporting a BrokenPipe as an internal error |
 
 Errors are one line on stderr: `vnx-dna: error [CATEGORY]: message`. Normal operation never prints a traceback.
+
+## Native kernels and backend environment variables
+
+The aligner, the read parser and the inner RS decoder have optional C kernels that `pip install` builds; without them
+the bit-identical NumPy references run. `python -m vnxdna.native` (or `vnx native`) shows which backend each kernel
+uses, and decode reports record it in `native_backends`. The environment variables that select backends
+(`VNXDNA_ALIGN_BACKEND`, `VNXDNA_READS_BACKEND`, `VNXDNA_RS_BACKEND`, `VNX_RS_REFERENCE`, the `*_LIB` paths,
+`VNXDNA_NATIVE_STRICT`) are documented in [NATIVE_KERNELS.md](NATIVE_KERNELS.md).
+
+## `vnx` (V6): security and archive-ID options
+
+`vnx --help` and `vnx <command> --help` list every option of the V4–V6 tool. These options were added in V6 Phase 6
+(findings in [security/V6_SECURITY_MODEL.md](security/V6_SECURITY_MODEL.md)). Errors are `vnx.error/1` JSON on stderr.
+
+| option | commands | effect | on failure |
+|---|---|---|---|
+| `--max-container-bytes N` | `decode` | Refuse a superblock that claims a container larger than N bytes. The check runs in the superblock stage, before anything is sized or decoded. Default 4 GiB (4294967296). Raise it for larger genuine archives (V6-SEC-01). Config file: `decode.max_container_bytes`. | exit 3, `RESOURCE_LIMIT` |
+| `--expect-archive-id HEX32` | `decode`, `extract` | Refuse any archive with another 16-byte archive ID. For decode, the superblock is checked before pass 2 and the recovered manifest before SUCCESS. In a pool that holds several archives, the expected ID also selects its archive (unless `--archive-tag` is given) (V6-SEC-03). | exit 1, `ARCHIVE_MISMATCH` |
+| `--expect-sha256 HEX64` | `decode`, `extract` | Refuse a container whose SHA-256 (of the whole `.vnx` file, as `sha256sum` prints it) differs. For decode, the superblock's container SHA-256 is checked before pass 2. This is the only binding check for a clear archive, whose archive ID anyone can forge (FC-8) (V6-SEC-03). | exit 1, `ARCHIVE_MISMATCH` |
+| `--allow-unencrypted` | `decode`, `extract`, `encode`, `inspect`, `list`, `verify`, `locate` | Accept an unencrypted archive although `--key-file`/`--passphrase-env` was given. Without it, the archive is refused as a possible encryption downgrade. Since V6-SEC-02 this also applies to a full `decode -o` (the recovered container is opened with the key before SUCCESS) and to `encode` of a `.vnx` source. | exit 4, `KEY_FOR_UNENCRYPTED` |
+| `--archive-id options\|content` | `archive` | How an unencrypted archive's ID is derived: `options` gives `options-v1` (the default, unchanged); `content` gives `content-v1` (spec §2.3.2: options, Merkle root and file-table hash). Refused for encrypted archives, which always get a random ID. Config file: `archive.archive_id`. | exit 7, `CONFIGURATION_ERROR` |
+
+Malformed `--expect-*` values are refused with exit 7 (`CONFIGURATION_ERROR`). With `--expect-*` options, the result
+carries `"expected": {"archive_id": …, "container_sha256": …}`. `extract` always reports the manifest `archive_id`,
+and reports `container_sha256` when `--expect-sha256` is given. A decode report already has
+`superblock.archive_id` and `container_sha256`; record them in your catalogue to use with `--expect-*` later.
+`vnx verify` recomputes a `content-v1` ID. A mismatch is the warning `ARCHIVE_ID_DERIVATION_MISMATCH`, not an error,
+because the ID is a name, not a digest.
+
+## `vnx` (V6): commands
+
+`vnx` (entry point `vnxdna.commands:main`) is a thin command line over `vnxdna.sdk`; each command makes one SDK call and
+prints its JSON. Exit codes are the table above. Errors are `vnx.error/1` JSON on stderr with a stable `code`.
+
+| command | purpose |
+|---|---|
+| `archive INPUT... OUTPUT.vnx` | files and directories to a verified VNX4 archive |
+| `encode SOURCE OUT.fasta` | archive (or an existing `.vnx`) to DNA strands |
+| `decode READS -o OUT.vnx` | reads to a verified container; `--extract DIR`, `--select FILE`, `--partial-dir DIR`, `--report FILE`, `--events FILE` |
+| `inspect`, `list`, `verify`, `locate`, `extract` | read a container or a read file; `inspect` also answers whether a read file is readable (frame and layout probe) |
+| `validate STRANDS` | constraint diagnostics (JSON) |
+| `channel simulate`, `models`, `show`, `convert`, `sweep` | the SIMULATED channel (`vnx.channel-model/1`); `--model NAME[@VERSION]`, `--seed`, `--coverage`, `--param PATH=JSON`, `--metadata FILE`, `--manifest FILE` (`vnx.experiment/1`, with `--experiment-id ID`) |
+| `benchmark`, `sweep`, `experiment run`, `experiment reproduce`, `generate`, `profiles` | benchmarks and experiments ([BENCHMARKING.md](BENCHMARKING.md)); `experiment run` also writes `manifest.json` (`vnx.experiment/1`) |
+| `experiment reproduce MANIFEST [--input F] [--workers N]` | re-run a `vnx.experiment/1` manifest ([CONFORMANCE.md](CONFORMANCE.md)): exit 0 if input and result hash match, 1 if either differs, 3 malformed manifest or missing input, 6 unsupported manifest schema, 7 `--input`/`--workers` with a directory. Given a directory, it compares every deterministic field as before |
+| `conformance` | run the conformance vectors; `--vectors DIR`, `--select ID`, `--backend auto`, `native` or `reference`; exit 0 only if CONFORMANT |
+| `version`, `native` | `vnx.version/1` (software, spec and format versions) and the native kernel status |
+| `keygen FILE` | a new key file |
+
+Opt-in decoder options (defaults unchanged; effects are SIMULATED results documented in the experiment READMEs):
+
+| option | effect | evidence |
+|---|---|---|
+| `--indel-recovery smart`, `--soft-decoding erasure`, `chase` or `auto`, `--min-quality Q`, `--recovery-schedule deferred` or `eager` | V5 bounded indel and soft recovery | [V5_PHASE3_INDEL_RECOVERY.md](V5_PHASE3_INDEL_RECOVERY.md), `experiments/v6/phase4/P4-EXP-01-failure-taxonomy/README.md` |
+| `--consensus-weighting quality` | pass-2 vote weighted by Phred quality; `count` is the default. Efficacy criterion REJECT in the pre-registered test | `experiments/v6/phase4/P4-EXP-02-qw-consensus/README.md` |
+| `--retry-band R` | reads beyond `--band` are aligned again with band R (0 = off, the default); suggested value 16 | `experiments/v6/align-band/README.md` |
+| `--max-recovery-reads N`, `--max-round-b-reads N` | budgets for the recovery rounds | `--help` |
+
+Exit code 9 (PARTIAL) and 10 (PROVIDER_ERROR) are `vnx` only. Provider operations (`prepare`, `write`, `retrieve`, `read`)
+are SDK/Python calls on `vnxdna.providers`, not CLI commands ([INTEROPERABILITY.md](INTEROPERABILITY.md)).

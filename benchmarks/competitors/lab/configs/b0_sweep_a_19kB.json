@@ -1,0 +1,95 @@
+{
+ "description": "B0 sweep A: 19 kB harness input (random/19kB), IDS channel of the harness ErrorGenerator with the ETH 53/45/2 sub/del/ins composition, no dropout. VNX operating points chosen to be at about 1.0 and 1.5 bit/nt; see README.",
+ "input": "random/19kB",
+ "step_timeout_s": 900,
+ "channel": {
+  "ratio": [
+   53,
+   45,
+   2
+  ],
+  "error_rates": [
+   0.002,
+   0.005,
+   0.01
+  ],
+  "coverages": [
+   5,
+   10
+  ],
+  "dropouts": [
+   0.0
+  ],
+  "seeds": [
+   1,
+   2,
+   3
+  ]
+ },
+ "participants": [
+  {
+   "id": "vnx-s148",
+   "codec": "VNX",
+   "profile": "s148",
+   "clustering": "NoClustering"
+  },
+  {
+   "id": "vnx-s184",
+   "codec": "VNX",
+   "profile": "s184",
+   "clustering": "NoClustering"
+  },
+  {
+   "id": "vnx-s280",
+   "codec": "VNX",
+   "profile": "s280",
+   "clustering": "NoClustering"
+  },
+  {
+   "id": "vnx-s456",
+   "codec": "VNX",
+   "profile": "s456",
+   "clustering": "NoClustering"
+  },
+  {
+   "id": "vnx-default313",
+   "codec": "VNX",
+   "profile": "default313",
+   "clustering": "NoClustering"
+  },
+  {
+   "id": "vnx-s184-basicset",
+   "codec": "VNX",
+   "profile": "s184",
+   "clustering": "BasicSet"
+  },
+  {
+   "id": "dna-rs-medium",
+   "codec": "DNARS",
+   "factory": "medium_coderate",
+   "needs_file_size": true,
+   "clustering": "BasicSet"
+  },
+  {
+   "id": "dna-rs-high",
+   "codec": "DNARS",
+   "factory": "high_coderate",
+   "needs_file_size": true,
+   "clustering": "BasicSet"
+  },
+  {
+   "id": "dna-fountain-medium",
+   "codec": "DNAFountain",
+   "factory": "medium_coderate",
+   "needs_file_size": true,
+   "clustering": "BasicSet"
+  },
+  {
+   "id": "dna-fountain-high",
+   "codec": "DNAFountain",
+   "factory": "high_coderate",
+   "needs_file_size": true,
+   "clustering": "BasicSet"
+  }
+ ]
+}

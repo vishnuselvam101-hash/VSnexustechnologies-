@@ -1,5 +1,188 @@
 # Changelog
 
+## 6.0.0 (unreleased)
+
+Consolidated entry for all V6 phases (development tree `6.0.0.dev0`; version and date to be set at release). The
+per-phase entries below it are kept as written during development. Formats are unchanged from 5.0.0 (VNX4 container,
+frame 4, superblocks 1 and 2); defaults are unchanged except where stated. Every channel result is SIMULATED; time and
+memory figures are MEASURED on a shared development host; the CNR statistics are PUBLIC-DATA-DERIVED. No DNA was
+synthesised, stored or sequenced. Deferred work and the reason for each item: docs/V6_DEFERRED.md.
+
+### Added
+
+- **Specification and architecture (Phases 0, 1).** `docs/spec/VNX-DNA-SPEC-V6.md` (formats, nine version axes, stage
+  graphs E0-E15 and D0-D14, conformance, failure contract, provider interface), `docs/V6_ARCHITECTURE.md`,
+  `docs/V6_BASELINE_AUDIT.md`. Frame 6, superblock 3, primers and the wide address class are specified, not implemented.
+- **Layered packages and the SDK (Phase 2).** `vnxdna.core`, `native`, `archive`, `codec`, `dnaenc`, `sync`, `recovery`,
+  `pipeline`, `simulation`, `benchmark`, `sdk`, `conformance`, `commands`; layer rules checked by
+  `tests/architecture`. `vnxdna.sdk` is the stable API with `vnx.result/1` envelopes; the `vnx` CLI is a thin layer
+  over it. Stable error codes (`vnx.error/1`), JSON Schemas, `vnx.event/1` decode events, `vnx.version/1`, writer
+  provenance in `extensions.vnx`, a frame-version probe with refusals (`FRAME_VERSION_UNSUPPORTED`, `LEGACY_FORMAT`,
+  `LAYOUT_UNDETECTED`). Docs: docs/ARCHITECTURE.md (rewritten for V6; the V3 text is docs/V3_ARCHITECTURE.md).
+- **Channel-model framework (Phase 3).** `vnx.channel-model/1`, staged simulator, Monte Carlo and sweeps, 14 shipped
+  models (unfitted), `vnx channel models|show|convert|sweep`. EXP-SIM-1: 210/210 cells byte-identical to the previous
+  simulator (experiments/v6/phase3/EXP-SIM-1).
+- **Measurement-driven decoder options, all opt-in (Phase 4, job #80).** `--consensus-weighting quality`
+  (pre-registered efficacy REJECT: 213/520 vs 211/520 exact) and `--retry-band R` (pre-registered: nanopore-like 0/60 vs
+  0/60, high-indel models +0.0292 [+0.0074, +0.0590], KEEP OPT-IN). Failure taxonomy: 0 false SUCCESS in 1,450 decodes.
+  Public nanopore (CNR, PUBLIC-DATA-DERIVED) per-read statistics: 2.16 / 1.66 / 1.95 % substitution / insertion / deletion
+  (experiments/v6/phase4, experiments/v6/align-band).
+- **Native packaging (Phase 5).** `pip install .` builds the aligner, read parser and inner Reed-Solomon kernels as
+  optional extensions; `python -m vnxdna.native [--require-native]`, `vnx native`; the Docker build checks the kernels.
+  Installed-path decode of a 4 MiB noisy input 10.8 s to 5.3 s (2.04x, MEASURED, one host and workload;
+  benchmarks/v6/native_packaging/README.md). docs/NATIVE_KERNELS.md.
+- **Security model and fuzzing (Phase 6).** docs/security/V6_SECURITY_MODEL.md (no CRITICAL or HIGH finding recorded),
+  libFuzzer harnesses (read parser, Reed-Solomon, aligner) and ten Python fuzz targets with campaigns of 320-630 s each
+  (docs/security/V6_FUZZ_REPORT.md), CI jobs for secrets, dependencies and a fuzz smoke test.
+  Fixes with tests that failed first: V6-SEC-01 (`--max-container-bytes`), V6-SEC-02 (key checked on full decode),
+  V6-SEC-03 (`--expect-archive-id`, `--expect-sha256`), and three fuzz-found robustness fixes (V6-SEC-04, -22, -23).
+  Opt-in `content-v1` archive ID (`vnx archive --archive-id content`).
+- **Interoperability and laboratory interface (Phase 7).** `vnxdna.providers` (`DNAWriter`, `DNAReader`, `DNAProvider`,
+  `ReferenceSimulatorProvider` as the only provider), `vnx.export-package/1` and `vnx.import-package/1`, `vnxdna.physical`
+  with the PUBLIC-DATA-DERIVED evidence class, exit code 10 (PROVIDER_ERROR). docs/INTEROPERABILITY.md,
+  docs/LAB_INTERFACE.md, docs/DDSA_MAPPING.md (mapping table only; no Sector Zero/One output).
+- **Conformance (Phase 8, part 1).** 226 vectors (132 positive, 94 negative; tests/conformance/index.json; 4 of them added with the `high-dropout` profile), a packaged
+  22-vector subset, `vnx conformance [--backend native|reference]`, property tests.
+- **Reproducibility (Phase 8, part 2).** `vnx.experiment/1` experiment manifests (`vnxdna.benchmark.manifest`: strict
+  validator with typed errors, writer, JSON Schema) for two kinds, `channel-simulation` and `experiment`.
+  `vnx channel simulate --manifest FILE`; `vnx experiment run` also writes `manifest.json`;
+  `vnx experiment reproduce MANIFEST [--input F] [--workers N]` re-runs and exits 0 only if the result hash matches
+  (1 if not). docs/CONFORMANCE.md covers the vectors, how to run and add them, and the manifest workflow. A committed
+  manifest of one EXP-SIM-1 cell reproduces its recorded read-file SHA-256 (SIMULATED).
+- **Benchmark lab B0 (Phase 9, first stage).** VNX-DNA as an external codec in `dt4dds-benchmark` beside DNA-RS, DNA
+  Fountain and DNA-Aeon: 280 trials, not the published protocol (benchmarks/competitors/lab/README.md). 0 false SUCCESS
+  in 157 VNX-DNA trials (SIMULATED); weaker than DNA-RS at 10 % dropout and at 1 % errors near 1 bit/nt (same README).
+- **Opt-in redundancy profile `high-dropout` (job #79, b0-dropout).** Strand profile `v6-high-dropout`: 256 nt, 4 B
+  inner parity, no markers, row code 160 + 48, at 0.998 bit/nt at 19 kB. It is opt-in with `--redundancy-profile high-dropout` and
+  never the default. The format is unchanged. Selected by a pre-registered comparison (SIMULATED,
+  benchmarks/competitors/lab/results/b0-dropout): 88/100 exact against 35/100 for B0's `s184`, and 10/10 in every cell
+  with dropout up to 10 %. DNA-RS-medium recovered 100/100 on the same grid, and the new profile loses to it at 1 % errors
+  with 20 % dropout. There were 0 false SUCCESS in 720 VNX trials. Conformance set: 4 vectors added for the new layout (226 in total).
+- **Documentation (Phase 10).** docs/V6_DEFERRED.md, docs/research/V6_COMPETITIVE_RESEARCH.md,
+  docs/research/V6_TECHNICAL_RESEARCH.md, docs/V6_IMPLEMENTATION_SUMMARY.md, docs/V6_COMPLETION_REPORT.md; README, docs/ARCHITECTURE.md, docs/BENCHMARKING.md, docs/CLI.md,
+  docs/COMPATIBILITY.md and docs/STORAGE_FORMAT.md updated for 6.x.
+
+### Changed
+
+- Version is `6.0.0.dev0`; new archives carry `extensions.vnx`, so container bytes differ from 5.0.0 for the same input
+  (`ArchiveOptions(writer_provenance=False)` writes the 5.x layout; spec section 2.3.1). The test that pinned the 5.0.0
+  container SHA-256 was restated before the bump.
+- `--report` files are the `vnx.decode-report/1` envelope with the 5.x fields at the top level; `--performance bogus` is
+  exit 7 (was 70); `vnx encode` passes archive options through or refuses them.
+- Every old module path (`vnxdna.v4.*`, `v5.*`, `v6.*`, ...) still imports.
+
+### Fixed
+
+- `--select` on stripe archives (job #56); `locate --dna-profile` on V6 outer-code layouts is refused with exit 7;
+  archive-tag collisions are refused (`ARCHIVE_TAG_AMBIGUOUS`); random access snaps reads like a full decode; the decode
+  outcome is independent of the spill bucket count.
+- Peak-RSS method: the child's own `VmHWM` replaces `wait4` `ru_maxrss` (experiments/v6/align-band). The Phase 4 memory
+  claim ("peak RSS unchanged", P4-EXP-04) is withdrawn; its time column stands (experiments/v6/phase4/README.md).
+
+### Known limitations
+
+- The simulated nanopore-like model decodes 0/20 at coverage 3, 5 and 10 (default and retry band). The measured causes
+  (header address, whole-segment erasure) are V7 work.
+- Not implemented: encode events; MSan and non-x86 builds; fuzz campaigns of one CPU-hour per target; open LOW findings in the security model. Open defects:
+  `vnx locate` on V6 striped pools (job #62), `--select` when some failed groups lie outside the index (job #66).
+- No physical validation of any kind.
+
+## Unreleased (6.0.0.dev0) — job #79: opt-in redundancy profile for heavy dropout (PERF-DROP)
+
+Formats unchanged; default unchanged. Channel results are SIMULATED (benchmarks/competitors/lab/results/b0-dropout).
+
+- **`high-dropout` redundancy profile** (`--redundancy-profile high-dropout`, `vnxdna.pipeline.profiles.dna_options`)
+  over the new frame-4 strand profile `v6-high-dropout`: `Layout(46, 4, 0, 0)`, outer 160 + 48. The decoder detects it
+  from read length. Its encoding is byte-identical to the lab profile `hd-l256-i4` (test).
+- **b0-dropout** (pre-registered in 1946f3c before any trial ran): 19 kB, coverage 10, errors 0.5 % and 1 %, dropout
+  0-20 %, 10 seeds per cell, 800 trials in the main grid.
+  * Rule 3 accepted `hd-l256-i4`: 0.9984 bit/nt, 0 false SUCCESS, never below `s184` in any cell, Wilson-separated
+    above it in 5 cells, and 10/10 at dropout up to 10 %.
+  * Where it loses: DNA-RS-medium 100/100 against 88/100 pooled, and 3/10 against 10/10 at 1 % errors with 20 % dropout.
+    Its strands are 78 % longer (256 against 144 nt) and decode peak RSS is 63 against 16 MiB.
+  * Column parity did not help at this size: 86 against 87.
+  * The 0.5 bit/nt secondary grid is reported only, because DNA-RS-low has only 14 of its 60 trials.
+- `benchmarks/competitors/lab/dropout_report.py` writes the per-cell Wilson tables and applies the pre-registered rule.
+  `seen_barocdes.json`, a runtime artefact of a third-party codec committed by mistake, is no longer tracked.
+
+## Unreleased (6.0.0.dev0) — job #80: opt-in retry band (ALIGN-BAND)
+
+Formats unchanged; default unchanged. Channel results are SIMULATED (experiments/v6/align-band).
+
+- **`DecodeOptions.retry_band`** (`--retry-band`, config `decode.retry_band`; 0 = off, the default): reads whose net
+  drift exceeds `band` but not `retry_band` are aligned by a second, wider-band `TemplateAligner` (same DP, same native
+  kernel, no C change) instead of being left unaligned. Reads inside the band are untouched, so default decodes are
+  bit-identical. Pass 1 reports `retry_band_reads` only when the option is on.
+- **AB-EXP-01** (pre-registered, 935 trials, 45 grid cells × 20 paired seeds): 0 false SUCCESS in 1,910 decodes; no
+  harm in any cell (0 pairs where only the stock decoder succeeded); deletion-heavy coverage 10: 0/20 → 6/20; nanopore-like
+  still 0/20 at every coverage (C2 REJECT) and +26 % peak RSS on deletion-heavy at 1 MiB (C5 REJECT): stays opt-in.
+  The ground-truth funnel (AB-DIAG) puts the next nanopore-like bottlenecks at header-address recovery and
+  whole-segment erasure. Native = reference on 102,400 fuzzed reads (AB-FUZZ).
+
+## Unreleased (6.0.0.dev0) — V6 Phase 3 (channel-model framework)
+
+Plan: docs/V6_ARCHITECTURE.md §8 Phase 3; docs/CHANNEL_MODEL.md. Formats unchanged. Every channel result is SIMULATED.
+
+- **`vnx.channel-model/1`**: staged channel models (synthesis → storage → amplification → sequencing) with independent
+  parameters, per-position error profiles, 4×4 substitution matrices, deletion-run lengths, coverage fixed / Poisson /
+  negative binomial / lognormal, `data_source` (SIMULATED, SYNTHETIC, LABORATORY, PHYSICAL_VALIDATION),
+  `evidence_class` and provenance. The 14 Phase 1 models ship as /1 package data; `/0` files and V4 `ChannelConfig`
+  JSON are read and converted exactly; unknown schema majors exit 6 `SCHEMA_UNSUPPORTED`.
+- **`vnxdna.simulation`**: generic error models (substitution, insertion, deletion, dropout, coverage, quality,
+  composite), the staged simulator, Monte Carlo trials and parameter sweeps; every run returns
+  `vnx.simulation-metadata/1` (model, parameters, versions, seed, input/output SHA-256).
+- **CLI/SDK**: `vnx channel simulate --model NAME[@VERSION] --seed N` (named models with loss and bursts; `--param`,
+  `--metadata`), `vnx channel models | show | convert | sweep`; `sdk.simulate(model=...)`, `sdk.channel_*`.
+- **Compatibility**: EXP-SIM-1 (experiments/v6/phase3/EXP-SIM-1): 210/210 cells (14 models × 3 strand files × 5 seeds)
+  give byte-identical reads to the current simulator, as /0 and as /1. Old `ChannelConfig` JSON gives byte-identical
+  output (tests/simulation/test_sim_compat.py).
+
+## Unreleased (6.0.0.dev0) — V6 Phase 2 (codec/API refactor, version fixes, P1 bugs)
+
+Plan: docs/V6_ARCHITECTURE.md §7–§8; formats unchanged (goldens v4_0, v5_0, v6_0 decode bit-exactly). Channel results
+are SIMULATED.
+
+- **Layered packages** `vnxdna.core`, `native`, `archive`, `codec`, `dnaenc`, `sync`, `recovery`, `pipeline`,
+  `simulation`, `benchmark`, `sdk`, `conformance`, `commands` (moves M1–M5). Every old module path (`vnxdna.v4.*`,
+  `v5.*`, `v6.*`, `errors`, `provenance`, `native`, …) still imports: whole-module moves are aliases of the same module
+  object, split modules (`v4.frame`, `v4.encoder`, `v4.decoder`, `v6.profiles`) are façades. `tests/architecture`
+  checks the public paths and the layer rules (no rule violation, no import cycle).
+- **`vnxdna.sdk`**, the stable Python API, returning `vnx.result/1` envelopes (software, spec, backends with ABI and
+  library SHA-256, input/output SHA-256, formats, timings, resources). The `vnx` CLI (`vnxdna.commands`) is a thin layer
+  over it; stdout keeps every 5.x field next to the envelope.
+- **Stable error codes** (spec §10) in every error (`vnx.error/1`); exit code 10 reserved for provider errors.
+- **Version axes**: `vnx version` emits `vnx.version/1`; new archives carry `extensions.vnx` (spec §2.3.1;
+  `ArchiveOptions(writer_provenance=False)` writes the 5.x layout).
+- **Probe and dispatch** (spec §3.10): unknown frame versions exit 6 `FRAME_VERSION_UNSUPPORTED` (not retryable), V1/V3
+  pools exit 6 `LEGACY_FORMAT`, unrecognisable reads exit 3 `LAYOUT_UNDETECTED`; `vnx inspect` answers "can I read
+  this?" for read files. EXP-PROBE-1: experiments/v6/phase2/EXP-PROBE-1.
+- **JSON Schemas** in `vnxdna/core/schemas` (result, error, decode report, events, version, probe); `--events` lines are
+  `vnx.event/1` with `seq`, `run_id`, `run_start`, `superblock` and the report hash on `command_end`.
+- **Conformance runner** `vnx conformance` with a packaged vector subset (spec §6).
+- Fixes: `--performance bogus` is exit 7 (was 70); `vnx encode` passes archive options through or refuses them;
+  `locate --dna-profile` refuses V6 outer-code layouts (exit 7) and handles custom K/M; archive-tag collisions are
+  refused as `ARCHIVE_TAG_AMBIGUOUS` (exit 3); random access snaps reads like a full decode. The decode outcome is
+  tested to be independent of the spill bucket count; consensus internals are not (see tests/v6/test_spill_independence.py).
+- `--report` files are now the `vnx.decode-report/1` envelope; the 5.x report fields stay at the top level.
+- V6 Phase 4 (measurement-driven, SIMULATED): opt-in quality-weighted pass-2 consensus
+  (`--consensus-weighting quality`; default `count` unchanged). Failure taxonomy, pre-registered comparison (efficacy
+  REJECT, no default change), CNR IDS statistics (PUBLIC-DATA-DERIVED): experiments/v6/phase4.
+
+## Unreleased — V6 Phase 1 (outer-code resilience)
+
+Opt-in; without the new options encoding is byte-identical to 5.0.0. All results are SIMULATED. Details:
+docs/V6_PHASE1_REPORT.md, format: docs/V6_OUTER_CODE.md.
+
+- **Superblock version 2** with stripes of row groups plus column-parity groups (a product of two Cauchy RS codes),
+  iterative row/column erasure decoding in pass 2, and per-archive strand-loss accounting (`report["outer_v6"]`).
+- **Interleaved strand order** (position-major per stripe, superblock strands spread over the file) for burst loss.
+- **Adaptive outer plan** (`outer_plan="adaptive"`, `--outer-plan adaptive`, `--redundancy-budget`) choosing row
+  length, stripe depth and column parity under a redundancy budget from an analytic dropout bound.
+- New `vnx encode` flags `--stripe-depth`, `--column-parity`, `--strand-order`, `--outer-plan`, `--redundancy-budget`
+  and matching `dna.*` configuration keys.
+- `jsonschema>=4.18,<5` added to the `[dev]` extra, so the physical-record schema cross-check runs instead of
+  being skipped.
+
 ## 5.0.0 — 2026-10-04
 
 VNX-DNA V5: adaptive and probabilistic decoding on top of the unchanged V4 format. All results are SIMULATED

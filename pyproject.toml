@@ -21,12 +21,12 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8,<9", "pytest-cov>=6,<8", "hypothesis>=6.100,<7", "ruff>=0.6,<1"]
+dev = ["pytest>=8,<9", "pytest-cov>=6,<8", "hypothesis>=6.100,<7", "ruff>=0.6,<1", "jsonschema>=4.18,<5"]
 
 [project.scripts]
 vnx-dna = "vnxdna._entry:main"
 vnxdna = "vnxdna._entry:main"
-vnx = "vnxdna.v4.cli:main"
+vnx = "vnxdna.commands:main"
 
 [tool.setuptools.dynamic]
 version = {attr = "vnxdna._version.__version__"}
@@ -36,6 +36,11 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 "vnxdna.v5" = ["native/*.c"]
+"vnxdna.v6" = ["native/*.c"]
+"vnxdna.core" = ["schemas/*.json"]
+"vnxdna.physical" = ["schemas/*.json"]
+"vnxdna.simulation" = ["models/*.json"]
+"vnxdna.conformance" = ["vectors/**/*"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src", "tests"]
@@ -45,6 +50,21 @@ markers = ["slow: long-running exhaustive/statistical tests (run by default; des
 
 [tool.coverage.run]
 source = ["vnxdna"]
+
+[tool.mypy]
+# CI static-analysis gate (job `mypy`): the V6 layered packages that type-check cleanly today. Errors in imported
+# modules outside this set are not reported (follow_imports = "silent"). Not yet gated (open mypy errors, tracked
+# with the legacy v2/v4/ecc errors by job #58): vnxdna.archive, vnxdna.sync, vnxdna.recovery, vnxdna.pipeline,
+# vnxdna.benchmark. Run with: mypy   (from the repository root)
+python_version = "3.12"
+mypy_path = "src"
+follow_imports = "silent"
+packages = ["vnxdna.core", "vnxdna.native", "vnxdna.codec", "vnxdna.dnaenc", "vnxdna.simulation", "vnxdna.sdk",
+            "vnxdna.conformance", "vnxdna.commands", "vnxdna.v6"]
+
+[[tool.mypy.overrides]]
+module = ["reedsolo", "reedsolo.*", "jsonschema", "jsonschema.*"]    # no type information shipped
+ignore_missing_imports = true
 
 [tool.ruff]
 target-version = "py312"

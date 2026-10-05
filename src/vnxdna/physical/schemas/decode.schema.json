@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "decode.schema.json",
+  "title": "Decode run",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "backend",
+    "command",
+    "commit",
+    "decode_status",
+    "decoder_config",
+    "report_sha256",
+    "vnx_version",
+    "workers"
+  ],
+  "properties": {
+    "vnx_version": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "commit": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/git_commit"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "working_tree_dirty": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "decoder_config": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "backend": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "workers": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1
+    },
+    "command": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "report_file": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "report_sha256": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/sha256"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "decode_status": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}

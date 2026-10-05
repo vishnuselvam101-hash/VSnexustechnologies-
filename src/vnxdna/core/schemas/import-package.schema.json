@@ -1,0 +1,310 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "urn:vnx:vnx.import-package/1",
+ "title": "VNX Import Package manifest (spec §9.3): sequencing reads + metadata for the decoder.",
+ "type": "object",
+ "additionalProperties": false,
+ "required": [
+  "schema",
+  "package_id",
+  "export_package_id",
+  "provider",
+  "evidence_class",
+  "statement",
+  "simulation",
+  "sequencing",
+  "selection",
+  "dataset",
+  "files"
+ ],
+ "$defs": {
+  "sha256": {
+   "type": "string",
+   "pattern": "^[0-9a-f]{64}$"
+  },
+  "provider": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "name",
+    "version",
+    "interface"
+   ],
+   "properties": {
+    "name": {
+     "type": "string",
+     "minLength": 1
+    },
+    "version": {
+     "type": "string",
+     "minLength": 1
+    },
+    "interface": {
+     "const": "vnx.provider/1"
+    }
+   }
+  },
+  "file": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "name",
+    "role",
+    "sha256",
+    "bytes",
+    "reads"
+   ],
+   "properties": {
+    "name": {
+     "type": "string",
+     "pattern": "^reads/[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "role": {
+     "enum": [
+      "reads",
+      "reads-r1",
+      "reads-r2"
+     ]
+    },
+    "sha256": {
+     "$ref": "#/$defs/sha256"
+    },
+    "bytes": {
+     "type": "integer",
+     "minimum": 0
+    },
+    "reads": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "minimum": 0
+    }
+   }
+  }
+ },
+ "properties": {
+  "schema": {
+   "const": "vnx.import-package/1"
+  },
+  "package_id": {
+   "$ref": "#/$defs/sha256",
+   "description": "SHA-256 of the canonical manifest without this field"
+  },
+  "export_package_id": {
+   "anyOf": [
+    {
+     "$ref": "#/$defs/sha256"
+    },
+    {
+     "type": "null"
+    }
+   ]
+  },
+  "provider": {
+   "$ref": "#/$defs/provider"
+  },
+  "evidence_class": {
+   "enum": [
+    "SIMULATED",
+    "SYNTHETIC SOFTWARE TEST",
+    "PUBLIC-DATA-DERIVED",
+    "REAL PHYSICAL RESULT"
+   ]
+  },
+  "statement": {
+   "type": "string",
+   "minLength": 1
+  },
+  "simulation": {
+   "anyOf": [
+    {
+     "type": "null"
+    },
+    {
+     "type": "object",
+     "additionalProperties": false,
+     "required": [
+      "model",
+      "model_version",
+      "model_schema",
+      "model_sha256",
+      "seed",
+      "coverage",
+      "simulator_software"
+     ],
+     "properties": {
+      "model": {
+       "type": "string",
+       "minLength": 1
+      },
+      "model_version": {
+       "type": "string"
+      },
+      "model_schema": {
+       "type": "string"
+      },
+      "model_sha256": {
+       "$ref": "#/$defs/sha256"
+      },
+      "seed": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "coverage": {
+       "type": "number",
+       "minimum": 0
+      },
+      "simulator_software": {
+       "type": "string"
+      },
+      "strands_in": {
+       "type": [
+        "integer",
+        "null"
+       ],
+       "minimum": 0
+      },
+      "strands_lost": {
+       "type": [
+        "integer",
+        "null"
+       ],
+       "minimum": 0
+      },
+      "reads": {
+       "type": [
+        "integer",
+        "null"
+       ],
+       "minimum": 0
+      }
+     }
+    }
+   ]
+  },
+  "sequencing": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "platform",
+    "run_id",
+    "read_length",
+    "layout",
+    "primers_trimmed"
+   ],
+   "properties": {
+    "platform": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "instrument": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "run_id": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "run_date": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "read_length": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "minimum": 1
+    },
+    "layout": {
+     "enum": [
+      "single",
+      "paired"
+     ]
+    },
+    "primers_trimmed": {
+     "type": "boolean"
+    }
+   }
+  },
+  "selection": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "primer_id"
+   ],
+   "properties": {
+    "primer_id": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "minimum": 0
+    }
+   }
+  },
+  "dataset": {
+   "anyOf": [
+    {
+     "type": "null"
+    },
+    {
+     "type": "object",
+     "additionalProperties": false,
+     "required": [
+      "accession",
+      "doi",
+      "files"
+     ],
+     "properties": {
+      "accession": {
+       "type": "string",
+       "minLength": 1
+      },
+      "doi": {
+       "type": "string",
+       "pattern": "^(10\\.[0-9]{4,9}/\\S+|unpublished)$"
+      },
+      "files": {
+       "type": "array",
+       "minItems": 1,
+       "items": {
+        "type": "object",
+        "required": [
+         "file_name",
+         "sha256"
+        ],
+        "properties": {
+         "file_name": {
+          "type": "string",
+          "minLength": 1
+         },
+         "sha256": {
+          "$ref": "#/$defs/sha256"
+         }
+        }
+       }
+      }
+     }
+    }
+   ]
+  },
+  "files": {
+   "type": "array",
+   "minItems": 1,
+   "items": {
+    "$ref": "#/$defs/file"
+   }
+  }
+ }
+}

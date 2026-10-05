@@ -1,0 +1,1 @@
+{"cases": 100000, "comparisons": 200000, "mismatches": 0, "first_mismatches": [], "seeds": [1000000, 1100000], "library": "/root/vnx-dna-lab/v6/src/vnxdna/v6/native/libvnx_reads.so", "seconds": 96.0}

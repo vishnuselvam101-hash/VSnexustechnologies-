@@ -1,0 +1,2750 @@
+{
+ "schema": "vnx.conformance-index/1",
+ "evidence": "SYNTHETIC SOFTWARE TEST",
+ "vectors": [
+  {
+   "id": "crc32.rows.001",
+   "stage": "E10",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/crc32.rows.001"
+  },
+  {
+   "id": "scrambler.keystream.v000",
+   "stage": "E11",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/scrambler.keystream.v000"
+  },
+  {
+   "id": "scrambler.keystream.v001",
+   "stage": "E11",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/scrambler.keystream.v001"
+  },
+  {
+   "id": "scrambler.keystream.v255",
+   "stage": "E11",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/scrambler.keystream.v255"
+  },
+  {
+   "id": "mapping.bytes_to_nt.001",
+   "stage": "E12",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/mapping.bytes_to_nt.001"
+  },
+  {
+   "id": "frame4.build.v4-balanced.k0",
+   "stage": "E10-E13",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/frame4.build.v4-balanced.k0"
+  },
+  {
+   "id": "frame4.build.v4-balanced.k1",
+   "stage": "E10-E13",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/frame4.build.v4-balanced.k1"
+  },
+  {
+   "id": "frame4.build.v4-dense.k0",
+   "stage": "E10-E13",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/frame4.build.v4-dense.k0"
+  },
+  {
+   "id": "frame4.build.v4-dense.k1",
+   "stage": "E10-E13",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/frame4.build.v4-dense.k1"
+  },
+  {
+   "id": "frame4.build.v4-indel.k0",
+   "stage": "E10-E13",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/frame4.build.v4-indel.k0"
+  },
+  {
+   "id": "frame4.build.v4-indel.k1",
+   "stage": "E10-E13",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/frame4.build.v4-indel.k1"
+  },
+  {
+   "id": "frame4.build.v4-archival.k0",
+   "stage": "E10-E13",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/frame4.build.v4-archival.k0"
+  },
+  {
+   "id": "frame4.build.v4-archival.k1",
+   "stage": "E10-E13",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/frame4.build.v4-archival.k1"
+  },
+  {
+   "id": "superblock.unpack.v1.001",
+   "stage": "E9",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": 1,
+    "container": null
+   },
+   "path": "stage/superblock.unpack.v1.001"
+  },
+  {
+   "id": "superblock.version.000",
+   "stage": "D8",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": 0,
+    "container": null
+   },
+   "path": "negative/superblock.version.000"
+  },
+  {
+   "id": "superblock.version.003",
+   "stage": "D8",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": 3,
+    "container": null
+   },
+   "path": "negative/superblock.version.003"
+  },
+  {
+   "id": "superblock.version.255",
+   "stage": "D8",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": 255,
+    "container": null
+   },
+   "path": "negative/superblock.version.255"
+  },
+  {
+   "id": "superblock.forged.k0",
+   "stage": "D8",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": 1,
+    "container": null
+   },
+   "path": "negative/superblock.forged.k0"
+  },
+  {
+   "id": "probe.frame4.balanced",
+   "stage": "D1",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 1,
+    "container": null
+   },
+   "path": "stage/probe.frame4.balanced"
+  },
+  {
+   "id": "probe.nibble7",
+   "stage": "D1",
+   "kind": "negative",
+   "formats": {
+    "frame": 7,
+    "superblock": null,
+    "container": null
+   },
+   "path": "negative/probe.nibble7"
+  },
+  {
+   "id": "probe.v3-frame5",
+   "stage": "D1",
+   "kind": "negative",
+   "formats": {
+    "frame": 5,
+    "superblock": null,
+    "container": null
+   },
+   "path": "negative/probe.v3-frame5"
+  },
+  {
+   "id": "probe.random",
+   "stage": "D1",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "negative/probe.random"
+  },
+  {
+   "id": "rs.encode.r08",
+   "stage": "E11",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/rs.encode.r08"
+  },
+  {
+   "id": "rs.decode.r08.clean",
+   "stage": "D5",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/rs.decode.r08.clean"
+  },
+  {
+   "id": "rs.decode.r08.errors",
+   "stage": "D5",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/rs.decode.r08.errors"
+  },
+  {
+   "id": "rs.decode.r08.erasures",
+   "stage": "D5",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/rs.decode.r08.erasures"
+  },
+  {
+   "id": "rs.decode.r08.mixed",
+   "stage": "D5",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/rs.decode.r08.mixed"
+  },
+  {
+   "id": "rs.encode.r12",
+   "stage": "E11",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/rs.encode.r12"
+  },
+  {
+   "id": "rs.decode.r12.clean",
+   "stage": "D5",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/rs.decode.r12.clean"
+  },
+  {
+   "id": "rs.decode.r12.errors",
+   "stage": "D5",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/rs.decode.r12.errors"
+  },
+  {
+   "id": "rs.decode.r12.erasures",
+   "stage": "D5",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/rs.decode.r12.erasures"
+  },
+  {
+   "id": "rs.decode.r12.mixed",
+   "stage": "D5",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/rs.decode.r12.mixed"
+  },
+  {
+   "id": "rs.encode.r16",
+   "stage": "E11",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/rs.encode.r16"
+  },
+  {
+   "id": "rs.decode.r16.clean",
+   "stage": "D5",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/rs.decode.r16.clean"
+  },
+  {
+   "id": "rs.decode.r16.errors",
+   "stage": "D5",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/rs.decode.r16.errors"
+  },
+  {
+   "id": "rs.decode.r16.erasures",
+   "stage": "D5",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/rs.decode.r16.erasures"
+  },
+  {
+   "id": "rs.decode.r16.mixed",
+   "stage": "D5",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/rs.decode.r16.mixed"
+  },
+  {
+   "id": "rs.encode.r20",
+   "stage": "E11",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/rs.encode.r20"
+  },
+  {
+   "id": "rs.decode.r20.clean",
+   "stage": "D5",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/rs.decode.r20.clean"
+  },
+  {
+   "id": "rs.decode.r20.errors",
+   "stage": "D5",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/rs.decode.r20.errors"
+  },
+  {
+   "id": "rs.decode.r20.erasures",
+   "stage": "D5",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/rs.decode.r20.erasures"
+  },
+  {
+   "id": "rs.decode.r20.mixed",
+   "stage": "D5",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/rs.decode.r20.mixed"
+  },
+  {
+   "id": "rs.golden.native-rs-file",
+   "stage": "D5",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/rs.golden.native-rs-file"
+  },
+  {
+   "id": "crc32.check-value",
+   "stage": "E10",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/crc32.check-value"
+  },
+  {
+   "id": "crc32.rows.002",
+   "stage": "E10",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/crc32.rows.002"
+  },
+  {
+   "id": "scrambler.byte0.vnx4",
+   "stage": "E11",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/scrambler.byte0.vnx4"
+  },
+  {
+   "id": "scrambler.byte0.v1-frame4",
+   "stage": "E11",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/scrambler.byte0.v1-frame4"
+  },
+  {
+   "id": "scrambler.byte0.v3-frame5",
+   "stage": "E11",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/scrambler.byte0.v3-frame5"
+  },
+  {
+   "id": "mapping.bytes_to_nt.v4-balanced",
+   "stage": "E12",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/mapping.bytes_to_nt.v4-balanced"
+  },
+  {
+   "id": "mapping.bytes_to_nt.v4-dense",
+   "stage": "E12",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/mapping.bytes_to_nt.v4-dense"
+  },
+  {
+   "id": "mapping.bytes_to_nt.v4-indel",
+   "stage": "E12",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/mapping.bytes_to_nt.v4-indel"
+  },
+  {
+   "id": "mapping.bytes_to_nt.v4-archival",
+   "stage": "E12",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/mapping.bytes_to_nt.v4-archival"
+  },
+  {
+   "id": "mapping.bytes_to_nt.v6-high-dropout",
+   "stage": "E12",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/mapping.bytes_to_nt.v6-high-dropout"
+  },
+  {
+   "id": "markers.insert.l1",
+   "stage": "E12",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/markers.insert.l1"
+  },
+  {
+   "id": "markers.insert.l2",
+   "stage": "E12",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/markers.insert.l2"
+  },
+  {
+   "id": "markers.insert.l3",
+   "stage": "E12",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/markers.insert.l3"
+  },
+  {
+   "id": "markers.insert.l4",
+   "stage": "E12",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/markers.insert.l4"
+  },
+  {
+   "id": "markers.insert.l5",
+   "stage": "E12",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/markers.insert.l5"
+  },
+  {
+   "id": "markers.insert.l6",
+   "stage": "E12",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/markers.insert.l6"
+  },
+  {
+   "id": "frame4.parse.v4-balanced.clean",
+   "stage": "D5",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/frame4.parse.v4-balanced.clean"
+  },
+  {
+   "id": "frame4.parse.v4-balanced.errors",
+   "stage": "D5",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/frame4.parse.v4-balanced.errors"
+  },
+  {
+   "id": "frame4.beyond-rs-bound.v4-balanced",
+   "stage": "D5",
+   "kind": "negative",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "negative/frame4.beyond-rs-bound.v4-balanced"
+  },
+  {
+   "id": "frame4.parse.v4-dense.clean",
+   "stage": "D5",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/frame4.parse.v4-dense.clean"
+  },
+  {
+   "id": "frame4.parse.v4-dense.errors",
+   "stage": "D5",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/frame4.parse.v4-dense.errors"
+  },
+  {
+   "id": "frame4.beyond-rs-bound.v4-dense",
+   "stage": "D5",
+   "kind": "negative",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "negative/frame4.beyond-rs-bound.v4-dense"
+  },
+  {
+   "id": "frame4.parse.v4-indel.clean",
+   "stage": "D5",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/frame4.parse.v4-indel.clean"
+  },
+  {
+   "id": "frame4.parse.v4-indel.errors",
+   "stage": "D5",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/frame4.parse.v4-indel.errors"
+  },
+  {
+   "id": "frame4.beyond-rs-bound.v4-indel",
+   "stage": "D5",
+   "kind": "negative",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "negative/frame4.beyond-rs-bound.v4-indel"
+  },
+  {
+   "id": "frame4.parse.v4-archival.clean",
+   "stage": "D5",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/frame4.parse.v4-archival.clean"
+  },
+  {
+   "id": "frame4.parse.v4-archival.errors",
+   "stage": "D5",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/frame4.parse.v4-archival.errors"
+  },
+  {
+   "id": "frame4.beyond-rs-bound.v4-archival",
+   "stage": "D5",
+   "kind": "negative",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "negative/frame4.beyond-rs-bound.v4-archival"
+  },
+  {
+   "id": "frame4.parse.v6-high-dropout.clean",
+   "stage": "D5",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/frame4.parse.v6-high-dropout.clean"
+  },
+  {
+   "id": "frame4.parse.v6-high-dropout.errors",
+   "stage": "D5",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/frame4.parse.v6-high-dropout.errors"
+  },
+  {
+   "id": "frame4.beyond-rs-bound.v6-high-dropout",
+   "stage": "D5",
+   "kind": "negative",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "negative/frame4.beyond-rs-bound.v6-high-dropout"
+  },
+  {
+   "id": "frame4.parse.r08.kind1",
+   "stage": "D5",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/frame4.parse.r08.kind1"
+  },
+  {
+   "id": "frame4.beyond-rs-bound.r08",
+   "stage": "D5",
+   "kind": "negative",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "negative/frame4.beyond-rs-bound.r08"
+  },
+  {
+   "id": "frame4.build.v4-balanced.variant-gt0",
+   "stage": "E13",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/frame4.build.v4-balanced.variant-gt0"
+  },
+  {
+   "id": "frame4.build.constraint-failure",
+   "stage": "E13",
+   "kind": "negative",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "negative/frame4.build.constraint-failure"
+  },
+  {
+   "id": "frame4.nibble7",
+   "stage": "D5",
+   "kind": "negative",
+   "formats": {
+    "frame": 7,
+    "superblock": null,
+    "container": null
+   },
+   "path": "negative/frame4.nibble7"
+  },
+  {
+   "id": "frame4.nibble5-reserved",
+   "stage": "D5",
+   "kind": "negative",
+   "formats": {
+    "frame": 5,
+    "superblock": null,
+    "container": null
+   },
+   "path": "negative/frame4.nibble5-reserved"
+  },
+  {
+   "id": "frame4.nibble3",
+   "stage": "D5",
+   "kind": "negative",
+   "formats": {
+    "frame": 3,
+    "superblock": null,
+    "container": null
+   },
+   "path": "negative/frame4.nibble3"
+  },
+  {
+   "id": "frame4.kind2",
+   "stage": "D5",
+   "kind": "negative",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "negative/frame4.kind2"
+  },
+  {
+   "id": "superblock.pack.v1",
+   "stage": "E9",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 1,
+    "container": null
+   },
+   "path": "stage/superblock.pack.v1"
+  },
+  {
+   "id": "superblock.pack.v2.interleaved",
+   "stage": "E9",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 2,
+    "container": null
+   },
+   "path": "stage/superblock.pack.v2.interleaved"
+  },
+  {
+   "id": "superblock.pack.v2.sequential",
+   "stage": "E9",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 2,
+    "container": null
+   },
+   "path": "stage/superblock.pack.v2.sequential"
+  },
+  {
+   "id": "superblock.unpack.v2.interleaved",
+   "stage": "D8",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 2,
+    "container": null
+   },
+   "path": "stage/superblock.unpack.v2.interleaved"
+  },
+  {
+   "id": "superblock.unpack.v2.sequential",
+   "stage": "D8",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 2,
+    "container": null
+   },
+   "path": "stage/superblock.unpack.v2.sequential"
+  },
+  {
+   "id": "superblock.v2.depth0",
+   "stage": "D8",
+   "kind": "negative",
+   "formats": {
+    "frame": 4,
+    "superblock": 2,
+    "container": null
+   },
+   "path": "negative/superblock.v2.depth0"
+  },
+  {
+   "id": "superblock.v2.depth-plus-parity-over-256",
+   "stage": "D8",
+   "kind": "negative",
+   "formats": {
+    "frame": 4,
+    "superblock": 2,
+    "container": null
+   },
+   "path": "negative/superblock.v2.depth-plus-parity-over-256"
+  },
+  {
+   "id": "superblock.v2.order2",
+   "stage": "D8",
+   "kind": "negative",
+   "formats": {
+    "frame": 4,
+    "superblock": 2,
+    "container": null
+   },
+   "path": "negative/superblock.v2.order2"
+  },
+  {
+   "id": "superblock.v2.order255",
+   "stage": "D8",
+   "kind": "negative",
+   "formats": {
+    "frame": 4,
+    "superblock": 2,
+    "container": null
+   },
+   "path": "negative/superblock.v2.order255"
+  },
+  {
+   "id": "superblock.v2.lt-code",
+   "stage": "D8",
+   "kind": "negative",
+   "formats": {
+    "frame": 4,
+    "superblock": 2,
+    "container": null
+   },
+   "path": "negative/superblock.v2.lt-code"
+  },
+  {
+   "id": "superblock.v4",
+   "stage": "D8",
+   "kind": "negative",
+   "formats": {
+    "frame": 4,
+    "superblock": 4,
+    "container": null
+   },
+   "path": "negative/superblock.v4"
+  },
+  {
+   "id": "superblock.forged.k-plus-m-over-256",
+   "stage": "D8",
+   "kind": "negative",
+   "formats": {
+    "frame": 4,
+    "superblock": 2,
+    "container": null
+   },
+   "path": "negative/superblock.forged.k-plus-m-over-256"
+  },
+  {
+   "id": "superblock.forged.unknown-code-id",
+   "stage": "D8",
+   "kind": "negative",
+   "formats": {
+    "frame": 4,
+    "superblock": 1,
+    "container": null
+   },
+   "path": "negative/superblock.forged.unknown-code-id"
+  },
+  {
+   "id": "superblock.forged.unknown-distribution",
+   "stage": "D8",
+   "kind": "negative",
+   "formats": {
+    "frame": 4,
+    "superblock": 1,
+    "container": null
+   },
+   "path": "negative/superblock.forged.unknown-distribution"
+  },
+  {
+   "id": "superblock.forged.groups-mismatch",
+   "stage": "D8",
+   "kind": "negative",
+   "formats": {
+    "frame": 4,
+    "superblock": 1,
+    "container": null
+   },
+   "path": "negative/superblock.forged.groups-mismatch"
+  },
+  {
+   "id": "superblock.forged.index-beyond-size",
+   "stage": "D8",
+   "kind": "negative",
+   "formats": {
+    "frame": 4,
+    "superblock": 1,
+    "container": null
+   },
+   "path": "negative/superblock.forged.index-beyond-size"
+  },
+  {
+   "id": "superblock.forged.payload0",
+   "stage": "D8",
+   "kind": "negative",
+   "formats": {
+    "frame": 4,
+    "superblock": 1,
+    "container": null
+   },
+   "path": "negative/superblock.forged.payload0"
+  },
+  {
+   "id": "superblock.forged.odd-inner-parity",
+   "stage": "D8",
+   "kind": "negative",
+   "formats": {
+    "frame": 4,
+    "superblock": 1,
+    "container": null
+   },
+   "path": "negative/superblock.forged.odd-inner-parity"
+  },
+  {
+   "id": "superblock.crc-invalid",
+   "stage": "D8",
+   "kind": "negative",
+   "formats": {
+    "frame": 4,
+    "superblock": 1,
+    "container": null
+   },
+   "path": "negative/superblock.crc-invalid"
+  },
+  {
+   "id": "superblock.truncated",
+   "stage": "D8",
+   "kind": "negative",
+   "formats": {
+    "frame": 4,
+    "superblock": 1,
+    "container": null
+   },
+   "path": "negative/superblock.truncated"
+  },
+  {
+   "id": "outer.row-encode.k64-m16",
+   "stage": "E8",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/outer.row-encode.k64-m16"
+  },
+  {
+   "id": "outer.row-decode.k64-m16.max-erasures",
+   "stage": "D10",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/outer.row-decode.k64-m16.max-erasures"
+  },
+  {
+   "id": "outer.row-decode.k64-m16.beyond-bound",
+   "stage": "D10",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "negative/outer.row-decode.k64-m16.beyond-bound"
+  },
+  {
+   "id": "outer.row-encode.k32-m32",
+   "stage": "E8",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/outer.row-encode.k32-m32"
+  },
+  {
+   "id": "outer.row-decode.k32-m32.max-erasures",
+   "stage": "D10",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/outer.row-decode.k32-m32.max-erasures"
+  },
+  {
+   "id": "outer.row-decode.k32-m32.beyond-bound",
+   "stage": "D10",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "negative/outer.row-decode.k32-m32.beyond-bound"
+  },
+  {
+   "id": "outer.row-encode.k48-m16",
+   "stage": "E8",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/outer.row-encode.k48-m16"
+  },
+  {
+   "id": "outer.row-decode.k48-m16.max-erasures",
+   "stage": "D10",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/outer.row-decode.k48-m16.max-erasures"
+  },
+  {
+   "id": "outer.row-decode.k48-m16.beyond-bound",
+   "stage": "D10",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "negative/outer.row-decode.k48-m16.beyond-bound"
+  },
+  {
+   "id": "outer.row-encode.short.k64-m16-k37",
+   "stage": "E8",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/outer.row-encode.short.k64-m16-k37"
+  },
+  {
+   "id": "outer.row-decode.short.k64-m16-k37",
+   "stage": "D10",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/outer.row-decode.short.k64-m16-k37"
+  },
+  {
+   "id": "outer.row-encode.short.k32-m32-k5",
+   "stage": "E8",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/outer.row-encode.short.k32-m32-k5"
+  },
+  {
+   "id": "outer.row-decode.short.k32-m32-k5",
+   "stage": "D10",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/outer.row-decode.short.k32-m32-k5"
+  },
+  {
+   "id": "outer.row-encode.short.k48-m16-k1",
+   "stage": "E8",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/outer.row-encode.short.k48-m16-k1"
+  },
+  {
+   "id": "outer.row-decode.short.k48-m16-k1",
+   "stage": "D10",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/outer.row-decode.short.k48-m16-k1"
+  },
+  {
+   "id": "outer.column-parity.d4-mc2",
+   "stage": "E8",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/outer.column-parity.d4-mc2"
+  },
+  {
+   "id": "outer.column-parity.short.d4-mc2",
+   "stage": "E8",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/outer.column-parity.short.d4-mc2"
+  },
+  {
+   "id": "outer.stripe-decode.d4-mc2.columns-repair-rows",
+   "stage": "D11",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 2,
+    "container": null
+   },
+   "path": "stage/outer.stripe-decode.d4-mc2.columns-repair-rows"
+  },
+  {
+   "id": "outer.stripe-decode.d4-mc2.beyond-bound",
+   "stage": "D11",
+   "kind": "negative",
+   "formats": {
+    "frame": 4,
+    "superblock": 2,
+    "container": null
+   },
+   "path": "negative/outer.stripe-decode.d4-mc2.beyond-bound"
+  },
+  {
+   "id": "outer.column-parity.d8-mc2",
+   "stage": "E8",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/outer.column-parity.d8-mc2"
+  },
+  {
+   "id": "outer.column-parity.short.d8-mc2",
+   "stage": "E8",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/outer.column-parity.short.d8-mc2"
+  },
+  {
+   "id": "outer.stripe-decode.d8-mc2.columns-repair-rows",
+   "stage": "D11",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 2,
+    "container": null
+   },
+   "path": "stage/outer.stripe-decode.d8-mc2.columns-repair-rows"
+  },
+  {
+   "id": "outer.stripe-decode.d8-mc2.beyond-bound",
+   "stage": "D11",
+   "kind": "negative",
+   "formats": {
+    "frame": 4,
+    "superblock": 2,
+    "container": null
+   },
+   "path": "negative/outer.stripe-decode.d8-mc2.beyond-bound"
+  },
+  {
+   "id": "strand.order.sequential",
+   "stage": "E14",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 2,
+    "container": null
+   },
+   "path": "stage/strand.order.sequential"
+  },
+  {
+   "id": "strand.order.interleaved",
+   "stage": "E14",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 2,
+    "container": null
+   },
+   "path": "stage/strand.order.interleaved"
+  },
+  {
+   "id": "container.build.clear",
+   "stage": "E6",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "stage/container.build.clear"
+  },
+  {
+   "id": "container.build.encrypted",
+   "stage": "E5-E6",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "stage/container.build.encrypted"
+  },
+  {
+   "id": "container.read.clear",
+   "stage": "D12",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "stage/container.read.clear"
+  },
+  {
+   "id": "container.read.zstd",
+   "stage": "D14",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "stage/container.read.zstd"
+  },
+  {
+   "id": "container.read.encrypted",
+   "stage": "D14",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "stage/container.read.encrypted"
+  },
+  {
+   "id": "merkle.proofs.n1",
+   "stage": "E6",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/merkle.proofs.n1"
+  },
+  {
+   "id": "merkle.proofs.n2",
+   "stage": "E6",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/merkle.proofs.n2"
+  },
+  {
+   "id": "merkle.proofs.n3",
+   "stage": "E6",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/merkle.proofs.n3"
+  },
+  {
+   "id": "merkle.proofs.n5",
+   "stage": "E6",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/merkle.proofs.n5"
+  },
+  {
+   "id": "merkle.proofs.n7",
+   "stage": "E6",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/merkle.proofs.n7"
+  },
+  {
+   "id": "merkle.proofs.n8",
+   "stage": "E6",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/merkle.proofs.n8"
+  },
+  {
+   "id": "manifest.canonical.accepts",
+   "stage": "E6",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/manifest.canonical.accepts"
+  },
+  {
+   "id": "manifest.pretty-printed",
+   "stage": "E6",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/manifest.pretty-printed"
+  },
+  {
+   "id": "manifest.unsorted-keys",
+   "stage": "E6",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/manifest.unsorted-keys"
+  },
+  {
+   "id": "manifest.float",
+   "stage": "E6",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/manifest.float"
+  },
+  {
+   "id": "manifest.duplicate-key",
+   "stage": "E6",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/manifest.duplicate-key"
+  },
+  {
+   "id": "manifest.trailing-newline",
+   "stage": "E6",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/manifest.trailing-newline"
+  },
+  {
+   "id": "manifest.non-ascii",
+   "stage": "E6",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/manifest.non-ascii"
+  },
+  {
+   "id": "manifest.not-an-object",
+   "stage": "E6",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/manifest.not-an-object"
+  },
+  {
+   "id": "manifest.nan",
+   "stage": "E6",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/manifest.nan"
+  },
+  {
+   "id": "aead.seal.domain0",
+   "stage": "E5",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "stage/aead.seal.domain0"
+  },
+  {
+   "id": "aead.open.domain0",
+   "stage": "D14",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "stage/aead.open.domain0"
+  },
+  {
+   "id": "aead.seal.domain1",
+   "stage": "E5",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "stage/aead.seal.domain1"
+  },
+  {
+   "id": "aead.open.domain1",
+   "stage": "D14",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "stage/aead.open.domain1"
+  },
+  {
+   "id": "aead.seal.domain2",
+   "stage": "E5",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "stage/aead.seal.domain2"
+  },
+  {
+   "id": "aead.open.domain2",
+   "stage": "D14",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "stage/aead.open.domain2"
+  },
+  {
+   "id": "aead.open.tampered",
+   "stage": "D14",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/aead.open.tampered"
+  },
+  {
+   "id": "aead.open.truncated",
+   "stage": "D14",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/aead.open.truncated"
+  },
+  {
+   "id": "aead.open.wrong-index",
+   "stage": "D14",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/aead.open.wrong-index"
+  },
+  {
+   "id": "aead.open.wrong-archive-id",
+   "stage": "D14",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/aead.open.wrong-archive-id"
+  },
+  {
+   "id": "aead.open.wrong-count",
+   "stage": "D14",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/aead.open.wrong-count"
+  },
+  {
+   "id": "container.rule1.too-small",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule1.too-small"
+  },
+  {
+   "id": "container.rule1.wrong-magic",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule1.wrong-magic"
+  },
+  {
+   "id": "container.rule1.legacy-magic",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule1.legacy-magic"
+  },
+  {
+   "id": "container.rule1.major-5",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule1.major-5"
+  },
+  {
+   "id": "container.rule1.minor-1",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule1.minor-1"
+  },
+  {
+   "id": "container.rule1.flags-nonzero",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule1.flags-nonzero"
+  },
+  {
+   "id": "container.rule2.truncated-trailer",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule2.truncated-trailer"
+  },
+  {
+   "id": "container.rule2.trailer-magic-missing",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule2.trailer-magic-missing"
+  },
+  {
+   "id": "container.rule2.section-sizes",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule2.section-sizes"
+  },
+  {
+   "id": "container.rule2.manifest-size-zero",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule2.manifest-size-zero"
+  },
+  {
+   "id": "container.rule2.chunk-table-not-multiple-of-84",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule2.chunk-table-not-multiple-of-84"
+  },
+  {
+   "id": "container.rule3.manifest-not-canonical",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule3.manifest-not-canonical"
+  },
+  {
+   "id": "container.rule3.unknown-required-feature",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule3.unknown-required-feature"
+  },
+  {
+   "id": "container.rule3.manifest-field-missing",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule3.manifest-field-missing"
+  },
+  {
+   "id": "container.rule3.chunk-size-out-of-range",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule3.chunk-size-out-of-range"
+  },
+  {
+   "id": "container.rule3.manifest-minor-1",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule3.manifest-minor-1"
+  },
+  {
+   "id": "container.rule4.manifest-digest-mismatch",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule4.manifest-digest-mismatch"
+  },
+  {
+   "id": "container.rule4.manifest-mac-mismatch",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule4.manifest-mac-mismatch"
+  },
+  {
+   "id": "container.rule4.wrong-key",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule4.wrong-key"
+  },
+  {
+   "id": "container.rule5.chunk-table-sha-mismatch",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule5.chunk-table-sha-mismatch"
+  },
+  {
+   "id": "container.rule5.stored-bytes-mismatch",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule5.stored-bytes-mismatch"
+  },
+  {
+   "id": "container.rule5.file-table-sha-mismatch",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule5.file-table-sha-mismatch"
+  },
+  {
+   "id": "container.rule6.reserved-bytes-nonzero",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule6.reserved-bytes-nonzero"
+  },
+  {
+   "id": "container.rule6.plain-size-zero",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule6.plain-size-zero"
+  },
+  {
+   "id": "container.rule6.plain-size-over-chunk-size",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule6.plain-size-over-chunk-size"
+  },
+  {
+   "id": "container.rule6.codec-not-allowed",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule6.codec-not-allowed"
+  },
+  {
+   "id": "container.rule6.chunks-do-not-tile-the-body",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule6.chunks-do-not-tile-the-body"
+  },
+  {
+   "id": "container.rule7.merkle-root-mismatch",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule7.merkle-root-mismatch"
+  },
+  {
+   "id": "container.rule8.reference-out-of-range",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule8.reference-out-of-range"
+  },
+  {
+   "id": "container.rule8.reference-table-length",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule8.reference-table-length"
+  },
+  {
+   "id": "container.rule8.content-bytes-mismatch",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule8.content-bytes-mismatch"
+  },
+  {
+   "id": "container.rule9.stored-sha-mismatch",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule9.stored-sha-mismatch"
+  },
+  {
+   "id": "container.rule9.chunk-id-mismatch",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule9.chunk-id-mismatch"
+  },
+  {
+   "id": "container.rule9.file-sha-mismatch",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule9.file-sha-mismatch"
+  },
+  {
+   "id": "container.rule9.zstd-output-over-plain-size",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule9.zstd-output-over-plain-size"
+  },
+  {
+   "id": "container.rule9.aead-failure",
+   "stage": "D12",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/container.rule9.aead-failure"
+  },
+  {
+   "id": "version.report",
+   "stage": "version",
+   "kind": "positive",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/version.report"
+  },
+  {
+   "id": "e2e.encode.v4_0.balanced",
+   "stage": "E7-E14",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 1,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "e2e/e2e.encode.v4_0.balanced"
+  },
+  {
+   "id": "e2e.decode.v4_0.balanced",
+   "stage": "D0-D14",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 1,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "e2e/e2e.decode.v4_0.balanced"
+  },
+  {
+   "id": "e2e.encode.v4_0.archival",
+   "stage": "E7-E14",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 1,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "e2e/e2e.encode.v4_0.archival"
+  },
+  {
+   "id": "e2e.decode.v4_0.archival",
+   "stage": "D0-D14",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 1,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "e2e/e2e.decode.v4_0.archival"
+  },
+  {
+   "id": "e2e.encode.v4_0.encrypted",
+   "stage": "E7-E14",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 1,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "e2e/e2e.encode.v4_0.encrypted"
+  },
+  {
+   "id": "e2e.decode.v4_0.encrypted",
+   "stage": "D0-D14",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 1,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "e2e/e2e.decode.v4_0.encrypted"
+  },
+  {
+   "id": "e2e.encode.v4_0.multifile",
+   "stage": "E7-E14",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 1,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "e2e/e2e.encode.v4_0.multifile"
+  },
+  {
+   "id": "e2e.decode.v4_0.multifile",
+   "stage": "D0-D14",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 1,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "e2e/e2e.decode.v4_0.multifile"
+  },
+  {
+   "id": "e2e.encode.v5_0.balanced",
+   "stage": "E7-E14",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 1,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "e2e/e2e.encode.v5_0.balanced"
+  },
+  {
+   "id": "e2e.decode.v5_0.balanced",
+   "stage": "D0-D14",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 1,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "e2e/e2e.decode.v5_0.balanced"
+  },
+  {
+   "id": "e2e.encode.v5_0.archival",
+   "stage": "E7-E14",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 1,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "e2e/e2e.encode.v5_0.archival"
+  },
+  {
+   "id": "e2e.decode.v5_0.archival",
+   "stage": "D0-D14",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 1,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "e2e/e2e.decode.v5_0.archival"
+  },
+  {
+   "id": "e2e.encode.v5_0.encrypted",
+   "stage": "E7-E14",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 1,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "e2e/e2e.encode.v5_0.encrypted"
+  },
+  {
+   "id": "e2e.decode.v5_0.encrypted",
+   "stage": "D0-D14",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 1,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "e2e/e2e.decode.v5_0.encrypted"
+  },
+  {
+   "id": "e2e.encode.v5_0.multifile",
+   "stage": "E7-E14",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 1,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "e2e/e2e.encode.v5_0.multifile"
+  },
+  {
+   "id": "e2e.decode.v5_0.multifile",
+   "stage": "D0-D14",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 1,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "e2e/e2e.decode.v5_0.multifile"
+  },
+  {
+   "id": "e2e.encode.v6_0.stripes-seq",
+   "stage": "E7-E14",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 2,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "e2e/e2e.encode.v6_0.stripes-seq"
+  },
+  {
+   "id": "e2e.decode.v6_0.stripes-seq",
+   "stage": "D0-D14",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 2,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "e2e/e2e.decode.v6_0.stripes-seq"
+  },
+  {
+   "id": "e2e.encode.v6_0.adaptive-interleaved",
+   "stage": "E7-E14",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 2,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "e2e/e2e.encode.v6_0.adaptive-interleaved"
+  },
+  {
+   "id": "e2e.decode.v6_0.adaptive-interleaved",
+   "stage": "D0-D14",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 2,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "e2e/e2e.decode.v6_0.adaptive-interleaved"
+  },
+  {
+   "id": "e2e.encode.v6_0.max-recovery",
+   "stage": "E7-E14",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 2,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "e2e/e2e.encode.v6_0.max-recovery"
+  },
+  {
+   "id": "e2e.decode.v6_0.max-recovery",
+   "stage": "D0-D14",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 2,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "e2e/e2e.decode.v6_0.max-recovery"
+  },
+  {
+   "id": "e2e.encode.v6_0.encrypted-stripes",
+   "stage": "E7-E14",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 2,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "e2e/e2e.encode.v6_0.encrypted-stripes"
+  },
+  {
+   "id": "e2e.decode.v6_0.encrypted-stripes",
+   "stage": "D0-D14",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 2,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "e2e/e2e.decode.v6_0.encrypted-stripes"
+  },
+  {
+   "id": "e2e.decode.wrong-key",
+   "stage": "D14",
+   "kind": "negative",
+   "formats": {
+    "frame": 4,
+    "superblock": 1,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/e2e.decode.wrong-key"
+  },
+  {
+   "id": "e2e.decode.key-for-unencrypted-archive",
+   "stage": "D14",
+   "kind": "negative",
+   "formats": {
+    "frame": 4,
+    "superblock": 1,
+    "container": [
+     4,
+     0
+    ]
+   },
+   "path": "negative/e2e.decode.key-for-unencrypted-archive"
+  },
+  {
+   "id": "e2e.decode.frame-nibble7-pool",
+   "stage": "D1",
+   "kind": "negative",
+   "formats": {
+    "frame": 7,
+    "superblock": null,
+    "container": null
+   },
+   "path": "negative/e2e.decode.frame-nibble7-pool"
+  },
+  {
+   "id": "e2e.decode.v3-frame5-pool",
+   "stage": "D1",
+   "kind": "negative",
+   "formats": {
+    "frame": 5,
+    "superblock": null,
+    "container": null
+   },
+   "path": "negative/e2e.decode.v3-frame5-pool"
+  },
+  {
+   "id": "e2e.decode.random-pool",
+   "stage": "D1",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "negative/e2e.decode.random-pool"
+  },
+  {
+   "id": "e2e.decode.two-archives-one-tag",
+   "stage": "D8",
+   "kind": "negative",
+   "formats": {
+    "frame": 4,
+    "superblock": 1,
+    "container": null
+   },
+   "path": "negative/e2e.decode.two-archives-one-tag"
+  },
+  {
+   "id": "e2e.decode.read-over-100000-nt",
+   "stage": "D0",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "negative/e2e.decode.read-over-100000-nt"
+  }
+ ]
+}

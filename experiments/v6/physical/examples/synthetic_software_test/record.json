@@ -1,0 +1,239 @@
+{
+  "record_version": "1",
+  "record_id": "SYNTH-SOFTWARE-TEST-0001",
+  "description": "Software-only round trip: 200-byte random payload, VNX v4-balanced, simulated 'illumina-like' channel (seed 7). Not a physical experiment.",
+  "evidence_classification": "SYNTHETIC SOFTWARE TEST",
+  "statement": "No DNA has been synthesised, stored or sequenced by VNX-DNA. This record is the interface for a future laboratory partnership; only a record classified REAL PHYSICAL RESULT with the required evidence may describe physical data.",
+  "synthesis": {
+    "provider_name": "none (simulation)",
+    "order_id": "none (simulation)",
+    "synthesis_platform": "none (simulation)",
+    "oligo_pool_id": "none (simulation)",
+    "library_ids": [
+      "SIM-LIB-0001"
+    ],
+    "strand_ids": [
+      "s0",
+      "s1",
+      "s2",
+      "s3",
+      "s4",
+      "s5",
+      "s6",
+      "s7",
+      "s8",
+      "s9",
+      "s10",
+      "s11",
+      "s12",
+      "s13",
+      "s14",
+      "s15",
+      "s16",
+      "s17",
+      "s18",
+      "s19",
+      "s20",
+      "s21",
+      "s22",
+      "s23",
+      "s24",
+      "s25",
+      "s26",
+      "s27",
+      "s28",
+      "s29",
+      "s30",
+      "s31",
+      "s32",
+      "s33",
+      "s34",
+      "s35",
+      "s36",
+      "s37",
+      "s38",
+      "s39",
+      "s40",
+      "s41",
+      "s42",
+      "s43",
+      "s44",
+      "s45",
+      "s46",
+      "s47",
+      "s48",
+      "s49",
+      "s50",
+      "s51",
+      "s52",
+      "s53",
+      "s54",
+      "s55",
+      "s56",
+      "s57",
+      "s58",
+      "s59",
+      "s60",
+      "s61",
+      "s62",
+      "s63",
+      "s64",
+      "s65"
+    ],
+    "strand_count": 66,
+    "strand_length_nt": 313,
+    "synthesis_date": "2026-10-04",
+    "delivery_date": "2026-10-04",
+    "provider_qc": {
+      "summary": "none (simulation): no synthesis was performed"
+    },
+    "ordered_fasta": {
+      "file_name": "strands.fasta",
+      "sha256": "8ecf51abc711e9d24bd1bed509bd2eb1b9dc9ad46b8f394910c56b3b5b44a35a",
+      "strand_count": 66,
+      "path": "strands.fasta"
+    },
+    "vnx_source": {
+      "vnx_version": "5.0.0",
+      "commit": "17c9b5ff89a5a28f6280db8fc33655d010162317",
+      "working_tree_dirty": true,
+      "profile": "v4-balanced",
+      "encoder_options": {
+        "profile": "v4-balanced"
+      },
+      "encode_command": "vnxdna.v4.encoder.encode_container (DNAOptions(profile='v4-balanced'))"
+    }
+  },
+  "sample": {
+    "sample_id": "SIM-SAMPLE-0001",
+    "library_id": "SIM-LIB-0001",
+    "description": "simulated read set; no physical sample",
+    "chain_of_custody": [
+      {
+        "step": "software simulation",
+        "date": "2026-10-04",
+        "performed_by": "software pipeline",
+        "notes": "no physical custody"
+      }
+    ]
+  },
+  "storage": {
+    "temperature_c": null,
+    "relative_humidity_percent": null,
+    "medium": "none (simulation)",
+    "encapsulation": "none (simulation)",
+    "start_date": "2026-10-04",
+    "end_date": "2026-10-04",
+    "duration_days": 0,
+    "notes": "no physical storage; temperature and humidity are not applicable"
+  },
+  "sequencing": {
+    "provider_name": "none (simulation)",
+    "platform": "simulated channel model 'illumina-like' v1.0.0 (not fitted to any instrument)",
+    "instrument": "none (simulation)",
+    "chemistry_kit": "none (simulation)",
+    "run_id": "sim-seed-7",
+    "run_date": "2026-10-04",
+    "read_length": 313,
+    "layout": "single",
+    "fastq_files": [
+      {
+        "file_name": "reads.fastq",
+        "sha256": "3a26ad7ce5579dbbd37daca2721bfdde48b0f3b48892ae762c92f2f87e7798cb",
+        "size_bytes": 431734,
+        "read_count": 679,
+        "read_role": "single",
+        "path": "reads.fastq"
+      }
+    ],
+    "read_counts": {
+      "total": 679,
+      "passing_filter": 679
+    },
+    "quality": {
+      "percent_q30": 99.7271,
+      "mean_q": 36.9318,
+      "error_rate_estimate": null,
+      "error_estimate_method": "Q30 and mean Q computed from the simulated quality strings (Phred+33); error rates: configured model rates in reads.fastq.json (key model.parameters); realised: {\"burst_rate\": 0.0, \"deletion_rate\": 4.383230733265799e-05, \"duplication_rate\": 0.0350609756097561, \"insertion_rate\": 4.383230733265799e-05, \"n_rate\": 0.00045780409880776126, \"reads_per_input_strand\": 10.287878787878787, \"reads_per_surviving_strand\": 10.287878787878787, \"reverse_complement_rate\": 0.49189985272459497, \"strand_loss_fraction\": 0.0, \"substitution_rate\": 0.0028637107457336556}"
+    }
+  },
+  "decode": {
+    "vnx_version": "5.0.0",
+    "commit": "17c9b5ff89a5a28f6280db8fc33655d010162317",
+    "working_tree_dirty": true,
+    "decoder_config": {
+      "profile": null,
+      "layout": null,
+      "workers": 1,
+      "batch_reads": 8192,
+      "band": 6,
+      "min_quality": 0,
+      "reverse_complement": true,
+      "consensus_threshold": 0.6,
+      "max_pending_per_address": 64,
+      "archive_tag": null,
+      "sync_costs": {
+        "marker_mismatch": 4,
+        "insertion": 6,
+        "deletion": 6,
+        "marker_deletion_extra": 1,
+        "guard_segments": 0
+      },
+      "max_reads": 2000000000,
+      "indel_recovery": "segment",
+      "indel_config": null,
+      "soft_decoding": "off",
+      "soft_config": null,
+      "recovery_schedule": "deferred",
+      "recovery_budget": {
+        "max_reads_examined": null,
+        "max_round_b_reads": null,
+        "max_outer_stripes": null,
+        "max_wall_seconds": null,
+        "max_rss_bytes": null
+      }
+    },
+    "backend": "python (vnxdna.v4.decoder.decode_reads)",
+    "workers": 1,
+    "command": "vnxdna.v4.decoder.decode_reads(reads.fastq, out.vnx, DecodeOptions(workers=1))",
+    "report_file": "decode_report.json",
+    "report_sha256": "ad0d23ba17d1f3e86cbc89df74aef1103e4954bae5a052635677dc5f88db94e4",
+    "decode_status": "SUCCESS"
+  },
+  "result": {
+    "recovered_sha256": "919aa041e5ed06cacf1273558518ae1880431f5cb60cb4d18c2250fa25f035f7",
+    "expected_sha256": "919aa041e5ed06cacf1273558518ae1880431f5cb60cb4d18c2250fa25f035f7",
+    "verification_result": "SUCCESS",
+    "files_expected": 1,
+    "files_recovered": 1,
+    "notes": "SHA-256 of the VNX container (a.vnx) before encoding versus after decoding; the container is not stored in this directory."
+  },
+  "attestations": {
+    "synthesis": {
+      "performed_by": "software pipeline (no laboratory step)",
+      "organisation": "VNX-DNA lab workspace",
+      "date": "2026-10-04"
+    },
+    "storage": {
+      "performed_by": "software pipeline (no laboratory step)",
+      "organisation": "VNX-DNA lab workspace",
+      "date": "2026-10-04"
+    },
+    "sequencing": {
+      "performed_by": "software pipeline (no laboratory step)",
+      "organisation": "VNX-DNA lab workspace",
+      "date": "2026-10-04"
+    },
+    "decode": {
+      "performed_by": "software pipeline (no laboratory step)",
+      "organisation": "VNX-DNA lab workspace",
+      "date": "2026-10-04"
+    },
+    "signed_off_by": {
+      "name": "not applicable (software test)",
+      "role": "n/a",
+      "date": "2026-10-04"
+    },
+    "raw_data_location": "this directory (examples/synthetic_software_test/)"
+  }
+}

@@ -1,0 +1,127 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "urn:vnx:vnx.error/1",
+ "title": "VNX-DNA error object (V6_ARCHITECTURE \u00a74.4, spec \u00a710)",
+ "type": "object",
+ "required": [
+  "schema",
+  "code",
+  "category",
+  "exit_code",
+  "retryable",
+  "stage",
+  "message",
+  "hint",
+  "details"
+ ],
+ "properties": {
+  "schema": {
+   "const": "vnx.error/1"
+  },
+  "code": {
+   "enum": [
+    "CONTAINER_VERSION_UNSUPPORTED",
+    "FEATURE_UNSUPPORTED",
+    "LEGACY_FORMAT",
+    "FRAME_VERSION_UNSUPPORTED",
+    "SUPERBLOCK_VERSION_UNSUPPORTED",
+    "SCHEMA_UNSUPPORTED",
+    "FORMAT_ERROR",
+    "LAYOUT_UNDETECTED",
+    "ARCHIVE_TAG_AMBIGUOUS",
+    "ARCHIVE_TAG_NOT_FOUND",
+    "MULTIPLE_ARCHIVES",
+    "ADDRESS_ERROR",
+    "RESOURCE_LIMIT",
+    "NO_SUPERBLOCK",
+    "INSUFFICIENT_REDUNDANCY",
+    "BUDGET_EXCEEDED",
+    "CONTAINER_HASH_MISMATCH",
+    "INTEGRITY_ERROR",
+    "ARCHIVE_MISMATCH",
+    "WRONG_KEY",
+    "KEY_FOR_UNENCRYPTED",
+    "CONSTRAINT_ERROR",
+    "CONFIGURATION_ERROR",
+    "VENDOR_MAX_LENGTH",
+    "ARCHIVE_TAG_COLLISION",
+    "OUTPUT_ERROR",
+    "PROVIDER_ERROR",
+    "INTERNAL_ERROR",
+    "USAGE_ERROR"
+   ]
+  },
+  "category": {
+   "enum": [
+    "VERIFICATION_FAILED",
+    "USAGE_ERROR",
+    "INVALID_INPUT",
+    "UNRECOVERABLE_CORRUPTION",
+    "AUTHENTICATION_FAILED",
+    "INSUFFICIENT_REDUNDANCY",
+    "UNSUPPORTED_FORMAT",
+    "CONFIGURATION_ERROR",
+    "OUTPUT_ERROR",
+    "PROVIDER_ERROR",
+    "INTERNAL_ERROR"
+   ]
+  },
+  "exit_code": {
+   "enum": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    10,
+    70
+   ]
+  },
+  "retryable": {
+   "type": "boolean"
+  },
+  "stage": {
+   "type": "string"
+  },
+  "message": {
+   "type": "string"
+  },
+  "hint": {
+   "type": [
+    "string",
+    "null"
+   ]
+  },
+  "details": {
+   "type": "object"
+  },
+  "error_class": {
+   "type": "string",
+   "description": "Python class name; kept in 6.x for compatibility, not stable"
+  },
+  "status": {
+   "const": "FAILED",
+   "description": "5.x key, kept in 6.x"
+  },
+  "error": {
+   "enum": [
+    "VERIFICATION_FAILED",
+    "USAGE_ERROR",
+    "INVALID_INPUT",
+    "UNRECOVERABLE_CORRUPTION",
+    "AUTHENTICATION_FAILED",
+    "INSUFFICIENT_REDUNDANCY",
+    "UNSUPPORTED_FORMAT",
+    "CONFIGURATION_ERROR",
+    "OUTPUT_ERROR",
+    "PROVIDER_ERROR",
+    "INTERNAL_ERROR"
+   ],
+   "description": "5.x key (= category), kept in 6.x"
+  }
+ },
+ "additionalProperties": true
+}

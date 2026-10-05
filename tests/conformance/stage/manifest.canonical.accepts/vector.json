@@ -1,0 +1,31 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "manifest.canonical.accepts",
+ "stage": "E6",
+ "formats": {
+  "frame": null,
+  "superblock": null,
+  "container": null
+ },
+ "kind": "positive",
+ "operation": "manifest.canonical",
+ "params": {},
+ "inputs": {
+  "manifest": {
+   "path": "manifest.dat",
+   "sha256": "aec5c0f31c988d397d1692c8883ef4f1a727b93189b53e0ed7f851263b24777d"
+  }
+ },
+ "expected": {
+  "outputs": {
+   "canonical": true,
+   "keys": [
+    "format",
+    "format_version",
+    "n"
+   ]
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

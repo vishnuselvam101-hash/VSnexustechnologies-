@@ -1,0 +1,112 @@
+{
+  "cells": [
+    {
+      "dropout": 0.02
+    },
+    {
+      "dropout": 0.03
+    },
+    {
+      "dropout": 0.04
+    },
+    {
+      "dropout": 0.05
+    },
+    {
+      "dropout": 0.06
+    },
+    {
+      "dropout": 0.07
+    },
+    {
+      "dropout": 0.08
+    },
+    {
+      "dropout": 0.09
+    },
+    {
+      "dropout": 0.1
+    },
+    {
+      "dropout": 0.11
+    },
+    {
+      "dropout": 0.12
+    },
+    {
+      "dropout": 0.13
+    },
+    {
+      "dropout": 0.14
+    },
+    {
+      "dropout": 0.15
+    },
+    {
+      "dropout": 0.16
+    },
+    {
+      "dropout": 0.17
+    },
+    {
+      "dropout": 0.18
+    },
+    {
+      "dropout": 0.19
+    },
+    {
+      "dropout": 0.2
+    }
+  ],
+  "configs": {
+    "V5": {},
+    "V6-adaptive": {
+      "outer_plan": "adaptive"
+    },
+    "V6-int": {
+      "strand_order": "interleaved"
+    },
+    "V6-plan-seq": {
+      "column_parity": 1,
+      "data_symbols": 206,
+      "parity_symbols": 49,
+      "strand_order": "sequential",
+      "stripe_depth": 128
+    },
+    "V6-rows255": {
+      "data_symbols": 204,
+      "parity_symbols": 51,
+      "strand_order": "interleaved"
+    }
+  },
+  "decode_options": "DecodeOptions(workers=1) (V5 defaults)",
+  "experiment": "P1-EXP-01-dropout",
+  "input": {
+    "bytes": 1048576,
+    "pattern": "random",
+    "seed": 6201
+  },
+  "loss": "i.i.d. strand loss (superblock strands included), each surviving strand read once, no base errors",
+  "seeds": [
+    1000,
+    1001,
+    1002,
+    1003,
+    1004,
+    1005,
+    1006,
+    1007,
+    1008,
+    1009,
+    1010,
+    1011,
+    1012,
+    1013,
+    1014,
+    1015,
+    1016,
+    1017,
+    1018,
+    1019
+  ]
+}
