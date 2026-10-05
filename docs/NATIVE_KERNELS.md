@@ -71,6 +71,13 @@ given SIMD levels so that the tests can exercise every level and the fallbacks o
 Production code must never call it; `tests/v6/native/test_native_status.py` checks that no module except
 `native_rs.py` refers to it, and `native_status()` reports `levels_restricted: true` while a restriction is active.
 
+## Sanitizers
+
+`tools/sanitizers.sh` (CI job `sanitizers`) runs gcc and clang ASan+UBSan builds of the three kernels through the
+Python bindings. `tools/msan.sh` (CI job `msan`) runs MemorySanitizer on the kernels compiled into standalone C
+programs, without CPython. Why that route was taken, what it covers and the results are in
+[security/V7_MSAN.md](security/V7_MSAN.md).
+
 ## Docker
 
 The `Dockerfile` builds a wheel with the three kernels in a separate stage (with gcc) and installs it into the slim
