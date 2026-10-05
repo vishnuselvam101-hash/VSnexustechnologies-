@@ -153,8 +153,11 @@ def _homopolymer_mask(codes: np.ndarray, min_run: int) -> np.ndarray:
     return fwd + bwd - 1 >= min_run
 
 
-def simulate_batch(codes: np.ndarray, cfg: ChannelConfig, batch_index: int) -> dict:
-    """Simulate reads for one batch of equal-length strands (n, L). Pure function of (codes, cfg, batch_index)."""
+def simulate_batch(codes: np.ndarray, cfg: ChannelConfig, batch_index: int, *, truth: bool = False) -> dict:
+    """Simulate reads for one batch of equal-length strands (n, L). Pure function of (codes, cfg, batch_index).
+
+    ``truth`` (V7 diagnostics, opt-in): also return the ground truth of every read, ``source`` (index of its strand in
+    the batch) and ``reverse_complement`` (bool). It draws no extra random numbers, so the reads are identical."""
     rng = np.random.default_rng([cfg.seed, batch_index])
     n, L = codes.shape
     stats = {"strands": n, "dropped": 0, "zero_coverage": 0, "reads": 0, "substitutions": 0, "insertions": 0, "deletions": 0,
@@ -176,8 +179,11 @@ def simulate_batch(codes: np.ndarray, cfg: ChannelConfig, batch_index: int) -> d
     src = np.repeat(np.arange(n), reads)
     m = src.size
     if m == 0:
-        return {"codes": np.zeros(0, dtype=np.uint8), "lengths": np.zeros(0, dtype=np.int64), "quals": np.zeros(0, dtype=np.uint8),
-                "stats": stats}
+        out = {"codes": np.zeros(0, dtype=np.uint8), "lengths": np.zeros(0, dtype=np.int64),
+               "quals": np.zeros(0, dtype=np.uint8), "stats": stats}
+        if truth:
+            out.update(source=np.zeros(0, dtype=np.int64), reverse_complement=np.zeros(0, dtype=bool))
+        return out
     base = codes[src]
     sub_r = np.full((m, L), cfg.substitution_rate)
     ins_r = np.full((m, L), cfg.insertion_rate)
@@ -224,6 +230,7 @@ def simulate_batch(codes: np.ndarray, cfg: ChannelConfig, batch_index: int) -> d
             flat[a:b] = _RC[flat[a:b][::-1]]
             q[a:b] = q[a:b][::-1]
         stats["reverse_complement"] = int(rc.sum())
+    read_order = None
     stats["substitutions"] = int(is_sub.sum())
     stats["insertions"] = int(is_ins.sum())
     stats["deletions"] = int(is_del.sum())
@@ -237,10 +244,15 @@ def simulate_batch(codes: np.ndarray, cfg: ChannelConfig, batch_index: int) -> d
             flat = np.concatenate(pieces)
             q = np.concatenate(qp)
             lengths = lengths[order]
+            read_order = order
             stats["duplicates"] = int(dup.sum())
     stats["reads"] = int(lengths.size)
     stats["bases"] = int(flat.size)
-    return {"codes": flat, "lengths": lengths, "quals": q, "stats": stats}
+    out = {"codes": flat, "lengths": lengths, "quals": q, "stats": stats}
+    if truth:
+        sel = np.arange(m) if read_order is None else read_order
+        out.update(source=src[sel].astype(np.int64), reverse_complement=rc[sel].copy())
+    return out
 
 
 def _serialize(res: dict, fmt: str, first: int) -> bytes:
