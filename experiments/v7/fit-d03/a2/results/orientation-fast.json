@@ -1,0 +1,188 @@
+{
+ "backward_model": "ont-guppy-fast-pass-bwd-fit",
+ "basecaller": "fast",
+ "decision": "keep separate: the substitution matrices differ beyond their 95 % intervals (strand asymmetry); the /2 `asymmetry` effect is not honoured by the simulator, so no merged model is produced",
+ "environment": {
+  "cpu_count": 8,
+  "git": {
+   "commit": "df46fa4ec02bf47de8462a6b9d6e23fd90184d82",
+   "dirty": false
+  },
+  "implementation": "CPython",
+  "libraries": {
+   "cryptography": "46.0.7",
+   "numpy": "2.5.3",
+   "reedsolo": "unknown",
+   "zstandard": "0.25.0"
+  },
+  "machine": "x86_64",
+  "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+  "processor": "x86_64",
+  "python": "3.12.3",
+  "software": {
+   "edlib": "1.3.9.post1",
+   "numpy": "2.5.3",
+   "python": "3.12.3",
+   "vnxdna": "6.0.0.dev0"
+  },
+  "vnxdna_version": "6.0.0.dev0"
+ },
+ "evidence_class": "PUBLIC-DATA-DERIVED",
+ "forward_model": "ont-guppy-fast-pass-fwd-fit",
+ "matrices_agree_within_ci": false,
+ "max_abs_difference_off_diagonal": 0.4833843111198116,
+ "model_sha256": {
+  "backward": "d71e13f6415c560f4e32ddb574723a6c6e7f480f5b046b33c2c43bda47be1d8d",
+  "forward": "459eb509ff187420d986e2014f658e4e0f02401625dbc27becebada5459102f4"
+ },
+ "native_frame": {
+  "agree": false,
+  "max_abs_difference_off_diagonal": 0.09054967293410163,
+  "note": "forward and backward reads compared as basecalled (backward matrix with complemented base labels); informational, the merge rule uses the reference frame",
+  "off_diagonal_intervals_overlap": [
+   [
+    true,
+    false,
+    false,
+    false
+   ],
+   [
+    false,
+    true,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    true,
+    false
+   ],
+   [
+    false,
+    false,
+    false,
+    true
+   ]
+  ]
+ },
+ "observed_rates": {
+  "deletion_bases": {
+   "backward": 0.0413384309627335,
+   "backward_ci95": [
+    0.04123295296050078,
+    0.04144985571939095
+   ],
+   "forward": 0.04003120678280175,
+   "forward_ci95": [
+    0.03993555106182897,
+    0.040125256040268314
+   ],
+   "intervals_overlap": false
+  },
+  "insertion_bases": {
+   "backward": 0.019201438781794092,
+   "backward_ci95": [
+    0.019156268919971506,
+    0.019251407005340112
+   ],
+   "forward": 0.018292905744463253,
+   "forward_ci95": [
+    0.018250575841803448,
+    0.01834067215271335
+   ],
+   "intervals_overlap": false
+  },
+  "substitution": {
+   "backward": 0.037895742748552196,
+   "backward_ci95": [
+    0.03781266688696548,
+    0.0379904028977291
+   ],
+   "forward": 0.03628722520940406,
+   "forward_ci95": [
+    0.03620266853546973,
+    0.03636526670888218
+   ],
+   "intervals_overlap": false
+  }
+ },
+ "off_diagonal_intervals_overlap": [
+  [
+   true,
+   false,
+   false,
+   false
+  ],
+  [
+   false,
+   true,
+   false,
+   false
+  ],
+  [
+   false,
+   false,
+   true,
+   false
+  ],
+  [
+   false,
+   false,
+   false,
+   true
+  ]
+ ],
+ "substitution_matrix_backward": [
+  [
+   0.0,
+   0.25475566693245244,
+   0.5163875916011694,
+   0.2288567414663781
+  ],
+  [
+   0.06330749354005168,
+   0.0,
+   0.22132599786931,
+   0.7153665085906383
+  ],
+  [
+   0.32253187040492837,
+   0.3746767992445534,
+   0.0,
+   0.30279133035051825
+  ],
+  [
+   0.0777855786712901,
+   0.6659914063280675,
+   0.2562230150006424,
+   0.0
+  ]
+ ],
+ "substitution_matrix_forward": [
+  [
+   0.0,
+   0.2640905925142518,
+   0.6548721482556962,
+   0.08103725923005207
+  ],
+  [
+   0.38405591498599484,
+   0.0,
+   0.3839618875431784,
+   0.23198219747082674
+  ],
+  [
+   0.6945884806608286,
+   0.20896096858026136,
+   0.0,
+   0.09645055075891006
+  ],
+  [
+   0.3088581390692702,
+   0.4835541351707673,
+   0.20758772575996254,
+   0.0
+  ]
+ ]
+}

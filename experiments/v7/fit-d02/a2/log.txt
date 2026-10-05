@@ -1,0 +1,54 @@
+$ python experiments/v7/fit/run.py fit d02-twist --workers 8 --bootstrap 200  # 2026-10-05T17:42:42Z
+{
+ "stage_split": {
+  "total_events_per_site": {
+   "substitution": 0.006297791650139831,
+   "insertion": 9.448138463749246e-05,
+   "deletion": 0.0005133384742389064
+  },
+  "phix_events_per_site": {
+   "substitution": 0.0017222647028089719,
+   "insertion": 0.0001373570448663796,
+   "deletion": 3.08395521708495e-05
+  },
+  "synthesis_residual": {
+   "substitution": 0.004609536173536448,
+   "insertion": 1.0953510015725658e-05,
+   "deletion": 0.0004568610557310549
+  },
+  "sequencing_scale": {
+   "substitution": 0.2734712099868741,
+   "insertion": 1.0,
+   "deletion": 0.06007644803279804
+  }
+ },
+ "phix_sub": 0.0017222647028089719,
+ "assignment": {
+  "ERR12033806": {
+   "reads": 964204,
+   "assigned": 961190,
+   "no_seed": 1587,
+   "too_distant": 1427,
+   "ambiguous": 0,
+   "reverse_strand": 1421,
+   "dropped_not_in_split": 384565
+  },
+  "ERR12033810": {
+   "reads": 1061917,
+   "assigned": 1059330,
+   "no_seed": 1313,
+   "too_distant": 1273,
+   "ambiguous": 1,
+   "reverse_strand": 2021,
+   "dropped_not_in_split": 422719
+  }
+ },
+ "seconds": {
+  "assign_and_tally": 159.5,
+  "fit_bootstrap_calibration": 32.6
+ }
+}
+exit 0
+$ python experiments/v7/fit/run.py validate d02-twist --workers 8  # 2026-10-05T17:48:53Z
+d02-twist ADEQUATE [] {'M1': False, 'M10': True, 'M2': True, 'M3': True, 'M3_unselected': True, 'M4': False, 'M5': False, 'M6': False, 'M7': True, 'M8': True, 'M9': False}
+exit 0

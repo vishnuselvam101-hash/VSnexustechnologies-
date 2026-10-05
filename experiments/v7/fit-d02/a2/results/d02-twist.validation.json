@@ -1,0 +1,427 @@
+{
+ "adequacy": "ADEQUATE",
+ "assignment_dev": {
+  "ERR12033806": {
+   "ambiguous": 0,
+   "assigned": 961190,
+   "dropped_not_in_split": 776639,
+   "no_seed": 1587,
+   "reads": 964204,
+   "reverse_strand": 1421,
+   "too_distant": 1427
+  },
+  "ERR12033810": {
+   "ambiguous": 1,
+   "assigned": 1059330,
+   "dropped_not_in_split": 855913,
+   "no_seed": 1313,
+   "reads": 1061917,
+   "reverse_strand": 2021,
+   "too_distant": 1273
+  }
+ },
+ "environment": {
+  "cpu_count": 8,
+  "git": {
+   "commit": "df46fa4ec02bf47de8462a6b9d6e23fd90184d82",
+   "dirty": false
+  },
+  "implementation": "CPython",
+  "libraries": {
+   "cryptography": "46.0.7",
+   "numpy": "2.5.3",
+   "reedsolo": "unknown",
+   "zstandard": "0.25.0"
+  },
+  "machine": "x86_64",
+  "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+  "processor": "x86_64",
+  "python": "3.12.3",
+  "software": {
+   "edlib": "1.3.9.post1",
+   "numpy": "2.5.3",
+   "python": "3.12.3",
+   "vnxdna": "6.0.0.dev0"
+  },
+  "vnxdna_version": "6.0.0.dev0"
+ },
+ "evidence_class": "SIMULATED reads vs PUBLIC-DATA-DERIVED DEV reads",
+ "failed_metrics": [],
+ "job": "d02-twist",
+ "metrics": {
+  "M1": {
+   "pass": false,
+   "rates": {
+    "deletion": {
+     "pass": false,
+     "real": 0.000801238391724431,
+     "real_se": 1.8630864302125285e-05,
+     "sim": 0.0008599385870822554,
+     "tolerance": 5.589259290637585e-05
+    },
+    "insertion": {
+     "pass": false,
+     "real": 7.989563315313057e-05,
+     "real_se": 1.8658596777537117e-06,
+     "sim": 8.82021999284918e-05,
+     "tolerance": 5.597579033261135e-06
+    },
+    "substitution": {
+     "pass": true,
+     "real": 0.006246092854159039,
+     "real_se": 5.885037626751653e-05,
+     "sim": 0.006327817738237954,
+     "tolerance": 0.000312304642707952
+    }
+   }
+  },
+  "M10": {
+   "observed_rates": {
+    "deletion_bases": {
+     "fit_data": 0.0008269647091327103,
+     "pass": true,
+     "refit_of_simulated": 0.0008559293961764149,
+     "se": 2.218954376185455e-05
+    },
+    "insertion_bases": {
+     "fit_data": 9.679840822151073e-05,
+     "pass": true,
+     "refit_of_simulated": 9.6614928386649e-05,
+     "se": 4.178615772449432e-06
+    },
+    "substitution": {
+     "fit_data": 0.006297791650139831,
+     "pass": true,
+     "refit_of_simulated": 0.006295349864344753,
+     "se": 3.9588077564927233e-05
+    }
+   },
+   "pass": true,
+   "rule": "|refit - FIT-data value| <= 5 SE + 8 % (observed per-base rates; the staged model is refit with the total estimator)"
+  },
+  "M2": {
+   "ks_D": 0.021157739940959264,
+   "p90_p99_rel_diff": {
+    "p90": 0.0,
+    "p99": 0.0
+   },
+   "pass": true,
+   "real": {
+    "mean": 0.7697405029359528,
+    "p90": 2,
+    "p99": 4
+   },
+   "sim": {
+    "mean": 0.7858035207268597,
+    "p90": 2,
+    "p99": 4
+   },
+   "thresholds": {
+    "ks_D": 0.03,
+    "quantile_rel": 0.1,
+    "tv": 0.05
+   },
+   "tv": 0.024534854314736957
+  },
+  "M3": {
+   "bands": {
+    "abs_drift_le_0": {
+     "diff_pp": -0.9080440527036826,
+     "pass": true,
+     "real": 0.952521667102846,
+     "sim": 0.9434412265758092
+    },
+    "abs_drift_le_3": {
+     "diff_pp": -0.08329900696217862,
+     "pass": true,
+     "real": 0.9966308322047722,
+     "sim": 0.9957978421351504
+    },
+    "abs_drift_le_6": {
+     "diff_pp": 0.18740189490803472,
+     "pass": true,
+     "real": 0.9977284796312718,
+     "sim": 0.9996024985803521
+    }
+   },
+   "pass": true,
+   "threshold_pp": 1.0
+  },
+  "M3_unselected": {
+   "bands": {
+    "abs_drift_le_0": {
+     "diff_pp": -0.9080440527036826,
+     "pass": true,
+     "real": 0.952521667102846,
+     "sim": 0.9434412265758092
+    },
+    "abs_drift_le_3": {
+     "diff_pp": -0.08329900696217862,
+     "pass": true,
+     "real": 0.9966308322047722,
+     "sim": 0.9957978421351504
+    },
+    "abs_drift_le_6": {
+     "diff_pp": 0.18740189490803472,
+     "pass": true,
+     "real": 0.9977284796312718,
+     "sim": 0.9996024985803521
+    }
+   },
+   "gating": false,
+   "note": "simulated reads without the dataset's read selection (protocol 5.5, A2.2); not gating",
+   "pass": true,
+   "threshold_pp": 1.0
+  },
+  "M4": {
+   "kinds": {
+    "deletion": {
+     "bins_tested": 11,
+     "chi2": 183.81122353134415,
+     "pass": false,
+     "ratio_sim_over_real": [
+      1.1091,
+      1.1355,
+      0.98,
+      0.9371,
+      0.8792,
+      1.0474,
+      1.1015,
+      0.9344,
+      1.1337,
+      1.1282,
+      1.0881
+     ]
+    },
+    "insertion": {
+     "bins_tested": 11,
+     "chi2": 238.2774710974509,
+     "pass": false,
+     "ratio_sim_over_real": [
+      1.0564,
+      0.9345,
+      0.7387,
+      1.0682,
+      1.0159,
+      1.568,
+      1.6561,
+      0.7214,
+      1.2029,
+      1.0342,
+      1.1792
+     ]
+    },
+    "substitution": {
+     "bins_tested": 11,
+     "chi2": 130.15961495742448,
+     "pass": true,
+     "ratio_sim_over_real": [
+      0.9938,
+      1.0049,
+      1.0288,
+      1.0509,
+      1.0225,
+      1.003,
+      1.0284,
+      0.9965,
+      1.0238,
+      0.9957,
+      0.9898
+     ]
+    }
+   },
+   "pass": false,
+   "threshold": "each 11-bin ratio within +-10% (bins with >= 100 real events)"
+  },
+  "M5": {
+   "pass": false,
+   "real": [
+    0.8622864019253911,
+    0.05713598074608905,
+    0.020409145607701563,
+    0.011456077015643802,
+    0.009001203369434416,
+    0.0049578820697954275,
+    0.005006016847172082,
+    0.029747292418772563
+   ],
+   "sim": [
+    0.6106870229007634,
+    0.22798982188295167,
+    0.09770992366412214,
+    0.03587786259541985,
+    0.014758269720101781,
+    0.008142493638676845,
+    0.0027989821882951653,
+    0.002035623409669211
+   ],
+   "threshold": 0.05,
+   "tv": 0.281518082692608
+  },
+  "M6": {
+   "indel_rate_out_in_real": [
+    0.0005458495500150984,
+    0.002152846835791211
+   ],
+   "indel_rate_out_in_sim": [
+    0.000600993084116383,
+    0.0007873240822753666
+   ],
+   "min_run": 5,
+   "pass": false,
+   "rel_diff": [
+    0.10102332061968228,
+    0.63428699655449
+   ],
+   "threshold": 0.1
+  },
+  "M7": {
+   "ks_D": 0.045567385008517924,
+   "p10_p90": {
+    "10": {
+     "real": 53.0,
+     "sim": 50.0
+    },
+    "90": {
+     "real": 109.0,
+     "sim": 113.0
+    }
+   },
+   "pass": true,
+   "thresholds": {
+    "ks_D": 0.05,
+    "quantile_rel": 0.1,
+    "zero_fraction": "simulated inside real bootstrap 95% CI"
+   },
+   "zero_fraction": {
+    "real": 0.0008517887563884157,
+    "real_ci95": [
+     0.0,
+     0.002129471890971039
+    ],
+    "sim": 0.001115
+   }
+  },
+  "M8": {
+   "consensus": "one-pass center-star (median-length pivot, edlib global alignment, majority vote); not the VNX decoder",
+   "curve": {
+    "1": {
+     "clusters": 1500,
+     "pass": true,
+     "real": 0.006567901234567901,
+     "real_wilson95": [
+      0.006186081031862086,
+      0.006973122965680646
+     ],
+     "sim": 0.007234567901234568,
+     "sim_wilson95": [
+      0.0068333983284824895,
+      0.007659107385036341
+     ]
+    },
+    "10": {
+     "clusters": 1491,
+     "pass": true,
+     "real": 1.2420200213627444e-05,
+     "real_wilson95": [
+      3.4060021961751677e-06,
+      4.528995707552206e-05
+     ],
+     "sim": 3.105050053406861e-05,
+     "sim_wilson95": [
+      1.3262792817799353e-05,
+      7.269287820024854e-05
+     ]
+    },
+    "2": {
+     "clusters": 1497,
+     "pass": true,
+     "real": 0.006265617655063213,
+     "real_wilson95": [
+      0.00589253834171711,
+      0.0066621597573933485
+     ],
+     "sim": 0.006482100002474083,
+     "sim_wilson95": [
+      0.006102473054296557,
+      0.006885179452161611
+     ]
+    },
+    "20": {
+     "clusters": 1486,
+     "pass": true,
+     "real": 4.361696824684712e-05,
+     "real_wilson95": [
+      2.1128342566022937e-05,
+      9.003992506758866e-05
+     ],
+     "sim": 1.8692986391505906e-05,
+     "sim_wilson95": [
+      6.357207131269267e-06,
+      5.496428997341595e-05
+     ]
+    },
+    "5": {
+     "clusters": 1494,
+     "pass": true,
+     "real": 0.0001859289007883385,
+     "real_wilson95": [
+      0.0001302458990050323,
+      0.000265411297951387
+     ],
+     "sim": 8.676682036789131e-05,
+     "sim_wilson95": [
+      5.168754441475272e-05,
+      0.0001456502134517093
+     ]
+    }
+   },
+   "exact_length_vote": {
+    "note": "real: all reads of the cluster; simulated: 10 reads per cluster",
+    "real": {
+     "clusters_with_exact_length_read": 1500,
+     "exact_share": 0.9986666666666667,
+     "per_base_error": 3.7037037037037037e-05
+    },
+    "sim": {
+     "clusters_with_exact_length_read": 1500,
+     "exact_share": 1.0,
+     "per_base_error": 0.0
+    }
+   },
+   "pass": true,
+   "threshold": "each k: within 2 percentage points or inside each other's Wilson 95% CI"
+  },
+  "M9": {
+   "bins": {
+    "11": {
+     "pass": false,
+     "real_bases": 419596.0,
+     "real_error_phred": 12.787251386261211,
+     "sim_bases": 0.0,
+     "sim_error_phred": 3.010299956639812
+    },
+    "25": {
+     "pass": true,
+     "real_bases": 852092.0,
+     "real_error_phred": 21.62478228241121,
+     "sim_bases": 262561.0,
+     "sim_error_phred": 22.05315862206584
+    },
+    "37": {
+     "pass": true,
+     "real_bases": 41203103.0,
+     "real_error_phred": 22.330147197506946,
+     "sim_bases": 7339088.0,
+     "sim_error_phred": 21.91934848556341
+    }
+   },
+   "pass": false,
+   "threshold_phred_units": 1.0
+  }
+ },
+ "model_sha256": "bec7f24a6c5fa7428fdf18db7eb65a6f1d3870f02b2e496040650c7fd74aada9",
+ "peak_rss_mb_self_plus_children": 2164.1,
+ "seconds": 198.7,
+ "workers": 8
+}
