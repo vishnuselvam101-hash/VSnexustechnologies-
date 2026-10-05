@@ -58,7 +58,11 @@ def parse_canonical_json(data: bytes, what: str) -> dict:
         raise VNXFormatError(f"{what} is not valid canonical JSON: {error}") from None
     if not isinstance(obj, dict):
         raise VNXFormatError(f"{what} must be a JSON object")
-    if canonical_json(obj) != data:
+    try:
+        again = canonical_json(obj)
+    except RecursionError:              # nesting that json.loads accepts can still exceed the limit here
+        raise VNXFormatError(f"{what} is nested too deeply") from None
+    if again != data:
         raise VNXFormatError(f"{what} is not in canonical form")
     return obj
 
