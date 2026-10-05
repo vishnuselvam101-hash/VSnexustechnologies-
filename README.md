@@ -107,7 +107,8 @@ Results (SIMULATED unless labelled; each from a committed file):
 [Laboratory interface](docs/LAB_INTERFACE.md) · [DDSA mapping](docs/DDSA_MAPPING.md) ·
 [Security model](docs/security/V6_SECURITY_MODEL.md) · [Fuzz report](docs/security/V6_FUZZ_REPORT.md) ·
 [CLI](docs/CLI.md) · [Compatibility](docs/COMPATIBILITY.md) · [Storage format](docs/STORAGE_FORMAT.md) ·
-[Benchmarking](docs/BENCHMARKING.md) · [Deferred work](docs/V6_DEFERRED.md) ·
+[Conformance](docs/CONFORMANCE.md) · [Benchmarking](docs/BENCHMARKING.md) · [Deferred work](docs/V6_DEFERRED.md) ·
+[Implementation summary](docs/V6_IMPLEMENTATION_SUMMARY.md) · [Completion report](docs/V6_COMPLETION_REPORT.md) ·
 [Competitive research](docs/research/V6_COMPETITIVE_RESEARCH.md) · [Technical research](docs/research/V6_TECHNICAL_RESEARCH.md)
 
 ## Limitations of VNX-DNA 6

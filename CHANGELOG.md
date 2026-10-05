@@ -59,7 +59,7 @@ synthesised, stored or sequenced. Deferred work and the reason for each item: do
   with dropout up to 10 %. DNA-RS-medium recovered 100/100 on the same grid, and the new profile loses to it at 1 % errors
   with 20 % dropout. There were 0 false SUCCESS in 720 VNX trials. Conformance set: 4 vectors added for the new layout (226 in total).
 - **Documentation (Phase 10).** docs/V6_DEFERRED.md, docs/research/V6_COMPETITIVE_RESEARCH.md,
-  docs/research/V6_TECHNICAL_RESEARCH.md; README, docs/ARCHITECTURE.md, docs/BENCHMARKING.md, docs/CLI.md,
+  docs/research/V6_TECHNICAL_RESEARCH.md, docs/V6_IMPLEMENTATION_SUMMARY.md, docs/V6_COMPLETION_REPORT.md; README, docs/ARCHITECTURE.md, docs/BENCHMARKING.md, docs/CLI.md,
   docs/COMPATIBILITY.md and docs/STORAGE_FORMAT.md updated for 6.x.
 
 ### Changed

@@ -132,6 +132,8 @@ decode to a known archive. No finding rated CRITICAL or HIGH is recorded in the 
 - Research syntheses: [research/V6_COMPETITIVE_RESEARCH.md](research/V6_COMPETITIVE_RESEARCH.md),
   [research/V6_TECHNICAL_RESEARCH.md](research/V6_TECHNICAL_RESEARCH.md).
 - What V6 does not contain: [V6_DEFERRED.md](V6_DEFERRED.md).
+- What each V6 phase built: [V6_IMPLEMENTATION_SUMMARY.md](V6_IMPLEMENTATION_SUMMARY.md); results, acceptance table and
+  evidence classes: [V6_COMPLETION_REPORT.md](V6_COMPLETION_REPORT.md).
 
 ## History
 
