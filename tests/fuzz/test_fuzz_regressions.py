@@ -91,3 +91,20 @@ def test_seed_archives_still_open(tmp_path):
         p = tmp_path / f"{which}.vnx"
         p.write_bytes(seed_archives()[which])
         assert ct.open_container(p, **kw).files
+
+
+# V6-FUZZ-02: a deeply nested manifest (depth ~1,500) parses with json.loads but the canonical re-serialisation check
+# (util.canonical_json -> _reject_floats) recursed past the interpreter limit outside the try block, so
+# parse_canonical_json raised RecursionError instead of VNXFormatError. It runs before the manifest MAC is checked, so
+# no key is needed to trigger it, also for encrypted archives.
+@pytest.mark.parametrize("depth", [1_500, 5_000, 50_000])
+def test_deeply_nested_manifest_is_a_format_error(tmp_path, depth):
+    from vnxdna.v4.util import parse_canonical_json
+    blob = b'{"a":' + b"[" * depth + b"]" * depth + b"}"
+    with pytest.raises(VNXFormatError):
+        parse_canonical_json(blob, "manifest")
+    src = seed_archives()["enc"]
+    p = tmp_path / "deep.vnx"
+    p.write_bytes(_rewrap(src, blob, hashlib.sha256(blob).digest()))
+    with pytest.raises(VNXFormatError):
+        ct.open_container(p)
