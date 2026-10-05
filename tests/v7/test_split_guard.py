@@ -17,6 +17,14 @@ import guard as G  # noqa: E402
 import refsplit as rs  # noqa: E402
 
 MANIFEST = json.loads((SPLIT / "SPLIT_MANIFEST.json").read_text())
+#: docs/V7_PROTOCOL.md as committed when the split was computed (810d35e) and recorded in SPLIT_MANIFEST.json
+PROTOCOL_AT_SPLIT = "64a8f7a8af349fcbc4e362cdddc2f215ccd04c8e9b41be66536bb197abc6083d"
+#: SHA-256 of that version's text before "## 5." (sections 1-4: objective, evidence classes, datasets, split rules)
+SPLIT_RULES_SHA256 = "5b766395bd1828e7a471a7281da74fa0c17a6bf048f1bec78fd4b0a5a081f090"
+
+
+def _before_section_5(text: bytes) -> bytes:
+    return text[:text.index(b"\n## 5. ")]
 
 
 def _rc(s: bytes) -> bytes:
@@ -70,9 +78,26 @@ def test_committed_manifest_describes_amendment_1():
     assert all(k.startswith(("file-0", "file-2")) for k in list(runs["FIT"]) + list(runs["DEV"]))
     assert sum(v == "all-references" for v in runs["HELDOUT"].values()) == 4
     assert all(k.startswith("file-1") for k, v in runs["HELDOUT"].items() if v == "all-references")
-    assert (ROOT / "docs/V7_PROTOCOL.md").read_bytes() and MANIFEST["protocol"]["sha256"] == hashlib.sha256(
-        (ROOT / "docs/V7_PROTOCOL.md").read_bytes()).hexdigest()
+    assert MANIFEST["protocol"]["sha256"] == PROTOCOL_AT_SPLIT
+    # Later amendments (protocol 5.5, amendment 2) may add to section 5 onwards; the text that governs the split (everything
+    # before section 5) must stay byte-identical to the protocol the split was computed under.
+    assert hashlib.sha256(_before_section_5((ROOT / "docs/V7_PROTOCOL.md").read_bytes())).hexdigest() == SPLIT_RULES_SHA256
     assert MANIFEST["dataset_manifest"]["sha256"] == hashlib.sha256((ROOT / "experiments/v7/datasets/MANIFEST.json").read_bytes()).hexdigest()
+
+
+def test_recorded_protocol_version_is_in_history_and_governs_the_split():
+    """The protocol blob whose SHA-256 the split manifest records exists in the repository history, and its text before
+    section 5 hashes to SPLIT_RULES_SHA256 (needs full git history; CI's test job uses a shallow checkout)."""
+    log = subprocess.run(["git", "log", "--format=%H", "--", "docs/V7_PROTOCOL.md"], cwd=ROOT, capture_output=True, text=True)
+    commits = log.stdout.split() if log.returncode == 0 else []
+    blobs = [subprocess.run(["git", "show", f"{c}:docs/V7_PROTOCOL.md"], cwd=ROOT, capture_output=True).stdout for c in commits]
+    recorded = [b for b in blobs if hashlib.sha256(b).hexdigest() == PROTOCOL_AT_SPLIT]
+    if not recorded:
+        shallow = subprocess.run(["git", "rev-parse", "--is-shallow-repository"], cwd=ROOT, capture_output=True, text=True)
+        if shallow.returncode != 0 or shallow.stdout.strip() == "true":
+            pytest.skip("protocol history not available (not a git checkout, or a shallow one)")
+    assert recorded, "the protocol version recorded by the split manifest is not in the history"
+    assert hashlib.sha256(_before_section_5(recorded[0])).hexdigest() == SPLIT_RULES_SHA256
 
 
 def test_no_sequences_in_committed_split_outputs():
