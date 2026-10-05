@@ -121,7 +121,8 @@ def main(argv=None) -> int:
                  for op, m in [("encode", None)] + [("decode", s.split(":")[0]) for s in a.models.split(",")]}
     doc = {"experiment": "G-SCALE", "classification": "SIMULATED channel; wall time and peak RSS MEASURED",
            "statement": STATEMENT, "size_mib": a.size_mib, "workers": WORKERS, "container_sha256": container_sha,
-           "git": {"commit": git("rev-parse", "HEAD"), "dirty": bool(git("status", "--porcelain"))}, "host": host(),
+           "git": {"commit": git("rev-parse", "HEAD"),
+                           "dirty_tracked": bool(git("status", "--porcelain", "--untracked-files=no"))}, "host": host(),
            "started": time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime(t0)), "elapsed_seconds": round(time.time() - t0, 1),
            "outputs_independent_of_workers": identical, "summary": summary, "rows": rows}
     (out / f"scaling-{a.size_mib}MiB.json").write_text(json.dumps(doc, indent=1) + "\n")

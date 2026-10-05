@@ -134,7 +134,8 @@ def main(argv=None) -> int:
             doc = {"experiment": "G-MEM", "classification": "SIMULATED channel; wall time and peak RSS MEASURED",
                    "statement": STATEMENT, "size_mib": size, "models": MODELS, "workers": 1,
                    "method": "fresh process per command; peak_rss_bytes = the process's own VmHWM (measure.py)",
-                   "git": {"commit": git("rev-parse", "HEAD"), "dirty": bool(git("status", "--porcelain"))},
+                   "git": {"commit": git("rev-parse", "HEAD"),
+                           "dirty_tracked": bool(git("status", "--porcelain", "--untracked-files=no"))},
                    "host": host(), "started": time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime(t0)),
                    "elapsed_seconds": round(time.time() - t0, 1), **res}
             (out / f"size-{size}MiB.json").write_text(json.dumps(doc, indent=1) + "\n")
