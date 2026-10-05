@@ -122,16 +122,22 @@ def version() -> None:
     """Print versions."""
     from .version import FORMAT_VERSION
     from ..v5 import native_alignment as na
+    from ..native import backend_summary
     st = na.status()
     typer.echo(json.dumps({"vnx": __version__, "vnx4_format": list(FORMAT_VERSION), "frame_version": 4,
-                           "alignment_backend": st["active_backend"], "native_alignment": st["native_available"]}))
+                           "alignment_backend": st["active_backend"], "native_alignment": st["native_available"],
+                           "native_backends": backend_summary()}))
 
 
 @app.command()
 def native() -> None:
-    """Show whether the native (C) marker aligner is active, which library is loaded and why not if it is not."""
+    """Show which backend (native C or NumPy reference) each kernel uses, which library is loaded and why not if it is not.
+
+    The top-level fields describe the V5 marker aligner (unchanged since V5); ``kernels`` covers all three kernels."""
+    from ..native import native_status
     from ..v5 import native_alignment as na
-    _emit(na.status())
+    st = native_status()
+    _emit({**na.status(), "kernels": st["kernels"], "all_native": st["all_native"]})
 
 
 @app.command()

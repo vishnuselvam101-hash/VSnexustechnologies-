@@ -593,15 +593,18 @@ def decode_reads(reads_path: str | os.PathLike, output: str | os.PathLike | None
     t0 = time.perf_counter()
     from ..v6.observe import Events
     from ..v6.recovery import RecoveryPlanner
+    from ..native import backend_summary
     ev = Events(observer, task_id, t0)
+    backends = backend_summary()        # provenance: which kernels run natively (never raises; additive report field)
     try:
         res = _decode_reads(reads_path, output, opt, t0, ev, RecoveryPlanner(opt.recovery_budget, t0), overwrite=overwrite,
                             partial_dir=partial_dir, select=select, select_dir=select_dir, key=key, passphrase=passphrase,
-                            progress=progress, workdir=workdir, allow_unencrypted=allow_unencrypted)
+                            progress=progress, workdir=workdir, allow_unencrypted=allow_unencrypted, backends=backends)
     except Exception as error:
         ev.emit("error", getattr(error, "stage", "unknown"), error_class=type(error).__name__, message=str(error)[:500])
         raise
     rep_ = res.report
+    rep_["native_backends"] = backends
     ev.emit("decode_end", "output", status=res.status, seconds=round(rep_.get("seconds", 0.0), 4),
             groups_decoded=rep_.get("groups_decoded"), groups_failed=rep_.get("groups_failed"),
             peak_rss_bytes=rep_.get("peak_rss_bytes"))
@@ -609,7 +612,7 @@ def decode_reads(reads_path: str | os.PathLike, output: str | os.PathLike | None
 
 
 def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner, *, overwrite, partial_dir, select,
-                  select_dir, key, passphrase, progress, workdir, allow_unencrypted=False) -> DecodeResult:
+                  select_dir, key, passphrase, progress, workdir, allow_unencrypted=False, backends=None) -> DecodeResult:
     stage: dict = {}
     reads_path = Path(reads_path)
     lay = detect_layout(reads_path, opt)
@@ -620,7 +623,7 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
             size = None
         ev.emit("decode_start", "input", reads_bytes=size, workers=opt.workers, batch_reads=opt.batch_reads,
                 strand_nt=lay.strand_nt, indel_recovery=opt.indel_recovery, soft_decoding=opt.soft_decoding,
-                recovery_budget=opt.recovery_budget.to_dict())
+                recovery_budget=opt.recovery_budget.to_dict(), native_backends=backends)
     try:
         est_reads = max(1, reads_path.stat().st_size // (lay.strand_nt + 20))
     except OSError as error:
