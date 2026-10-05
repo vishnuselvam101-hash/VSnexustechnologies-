@@ -13,6 +13,16 @@
   unresolved (FC-9); the container SHA-256 still decides SUCCESS. Python/NumPy reference (native kernels: step A2);
   design `docs/V7_ARCHITECTURE.md` §5, deviations in the module docstrings; smoke run
   `experiments/v7/a1-smoke/README.md` (EXPERIMENTAL, SIMULATED, no efficacy claim). Formats unchanged.
+- **V7 A2: native kernels for read clustering.** `src/vnxdna/native/c/cluster.c` (binding `vnxdna.native.cluster`,
+  fourth optional extension `vnxdna._vnx_cluster` built by `pip install`, listed by `native_status()`) runs the
+  sketch, candidate pairs, banded edit distance (Myers bit-vector), verification and forward-backward certain calls
+  (run-time AVX2) bit-exactly as the NumPy reference, which stays the specification and the fallback
+  (`VNXDNA_CLUSTER_BACKEND=auto|native|reference`). Evidence: golden hashes, >= 100,000 reads per kernel of randomized
+  equivalence, hypothesis at the ctypes boundary, a whole-decode identity test (`tests/v7/test_native_cluster.py`);
+  gcc/clang ASan+UBSan and clang UBSan-trap runs (`benchmarks/v7/native_cluster/sanitizers.sh`, in the CI sanitizers
+  job). A1-SMOKE decode with clustering on, same 10 trials, identical outcomes: median 54.6 s -> 2.8 s
+  (nanopore-like/cov10) and 35.8 s -> 2.6 s (deletion-heavy/cov10) on the development host (MEASURED,
+  `benchmarks/v7/native_cluster/results/a1smoke_bench.json`).
 
 ### Fixed
 

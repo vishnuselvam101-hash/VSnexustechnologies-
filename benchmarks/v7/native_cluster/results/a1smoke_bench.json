@@ -1,0 +1,452 @@
+{
+ "benchmark": "A1-SMOKE decode wall time, read clustering reference vs native",
+ "label": "MEASURED",
+ "data": "SIMULATED (A1-SMOKE inputs; reads SHA-256 checked against experiments/v7/a1-smoke/trials.jsonl)",
+ "command": "bench_a1smoke.py run --hyperfine-runs 3",
+ "provenance": {
+  "git": {
+   "commit": "be33d307ee4161bbec60d1aca0a7f04e45f9c25f",
+   "dirty_tracked": false
+  },
+  "cpu": "Intel(R) Xeon(R) Gold 6240 CPU @ 2.60GHz",
+  "logical_cpus": 8,
+  "python": "3.12.3",
+  "numpy": "2.5.3",
+  "loadavg_before": [
+   2.29931640625,
+   2.62451171875,
+   3.46142578125
+  ],
+  "nice": 0,
+  "cluster_library": "/root/vnx-dna-lab/v7-native/src/vnxdna/native/c/libvnx_cluster.so",
+  "cluster_library_sha256": "e5a3f920fd7973064e3df0c7fdb6a699ebfbee77d83fb8109156b52d0518f8af",
+  "cluster_source_sha256": "2ad2a7b3e8d62633208da8d50f792efe87e4e27abdd291e661db7d4934bee9f8",
+  "fb_level": "avx2",
+  "native_status": {
+   "align": "native",
+   "reads": "native",
+   "rs": "native",
+   "cluster": "native"
+  },
+  "hyperfine": "hyperfine 1.18.0"
+ },
+ "decoder": "DecodeOptions(stage_counters=True, read_clustering='fallback', workers=1); one decode per process; VNXDNA_CLUSTER_BACKEND=reference|native, every other kernel native",
+ "setup": {
+  "container_sha256": "1a61fa5e9404a8cfda53795e9a5f40c0cc214935a77fc19f7a475847a846b64e",
+  "container_bytes": 21376,
+  "payload_sha256": "dfbddf99a1a80ecb7037937e47ea916270a6a052eec43cf18e2618c74ede9f17",
+  "strand_count": 691,
+  "strand_nt": 313,
+  "nt_per_container_byte": 10.118,
+  "encode_seconds": 0.031
+ },
+ "trials": [
+  {
+   "cell": "nanopore-like/cov10",
+   "seed": 82020,
+   "reads_sha256": "ad9ef28c61396ba0a36fdc10c51b82fd970b8ec2c136a7fa458894a4c0897b94",
+   "reads_count": 6814,
+   "order": [
+    "reference",
+    "native"
+   ],
+   "reference": {
+    "decode_seconds": 50.516,
+    "status": "FAILURE",
+    "error_code": null,
+    "outcome": "EXPLICIT_FAILURE",
+    "output_sha256": null,
+    "report_sha256": "a965cef128cc05b2e9fc15078f14e2d011394266a42bcb71107122831f5898ce",
+    "cluster_backend": "reference",
+    "clustering_status": "ran",
+    "process_seconds": 50.719
+   },
+   "native": {
+    "decode_seconds": 2.804,
+    "status": "FAILURE",
+    "error_code": null,
+    "outcome": "EXPLICIT_FAILURE",
+    "output_sha256": null,
+    "report_sha256": "a965cef128cc05b2e9fc15078f14e2d011394266a42bcb71107122831f5898ce",
+    "cluster_backend": "native",
+    "clustering_status": "ran",
+    "process_seconds": 3.035
+   },
+   "identical": true,
+   "speedup_decode": 18.02
+  },
+  {
+   "cell": "nanopore-like/cov10",
+   "seed": 82021,
+   "reads_sha256": "6a47105244a4545395f5bf4ec1713a837fbad4bc64993dde538f63782750bb72",
+   "reads_count": 6989,
+   "order": [
+    "native",
+    "reference"
+   ],
+   "reference": {
+    "decode_seconds": 57.649,
+    "status": "FAILURE",
+    "error_code": null,
+    "outcome": "EXPLICIT_FAILURE",
+    "output_sha256": null,
+    "report_sha256": "4971953654d0c66347f2dbfd9debbf44641e0bb53a23b89f5e2b5b74da31f9aa",
+    "cluster_backend": "reference",
+    "clustering_status": "ran",
+    "process_seconds": 57.859
+   },
+   "native": {
+    "decode_seconds": 2.771,
+    "status": "FAILURE",
+    "error_code": null,
+    "outcome": "EXPLICIT_FAILURE",
+    "output_sha256": null,
+    "report_sha256": "4971953654d0c66347f2dbfd9debbf44641e0bb53a23b89f5e2b5b74da31f9aa",
+    "cluster_backend": "native",
+    "clustering_status": "ran",
+    "process_seconds": 2.968
+   },
+   "identical": true,
+   "speedup_decode": 20.8
+  },
+  {
+   "cell": "nanopore-like/cov10",
+   "seed": 82022,
+   "reads_sha256": "60eced84989db3ce5d3838356ede9697ba3c66b0df2ae78bb0d2d254cc98a3d0",
+   "reads_count": 6933,
+   "order": [
+    "reference",
+    "native"
+   ],
+   "reference": {
+    "decode_seconds": 54.583,
+    "status": "FAILURE",
+    "error_code": null,
+    "outcome": "EXPLICIT_FAILURE",
+    "output_sha256": null,
+    "report_sha256": "2508f9a6355c88d87f7f347c27c7cfe2efa96d7e6630e6816e9727d3496a0384",
+    "cluster_backend": "reference",
+    "clustering_status": "ran",
+    "process_seconds": 54.85
+   },
+   "native": {
+    "decode_seconds": 2.865,
+    "status": "FAILURE",
+    "error_code": null,
+    "outcome": "EXPLICIT_FAILURE",
+    "output_sha256": null,
+    "report_sha256": "2508f9a6355c88d87f7f347c27c7cfe2efa96d7e6630e6816e9727d3496a0384",
+    "cluster_backend": "native",
+    "clustering_status": "ran",
+    "process_seconds": 3.131
+   },
+   "identical": true,
+   "speedup_decode": 19.05
+  },
+  {
+   "cell": "nanopore-like/cov10",
+   "seed": 82023,
+   "reads_sha256": "77307eda05ef726127265a5c24ed9380d4a79c3d47c7b834e897a576bb15e8c9",
+   "reads_count": 6993,
+   "order": [
+    "native",
+    "reference"
+   ],
+   "reference": {
+    "decode_seconds": 56.522,
+    "status": "FAILURE",
+    "error_code": null,
+    "outcome": "EXPLICIT_FAILURE",
+    "output_sha256": null,
+    "report_sha256": "9cd8a0781807f5901ff1a9d68ab740b8f37ea3f8cc7895f13d9851cc13eb22e2",
+    "cluster_backend": "reference",
+    "clustering_status": "ran",
+    "process_seconds": 56.783
+   },
+   "native": {
+    "decode_seconds": 3.271,
+    "status": "FAILURE",
+    "error_code": null,
+    "outcome": "EXPLICIT_FAILURE",
+    "output_sha256": null,
+    "report_sha256": "9cd8a0781807f5901ff1a9d68ab740b8f37ea3f8cc7895f13d9851cc13eb22e2",
+    "cluster_backend": "native",
+    "clustering_status": "ran",
+    "process_seconds": 3.531
+   },
+   "identical": true,
+   "speedup_decode": 17.28
+  },
+  {
+   "cell": "nanopore-like/cov10",
+   "seed": 82024,
+   "reads_sha256": "68ef18fe72e5b487131b99bec820dd0e0559d6d507d606e8d4cad7e6ef71bfc5",
+   "reads_count": 6845,
+   "order": [
+    "reference",
+    "native"
+   ],
+   "reference": {
+    "decode_seconds": 49.797,
+    "status": "FAILURE",
+    "error_code": null,
+    "outcome": "EXPLICIT_FAILURE",
+    "output_sha256": null,
+    "report_sha256": "338e887d7d729cf44d8c5b13726302e230d8ae53b99e7f65f5ed5e3fc5836bff",
+    "cluster_backend": "reference",
+    "clustering_status": "ran",
+    "process_seconds": 50.044
+   },
+   "native": {
+    "decode_seconds": 2.733,
+    "status": "FAILURE",
+    "error_code": null,
+    "outcome": "EXPLICIT_FAILURE",
+    "output_sha256": null,
+    "report_sha256": "338e887d7d729cf44d8c5b13726302e230d8ae53b99e7f65f5ed5e3fc5836bff",
+    "cluster_backend": "native",
+    "clustering_status": "ran",
+    "process_seconds": 2.996
+   },
+   "identical": true,
+   "speedup_decode": 18.22
+  },
+  {
+   "cell": "deletion-heavy/cov10",
+   "seed": 82020,
+   "reads_sha256": "a1c427501cdf6fa7605b7de5a4cb3fbf128f07887fb936e29b28b43fa033d49e",
+   "reads_count": 6931,
+   "order": [
+    "native",
+    "reference"
+   ],
+   "reference": {
+    "decode_seconds": 35.765,
+    "status": "SUCCESS",
+    "error_code": null,
+    "outcome": "EXACT",
+    "output_sha256": "1a61fa5e9404a8cfda53795e9a5f40c0cc214935a77fc19f7a475847a846b64e",
+    "report_sha256": "1ee61a9f4b7be0884e945fe4dc35f15f74e7385c371b93d12b157f8847013496",
+    "cluster_backend": "reference",
+    "clustering_status": "ran",
+    "process_seconds": 36.014
+   },
+   "native": {
+    "decode_seconds": 2.485,
+    "status": "SUCCESS",
+    "error_code": null,
+    "outcome": "EXACT",
+    "output_sha256": "1a61fa5e9404a8cfda53795e9a5f40c0cc214935a77fc19f7a475847a846b64e",
+    "report_sha256": "1ee61a9f4b7be0884e945fe4dc35f15f74e7385c371b93d12b157f8847013496",
+    "cluster_backend": "native",
+    "clustering_status": "ran",
+    "process_seconds": 2.745
+   },
+   "identical": true,
+   "speedup_decode": 14.39
+  },
+  {
+   "cell": "deletion-heavy/cov10",
+   "seed": 82021,
+   "reads_sha256": "c3ce2a50aaaa8a5ba45e7146c53428c032081585f3a02c9a644f0db5439f4ee5",
+   "reads_count": 6850,
+   "order": [
+    "reference",
+    "native"
+   ],
+   "reference": {
+    "decode_seconds": 34.688,
+    "status": "SUCCESS",
+    "error_code": null,
+    "outcome": "EXACT",
+    "output_sha256": "1a61fa5e9404a8cfda53795e9a5f40c0cc214935a77fc19f7a475847a846b64e",
+    "report_sha256": "046a6f78a22a4d0fbe93c3fad44318d67258d912b70548dcebaf52f1ab5a17b3",
+    "cluster_backend": "reference",
+    "clustering_status": "ran",
+    "process_seconds": 34.883
+   },
+   "native": {
+    "decode_seconds": 2.45,
+    "status": "SUCCESS",
+    "error_code": null,
+    "outcome": "EXACT",
+    "output_sha256": "1a61fa5e9404a8cfda53795e9a5f40c0cc214935a77fc19f7a475847a846b64e",
+    "report_sha256": "046a6f78a22a4d0fbe93c3fad44318d67258d912b70548dcebaf52f1ab5a17b3",
+    "cluster_backend": "native",
+    "clustering_status": "ran",
+    "process_seconds": 2.65
+   },
+   "identical": true,
+   "speedup_decode": 14.16
+  },
+  {
+   "cell": "deletion-heavy/cov10",
+   "seed": 82022,
+   "reads_sha256": "1ccbb55da952c61d599145d79661395b4f8d9acb0e1948c395a518c9d427cb04",
+   "reads_count": 6780,
+   "order": [
+    "native",
+    "reference"
+   ],
+   "reference": {
+    "decode_seconds": 35.731,
+    "status": "SUCCESS",
+    "error_code": null,
+    "outcome": "EXACT",
+    "output_sha256": "1a61fa5e9404a8cfda53795e9a5f40c0cc214935a77fc19f7a475847a846b64e",
+    "report_sha256": "efe4f4f0e8daa23f6137b805d915e7f8f771b580b3e1bdedb6f01fc247d624ea",
+    "cluster_backend": "reference",
+    "clustering_status": "ran",
+    "process_seconds": 35.929
+   },
+   "native": {
+    "decode_seconds": 2.585,
+    "status": "SUCCESS",
+    "error_code": null,
+    "outcome": "EXACT",
+    "output_sha256": "1a61fa5e9404a8cfda53795e9a5f40c0cc214935a77fc19f7a475847a846b64e",
+    "report_sha256": "efe4f4f0e8daa23f6137b805d915e7f8f771b580b3e1bdedb6f01fc247d624ea",
+    "cluster_backend": "native",
+    "clustering_status": "ran",
+    "process_seconds": 2.798
+   },
+   "identical": true,
+   "speedup_decode": 13.82
+  },
+  {
+   "cell": "deletion-heavy/cov10",
+   "seed": 82023,
+   "reads_sha256": "dd5463c5be940ed5fa173a79ed8bd4d28729542344ac5faf5c2b35f295a4a882",
+   "reads_count": 6905,
+   "order": [
+    "reference",
+    "native"
+   ],
+   "reference": {
+    "decode_seconds": 45.856,
+    "status": "SUCCESS",
+    "error_code": null,
+    "outcome": "EXACT",
+    "output_sha256": "1a61fa5e9404a8cfda53795e9a5f40c0cc214935a77fc19f7a475847a846b64e",
+    "report_sha256": "0b12a28d5e1573469ec41e53ecb06597b80bc4ebb4d0e1691ea29e3a24a18be3",
+    "cluster_backend": "reference",
+    "clustering_status": "ran",
+    "process_seconds": 46.061
+   },
+   "native": {
+    "decode_seconds": 3.188,
+    "status": "SUCCESS",
+    "error_code": null,
+    "outcome": "EXACT",
+    "output_sha256": "1a61fa5e9404a8cfda53795e9a5f40c0cc214935a77fc19f7a475847a846b64e",
+    "report_sha256": "0b12a28d5e1573469ec41e53ecb06597b80bc4ebb4d0e1691ea29e3a24a18be3",
+    "cluster_backend": "native",
+    "clustering_status": "ran",
+    "process_seconds": 3.5
+   },
+   "identical": true,
+   "speedup_decode": 14.38
+  },
+  {
+   "cell": "deletion-heavy/cov10",
+   "seed": 82024,
+   "reads_sha256": "104cd24463a9621f8faa33b6858a5d2af5dc939802a3a577c1abd265c1702eae",
+   "reads_count": 6885,
+   "order": [
+    "native",
+    "reference"
+   ],
+   "reference": {
+    "decode_seconds": 39.541,
+    "status": "SUCCESS",
+    "error_code": null,
+    "outcome": "EXACT",
+    "output_sha256": "1a61fa5e9404a8cfda53795e9a5f40c0cc214935a77fc19f7a475847a846b64e",
+    "report_sha256": "633e2330db60e1f44e7ce6d8cbdeecf9df915918160d3f524905d1f07d32ae6b",
+    "cluster_backend": "reference",
+    "clustering_status": "ran",
+    "process_seconds": 39.808
+   },
+   "native": {
+    "decode_seconds": 2.901,
+    "status": "SUCCESS",
+    "error_code": null,
+    "outcome": "EXACT",
+    "output_sha256": "1a61fa5e9404a8cfda53795e9a5f40c0cc214935a77fc19f7a475847a846b64e",
+    "report_sha256": "633e2330db60e1f44e7ce6d8cbdeecf9df915918160d3f524905d1f07d32ae6b",
+    "cluster_backend": "native",
+    "clustering_status": "ran",
+    "process_seconds": 3.153
+   },
+   "identical": true,
+   "speedup_decode": 13.63
+  }
+ ],
+ "cells": {
+  "deletion-heavy/cov10": {
+   "trials": 5,
+   "median_decode_seconds": {
+    "reference": 35.765,
+    "native": 2.585
+   },
+   "median_speedup": 13.84,
+   "speedup_range": [
+    13.63,
+    14.39
+   ],
+   "outcomes": [
+    "EXACT"
+   ]
+  },
+  "nanopore-like/cov10": {
+   "trials": 5,
+   "median_decode_seconds": {
+    "reference": 54.583,
+    "native": 2.804
+   },
+   "median_speedup": 19.47,
+   "speedup_range": [
+    17.28,
+    20.8
+   ],
+   "outcomes": [
+    "EXPLICIT_FAILURE"
+   ]
+  }
+ },
+ "hyperfine": {
+  "nanopore-like/cov10/82020": {
+   "runs": 3,
+   "mean_seconds": {
+    "reference": 52.32,
+    "native": 3.21
+   },
+   "stddev_seconds": {
+    "reference": 1.55,
+    "native": 0.21
+   },
+   "speedup_mean": 16.29,
+   "file": "hyperfine-nanopore-like_cov10-82020.json"
+  },
+  "deletion-heavy/cov10/82020": {
+   "runs": 3,
+   "mean_seconds": {
+    "reference": 35.86,
+    "native": 2.73
+   },
+   "stddev_seconds": {
+    "reference": 0.05,
+    "native": 0.02
+   },
+   "speedup_mean": 13.16,
+   "file": "hyperfine-deletion-heavy_cov10-82020.json"
+  }
+ },
+ "all_identical": true,
+ "loadavg_after": [
+  3.072265625,
+  5.69482421875,
+  5.1279296875
+ ],
+ "wall_seconds": 778.9
+}
