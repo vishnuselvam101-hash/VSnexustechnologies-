@@ -273,6 +273,6 @@ def do_validate(workers: int, seed: int = R.SEED + 1) -> Path:
     (d / "results" / "d02-twist.validation.json").write_text(json.dumps(
         {"job": "d02-twist", "model_sha256": new.sha256, "adequacy": adequacy, "failed_metrics": failed, "metrics": R._jsonable(rep), "assignment_dev": astats,
          "seconds": round(time.time() - t0, 1), "peak_rss_mb_self_plus_children": round(R.mem_mb(), 1), "workers": workers,
-         "evidence_class": "SIMULATED reads vs PUBLIC-DATA-DERIVED DEV reads"}, indent=1, sort_keys=True) + "\n")
+         "environment": R.environment_info(), "evidence_class": "SIMULATED reads vs PUBLIC-DATA-DERIVED DEV reads"}, indent=1, sort_keys=True) + "\n")
     print("d02-twist", adequacy, failed, {m: rep[m].get("pass") for m in sorted(rep)})
     return mp

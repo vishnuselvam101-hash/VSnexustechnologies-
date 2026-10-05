@@ -283,7 +283,7 @@ def do_validate(job_id: str, workers: int, seed: int = SEED + 1) -> Path:
     (d / "results" / f"{job_id}.validation.json").write_text(json.dumps(
         {"job": job_id, "model_sha256": new.sha256, "adequacy": adequacy, "failed_metrics": failed, "metrics": _jsonable(rep),
          "seconds": round(time.time() - t0, 1), "peak_rss_mb_self_plus_children": round(mem_mb(), 1), "workers": workers,
-         "evidence_class": "SIMULATED reads vs PUBLIC-DATA-DERIVED DEV reads"}, indent=1, sort_keys=True) + "\n")
+         "environment": environment_info(), "evidence_class": "SIMULATED reads vs PUBLIC-DATA-DERIVED DEV reads"}, indent=1, sort_keys=True) + "\n")
     print(job_id, adequacy, failed, {m: rep[m].get("pass") for m in sorted(rep)})
     return mp
 
@@ -338,7 +338,8 @@ def do_smoke(workers: int, bootstrap: int, seed: int = SEED) -> Path:
     doc = {"experiment": "v7 CNR smoke test (fitter end to end)", "evidence_class": "PUBLIC-DATA-DERIVED", "split": "FIT",
            "references": len(refs), "p4_exp_03": {k: pub[k] for k in ("substitution", "insertion", "deletion")},
            "p4_exp_03_note": "P4-EXP-03 used all 10,000 clusters; this run uses the 6,017 FIT clusters only", "conventions": rows,
-           "bootstrap": bootstrap, "seed": seed, "workers": workers, "peak_rss_mb_self_plus_children": round(mem_mb(), 1)}
+           "bootstrap": bootstrap, "seed": seed, "workers": workers, "peak_rss_mb_self_plus_children": round(mem_mb(), 1),
+           "environment": environment_info()}
     d = out_dir(job)
     (d / "results").mkdir(parents=True, exist_ok=True)
     p = d / "results" / "smoke.json"
