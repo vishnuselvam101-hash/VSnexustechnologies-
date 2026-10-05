@@ -68,17 +68,53 @@ def _drop(recs, pred):
 
 # ---------------------------------------------------------------------------------------------------------------- compatibility
 def test_default_encoding_identical_to_v5_release(tmp_path):
-    """Golden SHA-256s produced by the released VNX-DNA 5.0.0 tree (6aef3f4) for the same input."""
+    """Golden SHA-256s produced by the released VNX-DNA 5.0.0 tree (6aef3f4) for the same input.
+
+    Restated in V6 Phase 2.4 (founder-approved, V6_ARCHITECTURE §8 decision 1). 5.0.0 pinned the whole-container
+    SHA-256 of the default archive and the strand SHA-256s of encoding that archive. From 6.0.0.dev0 the manifest names
+    the producing software (``encoder.version``, ``extensions.vnx``), so the container differs in those informational
+    fields only. Kept in full: (1) every non-manifest section of the default archive is pinned by digest and the
+    manifest is pinned after normalising the informational fields; (2) encoding the 5.0.0 container bytes gives the
+    5.0.0 strand SHA-256s: the 5.0.0 container is the stored fixture where one exists (tests/compat/test_byte_identity),
+    and here it is the archive built with the 5.0.0 manifest fields (``writer_provenance=False``, version 5.0.0), whose
+    whole SHA-256 must equal the 5.0.0 value.
+    """
+    import json
+
+    from compat.test_byte_identity import container_sections, normalised_manifest
     datagen.generate(tmp_path / "g.bin", 50_000, "mixed", 6001)
     ar.build_archive([tmp_path / "g.bin"], tmp_path / "g.vnx", ar.ArchiveOptions())
-    assert hashlib.sha256((tmp_path / "g.vnx").read_bytes()).hexdigest() == \
-        "6f2f30b416eacb541b6a879a7ae8ada8624eb27857ef98555a55dded65aced83"
+    sec = container_sections((tmp_path / "g.vnx").read_bytes())
+    assert {k: hashlib.sha256(sec[k]).hexdigest()[:16] for k in ("header", "body", "chunk_table", "file_table", "refs")} == \
+        {"header": "fd0a1ad70dad8a7d", "body": "26f532edbde4b522", "chunk_table": "904e39642102ef9a",
+         "file_table": "5cd96844a52e8299", "refs": "df3f619804a92fdb"}
+    assert hashlib.sha256(json.dumps(normalised_manifest(sec["manifest"]), sort_keys=True).encode()).hexdigest() == \
+        "8b8629001acd5763b0c69bf3cfa213dd2e5c078573b1ffa00f21c4c79d04eaaa"
+    v5 = tmp_path / "g5.vnx"
+    _build_with_5_0_0_manifest_fields([tmp_path / "g.bin"], v5)
+    assert hashlib.sha256(v5.read_bytes()).hexdigest() == "6f2f30b416eacb541b6a879a7ae8ada8624eb27857ef98555a55dded65aced83"
     golden = {"v4-balanced": "214868de03a7c2b9b49cfa974a4a97bec22d182ea9f2ee61022eab00aaeda3ac",
               "v4-archival": "e031a2ea560b0893968ad741cfce227a0dedc20a5e22dfbe0a5c5dd118abcb80"}
     for prof, sha in golden.items():
-        en.encode_container(tmp_path / "g.vnx", tmp_path / f"{prof}.fasta", en.DNAOptions(profile=prof))
+        en.encode_container(v5, tmp_path / f"{prof}.fasta", en.DNAOptions(profile=prof))
         assert hashlib.sha256((tmp_path / f"{prof}.fasta").read_bytes()).hexdigest() == sha
         assert not en.DNAOptions(profile=prof).v6
+
+
+def _build_with_5_0_0_manifest_fields(inputs, out):
+    """The default archive exactly as 5.0.0 wrote it: encoder.version 5.0.0 and no writer-provenance block."""
+    from dataclasses import fields
+
+    from vnxdna.v4 import container as ct
+    old = ct.__version__
+    ct.__version__ = "5.0.0"
+    try:
+        opts = ar.ArchiveOptions()
+        if "writer_provenance" in {f.name for f in fields(opts)}:      # 6.x: the extensions.vnx block is opt-out
+            opts.writer_provenance = False
+        ar.build_archive(inputs, out, opts)
+    finally:
+        ct.__version__ = old
 
 
 def test_superblock_v1_bytes_unchanged_and_v2_roundtrip():

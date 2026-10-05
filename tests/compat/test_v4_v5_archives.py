@@ -169,7 +169,16 @@ def test_current_encoder_reproduces_fixture_strands_byte_for_byte(s, c, tmp_path
 
 @pytest.mark.parametrize("s,c", PARAMS, ids=IDS)
 def test_current_builder_reproduces_fixture_container(s, c, tmp_path, monkeypatch):
-    """Identical container bytes, except that the manifest stamps the producing package version: pin it to the generator's."""
+    """Identical container bytes, except the informational manifest fields that name the producing software.
+
+    Restated in V6 Phase 2.4 (founder-approved, V6_ARCHITECTURE §8 decision 1): 5.0.0 compared the whole-container
+    SHA-256 with the package version pinned to the generator's; from 6.0.0.dev0 the manifest also carries the writer
+    provenance block ``extensions.vnx`` (spec §2.3.1), so the whole hash necessarily differs. The intent is kept in
+    full: header, body, chunk table, file table and reference table are byte-identical to the stored fixture, the
+    manifest equals it after removing ``extensions.vnx`` and normalising ``encoder.version``, and the trailer's
+    structural fields are identical (tests/compat/test_byte_identity.compare_containers).
+    """
+    from compat.test_byte_identity import compare_containers
     case = case_of(s, c)
     monkeypatch.setattr(ct, "__version__", {"v4_0": "4.0.0", "v5_0": "5.0.0"}[s])
     for name, (pattern, size, off) in PAYLOADS.items():
@@ -178,7 +187,9 @@ def test_current_builder_reproduces_fixture_container(s, c, tmp_path, monkeypatc
     kw = dict(archive_id=FIXED_ID, salt=FIXED_SALT) if case["encrypted"] else {}
     ar.build_archive([tmp_path / "in" / n for n in INPUTS[c]], out,
                      ar.ArchiveOptions(passphrase=PASSPHRASE if case["encrypted"] else None), **kw)
-    assert sha(out.read_bytes()) == case["container_sha256"]
+    stored = (FIXTURES / s / f"{c}.vnx").read_bytes()
+    assert sha(stored) == case["container_sha256"]
+    assert compare_containers(out.read_bytes(), stored) == []
 
 
 # ------------------------------------------------------------------------------------------------------------- wrong / missing key
