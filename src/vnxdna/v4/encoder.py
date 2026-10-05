@@ -29,12 +29,13 @@ from pathlib import Path
 
 import numpy as np
 
-from ..v2.strandio import StrandWriter, format_for_output
+from vnxdna.dnaenc.strandio import StrandWriter, format_for_output
 from vnxdna.archive import container as ct
 from vnxdna.codec.codecs import CODE_IDS, CauchyRSCodec, make_outer
-from .constraints import ConstraintConfig
+from vnxdna.dnaenc.constraints import ConstraintConfig
 from vnxdna.core.errors import VNXConfigurationError, VNXFormatError
-from .frame import KIND_DATA, KIND_SUPER, PROFILES, Layout, build_strands
+from vnxdna.dnaenc.layout import KIND_DATA, KIND_SUPER, PROFILES, Layout
+from vnxdna.dnaenc.frame4 import build_strands
 from vnxdna.core.util import sha256_file
 
 SB_MAGIC = b"VNX4SB"

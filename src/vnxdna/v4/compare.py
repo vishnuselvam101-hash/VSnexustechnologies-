@@ -155,10 +155,14 @@ def v3_vs_v4(config: dict, workdir: str | None = None, progress=None) -> dict:
 # ============================================================================ constraint / sequence-optimisation study
 def constraint_study(n_strands: int = 20000, seed: int = 3, profile: str = "v4-balanced", cases: list[dict] | None = None) -> dict:
     """Constraint violations before (variant 0 = plain scrambling) and after screening, variants needed, time, recoverability."""
-    from .constraints import ConstraintConfig, violations_batch
-    from .frame import PROFILES, build_strands, decode_frames, nt_to_bytes, insert_markers, bytes_to_nt, plain_rows, keystreams
+    from vnxdna.dnaenc.constraints import ConstraintConfig, violations_batch
+    from vnxdna.dnaenc.layout import PROFILES
+    from vnxdna.dnaenc.frame4 import build_strands, decode_frames, plain_rows
+    from vnxdna.dnaenc.mapping import nt_to_bytes, bytes_to_nt
+    from vnxdna.dnaenc.markers import insert_markers
+    from vnxdna.dnaenc.scrambler import keystreams
     from vnxdna.codec.codecs import InnerRS
-    from .sync import strip_markers_exact
+    from vnxdna.sync.template import strip_markers_exact
     lay = PROFILES[profile][0]
     rng = np.random.default_rng(seed)
     pays = rng.integers(0, 256, (n_strands, lay.payload_bytes), dtype=np.uint8)

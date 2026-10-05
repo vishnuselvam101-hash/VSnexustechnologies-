@@ -460,7 +460,7 @@ def dna_location(ranges: list[list[int]], profile: str, container_size: int) -> 
     """Strand groups and strand-file record ranges holding container byte ranges (no index file needed: group g covers
     container bytes [g·K·P, (g+1)·K·P); strand records are the superblock strands, then each group's K+M symbols)."""
     from vnxdna.v4.encoder import Superblock
-    from vnxdna.v4.frame import PROFILES
+    from vnxdna.dnaenc.layout import PROFILES
     lay, k, m = PROFILES[profile]
     span = k * lay.payload_bytes
     groups = sorted({g for off, n in ranges for g in range(off // span, (off + n - 1) // span + 1)})

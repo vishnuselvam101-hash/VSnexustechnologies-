@@ -26,9 +26,9 @@ from dataclasses import asdict, fields
 from pathlib import Path
 
 from .channel import ChannelConfig
-from .constraints import ConstraintConfig
+from vnxdna.dnaenc.constraints import ConstraintConfig
 from vnxdna.core.errors import VNXConfigurationError
-from .frame import Layout
+from vnxdna.dnaenc.layout import Layout
 
 PERFORMANCE_PROFILES = {
     # name: workers (None = all logical CPUs), decode batch, encode groups/task, verify-after-encode

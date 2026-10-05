@@ -45,8 +45,10 @@ from vnxdna.codec.codecs import CauchyRSCodec, make_outer
 from .encoder import SB_BYTES, Superblock, group_k
 from vnxdna.core.errors import (VNXAddressError, VNXConfigurationError, VNXDecodeError, VNXFormatError,
     VNXIntegrityError, VNXKeyError, VNXUnsupportedVersionError)
-from .frame import HEADER_BYTES, KIND_DATA, KIND_SUPER, PROFILES, Layout, decode_frames, nt_to_bytes, tentative_address
-from .sync import SyncCosts, TemplateAligner, frame_erasures_to_bytes, strip_markers_exact
+from vnxdna.dnaenc.layout import HEADER_BYTES, KIND_DATA, KIND_SUPER, PROFILES, Layout
+from vnxdna.dnaenc.frame4 import decode_frames, tentative_address
+from vnxdna.dnaenc.mapping import nt_to_bytes
+from vnxdna.sync.template import SyncCosts, TemplateAligner, frame_erasures_to_bytes, strip_markers_exact
 from vnxdna.core.util import atomic_output, peak_rss_bytes
 
 _RC = np.array([3, 2, 1, 0, 4], dtype=np.uint8)
@@ -94,7 +96,7 @@ class DecodeOptions:
         if self.indel_recovery not in ("segment", "smart"):
             raise VNXConfigurationError("indel_recovery must be 'segment' (V4) or 'smart' (V5)")
         if self.indel_recovery == "smart":
-            from ..v5.indel.recovery import IndelRecoveryConfig
+            from vnxdna.sync.smart.recovery import IndelRecoveryConfig
             if self.indel_config is None:
                 self.indel_config = IndelRecoveryConfig()
             elif not isinstance(self.indel_config, IndelRecoveryConfig):
@@ -154,7 +156,7 @@ def detect_layout(reads_path: str | os.PathLike, opt: DecodeOptions) -> Layout:
                              stage="layout")
     if len(candidates) == 1:
         return candidates[0][1]
-    from .sync import strip_markers_exact
+    from vnxdna.sync.template import strip_markers_exact
     best = None
     for name, lay in candidates:
         exact = [r for r in sample if r.size == lay.strand_nt][:4000]
@@ -181,7 +183,7 @@ def _p_init(layout: Layout, band: int, costs: SyncCosts, min_q: int, rc: bool, s
     _P.update(lay=layout, al=TemplateAligner(layout, band, costs), min_q=min_q, rc=rc, smart=smart_cfg, soft=soft_cfg,
               defer=defer)
     if smart_cfg is not None or soft_cfg is not None:
-        from ..v5.indel.recovery import Geometry
+        from vnxdna.sync.smart.recovery import Geometry
         _P["geom"] = Geometry(layout)
 
 
@@ -234,7 +236,7 @@ def _try(reads: list[np.ndarray], quals: list | None) -> tuple:
         if smart is None and soft is None:
             pr = _P["al"].project(rreads, rquals, _P["min_q"])
         else:
-            from ..v5.indel.path import align_with_path
+            from vnxdna.sync.smart.path import align_with_path
             pr, rpos = align_with_path(_P["al"], rreads, rquals, _P["min_q"])   # identical projection + the path
         frames = nt_to_bytes(np.minimum(pr.bases, 3))
         er = frame_erasures_to_bytes(pr.erased)
@@ -248,7 +250,7 @@ def _try(reads: list[np.ndarray], quals: list | None) -> tuple:
         cand_all = np.flatnonzero(~ok & pr.ok)
         if smart is not None:
             # V5 smart indel recovery, only for aligned reads the V4 erasure rule could not decode
-            from ..v5.indel import recovery as rv
+            from vnxdna.sync.smart import recovery as rv
             for c0 in range(0, cand_all.size, rv.PLAN_CHUNK):     # bounded memory: plans for ≤ PLAN_CHUNK reads at a time
                 cand = cand_all[c0:c0 + rv.PLAN_CHUNK]
                 plans = rv.plan_reads(_P["geom"], rreads, rquals, pr, rpos, cand, smart)
@@ -893,8 +895,8 @@ def _consensus_symbols(pend: np.ndarray, known: dict, lay: Layout, opt: DecodeOp
 
 def _soft_consensus(cand_keys, done, starts, ends, keys, pend, lay, opt, stats) -> dict:
     """V5 Phase 4: sum the reads' own soft evidence per still-missing address (≥ 2 reads) and soft-decode it."""
-    from ..v5.indel import recovery as rv
-    from ..v5.indel.path import align_with_path
+    from vnxdna.sync.smart import recovery as rv
+    from vnxdna.sync.smart.path import align_with_path
     from ..v5.soft import decoder as sd
     from ..v5.soft import frames as sf
     from ..v5.soft import symbols as ss
@@ -938,8 +940,8 @@ def _soft_consensus(cand_keys, done, starts, ends, keys, pend, lay, opt, stats) 
 
 def _smart_consensus(cand_keys, done, starts, ends, keys, pend, lay, opt, stats) -> dict:
     """V5 consensus realignment for addresses the V4 vote could not decode (groups of ≥ 2 pending reads)."""
-    from ..v5.indel.consensus import consensus_recover
-    from ..v5.indel.recovery import Geometry
+    from vnxdna.sync.smart.consensus import consensus_recover
+    from vnxdna.sync.smart.recovery import Geometry
     geom = Geometry(lay)
     al = TemplateAligner(lay, opt.band, opt.sync_costs)
     out = {}

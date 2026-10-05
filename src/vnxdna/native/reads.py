@@ -49,7 +49,7 @@ from vnxdna.core.errors import VNXFormatError, VNXResourceError
 from vnxdna.core._alias import lazy_module
 
 # the reference parser lives in a higher layer; it is resolved by name on first use (V6_ARCHITECTURE §3, R1/R5)
-_ref = lazy_module("vnxdna.v4.reads")
+_ref = lazy_module("vnxdna.dnaenc.reads")
 
 ABI_VERSION = 1
 BACKENDS = ("auto", "native", "reference")

@@ -151,9 +151,12 @@ def stages(size: int = 4 << 20, seed: int = 1, profile: str = "v4-balanced") -> 
 
     from vnxdna.archive import merkle
     from vnxdna.codec.codecs import CauchyRSCodec, InnerRS
-    from .constraints import ConstraintConfig, satisfied_batch
-    from .frame import PROFILES, build_strands, decode_frames, insert_markers, bytes_to_nt, nt_to_bytes
-    from .sync import TemplateAligner, frame_erasures_to_bytes
+    from vnxdna.dnaenc.constraints import ConstraintConfig, satisfied_batch
+    from vnxdna.dnaenc.layout import PROFILES
+    from vnxdna.dnaenc.frame4 import build_strands, decode_frames
+    from vnxdna.dnaenc.markers import insert_markers
+    from vnxdna.dnaenc.mapping import bytes_to_nt, nt_to_bytes
+    from vnxdna.sync.template import TemplateAligner, frame_erasures_to_bytes
 
     rng = np.random.default_rng(seed)
     tmp = Path(tempfile.mkdtemp(prefix="vnx4-stages-"))
@@ -212,7 +215,7 @@ def stages(size: int = 4 << 20, seed: int = 1, profile: str = "v4-balanced") -> 
         inner = InnerRS(lay.inner_parity)
         s, _ = timed(lambda: inner.parity(frames[:, : lay.frame_bytes - lay.inner_parity]))
         out["inner_rs_encode_mb_s"] = round(n * lay.frame_bytes / 1e6 / s, 1)
-        from .sync import strip_markers_exact
+        from vnxdna.sync.template import strip_markers_exact
         fb, _ = strip_markers_exact(lay, strands)
         fr = nt_to_bytes(fb)
         noisy = fr.copy()

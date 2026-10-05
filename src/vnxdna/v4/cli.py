@@ -473,7 +473,7 @@ def validate(sequences: Path, config: Optional[Path] = typer.Option(None, "--con
              max_reported: int = typer.Option(100)) -> None:
     """Check DNA sequences against configurable biological constraints (JSON diagnostics; exit 3 if any violate)."""
     def go():
-        from .constraints import ConstraintConfig, validate_file
+        from vnxdna.dnaenc.constraints import ConstraintConfig, validate_file
         cfg = ConstraintConfig.load(config) if config else ConstraintConfig()
         for name, v in (("gc_min_percent", gc_min), ("gc_max_percent", gc_max), ("max_homopolymer", max_homopolymer)):
             if v is not None:
@@ -570,7 +570,7 @@ def generate(output: Path, size: str = typer.Option("1MB"), pattern: str = typer
 def profiles() -> None:
     """List strand layout profiles and performance profiles."""
     from .config import PERFORMANCE_PROFILES
-    from .frame import PROFILES
+    from vnxdna.dnaenc.layout import PROFILES
     out = {"layouts": {n: {**lay.to_dict(), "outer_K": k, "outer_M": m} for n, (lay, k, m) in PROFILES.items()},
            "performance": PERFORMANCE_PROFILES}
     typer.echo(json.dumps(out, indent=2))

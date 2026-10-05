@@ -31,7 +31,7 @@ from pathlib import Path
 
 import numpy as np
 
-from ..v2.strandio import iter_batches
+from vnxdna.dnaenc.strandio import iter_batches
 from vnxdna.core.errors import VNXConfigurationError, VNXOutputError
 from vnxdna.core.util import atomic_output
 

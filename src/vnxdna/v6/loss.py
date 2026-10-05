@@ -16,7 +16,7 @@ from dataclasses import asdict, dataclass
 
 import numpy as np
 
-from ..v4.constraints import iter_fasta
+from vnxdna.dnaenc.constraints import iter_fasta
 from vnxdna.core.errors import V6ConfigurationError
 
 

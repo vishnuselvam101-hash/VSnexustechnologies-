@@ -117,7 +117,7 @@ def run_sweep(config: dict, *, workdir: str | None = None, progress=None) -> dic
         opts = en.DNAOptions(**{k: v for k, v in dna.items() if k in ("profile", "outer_code", "data_symbols", "parity_symbols",
                                                                       "lt_seed", "lt_distribution", "experimental")})
         if layout:
-            from .frame import Layout
+            from vnxdna.dnaenc.layout import Layout
             opts.layout = Layout(**layout)
             decode.setdefault("layout", opts.layout)
         if opts.outer_code != "cauchy-rs":

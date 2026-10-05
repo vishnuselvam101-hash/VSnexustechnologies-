@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from ..indel import recovery as rv
+from vnxdna.sync.smart import recovery as rv
 from . import symbols as ss
 
 

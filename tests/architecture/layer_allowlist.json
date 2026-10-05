@@ -1,24 +1,16 @@
 {
  "violations": [
   {
-   "violation": "R1 vnxdna.archive.operations -> vnxdna.v4.encoder",
+   "violation": "R1 vnxdna.archive.operations -> vnxdna.dnaenc.layout",
    "why": "locate --dna-profile maps chunks to DNA groups with the V4 geometry (moves out of the archive layer; bug 2.7)"
   },
   {
-   "violation": "R1 vnxdna.archive.operations -> vnxdna.v4.frame",
+   "violation": "R1 vnxdna.archive.operations -> vnxdna.v4.encoder",
    "why": "locate --dna-profile maps chunks to DNA groups with the V4 geometry (moves out of the archive layer; bug 2.7)"
   },
   {
    "violation": "R1 vnxdna.v4.bench -> vnxdna.v4.config",
    "why": "the benchmark reads the CLI performance profiles from v4.config (config moves to sdk.config, M5)"
-  },
-  {
-   "violation": "R4 vnxdna.v2.strandio -> vnxdna.dna.mapping",
-   "why": "the FASTA/FASTQ/VXS writer and reader is still the V2 module (moves up into dnaenc, M3)"
-  },
-  {
-   "violation": "R4 vnxdna.v2.strandio -> vnxdna.v2.container",
-   "why": "the FASTA/FASTQ/VXS writer and reader is still the V2 module (moves up into dnaenc, M3)"
   },
   {
    "violation": "R6 vnxdna.v4.cli -> vnxdna.archive.container",
@@ -34,6 +26,14 @@
   },
   {
    "violation": "R6 vnxdna.v4.cli -> vnxdna.codec.profiles",
+   "why": "the CLI still does pipeline work and imports the layers directly (rewritten on the SDK, M5)"
+  },
+  {
+   "violation": "R6 vnxdna.v4.cli -> vnxdna.dnaenc.constraints",
+   "why": "the CLI still does pipeline work and imports the layers directly (rewritten on the SDK, M5)"
+  },
+  {
+   "violation": "R6 vnxdna.v4.cli -> vnxdna.dnaenc.layout",
    "why": "the CLI still does pipeline work and imports the layers directly (rewritten on the SDK, M5)"
   },
   {
@@ -53,10 +53,6 @@
    "why": "the CLI still does pipeline work and imports the layers directly (rewritten on the SDK, M5)"
   },
   {
-   "violation": "R6 vnxdna.v4.cli -> vnxdna.v4.constraints",
-   "why": "the CLI still does pipeline work and imports the layers directly (rewritten on the SDK, M5)"
-  },
-  {
    "violation": "R6 vnxdna.v4.cli -> vnxdna.v4.datagen",
    "why": "the CLI still does pipeline work and imports the layers directly (rewritten on the SDK, M5)"
   },
@@ -70,10 +66,6 @@
   },
   {
    "violation": "R6 vnxdna.v4.cli -> vnxdna.v4.experiment",
-   "why": "the CLI still does pipeline work and imports the layers directly (rewritten on the SDK, M5)"
-  },
-  {
-   "violation": "R6 vnxdna.v4.cli -> vnxdna.v4.frame",
    "why": "the CLI still does pipeline work and imports the layers directly (rewritten on the SDK, M5)"
   },
   {
@@ -106,13 +98,6 @@
     "sdk"
    ],
    "why": "bench imports v4.config (fixed in M5)"
-  },
-  {
-   "edge": [
-    "dnaenc",
-    "legacy"
-   ],
-   "why": "strand file I/O is still the V2 module (fixed in M3)"
   }
  ]
 }
