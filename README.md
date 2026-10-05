@@ -120,8 +120,7 @@ Results (SIMULATED unless labelled; each from a committed file):
 - **Address space and strand length.** The default strand is 313 nt (353 nt with two 20-nt primers, over a 350-nt pool
   limit); one archive addresses about 11 TB by the 4-byte group index (THEORETICAL arithmetic in
   [docs/COMPETITIVE_GAP_ANALYSIS.md](docs/COMPETITIVE_GAP_ANALYSIS.md)).
-- **Open items:** the experiment manifest and `docs/CONFORMANCE.md` of the V6 plan are not implemented; MSan and non-x86
-  builds were not run; open LOW findings are listed in [docs/security/V6_SECURITY_MODEL.md](docs/security/V6_SECURITY_MODEL.md).
+- **Open items:** MSan and non-x86 builds were not run; open LOW findings are listed in [docs/security/V6_SECURITY_MODEL.md](docs/security/V6_SECURITY_MODEL.md).
 
 ---
 
