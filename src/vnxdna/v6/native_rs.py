@@ -23,7 +23,7 @@ A forced level that cannot run never executes: the C library checks cpuid + xget
 missing) and logs one warning. :func:`status` reports the requested and the active backend for provenance.
 
 The library is looked up at ``VNXDNA_RS_LIB`` (explicit path), then as an extension built by ``pip install``
-(``vnxdna/v6/_vnx_rs*.so``, if setup.py declares it), then next to the source (``native/libvnx_rs.so``, built by
+(``vnxdna/v6/_vnx_rs*.so``), then next to the source (``native/libvnx_rs.so``, built by
 ``python -m vnxdna.v6.native_rs build``).
 """
 from __future__ import annotations
@@ -38,6 +38,7 @@ from pathlib import Path
 
 import numpy as np
 
+from .. import _native_build as _nb
 from ..v4 import rs_fast
 
 ABI_VERSION = 1
@@ -51,7 +52,8 @@ AUTO_POLICY = "avx2 > scalar > reference; avx512 only when forced (measured 0.94
 _HERE = Path(__file__).resolve().parent
 _SOURCE = _HERE / "native" / "rs.c"
 _INPLACE = _HERE / "native" / "libvnx_rs.so"
-CFLAGS = ["-O3", "-std=c11", "-fPIC", "-shared", "-Wall", "-Wextra", "-Werror"]
+CFLAGS = _nb.explicit_cflags(strict=False)        # -O3 -std=c11 -fPIC -shared -Wall -Wextra (as pip install)
+STRICT_CFLAGS = _nb.explicit_cflags(strict=True)  # + -Werror: CI and sanitizer builds (build --strict)
 
 _ERRORS = {-1: "invalid argument", -2: "SIMD level not supported by this CPU/OS", -3: "out of memory",
            -4: "output overlaps an input"}
@@ -73,13 +75,16 @@ def _candidates() -> list[Path]:
     env = os.environ.get(ENV_LIB)
     if env:
         out.append(Path(env))
-    suffix = sysconfig.get_config_var("EXT_SUFFIX") or ".so"
-    ext = _HERE / f"_vnx_rs{suffix}"
-    if ext.is_file():
-        out.append(ext)
-    out.extend(p for p in sorted(_HERE.glob("_vnx_rs*.so")) if p != ext)
+    out.extend(_ext_candidates())
     out.append(_INPLACE)
     return out
+
+
+def _ext_candidates() -> list[Path]:
+    """The extension built by ``pip install`` (setup.py: ``vnxdna.v6._vnx_rs``), if present."""
+    suffix = sysconfig.get_config_var("EXT_SUFFIX") or ".so"
+    ext = _HERE / f"_vnx_rs{suffix}"
+    return ([ext] if ext.is_file() else []) + [p for p in sorted(_HERE.glob("_vnx_rs*.so")) if p != ext]
 
 
 def _bind(lib) -> None:
@@ -116,7 +121,7 @@ def _load():
             continue
         _lib, _lib_path = lib, str(path)
         return _lib
-    _load_error = "; ".join(errors) + " (build with: python -m vnxdna.v6.native_rs build)"
+    _load_error = "; ".join(errors) + " (pip install, or build with: python -m vnxdna.v6.native_rs build)"
     return None
 
 
@@ -194,10 +199,11 @@ def status() -> dict:
     except (NativeRSError, ValueError) as error:
         active, reason, err = None, None, str(error)
     lib = _load()
+    cpu = [] if lib is None else [n for n, v in LEVELS.items() if int(lib.vnx_rs_cpu_levels()) & (1 << v)]
+    supported = supported_levels()
     return {"requested_backend": want, "active_backend": active, "fallback_reason": reason, "error": err,
             "native_available": lib is not None, "library": _lib_path, "load_error": _load_error, "abi_version": ABI_VERSION,
-            "supported_levels": supported_levels(),
-            "cpu_levels": [] if lib is None else [n for n, v in LEVELS.items() if int(lib.vnx_rs_cpu_levels()) & (1 << v)],
+            "supported_levels": supported, "cpu_levels": cpu, "levels_restricted": supported != cpu,
             "auto_policy": AUTO_POLICY, "reference": "vnxdna.v4.rs_fast"}
 
 
@@ -275,7 +281,12 @@ def decode_batch_inplace(codewords: np.ndarray, nsym: int, erasures: np.ndarray 
 
 
 def _restrict_levels_for_tests(names: list[str] | None) -> None:
-    """Test hook: make the library behave as if the CPU only had ``names`` (None = everything detected)."""
+    """TEST-ONLY hook: make the library behave as if the CPU only had ``names`` (None = everything detected).
+
+    It calls the exported C symbol ``vnx_rs_restrict_levels``, which changes a process-wide mask: every later
+    ``decode_batch`` in this process (all threads) is affected until it is reset with ``None``. Production code never
+    calls it (tests/v6/native/test_native_status.py checks that); :func:`status` reports ``levels_restricted`` when a
+    restriction is active."""
     lib = _load()
     if lib is None:
         return
@@ -284,20 +295,21 @@ def _restrict_levels_for_tests(names: list[str] | None) -> None:
 
 # ============================================================================ in-place build (development / no pip build)
 def build_command(output: str | os.PathLike | None = None, extra_flags: list[str] | None = None,
-                  compiler: str | None = None) -> list[str]:
+                  compiler: str | None = None, strict: bool | None = None) -> list[str]:
     cc = compiler or os.environ.get("CC") or shutil.which("cc") or shutil.which("gcc") or shutil.which("clang")
     if not cc:
         raise NativeRSError("no C compiler found (set CC)")
     out = Path(output) if output else _INPLACE
-    return [cc, *CFLAGS, *(extra_flags or []), str(_SOURCE), "-o", str(out)]
+    return [cc, *_nb.explicit_cflags(strict), *(extra_flags or []), str(_SOURCE), "-o", str(out)]
 
 
-def build(output: str | os.PathLike | None = None, extra_flags: list[str] | None = None, compiler: str | None = None) -> Path:
+def build(output: str | os.PathLike | None = None, extra_flags: list[str] | None = None, compiler: str | None = None,
+          strict: bool | None = None) -> Path:
     """Compile ``native/rs.c`` into a shared library (default: next to the source). Returns its path.
 
     No ``-march``: the AVX2/AVX-512 kernels are compiled through per-function target attributes and only run after the
     runtime CPU check, so the library is safe on any x86-64 CPU."""
-    cmd = build_command(output, extra_flags, compiler)
+    cmd = build_command(output, extra_flags, compiler, strict)
     res = subprocess.run(cmd, capture_output=True, text=True)
     if res.returncode != 0:
         raise NativeRSError(f"native RS build failed: {' '.join(cmd)}\n{res.stderr}")
@@ -309,6 +321,6 @@ if __name__ == "__main__":
     import sys
 
     if sys.argv[1:2] == ["build"]:
-        print(build())
+        print(build(strict=True if "--strict" in sys.argv[2:] else None))
     else:
         print(json.dumps(status(), indent=2))

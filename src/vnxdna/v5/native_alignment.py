@@ -26,6 +26,8 @@ from pathlib import Path
 
 import numpy as np
 
+from .. import _native_build as _nb
+
 ABI_VERSION = 2
 MAX_BAND = 64
 MAX_TEMPLATE = 8192
@@ -37,7 +39,8 @@ BACKENDS = ("auto", "native", "reference")
 _HERE = Path(__file__).resolve().parent
 _SOURCE = _HERE / "native" / "align.c"
 _INPLACE = _HERE / "native" / "libvnx_align.so"
-CFLAGS = ["-O3", "-std=c11", "-fPIC", "-shared", "-Wall", "-Wextra", "-Werror"]
+CFLAGS = _nb.explicit_cflags(strict=False)        # -O3 -std=c11 -fPIC -shared -Wall -Wextra (as pip install)
+STRICT_CFLAGS = _nb.explicit_cflags(strict=True)  # + -Werror: CI and sanitizer builds (build --strict)
 
 _ERRORS = {-1: "invalid argument", -2: "outside the native domain", -3: "read outside the band or bad offsets",
            -4: "out of memory", -5: "traceback left the band"}
@@ -257,13 +260,14 @@ def align_usable(aligner, reads: list, quals: list | None, min_quality: int, tim
 
 
 # ============================================================================ in-place build (development / no pip build)
-def build(output: str | os.PathLike | None = None, extra_flags: list[str] | None = None, compiler: str | None = None) -> Path:
+def build(output: str | os.PathLike | None = None, extra_flags: list[str] | None = None, compiler: str | None = None,
+          strict: bool | None = None) -> Path:
     """Compile ``native/align.c`` into a shared library (default: next to the source). Returns its path."""
     cc = compiler or os.environ.get("CC") or shutil.which("cc") or shutil.which("gcc") or shutil.which("clang")
     if not cc:
         raise NativeAlignmentError("no C compiler found (set CC)")
     out = Path(output) if output else _INPLACE
-    cmd = [cc, *CFLAGS, *(extra_flags or []), str(_SOURCE), "-o", str(out)]
+    cmd = [cc, *_nb.explicit_cflags(strict), *(extra_flags or []), str(_SOURCE), "-o", str(out)]
     res = subprocess.run(cmd, capture_output=True, text=True)
     if res.returncode != 0:
         raise NativeAlignmentError(f"native build failed: {' '.join(cmd)}\n{res.stderr}")
@@ -275,6 +279,6 @@ if __name__ == "__main__":
     import sys
 
     if sys.argv[1:2] == ["build"]:
-        print(build())
+        print(build(strict=True if "--strict" in sys.argv[2:] else None))
     else:
         print(json.dumps(status(), indent=2))
