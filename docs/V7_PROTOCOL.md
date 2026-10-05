@@ -57,12 +57,20 @@ per split, plus their SHA-256) is committed **before** any fitting.
 
 ### 4.1 Rule
 
-1. **Held-out run.** For each dataset with two or more sequencing runs or files of the same condition, one whole run
-   is held out: index `int(SHA-256("VNX-V7-HELDOUT/" + dataset_id), 16) mod n_runs` over the runs sorted by file name.
-   For D03 the "runs" are the `file-<n>` groups of one basecaller and filter condition (all four conditions of that
-   file are held out together). For D02 the runs are Aging_0a and Aging_0b. CNR has one run, so this step does not
-   apply to it.
-2. **Reference buckets.** Every reference (designed strand) gets `b = int(SHA-256(sequence), 16) mod 10`.
+Amendment 1 (2026-10-05, after the dataset manifest and before any fitting or split computation): the manifest showed
+that the D02 runs Aging_0a and 0b share one 12,000-design pool, and that the D03 files `file-0`, `file-1`, `file-2`
+use three disjoint reference sets of about 30.6k strands, each repeated across basecaller (accurate, fast), filter
+and orientation (forward, backward) groups. The rule below is the amended one; the original held a run out for D02 too,
+which would have leaked its references.
+
+1. **Held-out run.** A whole run is held out only where runs have **disjoint** reference sets, so that holding it out
+   does not leak references. Index `int(SHA-256("VNX-V7-HELDOUT/" + dataset_id), 16) mod n_runs` over the runs sorted
+   by name. For D03 (`dataset_id` = `D03`, runs `file-0`, `file-1`, `file-2`) this is **`file-1`**; every group of that
+   file (both basecallers, pass and fail, both orientations) is held out together. D02 (shared designs) and CNR (one
+   run) get no held-out run; for them the split is by reference only, and section 4.3 reports it as the weaker kind.
+2. **Reference buckets.** Every reference (designed strand) gets `b = int(SHA-256(c), 16) mod 10`, where `c` is its
+   canonical sequence: the lexicographically smaller of the sequence and its reverse complement, upper-case ASCII. A
+   reference therefore lands in the same bucket in every group, orientation and run.
    - **FIT** = non-held-out runs, buckets 0-5 (60 %).
    - **DEV** = non-held-out runs, buckets 6-7 (20 %).
    - **HELD-OUT** = the held-out run (all buckets) plus buckets 8-9 of every run.
@@ -86,7 +94,10 @@ script refuses to emit held-out read data unless it is given the PREREG commit S
 - The held-out run is a separate sequencing run of the same pool, so it is independent in sequencing noise but not in
   synthesis, chemistry or pool design. Results are described as "held-out run and references of dataset X", never as
   independent physical validation.
-- D03 runs share one oligo pool and one lab; CNR is one run (reference split only). If a dataset has fewer than
+- D03 files come from one synthesis order and one lab; D02 and CNR are split by reference only, so their held-out
+  references share runs (sequencing noise, library) with the fit references. D02 qualities are binned to three values
+  (11, 25, 37), which limits any quality calibration (section 9). D03 `file-0` has low coverage (median 3-7 reads per
+  cluster) and up to 2,873 empty clusters per group; coverage statistics are reported per file. If a dataset has fewer than
   2,000 references in a split, or if the per-split rates differ by more than 3 bootstrap SE for reasons that are not
   sampling, the completion report states that the split is weak for that dataset.
 - VNX strands (313 nt, v4-balanced) are longer than the public references (110-150 nt). Applying a fitted model at
