@@ -124,10 +124,12 @@ def _try(reads: list[np.ndarray], quals: list | None, with_quality: bool = False
         if proj_q is not None and rquals is not None:
             # quality of the read base each frame base was aligned to (the alignment path; −1 = deleted → 0)
             fpos = lay.template()[1]
-            for j, i in enumerate(rest.tolist()):
-                ri = rpos[j][fpos].astype(np.int64)
-                on = ri >= 0
-                proj_q[i, on] = np.asarray(rquals[j])[ri[on]]
+            qlen = np.fromiter((q.size for q in rquals), dtype=np.int64, count=len(rquals))
+            qmat = np.zeros((len(rquals), max(1, int(qlen.max(initial=0)))), dtype=np.uint8)
+            for j, q in enumerate(rquals):
+                qmat[j, : q.size] = q
+            ri = np.asarray(rpos)[:, fpos].astype(np.int64)
+            proj_q[rest] = np.where(ri >= 0, np.take_along_axis(qmat, np.maximum(ri, 0), axis=1), 0)
         cost[rest] = np.where(pr.ok, pr.cost, 1 << 28)
         hard_bases[rest] = np.minimum(pr.bases, 3)
         pb = pr.bases.copy()

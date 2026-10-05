@@ -19,11 +19,15 @@ mask of the model's loss layer (``vnxdna.simulation.loss.loss_mask``, the same f
 Failure classification of a trial that did not decode exactly (``stage``):
   * ``superblock``     the decoder raised before pass 2 (no superblock / configuration);
   * ``verify``         the reconstructed container failed its SHA-256 (CONTAINER_HASH_MISMATCH);
-  * ``outer-loss``     some failed group lacks more symbols than its outer parity M *without any pending read*
-                       (strand lost by the loss layer, zero coverage, every read unaligned or unaddressable): even a
-                       perfect consensus could not have decoded it;
+  * ``outer-loss``     some failed group lacks more than its outer parity M symbols whose strand had no alignable
+                       read at all (lost by the loss layer, zero coverage, or every read beyond the aligner's band):
+                       no read-level method of this decoder could have decoded it;
+  * ``outer-address``  not loss-limited, but adding the symbols whose strand had aligned reads none of which reached
+                       pass 2 under its address (header misread / not snapped) makes it so: address recovery limited;
   * ``outer-consensus`` every failed group would have decoded had consensus recovered the addresses that had pending
-                       reads (consensus-limited);
+                       reads (consensus-limited).
+  Strand attribution for these classes is ground truth (each read is assigned to the strand sharing most 16-mers,
+  either orientation), computed only for trials that failed in pass 2.
   * ``other``          anything else (reported verbatim).
 """
 from __future__ import annotations
@@ -197,12 +201,79 @@ class Observer:
 
 
 # ------------------------------------------------------------------------------------------------------ trial
-def classify(status: str, rep: dict, obs_calls: list, dropped: set, M: int, exact: bool) -> dict:
+_RC = np.array([3, 2, 1, 0, 4], dtype=np.uint8)
+_KMER = 16
+
+
+def _kmers(codes: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """(m, L) or flat codes → 32-bit k-mer values per start, and a validity mask (no N inside)."""
+    c = np.asarray(codes, dtype=np.uint64)
+    n = c.shape[-1] - _KMER + 1
+    if n <= 0:
+        return np.zeros(c.shape[:-1] + (0,), np.uint64), np.zeros(c.shape[:-1] + (0,), bool)
+    val = np.zeros(c.shape[:-1] + (n,), dtype=np.uint64)
+    bad = np.zeros(c.shape[:-1] + (n,), dtype=bool)
+    for j in range(_KMER):
+        sl = c[..., j:j + n]
+        val = (val << np.uint64(2)) | (sl & np.uint64(3))
+        bad |= sl > 3
+    return val, ~bad
+
+
+def read_origins(reads_path: Path, strand_codes: np.ndarray, band: int = 6) -> dict:
+    """Ground-truth attribution of every read to its source strand (most shared 16-mers, either orientation; a read
+    sharing none is unattributed). Returns per-strand read counts and counts of reads within the aligner's band.
+    Used only to explain failures (the decoder never sees it)."""
+    n, L = strand_codes.shape
+    sk, _ = _kmers(strand_codes)
+    keys = sk.reshape(-1)
+    sid = np.repeat(np.arange(n), sk.shape[1])
+    order = np.argsort(keys, kind="stable")
+    keys, sid = keys[order], sid[order]
+    table = {ord("A"): 0, ord("C"): 1, ord("G"): 2, ord("T"): 3}
+    lut = np.full(256, 4, dtype=np.uint8)
+    for k_, v in table.items():
+        lut[k_] = v
+    reads_n = np.zeros(n, dtype=np.int64)
+    within = np.zeros(n, dtype=np.int64)
+    unattributed = 0
+    with open(reads_path, "rb") as f:
+        lines = f.read().split(b"\n")
+    seqs = lines[1::4]
+    for raw in seqs:
+        if not raw:
+            continue
+        r = lut[np.frombuffer(raw, dtype=np.uint8)]
+        best, best_hits = -1, 0
+        for cand in (r, _RC[r[::-1]]):
+            km, ok = _kmers(cand)
+            km = km[ok]
+            if not km.size:
+                continue
+            pos = np.searchsorted(keys, km)
+            pos = np.minimum(pos, keys.size - 1)
+            hit = keys[pos] == km
+            if not hit.any():
+                continue
+            ids, cnt = np.unique(sid[pos[hit]], return_counts=True)
+            j = int(cnt.argmax())
+            if cnt[j] > best_hits:
+                best, best_hits = int(ids[j]), int(cnt[j])
+        if best < 0:
+            unattributed += 1
+            continue
+        reads_n[best] += 1
+        within[best] += abs(r.size - L) <= band
+    return {"reads": reads_n, "within_band": within, "unattributed": unattributed}
+
+
+def classify(status: str, rep: dict, obs_calls: list, dropped: set, M: int, exact: bool,
+             origins: dict | None = None, strand_of: dict | None = None) -> dict:
     if exact:
         return {"stage": "ok"}
     if status.startswith("ERROR:"):
         stage = "verify" if "IntegrityError" in status else "superblock"
-        return {"stage": stage, "error": rep.get("error")}
+        return {"stage": stage, "error": rep.get("error"), "error_code": rep.get("error_code")}
     failed = set(rep.get("failed_groups") or [])
     if not failed:
         return {"stage": "other", "status": status}
@@ -216,6 +287,7 @@ def classify(status: str, rep: dict, obs_calls: list, dropped: set, M: int, exac
             missing.setdefault(k, v)
     detail = []
     loss_limited = False
+    addr_any = False
     for g in sorted(failed):
         gv = groups.get(g, {"known": 0, "missing": 0})
         n_sym = gv["known"] + gv["missing"]
@@ -228,18 +300,30 @@ def classify(status: str, rep: dict, obs_calls: list, dropped: set, M: int, exac
             elif (g, int(k.split(":")[1])) in dropped:
                 cls["lost_dropout"] += 1
             elif v["reads"] == 0:
-                cls["no_pending_read"] += 1
+                si = None if strand_of is None else strand_of.get((g, int(k.split(":")[1])))
+                if origins is None or si is None:
+                    cls["no_pending_read"] += 1
+                elif origins["reads"][si] == 0:
+                    cls["zero_coverage"] += 1
+                elif origins["within_band"][si] == 0:
+                    cls["all_reads_beyond_band"] += 1
+                else:
+                    cls["aligned_reads_misaddressed"] += 1
             elif v["reads"] == 1:
                 cls["consensus_failed_1_read"] += 1
             else:
                 cls["consensus_failed_multi"] += 1
         have = gv["known"] + cls["recovered_by_consensus"]
-        lost = cls["lost_dropout"] + cls["no_pending_read"]
+        # no alignable read of the strand at all (lost, zero coverage, every read beyond the band)
+        lost = cls["lost_dropout"] + cls["zero_coverage"] + cls["all_reads_beyond_band"] + cls["no_pending_read"]
         limited = n_sym - lost < k_need
+        address_limited = not limited and n_sym - lost - cls["aligned_reads_misaddressed"] < k_need
         loss_limited |= limited
+        addr_any |= address_limited
         detail.append({"group": g, "symbols": n_sym, "k": k_need, "verified_pass1": gv["known"], "have": have,
-                       "deficit": k_need - have, "loss_limited": limited, **cls})
-    return {"stage": "outer-loss" if loss_limited else "outer-consensus", "groups": detail}
+                       "deficit": k_need - have, "loss_limited": limited, "address_limited": address_limited, **cls})
+    stage = "outer-loss" if loss_limited else ("outer-address" if addr_any else "outer-consensus")
+    return {"stage": stage, "groups": detail}
 
 
 def consensus_quality(obs_calls: list, r: int) -> dict:
@@ -263,6 +347,21 @@ def consensus_quality(obs_calls: list, r: int) -> dict:
     return out
 
 
+def read_drift(path: Path, strand_nt: int, band: int = 6) -> dict:
+    """Read length minus strand length: the share of reads the banded aligner can align at all (|drift| ≤ band)."""
+    lens = []
+    with open(path, "rb") as f:
+        for i, line in enumerate(f):
+            if i % 4 == 1:
+                lens.append(len(line.rstrip(b"\n")))
+    d = np.asarray(lens, dtype=np.int64) - strand_nt
+    if not d.size:
+        return {"reads": 0}
+    return {"reads": int(d.size), "within_band": round(float((np.abs(d) <= band).mean()), 4),
+            "mean": round(float(d.mean()), 3), "p05": int(np.percentile(d, 5)), "p95": int(np.percentile(d, 95)),
+            "band": band}
+
+
 def run_trial(job: dict) -> dict:
     model = chn.load_model(job["model"])
     work = Path(tempfile.mkdtemp(prefix="vnx-p4-", dir=job["tmp"]))
@@ -271,11 +370,14 @@ def run_trial(job: dict) -> dict:
         reads = work / "reads.fastq"
         sc = chn.simulate_with_sidecar(model, job["strands"], reads, job["seed"], workers=1, command=job["command"])
         n_strands = sc["input"]["strands"]
+        drift = read_drift(reads, sc["input"]["strand_length"])
         keep = loss_mask(n_strands, model.loss_config(job["seed"]))
         truth, order = truth_frames(Path(job["strands"]), lay_cell or job["layout"])
         lay = lay_cell or job["layout"]
         dropped = {(k[2], k[3]) for k, kept in zip(order, keep.tolist()) if not kept and k[0] == KIND_DATA}
         arms = {}
+        origin_cache = None
+        strand_of = {(k[2], k[3]): i for i, k in enumerate(order) if k[0] == KIND_DATA}
         for arm, dopts in job["arms"].items():
             if job["cell"].get("arms") and arm not in job["cell"]["arms"]:
                 continue
@@ -285,11 +387,13 @@ def run_trial(job: dict) -> dict:
             outer_mod._consensus_symbols = obs.wrap(orig)
             out = work / f"out-{arm}.vnx"
             t = time.perf_counter()
+            events: list = []
             try:
-                res = de.decode_reads(reads, out, opts, overwrite=True, workdir=work)
+                res = de.decode_reads(reads, out, opts, overwrite=True, workdir=work, observer=events.append)
                 status, rep = res.status, res.report
             except VNXError as error:
-                status, rep = f"ERROR:{type(error).__name__}", {"error": str(error)[:500]}
+                status, rep = f"ERROR:{type(error).__name__}", {"error": str(error)[:500], "error_code": error.code,
+                                                                "error_stage": error.stage}
             finally:
                 outer_mod._consensus_symbols = orig
             secs = time.perf_counter() - t
@@ -297,13 +401,21 @@ def run_trial(job: dict) -> dict:
             exact = status == "SUCCESS" and got == job["container_sha256"]
             false_success = status == "SUCCESS" and not exact
             M = job["parity_symbols"]
-            cls = classify(status, rep, obs.calls, dropped, M, exact)
+            origins = None
+            if not exact and not status.startswith("ERROR:") and job.get("attribute", True):
+                if origin_cache is None:
+                    origin_cache = read_origins(reads, chn.read_strand_codes(Path(job["strands"])))
+                origins = origin_cache
+            cls = classify(status, rep, obs.calls, dropped, M, exact, origins, strand_of)
             reads_stats = rep.get("reads") or {}
+            pass1 = next((e for e in events if e["event"] == "pass1_end"), None)
             arms[arm] = {
                 "status": status, "outcome": "FALSE_SUCCESS" if false_success else ("exact" if exact else "failed-detected"),
                 "false_success": bool(false_success), "container_sha256_decoded": got,
                 "decode_seconds": round(secs, 3), "peak_rss_bytes": rep.get("peak_rss_bytes"),
                 "stage_seconds": rep.get("stage_seconds"), "reads": reads_stats,
+                "pass1_end": None if pass1 is None else {k: pass1.get(k) for k in (
+                    "reads_processed", "fast", "sync", "reverse_complement", "reads_pending", "reads_rejected", "orphans")},
                 "groups_failed": rep.get("groups_failed"), "failed_groups": rep.get("failed_groups"),
                 "recovery_schedule": rep.get("recovery_schedule"), "indel_recovery": rep.get("indel_recovery"),
                 "soft_decoding": rep.get("soft_decoding"), "recovery_plan_spent": (rep.get("recovery_plan") or {}).get("spent"),
@@ -314,7 +426,8 @@ def run_trial(job: dict) -> dict:
         return {"record": "trial", "classification": CLASSIFICATION, "cell": job["cell"]["id"], "model": model.name,
                 "model_version": model.version, "model_sha256": model.sha256, "seed": job["seed"],
                 "reads_sha256": sc["output"]["sha256"], "reads": sc["output"]["reads"],
-                "realised_rates": sc["realised_rates"], "strands_lost": int((~keep).sum()), "arms": arms}
+                "realised_rates": sc["realised_rates"], "strands_lost": int((~keep).sum()), "read_drift": drift,
+                "arms": arms}
     finally:
         shutil.rmtree(work, ignore_errors=True)
 
