@@ -41,7 +41,7 @@ the right and with the wrong profile).
 
 The criterion "0 refusals of supported pools" cannot be met together with "0 acceptances of unsupported pools" at
 n = 64 when the 64 reads are coverage copies of a few strands and no frame verifies: a follow-up run at n = 64
-(probe metrics only, not committed) found random-sequence samples at coverage 10 whose version-nibble statistics
-(share up to 0.59 for nibble 4) overlap those of the refused nanopore-like samples (share ≥ 0.39). The implementation
+(`followup_n64.py`, results `followup_n64.json`, at 487c62e) found random-sequence samples at coverage 10 whose version-nibble statistics
+(nibble 4 dominant with a share up to 0.53) overlap those of the refused nanopore-like samples (share ≥ 0.39). The implementation
 keeps the conservative side: it never accepts an unsupported pool, and a refused n = 64 nanopore-like sample is one that
 no layout decodes. The criterion is met at n ≥ 1,000. Changing it needs a decision (founder).
