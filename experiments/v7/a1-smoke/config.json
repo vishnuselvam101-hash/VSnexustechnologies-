@@ -1,0 +1,18 @@
+{
+ "experiment": "A1-SMOKE",
+ "classification": "EXPERIMENTAL / SIMULATED",
+ "purpose": "Show that the V7 item A Python reference (DecodeOptions(read_clustering='fallback')) runs end to end on the unfitted V6 nanopore-like and deletion-heavy models at coverage 10, with its stage funnel. Not an efficacy measurement: no claim, no tuning, no fitted model, no public data. A0 (exploration) and A-EXP-01 (confirmatory, PREREG) are separate steps.",
+ "evidence": "EXPERIMENTAL: exploration seeds 82020-82024 (protocol section 7 range 82000-82099); no PREREG, no confirmatory claim",
+ "profile": "v4-balanced",
+ "size": 20000,
+ "data_seed": 6201,
+ "base_seed": 82020,
+ "seeds": 5,
+ "decoder": {"arms": {"off": "DecodeOptions(stage_counters=True) (6.0 defaults)",
+                      "fallback": "DecodeOptions(stage_counters=True, read_clustering='fallback') with ClusterConfig() defaults"},
+             "workers": 1},
+ "cells": [
+  {"id": "nanopore-like/cov10", "model": "experiments/v7/a-diag/models/nanopore-like-cov10.json"},
+  {"id": "deletion-heavy/cov10", "model": "experiments/v7/a-diag/models/deletion-heavy-cov10.json"}
+ ]
+}

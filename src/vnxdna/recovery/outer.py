@@ -52,7 +52,7 @@ def _stripe_groups(sb: Superblock, groups: set) -> set:
 
 def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage: dict, t0: float, output, overwrite, partial_dir,
            select, select_dir, key, passphrase, tmp_root, planner=None, ev=None, recover_groups=None,
-           allow_unencrypted=False) -> DecodeResult:
+           allow_unencrypted=False, cluster=None) -> DecodeResult:
     if planner is None:
         from vnxdna.recovery.planner import RecoveryPlanner
         planner = RecoveryPlanner()
@@ -62,7 +62,15 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
         # random access, first stage: round S (superblock reads) must run before the superblock is decoded, exactly as
         # in a full decode; the stage's groups (the index's stripes) are only known once round S has decoded it
         recover_groups(lambda sb_: _stripe_groups(sb_, _index_groups(sb_, lay.payload_bytes)))
-    sb, sb_info = _decode_superblock(spill, lay, opt, stats)
+    try:
+        sb, sb_info = _decode_superblock(spill, lay, opt, stats)
+    except VNXDecodeError as error:
+        # V7 read clustering (opt-in, FC-9): only when the 6.0 symbols cannot decode the superblock are cluster
+        # superblock symbols added, at symbols 6.0 left unresolved, and the decode repeated with the same rules
+        if cluster is None or getattr(error, "code", None) != "NO_SUPERBLOCK":
+            raise
+        cluster.ensure_run("superblock")
+        sb, sb_info = _decode_superblock(spill, lay, opt, Counter(), cluster=cluster)
     if ev is not None:
         ev.archive_id = sb.archive_id.hex()
         ev.emit("superblock", "superblock", formats={"frame_version": FRAME_VERSION, "superblock_version": sb.version,
@@ -125,6 +133,11 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
                     missing.update((KIND_DATA, tag, g, s_) for s_ in range(n_sym) if (KIND_DATA, tag, g, s_) not in symbols)
                 n_pass1 = Counter(k[2] for k in symbols) if sc is not None else None
                 symbols.update(_consensus_symbols(pend, symbols, lay, opt, stats, missing, snap_to))
+                from_cluster: dict = {}
+                if cluster is not None:
+                    # V7 read clustering (opt-in, FC-9): fill only rows the 6.0 symbols cannot decode, only at
+                    # addresses 6.0 left unresolved (the stage runs here the first time such a row exists)
+                    from_cluster = cluster.fill_rows(b, symbols, targets_b, tag, total, codec, row_k, P)
                 by_group: dict[int, dict[int, np.ndarray]] = {}
                 for (kd, tg, g, s), v in symbols.items():
                     if kd == KIND_DATA and tg == tag:
@@ -136,7 +149,11 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
                     syms = by_group.get(g, {})
                     if sc is not None:
                         row = {"k": k, "symbols": codec.symbols_for(k), "verified_pass1": n_pass1.get(g, 0),
-                               "from_consensus": len(syms) - n_pass1.get(g, 0), "have": len(syms)}
+                               "from_consensus": len(syms) - n_pass1.get(g, 0) - from_cluster.get(g, 0),
+                               "have": len(syms)}
+                        if from_cluster.get(g, 0):
+                            row["from_cluster"] = from_cluster[g]
+                            sc.add("outer_ecc", "symbols_from_cluster", row["from_cluster"])
                         sc.add("outer_ecc", "rows_attempted")
                         sc.add("outer_ecc", "symbols_verified_pass1", row["verified_pass1"])
                         sc.add("outer_ecc", "symbols_from_consensus", row["from_consensus"])

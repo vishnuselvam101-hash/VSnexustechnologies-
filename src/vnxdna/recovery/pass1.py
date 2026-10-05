@@ -20,13 +20,14 @@ _P: dict = {}
 
 
 def _p_init(layout: Layout, band: int, costs: SyncCosts, min_q: int, rc: bool, smart_cfg=None, soft_cfg=None,
-            defer: bool = False, qw: bool = False, retry_band: int = 0, diag: bool = False) -> None:
+            defer: bool = False, qw: bool = False, retry_band: int = 0, diag: bool = False, unplaced: bool = False) -> None:
     # defer: pass 1 of the deferred schedule — the cheap V4 paths only; smart/soft run later on the pending reads
     # qw: V6 Phase 4 quality-weighted consensus — keep the Phred quality of every projected frame base of pending reads
     # retry_band: V6 opt-in second, wider band for reads beyond ``band`` (0 = off, the V4 behaviour)
     # diag: V7 opt-in stage counters (recovery.stagecount); observability only, never changes a decision
+    # unplaced: V7 opt-in read clustering — also return every unverified read, raw, for the unplaced-read store
     _P.update(lay=layout, al=TemplateAligner(layout, band, costs, retry_band=retry_band), min_q=min_q, rc=rc, smart=smart_cfg, soft=soft_cfg,
-              defer=defer, qw=qw, diag=diag)
+              defer=defer, qw=qw, diag=diag, unpl=unplaced)
     if smart_cfg is not None or soft_cfg is not None:
         from vnxdna.sync.smart.recovery import Geometry
         _P["geom"] = Geometry(layout)
@@ -345,5 +346,10 @@ def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | N
         # per-read arrays (batch order) for ground-truth harnesses; the decoder itself only adds up ``counts``
         out["diag"] = {"counts": counts, "fate": fate, "rc_used": rc_used.copy(),
                        "pend_index": pend[good].astype(np.int64)}
+    if _P.get("unpl"):
+        # V7 read clustering (opt-in): every read without a verified frame, as read (not re-oriented); decisions above
+        # are unchanged
+        from vnxdna.recovery.cluster.store import select_unplaced
+        out["unpl"] = select_unplaced(batch_codes, lengths, quals, acc, lay.strand_nt)
     out["cpu_seconds"] = time.process_time() - cpu0          # observability only (never in the report)
     return out

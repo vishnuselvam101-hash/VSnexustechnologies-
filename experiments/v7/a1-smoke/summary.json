@@ -1,0 +1,139 @@
+{
+ "cells": {
+  "deletion-heavy/cov10": {
+   "fallback": {
+    "error_codes": {
+     "None": 5
+    },
+    "funnel_mean": {
+     "clustered_reads": 6204.4,
+     "clusters": 690.0,
+     "consensus_attempts": 690.0,
+     "decode_failed": 7.6,
+     "erasures_exceed_parity": 22.0,
+     "fill_confirmations": 532.8,
+     "fill_conflicts": 0.0,
+     "fill_data_symbols": 64.2,
+     "fill_superblock_symbols": 0.0,
+     "frames_data": 670.6,
+     "frames_superblock": 11.8,
+     "frames_verified": 682.4,
+     "insufficient_reads": 0.0,
+     "reads": 6870.2,
+     "rows_filled": 3.2,
+     "rows_short": 3.2,
+     "unassigned_reads": 1.0,
+     "unplaced_stored": 6205.4
+    },
+    "median_decode_seconds": 36.71,
+    "outcomes": {
+     "CRASH": 0,
+     "EXACT": 5,
+     "EXPLICIT_FAILURE": 0,
+     "FALSE_SUCCESS": 0,
+     "PARTIAL": 0
+    },
+    "stage_status": {
+     "ran": 5
+    },
+    "terminal_stage": {
+     "None": 5
+    },
+    "trigger": {
+     "rows": 5
+    }
+   },
+   "off": {
+    "error_codes": {
+     "None": 5
+    },
+    "median_decode_seconds": 0.37,
+    "outcomes": {
+     "CRASH": 0,
+     "EXACT": 0,
+     "EXPLICIT_FAILURE": 5,
+     "FALSE_SUCCESS": 0,
+     "PARTIAL": 0
+    },
+    "terminal_stage": {
+     "outer_ecc": 5
+    }
+   },
+   "trials": 5
+  },
+  "nanopore-like/cov10": {
+   "fallback": {
+    "error_codes": {
+     "None": 5
+    },
+    "funnel_mean": {
+     "clustered_reads": 6879.0,
+     "clusters": 671.8,
+     "consensus_attempts": 671.8,
+     "decode_failed": 151.4,
+     "erasures_exceed_parity": 98.6,
+     "fill_confirmations": 0.2,
+     "fill_conflicts": 0.0,
+     "fill_data_symbols": 511.2,
+     "fill_superblock_symbols": 9.0,
+     "frames_data": 511.4,
+     "frames_superblock": 9.0,
+     "frames_verified": 520.4,
+     "insufficient_reads": 0.0,
+     "reads": 6914.8,
+     "rows_filled": 9.0,
+     "rows_short": 9.0,
+     "unassigned_reads": 35.6,
+     "unplaced_stored": 6914.6
+    },
+    "median_decode_seconds": 53.32,
+    "outcomes": {
+     "CRASH": 0,
+     "EXACT": 0,
+     "EXPLICIT_FAILURE": 5,
+     "FALSE_SUCCESS": 0,
+     "PARTIAL": 0
+    },
+    "stage_status": {
+     "ran": 5
+    },
+    "terminal_stage": {
+     "outer_ecc": 5
+    },
+    "trigger": {
+     "superblock": 5
+    }
+   },
+   "off": {
+    "error_codes": {
+     "NO_SUPERBLOCK": 5
+    },
+    "median_decode_seconds": 0.37,
+    "outcomes": {
+     "CRASH": 0,
+     "EXACT": 0,
+     "EXPLICIT_FAILURE": 5,
+     "FALSE_SUCCESS": 0,
+     "PARTIAL": 0
+    },
+    "terminal_stage": {
+     "superblock": 5
+    }
+   },
+   "trials": 5
+  }
+ },
+ "classification": "EXPERIMENTAL / SIMULATED",
+ "config_sha256": "1fca5304979a92ee64b55a5b62731c926abd4fb73f1afbe0c479d1f239576955",
+ "crash_total": 0,
+ "experiment": "A1-SMOKE",
+ "false_success_total": 0,
+ "git": {
+  "commit": "0b7f0e9b5e90fb1e51ce32cda2b92c6da3b91e09",
+  "dirty": true,
+  "dirty_tracked": false
+ },
+ "record": "summary",
+ "statement": "EXPERIMENTAL (protocol \u00a77 exploration seeds 82020-82024), SIMULATED: software strands and the unfitted V6 channel models. No DNA was synthesised, stored or sequenced; no public data and no fitted model is used. A smoke check that the reference runs, not an efficacy result; no tuning.",
+ "trials": 10
+}

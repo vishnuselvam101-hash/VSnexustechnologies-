@@ -15,7 +15,10 @@ Stages, in the order of protocol §8.1 (``STAGES``):
                       refused by the parser with a typed error (terminal stage ``read_parsing``).
 * ``orientation``     orientation pre-pass flips, reverse-complement retries attempted / adopted, accepted reads read
                       as reverse complement.
-* ``clustering``      not applicable in 6.0 (no clustering stage): ``{"applicable": 0}``.
+* ``clustering``      ``{"applicable": 0}`` unless read clustering is on (``read_clustering="fallback"``, V7 item A):
+                      then the unplaced-read store, sketch/candidate/verification/component counters, unassigned
+                      reads and the fill-only merge (``recovery.cluster.stage``); its consensus counters are in
+                      ``consensus`` with the prefix ``cluster_``.
 * ``consensus``       pass-2 consensus per missing address: attempts with one / several reads, groups capped at
                       ``max_pending_per_address``, ambiguous columns (votes split below the threshold), empty columns
                       (no read has a base), frames whose erasures exceed the inner parity, recoveries.
@@ -80,7 +83,8 @@ class StageCounters:
         for k in sorted(self.c):
             s, name = k.split(".", 1)
             stages[s][name] = int(self.c[k])
-        stages["clustering"] = {"applicable": 0}
+        if not stages["clustering"]:          # V7 item A off (or a 6.0 decode): no clustering stage
+            stages["clustering"] = {"applicable": 0}
         failed = sorted((report or {}).get("failed_groups") or [])
         rows = [dict(group=g, **self.failed_rows[g]) for g in failed if g in self.failed_rows]
         return {"schema": SCHEMA, "taxonomy": "V7_PROTOCOL section 8.1", "stages": stages,
