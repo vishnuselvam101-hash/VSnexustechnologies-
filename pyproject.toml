@@ -51,6 +51,21 @@ markers = ["slow: long-running exhaustive/statistical tests (run by default; des
 [tool.coverage.run]
 source = ["vnxdna"]
 
+[tool.mypy]
+# CI static-analysis gate (job `mypy`): the V6 layered packages that type-check cleanly today. Errors in imported
+# modules outside this set are not reported (follow_imports = "silent"). Not yet gated (open mypy errors, tracked
+# with the legacy v2/v4/ecc errors by job #58): vnxdna.archive, vnxdna.sync, vnxdna.recovery, vnxdna.pipeline,
+# vnxdna.benchmark. Run with: mypy   (from the repository root)
+python_version = "3.12"
+mypy_path = "src"
+follow_imports = "silent"
+packages = ["vnxdna.core", "vnxdna.native", "vnxdna.codec", "vnxdna.dnaenc", "vnxdna.simulation", "vnxdna.sdk",
+            "vnxdna.conformance", "vnxdna.commands", "vnxdna.v6"]
+
+[[tool.mypy.overrides]]
+module = ["reedsolo", "reedsolo.*", "jsonschema", "jsonschema.*"]    # no type information shipped
+ignore_missing_imports = true
+
 [tool.ruff]
 target-version = "py312"
 line-length = 140

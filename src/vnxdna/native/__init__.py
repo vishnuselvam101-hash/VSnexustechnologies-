@@ -23,6 +23,7 @@ variable is reported in ``error`` (the decode itself would raise it).
 """
 from __future__ import annotations
 
+import importlib
 import os
 from pathlib import Path
 
@@ -35,15 +36,9 @@ _CODECS = "vnxdna.codec.codecs"      # InnerRS; its VNX_RS_REFERENCE switch (rea
 
 
 def _module(kernel: str):
-    if kernel == "align":
-        from . import align as m
-    elif kernel == "reads":
-        from . import reads as m
-    elif kernel == "rs":
-        from . import rs as m
-    else:
+    if kernel not in KERNELS:
         raise ValueError(f"unknown kernel {kernel!r}; one of {KERNELS}")
-    return m
+    return importlib.import_module(f"{__name__}.{kernel}")
 
 
 def _origin(kernel: str, library: str | None) -> str | None:

@@ -171,7 +171,7 @@ def environment() -> dict[str, Any]:
                 ram = int(line.split()[1]) * 1024
     except OSError:
         pass
-    packages = {}
+    packages: dict[str, str | None] = {}
     for name in ("numpy", "cryptography", "zstandard", "reedsolo", "pydantic", "typer"):
         try:
             packages[name] = metadata.version(name)

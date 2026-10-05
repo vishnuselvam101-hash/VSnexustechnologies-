@@ -191,6 +191,7 @@ class StrandWriter:
         self.file_hash = hashlib.sha256()
         self.strand_nt = strand_nt
         if fmt == "vxs":
+            assert strand_nt                                   # checked above: VXS needs a fixed strand length
             self.record_bytes = -(-strand_nt // 4)
             self.record_hash = hashlib.sha256()
             self._raw(VXS_MAGIC + VXS_VERSION.to_bytes(2, "big") + (0).to_bytes(2, "big") + strand_nt.to_bytes(4, "big")
@@ -246,9 +247,11 @@ def serialize_batch(batch: ReadBatch, fmt: str, labels: list[str] | None, first_
     n = batch.count
     total = int(batch.lengths.sum())
     if fmt == "vxs":
-        if n and ((batch.lengths != strand_nt).any()):
+        if not n:
+            return b"", n, total
+        if strand_nt is None or (batch.lengths != strand_nt).any():
             raise OutputError("VXS holds equal-length strands only; this batch has reads of other lengths (use FASTQ)")
-        return pack_codes(batch.codes.reshape(n, strand_nt)).tobytes() if n else b"", n, total
+        return pack_codes(batch.codes.reshape(n, strand_nt)).tobytes(), n, total
     ascii_all = _CODE_TO_ASCII[batch.codes].tobytes()
     offsets = batch.offsets.tolist()
     names = labels or [f"r{first_index + i}" for i in range(n)]

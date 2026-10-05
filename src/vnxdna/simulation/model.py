@@ -25,6 +25,7 @@ import copy
 import hashlib
 import json
 import math
+import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -642,7 +643,7 @@ def from_doc(doc: Any, *, source: dict | None = None) -> tuple[ChannelModel, int
     return ChannelModel(model.doc, sid, src), cfg.seed
 
 
-def read_file(path: str | Path) -> tuple[ChannelModel, int | None]:
+def read_file(path: str | os.PathLike) -> tuple[ChannelModel, int | None]:
     p = Path(path)
     try:
         raw = p.read_bytes()
