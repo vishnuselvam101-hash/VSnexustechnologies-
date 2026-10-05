@@ -47,7 +47,8 @@ class Layout:
         spec = [("n_reads", 1), ("excluded", 1), ("pos_sub", L), ("pos_ins", L), ("pos_del", L), ("pos_delstart", L),
                 ("sub_matrix", 16), ("ins_base", 4), ("ins_runs", self.max_run), ("del_runs", self.max_run),
                 ("end_ins_events", 1), ("end_ins_bases", 1), ("corr", 4),
-                ("ctx_sites", M * 128), ("ctx_sub", M * 128), ("ctx_ins", M * 128), ("ctx_del", M * 128)]
+                ("ctx_sites", M * 128), ("ctx_sub", M * 128), ("ctx_ins", M * 128), ("ctx_del", M * 128),
+                ("ed_n", 1), ("ed_sum", 1), ("ed_sq", 1), ("window_out", 1)]
         if self.quality:
             spec += [("q_correct", self.qbins), ("q_error", self.qbins), ("q_cycle_sum", self.cycles),
                      ("q_cycle_n", self.cycles)]
@@ -125,10 +126,13 @@ def read_events(ref: bytes, rcodes_read: bytes, runs, window_start: int = 0) -> 
 
 
 def tally_reference(ref: bytes, reads: list, layout: Layout, mode: str = "NW", quals: list | None = None,
-                    exclude_frac: float = EXCLUDE_FRAC, aligner: str = "edlib", shift: str = "left"
-                    ) -> tuple[np.ndarray, np.ndarray]:
+                    exclude_frac: float = EXCLUDE_FRAC, aligner: str = "edlib", shift: str = "left",
+                    length_window: tuple | None = None) -> tuple[np.ndarray, np.ndarray]:
     """(count vector of this reference, read-level histogram vector). ``reads`` are upper-case ACGT bytes; for ``HW`` they may
-    carry flanks. A read with more than ``exclude_frac * len(ref)`` edits is counted in ``excluded`` and not tallied."""
+    carry flanks. A read with more than ``exclude_frac * len(ref)`` edits is counted in ``excluded`` and not tallied.
+    ``length_window`` = (lo, hi): only reads with lo <= len(read) - len(ref) <= hi are used (protocol 5.5, A2.2: the
+    dataset's read selection applied to simulated reads too); the others are counted in ``window_out`` and nothing else.
+    ``ed_n``/``ed_sum``/``ed_sq`` hold the count, sum and sum of squares of the edit distance of the tallied reads."""
     L = layout.L
     if len(ref) != L:
         raise ValueError(f"reference length {len(ref)} differs from the layout length {L}")
@@ -147,6 +151,14 @@ def tally_reference(ref: bytes, reads: list, layout: Layout, mode: str = "NW", q
         qe = np.zeros(layout.qbins, dtype=np.int64)
         qsum = np.zeros(layout.cycles, dtype=np.int64)
         qn = np.zeros(layout.cycles, dtype=np.int64)
+    if length_window is not None:
+        lo, hi = length_window
+        keep = [i for i, r in enumerate(reads) if lo <= len(r) - L <= hi]
+        vec[layout.fields["window_out"][0]] = len(reads) - len(keep)
+        if len(keep) < len(reads):
+            reads = [reads[i] for i in keep]
+            quals = None if quals is None else [quals[i] for i in keep]
+    ed = np.zeros(3, dtype=np.int64)
     dp = dp_align_batch(ref, reads) if aligner == "dp-diag" and mode == "NW" else None
     for idx, read in enumerate(reads):
         if dp is not None:
@@ -166,6 +178,7 @@ def tally_reference(ref: bytes, reads: list, layout: Layout, mode: str = "NW", q
             vec[layout.fields["excluded"][0]] += 1
             continue
         n_ok += 1
+        ed += (1, dist, dist * dist)
         ev = read_events(ref, read, runs, ws)
         lists["sub_sites"] += ev["sub_sites"]
         lists["sub_pairs"] += ev["sub_pairs"]
@@ -185,6 +198,7 @@ def tally_reference(ref: bytes, reads: list, layout: Layout, mode: str = "NW", q
             _tally_quality(qc, qe, qsum, qn, runs, ws, quals[idx], layout)
     f = layout.fields
     vec[f["n_reads"][0]] = n_ok
+    vec[f["ed_n"][0]], vec[f["ed_sum"][0]], vec[f["ed_sq"][0]] = ed
     if n_ok:
         for name, key in (("pos_sub", "sub_sites"), ("pos_del", "del_sites"), ("pos_delstart", "del_starts")):
             vec[f[name][0]:f[name][0] + L] = (np.bincount(np.asarray(lists[key], dtype=np.int64), minlength=L)[:L]

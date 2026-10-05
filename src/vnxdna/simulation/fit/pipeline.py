@@ -32,10 +32,11 @@ def _chunks(pairs, layout, mode, opts):
 
 
 def tally_matrix(pairs, layout: Layout, *, mode: str = "NW", workers: int = 1, aligner: str = "edlib",
-                 shift: str = "left") -> tuple[np.ndarray, np.ndarray]:
-    """(M, read histogram totals) for an iterable of ``(ref, reads)`` or ``(ref, reads, quals)``. Row order = input order."""
+                 shift: str = "left", length_window: tuple | None = None) -> tuple[np.ndarray, np.ndarray]:
+    """(M, read histogram totals) for an iterable of ``(ref, reads)`` or ``(ref, reads, quals)``. Row order = input order.
+    ``length_window``: see :func:`tally_reference`."""
     blocks, total = [], np.zeros(EDIT_BINS + DRIFT_BINS, dtype=np.int64)
-    tasks = _chunks(pairs, layout, mode, {"aligner": aligner, "shift": shift})
+    tasks = _chunks(pairs, layout, mode, {"aligner": aligner, "shift": shift, "length_window": length_window})
     if workers <= 1:
         results = map(_work, tasks)
         for m, rs in results:

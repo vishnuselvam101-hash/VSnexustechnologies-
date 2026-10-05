@@ -3,7 +3,11 @@ count, but the simulator's per-site probabilities and the *measured* events diff
 and saturates inside homopolymers. So after the first estimate, reads are simulated from the fitted model for a subset of the
 FIT references, measured with the same alignment pipeline, and every parameter is scaled by (target statistic / simulated
 statistic), a few times. The targets are always statistics measured on the FIT data; no DEV or held-out data is used.
-The confidence intervals of the raw estimator are scaled by the same factors."""
+The confidence intervals of the raw estimator are scaled by the same factors.
+
+With ``design.heterogeneity`` (protocol 5.5, A2.1) the variance of the per-read edit distance is matched as well: Var(m) of
+the per-read gamma multiplier is moved by (var_real - var_sim) / mean_real^2 (damped), since a mixed read-level rate adds
+about mean^2 Var(m) to the variance of the per-read error count."""
 from __future__ import annotations
 
 import copy
@@ -41,6 +45,7 @@ def summary(layout: Layout, T: np.ndarray, design: est.Design) -> dict:
            "ins_mean": est._mean_run(ins_runs), "hp_indel": ratio(indel), "hp_sub": ratio(ev["substitution"]),
            "ctx_sub": ev["substitution"].sum(axis=1) / np.maximum(S.sum(axis=1), 1), "ctx_sub_events": ev["substitution"].sum(axis=1),
            "profile": {}}
+    out["ed_mean"], out["ed_var"] = est.edit_moments(layout, T)
     for kind, (pos, _c) in est._kind_arrays(layout, T).items():
         B = design.bins.get(kind)
         out["profile"][kind] = (est._profile_counts(pos.astype(float), B), B) if B else None
@@ -62,7 +67,7 @@ def calibrate(fit: dict, layout: Layout, refs: list, *, real_T: np.ndarray, cove
     values = copy.deepcopy(fit["values"])
     raw = copy.deepcopy(fit["values"])
     target = summary(layout, real_T, design)
-    trace = []
+    trace: list[dict] = []
     for it in range(iterations):
         model = _sim_model(values, design, fit)
         cl = simulate_clusters(model, refs, coverage, seed * 100 + it)
@@ -71,7 +76,14 @@ def calibrate(fit: dict, layout: Layout, refs: list, *, real_T: np.ndarray, cove
         ratios = {k: (target[k] / sim[k] if sim[k] else 1.0) for k in ("sub", "ins", "start", "hp_indel", "hp_sub")}
         ratios["del_mean"] = target["del_mean"] / sim["del_mean"] if sim["del_mean"] else 1.0
         ratios["ins_mean"] = (target["ins_mean"] - 1.0 + 1e-6) / (sim["ins_mean"] - 1.0 + 1e-6)
+        if design.heterogeneity and values.get("sequencing.read_heterogeneity.shape") is not None and target["ed_mean"] > 0:
+            ratios["ed_var"] = target["ed_var"] / sim["ed_var"] if sim["ed_var"] else 1.0
+            s2 = 1.0 / values["sequencing.read_heterogeneity.shape"]
+            s2 += STEP * (target["ed_var"] - sim["ed_var"]) / target["ed_mean"] ** 2
+            s2 = min(max(s2, est.HETEROGENEITY_FLOOR), est.HETEROGENEITY_CEIL)
+            values["sequencing.read_heterogeneity.shape"] = 1.0 / s2
         trace.append({"iteration": it, "ratios": {k: float(v) for k, v in ratios.items()}})
+        ratios.pop("ed_var", None)
         ratios = {k: float(np.clip(v, *CLIP) ** STEP) for k, v in ratios.items()}
         values["sequencing.substitution.rate"] *= ratios["sub"]
         values["sequencing.insertion.rate"] *= ratios["ins"]
@@ -108,6 +120,8 @@ def calibrate(fit: dict, layout: Layout, refs: list, *, real_T: np.ndarray, cove
     M, _ = tally_matrix(zip(refs, cl), layout, workers=workers, **(tally_opts or {}))
     sim = summary(layout, M.sum(axis=0).astype(float), design)
     residual = {k: float(target[k] / sim[k]) if sim[k] else 1.0 for k in ("sub", "ins", "start", "hp_indel", "hp_sub")}
+    if design.heterogeneity:
+        residual["ed_var"] = float(target["ed_var"] / sim["ed_var"]) if sim["ed_var"] else 1.0
     factors = {}
     ci = copy.deepcopy(fit["ci95"])
     for key, v in values.items():
@@ -124,4 +138,4 @@ def calibrate(fit: dict, layout: Layout, refs: list, *, real_T: np.ndarray, cove
             ci[key] = {"lo": np.minimum(lo, hi).tolist(), "hi": np.maximum(lo, hi).tolist()}
         else:
             ci[key] = [float(c[0] * f), float(c[1] * f)]
-    return {"values": values, "ci95": ci, "factors": factors, "trace": trace, "final_residual_ratios": residual, "raw_values": raw, "target": {k: v for k, v in target.items() if k in ("sub", "ins", "start", "f_del", "del_mean", "ins_mean", "hp_indel", "hp_sub")}}
+    return {"values": values, "ci95": ci, "factors": factors, "trace": trace, "final_residual_ratios": residual, "raw_values": raw, "target": {k: v for k, v in target.items() if k in ("sub", "ins", "start", "f_del", "del_mean", "ins_mean", "hp_indel", "hp_sub", "ed_mean", "ed_var")}}

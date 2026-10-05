@@ -31,6 +31,9 @@ CONTEXT_PRIOR = 10.0           # pseudo-events shrinking a 3-mer's multiplier to
 #: concentrate simulated events on those sites and the simulated reads, normalised again, would overshoot). The homopolymer
 #: multiplier, which is a run-level quantity, is unaffected. The schema allows indel contexts; this fitter does not fill them.
 CONTEXT_KINDS = ("substitution",)
+HETEROGENEITY_MIN = 0.01       # protocol 5.5 (A2.1): read_heterogeneity is used when the moment estimate of Var(m) exceeds this
+HETEROGENEITY_FLOOR = 1e-6     # Var(m) is kept in [1e-6, 20]: shape in [0.05, 1e6], the schema range
+HETEROGENEITY_CEIL = 20.0
 
 
 @dataclass
@@ -41,6 +44,7 @@ class Design:
     del_geometric: bool = False
     context: tuple = ()                                 # kinds ("substitution", "insertion", "deletion") with a 3-mer context
     use_hp: bool = True
+    heterogeneity: bool = False                         # protocol 5.5 A2.1: per-read gamma rate multiplier
 
 
 def _div(a, b):
@@ -232,7 +236,36 @@ def choose_design(layout: Layout, T: np.ndarray) -> Design:
         if lr >= CONTEXT_LR and Ot[kind].sum() >= 500:
             ctx.append(kind)
     d.context = tuple(ctx)
+    d.heterogeneity = heterogeneity_moment(layout, T) > HETEROGENEITY_MIN
     return d
+
+
+def edit_moments(layout: Layout, T: np.ndarray) -> tuple[float, float]:
+    """(mean, variance) of the per-read unit-cost edit distance over the tallied reads of the totals ``T``."""
+    n = float(layout.get(T, "ed_n")[0])
+    if n <= 1:
+        return 0.0, 0.0
+    m = float(layout.get(T, "ed_sum")[0]) / n
+    return m, max(0.0, float(layout.get(T, "ed_sq")[0]) / n - m * m)
+
+
+def independent_edit_variance(layout: Layout, T: np.ndarray) -> float:
+    """Per-read edit-distance variance if every read had the same rates: the compound-Poisson variance of the observed
+    events (substituted sites, insertion runs and deletion runs, each contributing its length squared) per read."""
+    n = float(layout.get(T, "ed_n")[0])
+    if n <= 0:
+        return 0.0
+    lens2 = np.arange(1, layout.max_run + 1, dtype=float) ** 2
+    s2 = (float(layout.get(T, "pos_sub").sum()) + float(layout.get(T, "ins_runs") @ lens2)
+          + float(layout.get(T, "del_runs") @ lens2))
+    return s2 / n
+
+
+def heterogeneity_moment(layout: Layout, T: np.ndarray) -> float:
+    """Moment estimator of Var(m) of the per-read rate multiplier (protocol 5.5, A2.1): max(0, var - var0) / mean^2 with var0
+    the variance without heterogeneity (:func:`independent_edit_variance`); the simulation calibration refines it."""
+    m, v = edit_moments(layout, T)
+    return max(0.0, v - independent_edit_variance(layout, T)) / (m * m) if m > 0 else 0.0
 
 
 def _mean_run(hist: np.ndarray) -> float:
@@ -277,6 +310,8 @@ def estimate(layout: Layout, T: np.ndarray, d: Design) -> dict:
     out["sequencing.homopolymer.substitution_multiplier"] = fit["hp"]["substitution"]
     for kind in ("substitution", "insertion", "deletion"):
         out[f"sequencing.context.{kind}"] = fit["ctx"][kind].tolist() if kind in d.context else None
+    out["sequencing.read_heterogeneity.shape"] = (1.0 / min(max(heterogeneity_moment(layout, T), HETEROGENEITY_FLOOR), HETEROGENEITY_CEIL)
+                                                  if d.heterogeneity else None)
     n00, n01, n10, n11 = layout.get(T, "corr").astype(float)
     if layout.quality:
         out.update(estimate_quality(layout, T))
@@ -287,6 +322,7 @@ def estimate(layout: Layout, T: np.ndarray, d: Design) -> dict:
                      "ins_run_share_gt1": _div(float(layout.get(T, "ins_runs")[1:].sum()), float(layout.get(T, "ins_runs").sum())),
                      "deletion_run_mean_observed": _div(float(layout.get(T, "pos_del").sum()), O["deletion"]),
                      "deletion_run_mean_geometric_fit": m_del,
+                     "edit_distance_mean_var": list(edit_moments(layout, T)),
                      "p_event_given_event": _div(n11, n11 + n10), "p_event_given_no_event": _div(n01, n01 + n00),
                      "excluded_reads": float(layout.get(T, "excluded").sum())}
     return out

@@ -301,9 +301,13 @@ def validate_model(model: cm.ChannelModel, layout: Layout, *, dev_refs: list, de
     refs = dev_refs[:sim_refs_cap]
     simM = np.zeros(layout.size, dtype=np.int64)
     simrs = np.zeros(EDIT_BINS + DRIFT_BINS, dtype=np.int64)
+    raw_drift = np.zeros(EDIT_BINS + DRIFT_BINS, dtype=np.int64)    # simulated read lengths before any read selection
     for s in range(sim_seeds):
         sq: list | None = [] if layout.quality else None
         cl = simulate_clusters(model, refs, sim_coverage, seed * 1000 + s, quals=sq)
+        for reads in cl:
+            for r in reads:
+                raw_drift[EDIT_BINS + max(0, min(DRIFT_BINS - 1, len(r) - layout.L + DRIFT_OFF))] += 1
         pairs = zip(refs, cl, sq) if sq is not None else zip(refs, cl)
         M, rs = tally_matrix(pairs, layout, mode="NW" if mode == "HW" else mode, workers=workers, **(tally_opts or {}))
         simM += M.sum(axis=0, dtype=np.int64)
@@ -314,6 +318,8 @@ def validate_model(model: cm.ChannelModel, layout: Layout, *, dev_refs: list, de
     rep = {
         "M1": m1_rates(layout, dev_M, sim_T, seed),
         "M2": m2_edit_distance(dev_rs, simrs), "M3": m3_drift(dev_rs, simrs),
+        "M3_unselected": dict(m3_drift(dev_rs, raw_drift), gating=False,
+                              note="simulated reads without the dataset's read selection (protocol 5.5, A2.2); not gating"),
         "M4": m4_profile(layout, real_T, sim_T), "M5": m5_delruns(layout, real_T, sim_T),
         "M6": m6_homopolymer(layout, real_T, sim_T, min_run),
         "M7": m7_coverage(dev_counts if dev_counts is not None else
@@ -343,7 +349,8 @@ def design_from_model(model: cm.ChannelModel) -> "est.Design":
     return est.Design(min_run=seq["homopolymer"]["min_run"], bins=bins,
                       ins_geometric=seq["insertion"].get("run_length", {}).get("distribution") == "geometric",
                       del_geometric=seq["deletion"]["run_length"]["distribution"] == "geometric",
-                      context=tuple(k for k in ("substitution", "insertion", "deletion") if ctx.get(k) is not None))
+                      context=tuple(k for k in ("substitution", "insertion", "deletion") if ctx.get(k) is not None),
+                      heterogeneity=seq.get("read_heterogeneity") is not None)
 
 
 def compare_params(target: dict, refit: dict, ci: dict, rel_floor: float = 0.08, abs_floor: float = 0.02) -> dict:

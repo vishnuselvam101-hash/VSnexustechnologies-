@@ -26,6 +26,9 @@ from fitlib import F, G, MO, P, V, cm  # noqa: E402
 from vnxdna.simulation.fit.tally import Layout  # noqa: E402
 
 D03_FILES = (0, 2)          # non-held-out D03 files (file-1 is the held-out run)
+#: protocol 5.5 (A2.2): read-length selection (read length - L), the closed range observed over all FIT reads of the dataset;
+#: do_fit checks that the FIT reads span exactly this range and refuses to continue otherwise
+LENGTH_WINDOW = {"cnr": (-4, 5), "d03-nanopore": (-15, 15)}
 PUBLISHED = {
     "d02": {"source": "Gimpel et al. 2023 (Nat Commun 14:6026): 40 datasets, deletions 6.7 +- 6.9, substitutions 7.9 +- 2.0, insertions < 0.3 +- 0.2 "
                       "per 1000 nt; iSeq PhiX substitutions 1.8 +- 0.8e-3, indels < 1e-4 (quoted from docs/DNA_STORAGE_DATASET_REGISTRY.md)",
@@ -67,15 +70,19 @@ JOBS["d02-twist"] = {"dataset": "dt4dds-twist", "L": 108, "mode": "HW", "runs": 
                      "name": "illumina-iseq-twist-fit", "pub": "d02", "title": "DT4DDS Twist_GCfix Aging_0a/0b (R1) with PhiX stage split"}
 OUT = Path(os.environ.get("VNX_FIT_OUT", Path(__file__).resolve().parents[1]))   # override for dry runs only
 CAL_REFS, CAL_COVERAGE, CAL_ITER = 4000, 10, 5
+#: round of model F: results of round 1 (before amendment 2, commit 1c0b889) stay in fit-<dataset>/{models,results};
+#: this code writes round 2 (protocol 5.5) to fit-<dataset>/a2/{models,results}
+ROUND = "a2"
+MODEL_VERSION = "2.0.0"
 SEED = 20261005
 
 
 def d02_out_dir() -> Path:
-    return OUT / "fit-d02"
+    return OUT / "fit-d02" / ROUND
 
 
 def out_dir(job: dict) -> Path:
-    return OUT / ("fit-cnr" if job["dataset"] == "cnr" else "fit-d03" if job["dataset"] == "d03-nanopore" else "fit-d02")
+    return OUT / ("fit-cnr" if job["dataset"] == "cnr" else "fit-d03" if job["dataset"] == "d03-nanopore" else "fit-d02") / ROUND
 
 
 def sources(guard: G.Guard, job: dict, split: str):
@@ -102,7 +109,26 @@ def job_files(job: dict) -> list[dict]:
 
 
 def topts(job: dict) -> dict:
-    return {"aligner": job.get("aligner", "edlib"), "shift": "left"}
+    return {"aligner": job.get("aligner", "edlib"), "shift": "left", "length_window": LENGTH_WINDOW.get(job["dataset"])}
+
+
+def observed_window(rs: np.ndarray) -> tuple[int, int]:
+    """(min, max) of read length - L over the reads of a read-level histogram (NW alignment: the whole read is aligned)."""
+    from vnxdna.simulation.fit.tally import DRIFT_OFF, EDIT_BINS
+    nz = np.flatnonzero(rs[EDIT_BINS:])
+    return int(nz.min()) - DRIFT_OFF, int(nz.max()) - DRIFT_OFF
+
+
+def check_window(job: dict, rs: np.ndarray, M: np.ndarray, lay) -> dict:
+    """A2.2: the declared window must equal the range of the FIT reads, so it removes no real read."""
+    declared = LENGTH_WINDOW.get(job["dataset"])
+    if declared is None:
+        return {"declared": None}
+    seen = observed_window(rs)
+    removed = int(lay.get(M, "window_out").sum())
+    if tuple(declared) != seen or removed:
+        raise SystemExit(f"read-length window {declared} differs from the FIT range {seen} or removes {removed} real reads")
+    return {"declared": list(declared), "observed_fit_range": list(seen), "real_reads_removed": removed}
 
 
 def tally_split(guard: G.Guard, job: dict, split: str, workers: int, keep_clusters: int = 0):
@@ -165,6 +191,7 @@ def do_fit(job_id: str, workers: int, bootstrap: int, seed: int = SEED) -> Path:
     lay, Ms, rss, colls, labels = tally_split(guard, job, "FIT", workers)
     t_tally = time.time() - t0
     M = np.concatenate(Ms)
+    window = check_window(job, sum(rss), M, lay)
     refs = [r for c in colls for r in c.refs]
     step = max(1, len(refs) // CAL_REFS)
     cal_refs = refs[::step][:CAL_REFS]
@@ -188,20 +215,25 @@ def do_fit(job_id: str, workers: int, bootstrap: int, seed: int = SEED) -> Path:
                                                             "ci95_p_event_given_event": ci["_stats"]["p_event_given_event"]},
                                       "deletion_run_histogram_1_to_16plus": v["_stats"]["deletion_runs_hist"],
                                       "insertion_run_histogram_1_to_16plus": v["_stats"]["insertion_runs_hist"],
-                                      "per_group": per_group, "pooled": cov_stats,
+                                      "per_group": per_group, "pooled": cov_stats, "read_length_window": window,
+                                      "edit_distance_mean_var": v["_stats"]["edit_distance_mean_var"],
                                       "coverage_aic": fit["coverage"]["aic"], "coverage_choice": list(fit["coverage"]["choice"]),
                                       "design": {"min_run": fit["design"].min_run, "profile_bins": fit["design"].bins,
                                                  "context_kinds": list(fit["design"].context),
                                                  "insertion_runs_geometric": fit["design"].ins_geometric,
+                                                 "read_heterogeneity": fit["design"].heterogeneity,
                                                  "deletion_runs_geometric": fit["design"].del_geometric}},
               "misfit": {"notes": misfit_notes(fit)},
               "notes": ["PUBLIC-DATA-DERIVED parameters; reads simulated from this model are SIMULATED",
                         "dropout is an upper bound: empty clusters mix molecular loss with clustering/segmentation loss",
                         "nanopore quality is assumed (no qualities in the dataset): sequencing.quality is the schema default",
-                        "applying the model to 313-nt VNX strands extrapolates the relative position profile"]}
+                        "applying the model to 313-nt VNX strands extrapolates the relative position profile",
+                        "protocol 5.5 (amendment 2): read_heterogeneity (per-read gamma rate multiplier) and the read-length window "
+                        f"{window.get('declared')} applied to simulated reads in calibration and validation; the model describes "
+                        "length-selected reads"]}
     report["misfit"] = {"notes": report["misfit"]["notes"]}
     doc = MO.build(
-        fit, name=job["name"], version="1.0.0", model_id=f"{job['name']}-F",
+        fit, name=job["name"], version=MODEL_VERSION, model_id=f"{job['name']}-F-{ROUND}",
         description=f"Model F fitted to the FIT split of {job['title']}.",
         note=("PUBLIC-DATA-DERIVED fit of other groups' sequencing data (FIT split only, protocol 4.1/5.2). Reads simulated from it are "
               "SIMULATED. Not a prediction for VNX strands or any wet-lab round."),
@@ -405,8 +437,11 @@ def write_configs() -> None:
                "alignment": "edlib unit-cost global (NW) / infix (HW), leftmost indel normalisation; 'dp-diag' = P4-EXP-03 tie-break",
                "workers": "results do not depend on the worker count",
                "environment": environment_info()}
-        (OUT / name).mkdir(parents=True, exist_ok=True)
-        (OUT / name / "config.json").write_text(json.dumps(cfg, indent=1, sort_keys=True) + "\n")
+        cfg["round"] = {"name": ROUND, "protocol": "docs/V7_PROTOCOL.md 5.5 (amendment 2)",
+                        "read_heterogeneity": "per-read gamma rate multiplier, estimated on FIT (A2.1)",
+                        "length_window": LENGTH_WINDOW.get(ds), "model_version": MODEL_VERSION}
+        (OUT / name / ROUND).mkdir(parents=True, exist_ok=True)
+        (OUT / name / ROUND / "config.json").write_text(json.dumps(cfg, indent=1, sort_keys=True) + "\n")
 
 
 def environment_info() -> dict:

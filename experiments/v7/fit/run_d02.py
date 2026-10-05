@@ -120,7 +120,7 @@ def staged_model(fit: dict, phix: dict, S_rates: dict, scale: dict, *, job: dict
              "synthesis.position_profile.deletion": "inferred",
              "sequencing.substitution.rate": "measured", "sequencing.insertion.rate": "measured", "sequencing.deletion.rate": "measured"}
     return MO.build(
-        _scaled_fit(fit, scale), name=job["name"], version="1.0.0", model_id=f"{job['name']}-F",
+        _scaled_fit(fit, scale), name=job["name"], version=R.MODEL_VERSION, model_id=f"{job['name']}-F-{R.ROUND}",
         description=f"Model F fitted to the FIT split of {job['title']}.",
         note=("PUBLIC-DATA-DERIVED fit of other groups' sequencing data (FIT split only, protocol 4.1/5.2). Two stages: the sequencing "
               "stage carries the PhiX-run (sequencing-only) rate scale on the error structure fitted to the design reads; the synthesis "

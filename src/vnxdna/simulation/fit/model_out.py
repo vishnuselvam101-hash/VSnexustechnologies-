@@ -18,7 +18,7 @@ BASIS = {
     "sequencing.position_profile.substitution": "estimated", "sequencing.position_profile.insertion": "estimated",
     "sequencing.position_profile.deletion": "estimated",
     "sequencing.context.substitution": "measured", "sequencing.context.insertion": "measured",
-    "sequencing.context.deletion": "measured",
+    "sequencing.context.deletion": "measured", "sequencing.read_heterogeneity.shape": "estimated",
     "sequencing.coverage.model": "estimated", "sequencing.coverage.mean": "estimated",
     "sequencing.coverage.dispersion": "estimated", "sequencing.coverage.sigma": "estimated",
     "synthesis.dropout_rate": "inferred", "sequencing.reverse_complement_rate": "measured",
@@ -58,6 +58,8 @@ def sequencing_stage(fit: dict, extra: dict | None = None) -> dict:
     prof = {k: v[f"sequencing.position_profile.{k}"] for k in ("substitution", "insertion", "deletion")}
     if any(x is not None for x in prof.values()):
         seq["position_profile"] = {"basis": "relative", **prof}
+    if getattr(d, "heterogeneity", False) and v.get("sequencing.read_heterogeneity.shape") is not None:
+        seq["read_heterogeneity"] = {"distribution": "gamma", "shape": v["sequencing.read_heterogeneity.shape"]}
     if d.context:
         seq["context"] = {"k": 3, **{k: v[f"sequencing.context.{k}"] for k in d.context}}
     cov = fit.get("coverage")
