@@ -76,7 +76,7 @@ def candidate_pairs(hashes: np.ndarray, orient: np.ndarray, bucket_cap: int, max
             total += iu.size
             if total > max_pairs:
                 counts["candidate_pairs_slots"] = total
-                return (np.zeros(0, np.int64),) * 2 + (np.zeros(0, np.uint8),), {
+                return np.zeros(0, np.int64), np.zeros(0, np.int64), np.zeros(0, np.uint8), {
                     "limit": "max_candidate_pairs", "allowed": max_pairs, "used": total,
                     "effect": "clustering stage stopped; no cluster frame produced"}
             pa.append(mem[iu])
