@@ -379,7 +379,58 @@
    }
   },
   "result": {
-   "type": "object"
+   "type": "object",
+   "description": "Kind-specific body. The fields below are optional; when present they have these types (V6 Phase 6 security fields).",
+   "properties": {
+    "expected": {
+     "type": "object",
+     "description": "V6-SEC-03: the expectations given (--expect-archive-id / --expect-sha256); present only when given, and only on success (any mismatch is the error ARCHIVE_MISMATCH)",
+     "required": [
+      "archive_id",
+      "container_sha256"
+     ],
+     "properties": {
+      "archive_id": {
+       "oneOf": [
+        {
+         "type": "string",
+         "pattern": "^[0-9a-f]{32}$"
+        },
+        {
+         "type": "null"
+        }
+       ]
+      },
+      "container_sha256": {
+       "oneOf": [
+        {
+         "type": "string",
+         "pattern": "^[0-9a-f]{64}$"
+        },
+        {
+         "type": "null"
+        }
+       ]
+      }
+     },
+     "additionalProperties": false
+    },
+    "key_checked": {
+     "type": "boolean",
+     "description": "V6-SEC-02 (decode): a key or passphrase was given and the recovered container was opened with it (true: key check and manifest MAC verified; false: unencrypted archive accepted with --allow-unencrypted)"
+    },
+    "archive_id": {
+     "type": "string",
+     "pattern": "^[0-9a-f]{32}$",
+     "description": "extract, verify, archive: the manifest archive ID (for the key holder's catalogue, V6-SEC-03)"
+    },
+    "container_sha256": {
+     "type": "string",
+     "pattern": "^[0-9a-f]{64}$",
+     "description": "SHA-256 of the whole container file (decode: recovered container; extract: only with --expect-sha256)"
+    }
+   },
+   "additionalProperties": true
   },
   "warnings": {
    "type": "array"

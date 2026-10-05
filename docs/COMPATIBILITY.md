@@ -90,3 +90,12 @@ A decoder rejects:
 
 A future format must change one of these rather than reinterpret an existing field. `extensions` is the only place
 where optional, ignorable data may be added, and it is still covered by the digest and HMAC.
+
+## VNX4 archive IDs in 6.x (`content-v1`, V6 Phase 6)
+
+The opt-in `content-v1` archive ID (`vnx archive --archive-id content`, spec V6 §2.3.2) changes neither the VNX4 format
+nor any default output. Only the 16-byte `archive_id` value and `extensions.vnx.archive_id_derivation` differ; the
+header, body, chunk table, file table and reference table are byte-identical to an `options-v1` build of the same input
+(`tests/compat/test_archive_id_content_v1.py::test_identical_body_and_tables_under_both_derivations`). The released 5.0.0
+reader (6aef3f4) opens, verifies and extracts such an archive and decodes its strands
+(`::test_released_5_0_0_reader_opens_a_content_v1_archive`). The default stays `options-v1`.

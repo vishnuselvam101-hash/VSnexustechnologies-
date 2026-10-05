@@ -46,6 +46,10 @@ class ArchiveOptions:
     # V6 (spec §2.3.1): write the informational ``extensions.vnx`` block (spec version, software version, archive-ID
     # derivation). On by default; False reproduces the 5.x manifest layout. Never part of the archive-ID derivation.
     writer_provenance: bool = True
+    # V6 Phase 6 (spec §2.3.2): how an unencrypted archive's ID is derived. "options" = options-v1 (options + paths +
+    # sizes + metadata; the default, unchanged); "content" = content-v1 (options + Merkle root + SHA-256 of the file
+    # table), opt-in. Encrypted archives always use a random ID (AEAD associated data), so "content" is refused there.
+    archive_id: str = "options"
 
     def validate(self) -> None:
         if not ct.MIN_CHUNK_SIZE <= self.chunk_size <= ct.MAX_CHUNK_SIZE:
@@ -58,6 +62,11 @@ class ArchiveOptions:
             raise VNXConfigurationError("workers must be in 1..256")
         if self.key is not None and self.passphrase is not None:
             raise VNXConfigurationError("use a key file or a passphrase, not both")
+        if self.archive_id not in ("options", "content"):
+            raise VNXConfigurationError("archive_id must be 'options' (options-v1, the default) or 'content' (content-v1)")
+        if self.archive_id == "content" and (self.key is not None or self.passphrase is not None):
+            raise VNXConfigurationError("a content-derived archive ID (content-v1) is for unencrypted archives only; "
+                                        "encrypted archives always get a random ID")
 
 
 @dataclass
@@ -183,12 +192,50 @@ def _chunk_source(entries: list[Entry], chunk_size: int) -> Iterator[tuple[int, 
                                  retryable=True)
 
 
+def _id_options(opt: ArchiveOptions) -> bytes:
+    """The options string shared by options-v1 and content-v1 (spec §2.3.2)."""
+    return f"{opt.chunk_size}|{opt.compression}|{opt.level}|{opt.dedup}|{opt.preserve_metadata}".encode()
+
+
+def content_v1_archive_id(options: bytes, merkle_root: bytes, file_table: bytes) -> bytes:
+    """``SHA-256("VNX6 archive-id\\0" ‖ options ‖ merkle_root ‖ SHA-256(file table as stored))[:16]`` (spec §2.3.2)."""
+    if len(merkle_root) != 32:
+        raise ValueError("merkle_root must be 32 bytes")
+    return hashlib.sha256(b"VNX6 archive-id\x00" + options + merkle_root + hashlib.sha256(file_table).digest()).digest()[:16]
+
+
+def _content_v1_matches(c: ct.Container) -> bool:
+    """Whether ``c``'s archive ID is its content-v1 ID (spec §2.3.2). The manifest does not record every option of the
+    options string (the zstd level when compression is off, ``preserve_metadata``), so each value they can take is
+    tried: at most 44 hashes. Unencrypted archives only (the file table is hashed as stored)."""
+    m = c.manifest
+    try:
+        size = m["chunking"]["chunk_size"]
+        algo = m["compression"]["algorithm"]
+        dedup = "dedup-content-address" in m["required_features"]
+        levels = [m["compression"]["level"]] if algo == "zstd" else list(range(1, 23))
+    except (KeyError, TypeError):
+        return False
+    _, (body, ctb, ft, _rf, _mn), _, _ = ct.read_header_trailer(c.path)
+    with open(c.path, "rb") as f:
+        file_table = os.pread(f.fileno(), ft, ct.HEADER_BYTES + body + ctb)
+    root = merkle.root_from_leaves(ct.leaf_hashes(c.chunk_table_bytes))
+    for level in levels:
+        for preserve in (False, True):
+            opts = f"{size}|{algo}|{level}|{dedup}|{preserve}".encode()
+            if content_v1_archive_id(opts, root, file_table) == c.archive_id:
+                return True
+    return False
+
+
 def build_archive(inputs: list[str | os.PathLike], output: str | os.PathLike, options: ArchiveOptions | None = None, *,
                   overwrite: bool = False, progress: Callable[[dict], None] | None = None,
                   archive_id: bytes | None = None, salt: bytes | None = None) -> BuildReport:
     """Create a VNX4 container. ``archive_id``/``salt`` overrides exist for tests only."""
     opt = options or ArchiveOptions()
     opt.validate()
+    if opt.archive_id == "content" and archive_id is not None:
+        raise VNXConfigurationError("a caller-supplied archive ID cannot also be content-derived (content-v1)")
     t0 = time.perf_counter()
     entries, warnings = collect_entries(inputs, preserve_metadata=opt.preserve_metadata, follow_symlinks=opt.follow_symlinks)
     if not entries:
@@ -218,10 +265,12 @@ def build_archive(inputs: list[str | os.PathLike], output: str | os.PathLike, op
     else:
         enc = {"algorithm": "none"}
         derivation = "options-v1" if archive_id is None else "random"   # a caller-supplied ID is not derived
-        if archive_id is None:
+        if opt.archive_id == "content":
+            derivation = "content-v1"       # computed after the body and tables (below): nothing before them uses it
+        elif archive_id is None:
             # deterministic: derived from the options and the sorted entry list (paths, sizes, metadata)
             h = hashlib.sha256(b"VNX4 archive-id\x00")
-            h.update(f"{opt.chunk_size}|{opt.compression}|{opt.level}|{opt.dedup}|{opt.preserve_metadata}".encode())
+            h.update(_id_options(opt))
             for e in entries:
                 h.update(e.path.encode() + b"\x00" + f"{e.type}|{e.size}|{e.mode}|{e.mtime_ns}".encode() + b"\x00")
             archive_id = h.digest()[:16]
@@ -305,6 +354,10 @@ def build_archive(inputs: list[str | os.PathLike], output: str | os.PathLike, op
             counts = {"files": len(entries), "chunks": len(writer.entries), "chunk_refs": len(refs), "content_bytes": content,
                       "stored_bytes": 0}
             comp = {"algorithm": opt.compression, "level": opt.level if compress else 0, "policy": "keep-if-smaller"}
+            if derivation == "content-v1":
+                # spec §2.3.2: unencrypted, so the body and tables above never depended on the ID (the Sealer exists only
+                # for encrypted archives); the file table is hashed as stored
+                archive_id = content_v1_archive_id(_id_options(opt), writer.merkle_root(), file_table)
             ext = {"vnx": ct.writer_provenance(derivation)} if opt.writer_provenance else None
             manifest = ct.base_manifest(archive_id=archive_id, chunk_size=opt.chunk_size, compression=comp, encryption=enc,
                                         counts=counts, features=features, extensions=ext)
@@ -381,6 +434,16 @@ def verify_container(path: str | os.PathLike, *, key: bytes | None = None, passp
     c = ct.open_container(path, key=key, passphrase=passphrase, allow_unencrypted=allow_unencrypted)
     report: dict = {"path": str(path), "archive_id": c.manifest["archive_id"], "merkle_root": c.manifest["integrity"]["merkle_root"],
                     "encrypted": c.encrypted, "key_supplied": c.sealer is not None, "checks": {}}
+    ext = c.manifest.get("extensions", {}).get("vnx")
+    if chunk is None and isinstance(ext, dict) and ext.get("archive_id_derivation") == "content-v1":
+        # spec §2.3.2: recompute; a mismatch is a warning, never an integrity failure (the ID is a name, not a digest)
+        ok = not c.encrypted and _content_v1_matches(c)
+        report["archive_id_derivation"] = {"name": "content-v1", "recomputed": not c.encrypted, "matches": ok}
+        if not ok:
+            report["warnings"] = [{"code": "ARCHIVE_ID_DERIVATION_MISMATCH",
+                                   "message": "the manifest says the archive ID is content-derived (content-v1), but it "
+                                              "is not the content-v1 ID of this archive" +
+                                              (" (an encrypted archive cannot use content-v1)" if c.encrypted else "")}]
     leaves = ct.leaf_hashes(c.chunk_table_bytes)
     if chunk is not None:
         if not 0 <= chunk < len(c.chunk_table):
@@ -499,10 +562,29 @@ def _safe_target(root: Path, rel: str) -> Path:
 
 def extract(path: str | os.PathLike, output_dir: str | os.PathLike, *, key: bytes | None = None, passphrase: str | None = None,
             names: list[str] | None = None, overwrite: bool = False, apply_metadata: bool = False,
-            allow_unencrypted: bool = False) -> dict:
-    """Extract all or selected files. Every file is verified (chunk IDs + file SHA-256) before it is renamed into place."""
+            allow_unencrypted: bool = False, expect_archive_id: str | bytes | None = None,
+            expect_sha256: str | bytes | None = None) -> dict:
+    """Extract all or selected files. Every file is verified (chunk IDs + file SHA-256) before it is renamed into place.
+
+    V6-SEC-03: ``expect_sha256`` (SHA-256 of the whole container file) and ``expect_archive_id`` refuse any other
+    archive (``ARCHIVE_MISMATCH``) before anything is written. For an encrypted archive opened with its key the archive
+    ID is MAC-authenticated (rollback under the same key is detected); for a clear archive only the SHA-256 binds the
+    content (FC-8). The file is hashed before it is opened: a concurrent local writer (A4) is out of scope."""
+    from vnxdna.core.util import archive_mismatch, expected_hex, sha256_file
     t0 = time.perf_counter()
+    want_id = expected_hex(expect_archive_id, 16, "expect_archive_id")
+    want_sha = expected_hex(expect_sha256, 32, "expect_sha256")
+    got_sha = None
+    if want_sha is not None:
+        try:
+            got_sha = sha256_file(path)
+        except OSError as error:
+            raise VNXFormatError(f"cannot read {path}: {error.strerror or error}") from None
+        if got_sha != want_sha:
+            raise archive_mismatch("container SHA-256", want_sha, got_sha, "integrity")
     c = ct.open_container(path, key=key, passphrase=passphrase, require_key=True, allow_unencrypted=allow_unencrypted)
+    if want_id is not None and c.archive_id.hex() != want_id:
+        raise archive_mismatch("archive ID", want_id, c.archive_id.hex(), "integrity")
     root = Path(output_dir)
     root.mkdir(parents=True, exist_ok=True)
     root = root.resolve()
@@ -535,4 +617,10 @@ def extract(path: str | os.PathLike, output_dir: str | os.PathLike, *, key: byte
         if apply_metadata and rec.mtime_ns:
             os.utime(target, ns=(rec.mtime_ns, rec.mtime_ns))
         done.append(rec.path)
-    return {"status": "EXTRACTED", "files": len(done), "bytes": processed, "output": str(root), "seconds": time.perf_counter() - t0}
+    out = {"status": "EXTRACTED", "files": len(done), "bytes": processed, "output": str(root),
+           "archive_id": c.archive_id.hex(), "seconds": time.perf_counter() - t0}
+    if got_sha is not None:
+        out["container_sha256"] = got_sha
+    if want_id is not None or want_sha is not None:
+        out["expected"] = {"archive_id": want_id, "container_sha256": want_sha}
+    return out

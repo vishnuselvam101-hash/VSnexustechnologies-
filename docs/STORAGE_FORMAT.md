@@ -36,7 +36,7 @@ DNA strand pool. Either one is a complete archive on its own.
 | requirement | how format 5 meets it |
 |---|---|
 | versioning | container version (2), `format_version` (5), frame version nibble (5), `required_features`; unknown values are refused with exit 6 |
-| deterministic serialisation | canonical JSON (sorted keys, no floats, no duplicate keys, bytes must equal their re-serialisation); fixed-width binary tables; content-derived archive ID when unencrypted; `created_at` null by default |
+| deterministic serialisation | canonical JSON (sorted keys, no floats, no duplicate keys, bytes must equal their re-serialisation); fixed-width binary tables; deterministic archive ID when unencrypted (`options-v1` by default; opt-in `content-v1`, derived from the content, spec V6 §2.3.2); `created_at` null by default |
 | integrity verification | trailer SHA-256 (file), `stored_sha256` (body), SHA-256 per stored chunk, SHA-256 per plaintext chunk, object SHA-256; HMAC-SHA256 and AES-GCM tags when encrypted |
 | corruption detection | every layer above; per strand CRC-32 and inner RS |
 | explicit metadata | the manifest records every parameter needed to decode; decoding never depends on the profile table |

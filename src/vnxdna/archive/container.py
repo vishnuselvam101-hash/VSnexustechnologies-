@@ -159,6 +159,10 @@ class ContainerWriter:
         self.body += len(stored)
         return index
 
+    def merkle_root(self) -> bytes:
+        """Merkle root of the chunk table written so far (what :meth:`finish` records)."""
+        return merkle.root_from_leaves(leaf_hashes(b"".join(self.entries)))
+
     def finish(self, manifest: dict, file_table: bytes, refs: bytes, mac_fn=None) -> tuple[bytes, dict]:
         """Write tables, manifest and trailer. ``manifest`` is completed here (tables, Merkle root)."""
         table = b"".join(self.entries)

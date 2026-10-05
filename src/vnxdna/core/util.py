@@ -71,6 +71,28 @@ def _float_refused(value: str):
     raise VNXFormatError(f"non-integer number {value!r} in canonical JSON")
 
 
+def expected_hex(value: Any, nbytes: int, what: str) -> str | None:
+    """Normalise an expectation given by the user (V6-SEC-03): ``None``, or lower-case hex of exactly ``nbytes`` bytes
+    (``bytes`` accepted too). Anything else is a :class:`VNXConfigurationError`."""
+    from vnxdna.core.errors import VNXConfigurationError
+    if value is None:
+        return None
+    if isinstance(value, (bytes, bytearray)):
+        value = bytes(value).hex()
+    if (not isinstance(value, str) or len(value) != 2 * nbytes
+            or any(c not in "0123456789abcdef" for c in value.lower())):
+        raise VNXConfigurationError(f"{what} must be {2 * nbytes} hexadecimal characters ({nbytes} bytes)")
+    return value.lower()
+
+
+def archive_mismatch(what: str, expected: str, found: str, stage: str):
+    """The ``ARCHIVE_MISMATCH`` error (V6-SEC-03): the input is not the archive the caller expects."""
+    from vnxdna.core.errors import VNXIntegrityError
+    return VNXIntegrityError(f"{what} {found} is not the expected {expected}: refusing a substituted or rolled-back "
+                             "archive; nothing published", stage=stage, code="ARCHIVE_MISMATCH",
+                             details={"field": what, "expected": expected, "found": found})
+
+
 def sha256_hex(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 

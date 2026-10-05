@@ -16,13 +16,13 @@ cites code or a test at this revision. Anything not verified is marked **(not ve
 
 ## 1. Findings summary
 
-No CRITICAL or HIGH finding. Not fixed: 3 MEDIUM (V6-SEC-01, -02, -03), 9 LOW (open, accepted, or awaiting a push) and 7 INFO. Fixed in this branch: 3 LOW (V6-SEC-04, -22, -23) and 1 INFO (V6-SEC-14, documentation).
+No CRITICAL or HIGH finding. Not fixed: 9 LOW (open, accepted, or awaiting a push) and 7 INFO. Fixed in `work/v6-security`: 3 LOW (V6-SEC-04, -22, -23) and 1 INFO (V6-SEC-14, documentation). Fixed in `work/v6-secfix` (base 08ca9c4): the 3 MEDIUM findings V6-SEC-01, -02 and -03, each with a test written first that failed before the fix. The same branch implements the `content-v1` archive ID (spec §2.3.2), which addresses part of V6-SEC-11.
 
 | ID | Sev. | Finding | Status | Recommended action |
 |---|---|---|---|---|
-| V6-SEC-01 | MEDIUM | A forged superblock (12 strands, CRC-valid) can claim any `container_size` up to the u32 `group_count` limit. The decoder sparse-allocates that size and walks every group, so the time to FAILURE grows linearly with the claimed group count (up to 2³² groups). A local reproduction confirmed the effect; its timing is not a committed measurement. Larger claims end in `OverflowError`/`OSError` (exit 70). | open | Bound `container_size` by the evidence: groups that no read can address cannot exist. Also add an absolute cap or a `--max-container-bytes` option. |
-| V6-SEC-02 | MEDIUM | A full `vnx decode -o OUT` ignores `--key-file`/`--passphrase-env`. It does not check the manifest MAC and does not refuse an unencrypted (downgraded) pool. Reproduced: plain pool + key gives exit 0, SUCCESS. | open | When a key is given, call `open_container(work, key=…, require_key=True, allow_unencrypted=…)` before SUCCESS. |
-| V6-SEC-03 | MEDIUM | Archive substitution or rollback. The decoder has no notion of an *expected* archive. A clear pool can be replaced by any self-consistent pool (FC-8). An encrypted pool can be replaced by an older or different archive under the same key, and extract accepts it. | open (design) | Add `--expect-archive-id` / `--expect-sha256` to decode and extract, and print the archive ID and container SHA-256 for the key holder's catalogue. |
+| V6-SEC-01 | MEDIUM | A forged superblock (12 strands, CRC-valid) can claim any `container_size` up to the u32 `group_count` limit. The decoder sparse-allocates that size and walks every group, so the time to FAILURE grows linearly with the claimed group count (up to 2³² groups). A local reproduction confirmed the effect; its timing is not a committed measurement. Larger claims end in `OverflowError`/`OSError` (exit 70). | fixed in `work/v6-secfix` (746de03; `tests/v6/test_security_sec01_container_cap.py`, failed before the fix) | Done: a claim above `DecodeOptions.max_container_bytes` / `--max-container-bytes` (default 4 GiB) is refused in the superblock stage, for every caller, before the work file is sized or any group is walked (`RESOURCE_LIMIT`, exit 3). Not done: an evidence bound (claims ≤ the cap still cost time linear in the claimed group count). |
+| V6-SEC-02 | MEDIUM | A full `vnx decode -o OUT` ignores `--key-file`/`--passphrase-env`. It does not check the manifest MAC and does not refuse an unencrypted (downgraded) pool. Reproduced: plain pool + key gives exit 0, SUCCESS. | fixed in `work/v6-secfix` (843b787; `tests/v6/test_security_sec02_full_decode_key.py`, failed before the fix) | Done: with a key or passphrase, `open_container(work, key=…, require_key=True, allow_unencrypted=…)` runs before SUCCESS (wrong key: `WRONG_KEY`; clear archive: `KEY_FOR_UNENCRYPTED`; exit 4, nothing published). `vnx encode` of a container source with a key performs the same check. |
+| V6-SEC-03 | MEDIUM | Archive substitution or rollback. The decoder has no notion of an *expected* archive. A clear pool can be replaced by any self-consistent pool (FC-8). An encrypted pool can be replaced by an older or different archive under the same key, and extract accepts it. | fixed in `work/v6-secfix` (2b883e9; `tests/v6/test_security_sec03_expectations.py`, failed before the change) | Done: `--expect-archive-id` / `--expect-sha256` on decode and extract (SDK `expect_archive_id` / `expect_sha256`), giving `ARCHIVE_MISMATCH` (exit 1) with nothing published. Decode checks the superblock before pass 2 and the recovered manifest before SUCCESS. Extract and decode reports carry the archive ID (and the container SHA-256) for the key holder's catalogue. Residual: for a clear archive only `--expect-sha256` binds the content (FC-8). |
 | V6-SEC-04 | LOW | `open_container` raised `TypeError`/`KeyError`/`ValueError` (not `VNXError`) on hash-consistent manifests with type-confused fields. The CLI mapped these to exit 70 INTERNAL_ERROR. No wrong data. Found by the `py-manifest` fuzz target (V6-FUZZ-01). | fixed in this branch (1036eda; `tests/fuzz/test_fuzz_regressions.py`, 19 cases, failed before the fix) | §5.4 lists every hole. |
 | V6-SEC-05 | LOW | For an encrypted archive opened without a key, the manifest is checked against nothing (no MAC, and the trailer digest is skipped). `inspect`/`verify` print unauthenticated metadata; `VERIFIED_STORED` means self-consistent only. | open | State it in the output (`"authenticated": false`) and in the docs. |
 | V6-SEC-06 | LOW | Spec §2.3.3 requires decode results of encrypted archives to carry `"encrypted": true, "content_verified": false`. The decoder does not emit them. | open | Implement in Phase 2/7 (report fields). |
@@ -30,7 +30,7 @@ No CRITICAL or HIGH finding. Not fixed: 3 MEDIUM (V6-SEC-01, -02, -03), 9 LOW (o
 | V6-SEC-08 | LOW | Native libraries are loaded from env-var paths (`VNXDNA_NATIVE_LIB`, `VNXDNA_READS_LIB`, `VNXDNA_RS_LIB`) and in-place `.so` files by name, checked by ABI integer only. The exported test hook `vnx_rs_restrict_levels` mutates global dispatch. | accepted (local trust boundary) | Record the backend and a library hash in provenance; hide the hook behind a test build flag. |
 | V6-SEC-09 | LOW | Native ABIs with implicit buffer sizes: align outputs (`n*frame_nt`, `n*T`), reads `info[4]` / `ctx[40]`. They are correct today, and the ABI number does not cover them. | open | Pass the capacities, or bump the ABI with a size check. |
 | V6-SEC-10 | LOW | `extract`: the symlink checks and the write are not atomic (TOCTOU). The containment check is a string-prefix test (`/out` also matches `/out2`). | open | Use `os.path.commonpath`, plus `O_NOFOLLOW`/`openat`-style creation. |
-| V6-SEC-11 | LOW | Unencrypted archive IDs are deterministic from options, paths and sizes, not content. Two different clear archives with the same file names and sizes get the same ID and tag. Random IDs have 16-bit tags (birthday ≈ 300 archives per pool). | open (`content-v1` deferred; pool rule Phase 7) | Spec §2.3.2 `content-v1`; refuse tag collisions (`ARCHIVE_TAG_COLLISION`, Phase 7). |
+| V6-SEC-11 | LOW | Unencrypted archive IDs are deterministic from options, paths and sizes, not content. Two different clear archives with the same file names and sizes get the same ID and tag. Random IDs have 16-bit tags (birthday ≈ 300 archives per pool). | partly addressed in `work/v6-secfix` (f671daf: opt-in `content-v1`, `vnx archive --archive-id content`; `tests/compat/test_archive_id_content_v1.py`); the default stays `options-v1`; pool rule Phase 7 | Refuse tag collisions (`ARCHIVE_TAG_COLLISION`, Phase 7). Consider `content-v1` as the default in a later major version. |
 | V6-SEC-12 | LOW | CI runs no secret scan, dependency audit or fuzz smoke (`.github/workflows/ci.yml`), while `docs/SECURITY.md:62` says "CI … stay quiet". | addressed in this branch (needs a push) | Push the CI addition after the founder's go. |
 | V6-SEC-13 | LOW | No test swaps or reorders *encrypted* chunks under a consistent (re-hashed) chunk table, so the AEAD index binding has no direct test. The MAC'd manifest catches it first today. | open | Add a test that rebuilds the table and needs the AEAD to fail. |
 | V6-SEC-14 | INFO | `docs/SECURITY.md:18` says the AAD binds "count". For chunks the count is 0 (`archive.py:265`, `archive.py:346`). `VNX4_FORMAT.md` states this correctly; chunk truncation is caught by the MAC'd manifest and chunk table. | fixed in this branch (bc6faa0, `docs/SECURITY.md`) | none |
@@ -84,7 +84,7 @@ are trusted, apart from the bounded reading (`crypto.py:58-65`).
 | Order of operations | compress → encrypt (`archive.py` pipeline docstring, lines 3-6); on read: stored SHA-256 → AEAD open → bounded zstd → size → chunk ID (`archive.py:343-357`) | Authenticate before decompress. Compressed sizes leak (documented). |
 | Error leakage | `InvalidTag` → `VNXIntegrityError` with a generic message, `from None` (`crypto.py:159-161`). CLI errors are printed as JSON; internal errors as `"<Type>: <message>"` (`cli.py:80-88`) | No key material in messages (checked in `crypto.py` / `container.py` / `archive.py` messages). Reports and events are not exhaustively audited for passphrase echo **(not verified)**; `_keys` keeps the passphrase local (`cli.py:92-101`). |
 | Secret lifetime | `ArchiveKeys` is a frozen dataclass of `bytes` (`crypto.py:118-123`) | Cannot be zeroised in Python (V6-SEC-16). |
-| Downgrade (container) | a key or passphrase given for a clear archive is refused unless `allow_unencrypted` (`container.py:302-304`) | Tests: `test_security_v6.py::test_api_refuses_key_for_unencrypted_archive`, `::test_cli_refuses_key_for_unencrypted_archive`, `::test_partial_decode_with_key_refuses_unencrypted`. **Gap:** the full decode path (V6-SEC-02). |
+| Downgrade (container) | a key or passphrase given for a clear archive is refused unless `allow_unencrypted` (`container.py:302-304`) | Tests: `test_security_v6.py::test_api_refuses_key_for_unencrypted_archive`, `::test_cli_refuses_key_for_unencrypted_archive`, `::test_partial_decode_with_key_refuses_unencrypted`. The full decode path (V6-SEC-02) is fixed: `test_security_sec02_full_decode_key.py`. |
 | KDF confusion | key file vs passphrase archives are distinguished by `enc["kdf"]` (`container.py:312-316`) | Sound. |
 
 V3 (`src/vnxdna/container/crypto.py`) and V2 (`src/vnxdna/v2/crypto.py`) use the same construction with their own labels
@@ -142,13 +142,16 @@ Each subsection gives the entry points, the mitigations (with their tests), the 
 - **Tests:**
   - `test_security_v6.py`: `::test_superblock_k_zero_is_a_format_error`, `::test_forged_superblock_candidate_does_not_abort_decode`;
   - `test_fuzz_v4.py::test_fuzz_superblock_bytes`.
-- **Gap V6-SEC-01:**
+- **Gap V6-SEC-01 (fixed in `work/v6-secfix`):** the superblock stage now refuses a claim above
+  `max_container_bytes` (default 4 GiB) before anything is sized or walked (`recovery/superblock.py`;
+  `tests/v6/test_security_sec01_container_cap.py`, including the deferred smart/soft schedule, random access and
+  partial decodes). Below the cap, the original analysis still holds:
   - `container_size` is a u64 checked only for consistency with `group_count` (u32) and `index_offset` (`encoder.py:183`).
   - The decoder then runs `f.truncate(sb.container_size)` (`decoder.py:1319`) and iterates every group.
   - Reproduced locally on 2026-10-05 (not a committed measurement): 12 forged superblock strands (v4-balanced) claiming a container of 10⁹ bytes made a decode run for tens of seconds before FAILURE. The cost is linear in the group count, and the u32 limit allows 2³² groups.
   - Claims above the filesystem limit raise `OSError(EFBIG)`; claims ≥ 2⁶³ raise `OverflowError`. Both end in exit 70.
   - The V6 recovery budgets (`v6/recovery.py:55-56`, `--max-wall-seconds`, `--max-rss-mb`) are opt-in and off by default. Whether they fire inside this loop is **(not verified)**.
-- **Severity:** MEDIUM.
+- **Severity:** MEDIUM before the fix; LOW residual (cost linear in a claimed size up to the cap).
 
 ### 4.4 Read-file parser attacks (A1)
 - **Entry:**
@@ -194,10 +197,10 @@ Each subsection gives the entry points, the mitigations (with their tests), the 
   - reads as in §4.4;
   - the chunk table and Merkle work are linear in the file size.
 - **Unbounded:**
-  - the superblock-claimed container (V6-SEC-01);
+  - the superblock-claimed container up to `--max-container-bytes` (default 4 GiB; V6-SEC-01 fixed above the cap);
   - `max_reads` defaults to 2·10⁹ (`decoder.py:68`);
   - wall time and RSS are bounded only when the opt-in budgets are given.
-- **Severity:** MEDIUM (through V6-SEC-01).
+- **Severity:** LOW after the V6-SEC-01 fix (MEDIUM before).
 
 ### 4.7 Decompression bombs
 - **Mitigation:**
@@ -236,8 +239,8 @@ Each subsection gives the entry points, the mitigations (with their tests), the 
   - a key-file archive refuses a passphrase and vice versa (`container.py:312-316`);
   - no key or passphrase is stored (`test_container_v4.py::test_no_plaintext_key_in_archive`);
   - an encrypted archive without a key cannot be listed or extracted (`test_container_v4.py::test_encrypted_round_trip_and_wrong_key`).
-- **Gaps:** V6-SEC-02 (the key is silently ignored by a full decode).
-- **Severity:** MEDIUM (through V6-SEC-02).
+- **Gaps:** none known. V6-SEC-02 (the key was silently ignored by a full decode) is fixed in `work/v6-secfix`.
+- **Severity:** LOW after the V6-SEC-02 fix (MEDIUM before).
 
 ### 4.11 Authentication failures
 - AEAD failure → `VNXIntegrityError` (`crypto.py:156-161`); MAC failure (`container.py:320-321`).
@@ -248,18 +251,19 @@ Each subsection gives the entry points, the mitigations (with their tests), the 
 
 ### 4.12 Downgrade
 - Container: refused (§3).
-- DNA decode: V6-SEC-02.
+- DNA decode: refused since the V6-SEC-02 fix (a full decode with a key opens the recovered container with it).
 - Superblock version: an unsupported version gives `VNXUnsupportedVersionError` but other candidates still count (`decoder.py:768-770`). A newer-version forgery cannot mask a valid candidate.
 - Format minor or required features: refused (`container.py:267-268`, `:383-385`).
-- **Severity:** MEDIUM (through V6-SEC-02).
+- **Severity:** LOW after the V6-SEC-02 fix (MEDIUM before).
 
 ### 4.13 Archive substitution and rollback
 - **Clear archives (FC-8, spec `:688-690`):** anyone who can write the pool can build a consistent forgery with matching superblock SHA-256, Merkle root and trailer, and decode reports SUCCESS.
 - **Encrypted archives:** an attacker without the key cannot forge content. They can:
-  - replace the pool with a clear archive (caught at extract with a key; missed by a full decode, V6-SEC-02);
-  - replay an *older or different* archive made with the same key. Nothing detects this: the archive ID binds chunks to their archive but is not checked against an expectation.
-- **Gap:** V6-SEC-03.
-- **Severity:** MEDIUM.
+  - replace the pool with a clear archive (caught at extract and, since the V6-SEC-02 fix, at a full decode with a key);
+  - replay an *older or different* archive made with the same key. Before V6-SEC-03 nothing detected this: the archive ID binds chunks to their archive but was not checked against an expectation.
+- **Mitigation (V6-SEC-03, `work/v6-secfix`):** `--expect-archive-id` / `--expect-sha256` on decode and extract. Decode checks the superblock before pass 2 and the recovered manifest before SUCCESS (also for random access and partial recovery). With the key, the manifest archive ID is MAC-authenticated, so a replayed archive under the same key is refused (`ARCHIVE_MISMATCH`, exit 1). For a clear archive, the archive ID is forgeable (FC-8), and only `--expect-sha256` binds the content. Tests: `tests/v6/test_security_sec03_expectations.py`.
+- **Residual:** the expectation must come from a trusted catalogue that the key holder keeps; without one, nothing gives freshness. Extract hashes the file before opening it, so a concurrent local writer (A4) is out of scope (cf. V6-SEC-10).
+- **Severity:** LOW residual when expectations are used (MEDIUM before).
 
 ### 4.14 Provider compromise (A5)
 - No provider, export or import code exists (spec §9, `docs/spec/VNX-DNA-SPEC-V6.md:725`; Phase 7).
@@ -297,7 +301,8 @@ FC-8 (`docs/spec/VNX-DNA-SPEC-V6.md:688-690`) holds in the code:
 - The container is protected by the superblock SHA-256, behind a CRC-32 (`encoder.py:158`, `decoder.py:1454`).
 - No secret is involved, so these checks stop accidents, not adversaries. `docs/SECURITY.md:19-20` says the same.
 
-Users must not treat SUCCESS on a clear archive as proof of origin (V6-SEC-03).
+Users must not treat SUCCESS on a clear archive as proof of origin. `--expect-sha256` (V6-SEC-03) binds a decode or
+extract to a container SHA-256 taken from a trusted catalogue.
 
 ### 5.2 Metadata leakage: tags, primers, Sector Zero/One (spec §11)
 - **Visible today without a key:**
@@ -306,7 +311,7 @@ Users must not treat SUCCESS on a clear archive as proof of origin (V6-SEC-03).
   - the container SHA-256;
   - in the container: the chunk table (stored and plain sizes, codec, stored SHA-256, chunk IDs) and the manifest (chunk size, compression, counts, content size, file count).
 - **Sealed:** paths, file sizes, per-file hashes, ref order (`docs/SECURITY.md:23-30`).
-- **Clear archives:** the deterministic ID (`archive.py:216-222`) is derived from the options plus path, type, size, mode and mtime of every entry. Truncated to 16 bytes, it is a fingerprint of the *file list*, so equal listings are linkable across pools. This goes beyond what spec §11 says about `content-v1`.
+- **Clear archives:** the deterministic ID (`archive.py:216-222`) is derived from the options plus path, type, size, mode and mtime of every entry. Truncated to 16 bytes, it is a fingerprint of the *file list*, so equal listings are linkable across pools. This goes beyond what spec §11 says about `content-v1`. The opt-in `content-v1` ID (`work/v6-secfix`) is a fingerprint of the content instead: someone with a candidate file set can confirm that a pool holds exactly that set, which the clear chunk IDs already allow (spec §11).
 - **Not implemented:** frame-6 pool tags, primer IDs and sequences, Sector Zero/One, export/import manifests (V7/V9; `docs/spec/VNX-DNA-SPEC-V6.md:860-862`). `docs/SECURITY.md` must be extended when they land.
 
 ### 5.3 Encrypted SUCCESS semantics
@@ -317,7 +322,7 @@ For a full decode (`decoder.py:1447-1470`), SUCCESS means:
 
 SUCCESS therefore means "these are the bytes the superblock describes", not "this is authentic content":
 - Authenticity (MAC, AEAD) is established only when files are extracted with the key (`--extract` or `vnx extract`), and it does not include freshness (V6-SEC-03).
-- The key passed to a full decode is not used (V6-SEC-02).
+- Since the V6-SEC-02 fix, a key passed to a full decode is used: before SUCCESS, the recovered container is opened with it (key check and manifest MAC; report `key_checked`). Chunks are decrypted only by extraction.
 - The spec requires `"encrypted": true, "content_verified": false` in such results (`docs/spec/VNX-DNA-SPEC-V6.md:124-127`); this is not implemented (V6-SEC-06).
 
 Selective and partial decodes do use the key and the downgrade refusal (`decoder.py:1492`, `:1523`, `:1537`).

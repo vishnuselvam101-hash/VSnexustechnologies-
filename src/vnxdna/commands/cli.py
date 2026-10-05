@@ -107,6 +107,10 @@ V6_STRIPE = typer.Option(None, "--stripe-depth", help="V6 (opt-in): data groups 
 V6_COLUMN = typer.Option(None, "--column-parity", help="V6 (opt-in): column-parity groups per stripe.")
 V6_ORDER = typer.Option(None, "--strand-order", help="V6 (opt-in): sequential or interleaved.")
 V6_PLAN = typer.Option(None, "--outer-plan", help="V6 (opt-in): fixed (default) or adaptive.")
+EXPECT_ID_OPT = typer.Option(None, "--expect-archive-id",
+                             help="Refuse any other archive (32 hex characters; exit 1 ARCHIVE_MISMATCH).")
+EXPECT_SHA_OPT = typer.Option(None, "--expect-sha256",
+                              help="Refuse a container whose SHA-256 differs (64 hex characters; exit 1 ARCHIVE_MISMATCH).")
 
 
 @app.callback()
@@ -141,6 +145,8 @@ def archive(inputs: List[Path] = typer.Argument(..., help="Files and/or director
             chunk_size: int = typer.Option(1 << 20, help="Chunk size in bytes (4 KiB … 64 MiB)."),
             compression: str = typer.Option("zstd", help="zstd or none."), level: int = typer.Option(3, help="zstd level 1–22."),
             no_dedup: bool = typer.Option(False, "--no-dedup"), preserve_metadata: bool = typer.Option(False, "--preserve-metadata"),
+            archive_id: str = typer.Option("options", "--archive-id",
+                                           help="Unencrypted archive ID: options (options-v1, default) or content (content-v1)."),
             workers: int = typer.Option(1, "--workers", "-w"), performance: Optional[str] = PERF_OPT,
             key_file: Optional[Path] = KEY_OPT, passphrase_env: Optional[str] = PW_OPT, force: bool = FORCE_OPT,
             config: Optional[Path] = CONFIG_OPT, as_json: bool = JSON_OPT) -> None:
@@ -152,7 +158,8 @@ def archive(inputs: List[Path] = typer.Argument(..., help="Files and/or director
         key, pw = sdk.load_keys(key_file, passphrase_env)
         opts = archive_options_for(config, performance, key=key, passphrase=pw,
                                    chunk_size=chunk_size if chunk_size != 1 << 20 else None, workers=workers,
-                                   compression=compression, level=level, dedup=not no_dedup, preserve_metadata=preserve_metadata)
+                                   compression=compression, level=level, dedup=not no_dedup, preserve_metadata=preserve_metadata,
+                                   archive_id=archive_id)
         res = sdk.archive(list(inputs[:-1]), inputs[-1], options=opts, overwrite=force, progress=_progress_cb())
         d = res.body
         _out(res, f"archived {d['files']} entries, {d['content_bytes']:,} B → {d['container_bytes']:,} B ({d['output']})", as_json)
@@ -222,12 +229,14 @@ def locate(container: Path, name: str, key_file: Optional[Path] = KEY_OPT, passp
 @app.command()
 def extract(container: Path, output_dir: Path, names: Optional[List[str]] = typer.Option(None, "--file", help="Extract only these."),
             key_file: Optional[Path] = KEY_OPT, passphrase_env: Optional[str] = PW_OPT, force: bool = FORCE_OPT,
-            apply_metadata: bool = typer.Option(False, "--apply-metadata"), allow_unencrypted: bool = UNENC_OPT) -> None:
+            apply_metadata: bool = typer.Option(False, "--apply-metadata"), allow_unencrypted: bool = UNENC_OPT,
+            expect_archive_id: Optional[str] = EXPECT_ID_OPT, expect_sha256: Optional[str] = EXPECT_SHA_OPT) -> None:
     """Extract (every file verified before it is renamed into place)."""
     def go():
         key, pw = sdk.load_keys(key_file, passphrase_env)
         _out(sdk.extract(container, output_dir, files=names or None, key=key, passphrase=pw, overwrite=force,
-                         apply_metadata=apply_metadata, allow_unencrypted=allow_unencrypted))
+                         apply_metadata=apply_metadata, allow_unencrypted=allow_unencrypted,
+                         expect_archive_id=expect_archive_id, expect_sha256=expect_sha256))
     _run(go)
 
 
@@ -252,7 +261,8 @@ def encode(source: Path = typer.Argument(..., help="A .vnx container, or a file/
            compression: Optional[str] = typer.Option(None, "--compression", help="Archive option: zstd or none."),
            level: Optional[int] = typer.Option(None, "--level", help="Archive option: zstd level 1–22."),
            no_dedup: bool = typer.Option(False, "--no-dedup", help="Archive option: no chunk deduplication."),
-           preserve_metadata: bool = typer.Option(False, "--preserve-metadata", help="Archive option.")) -> None:
+           preserve_metadata: bool = typer.Option(False, "--preserve-metadata", help="Archive option."),
+           allow_unencrypted: bool = UNENC_OPT) -> None:
     """Encode a VNX4 container (or files) into DNA strands. Archive options are passed to the archive builder when SOURCE
     is not a container, and refused (exit 7) when it is one."""
     def go():
@@ -272,7 +282,7 @@ def encode(source: Path = typer.Argument(..., help="A .vnx container, or a file/
                                         **{k: v for k, v in given.items() if k != "chunk_size"}, chunk_size=chunk_size)
         _out(sdk.encode(source, output, dna=opts, archive_options=aopts, key=key, passphrase=pw,
                         verify=bool(perf.get("verify_after_encode")), overwrite=force, keep_archive=keep_archive,
-                        progress=_progress_cb()))
+                        progress=_progress_cb(), allow_unencrypted=allow_unencrypted))
     _run(go)
 
 
@@ -390,6 +400,10 @@ def decode(reads: Path, output: Optional[Path] = typer.Option(None, "--output", 
            events: Optional[Path] = typer.Option(None, "--events", help="Write structured decode events (JSON lines) here."),
            task_id: Optional[str] = typer.Option(None, "--task-id", help="Task ID recorded in every event."),
            allow_unencrypted: bool = UNENC_OPT,
+           max_container_bytes: Optional[int] = typer.Option(
+               None, "--max-container-bytes",
+               help="Refuse a superblock claiming a larger container (default 4 GiB; exit 3 RESOURCE_LIMIT)."),
+           expect_archive_id: Optional[str] = EXPECT_ID_OPT, expect_sha256: Optional[str] = EXPECT_SHA_OPT,
            no_input_hash: bool = typer.Option(False, "--no-input-hash", help="Do not compute the SHA-256 of the read file.")
            ) -> None:
     """Reconstruct a verified VNX4 container from DNA reads (FASTA/FASTQ)."""
@@ -401,7 +415,9 @@ def decode(reads: Path, output: Optional[Path] = typer.Option(None, "--output", 
         from vnxdna.sdk.config import decode_options_for
         opts = decode_options_for(config, performance, workers=workers, archive_tag=archive_tag, budget=budget,
                                   profile=profile, band=band, min_quality=min_quality, indel_recovery=indel_recovery,
-                                  soft_decoding=soft_decoding, recovery_schedule=recovery_schedule)
+                                  soft_decoding=soft_decoding, recovery_schedule=recovery_schedule,
+                                  max_container_bytes=max_container_bytes, expect_archive_id=expect_archive_id,
+                                  expect_sha256=expect_sha256)
         return _decode(reads, output, extract_dir, partial_dir, select, opts, force, key_file, passphrase_env, report, events,
                        task_id, allow_unencrypted, not no_input_hash)
     _run(go)

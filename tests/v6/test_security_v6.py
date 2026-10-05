@@ -117,12 +117,28 @@ def test_cli_events_record_extract_failure(arc, tmp_path):
     assert r.exit_code == 4, r.output
     lines = _lines(ev)
     names = [e["event"] for e in lines]
-    assert "decode_end" in names and next(e for e in lines if e["event"] == "decode_end")["status"] == "SUCCESS"
+    # V6-SEC-02: the decoder itself now checks the key before SUCCESS, so the wrong key fails the decode (nothing is
+    # published) instead of the extraction after a SUCCESS decode
+    assert "decode_end" not in names and not (tmp_path / "o.vnx").exists()
     err = [e for e in lines if e["event"] == "error"]
     assert err and err[-1]["error_class"] == "VNXKeyError"
     end = lines[-1]
     assert end["event"] == "command_end" and end["exit_code"] == 4 and end["status"] == "FAILED"
     assert end["error_class"] == "VNXKeyError" and all(e["task_id"] == "job9" for e in lines)
+    # an extraction that fails after a SUCCESS decode is still recorded (an existing file without --force: exit 8)
+    ev2 = tmp_path / "ev2.jsonl"
+    (tmp_path / "x2" / "in").mkdir(parents=True)
+    (tmp_path / "x2" / "in" / "a.bin").write_bytes(b"existing")
+    r = _cli("decode", arc / "enc.fasta", "-o", tmp_path / "o2.vnx", "--extract", tmp_path / "x2",
+             "--key-file", arc / "k.key", "--events", ev2, "--task-id", "job9")
+    assert r.exit_code == 8, r.output
+    lines = _lines(ev2)
+    assert next(e for e in lines if e["event"] == "decode_end")["status"] == "SUCCESS"
+    err = [e for e in lines if e["event"] == "error"]
+    assert err and err[-1]["error_class"] == "VNXOutputError"
+    end = lines[-1]
+    assert end["event"] == "command_end" and end["exit_code"] == 8 and end["status"] == "FAILED"
+    assert (tmp_path / "x2" / "in" / "a.bin").read_bytes() == b"existing"
 
 
 def test_cli_events_command_end_on_success(arc, tmp_path):

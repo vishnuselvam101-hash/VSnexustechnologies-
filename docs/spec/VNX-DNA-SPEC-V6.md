@@ -108,7 +108,7 @@ A 6.x writer MUST add this object to the manifest `extensions`:
 | Derivation | Definition | Status |
 |---|---|---|
 | `options-v1` | `SHA-256("VNX4 archive-id\0" ‖ options ‖ entries)[:16]`, exactly as `v4/archive.py:217-222` | IMPLEMENTED; the default |
-| `content-v1` | `SHA-256("VNX6 archive-id\0" ‖ options ‖ merkle_root (32 B) ‖ SHA-256(file table as stored) (32 B))[:16]`, where `options` is the same UTF-8 string as in `options-v1` (`archive.py:219`) | SPECIFIED; opt-in (`ArchiveOptions.archive_id="content"`, `vnx archive --archive-id content`) |
+| `content-v1` | `SHA-256("VNX6 archive-id\0" ‖ options ‖ merkle_root (32 B) ‖ SHA-256(file table as stored) (32 B))[:16]`, where `options` is the same UTF-8 string as in `options-v1` (`archive.py:219`) | IMPLEMENTED (V6 Phase 6, `archive/operations.py` `content_v1_archive_id`); opt-in (`ArchiveOptions.archive_id="content"`, `vnx archive --archive-id content`) |
 | `random` | 16 bytes from the OS CSPRNG (`archive.py:202`) | IMPLEMENTED; required for encrypted archives (AEAD associated data, VNX4 §6) |
 
 - `content-v1` can be computed after the body: for an unencrypted archive nothing before the manifest depends on
@@ -117,7 +117,9 @@ A 6.x writer MUST add this object to the manifest `extensions`:
 - Identical inputs give identical IDs under `content-v1`. Mixing two such pools is harmless, because their strands are identical.
 - A reader that sees `archive_id_derivation = "content-v1"` SHOULD recompute the ID in `vnx verify --full` and report a
   mismatch as the warning `ARCHIVE_ID_DERIVATION_MISMATCH`. It MUST NOT treat a mismatch as an integrity failure, because the
-  ID is a name, not a digest. Integrity is covered by the trailer hash and MAC.
+  ID is a name, not a digest. Integrity is covered by the trailer hash and MAC. Implemented in `vnx verify` (which always
+  verifies fully): the manifest records neither the zstd level when compression is off nor `preserve_metadata`, so every
+  value they can take is tried (at most 44 hashes).
 
 #### 2.3.3 Behaviour that 6.x MUST state explicitly (clarification, no format change)
 
@@ -868,8 +870,10 @@ manifest.json   strands.fasta[.gz]   order.csv   SHA256SUMS   [sector-zero.fasta
 | `INTERNAL_ERROR` | INTERNAL_ERROR | 70 | no | bug |
 
 Codes added by the implementation for errors the table does not name (category and exit code as shown):
-`ADDRESS_ERROR` (INVALID_INPUT, 3), `RESOURCE_LIMIT` (INVALID_INPUT, 3), `INTEGRITY_ERROR` (VERIFICATION_FAILED, 1;
-any digest mismatch other than the whole-container one) and `INTERNAL_ERROR` for unexpected exceptions. `KEY_REQUIRED`
+`ADDRESS_ERROR` (INVALID_INPUT, 3), `RESOURCE_LIMIT` (INVALID_INPUT, 3; also a superblock claiming a container above
+`--max-container-bytes`, V6-SEC-01), `INTEGRITY_ERROR` (VERIFICATION_FAILED, 1; any digest mismatch other than the
+whole-container one), `ARCHIVE_MISMATCH` (VERIFICATION_FAILED, 1; not the archive named by `--expect-archive-id` /
+`--expect-sha256`, V6-SEC-03) and `INTERNAL_ERROR` for unexpected exceptions. `KEY_REQUIRED`
 does not exist: a missing key is `WRONG_KEY`. Errors of the frozen V1–V3 classes use their category as the code.
 
 During the deprecation period, the error JSON keeps `error_class` (`v4/errors.py:37`) in addition to `code`. Only `code`
