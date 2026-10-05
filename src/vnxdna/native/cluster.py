@@ -20,7 +20,7 @@ Backend selection::
     VNXDNA_CLUSTER_BACKEND=reference  always the NumPy reference
 
 The library is looked up in this order: ``VNXDNA_CLUSTER_LIB`` (explicit path, e.g. a sanitizer build), the extension
-built by ``pip install`` (``vnxdna/native/_vnx_cluster*.so``) and the library built in place by :func:`build`
+built by ``pip install`` (``vnxdna/_vnx_cluster*.so``, module name ``vnxdna._vnx_cluster``) and the library built in place by :func:`build`
 (``python -m vnxdna.native.cluster build`` writes ``vnxdna/native/c/libvnx_cluster.so``). A library whose ABI version
 differs from :data:`ABI_VERSION` is ignored. Inputs outside the native domain (codes >= 8, costs outside [0, 1024],
 bands above 512, templates longer than 8192, negative slack) are routed to the reference by the callers
@@ -51,9 +51,15 @@ MAX_SLACK = 1 << 20
 MAX_READ = 1 << 20
 LEVELS = {0: "best", 1: "scalar", 2: "avx2"}
 
-_HERE = Path(__file__).resolve().parent
-_SOURCE = _HERE / "c" / "cluster.c"
-_INPLACE = _HERE / "c" / "libvnx_cluster.so"
+# the pip-built extension (setup.py: vnxdna._vnx_cluster) lands in the package root; the C source and the in-place
+# development library live in vnxdna/native/c
+_HERE = Path(__file__).resolve().parents[1]
+_SOURCE = _HERE / "native" / "c" / "cluster.c"
+_INPLACE = _HERE / "native" / "c" / "libvnx_cluster.so"
+CFLAGS = _nb.explicit_cflags(strict=False)        # -O3 -std=c11 -fPIC -shared -Wall -Wextra (as pip install)
+STRICT_CFLAGS = _nb.explicit_cflags(strict=True)  # + -Werror: CI and sanitizer builds (build --strict)
+ENV = "VNXDNA_CLUSTER_BACKEND"
+ENV_LIB = "VNXDNA_CLUSTER_LIB"
 _ERRORS = {-1: "invalid argument", -2: "out of memory"}
 
 log = logging.getLogger(__name__)
@@ -73,7 +79,7 @@ _pool_size = 0
 
 def _candidates() -> list[Path]:
     out = []
-    env = os.environ.get("VNXDNA_CLUSTER_LIB")
+    env = os.environ.get(ENV_LIB)
     if env:
         out.append(Path(env))
     suffix = sysconfig.get_config_var("EXT_SUFFIX") or ".so"
@@ -92,15 +98,15 @@ def _bind(lib) -> None:
     lib.vnx_cl_fb_level.restype = ctypes.c_int
     lib.vnx_cl_fb_level.argtypes = []
     lib.vnx_cl_sketch.restype = ctypes.c_int
-    lib.vnx_cl_sketch.argtypes = [i64, i64, p, p, i32, i32, p, p]
+    lib.vnx_cl_sketch.argtypes = [i64, i64, p, i64, p, i32, i32, p, p]
     lib.vnx_cl_candidates.restype = ctypes.c_int
     lib.vnx_cl_candidates.argtypes = [i64, i32, p, p, i64, i64, i64, p, p, p, i64, p]
     lib.vnx_cl_banded.restype = ctypes.c_int
-    lib.vnx_cl_banded.argtypes = [i64, p, p, p, i64, p, p, p, i64, p]
+    lib.vnx_cl_banded.argtypes = [i64, p, i64, p, p, i64, p, p, p, i64, p]
     lib.vnx_cl_verify.restype = ctypes.c_int
-    lib.vnx_cl_verify.argtypes = [i64, p, p, p, i64, p, p, p, p, dbl, i64, i64, p, p, p, p]
+    lib.vnx_cl_verify.argtypes = [i64, p, i64, p, p, i64, p, p, p, p, dbl, i64, i64, p, p, p, p]
     lib.vnx_cl_fb.restype = ctypes.c_int
-    lib.vnx_cl_fb.argtypes = [i64, i64, i64, p, p, p, p, p, p, i32, i32, p, p, i32, i32]
+    lib.vnx_cl_fb.argtypes = [i64, i64, i64, p, p, p, i64, p, p, p, i32, i32, p, p, i32, i32]
 
 
 def _load():
@@ -141,7 +147,7 @@ def available() -> bool:
 
 
 def requested_backend(explicit: str | None = None) -> str:
-    name = (explicit or os.environ.get("VNXDNA_CLUSTER_BACKEND") or "auto").strip().lower()
+    name = (explicit or os.environ.get(ENV) or "auto").strip().lower()
     if name not in BACKENDS:
         raise ValueError(f"cluster backend must be one of {BACKENDS}, got {name!r}")
     return name
@@ -179,7 +185,7 @@ def fb_level() -> str | None:
 
 def status() -> dict:
     """Diagnostics; never raises."""
-    want = os.environ.get("VNXDNA_CLUSTER_BACKEND") or "auto"
+    want = os.environ.get(ENV) or "auto"
     try:
         active, err = resolve_backend(), None
     except (NativeClusterError, ValueError) as error:
@@ -197,6 +203,7 @@ def build(output: str | os.PathLike | None = None, extra_flags: list[str] | None
         raise NativeClusterError("no C compiler found (set CC)")
     out = Path(output) if output else _INPLACE
     cmd = [cc, *_nb.explicit_cflags(strict), *(extra_flags or []), str(_SOURCE), "-o", str(out)]
+    out.parent.mkdir(parents=True, exist_ok=True)
     res = subprocess.run(cmd, capture_output=True, text=True)
     if res.returncode != 0:
         raise NativeClusterError(f"native build failed: {' '.join(cmd)}\n{res.stderr}")
@@ -218,6 +225,19 @@ def _lib_or_raise():
     if lib is None:
         raise NativeClusterError(f"native cluster kernels unavailable: {_load_error}")
     return lib
+
+
+def _seqs(buf: np.ndarray, off: np.ndarray, lens: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Contiguous uint8 buffer and int64 offsets/lengths of equal size (the kernels check every [off, off + len)
+    against the buffer size)."""
+    buf = np.ascontiguousarray(buf, dtype=np.uint8)
+    off = np.ascontiguousarray(off, dtype=np.int64)
+    lens = np.ascontiguousarray(lens, dtype=np.int64)
+    if off.ndim != 1 or off.shape != lens.shape:
+        raise ValueError("offsets and lengths must be 1-D of equal size")
+    if buf.size == 0:
+        buf = np.zeros(1, dtype=np.uint8)
+    return buf, off, lens
 
 
 def pack(seqs: list) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -250,7 +270,10 @@ def sketch(raw: np.ndarray, lengths: np.ndarray, k: int, s: int) -> tuple[np.nda
     lengths = np.ascontiguousarray(lengths, dtype=np.int64)
     hashes = np.empty((n, s), dtype=np.uint32)
     orient = np.empty((n, s), dtype=np.uint8)
-    _check(lib.vnx_cl_sketch(n, width, _ptr(raw), _ptr(lengths), int(k), int(s), _ptr(hashes), _ptr(orient)), "sketch")
+    if lengths.shape != (n,):
+        raise ValueError(f"lengths must have shape ({n},), got {lengths.shape}")
+    _check(lib.vnx_cl_sketch(n, width, _ptr(raw), raw.size, _ptr(lengths), int(k), int(s), _ptr(hashes), _ptr(orient)),
+           "sketch")
     return hashes, orient
 
 
@@ -285,8 +308,11 @@ def banded(buf: np.ndarray, off: np.ndarray, lens: np.ndarray, ia: np.ndarray, i
     ib = np.ascontiguousarray(ib, dtype=np.int64)
     brc = None if brc is None else np.ascontiguousarray(brc, dtype=np.uint8)
     out = np.empty(ia.size, dtype=np.int64)
-    _check(lib.vnx_cl_banded(off.size, _ptr(buf), _ptr(off), _ptr(lens), ia.size, _ptr(ia), _ptr(ib), _ptr(brc),
-                             int(slack), _ptr(out)), "banded distance")
+    buf, off, lens = _seqs(buf, off, lens)
+    if ib.size != ia.size or (brc is not None and brc.size != ia.size):
+        raise ValueError("ia, ib and brc must have one entry per pair")
+    _check(lib.vnx_cl_banded(off.size, _ptr(buf), buf.size, _ptr(off), _ptr(lens), ia.size, _ptr(ia), _ptr(ib),
+                             _ptr(brc), int(slack), _ptr(out)), "banded distance")
     return out
 
 
@@ -304,14 +330,17 @@ def verify(buf: np.ndarray, off: np.ndarray, lens: np.ndarray, pa: np.ndarray, p
            pmax: np.ndarray, theta: float, slack: int, chunk: int) -> tuple:
     """(root, orient, best, counters[skipped, verified, accepted, rejected, conflicts])."""
     lib = _lib_or_raise()
+    buf, off, lens = _seqs(buf, off, lens)
     n = off.size
     pa, pb, pmax = (np.ascontiguousarray(x, dtype=np.int64) for x in (pa, pb, pmax))
     prel = np.ascontiguousarray(prel, dtype=np.uint8)
+    if not pb.size == prel.size == pmax.size == pa.size:
+        raise ValueError("pa, pb, prel and pmax must have one entry per pair")
     root = np.empty(n, dtype=np.int64)
     orient = np.empty(n, dtype=np.uint8)
     best = np.full(n, -np.inf)
     counters = np.zeros(5, dtype=np.int64)
-    _check(lib.vnx_cl_verify(n, _ptr(buf), _ptr(off), _ptr(lens), pa.size, _ptr(pa), _ptr(pb), _ptr(prel), _ptr(pmax),
+    _check(lib.vnx_cl_verify(n, _ptr(buf), buf.size, _ptr(off), _ptr(lens), pa.size, _ptr(pa), _ptr(pb), _ptr(prel), _ptr(pmax),
                              float(theta), int(slack), int(chunk), _ptr(root), _ptr(orient), _ptr(best),
                              _ptr(counters)), "verification")
     return root, orient, best, counters
@@ -341,6 +370,9 @@ def fb(tpl: np.ndarray, mc: np.ndarray, buf: np.ndarray, off: np.ndarray, lens: 
     tpl = np.ascontiguousarray(tpl, dtype=np.int16)
     mc = np.ascontiguousarray(mc, dtype=np.int32)
     band = np.ascontiguousarray(band, dtype=np.int64)
+    buf, off, lens = _seqs(buf, off, lens)
+    if mc.shape != (n, T) or off.shape != (n,) or band.shape != (n,):
+        raise ValueError("tpl and mc must be (n, T); off, lens and band (n,)")
     calls = np.empty((n, T), dtype=np.uint8)
     opt = np.empty(n, dtype=np.int64)
     nt = threads() if nthreads is None else max(1, int(nthreads))
@@ -352,7 +384,7 @@ def fb(tpl: np.ndarray, mc: np.ndarray, buf: np.ndarray, off: np.ndarray, lens: 
         r0, r1 = bounds[k], bounds[k + 1]
         if r1 <= r0:
             return 0
-        return lib.vnx_cl_fb(r1 - r0, T, int(B), tpl[r0:].ctypes.data, mc[r0:].ctypes.data, _ptr(buf),
+        return lib.vnx_cl_fb(r1 - r0, T, int(B), tpl[r0:].ctypes.data, mc[r0:].ctypes.data, _ptr(buf), buf.size,
                              off[r0:].ctypes.data, lens[r0:].ctypes.data, band[r0:].ctypes.data, int(c_indel),
                              int(slack), calls[r0:].ctypes.data, opt[r0:].ctypes.data, int(level), int(width))
 

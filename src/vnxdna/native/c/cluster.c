@@ -34,7 +34,9 @@
 #define VNX_CL_X86 1
 #endif
 
+#ifndef VNX_CL_ABI /* overridable only so that the tests can build a mismatching library */
 #define VNX_CL_ABI 1
+#endif
 #define CL_INF (1 << 28)
 
 enum { CL_OK = 0, CL_EARG = -1, CL_ENOMEM = -2 };
@@ -49,12 +51,13 @@ static inline uint64_t splitmix64(uint64_t x) {
     return z ^ (z >> 31);
 }
 
-/* raw: n rows of `width` codes; lengths: n read lengths (windows end at min(length, width)); out: n*s hashes and
+/* raw: n rows of `width` codes (raw_len bytes available); lengths: n read lengths (windows end at min(length, width)); out: n*s hashes and
  * orientation bits (0xFFFFFFFF / 2 when the read has no k-mer without N). */
-int vnx_cl_sketch(int64_t n, int64_t width, const uint8_t *raw, const int64_t *lengths, int32_t k, int32_t s,
-                  uint32_t *hashes, uint8_t *orient) {
-    if (n < 0 || width < 0 || k < 1 || k > 31 || s < 1 || s > 256) return CL_EARG;
+int vnx_cl_sketch(int64_t n, int64_t width, const uint8_t *raw, int64_t raw_len, const int64_t *lengths, int32_t k,
+                  int32_t s, uint32_t *hashes, uint8_t *orient) {
+    if (n < 0 || width < 0 || raw_len < 0 || k < 1 || k > 31 || s < 1 || s > 256) return CL_EARG;
     if (n > 0 && (!raw || !lengths || !hashes || !orient)) return CL_EARG;
+    if (width > 0 && n > raw_len / width) return CL_EARG; /* n rows of width codes must lie inside raw */
     uint64_t seeds[256];
     for (int i = 0; i < s; i++) seeds[i] = splitmix64(0x56584E37ULL + (uint64_t)i);
     const uint64_t mask = (k == 32) ? ~0ULL : ((1ULL << (2 * k)) - 1);
@@ -405,17 +408,27 @@ static int prep_ws(ws_t *w, int64_t maxlen, int64_t slack) {
     return 0;
 }
 
+/* every sequence [off, off + len) lies inside a buffer of nbuf bytes; lengths at most maxlen */
+static int check_seqs(int64_t nseq, int64_t nbuf, const int64_t *off, const int64_t *len, int64_t maxlen_cap,
+                      int64_t *maxlen) {
+    *maxlen = 0;
+    if (nbuf < 0) return -1;
+    for (int64_t s = 0; s < nseq; s++) {
+        if (len[s] < 0 || len[s] > maxlen_cap || off[s] < 0 || off[s] > nbuf - len[s]) return -1;
+        if (len[s] > *maxlen) *maxlen = len[s];
+    }
+    return 0;
+}
+
 /* Banded distances of npairs pairs (buf[off[ia[p]]], buf[off[ib[p]]]); brc[p] = 1 reverse-complements b first
  * (codes must be < 8 then). Returns CL_OK or an error. */
-int vnx_cl_banded(int64_t nseq, const uint8_t *buf, const int64_t *off, const int64_t *len, int64_t npairs,
-                  const int64_t *ia, const int64_t *ib, const uint8_t *brc, int64_t slack, int64_t *out) {
+int vnx_cl_banded(int64_t nseq, const uint8_t *buf, int64_t nbuf, const int64_t *off, const int64_t *len,
+                  int64_t npairs, const int64_t *ia, const int64_t *ib, const uint8_t *brc, int64_t slack, int64_t *out) {
     if (nseq < 0 || npairs < 0 || slack < 0 || slack > (1 << 20)) return CL_EARG;
-    if (npairs > 0 && (!buf || !off || !len || !ia || !ib || !out)) return CL_EARG;
-    int64_t maxlen = 0;
-    for (int64_t s = 0; s < nseq; s++) {
-        if (len[s] < 0 || off[s] < 0 || len[s] > (1 << 24)) return CL_EARG;
-        if (len[s] > maxlen) maxlen = len[s];
-    }
+    if (nseq > 0 && (!off || !len)) return CL_EARG;
+    if (npairs > 0 && (!buf || !ia || !ib || !out)) return CL_EARG;
+    int64_t maxlen;
+    if (check_seqs(nseq, nbuf, off, len, (int64_t)1 << 24, &maxlen)) return CL_EARG;
     for (int64_t p = 0; p < npairs; p++)
         if (ia[p] < 0 || ia[p] >= nseq || ib[p] < 0 || ib[p] >= nseq) return CL_EARG;
     ws_t w = {0};
@@ -461,18 +474,15 @@ static int64_t uf_find(int64_t *parent, uint8_t *par, int64_t *stack, int64_t x,
  * accepted edges of a chunk are then united in order. Outputs: root/orient of every read (union-find with parity, the
  * root is the smallest index), best (in/out: the best score 1 - d / pmax of an accepted edge per read) and counters
  * [skipped, verified, accepted, rejected, orientation conflicts]. Codes must be < 8. */
-int vnx_cl_verify(int64_t n, const uint8_t *buf, const int64_t *off, const int64_t *len, int64_t npairs,
+int vnx_cl_verify(int64_t n, const uint8_t *buf, int64_t nbuf, const int64_t *off, const int64_t *len, int64_t npairs,
                   const int64_t *pa, const int64_t *pb, const uint8_t *prel, const int64_t *pmax, double theta,
                   int64_t slack, int64_t chunk, int64_t *root_out, uint8_t *orient_out, double *best,
                   int64_t *counters) {
     if (n < 0 || npairs < 0 || slack < 0 || slack > (1 << 20) || chunk < 1 || !counters) return CL_EARG;
     if (n > 0 && (!buf || !off || !len || !root_out || !orient_out || !best)) return CL_EARG;
     if (npairs > 0 && (!pa || !pb || !prel || !pmax)) return CL_EARG;
-    int64_t maxlen = 0;
-    for (int64_t s = 0; s < n; s++) {
-        if (len[s] < 0 || off[s] < 0 || len[s] > (1 << 24)) return CL_EARG;
-        if (len[s] > maxlen) maxlen = len[s];
-    }
+    int64_t maxlen;
+    if (check_seqs(n, nbuf, off, len, (int64_t)1 << 24, &maxlen)) return CL_EARG;
     for (int64_t p = 0; p < npairs; p++)
         if (pa[p] < 0 || pa[p] >= n || pb[p] < 0 || pb[p] >= n || pmax[p] < 1) return CL_EARG;
     for (int i = 0; i < 5; i++) counters[i] = 0;
@@ -721,21 +731,23 @@ int vnx_cl_fb_level(void) {
 }
 
 /* Certain calls of n reads against per-read templates (consensus.fb_calls on one chunk with shared band B).
- * tpl: n*T int16 (negative = wildcard); mc: n*T int32 mismatch costs; reads at buf[off[r]] with len[r] bases;
+ * tpl: n*T int16 (negative = wildcard); mc: n*T int32 mismatch costs; reads at buf[off[r]] with len[r] bases, inside
+ * the nbuf bytes of buf;
  * band: n per-read bands (0 <= band <= B); calls: n*T output (4 = not certain); opt: n output (2^28 = does not fit).
  * level: 0 = best available, 1 = scalar, 2 = avx2 (error if unsupported). width: 0 = int16 when its bound holds else
  * int32, 32 = int32, 16 = int16 (error if the bound does not hold). Cost domain (checked): 0 <= mc, c_indel <= 1024,
  * T <= 8192, B <= 512, slack <= 2^20, read length <= 2^20. Results are identical for every level and width. */
-int vnx_cl_fb(int64_t n, int64_t T, int64_t B, const int16_t *tpl, const int32_t *mc, const uint8_t *buf,
+int vnx_cl_fb(int64_t n, int64_t T, int64_t B, const int16_t *tpl, const int32_t *mc, const uint8_t *buf, int64_t nbuf,
               const int64_t *off, const int64_t *len, const int64_t *band, int32_t c_indel, int32_t slack,
               uint8_t *calls, int64_t *opt, int32_t level, int32_t width) {
     if (n < 0 || T < 0 || T > 8192 || B < 0 || B > 512 || c_indel < 0 || c_indel > 1024 || slack < 0 ||
         slack > (1 << 20) || (level != 0 && level != 1 && level != 2) || (width != 0 && width != 16 && width != 32))
         return CL_EARG;
-    if (n > 0 && (!tpl || !mc || !buf || !off || !len || !band || !calls || !opt)) return CL_EARG;
+    if (n > 0 && (!tpl || !mc || !buf || !off || !len || !band || !calls || !opt || nbuf < 0)) return CL_EARG;
     int64_t maxlen = 0, maxstep = c_indel;
     for (int64_t r = 0; r < n; r++) {
-        if (len[r] < 0 || len[r] > (1 << 20) || off[r] < 0 || band[r] < 0 || band[r] > B) return CL_EARG;
+        if (len[r] < 0 || len[r] > (1 << 20) || off[r] < 0 || off[r] > nbuf - len[r] || band[r] < 0 || band[r] > B)
+            return CL_EARG;
         if (len[r] > maxlen) maxlen = len[r];
         for (int64_t t = 0; t < T; t++) {
             const int32_t v = mc[r * T + t];
@@ -744,7 +756,8 @@ int vnx_cl_fb(int64_t n, int64_t T, int64_t B, const int16_t *tpl, const int32_t
         }
     }
     if (n == 0) return CL_OK;
-    const int fits16 = (T + maxlen + 2) * maxstep + slack < FB16_INF;
+    /* (maxstep >= 1 in the bound: with all costs 0 the lane lengths and indices must still fit the int16 lanes) */
+    const int fits16 = (T + maxlen + 2) * (maxstep > 0 ? maxstep : 1) + slack < FB16_INF;
     if (width == 16 && !fits16) return CL_EARG;
     const int w16 = width == 16 || (width == 0 && fits16);
     int use_avx2 = 0;
