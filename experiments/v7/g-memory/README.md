@@ -6,9 +6,15 @@ synthesised, stored or sequenced.
 
 - Scripts: `run.py` (driver), `measure.py` (fresh-process measurement, shared with `../g-scaling`), `memray.sh`
   (heap attribution). Results: `results/size-{1,4,16}MiB.json` (commit `a3e53cd`) and
-  `results/size-64MiB-<model>.json` (run one model at a time because of disk space; commits `1cb7f08`, `36adade`
-  and `358ab29`. The experiment code is the same in all of them: only the `--models` and incremental-save
-  options were added in `6be3f65`). Every file records a clean tracked tree.
+  `results/size-64MiB-<model>.json` (run one model at a time because of disk space). **Provenance correction:**
+  the drivers recorded the git commit and tree state when a result file was *saved*, not when the run *started*,
+  and commits were made while runs were in progress. The files therefore record `1cb7f08`, `36adade` and `358ab29`,
+  but the code that ran the three 64 MiB measurements is `6be3f65`. No file under `src/` or `experiments/v7/g-memory/`
+  changed between `6be3f65` and the recorded commits. The clean tracked tree was checked at save time. The drivers
+  now record `git_at_start` before the first measured command (and `git_at_end` at save).
+- **Decoder version:** every result here was measured on the decoder before the V7 cluster/diag merges (lineage
+  `810d35e`, before `95eeaa7`). Those merges add opt-in stage counters and opt-in read clustering, both off in
+  these runs. The post-merge default decoder was not re-measured.
 - Host: Intel Xeon Gold 6240, 8 logical CPUs, 31 GiB, Python 3.12.3. Native align, reads and rs (AVX2) kernels active.
 - Method: every command runs in a fresh interpreter, which writes its **own `VmHWM`** at exit. This is the
   high-water mark of the address space created by exec, so the harness's memory is not included, unlike V6's `wait4`
@@ -32,15 +38,16 @@ synthesised, stored or sequenced.
 
 "exact": the decoded container's SHA-256 equals the encoded one. "fails": exit 5, nothing published. The two
 unfitted models fail at every size, as in V6: nanopore-like fails at the superblock after pass 1, and deletion-heavy
-with `INSUFFICIENT_REDUNDANCY` after pass 2. Memory is still measured over the full decode effort. Wall times were
+with `INSUFFICIENT_REDUNDANCY` after pass 2. Memory is measured over the stages each decode ran (for nanopore-like: pass 1 only). Wall times were
 measured under a shared load (1-minute load average 2.5-12.4 at the start of the measured commands); they are linear
 in the input to within that noise (illumina-like about 3 s per MiB).
 
 ## Bounded or growing?
 
-**Bounded on every measured channel.** From 1 to 64 MiB of input (64x, reads files from 0.2 to 13-20 GB):
+**Bounded on every measured channel, over the decode stages that ran.** nanopore-like stops at the superblock after
+pass 1, so its pass-2 memory was not measured (pass 2 is the dominant stage on deletion-heavy). From 1 to 64 MiB of input (64x, reads files from 0.2 to 13-20 GB):
 
-- **Encode** rises from 57.9 to 63.2-63.5 MiB, +5.6 MiB over the whole range and flat from 16 to 64 MiB. The heap
+- **Encode** rises from 57.9 to 62.9-63.5 MiB (three 64 MiB encodes: 63.1, 63.2, 62.9), +5.6 MiB over the whole range and flat from 16 to 64 MiB. The heap
   peak at 16 MiB is 25.0 MB (memray, `results/memray-encode-16MiB.txt`; largest live allocations: constraint
   checking 3.8 MB, strand building 2.4 MB, marker insertion 1.6 MB). The rest of the RSS is the interpreter, NumPy,
   the cryptography library and the native kernels.

@@ -75,6 +75,11 @@ def slim(r: dict) -> dict:
     return r
 
 
+def git_state() -> dict:
+    return {"commit": git("rev-parse", "HEAD"),
+            "dirty_tracked": bool(git("status", "--porcelain", "--untracked-files=no"))}
+
+
 def run_size(size_mib: int, work: Path, workers_sim: int, models: list[str], save) -> dict:
     payload, strands, container = work / "payload.bin", work / "strands.fasta", work / "a.vnx"
     import subprocess
@@ -83,8 +88,10 @@ def run_size(size_mib: int, work: Path, workers_sim: int, models: list[str], sav
     gen = [sys.executable, "-c", "from vnxdna.commands import main; main()", "generate", str(payload), "--size",
            f"{size_mib}MiB", "--pattern", "random", "--seed", str(7000 + size_mib)]
     subprocess.run(gen, check=True, env=env, capture_output=True)
-    enc = slim(measured(["encode", str(payload), str(strands), "--workers", "1", "--compression", "none",
-                         "--keep-archive", str(container), "--force"], work))
+    enc = measured(["encode", str(payload), str(strands), "--workers", "1", "--compression", "none",
+                         "--keep-archive", str(container), "--force"], work)
+    enc.pop("_raw_samples", None)
+    enc = slim(enc)
     enc.update(op="encode", size_mib=size_mib, payload_sha256=sha256_file(payload),
                strands_sha256=sha256_file(strands), strands_bytes=strands.stat().st_size,
                container_sha256=sha256_file(container), container_bytes=container.stat().st_size)
@@ -135,6 +142,7 @@ def main(argv=None) -> int:
     models = a.models.split(",")
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
+    git_at_start = git_state()   # provenance of the code that runs, captured before the first measured command
     for size in [int(x) for x in a.sizes.split(",")]:
         name = f"size-{size}MiB.json" if models == MODELS else f"size-{size}MiB-{'+'.join(models)}.json"
         t0 = time.time()
@@ -143,8 +151,8 @@ def main(argv=None) -> int:
             doc = {"experiment": "G-MEM", "classification": "SIMULATED channel; wall time and peak RSS MEASURED",
                    "statement": STATEMENT, "size_mib": size, "models": models, "workers": 1,
                    "method": "fresh process per command; peak_rss_bytes = the process's own VmHWM (measure.py)",
-                   "git": {"commit": git("rev-parse", "HEAD"),
-                           "dirty_tracked": bool(git("status", "--porcelain", "--untracked-files=no"))},
+                   "git": git_at_start, "git_at_save": (now := git_state()),
+                   "git_changed_during_run": now != git_at_start,
                    "host": host(), "started": time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime(t0)),
                    "elapsed_seconds": round(time.time() - t0, 1), "complete": len(rows) == 1 + len(models), "rows": rows}
             (out / name).write_text(json.dumps(doc, indent=1) + "\n")

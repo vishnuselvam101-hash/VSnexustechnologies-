@@ -5,8 +5,8 @@ run is recorded, and the timings are only comparable within this file.
     PYTHONPATH=src python experiments/v7/g-scaling/run.py --out experiments/v7/g-scaling/results
 
 Setup: a 16 MiB random payload (seed 7016, the G-MEM 16 MiB payload), encoded once to strands, simulated once per
-model (illumina-like seed 71016: the decode succeeds; nanopore-like seed 71016: unfitted, the decode fails after
-the full recovery effort). Measured: `vnx encode --workers W` and `vnx decode --workers W` in fresh processes
+model (illumina-like seed 71016: the decode succeeds; nanopore-like seed 71016: unfitted, the decode fails at
+the superblock after pass 1; no outer decode runs). Measured: `vnx encode --workers W` and `vnx decode --workers W` in fresh processes
 (experiments/v7/g-memory/measure.py), REPS repetitions per (command, W) with the worker order rotated per repetition.
 Every run's output hash is recorded: the strands and the decoded container must not depend on W.
 Speed-up = median wall(W=1) / median wall(W). Memory: the main process's VmHWM and the sampled process-tree peak.
@@ -58,6 +58,8 @@ def main(argv=None) -> int:
     env = dict(os.environ, PYTHONPATH=str(REPO / "src"))
     cli = [sys.executable, "-c", "from vnxdna.commands import main; main()"]
     t0 = time.time()
+    git_at_start = {"commit": git("rev-parse", "HEAD"),   # captured before the first measured command
+                    "dirty_tracked": bool(git("status", "--porcelain", "--untracked-files=no"))}
     rows = []
     with tempfile.TemporaryDirectory(prefix="vnx-g-scale-") as d:
         w = Path(d)
@@ -114,15 +116,18 @@ def main(argv=None) -> int:
                             "efficiency": round(base / med / wk, 2),
                             "main_vmhwm_mib": round(max(r["peak_rss_bytes"] for r in x) / 2**20, 1),
                             "tree_rss_peak_mib": round(max(r["tree_rss_peak_bytes"] for r in x) / 2**20, 1),
-                            "load_1min_range": [min(r["load_1min_before"] for r in x), max(r["load_1min_after"] for r in x)],
+                            "load_1min_range": [min(v for r in x for v in (r["load_1min_before"], r["load_1min_after"])),
+                                                max(v for r in x for v in (r["load_1min_before"], r["load_1min_after"]))],
                             "outputs_identical": len({r["output_sha256"] for r in x}) == 1,
                             "exits": sorted({r["exit"] for r in x})})
     identical = {op: len({r["output_sha256"] for r in rows if r["op"] == op and r.get("model") == m}) == 1
                  for op, m in [("encode", None)] + [("decode", s.split(":")[0]) for s in a.models.split(",")]}
     doc = {"experiment": "G-SCALE", "classification": "SIMULATED channel; wall time and peak RSS MEASURED",
            "statement": STATEMENT, "size_mib": a.size_mib, "workers": WORKERS, "container_sha256": container_sha,
-           "git": {"commit": git("rev-parse", "HEAD"),
-                           "dirty_tracked": bool(git("status", "--porcelain", "--untracked-files=no"))}, "host": host(),
+           "git": git_at_start,
+           "git_at_save": (now := {"commit": git("rev-parse", "HEAD"),
+                                   "dirty_tracked": bool(git("status", "--porcelain", "--untracked-files=no"))}),
+           "git_changed_during_run": now != git_at_start, "host": host(),
            "started": time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime(t0)), "elapsed_seconds": round(time.time() - t0, 1),
            "outputs_independent_of_workers": identical, "summary": summary, "rows": rows}
     (out / f"scaling-{a.size_mib}MiB.json").write_text(json.dumps(doc, indent=1) + "\n")
