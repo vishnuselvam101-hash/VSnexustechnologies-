@@ -381,7 +381,7 @@ def run_trial(job: dict) -> dict:
         for arm, dopts in job["arms"].items():
             if job["cell"].get("arms") and arm not in job["cell"]["arms"]:
                 continue
-            opts = de.DecodeOptions(workers=1, layout=lay_cell, **dopts)
+            opts = de.DecodeOptions(**{"workers": 1, "layout": lay_cell, **dopts})
             obs = Observer(truth, lay)
             orig = outer_mod._consensus_symbols
             outer_mod._consensus_symbols = obs.wrap(orig)
@@ -507,7 +507,8 @@ def summarise(trials: list, arms: list, baseline: str | None) -> dict:
                               "false_success": sum(r["false_success"] for r in rs), "success_rate": round(ex / len(rs), 4),
                               "wilson95_low": round(lo, 4), "wilson95_high": round(hi, 4),
                               "median_decode_seconds": secs[len(secs) // 2], "max_decode_seconds": secs[-1],
-                              "median_peak_rss_mib": round(rss[len(rss) // 2] / 2**20, 1),
+                              # ru_maxrss of a long-lived worker process: a high-water mark, NOT a per-trial peak
+                              "median_process_rss_high_water_mib": round(rss[len(rss) // 2] / 2**20, 1),
                               "stages": dict(stages), "consensus_quality_totals": dict(cq),
                               "consensus_recovered_total": sum((r["reads"] or {}).get("consensus_recovered", 0) for r in rs)}
         if baseline is not None:
@@ -520,10 +521,8 @@ def summarise(trials: list, arms: list, baseline: str | None) -> dict:
                 cr = mean_ci([(y["reads"] or {}).get("consensus_recovered", 0) - (x["reads"] or {}).get("consensus_recovered", 0)
                               for x, y in zip(base, cand)])
                 ratio = [y["decode_seconds"] / x["decode_seconds"] for x, y in zip(base, cand) if x["decode_seconds"] > 0]
-                rss = [(y["peak_rss_bytes"] or 0) / (x["peak_rss_bytes"] or 1) for x, y in zip(base, cand)]
                 c[f"paired_{arm}_vs_{baseline}"] = {"exact": pd, "consensus_recovered_difference": cr,
-                                                    "median_decode_time_ratio": round(float(np.median(ratio)), 3) if ratio else None,
-                                                    "median_peak_rss_ratio": round(float(np.median(rss)), 3) if rss else None}
+                                                    "median_decode_time_ratio": round(float(np.median(ratio)), 3) if ratio else None}
         out[cid] = c
     return out
 
