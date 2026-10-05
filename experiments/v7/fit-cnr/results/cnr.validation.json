@@ -1,0 +1,418 @@
+{
+ "adequacy": "INADEQUATE",
+ "environment": {
+  "cpu_count": 8,
+  "git": {
+   "commit": "1c0b889c2847c57c98d6c155ecc7086f8f1250e4",
+   "dirty": false
+  },
+  "implementation": "CPython",
+  "libraries": {
+   "cryptography": "46.0.7",
+   "numpy": "2.5.3",
+   "reedsolo": "unknown",
+   "zstandard": "0.25.0"
+  },
+  "machine": "x86_64",
+  "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+  "processor": "x86_64",
+  "python": "3.12.3",
+  "software": {
+   "edlib": "1.3.9.post1",
+   "numpy": "2.5.3",
+   "python": "3.12.3",
+   "vnxdna": "6.0.0.dev0"
+  },
+  "vnxdna_version": "6.0.0.dev0"
+ },
+ "evidence_class": "SIMULATED reads vs PUBLIC-DATA-DERIVED DEV reads",
+ "failed_metrics": [
+  "M2",
+  "M3"
+ ],
+ "job": "cnr",
+ "metrics": {
+  "M1": {
+   "pass": true,
+   "rates": {
+    "deletion": {
+     "pass": true,
+     "real": 0.021800641072491307,
+     "real_se": 0.00010964728730431055,
+     "sim": 0.02196654520855434,
+     "tolerance": 0.0010900320536245654
+    },
+    "insertion": {
+     "pass": true,
+     "real": 0.01899290365467005,
+     "real_se": 8.002969695704548e-05,
+     "sim": 0.018559875774487648,
+     "tolerance": 0.0009496451827335025
+    },
+    "substitution": {
+     "pass": true,
+     "real": 0.016871656730391083,
+     "real_se": 8.944779872645612e-05,
+     "sim": 0.016930953369309533,
+     "tolerance": 0.0008435828365195542
+    }
+   }
+  },
+  "M10": {
+   "parameters": {
+    "sequencing.context.substitution": {
+     "n": 64,
+     "pass": true,
+     "worst_ratio": 0.5671365739161479
+    },
+    "sequencing.deletion.rate": {
+     "n": 1,
+     "pass": true,
+     "worst_ratio": 0.07992146163849422
+    },
+    "sequencing.deletion.run_length.mean": {
+     "n": 1,
+     "pass": true,
+     "worst_ratio": 0.0019723427573075823
+    },
+    "sequencing.homopolymer.indel_multiplier": {
+     "n": 1,
+     "pass": true,
+     "worst_ratio": 0.014610846466150693
+    },
+    "sequencing.homopolymer.min_run": {
+     "n": 1,
+     "pass": true,
+     "worst_ratio": 0.0
+    },
+    "sequencing.homopolymer.substitution_multiplier": {
+     "n": 1,
+     "pass": true,
+     "worst_ratio": 0.06697501189797865
+    },
+    "sequencing.insertion.base_weights": {
+     "n": 4,
+     "pass": true,
+     "worst_ratio": 0.09692187882371808
+    },
+    "sequencing.insertion.rate": {
+     "n": 1,
+     "pass": true,
+     "worst_ratio": 0.07605525726756399
+    },
+    "sequencing.insertion.run_length.mean": {
+     "n": 1,
+     "pass": true,
+     "worst_ratio": 0.11393198381701286
+    },
+    "sequencing.position_profile.deletion": {
+     "n": 22,
+     "pass": true,
+     "worst_ratio": 0.4132037652678282
+    },
+    "sequencing.position_profile.insertion": {
+     "n": 22,
+     "pass": true,
+     "worst_ratio": 0.3741327607731517
+    },
+    "sequencing.position_profile.substitution": {
+     "n": 22,
+     "pass": true,
+     "worst_ratio": 0.36110193350440206
+    },
+    "sequencing.substitution.from_multipliers": {
+     "n": 4,
+     "pass": true,
+     "worst_ratio": 0.0
+    },
+    "sequencing.substitution.matrix": {
+     "n": 16,
+     "pass": true,
+     "worst_ratio": 0.8553074330913685
+    },
+    "sequencing.substitution.rate": {
+     "n": 1,
+     "pass": true,
+     "worst_ratio": 0.051261117480004795
+    }
+   },
+   "pass": true,
+   "rule": "|refit - target| <= 5 SE + 0.08 * |target| + 0.02"
+  },
+  "M2": {
+   "ks_D": 0.05392216075322567,
+   "p90_p99_rel_diff": {
+    "p90": 0.09090909090909091,
+    "p99": 0.0
+   },
+   "pass": false,
+   "real": {
+    "mean": 6.343172160330768,
+    "p90": 11,
+    "p99": 14
+   },
+   "sim": {
+    "mean": 6.320311178758667,
+    "p90": 10,
+    "p99": 14
+   },
+   "thresholds": {
+    "ks_D": 0.03,
+    "quantile_rel": 0.1,
+    "tv": 0.05
+   },
+   "tv": 0.10338463285963145
+  },
+  "M3": {
+   "bands": {
+    "abs_drift_le_0": {
+     "diff_pp": -1.6703954594792432,
+     "pass": false,
+     "real": 0.17562497607289154,
+     "sim": 0.1589210214780991
+    },
+    "abs_drift_le_3": {
+     "diff_pp": -6.877521232559136,
+     "pass": false,
+     "real": 0.8778568967497415,
+     "sim": 0.8090816844241502
+    },
+    "abs_drift_le_6": {
+     "diff_pp": -2.5892102147809903,
+     "pass": false,
+     "real": 1.0,
+     "sim": 0.9741078978521901
+    }
+   },
+   "pass": false,
+   "threshold_pp": 1.0
+  },
+  "M4": {
+   "kinds": {
+    "deletion": {
+     "bins_tested": 11,
+     "chi2": 134.37786516419558,
+     "pass": true,
+     "ratio_sim_over_real": [
+      1.021,
+      1.0043,
+      0.9823,
+      0.957,
+      0.9504,
+      1.0561,
+      1.0424,
+      1.0727,
+      1.0034,
+      0.9807,
+      1.0048
+     ]
+    },
+    "insertion": {
+     "bins_tested": 11,
+     "chi2": 17.327427769460588,
+     "pass": true,
+     "ratio_sim_over_real": [
+      1.0044,
+      1.0007,
+      0.9824,
+      0.9865,
+      1.0398,
+      1.0167,
+      0.9983,
+      1.0095,
+      1.0009,
+      1.0051,
+      1.0072
+     ]
+    },
+    "substitution": {
+     "bins_tested": 11,
+     "chi2": 38.6229787498717,
+     "pass": true,
+     "ratio_sim_over_real": [
+      1.0195,
+      0.9885,
+      1.0115,
+      0.9909,
+      0.9559,
+      1.0052,
+      1.0057,
+      1.0347,
+      1.0138,
+      0.9975,
+      1.0133
+     ]
+    }
+   },
+   "pass": true,
+   "threshold": "each 11-bin ratio within +-10% (bins with >= 100 real events)"
+  },
+  "M5": {
+   "pass": true,
+   "real": [
+    0.7712718602580764,
+    0.1851969341915414,
+    0.03549829620457825,
+    0.006651453598436397,
+    0.0011153976034301034,
+    0.0002148931162571759,
+    5.116502768027997e-05,
+    0.0
+   ],
+   "sim": [
+    0.7804058606347524,
+    0.17059980775968164,
+    0.03762160996775034,
+    0.008605898364160655,
+    0.0021649493797105614,
+    0.0004581428147935213,
+    0.00012576469425704508,
+    1.796638489386358e-05
+   ],
+   "threshold": 0.05,
+   "tv": 0.014597126431859769
+  },
+  "M6": {
+   "indel_rate_out_in_real": [
+    0.027514564857074004,
+    0.050810531109479945
+   ],
+   "indel_rate_out_in_sim": [
+    0.027649836331508356,
+    0.05088384610679552
+   ],
+   "min_run": 3,
+   "pass": true,
+   "rel_diff": [
+    0.0049163588498319965,
+    0.001442909485783678
+   ],
+   "threshold": 0.1
+  },
+  "M7": {
+   "ks_D": 0.04351558599695582,
+   "p10_p90": {
+    "10": {
+     "real": 10.0,
+     "sim": 9.0
+    },
+    "90": {
+     "real": 52.0,
+     "sim": 50.0
+    }
+   },
+   "pass": true,
+   "thresholds": {
+    "ks_D": 0.05,
+    "quantile_rel": 0.1,
+    "zero_fraction": "simulated inside real bootstrap 95% CI"
+   },
+   "zero_fraction": {
+    "real": 0.0015220700152207,
+    "real_ci95": [
+     0.0,
+     0.0035514967021816335
+    ],
+    "sim": 0.001885
+   }
+  },
+  "M8": {
+   "consensus": "one-pass center-star (median-length pivot, edlib global alignment, majority vote); not the VNX decoder",
+   "curve": {
+    "1": {
+     "clusters": 1500,
+     "pass": true,
+     "real": 0.059018181818181824,
+     "real_wilson95": [
+      0.057891318292451484,
+      0.06016557911738437
+     ],
+     "sim": 0.0571030303030303,
+     "sim_wilson95": [
+      0.05599367405429701,
+      0.058233009501899656
+     ]
+    },
+    "10": {
+     "clusters": 1359,
+     "pass": true,
+     "real": 0.0202020202020202,
+     "real_wilson95": [
+      0.019501045228792563,
+      0.020927654276913357
+     ],
+     "sim": 0.016583049033380162,
+     "sim_wilson95": [
+      0.015947993003017878,
+      0.017242950161559953
+     ]
+    },
+    "2": {
+     "clusters": 1499,
+     "pass": true,
+     "real": 0.05779610649523925,
+     "real_wilson95": [
+      0.05668000580885202,
+      0.05893281159548216
+     ],
+     "sim": 0.05683182727879192,
+     "sim_wilson95": [
+      0.0557246127477393,
+      0.057959691154123354
+     ]
+    },
+    "20": {
+     "clusters": 857,
+     "pass": true,
+     "real": 0.019529012411159438,
+     "real_wilson95": [
+      0.018665054508881306,
+      0.020432128097072885
+     ],
+     "sim": 0.016622467380927125,
+     "sim_wilson95": [
+      0.015825780118156895,
+      0.0174585493071118
+     ]
+    },
+    "5": {
+     "clusters": 1480,
+     "pass": true,
+     "real": 0.02492628992628993,
+     "real_wilson95": [
+      0.02418011122089072,
+      0.02569488878033776
+     ],
+     "sim": 0.020730958230958232,
+     "sim_wilson95": [
+      0.020050050054649177,
+      0.021434484546160884
+     ]
+    }
+   },
+   "exact_length_vote": {
+    "note": "real: all reads of the cluster; simulated: 10 reads per cluster",
+    "real": {
+     "clusters_with_exact_length_read": 1413,
+     "exact_share": 0.1464968152866242,
+     "per_base_error": 0.17945699028501574
+    },
+    "sim": {
+     "clusters_with_exact_length_read": 1251,
+     "exact_share": 0.025579536370903277,
+     "per_base_error": 0.27046726255359343
+    }
+   },
+   "pass": true,
+   "threshold": "each k: within 2 percentage points or inside each other's Wilson 95% CI"
+  },
+  "M9": {
+   "note": "no qualities in this dataset (nanopore quality is assumed)",
+   "pass": null
+  }
+ },
+ "model_sha256": "e060e0ee54dab24a8000e4b7cd2d2da53a4680c313fdd5358cd85beb53b14f5e",
+ "peak_rss_mb_self_plus_children": 817.1,
+ "seconds": 34.4,
+ "workers": 8
+}

@@ -1,0 +1,172 @@
+$ python experiments/v7/fit/run.py fit d03-hac-fwd --workers 8 --bootstrap 200  # 2026-10-05T16:47:50Z
+{
+ "job": "d03-hac-fwd",
+ "comparison": {
+  "substitution": {
+   "fitted_observed": 0.016521420180602323,
+   "ci95": [
+    0.0164652594392353,
+    0.01657732035842709
+   ],
+   "published": 0.02,
+   "published_inside_ci": false
+  },
+  "insertion": {
+   "fitted_observed": 0.01018736633320426,
+   "ci95": [
+    0.010145350434997428,
+    0.010229379192354797
+   ],
+   "published": 0.009,
+   "published_inside_ci": false
+  },
+  "deletion": {
+   "fitted_observed": 0.014990793431395134,
+   "ci95": [
+    0.014923803885070887,
+    0.01504900229633239
+   ],
+   "published": 0.014,
+   "published_inside_ci": false
+  }
+ },
+ "seconds": {
+  "tally": 7.4,
+  "fit_bootstrap_calibration": 35.1
+ },
+ "rss_mb": 2505.5
+}
+$ python experiments/v7/fit/run.py validate d03-hac-fwd --workers 8  # 2026-10-05T16:48:33Z
+d03-hac-fwd INADEQUATE ['M2', 'M3'] {'M1': True, 'M10': False, 'M2': False, 'M3': False, 'M4': False, 'M5': False, 'M6': True, 'M7': True, 'M8': True, 'M9': None}
+$ python experiments/v7/fit/run.py fit d03-hac-bwd --workers 8 --bootstrap 200  # 2026-10-05T16:49:19Z
+{
+ "job": "d03-hac-bwd",
+ "comparison": {
+  "substitution": {
+   "fitted_observed": 0.01631963495441515,
+   "ci95": [
+    0.016268847982414205,
+    0.01638140817358157
+   ],
+   "published": 0.02,
+   "published_inside_ci": false
+  },
+  "insertion": {
+   "fitted_observed": 0.010600492984926197,
+   "ci95": [
+    0.01055425124971962,
+    0.010641992175136708
+   ],
+   "published": 0.009,
+   "published_inside_ci": false
+  },
+  "deletion": {
+   "fitted_observed": 0.015966259624834635,
+   "ci95": [
+    0.01590173857215129,
+    0.016025849624367806
+   ],
+   "published": 0.014,
+   "published_inside_ci": false
+  }
+ },
+ "seconds": {
+  "tally": 9.5,
+  "fit_bootstrap_calibration": 33.9
+ },
+ "rss_mb": 2646.8
+}
+$ python experiments/v7/fit/run.py validate d03-hac-bwd --workers 8  # 2026-10-05T16:50:03Z
+d03-hac-bwd INADEQUATE ['M2', 'M3'] {'M1': False, 'M10': True, 'M2': False, 'M3': False, 'M4': False, 'M5': True, 'M6': True, 'M7': True, 'M8': True, 'M9': None}
+$ python experiments/v7/fit/run.py fit d03-fast-fwd --workers 8 --bootstrap 200  # 2026-10-05T16:50:49Z
+{
+ "job": "d03-fast-fwd",
+ "comparison": {
+  "substitution": {
+   "fitted_observed": 0.03628722520940406,
+   "ci95": [
+    0.03620266853546973,
+    0.03636526670888218
+   ],
+   "published": 0.043,
+   "published_inside_ci": false
+  },
+  "insertion": {
+   "fitted_observed": 0.018292905744463253,
+   "ci95": [
+    0.018250575841803448,
+    0.01834067215271335
+   ],
+   "published": 0.014,
+   "published_inside_ci": false
+  },
+  "deletion": {
+   "fitted_observed": 0.04003120678280175,
+   "ci95": [
+    0.03993555106182897,
+    0.040125256040268314
+   ],
+   "published": 0.038,
+   "published_inside_ci": false
+  }
+ },
+ "seconds": {
+  "tally": 10.8,
+  "fit_bootstrap_calibration": 33.3
+ },
+ "rss_mb": 2382.6
+}
+$ python experiments/v7/fit/run.py validate d03-fast-fwd --workers 8  # 2026-10-05T16:51:33Z
+d03-fast-fwd INADEQUATE ['M2', 'M3'] {'M1': True, 'M10': False, 'M2': False, 'M3': False, 'M4': False, 'M5': True, 'M6': True, 'M7': False, 'M8': True, 'M9': None}
+$ python experiments/v7/fit/run.py fit d03-fast-bwd --workers 8 --bootstrap 200  # 2026-10-05T16:52:23Z
+{
+ "job": "d03-fast-bwd",
+ "comparison": {
+  "substitution": {
+   "fitted_observed": 0.037895742748552196,
+   "ci95": [
+    0.03781266688696548,
+    0.0379904028977291
+   ],
+   "published": 0.043,
+   "published_inside_ci": false
+  },
+  "insertion": {
+   "fitted_observed": 0.019201438781794092,
+   "ci95": [
+    0.019156268919971506,
+    0.019251407005340112
+   ],
+   "published": 0.014,
+   "published_inside_ci": false
+  },
+  "deletion": {
+   "fitted_observed": 0.0413384309627335,
+   "ci95": [
+    0.04123295296050078,
+    0.04144985571939095
+   ],
+   "published": 0.038,
+   "published_inside_ci": false
+  }
+ },
+ "seconds": {
+  "tally": 9.3,
+  "fit_bootstrap_calibration": 33.9
+ },
+ "rss_mb": 2379.7
+}
+$ python experiments/v7/fit/run.py validate d03-fast-bwd --workers 8  # 2026-10-05T16:53:07Z
+d03-fast-bwd INADEQUATE ['M2', 'M3'] {'M1': False, 'M10': False, 'M2': False, 'M3': False, 'M4': False, 'M5': True, 'M6': True, 'M7': False, 'M8': True, 'M9': None}
+$ python experiments/v7/fit/run.py orientation hac --workers 8 --bootstrap 200  # 2026-10-05T16:53:57Z
+hac differ max |diff| off-diagonal 0.428
+$ python experiments/v7/fit/run.py orientation fast --workers 8 --bootstrap 200  # 2026-10-05T16:53:58Z
+fast differ max |diff| off-diagonal 0.4834
+$ python experiments/v7/fit/run.py orientation hac --workers 8 --bootstrap 200  # 2026-10-05T16:54:47Z
+hac differ max |diff| off-diagonal 0.428
+$ python experiments/v7/fit/run.py orientation fast --workers 8 --bootstrap 200  # 2026-10-05T16:54:47Z
+fast differ max |diff| off-diagonal 0.4834
+$ python experiments/v7/fit/run.py orientation hac --workers 8 --bootstrap 200  # 2026-10-05T17:18:46Z
+hac differ max |diff| off-diagonal 0.428
+$ python experiments/v7/fit/run.py orientation fast --workers 8 --bootstrap 200  # 2026-10-05T17:18:46Z
+fast differ max |diff| off-diagonal 0.4834
