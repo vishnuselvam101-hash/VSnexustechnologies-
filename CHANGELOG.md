@@ -18,9 +18,13 @@
   `invalid`, as without the fallback (`tests/v2/test_channel_cluster_consensus.py`). mypy now gates `vnxdna.v2`,
   `vnxdna.v4` and `vnxdna.ecc` (164 errors fixed, no new ignores).
 
-## 6.0.0 (unreleased)
+## 6.0.0 (2026-10-05)
 
-Consolidated entry for all V6 phases (development tree `6.0.0.dev0`; version and date to be set at release). The
+Tagged `v6.0.0` at 16b5811 (merge of PR #8). The tagged tree still reports the package version `6.0.0.dev0`: the
+release did not set `_version.py` to `6.0.0`, so archives written by it name `6.0.0.dev0` as their writer. The tag is
+not moved.
+
+Consolidated entry for all V6 phases (development tree `6.0.0.dev0`). The
 per-phase entries below it are kept as written during development. Formats are unchanged from 5.0.0 (VNX4 container,
 frame 4, superblocks 1 and 2); defaults are unchanged except where stated. Every channel result is SIMULATED; time and
 memory figures are MEASURED on a shared development host; the CNR statistics are PUBLIC-DATA-DERIVED. No DNA was
