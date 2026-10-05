@@ -104,6 +104,22 @@ jobs:
       - run: python -m pip install -e '.[dev]'
       - run: bash tools/sanitizers.sh "$RUNNER_TEMP/sanitizers"
 
+  msan:
+    # MemorySanitizer on all three native kernels, linked without CPython (tools/msan.sh): canary, golden-vector replay
+    # against the Python reference, the fuzz harnesses on corpus + regressions + random inputs, 30 s libFuzzer+MSan each
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with: {python-version: '3.12'}
+      - name: clang and its sanitizer runtimes
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends clang libclang-rt-dev
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev]'
+      - run: python -m vnxdna.native --require-native
+      - run: MSAN_FUZZ_SECS=30 bash tools/msan.sh "$RUNNER_TEMP/msan"
+
   conformance:
     # conformance vectors (spec §6) through the CLI on both backends; each must answer CONFORMANT (exit 0)
     runs-on: ubuntu-latest
