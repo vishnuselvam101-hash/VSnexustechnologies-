@@ -1,0 +1,31 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "frame4.beyond-rs-bound.v6-high-dropout",
+ "stage": "D5",
+ "formats": {
+  "frame": 4,
+  "superblock": null,
+  "container": null
+ },
+ "kind": "negative",
+ "operation": "frame4.accept",
+ "params": {
+  "profile": "v6-high-dropout"
+ },
+ "inputs": {
+  "strand": {
+   "path": "strand.dat",
+   "sha256": "2008c54056a79684aaa4cfddeae23c5ada70c5e679324b81221123aa22870872"
+  }
+ },
+ "expected": {
+  "error": {
+   "code": "INSUFFICIENT_REDUNDANCY",
+   "category": "INSUFFICIENT_REDUNDANCY",
+   "exit_code": 5,
+   "retryable": true
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

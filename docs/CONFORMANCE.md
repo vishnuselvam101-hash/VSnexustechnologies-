@@ -10,11 +10,11 @@ nothing about wet-lab behaviour. It shows that this software agrees with the wri
 prove the specification is complete, and it does not cover frame 6, superblock 3 or any other format the specification
 marks as not implemented.
 
-## What the 222 vectors cover
+## What the 226 vectors cover
 
 The full set is `tests/conformance/index.json` (schema `vnx.conformance-index/1`). The counts below were computed from that
-file: 129 positive and 93 negative vectors, 222 in total. By directory: 105 under `stage/`, 24 under `e2e/` (all positive)
-and 93 under `negative/`. Stage IDs are the pipeline stages of spec §5 (E = encode, D = decode); a range such as
+file: 132 positive and 94 negative vectors, 226 in total. By directory: 108 under `stage/`, 24 under `e2e/` (all positive)
+and 94 under `negative/`. Stage IDs are the pipeline stages of spec §5 (E = encode, D = decode); a range such as
 `E10-E13` marks a vector that exercises several stages together.
 
 | Stage ID | Stage name (spec §5) | Positive | Negative | Total |
@@ -29,19 +29,19 @@ and 93 under `negative/`. Stage IDs are the pipeline stages of spec §5 (E = enc
 | E10 | frame | 3 | 0 | 3 |
 | E10-E13 | frame build (E10 to E13) | 8 | 0 | 8 |
 | E11 | scramble, inner RS | 10 | 0 | 10 |
-| E12 | map, markers | 11 | 0 | 11 |
+| E12 | map, markers | 12 | 0 | 12 |
 | E13 | screen | 1 | 1 | 2 |
 | E14 | order, write | 2 | 0 | 2 |
 | D0 | ingest | 0 | 1 | 1 |
 | D0-D14 | whole decode | 12 | 0 | 12 |
 | D1 | probe, layout | 1 | 6 | 7 |
-| D5 | inner | 26 | 9 | 35 |
+| D5 | inner | 28 | 10 | 38 |
 | D8 | superblock | 2 | 20 | 22 |
 | D10 | outer | 6 | 3 | 9 |
 | D11 | stripe | 2 | 2 | 4 |
 | D12 | verify (container rules) | 1 | 36 | 37 |
 | D14 | extract | 5 | 7 | 12 |
-| all | | 129 | 93 | 222 |
+| all | | 132 | 94 | 226 |
 
 Operation families, with the count per family (positive/negative) taken from the vector IDs:
 
@@ -49,9 +49,9 @@ Operation families, with the count per family (positive/negative) taken from the
 |---|---|
 | `crc32` (3) | CRC-32 of fixed rows, and the standard check value |
 | `scrambler` (6) | keystream bytes for variants 0, 1 and 255; byte 0 of the keystream for all 256 variants in each of the three scrambler domains (spec §3.2) |
-| `mapping`, `markers` (5, 6) | bytes to nucleotides for the four frame-4 profiles; marker tables for ℓ = 1 to 6 |
+| `mapping`, `markers` (6, 6) | bytes to nucleotides for the five frame-4 profiles (including `v6-high-dropout`); marker tables for ℓ = 1 to 6 |
 | `rs` (21) | inner Reed-Solomon encode (4 vectors), errata decode (16) and a golden vector (1); parity is checked against an independent implementation in the generator |
-| `frame4` (9 build, 9 parse, 10 negative) | frame-4 build per profile for kind 0 and 1 and a variant greater than 0; parse of the built strands; negatives for the reserved version nibbles, kind 2, a constraint failure, and errors beyond the RS bound (these must be reported, never silently miscorrected) |
+| `frame4` (9 build, 11 parse, 11 negative; the `v6-high-dropout` profile adds 2 parse and 1 beyond-RS-bound vector) | frame-4 build per profile for kind 0 and 1 and a variant greater than 0; parse of the built strands; negatives for the reserved version nibbles, kind 2, a constraint failure, and errors beyond the RS bound (these must be reported, never silently miscorrected) |
 | `superblock` (6 positive, 19 negative) | pack and unpack of versions 1 and 2; negatives for versions 0, 3 and 255, version 4, bad CRC, truncation, invalid version-2 fields (depth 0, depth plus parity above 256, order 2 and 255, unsupported LT code) and CRC-valid forged fields |
 | `outer` (18 positive, 5 negative) | Cauchy row encode and decode for (K, M) in {(64,16), (32,32), (48,16)}, a short last group, column parity for (D, Mc) in {(4,2), (8,2)}, iterative stripe decode; negatives for erasure patterns beyond the bound |
 | `strand.order` (2) | sequential and interleaved record order for one small geometry |
@@ -83,7 +83,7 @@ Each negative vector fixes the exact error. The 93 negatives use these error cod
 
 The error table itself is spec §10 (see [VNX-DNA-SPEC-V6](spec/VNX-DNA-SPEC-V6.md)).
 
-**Packaged subset.** The installed package carries 22 of the 222 vectors in `src/vnxdna/conformance/vectors/` (counted from
+**Packaged subset.** The installed package carries 22 of the 226 vectors in `src/vnxdna/conformance/vectors/` (counted from
 that directory's `index.json`): CRC-32, scrambler, mapping, frame-4 build for the four profiles, superblock unpack and
 version negatives, one forged-superblock negative, and layout probes. `default_vectors()` in `vnxdna.conformance` returns `tests/conformance` when the
 package sits inside a source checkout that has `tests/conformance/index.json`, and the packaged subset otherwise. A run

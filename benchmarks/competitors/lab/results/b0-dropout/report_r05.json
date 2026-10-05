@@ -1,0 +1,258 @@
+{
+ "participants": {
+  "dna-fountain-low": {
+   "strand_nt": [
+    152
+   ],
+   "nt_per_byte": 15.9140625,
+   "bits_per_nt": 0.5027000490918017,
+   "trials": 60,
+   "exact": 52,
+   "false_success": 8,
+   "decode_median_s": 1.0616981983184814,
+   "decode_max_s": 1.3058421611785889,
+   "decode_peak_rss_mib_max": 81.078125
+  },
+  "dna-rs-low": {
+   "strand_nt": [
+    150
+   ],
+   "nt_per_byte": 16.02076480263158,
+   "bits_per_nt": 0.49935194096888036,
+   "trials": 14,
+   "exact": 14,
+   "false_success": 0,
+   "decode_median_s": 313.3316091299057,
+   "decode_max_s": 610.4688928127289,
+   "decode_peak_rss_mib_max": 16.80078125
+  },
+  "vnx-hd-l184-i2-r05": {
+   "strand_nt": [
+    184
+   ],
+   "nt_per_byte": 15.9921875,
+   "bits_per_nt": 0.5002442598925256,
+   "trials": 60,
+   "exact": 60,
+   "false_success": 0,
+   "decode_median_s": 0.9478614330291748,
+   "decode_max_s": 1.2677786350250244,
+   "decode_peak_rss_mib_max": 66.35546875
+  },
+  "vnx-hd-l232-i2-r05": {
+   "strand_nt": [
+    232
+   ],
+   "nt_per_byte": 16.01439144736842,
+   "bits_per_nt": 0.49955067142527027,
+   "trials": 60,
+   "exact": 60,
+   "false_success": 0,
+   "decode_median_s": 0.9477312564849854,
+   "decode_max_s": 1.2289719581604004,
+   "decode_peak_rss_mib_max": 70.2265625
+  }
+ },
+ "cells": [
+  {
+   "participant": "dna-fountain-low",
+   "error_rate": 0.005,
+   "dropout": 0.1,
+   "n": 10,
+   "exact": 10,
+   "lo": 0.7224671969739421,
+   "hi": 0.9999999999999999,
+   "false_success": 0
+  },
+  {
+   "participant": "dna-fountain-low",
+   "error_rate": 0.005,
+   "dropout": 0.2,
+   "n": 10,
+   "exact": 10,
+   "lo": 0.7224671969739421,
+   "hi": 0.9999999999999999,
+   "false_success": 0
+  },
+  {
+   "participant": "dna-fountain-low",
+   "error_rate": 0.005,
+   "dropout": 0.3,
+   "n": 10,
+   "exact": 10,
+   "lo": 0.7224671969739421,
+   "hi": 0.9999999999999999,
+   "false_success": 0
+  },
+  {
+   "participant": "dna-rs-low",
+   "error_rate": 0.005,
+   "dropout": 0.1,
+   "n": 7,
+   "exact": 7,
+   "lo": 0.6456695613241317,
+   "hi": 1.0,
+   "false_success": 0
+  },
+  {
+   "participant": "dna-rs-low",
+   "error_rate": 0.005,
+   "dropout": 0.2,
+   "n": 7,
+   "exact": 7,
+   "lo": 0.6456695613241317,
+   "hi": 1.0,
+   "false_success": 0
+  },
+  {
+   "participant": "vnx-hd-l184-i2-r05",
+   "error_rate": 0.005,
+   "dropout": 0.1,
+   "n": 10,
+   "exact": 10,
+   "lo": 0.7224671969739421,
+   "hi": 0.9999999999999999,
+   "false_success": 0
+  },
+  {
+   "participant": "vnx-hd-l184-i2-r05",
+   "error_rate": 0.005,
+   "dropout": 0.2,
+   "n": 10,
+   "exact": 10,
+   "lo": 0.7224671969739421,
+   "hi": 0.9999999999999999,
+   "false_success": 0
+  },
+  {
+   "participant": "vnx-hd-l184-i2-r05",
+   "error_rate": 0.005,
+   "dropout": 0.3,
+   "n": 10,
+   "exact": 10,
+   "lo": 0.7224671969739421,
+   "hi": 0.9999999999999999,
+   "false_success": 0
+  },
+  {
+   "participant": "vnx-hd-l232-i2-r05",
+   "error_rate": 0.005,
+   "dropout": 0.1,
+   "n": 10,
+   "exact": 10,
+   "lo": 0.7224671969739421,
+   "hi": 0.9999999999999999,
+   "false_success": 0
+  },
+  {
+   "participant": "vnx-hd-l232-i2-r05",
+   "error_rate": 0.005,
+   "dropout": 0.2,
+   "n": 10,
+   "exact": 10,
+   "lo": 0.7224671969739421,
+   "hi": 0.9999999999999999,
+   "false_success": 0
+  },
+  {
+   "participant": "vnx-hd-l232-i2-r05",
+   "error_rate": 0.005,
+   "dropout": 0.3,
+   "n": 10,
+   "exact": 10,
+   "lo": 0.7224671969739421,
+   "hi": 0.9999999999999999,
+   "false_success": 0
+  },
+  {
+   "participant": "dna-fountain-low",
+   "error_rate": 0.01,
+   "dropout": 0.1,
+   "n": 10,
+   "exact": 9,
+   "lo": 0.5958499704752279,
+   "hi": 0.982123787103926,
+   "false_success": 1
+  },
+  {
+   "participant": "dna-fountain-low",
+   "error_rate": 0.01,
+   "dropout": 0.2,
+   "n": 10,
+   "exact": 8,
+   "lo": 0.4901624691221323,
+   "hi": 0.9433178490622331,
+   "false_success": 2
+  },
+  {
+   "participant": "dna-fountain-low",
+   "error_rate": 0.01,
+   "dropout": 0.3,
+   "n": 10,
+   "exact": 5,
+   "lo": 0.23659308901147935,
+   "hi": 0.7634069109885206,
+   "false_success": 5
+  },
+  {
+   "participant": "vnx-hd-l184-i2-r05",
+   "error_rate": 0.01,
+   "dropout": 0.1,
+   "n": 10,
+   "exact": 10,
+   "lo": 0.7224671969739421,
+   "hi": 0.9999999999999999,
+   "false_success": 0
+  },
+  {
+   "participant": "vnx-hd-l184-i2-r05",
+   "error_rate": 0.01,
+   "dropout": 0.2,
+   "n": 10,
+   "exact": 10,
+   "lo": 0.7224671969739421,
+   "hi": 0.9999999999999999,
+   "false_success": 0
+  },
+  {
+   "participant": "vnx-hd-l184-i2-r05",
+   "error_rate": 0.01,
+   "dropout": 0.3,
+   "n": 10,
+   "exact": 10,
+   "lo": 0.7224671969739421,
+   "hi": 0.9999999999999999,
+   "false_success": 0
+  },
+  {
+   "participant": "vnx-hd-l232-i2-r05",
+   "error_rate": 0.01,
+   "dropout": 0.1,
+   "n": 10,
+   "exact": 10,
+   "lo": 0.7224671969739421,
+   "hi": 0.9999999999999999,
+   "false_success": 0
+  },
+  {
+   "participant": "vnx-hd-l232-i2-r05",
+   "error_rate": 0.01,
+   "dropout": 0.2,
+   "n": 10,
+   "exact": 10,
+   "lo": 0.7224671969739421,
+   "hi": 0.9999999999999999,
+   "false_success": 0
+  },
+  {
+   "participant": "vnx-hd-l232-i2-r05",
+   "error_rate": 0.01,
+   "dropout": 0.3,
+   "n": 10,
+   "exact": 10,
+   "lo": 0.7224671969739421,
+   "hi": 0.9999999999999999,
+   "false_success": 0
+  }
+ ]
+}

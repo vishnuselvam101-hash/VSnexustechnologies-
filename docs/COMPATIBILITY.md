@@ -113,6 +113,7 @@ Frame 6 and superblock 3 are specified for V7 and are not implemented ([V6_DEFER
 | 6.x on a pool with an unknown frame version | refused: exit 6 `FRAME_VERSION_UNSUPPORTED`, not retryable | spec §3.10 |
 | 6.x on a V1 or V3 pool | refused: exit 6 `LEGACY_FORMAT`; use `vnx-dna` | spec §3.10 |
 | 6.x on reads whose layout cannot be detected | refused: exit 3 `LAYOUT_UNDETECTED` | spec §3.10 |
+| opt-in redundancy profile `high-dropout` (strand profile `v6-high-dropout`, 256 nt) | frame 4 and superblock 1 with existing layout options, so the format is unchanged. It is never selected by default. 6.x detects the layout from read length. Readers before 6.0 do not know the profile name and cannot auto-detect the layout. Decoding such strands with an earlier reader and an explicit layout has not been tested | `tests/v6/test_redundancy_profiles.py`; spec §3.7, §7.2 |
 | Python imports | every `vnxdna.v4.*`, `v5.*`, `v6.*`, `errors`, `provenance` and `native` path still imports (module aliases and facades) | `tests/architecture/test_public_paths.py` |
 | CLI | the 5.x JSON fields stay at the top level of every output; `vnx.result/1` envelope added; `--report` files are `vnx.decode-report/1` with the 5.x fields at the top level; exit codes 9 and 10 | CHANGELOG; [CLI.md](CLI.md) |
 

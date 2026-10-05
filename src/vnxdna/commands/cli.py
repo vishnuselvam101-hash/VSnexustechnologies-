@@ -245,7 +245,7 @@ def extract(container: Path, output_dir: Path, names: Optional[List[str]] = type
 @app.command()
 def encode(source: Path = typer.Argument(..., help="A .vnx container, or a file/directory (archived first)."),
            output: Path = typer.Argument(..., help="Strand file (.fasta or .fastq)."),
-           profile: Optional[str] = typer.Option(None, help="v4-balanced (default), v4-dense, v4-indel, v4-archival."),
+           profile: Optional[str] = typer.Option(None, help="v4-balanced (default), v4-dense, v4-indel, v4-archival, v6-high-dropout."),
            outer_code: Optional[str] = typer.Option(None, help="cauchy-rs (default)."),
            data_symbols: Optional[int] = typer.Option(None, "-K"), parity_symbols: Optional[int] = typer.Option(None, "-M"),
            workers: int = typer.Option(0, "--workers", "-w", help="0 = from the performance profile."),
@@ -258,7 +258,7 @@ def encode(source: Path = typer.Argument(..., help="A .vnx container, or a file/
                                                              help="V6 adaptive plan: max redundant strands per data strand."),
            redundancy_profile: Optional[str] = typer.Option(
                None, "--redundancy-profile",
-               help="V6 preset: maximum-density, balanced or maximum-recovery (explicit options override it)."),
+               help="V6 preset: maximum-density, balanced, maximum-recovery or high-dropout (explicit options override it)."),
            chunk_size: Optional[int] = typer.Option(None, "--chunk-size", help="Archive option (SOURCE not a container)."),
            compression: Optional[str] = typer.Option(None, "--compression", help="Archive option: zstd or none."),
            level: Optional[int] = typer.Option(None, "--level", help="Archive option: zstd level 1–22."),

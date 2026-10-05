@@ -246,6 +246,15 @@ Tests of the VNX-side files: `python -m pytest tests/bench_lab`.
 
 Provenance JSON `results/b0/provenance.json`: VNX commit and clean flag, native backends, CPU/kernel/RAM, gcc/cmake versions, every tool's SHA, remote, licence-file hash and submodules, patch hashes, driver hashes, commands, seeds, step limits.
 
+## Follow-up: b0-dropout (SIMULATED, pre-registered)
+
+The pre-registered follow-up on heavy strand dropout at matched rate is in
+[`results/b0-dropout/README.md`](results/b0-dropout/README.md). The grid was 19 kB, coverage 10, errors 0.5 % and 1 %,
+dropout 0-20 %, with 10 seeds per cell. At 0.998 bit/nt, `hd-l256-i4` recovered 88/100 against 35/100 for `s184`, with
+0 false SUCCESS. DNA-RS-medium recovered 100/100. `hd-l256-i4` was accepted under the pre-registered rule and ships as the
+opt-in redundancy profile `high-dropout`. New lab profiles are `adapters/vnx/profiles/hd-*.json`, and the report script is
+`dropout_report.py`.
+
 ## Next (B1)
 
 Full sweep with HEDGES (text-I/O adapter around the C++ build), YYC and the DNA-RS / Fountain / Aeon grid on the same seeds; the ETH protocol re-run (30 trials, logistic threshold, 1 h limit, 0.5/1.0/1.5 bit/nt) through the harness; Aeon demo conditions with the 3600 s limit; stronger clusterers for the built-in codecs; VNX profiles with a higher outer-parity share (to test the dropout result) and with indel-marker layouts at matched rate; the dt4dds digital-twin workflows; timing cells at load below 1.5.

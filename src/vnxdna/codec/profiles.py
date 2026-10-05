@@ -8,6 +8,10 @@ strand dropout, burst loss, coverage) and on the density the user can afford. No
     balanced          v4-balanced layout with sync markers, row code 64 + 16 — exactly the V5 default encoding
     maximum-recovery  v4-archival layout (sync markers, larger index), row code 32 + 32, plus V6 column parity (2 per
                       stripe of 8 data groups) and interleaved strand order against burst loss
+    high-dropout      v6-high-dropout layout (256 nt, no sync markers, 4 B inner parity), row code 160 + 48: about
+                      1.0 bit/nt with more outer parity for strand dropout; weaker against indels than layouts with
+                      markers. Selected by the pre-registered b0-dropout comparison (SIMULATED,
+                      benchmarks/competitors/lab/results/b0-dropout/README.md)
 
 Explicit options override a profile's fields (e.g. ``workers``). :func:`merge` is the single place where a profile and
 explicit options are combined (V6 Phase 2.3; the CLI and :func:`vnxdna.pipeline.profiles.dna_options` both use it).
@@ -22,6 +26,7 @@ REDUNDANCY_PROFILES: dict[str, dict] = {
     "maximum-density": {"profile": "v4-dense"},
     "balanced": {"profile": "v4-balanced"},
     "maximum-recovery": {"profile": "v4-archival", "stripe_depth": 8, "column_parity": 2, "strand_order": "interleaved"},
+    "high-dropout": {"profile": "v6-high-dropout"},
 }
 
 

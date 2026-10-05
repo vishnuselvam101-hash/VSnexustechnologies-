@@ -41,7 +41,7 @@ synthesised, stored or sequenced. Deferred work and the reason for each item: do
   `ReferenceSimulatorProvider` as the only provider), `vnx.export-package/1` and `vnx.import-package/1`, `vnxdna.physical`
   with the PUBLIC-DATA-DERIVED evidence class, exit code 10 (PROVIDER_ERROR). docs/INTEROPERABILITY.md,
   docs/LAB_INTERFACE.md, docs/DDSA_MAPPING.md (mapping table only; no Sector Zero/One output).
-- **Conformance (Phase 8, part 1).** 222 vectors (129 positive, 93 negative; tests/conformance/index.json), a packaged
+- **Conformance (Phase 8, part 1).** 226 vectors (132 positive, 94 negative; tests/conformance/index.json; 4 of them added with the `high-dropout` profile), a packaged
   22-vector subset, `vnx conformance [--backend native|reference]`, property tests.
 - **Reproducibility (Phase 8, part 2).** `vnx.experiment/1` experiment manifests (`vnxdna.benchmark.manifest`: strict
   validator with typed errors, writer, JSON Schema) for two kinds, `channel-simulation` and `experiment`.
@@ -52,6 +52,12 @@ synthesised, stored or sequenced. Deferred work and the reason for each item: do
 - **Benchmark lab B0 (Phase 9, first stage).** VNX-DNA as an external codec in `dt4dds-benchmark` beside DNA-RS, DNA
   Fountain and DNA-Aeon: 280 trials, not the published protocol (benchmarks/competitors/lab/README.md). 0 false SUCCESS
   in 157 VNX-DNA trials (SIMULATED); weaker than DNA-RS at 10 % dropout and at 1 % errors near 1 bit/nt (same README).
+- **Opt-in redundancy profile `high-dropout` (job #79, b0-dropout).** Strand profile `v6-high-dropout`: 256 nt, 4 B
+  inner parity, no markers, row code 160 + 48, at 0.998 bit/nt at 19 kB. It is opt-in with `--redundancy-profile high-dropout` and
+  never the default. The format is unchanged. Selected by a pre-registered comparison (SIMULATED,
+  benchmarks/competitors/lab/results/b0-dropout): 88/100 exact against 35/100 for B0's `s184`, and 10/10 in every cell
+  with dropout up to 10 %. DNA-RS-medium recovered 100/100 on the same grid, and the new profile loses to it at 1 % errors
+  with 20 % dropout. There were 0 false SUCCESS in 720 VNX trials. Conformance set: 4 vectors added for the new layout (226 in total).
 - **Documentation (Phase 10).** docs/V6_DEFERRED.md, docs/research/V6_COMPETITIVE_RESEARCH.md,
   docs/research/V6_TECHNICAL_RESEARCH.md; README, docs/ARCHITECTURE.md, docs/BENCHMARKING.md, docs/CLI.md,
   docs/COMPATIBILITY.md and docs/STORAGE_FORMAT.md updated for 6.x.
@@ -80,6 +86,24 @@ synthesised, stored or sequenced. Deferred work and the reason for each item: do
 - Not implemented: encode events; MSan and non-x86 builds; fuzz campaigns of one CPU-hour per target; open LOW findings in the security model. Open defects:
   `vnx locate` on V6 striped pools (job #62), `--select` when some failed groups lie outside the index (job #66).
 - No physical validation of any kind.
+
+## Unreleased (6.0.0.dev0) — job #79: opt-in redundancy profile for heavy dropout (PERF-DROP)
+
+Formats unchanged; default unchanged. Channel results are SIMULATED (benchmarks/competitors/lab/results/b0-dropout).
+
+- **`high-dropout` redundancy profile** (`--redundancy-profile high-dropout`, `vnxdna.pipeline.profiles.dna_options`)
+  over the new frame-4 strand profile `v6-high-dropout`: `Layout(46, 4, 0, 0)`, outer 160 + 48. The decoder detects it
+  from read length. Its encoding is byte-identical to the lab profile `hd-l256-i4` (test).
+- **b0-dropout** (pre-registered in 1946f3c before any trial ran): 19 kB, coverage 10, errors 0.5 % and 1 %, dropout
+  0-20 %, 10 seeds per cell, 800 trials in the main grid.
+  * Rule 3 accepted `hd-l256-i4`: 0.9984 bit/nt, 0 false SUCCESS, never below `s184` in any cell, Wilson-separated
+    above it in 5 cells, and 10/10 at dropout up to 10 %.
+  * Where it loses: DNA-RS-medium 100/100 against 88/100 pooled, and 3/10 against 10/10 at 1 % errors with 20 % dropout.
+    Its strands are 78 % longer (256 against 144 nt) and decode peak RSS is 63 against 16 MiB.
+  * Column parity did not help at this size: 86 against 87.
+  * The 0.5 bit/nt secondary grid is reported only, because DNA-RS-low has only 14 of its 60 trials.
+- `benchmarks/competitors/lab/dropout_report.py` writes the per-cell Wilson tables and applies the pre-registered rule.
+  `seen_barocdes.json`, a runtime artefact of a third-party codec committed by mistake, is no longer tracked.
 
 ## Unreleased (6.0.0.dev0) — job #80: opt-in retry band (ALIGN-BAND)
 

@@ -1,0 +1,90 @@
+{
+ "description": "b0-dropout (pre-registered, see results/b0-dropout/PREREG.md). 19 kB, coverage 10, 53/45/2 error composition. SIMULATED. Main grid, all participants (executed in chunks below, identical parameters).",
+ "input": "random/19kB",
+ "step_timeout_s": 900,
+ "channel": {
+  "ratio": [
+   53,
+   45,
+   2
+  ],
+  "error_rates": [
+   0.005,
+   0.01
+  ],
+  "coverages": [
+   10
+  ],
+  "dropouts": [
+   0.0,
+   0.05,
+   0.1,
+   0.15,
+   0.2
+  ],
+  "seeds": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10
+  ]
+ },
+ "participants": [
+  {
+   "id": "vnx-s184",
+   "codec": "VNX",
+   "profile": "s184",
+   "clustering": "NoClustering"
+  },
+  {
+   "id": "vnx-hd-l208-i2",
+   "codec": "VNX",
+   "profile": "hd-l208-i2",
+   "clustering": "NoClustering"
+  },
+  {
+   "id": "vnx-hd-l232-i2",
+   "codec": "VNX",
+   "profile": "hd-l232-i2",
+   "clustering": "NoClustering"
+  },
+  {
+   "id": "vnx-hd-l256-i4",
+   "codec": "VNX",
+   "profile": "hd-l256-i4",
+   "clustering": "NoClustering"
+  },
+  {
+   "id": "vnx-hd-l280-i4",
+   "codec": "VNX",
+   "profile": "hd-l280-i4",
+   "clustering": "NoClustering"
+  },
+  {
+   "id": "vnx-hd-l280-i4-c1",
+   "codec": "VNX",
+   "profile": "hd-l280-i4-c1",
+   "clustering": "NoClustering"
+  },
+  {
+   "id": "dna-rs-medium",
+   "codec": "DNARS",
+   "factory": "medium_coderate",
+   "needs_file_size": true,
+   "clustering": "BasicSet"
+  },
+  {
+   "id": "dna-fountain-medium",
+   "codec": "DNAFountain",
+   "factory": "medium_coderate",
+   "needs_file_size": true,
+   "clustering": "BasicSet"
+  }
+ ]
+}
