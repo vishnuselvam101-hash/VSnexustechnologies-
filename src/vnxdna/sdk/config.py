@@ -106,7 +106,7 @@ def decode_options(cfg: dict, **overrides):
 
 def resolved(obj) -> dict:
     """Plain-dict view of an options dataclass (for reports)."""
-    out = {}
+    out: dict = {}
     for f in fields(obj):
         v = getattr(obj, f.name)
         if f.name in ("key", "passphrase"):

@@ -93,7 +93,7 @@ def file_ref(role: str, path: str | os.PathLike | None, sha256: str | None = Non
             size = p.stat().st_size if p.is_file() else None
         except OSError:
             size = None
-    if sha256 is None and hash_file and size is not None:
+    if sha256 is None and hash_file and size is not None and p is not None:
         sha256 = _hash_now(p)
     return {"role": role, "path": "" if p is None else str(p), "bytes": size, "sha256": sha256}
 
@@ -151,7 +151,7 @@ class Result:
     peak_rss_bytes: int = field(default_factory=peak_rss_bytes)
 
     def to_json(self, schema: str = RESULT_SCHEMA) -> dict:
-        timings = {"seconds": self.seconds}
+        timings: dict = {"seconds": self.seconds}
         if self.stage_seconds is not None:
             timings["stage_seconds"] = self.stage_seconds
         return {"schema": schema, "kind": self.kind, "status": self.status, "software": dict(SOFTWARE), "spec": SPEC_VERSION,

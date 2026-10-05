@@ -59,12 +59,13 @@ class Probe:
             return 0, 0.0, 0.0, 0
         di = [d for d, _ in DOMAINS].index(domain)
         (b0f, nf, vf), (b0r, nr, vr) = self.heads["forward"], self.heads["reverse"]
-        best = None
+        best: tuple | None = None
         for u in range(16):
             hf, hr = vf & (nf[di] == u), vr & (nr[di] == u)
             hit = hf | hr
             if best is None or hit.sum() > best[1].sum():
                 best = (u, hit, np.where(hf | ~hr, b0f, b0r))
+        assert best is not None
         u, hit, b0 = best
         if not hit.any():
             return u, 0.0, 0.0, 0
@@ -142,17 +143,17 @@ def probe_reads(reads_path: str | os.PathLike, band: int = 6) -> Probe:
         # no exact-length read verifies (heavy indels): the same vote through the sync path of pass 1 (marker-template
         # alignment, indels → erasures) on up to SYNC_VOTE_READS reads near each candidate's length, both orientations
         for name, lay in p.candidates:
-            near = [r for r in sample if abs(r.size - lay.strand_nt) <= band][:SYNC_VOTE_READS]
-            if not near:
+            close = [r for r in sample if abs(r.size - lay.strand_nt) <= band][:SYNC_VOTE_READS]
+            if not close:
                 continue
             al = TemplateAligner(lay, band)
-            score = 0
-            for reads in (near, [_RC[r[::-1]] for r in near]):
-                pr = al.project(reads)
+            votes = 0
+            for oriented in (close, [_RC[r[::-1]] for r in close]):
+                pr = al.project(oriented)
                 er = frame_erasures_to_bytes(pr.erased)
-                score += int((decode_frames(lay, nt_to_bytes(np.minimum(pr.bases, 3)), er, errors_only_retry=False).ok
+                votes += int((decode_frames(lay, nt_to_bytes(np.minimum(pr.bases, 3)), er, errors_only_retry=False).ok
                               & pr.ok).sum())
-            p.scores[name] = score
+            p.scores[name] = votes
             p.sync_vote = True
     return p
 
@@ -260,7 +261,7 @@ def check_unsupported_after_pass1(reads_path: str | os.PathLike) -> None:
 def probe_file(path: str | os.PathLike, *, deep: bool = False) -> dict:
     """``vnx.probe/1`` answer for a read or strand file: can this reader decode it, and with which layout?"""
     from vnxdna.core.errors import VNXError
-    out = {"schema": "vnx.probe/1", "object": "reads", "readable": "yes", "reason": None, "frame": None,
+    out: dict = {"schema": "vnx.probe/1", "object": "reads", "readable": "yes", "reason": None, "frame": None,
            "strand_profile": None, "layout": None, "primers": None, "sample_reads": None, "superblock": None,
            "generated_by": None}
     try:

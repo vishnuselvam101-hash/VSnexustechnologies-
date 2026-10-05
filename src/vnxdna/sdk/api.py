@@ -178,7 +178,7 @@ def encode(source: PathLike | Sequence[PathLike], output: PathLike, *, dna: DNAO
                 aopt = replace(aopt, key=key, passphrase=passphrase)
             tmpdir = tempfile.mkdtemp(prefix="vnx-encode-")
             src = Path(keep_archive) if keep_archive else Path(tmpdir) / "archive.vnx"
-            archived = _ar.build_archive(sources, src, aopt, overwrite=overwrite).to_dict()
+            archived = _ar.build_archive(list[PathLike](sources), src, aopt, overwrite=overwrite).to_dict()
         rep = _en.encode_container(src, output, opts, overwrite=overwrite, progress=progress)
         if archived is not None:
             rep = {**rep, "archive": archived}
@@ -234,7 +234,7 @@ def decode(reads: PathLike, output: PathLike | None = None, *, options: DecodeOp
             res = _de.decode_reads(reads, target, opts, overwrite=overwrite, partial_dir=partial_dir, key=key,
                                    passphrase=passphrase, progress=progress, observer=observer, task_id=task_id,
                                    allow_unencrypted=allow_unencrypted)
-            if res.status == "SUCCESS" and extract_to is not None:
+            if res.status == "SUCCESS" and extract_to is not None and target is not None:
                 res.report["extract"] = _ar.extract(target, extract_to, key=key, passphrase=passphrase, overwrite=overwrite,
                                                     allow_unencrypted=allow_unencrypted)
     finally:
