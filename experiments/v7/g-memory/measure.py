@@ -9,11 +9,13 @@ the spawning parent's high-water mark into it. It is still recorded (``wait4_ru_
 
 Worker processes (``--workers N > 1``: ProcessPoolExecutor children of the measured process) are not covered by its
 VmHWM. A sampler thread polls /proc every ``interval`` seconds for the whole process tree and records:
-  * ``tree_rss_peak_bytes``  the largest sampled sum of VmRSS over the tree (a lower bound of the true tree peak:
-                             sampling can miss short spikes);
+  * ``tree_rss_peak_bytes``  the largest sampled sum of VmRSS over the tree. Not a strict bound either way: sampling can
+                             miss short spikes, and pages shared copy-on-write between the parent and its forked
+                             workers are counted once per process;
   * ``tree_hwm_sum_bytes``   the sum over every process ever seen of its last sampled VmHWM (an upper bound of the
-                             simultaneous peak: the per-process peaks need not coincide; misses growth in a worker's
-                             last ``interval``);
+                             simultaneous peak: per-process peaks need not coincide, and a forked worker's VmHWM starts
+                             at the parent's high-water mark at fork time; it misses growth in a worker's last
+                             ``interval``);
   * ``timeline``             (seconds since spawn, main-process VmRSS, tree VmRSS) samples, thinned to <= 600 points.
 """
 from __future__ import annotations
