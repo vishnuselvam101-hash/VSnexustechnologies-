@@ -181,7 +181,8 @@ def percentile_ci(values: list) -> list | dict | None:
 
 
 def fit_tallies(M: np.ndarray, layout: Layout, *, seed: int, bootstrap: int = BOOTSTRAP, with_coverage: bool = True,
-                design: est.Design | None = None, calibration: dict | None = None) -> dict:
+                design: est.Design | None = None, calibration: dict | None = None,
+                coverage_counts: np.ndarray | None = None) -> dict:
     """Estimate every sequencing-stage parameter, coverage and dropout from the reference-by-count matrix ``M``, with
     bootstrap-over-references confidence intervals. Returns ``{'values', 'ci95', 'design', 'coverage', 'observed', 'stats'}``."""
     R = M.shape[0]
@@ -189,6 +190,8 @@ def fit_tallies(M: np.ndarray, layout: Layout, *, seed: int, bootstrap: int = BO
     design = design if design is not None else est.choose_design(layout, T)
     point = est.estimate(layout, T, design)
     assigned = layout.get(M, "n_reads")[:, 0] + layout.get(M, "excluded")[:, 0]
+    if coverage_counts is not None:
+        assigned = np.asarray(coverage_counts, dtype=np.int64)
     cov_point: dict | None = fit_coverage(counts_hist(assigned)) if with_coverage else None
     ci: dict = {}
     if bootstrap:

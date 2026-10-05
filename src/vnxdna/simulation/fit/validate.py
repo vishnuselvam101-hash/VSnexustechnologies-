@@ -156,6 +156,34 @@ def m7_coverage(real_counts: np.ndarray, model: cm.ChannelModel, seed: int, B: i
             "thresholds": {"ks_D": 0.05, "zero_fraction": "simulated inside real bootstrap 95% CI", "quantile_rel": 0.10}}
 
 
+def m9_quality(layout: Layout, real_T: np.ndarray, sim_T: np.ndarray, min_bases: int = 1000) -> dict:
+    """Quality calibration (FASTQ data): for each Phred value occupied in the real reads, the empirical error probability of
+    bases at that value, in Phred units (-10 log10 p), real vs simulated; every occupied bin within 1 Phred unit. Simulated
+    values are assigned to the nearest real value (the real instrument bins its qualities)."""
+    rc_, re_ = layout.get(real_T, "q_correct").astype(float), layout.get(real_T, "q_error").astype(float)
+    sc, se = layout.get(sim_T, "q_correct").astype(float), layout.get(sim_T, "q_error").astype(float)
+    occ = np.flatnonzero(rc_ + re_ >= min_bases)
+    if occ.size == 0:
+        return {"pass": None, "note": "no occupied quality values"}
+    sim_c, sim_e = np.zeros(occ.size), np.zeros(occ.size)
+    for q in np.flatnonzero(sc + se > 0):
+        j = int(np.argmin(np.abs(occ - q)))
+        sim_c[j] += sc[q]
+        sim_e[j] += se[q]
+
+    def phred(e, n):
+        p = (e + 0.5) / (n + 1.0)
+        return -10.0 * np.log10(p)
+    rows, ok = {}, True
+    for j, q in enumerate(occ):
+        pr, ps = phred(re_[q], rc_[q] + re_[q]), phred(sim_e[j], sim_c[j] + sim_e[j])
+        good = bool(abs(pr - ps) <= 1.0)
+        ok &= good
+        rows[int(q)] = {"real_error_phred": float(pr), "sim_error_phred": float(ps), "real_bases": float(rc_[q] + re_[q]),
+                        "sim_bases": float(sim_c[j] + sim_e[j]), "pass": good}
+    return {"pass": bool(ok), "bins": rows, "threshold_phred_units": 1.0}
+
+
 # ================================================================================================================ consensus (M8)
 def center_star(reads: list) -> bytes:
     """One-pass consensus: the median-length read is the pivot; every other read is aligned to it (edlib, global) and each
@@ -266,15 +294,18 @@ def m8_functional(real_clusters: list, model: cm.ChannelModel, seed: int, *, max
 # ================================================================================================================ driver
 def validate_model(model: cm.ChannelModel, layout: Layout, *, dev_refs: list, dev_clusters: list, dev_M: np.ndarray,
                    dev_rs: np.ndarray, mode: str = "NW", seed: int = 7, sim_seeds: int = 5, sim_coverage: int = 6,
-                   workers: int = 1, sim_refs_cap: int = 4000, with_functional: bool = True) -> dict:
+                   workers: int = 1, sim_refs_cap: int = 4000, with_functional: bool = True,
+                   tally_opts: dict | None = None, dev_counts: np.ndarray | None = None) -> dict:
     """M1-M8 for ``model`` against DEV data (``dev_M``/``dev_rs`` from the same pipeline; ``dev_clusters`` = (ref, reads)).
     M9 (quality) and M10 (round trip) are separate (see ``quality_calibration`` in the experiment code and ``round_trip``)."""
     refs = dev_refs[:sim_refs_cap]
     simM = np.zeros(layout.size, dtype=np.int64)
     simrs = np.zeros(EDIT_BINS + DRIFT_BINS, dtype=np.int64)
     for s in range(sim_seeds):
-        cl = simulate_clusters(model, refs, sim_coverage, seed * 1000 + s)
-        M, rs = tally_matrix(zip(refs, cl), layout, mode="NW" if mode == "HW" else mode, workers=workers)
+        sq: list | None = [] if layout.quality else None
+        cl = simulate_clusters(model, refs, sim_coverage, seed * 1000 + s, quals=sq)
+        pairs = zip(refs, cl, sq) if sq is not None else zip(refs, cl)
+        M, rs = tally_matrix(pairs, layout, mode="NW" if mode == "HW" else mode, workers=workers, **(tally_opts or {}))
         simM += M.sum(axis=0, dtype=np.int64)
         simrs += rs
     sim_T = simM.astype(float)
@@ -285,8 +316,11 @@ def validate_model(model: cm.ChannelModel, layout: Layout, *, dev_refs: list, de
         "M2": m2_edit_distance(dev_rs, simrs), "M3": m3_drift(dev_rs, simrs),
         "M4": m4_profile(layout, real_T, sim_T), "M5": m5_delruns(layout, real_T, sim_T),
         "M6": m6_homopolymer(layout, real_T, sim_T, min_run),
-        "M7": m7_coverage((layout.get(dev_M, "n_reads")[:, 0] + layout.get(dev_M, "excluded")[:, 0]).astype(np.int64), model, seed),
+        "M7": m7_coverage(dev_counts if dev_counts is not None else
+                          (layout.get(dev_M, "n_reads")[:, 0] + layout.get(dev_M, "excluded")[:, 0]).astype(np.int64), model, seed),
     }
+    if layout.quality:
+        rep["M9"] = m9_quality(layout, real_T, sim_T)
     if with_functional:
         rep["M8"] = m8_functional(dev_clusters, model, seed * 1000 + 500, ref_len=layout.L)
     return rep
@@ -336,11 +370,11 @@ def compare_params(target: dict, refit: dict, ci: dict, rel_floor: float = 0.08,
 
 
 def round_trip(model: cm.ChannelModel, layout: Layout, refs: list, *, coverage: int, seed: int, bootstrap: int = 200,
-               workers: int = 1, rel_floor: float = 0.08, calibration: dict | None = None) -> dict:
+               workers: int = 1, rel_floor: float = 0.08, calibration: dict | None = None, tally_opts: dict | None = None) -> dict:
     """M10: simulate ``refs`` from the fitted model, refit with the same pipeline and design, and compare every sequencing
     parameter with the model's own value (5 bootstrap SE of the refit, plus an alignment-ambiguity floor)."""
     cl = simulate_clusters(model, refs, coverage, seed)
-    M, _rs = tally_matrix(zip(refs, cl), layout, workers=workers)
+    M, _rs = tally_matrix(zip(refs, cl), layout, workers=workers, **(tally_opts or {}))
     cal = dict(calibration) if calibration else None
     if cal is not None:
         cal.setdefault("workers", workers)

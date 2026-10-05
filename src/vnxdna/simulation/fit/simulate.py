@@ -26,10 +26,12 @@ def validation_model(model: cm.ChannelModel, coverage: int) -> cm.ChannelModel:
         label="validation: fixed coverage")
 
 
-def simulate_clusters(model: cm.ChannelModel, refs: list, coverage: int, seed: int, *, stats: dict | None = None) -> list:
+def simulate_clusters(model: cm.ChannelModel, refs: list, coverage: int, seed: int, *, stats: dict | None = None,
+                      quals: list | None = None) -> list:
     """For each reference (bytes, equal lengths), ``coverage`` simulated reads (bytes ACGT/N). Pure function of the inputs.
     If ``stats`` is a dict, the simulator's own event counters (substitutions, insertions = inserted bases, deletions =
-    deleted bases) are added to it."""
+    deleted bases) are added to it. If ``quals`` is a list, the Phred+33 quality strings (same shape as the result) are
+    appended to it per reference."""
     vm = validation_model(model, coverage)
     sim = Simulator(vm.stages)
     out: list = []
@@ -45,6 +47,11 @@ def simulate_clusters(model: cm.ChannelModel, refs: list, coverage: int, seed: i
                 stats[k] = stats.get(k, 0) + res["stats"][k]
         if len(reads) != len(part) * coverage:
             raise RuntimeError("simulation did not give the requested fixed coverage")
+        qtext = None
+        if quals is not None:
+            qtext = (res["quals"].astype(np.uint8) + 33).tobytes()
         for i in range(len(part)):
             out.append(reads[i * coverage:(i + 1) * coverage])
+            if quals is not None and qtext is not None:
+                quals.append([qtext[offs[i * coverage + j]:offs[i * coverage + j + 1]] for j in range(coverage)])
     return out

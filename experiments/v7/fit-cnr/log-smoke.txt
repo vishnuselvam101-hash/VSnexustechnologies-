@@ -1,0 +1,7 @@
+edlib+leftmost (main) {'substitution': 1.681, 'insertion_bases': 1.896, 'deletion_bases': 2.189} {'substitution': False, 'insertion': False, 'deletion': False} {'substitution.rate': np.float64(0.0), 'insertion.rate': np.float64(0.0), 'deletion.rate': np.float64(0.0), 'homopolymer.indel_multiplier': np.float64(0.0), 'homopolymer.substitution_multiplier': np.float64(0.0)}
+edlib+rightmost {'substitution': 1.681, 'insertion_bases': 1.896, 'deletion_bases': 2.189} {'substitution': False, 'insertion': False, 'deletion': False} {'substitution.rate': np.float64(0.8), 'insertion.rate': np.float64(6.7), 'deletion.rate': np.float64(8.6), 'homopolymer.indel_multiplier': np.float64(27.2), 'homopolymer.substitution_multiplier': np.float64(-3.0)}
+dp-diag (P4-EXP-03 tie-break) {'substitution': 2.152, 'insertion_bases': 1.661, 'deletion_bases': 1.954} {'substitution': True, 'insertion': True, 'deletion': True} {'substitution.rate': np.float64(23.0), 'insertion.rate': np.float64(-12.7), 'deletion.rate': np.float64(-11.0), 'homopolymer.indel_multiplier': np.float64(9.4), 'homopolymer.substitution_multiplier': np.float64(-5.3)}
+
+real	1m20.594s
+user	4m8.603s
+sys	0m5.500s

@@ -276,6 +276,8 @@ def estimate(layout: Layout, T: np.ndarray, d: Design) -> dict:
     for kind in ("substitution", "insertion", "deletion"):
         out[f"sequencing.context.{kind}"] = fit["ctx"][kind].tolist() if kind in d.context else None
     n00, n01, n10, n11 = layout.get(T, "corr").astype(float)
+    if layout.quality:
+        out.update(estimate_quality(layout, T))
     out["_observed"] = observed
     out["_stats"] = {"reads": n, "sites": nb, "end_insertion_events": float(layout.get(T, "end_ins_events").sum()),
                      "deletion_runs_hist": layout.get(T, "del_runs").tolist(),
@@ -286,3 +288,46 @@ def estimate(layout: Layout, T: np.ndarray, d: Design) -> dict:
                      "p_event_given_event": _div(n11, n11 + n10), "p_event_given_no_event": _div(n01, n01 + n00),
                      "excluded_reads": float(layout.get(T, "excluded").sum())}
     return out
+
+
+def estimate_quality(layout: Layout, T: np.ndarray) -> dict:
+    """Quality calibration of the simulator's model from FASTQ tallies (plan 3.3): ``correct`` / ``error`` = median Phred
+    on correct / erroneous bases, ``informative`` = max(0, P(Q <= tau | error) - P(Q <= tau | correct)) with tau the midpoint,
+    ``sd`` = SD of correct bases net of the cycle slope, ``position_slope`` = Phred units lost per base: minus the least-squares slope of the mean
+    Phred of correct bases on the read cycle (cycles 0..L-1)."""
+    qc = layout.get(T, "q_correct").astype(float)
+    qe = layout.get(T, "q_error").astype(float)
+    v = np.arange(qc.size, dtype=float)
+
+    def median(h):
+        c = np.cumsum(h)
+        return float(np.searchsorted(c, 0.5 * c[-1])) if c[-1] > 0 else 0.0
+    correct, error0 = median(qc), median(qe)
+    tau = int((correct + error0) // 2)
+    low = qe[:tau + 1]
+    # refinement of the plan's definition: the simulator draws `error` only for the informative share of errors, so it is
+    # the median over the erroneous bases at or below the midpoint (the plan's plain median mixes in uninformative errors)
+    error = median(low) if low.sum() > 0 else error0
+    pc = float(qc[:tau + 1].sum() / qc.sum()) if qc.sum() else 0.0
+    pe = float(qe[:tau + 1].sum() / qe.sum()) if qe.sum() else 0.0
+    mc = float((qc * v).sum() / qc.sum()) if qc.sum() else 0.0
+    var_c = float((qc * (v - mc) ** 2).sum() / qc.sum()) if qc.sum() else 0.0
+    qs, qn = layout.get(T, "q_cycle_sum").astype(float), layout.get(T, "q_cycle_n").astype(float)
+    cyc = np.arange(qs.size)[:layout.L]
+    w = qn[:layout.L]
+    ok = w > 0
+    slope, xbar = 0.0, 0.0
+    if ok.sum() > 2:
+        y = qs[:layout.L][ok] / w[ok]
+        x = cyc[ok].astype(float)
+        xm, ym = np.average(x, weights=w[ok]), np.average(y, weights=w[ok])
+        xbar = float(xm)
+        slope = float(np.sum(w[ok] * (x - xm) * (y - ym)) / max(np.sum(w[ok] * (x - xm) ** 2), 1e-12))
+    # sd: spread of correct bases around their mean, minus the part explained by the cycle slope (the simulator adds the slope
+    # and the Gaussian noise separately)
+    sd = float(np.sqrt(max(0.0, var_c - slope ** 2 * (layout.L ** 2 - 1) / 12.0)))
+    shift = -slope * xbar                  # slope applies from the first cycle: report first-cycle values
+    correct, error = float(np.clip(round(correct + shift), 0, 93)), float(np.clip(round(error + shift), 0, 93))
+    return {"sequencing.quality.correct": int(correct), "sequencing.quality.error": int(error),
+            "sequencing.quality.informative": max(0.0, pe - pc), "sequencing.quality.sd": sd,
+            "sequencing.quality.position_slope": -slope}

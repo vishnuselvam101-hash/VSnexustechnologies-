@@ -230,9 +230,14 @@ def tally_reference(ref: bytes, reads: list, layout: Layout, mode: str = "NW", q
     return vec, rs
 
 
-def _tally_quality(qc, qe, qsum, qn, runs, ws, qual: bytes, layout: Layout) -> None:
-    """Phred+33 quality bookkeeping of one alignment: bases at '=' are correct, at 'X' and 'I' erroneous."""
+def _tally_quality(qc, qe, qsum, qn, runs, ws, quality, layout: Layout) -> None:
+    """Phred+33 quality bookkeeping of one alignment: bases at '=' are correct, at 'X' and 'I' erroneous. ``quality`` is
+    ``(qual, rev)``: the quality string in the read's original (sequenced) orientation and whether the read was reverse
+    complemented before alignment; cycles are counted in the sequenced orientation."""
+    qual, rev = quality if isinstance(quality, tuple) else (quality, False)
     q = np.frombuffer(qual, dtype=np.uint8).astype(np.int64) - 33
+    if rev:
+        q = q[::-1]                                  # aligned orientation
     flag = np.zeros(q.size, dtype=np.int8)         # 0 outside the window / flank, 1 correct, 2 error
     pos = ws
     for op, n in runs:
@@ -242,6 +247,8 @@ def _tally_quality(qc, qe, qsum, qn, runs, ws, qual: bytes, layout: Layout) -> N
         elif op in "XI":
             flag[pos:pos + n] = 2
             pos += n
+    if rev:
+        q, flag = q[::-1], flag[::-1]                # back to the sequenced orientation
     qq = np.clip(q, 0, layout.qbins - 1)
     qc += np.bincount(qq[flag == 1], minlength=layout.qbins)
     qe += np.bincount(qq[flag == 2], minlength=layout.qbins)

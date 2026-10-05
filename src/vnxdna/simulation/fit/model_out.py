@@ -63,6 +63,8 @@ def sequencing_stage(fit: dict, extra: dict | None = None) -> dict:
     cov = fit.get("coverage")
     if cov:
         seq["coverage"] = cov["coverage"]
+    if "sequencing.quality.correct" in v:
+        seq["quality"] = {k: v[f"sequencing.quality.{k}"] for k in ("correct", "error", "informative", "sd", "position_slope")}
     if extra:
         for k, x in extra.items():
             seq[k] = x
@@ -92,6 +94,8 @@ def build(fit: dict, *, name: str, version: str, model_id: str, description: str
            "stages": stages, "fit_report": fit_report}
     norm = model2.normalize_v2(doc)
     labels = dict(BASIS, **(basis or {}))
+    if "sequencing.quality.correct" in fit["values"]:      # FASTQ data: the quality parameters are measured, not assumed
+        labels.update({f"sequencing.quality.{k}": "measured" for k in ("correct", "error", "informative", "sd", "position_slope")})
     ci = fit["ci95"]
     cmap = {"sequencing.coverage.mean": ci.get("coverage.mean"), "sequencing.coverage.dispersion": ci.get("coverage.dispersion"),
             "sequencing.coverage.sigma": ci.get("coverage.sigma"), "synthesis.dropout_rate": ci.get("dropout")}

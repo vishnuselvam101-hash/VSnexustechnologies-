@@ -27,6 +27,9 @@ from vnxdna.simulation.fit.tally import Layout  # noqa: E402
 
 D03_FILES = (0, 2)          # non-held-out D03 files (file-1 is the held-out run)
 PUBLISHED = {
+    "d02": {"source": "Gimpel et al. 2023 (Nat Commun 14:6026): 40 datasets, deletions 6.7 +- 6.9, substitutions 7.9 +- 2.0, insertions < 0.3 +- 0.2 "
+                      "per 1000 nt; iSeq PhiX substitutions 1.8 +- 0.8e-3, indels < 1e-4 (quoted from docs/DNA_STORAGE_DATASET_REGISTRY.md)",
+            "phix_substitution": 0.0018, "phix_substitution_sd": 0.0008, "phix_indel_upper": 1e-4},
     "cnr-ont": {"source": "P4-EXP-03 (this repository, all 10,000 clusters) and Srinivasavaradhan et al. 2021 (clusters 1-2000)",
                 "substitution": 0.0216, "insertion": 0.0166, "deletion": 0.0195,
                 "paper": {"substitution": 0.022, "insertion": 0.017, "deletion": 0.020}},
@@ -42,6 +45,8 @@ def d03_groups(acc: bool, direction: str) -> list[str]:
 
 
 JOBS = {
+    "cnr-p4tie": {"dataset": "cnr", "L": 110, "mode": "NW", "name": "cnr-ont-p4tie-fit", "pub": "cnr-ont", "aligner": "dp-diag",
+                  "title": "CNR (D04), ONT, with the P4-EXP-03 alignment tie-break (diagonal, deletion, insertion)"},
     "cnr": {"dataset": "cnr", "L": 110, "mode": "NW", "name": "cnr-ont-fit", "pub": "cnr-ont", "title": "CNR (D04), ONT, basecaller not stated"},
     "d03-hac-fwd": {"dataset": "d03-nanopore", "L": 150, "mode": "NW", "groups": d03_groups(True, "forward"), "back": False,
                     "name": "ont-guppy-hac-pass-fwd-fit", "pub": "d03-hac", "title": "D03 guppy accurate (HAC), pass, forward"},
@@ -52,9 +57,21 @@ JOBS = {
     "d03-fast-bwd": {"dataset": "d03-nanopore", "L": 150, "mode": "NW", "groups": d03_groups(False, "backward"), "back": True,
                      "name": "ont-guppy-fast-pass-bwd-fit", "pub": "d03-fast", "title": "D03 guppy fast, pass, backward (reverse-complemented to the reference frame)"},
 }
+JOBS["d03-hac-merged"] = {"dataset": "d03-nanopore", "L": 150, "mode": "NW", "groups": d03_groups(True, "forward") + d03_groups(True, "backward"),
+                          "name": "ont-guppy-hac-pass-fit", "pub": "d03-hac", "merged": True,
+                          "title": "D03 guppy accurate (HAC), pass, forward and backward merged in the reference frame"}
+JOBS["d03-fast-merged"] = {"dataset": "d03-nanopore", "L": 150, "mode": "NW", "groups": d03_groups(False, "forward") + d03_groups(False, "backward"),
+                           "name": "ont-guppy-fast-pass-fit", "pub": "d03-fast", "merged": True,
+                           "title": "D03 guppy fast, pass, forward and backward merged in the reference frame"}
+JOBS["d02-twist"] = {"dataset": "dt4dds-twist", "L": 108, "mode": "HW", "runs": ["ERR12033806", "ERR12033810"], "control": "ERR12033850",
+                     "name": "illumina-iseq-twist-fit", "pub": "d02", "title": "DT4DDS Twist_GCfix Aging_0a/0b (R1) with PhiX stage split"}
 OUT = Path(os.environ.get("VNX_FIT_OUT", Path(__file__).resolve().parents[1]))   # override for dry runs only
 CAL_REFS, CAL_COVERAGE, CAL_ITER = 4000, 10, 3
 SEED = 20261005
+
+
+def d02_out_dir() -> Path:
+    return OUT / "fit-d02"
 
 
 def out_dir(job: dict) -> Path:
@@ -84,12 +101,16 @@ def job_files(job: dict) -> list[dict]:
     return [FL.dataset_entry("d03-nanopore", files)]
 
 
+def topts(job: dict) -> dict:
+    return {"aligner": job.get("aligner", "edlib"), "shift": "left"}
+
+
 def tally_split(guard: G.Guard, job: dict, split: str, workers: int, keep_clusters: int = 0):
     lay = Layout(job["L"])
     Ms, rss, colls, labels = [], [], [], []
     for label, src in sources(guard, job, split):
-        coll = FL.Collector(src, orient_backward=job.get("back", False), keep_clusters=keep_clusters)
-        M, rs = P.tally_matrix(coll, lay, mode=job["mode"], workers=workers)
+        coll = FL.Collector(src, orient_backward=label.endswith("/backward"), keep_clusters=keep_clusters)
+        M, rs = P.tally_matrix(coll, lay, mode=job["mode"], workers=workers, **topts(job))
         Ms.append(M)
         rss.append(rs)
         colls.append(coll)
@@ -148,7 +169,7 @@ def do_fit(job_id: str, workers: int, bootstrap: int, seed: int = SEED) -> Path:
     step = max(1, len(refs) // CAL_REFS)
     cal_refs = refs[::step][:CAL_REFS]
     t1 = time.time()
-    fit = F.fit_tallies(M, lay, seed=seed, bootstrap=bootstrap, calibration=dict(refs=cal_refs, coverage=CAL_COVERAGE, iterations=CAL_ITER, workers=workers))
+    fit = F.fit_tallies(M, lay, seed=seed, bootstrap=bootstrap, calibration=dict(refs=cal_refs, coverage=CAL_COVERAGE, iterations=CAL_ITER, workers=workers, tally_opts=topts(job)))
     t_fit = time.time() - t1
     v, ci = fit["values"], fit["ci95"]
     per_group = {lab: group_rates(lay, m, c) for lab, m, c in zip(labels, Ms, colls)}
@@ -198,10 +219,33 @@ def do_fit(job_id: str, workers: int, bootstrap: int, seed: int = SEED) -> Path:
                                "trace": fit["calibration"]["trace"], "factors_scalar": {k: x for k, x in fit["calibration"]["factors"].items() if not isinstance(x, list)}},
                "seconds": {"tally": round(t_tally, 1), "fit_bootstrap_calibration": round(t_fit, 1)}, "workers": workers,
                "peak_rss_mb_self_plus_children": round(mem_mb(), 1), "bootstrap": bootstrap, "seed": seed,
-               "evidence_class": "PUBLIC-DATA-DERIVED"}
+               "environment": environment_info(), "evidence_class": "PUBLIC-DATA-DERIVED"}
     (d / "results" / f"{job_id}.fit.json").write_text(json.dumps(summary, indent=1, sort_keys=True) + "\n")
     print(json.dumps({"job": job_id, "comparison": comparison, "seconds": summary["seconds"], "rss_mb": summary["peak_rss_mb_self_plus_children"]}, indent=1))
     return mp
+
+
+def validation_notes(rep: dict) -> list[str]:
+    """Plain statements about failed metrics (what was measured), with the usual structural reasons stated as consistent-with."""
+    notes = []
+    m2, m3, m5, m8 = rep.get("M2", {}), rep.get("M3", {}), rep.get("M5", {}), rep.get("M8", {})
+    if m2.get("pass") is False:
+        notes.append(f"M2 fails: per-read edit-distance KS D = {m2['ks_D']:.3f} (limit 0.03), TV = {m2['tv']:.3f} (limit 0.05); "
+                     f"real p90/p99 = {m2['real']['p90']}/{m2['real']['p99']}, simulated {m2['sim']['p90']}/{m2['sim']['p99']}. Consistent with read-to-read "
+                     "heterogeneity of the error rate, which independent per-site draws do not produce")
+    if m3.get("pass") is False:
+        worst = max(m3["bands"].items(), key=lambda kv: abs(kv[1]["diff_pp"]))
+        notes.append(f"M3 fails: P({worst[0].replace('abs_drift_le_', '|drift| <= ')}) real {worst[1]['real']:.3f} vs simulated {worst[1]['sim']:.3f} "
+                     f"({worst[1]['diff_pp']:+.1f} pp, limit 1 pp). Consistent with insertions and deletions that are not independent along a read")
+    if m5.get("pass") is False:
+        notes.append(f"M5 fails: deletion run-length TV = {m5['tv']:.3f} (limit 0.05): the run-length tail is heavier or lighter than geometric")
+    if m8.get("pass") is False:
+        bad = [k for k, v in m8["curve"].items() if v.get("pass") is False]
+        notes.append(f"M8 fails at k = {bad}")
+    for m in ("M1", "M4", "M6", "M9"):
+        if rep.get(m, {}).get("pass") is False:
+            notes.append(f"{m} fails (not gating; see metrics)")
+    return notes
 
 
 def do_validate(job_id: str, workers: int, seed: int = SEED + 1) -> Path:
@@ -218,11 +262,11 @@ def do_validate(job_id: str, workers: int, seed: int = SEED + 1) -> Path:
     refs = [r for c in colls for r in c.refs]
     clusters = [x for c in colls for x in c.clusters][:6000]
     rep = V.validate_model(model, lay, dev_refs=refs[::max(1, len(refs) // 4000)], dev_clusters=clusters, dev_M=M, dev_rs=rs,
-                           mode=job["mode"], seed=seed, workers=workers)
-    cal = dict(refs=refs[::max(1, len(refs) // 2000)][:2000], coverage=CAL_COVERAGE, iterations=CAL_ITER)
+                           mode=job["mode"], seed=seed, workers=workers, tally_opts=topts(job))
+    cal = dict(refs=refs[::max(1, len(refs) // 2000)][:2000], coverage=CAL_COVERAGE, iterations=CAL_ITER, tally_opts=topts(job))
     rt_refs = refs[::max(1, len(refs) // 3000)][:3000]
     rep["M9"] = {"pass": None, "note": "no qualities in this dataset (nanopore quality is assumed)"}
-    rep["M10"] = V.round_trip(model, lay, rt_refs, coverage=8, seed=seed + 5, bootstrap=200, workers=workers, calibration=cal)
+    rep["M10"] = V.round_trip(model, lay, rt_refs, coverage=8, seed=seed + 5, bootstrap=200, workers=workers, calibration=cal, tally_opts=topts(job))
     adequacy, failed = V.adequacy(rep)
     fr = dict(doc["fit_report"])
     fr["adequacy"], fr["failed_metrics"] = adequacy, failed
@@ -230,6 +274,9 @@ def do_validate(job_id: str, workers: int, seed: int = SEED + 1) -> Path:
                         "simulated_reads_note": "SIMULATED: 5 seeds x 6 reads per DEV reference (<= 4,000 references)",
                         "summary": {m: rep[m].get("pass") for m in sorted(rep)}}
     fr["metrics"] = _jsonable(rep)
+    fr["misfit"] = {"notes": list(fr["misfit"]["notes"]) + validation_notes(rep)}
+    if adequacy == "INADEQUATE":
+        fr["notes"] = list(fr["notes"]) + [f"INADEQUATE (protocol 5.4): fails {failed} on DEV; not used to choose decoder parameters; may be run as a labelled stress condition"]
     doc["fit_report"] = fr
     new = cm.from_doc(json.loads(json.dumps(doc)))[0]
     mp.write_text(json.dumps(new.doc, indent=1, sort_keys=True) + "\n")
@@ -302,9 +349,68 @@ def do_smoke(workers: int, bootstrap: int, seed: int = SEED) -> Path:
     return p
 
 
+def do_orientation(base: str, workers: int, bootstrap: int) -> Path:
+    """Protocol 5 / plan 3.2: forward and backward fitted separately, then compared; merged only if the substitution matrices
+    agree within their confidence intervals (every off-diagonal element's 95 % intervals overlap)."""
+    jf, jb = JOBS[f"d03-{base}-fwd"], JOBS[f"d03-{base}-bwd"]
+    d = out_dir(jf)
+    mf = cm.from_doc(json.loads((d / "models" / f"{jf['name']}.json").read_text()))[0]
+    mb = cm.from_doc(json.loads((d / "models" / f"{jb['name']}.json").read_text()))[0]
+    cf, cb = mf.doc["parameters"]["sequencing.substitution.matrix"]["ci95"], mb.doc["parameters"]["sequencing.substitution.matrix"]["ci95"]
+    lo_f, hi_f, lo_b, hi_b = (np.asarray(x) for x in (cf["lo"], cf["hi"], cb["lo"], cb["hi"]))
+    off = ~np.eye(4, dtype=bool)
+    overlap = (lo_f <= hi_b) & (lo_b <= hi_f)
+    agree = bool(overlap[off].all())
+    vf, vb = np.asarray(mf.stages["sequencing"]["substitution"]["matrix"]), np.asarray(mb.stages["sequencing"]["substitution"]["matrix"])
+    rf, rb = mf.doc["fit_report"]["measured_statistics"], mb.doc["fit_report"]["measured_statistics"]
+    rates = {}
+    for k in ("substitution", "insertion_bases", "deletion_bases"):
+        a, b = rf["observed_per_base_rates_ci95"][k], rb["observed_per_base_rates_ci95"][k]
+        rates[k] = {"forward": rf["observed_per_base_rates"][k], "forward_ci95": a, "backward": rb["observed_per_base_rates"][k],
+                    "backward_ci95": b, "intervals_overlap": bool(a[0] <= b[1] and b[0] <= a[1])}
+    doc = {"basecaller": base, "forward_model": jf["name"], "backward_model": jb["name"],
+           "substitution_matrix_forward": vf.tolist(), "substitution_matrix_backward": vb.tolist(),
+           "max_abs_difference_off_diagonal": float(np.abs(vf - vb)[off].max()), "off_diagonal_intervals_overlap": overlap.tolist(),
+           "matrices_agree_within_ci": agree, "observed_rates": rates,
+           "decision": "merge forward and backward (protocol 5 / plan 3.2)" if agree else
+           "keep separate: the substitution matrices differ beyond their 95 % intervals (strand asymmetry); the /2 `asymmetry` effect is not honoured "
+           "by the simulator, so no merged model is produced",
+           "evidence_class": "PUBLIC-DATA-DERIVED"}
+    p = d / "results" / f"orientation-{base}.json"
+    p.write_text(json.dumps(_jsonable(doc), indent=1, sort_keys=True) + "\n")
+    print(base, "agree" if agree else "differ", "max |diff| off-diagonal", round(doc["max_abs_difference_off_diagonal"], 4))
+    if agree:
+        do_fit(f"d03-{base}-merged", workers, bootstrap)
+        do_validate(f"d03-{base}-merged", workers)
+    return p
+
+
+def write_configs() -> None:
+    """experiments/v7/fit-<dataset>/config.json: the complete definition of every job (protocol 7, vnx-dna-experiment)."""
+    for ds, name in (("cnr", "fit-cnr"), ("d03-nanopore", "fit-d03"), ("dt4dds-twist", "fit-d02")):
+        jobs = {k: v for k, v in JOBS.items() if v["dataset"] == ds}
+        cfg = {"experiment": name, "evidence_class": "PUBLIC-DATA-DERIVED (fits); SIMULATED (simulated reads)", "split": "FIT (fit), DEV (validation)",
+               "split_manifest_sha256": FL.SPLIT_SHA, "jobs": jobs, "seed_fit": SEED, "seed_validation": SEED + 1,
+               "bootstrap_over_references": 200, "calibration": {"references": CAL_REFS, "coverage": CAL_COVERAGE, "iterations": CAL_ITER},
+               "validation": {"simulated_seeds": 5, "simulated_coverage": 6, "simulated_references_cap": 4000, "metrics": "M1-M10 (docs/research/V7_CHANNEL_FITTING_PLAN.md 3.4)",
+                              "gating": ["M2", "M3", "M8"]},
+               "alignment": "edlib unit-cost global (NW) / infix (HW), leftmost indel normalisation; 'dp-diag' = P4-EXP-03 tie-break",
+               "workers": "results do not depend on the worker count",
+               "environment": environment_info()}
+        (OUT / name).mkdir(parents=True, exist_ok=True)
+        (OUT / name / "config.json").write_text(json.dumps(cfg, indent=1, sort_keys=True) + "\n")
+
+
+def environment_info() -> dict:
+    from vnxdna.core.provenance import environment
+    env = environment()
+    env["software"] = FL.software()
+    return env
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("cmd", choices=["fit", "validate", "smoke", "list"])
+    ap.add_argument("cmd", choices=["fit", "validate", "smoke", "orientation", "config", "list"])
     ap.add_argument("job", nargs="?")
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--bootstrap", type=int, default=200)
@@ -312,11 +418,21 @@ def main(argv=None) -> int:
     if a.cmd == "list":
         print("\n".join(JOBS))
         return 0
+    if a.cmd == "config":
+        write_configs()
+        return 0
+    if a.cmd == "orientation":
+        do_orientation(a.job, a.workers, a.bootstrap)
+        return 0
     if a.cmd == "smoke":
         do_smoke(a.workers, a.bootstrap)
         return 0
     if a.job not in JOBS:
         ap.error(f"job must be one of {list(JOBS)}")
+    if a.job == "d02-twist":
+        import run_d02
+        (run_d02.do_fit(a.workers, a.bootstrap) if a.cmd == "fit" else run_d02.do_validate(a.workers))
+        return 0
     (do_fit(a.job, a.workers, a.bootstrap) if a.cmd == "fit" else do_validate(a.job, a.workers))
     return 0
 
