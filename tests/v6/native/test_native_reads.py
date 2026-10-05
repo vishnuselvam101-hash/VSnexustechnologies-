@@ -292,6 +292,7 @@ def test_backend_selection_and_fallback(tmp_path, monkeypatch, caplog):
     # library missing: auto falls back (logged once), native raises, reference unaffected
     monkeypatch.setenv("VNXDNA_READS_LIB", str(tmp_path / "missing.so"))
     monkeypatch.setattr(nr, "_INPLACE", tmp_path / "also-missing.so")
+    monkeypatch.setattr(nr, "_ext_candidates", lambda: [])
     nr._reset_for_tests()
     try:
         monkeypatch.setenv("VNXDNA_READS_BACKEND", "auto")
@@ -325,6 +326,7 @@ def test_abi_mismatch_is_rejected(tmp_path, monkeypatch):
         pytest.skip(f"no C compiler for the ABI stub: {error}")
     monkeypatch.setenv("VNXDNA_READS_LIB", str(lib))
     monkeypatch.setattr(nr, "_INPLACE", tmp_path / "missing.so")
+    monkeypatch.setattr(nr, "_ext_candidates", lambda: [])
     nr._reset_for_tests()
     try:
         assert not nr.available()
@@ -339,7 +341,11 @@ def test_build_command(tmp_path):
     out = nr.build(tmp_path / "libvnx_reads.so")
     lib = ctypes.CDLL(str(out))
     assert lib.vnx_reads_abi_version() == nr.ABI_VERSION
-    assert "-march" not in " ".join(nr.CFLAGS) and "-Werror" in nr.CFLAGS
+    strict = nr.build(tmp_path / "libvnx_reads_strict.so", strict=True)       # CI/sanitizer flags: warnings are errors
+    assert ctypes.CDLL(str(strict)).vnx_reads_abi_version() == nr.ABI_VERSION
+    assert "-march" not in " ".join(nr.STRICT_CFLAGS) and "-Werror" in nr.STRICT_CFLAGS
+    # a new compiler warning must not break a normal (install/development) build: no -Werror there
+    assert "-Werror" not in nr.CFLAGS and set(nr.STRICT_CFLAGS) - set(nr.CFLAGS) == {"-Werror"}
 
 
 # ------------------------------------------------------------------------------------- raw C ABI hardening

@@ -465,6 +465,10 @@ def test_abi_mismatch_is_not_loaded(monkeypatch, tmp_path):
 
 
 def test_build_command_has_no_march_and_strict_warnings():
-    cmd = nr.build_command("x.so", compiler="cc")
+    cmd = nr.build_command("x.so", compiler="cc", strict=True)          # CI / sanitizer builds
     assert not any(a.startswith(("-march", "-mavx", "-mtune")) for a in cmd)
     assert {"-O3", "-std=c11", "-fPIC", "-shared", "-Wall", "-Wextra", "-Werror"} <= set(cmd)
+    # install/development builds: same flags without -Werror, so a new compiler warning cannot disable the kernel
+    plain = nr.build_command("x.so", compiler="cc", strict=False)
+    assert not any(a.startswith(("-march", "-mavx", "-mtune")) for a in plain)
+    assert set(cmd) - set(plain) == {"-Werror"} and "-Werror" not in plain

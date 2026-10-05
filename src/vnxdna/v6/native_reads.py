@@ -12,10 +12,10 @@ Backend selection::
     VNXDNA_READS_BACKEND=native     native; raise NativeReadsError if the library is unavailable
     VNXDNA_READS_BACKEND=reference  always vnxdna.v4.reads
 
-The library is looked up in this order: ``VNXDNA_READS_LIB`` (explicit path, e.g. a sanitizer build) and the
-library built in place by :func:`build` (``python -m vnxdna.v6.native_reads build`` writes
-``vnxdna/v6/native/libvnx_reads.so``). A library whose ABI version differs from :data:`ABI_VERSION` is
-ignored.
+The library is looked up in this order: ``VNXDNA_READS_LIB`` (explicit path, e.g. a sanitizer build), the
+extension built by ``pip install`` (``vnxdna/v6/_vnx_reads*.so``) and the library built in place by :func:`build`
+(``python -m vnxdna.v6.native_reads build`` writes ``vnxdna/v6/native/libvnx_reads.so``). A library whose ABI
+version differs from :data:`ABI_VERSION` is ignored.
 
 Buffer ownership and lifetime (also the minimal-copy entry point for the decoder):
 
@@ -38,11 +38,13 @@ import logging
 import os
 import shutil
 import subprocess
+import sysconfig
 from collections.abc import Iterable, Iterator
 from pathlib import Path
 
 import numpy as np
 
+from .. import _native_build as _nb
 from ..v4 import reads as _ref
 from ..v4.errors import VNXFormatError, VNXResourceError
 
@@ -53,7 +55,8 @@ FORMATS = {"fastq": 1, "fasta": 2, "plain": 3}
 _HERE = Path(__file__).resolve().parent
 _SOURCE = _HERE / "native" / "reads.c"
 _INPLACE = _HERE / "native" / "libvnx_reads.so"
-CFLAGS = ["-O3", "-std=c11", "-fPIC", "-shared", "-Wall", "-Wextra", "-Werror"]
+CFLAGS = _nb.explicit_cflags(strict=False)        # -O3 -std=c11 -fPIC -shared -Wall -Wextra (as pip install)
+STRICT_CFLAGS = _nb.explicit_cflags(strict=True)  # + -Werror: CI and sanitizer builds (build --strict)
 
 NEED_INPUT, BATCH_FULL, NEED_SPACE, NEED_MORE, DONE = 0, 1, 2, 3, 4
 _INTERNAL = {-1: "invalid argument", -2: "inconsistent parser state"}
@@ -71,11 +74,19 @@ _lib_path: str | None = None
 _fallback_logged = False
 
 
+def _ext_candidates() -> list[Path]:
+    """The extension built by ``pip install`` (setup.py: ``vnxdna.v6._vnx_reads``), if present."""
+    suffix = sysconfig.get_config_var("EXT_SUFFIX") or ".so"
+    ext = _HERE / f"_vnx_reads{suffix}"
+    return ([ext] if ext.is_file() else []) + [p for p in sorted(_HERE.glob("_vnx_reads*.so")) if p != ext]
+
+
 def _candidates() -> list[Path]:
     out = []
     env = os.environ.get("VNXDNA_READS_LIB")
     if env:
         out.append(Path(env))
+    out.extend(_ext_candidates())
     out.append(_INPLACE)
     return out
 
@@ -116,7 +127,7 @@ def _load():
             continue
         _lib, _lib_path = lib, str(path)
         return _lib
-    _load_error = "; ".join(errors) if errors else "native reads library not built (python -m vnxdna.v6.native_reads build)"
+    _load_error = "; ".join(errors) if errors else "native reads library not built (pip install, or python -m vnxdna.v6.native_reads build)"
     return None
 
 
@@ -164,13 +175,14 @@ def status() -> dict:
             "library": _lib_path, "load_error": _load_error, "abi_version": ABI_VERSION, "error": err}
 
 
-def build(output: str | os.PathLike | None = None, extra_flags: list[str] | None = None, compiler: str | None = None) -> Path:
+def build(output: str | os.PathLike | None = None, extra_flags: list[str] | None = None, compiler: str | None = None,
+          strict: bool | None = None) -> Path:
     """Compile ``native/reads.c`` into a shared library (default: next to the source). Returns its path."""
     cc = compiler or os.environ.get("CC") or shutil.which("cc") or shutil.which("gcc") or shutil.which("clang")
     if not cc:
         raise NativeReadsError("no C compiler found (set CC)")
     out = Path(output) if output else _INPLACE
-    cmd = [cc, *CFLAGS, *(extra_flags or []), str(_SOURCE), "-o", str(out)]
+    cmd = [cc, *_nb.explicit_cflags(strict), *(extra_flags or []), str(_SOURCE), "-o", str(out)]
     res = subprocess.run(cmd, capture_output=True, text=True)
     if res.returncode != 0:
         raise NativeReadsError(f"native build failed: {' '.join(cmd)}\n{res.stderr}")
@@ -334,6 +346,6 @@ if __name__ == "__main__":
     import sys
 
     if sys.argv[1:2] == ["build"]:
-        print(build())
+        print(build(strict=True if "--strict" in sys.argv[2:] else None))
     else:
         print(json.dumps(status(), indent=2))
