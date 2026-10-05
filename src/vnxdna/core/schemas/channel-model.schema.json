@@ -1,0 +1,743 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "urn:vnx:vnx.channel-model/1",
+ "title": "VNX-DNA channel model (spec \u00a74.5, V6_ARCHITECTURE \u00a78 Phase 3; docs/CHANNEL_MODEL.md). The canonical form has every field; readers fill omitted stage fields with their defaults",
+ "type": "object",
+ "additionalProperties": false,
+ "required": [
+  "schema",
+  "name",
+  "version",
+  "data_source",
+  "evidence_class",
+  "provenance",
+  "stages"
+ ],
+ "properties": {
+  "schema": {
+   "const": "vnx.channel-model/1"
+  },
+  "name": {
+   "type": "string",
+   "pattern": "^[a-z0-9][a-z0-9._+-]{0,63}$"
+  },
+  "version": {
+   "type": "string",
+   "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?$"
+  },
+  "description": {
+   "type": "string"
+  },
+  "note": {
+   "type": "string"
+  },
+  "data_source": {
+   "enum": [
+    "SIMULATED",
+    "SYNTHETIC",
+    "LABORATORY",
+    "PHYSICAL_VALIDATION"
+   ],
+   "description": "origin of the parameter values"
+  },
+  "evidence_class": {
+   "enum": [
+    "SIMULATED",
+    "SYNTHETIC SOFTWARE TEST",
+    "PUBLIC-DATA-DERIVED",
+    "REAL PHYSICAL RESULT"
+   ],
+   "description": "label of the parameter file; reads simulated from any model are SIMULATED"
+  },
+  "provenance": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "converted_from": {
+     "type": [
+      "object",
+      "null"
+     ]
+    },
+    "datasets": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "required": [
+       "accession",
+       "sha256"
+      ],
+      "properties": {
+       "accession": {
+        "type": "string",
+        "minLength": 1
+       },
+       "sha256": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+       }
+      }
+     }
+    },
+    "fitter": {
+     "type": [
+      "object",
+      "string",
+      "null"
+     ]
+    },
+    "references": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "derived": {
+     "type": "array",
+     "items": {
+      "type": "object"
+     }
+    }
+   }
+  },
+  "stages": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "synthesis": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "dropout_rate": {
+       "type": "number",
+       "minimum": 0,
+       "maximum": 1
+      },
+      "substitution": {
+       "$ref": "#/$defs/substitution"
+      },
+      "insertion": {
+       "$ref": "#/$defs/insertion"
+      },
+      "deletion": {
+       "$ref": "#/$defs/deletion"
+      },
+      "position_profile": {
+       "$ref": "#/$defs/position_profile"
+      },
+      "truncation": {
+       "type": "object",
+       "additionalProperties": false,
+       "properties": {
+        "rate": {
+         "type": "number",
+         "minimum": 0,
+         "maximum": 1
+        },
+        "min_fraction": {
+         "type": "number",
+         "minimum": 0,
+         "maximum": 1
+        }
+       },
+       "required": [
+        "rate",
+        "min_fraction"
+       ]
+      },
+      "yield_sigma": {
+       "type": "number",
+       "minimum": 0,
+       "maximum": 10
+      },
+      "molecules_per_strand": {
+       "type": "integer",
+       "minimum": 1,
+       "maximum": 64
+      }
+     },
+     "required": [
+      "dropout_rate",
+      "substitution",
+      "insertion",
+      "deletion",
+      "position_profile",
+      "truncation",
+      "yield_sigma",
+      "molecules_per_strand"
+     ]
+    },
+    "storage": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "strand_loss": {
+       "type": "object",
+       "additionalProperties": false,
+       "properties": {
+        "rate": {
+         "type": "number",
+         "minimum": 0,
+         "exclusiveMaximum": 1
+        },
+        "burst_count": {
+         "type": "integer",
+         "minimum": 0,
+         "maximum": 1073741824
+        },
+        "burst_length": {
+         "type": "integer",
+         "minimum": 0,
+         "maximum": 1099511627776
+        }
+       },
+       "required": [
+        "rate",
+        "burst_count",
+        "burst_length"
+       ]
+      },
+      "retention": {
+       "type": "number",
+       "exclusiveMinimum": 0,
+       "maximum": 1
+      },
+      "damage": {
+       "$ref": "#/$defs/substitution"
+      },
+      "breakage_rate": {
+       "type": "number",
+       "minimum": 0,
+       "maximum": 1
+      },
+      "contamination_rate": {
+       "type": "number",
+       "minimum": 0,
+       "maximum": 0.5
+      }
+     },
+     "required": [
+      "strand_loss",
+      "retention",
+      "damage",
+      "breakage_rate",
+      "contamination_rate"
+     ]
+    },
+    "amplification": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "gc_bias": {
+       "type": "object",
+       "additionalProperties": false,
+       "properties": {
+        "strength": {
+         "type": "number",
+         "minimum": 0,
+         "maximum": 1000000.0
+        },
+        "optimum": {
+         "type": "number",
+         "minimum": 0,
+         "maximum": 1
+        }
+       },
+       "required": [
+        "strength",
+        "optimum"
+       ]
+      },
+      "efficiency_sigma": {
+       "type": "number",
+       "minimum": 0,
+       "maximum": 10
+      },
+      "cycles": {
+       "type": "integer",
+       "minimum": 0,
+       "maximum": 1000
+      },
+      "substitution_per_cycle": {
+       "$ref": "#/$defs/substitution"
+      },
+      "duplicate_rate": {
+       "type": "number",
+       "minimum": 0,
+       "maximum": 1
+      }
+     },
+     "required": [
+      "gc_bias",
+      "efficiency_sigma",
+      "cycles",
+      "substitution_per_cycle",
+      "duplicate_rate"
+     ]
+    },
+    "sequencing": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "coverage": {
+       "type": "object",
+       "additionalProperties": false,
+       "properties": {
+        "model": {
+         "enum": [
+          "fixed",
+          "poisson",
+          "negative-binomial",
+          "lognormal"
+         ]
+        },
+        "mean": {
+         "type": "number",
+         "minimum": 0,
+         "maximum": 10000
+        },
+        "dispersion": {
+         "type": "number",
+         "exclusiveMinimum": 0
+        },
+        "sigma": {
+         "type": "number",
+         "minimum": 0,
+         "maximum": 10
+        }
+       },
+       "required": [
+        "model",
+        "mean",
+        "dispersion",
+        "sigma"
+       ]
+      },
+      "substitution": {
+       "$ref": "#/$defs/substitution"
+      },
+      "insertion": {
+       "$ref": "#/$defs/insertion"
+      },
+      "deletion": {
+       "$ref": "#/$defs/deletion"
+      },
+      "position_profile": {
+       "$ref": "#/$defs/position_profile"
+      },
+      "homopolymer": {
+       "type": "object",
+       "additionalProperties": false,
+       "properties": {
+        "min_run": {
+         "type": "integer",
+         "minimum": 2,
+         "maximum": 1048576
+        },
+        "indel_multiplier": {
+         "type": "number",
+         "minimum": 0,
+         "maximum": 100
+        },
+        "substitution_multiplier": {
+         "type": "number",
+         "minimum": 0,
+         "maximum": 100
+        }
+       },
+       "required": [
+        "min_run",
+        "indel_multiplier",
+        "substitution_multiplier"
+       ]
+      },
+      "bursts": {
+       "type": "object",
+       "additionalProperties": false,
+       "properties": {
+        "rate": {
+         "type": "number",
+         "minimum": 0,
+         "maximum": 1
+        },
+        "max_length": {
+         "type": "integer",
+         "minimum": 0,
+         "maximum": 1000
+        }
+       },
+       "required": [
+        "rate",
+        "max_length"
+       ]
+      },
+      "n_rate": {
+       "type": "number",
+       "minimum": 0,
+       "maximum": 1
+      },
+      "reverse_complement_rate": {
+       "type": "number",
+       "minimum": 0,
+       "maximum": 1
+      },
+      "quality": {
+       "type": "object",
+       "additionalProperties": false,
+       "properties": {
+        "correct": {
+         "type": "integer",
+         "minimum": 0,
+         "maximum": 93
+        },
+        "error": {
+         "type": "integer",
+         "minimum": 0,
+         "maximum": 93
+        },
+        "informative": {
+         "type": "number",
+         "minimum": 0,
+         "maximum": 1
+        },
+        "sd": {
+         "type": "number",
+         "minimum": 0,
+         "maximum": 50
+        },
+        "position_slope": {
+         "type": "number",
+         "minimum": -10,
+         "maximum": 10
+        }
+       },
+       "required": [
+        "correct",
+        "error",
+        "informative",
+        "sd",
+        "position_slope"
+       ]
+      },
+      "read_length": {
+       "type": "object",
+       "additionalProperties": false,
+       "properties": {
+        "max_length": {
+         "type": [
+          "integer",
+          "null"
+         ],
+         "minimum": 1
+        },
+        "truncation_rate": {
+         "type": "number",
+         "minimum": 0,
+         "maximum": 1
+        },
+        "min_fraction": {
+         "type": "number",
+         "minimum": 0,
+         "maximum": 1
+        }
+       },
+       "required": [
+        "max_length",
+        "truncation_rate",
+        "min_fraction"
+       ]
+      },
+      "duplicate_rate": {
+       "type": "number",
+       "minimum": 0,
+       "maximum": 1
+      },
+      "missing_read_rate": {
+       "type": "number",
+       "minimum": 0,
+       "maximum": 1
+      },
+      "shuffle_window": {
+       "type": "integer",
+       "minimum": 0,
+       "maximum": 1099511627776
+      }
+     },
+     "required": [
+      "coverage",
+      "substitution",
+      "insertion",
+      "deletion",
+      "position_profile",
+      "homopolymer",
+      "bursts",
+      "n_rate",
+      "reverse_complement_rate",
+      "quality",
+      "read_length",
+      "duplicate_rate",
+      "missing_read_rate",
+      "shuffle_window"
+     ]
+    }
+   },
+   "required": [
+    "synthesis",
+    "storage",
+    "amplification",
+    "sequencing"
+   ]
+  }
+ },
+ "allOf": [
+  {
+   "if": {
+    "properties": {
+     "data_source": {
+      "const": "SIMULATED"
+     }
+    }
+   },
+   "then": {
+    "properties": {
+     "evidence_class": {
+      "const": "SIMULATED"
+     }
+    }
+   }
+  },
+  {
+   "if": {
+    "properties": {
+     "data_source": {
+      "const": "SYNTHETIC"
+     }
+    }
+   },
+   "then": {
+    "properties": {
+     "evidence_class": {
+      "const": "SYNTHETIC SOFTWARE TEST"
+     }
+    }
+   }
+  },
+  {
+   "if": {
+    "properties": {
+     "data_source": {
+      "const": "LABORATORY"
+     }
+    }
+   },
+   "then": {
+    "properties": {
+     "evidence_class": {
+      "enum": [
+       "PUBLIC-DATA-DERIVED",
+       "REAL PHYSICAL RESULT"
+      ]
+     },
+     "provenance": {
+      "required": [
+       "datasets"
+      ],
+      "properties": {
+       "datasets": {
+        "minItems": 1
+       }
+      }
+     }
+    }
+   }
+  },
+  {
+   "if": {
+    "properties": {
+     "data_source": {
+      "const": "PHYSICAL_VALIDATION"
+     }
+    }
+   },
+   "then": {
+    "properties": {
+     "evidence_class": {
+      "const": "REAL PHYSICAL RESULT"
+     },
+     "provenance": {
+      "required": [
+       "datasets"
+      ],
+      "properties": {
+       "datasets": {
+        "minItems": 1
+       }
+      }
+     }
+    }
+   }
+  }
+ ],
+ "$defs": {
+  "substitution": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "rate": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 1
+    },
+    "matrix": {
+     "description": "4x4 P(to | from, substitution); rows/cols A,C,G,T; diagonal 0; rows sum to 1",
+     "oneOf": [
+      {
+       "type": "null"
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "array",
+        "items": {
+         "type": "number",
+         "minimum": 0,
+         "maximum": 1
+        },
+        "minItems": 4,
+        "maxItems": 4
+       },
+       "minItems": 4,
+       "maxItems": 4
+      }
+     ]
+    },
+    "from_multipliers": {
+     "type": [
+      "array",
+      "null"
+     ],
+     "items": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+     },
+     "minItems": 4,
+     "maxItems": 4
+    }
+   },
+   "required": [
+    "rate",
+    "matrix",
+    "from_multipliers"
+   ]
+  },
+  "insertion": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "rate": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 1
+    },
+    "base_weights": {
+     "description": "P(inserted base = A, C, G, T), sums to 1; null = uniform",
+     "type": [
+      "array",
+      "null"
+     ],
+     "items": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+     },
+     "minItems": 4,
+     "maxItems": 4
+    }
+   },
+   "required": [
+    "rate",
+    "base_weights"
+   ]
+  },
+  "deletion": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "rate": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 1,
+     "description": "per-base rate of deletion events (run starts)"
+    },
+    "run_length": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "distribution": {
+       "enum": [
+        "single",
+        "geometric"
+       ]
+      },
+      "mean": {
+       "type": "number",
+       "minimum": 1,
+       "maximum": 1000
+      }
+     },
+     "required": [
+      "distribution",
+      "mean"
+     ]
+    }
+   },
+   "required": [
+    "rate",
+    "run_length"
+   ]
+  },
+  "profile_vector": {
+   "type": [
+    "array",
+    "null"
+   ],
+   "items": {
+    "type": "number",
+    "minimum": 0,
+    "maximum": 1000
+   },
+   "minItems": 1,
+   "maxItems": 100000
+  },
+  "position_profile": {
+   "oneOf": [
+    {
+     "type": "null"
+    },
+    {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "basis": {
+       "enum": [
+        "absolute",
+        "relative"
+       ]
+      },
+      "substitution": {
+       "$ref": "#/$defs/profile_vector"
+      },
+      "insertion": {
+       "$ref": "#/$defs/profile_vector"
+      },
+      "deletion": {
+       "$ref": "#/$defs/profile_vector"
+      }
+     },
+     "required": []
+    }
+   ]
+  }
+ }
+}
