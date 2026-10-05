@@ -30,6 +30,34 @@ def test_order_covers_every_strand_once(order, shape):
     assert sum(len(g.stripe_order(s)) for s in range(g.stripes)) == g.strands()
 
 
+def _written_file(g, n_super):
+    """Record keys of the strand file in the order the V6 encoder writes them (superblock strands at their slots)."""
+    keys = [tuple(k) for k in g.order_keys().tolist()]
+    slots, out, i = g.superblock_slots(n_super, len(keys)), [], 0
+    for j, k in enumerate(keys):
+        while i < n_super and slots[i] <= j:
+            out.append(("sb", i))
+            i += 1
+        out.append(k)
+    out += [("sb", x) for x in range(i, n_super)]
+    return {k: n for n, k in enumerate(out)}
+
+
+@pytest.mark.parametrize("order", ou.ORDERS)
+@pytest.mark.parametrize("shape", [(8, 3, 4, 2, 10.5), (8, 3, 4, 0, 3.2), (6, 2, 3, 1, 7.0), (5, 0, 2, 1, 1.0),
+                                   (4, 4, 16, 3, 2.9), (3, 2, 5, 0, 11.4), (1, 1, 1, 1, 3.0)])
+@pytest.mark.parametrize("n_super", [0, 1, 7])
+def test_closed_form_record_index_matches_written_order(order, shape, n_super):
+    """Geometry.data_index/file_index/superblock_index (used by locate) equal the encoder's strand order (job #62)."""
+    K, M, D, Mc, groups = shape
+    g = geo(K, M, D, Mc, groups=groups, order=order)
+    where = _written_file(g, n_super)
+    for r in range(g.total_groups):
+        t = np.arange(g.symbols_of(r))
+        assert g.file_index(g.data_index(r, t), n_super).tolist() == [where[(r, x)] for x in t.tolist()]
+    assert g.superblock_index(n_super).tolist() == [where[("sb", i)] for i in range(n_super)]
+
+
 def test_balanced_stripes_and_inverse():
     g = geo(K=4, M=1, D=7, Mc=1, groups=30.3)          # 31 groups → 5 stripes of 6 or 7 rows
     sizes = [len(g.stripe_rows(s)[0]) for s in range(g.stripes)]
