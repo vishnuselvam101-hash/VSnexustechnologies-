@@ -13,6 +13,10 @@
 - `vnx locate` / `dna_location` with V6 outer-code options (stripes, column parity, interleaved order, adaptive plan)
   report the strand-file records the encoder writes for those options instead of refusing them; V4/V5 output is
   unchanged (job #62).
+- **V2 consensus crash and mypy coverage (job #58).** A cluster that counts verified reads, none of which verifies again,
+  made `consensus_file` raise AttributeError when the verified-read fallback was on; its consensus is now written as
+  `invalid`, as without the fallback (`tests/v2/test_channel_cluster_consensus.py`). mypy now gates `vnxdna.v2`,
+  `vnxdna.v4` and `vnxdna.ecc` (164 errors fixed, no new ignores).
 
 ## 6.0.0 (unreleased)
 
