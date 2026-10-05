@@ -57,7 +57,7 @@ run clang-ubsan-trap "$W/clang_ubsan_trap.so" ""
 
 if command -v valgrind > /dev/null; then
     $PY -m vnxdna.v6.native_reads build > /dev/null && \
-    PYTHONMALLOC=malloc valgrind --error-exitcode=99 --errors-for-leak-kinds=none --suppressions=/dev/null -q \
+    PYTHONMALLOC=malloc valgrind --error-exitcode=99 --errors-for-leak-kinds=none -q \
         $PY -m pytest -q -p no:cacheprovider -o addopts= --color=no tests/v6/native/test_native_reads.py \
         -k "not long_lines and not multi_block and not small_limits and not committed" > "$W/valgrind.log" 2>&1
     rc=$?
