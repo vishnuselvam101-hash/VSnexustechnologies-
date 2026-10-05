@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **Random access with failed groups outside the selection (job #66).** On a V6 stripe archive the column pass decodes
+  the whole stripe of an index group, and any unrecovered row of that stripe made `--select` refuse with "the archive
+  index could not be decoded" although the index had decoded. Random access now refuses only when an index group or a
+  group of the selected files is unrecovered; the error details list the other failed groups separately. Every
+  selected file is still verified (chunk SHA-256, chunk ID, file SHA-256) before it is written
+  (`tests/v6/test_random_access_partial.py`).
+
 ## 6.0.0 (unreleased)
 
 Consolidated entry for all V6 phases (development tree `6.0.0.dev0`; version and date to be set at release). The

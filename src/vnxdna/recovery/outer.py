@@ -316,12 +316,19 @@ def _partial(sb: Superblock, work: Path, failed: dict, partial_dir, key, passphr
 
 def _selective(sb, work, fd, run, done, failed, select, select_dir, key, passphrase, overwrite, report, stage, t0,
                recover=None, allow_unencrypted=False, opt: DecodeOptions | None = None) -> DecodeResult:
-    """Random access: decode the index groups, then only the groups holding the selected files."""
+    """Random access: decode the index groups, then only the groups holding the selected files.
+
+    Only failures of the groups that random access reads decide the outcome (job #66): the index groups (header and
+    index section) and the groups holding the selected files. The V6 column pass decodes whole stripes, so ``failed``
+    can also hold other rows of those stripes; they hold no byte that is read here. Unread regions of ``work`` stay
+    zero, and ``ar.extract`` verifies every selected chunk (SHA-256, chunk ID) and file SHA-256 before publishing."""
     opt = opt or DecodeOptions()
     K, P = sb.K, sb.layout.payload_bytes
-    if failed:
+    index_failed = sorted(set(failed) & _index_groups(sb, P))
+    if index_failed:
         raise VNXDecodeError("the archive index could not be decoded; selective extraction impossible",
-                             details={"failed_groups": sorted(failed)[:20]})
+                             details={"failed_groups": index_failed[:20],
+                                      "other_failed_groups": sorted(set(failed) - set(index_failed))[:20]})
     c = ct.open_container(work, key=key, passphrase=passphrase, require_key=True, allow_unencrypted=allow_unencrypted)
     _check_manifest_id(c, opt)
     report["encrypted"] = c.encrypted
@@ -336,11 +343,15 @@ def _selective(sb, work, fd, run, done, failed, select, select_dir, key, passphr
         recover(need - done)                     # smart/soft recovery for the selected files' stripes only
     run(need - done, done)
     stage["selective_decode"] = time.perf_counter() - t
-    if failed:
-        raise VNXDecodeError("groups holding the selected files could not be decoded", details={"failed_groups": sorted(failed)[:20]})
+    need_failed = sorted(set(failed) & need)
+    if need_failed:
+        raise VNXDecodeError("groups holding the selected files could not be decoded",
+                             details={"failed_groups": need_failed[:20],
+                                      "other_failed_groups": sorted(set(failed) - set(need_failed))[:20]})
     res = ar.extract(work, select_dir or ".", key=key, passphrase=passphrase, names=select, overwrite=overwrite,
                      allow_unencrypted=allow_unencrypted)
     report.update({"status": "SUCCESS", "selected": select, "groups_decoded": len(done), "groups_total": sb.group_count,
+                   "groups_failed_outside_selection": sorted(failed)[:100],
                    "fraction_of_groups_decoded": round(len(done) / sb.group_count, 6), "extract": res, "stage_seconds": stage,
                    "seconds": time.perf_counter() - t0, "peak_rss_bytes": peak_rss_bytes()})
     return DecodeResult("SUCCESS", report, str(select_dir))

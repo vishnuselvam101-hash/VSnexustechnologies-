@@ -105,7 +105,7 @@ were not met or have not been run.
 | Job | Defect |
 |---|---|
 | #62 | `vnx locate` / `dna_location` assume the V4 sequential layout and give wrong strand ranges for V6 striped or interleaved pools |
-| #66 | `--select` fails with "archive index could not be decoded" when the full decode is FAILURE with some failed groups outside the index; this does not break the select-iff-full rule |
+| #66 | **fixed** on `work/v7-select`: `--select` failed with "archive index could not be decoded" when the full decode is FAILURE with some failed groups outside the index. Random access now refuses only on failed index groups or failed groups of the selected files; the select-iff-full property test still passes (its selection spans every data group). Test: `tests/v6/test_random_access_partial.py` |
 | #58 | Latent mypy errors in `v2`, `v4` and `ecc` modules |
 
 Source: `vnx-jobs list` at the time of writing; these are not tied to a committed test result.
