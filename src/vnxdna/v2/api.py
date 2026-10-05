@@ -272,6 +272,7 @@ def extract(path, output_path, *, offset: int | None = None, length: int | None 
             cs = loaded.manifest.chunk_size
             if not 0 <= chunk < loaded.manifest.chunk_count:
                 raise InvalidInputError(f"chunk {chunk} does not exist (archive has {loaded.manifest.chunk_count} chunks)")
+            assert loaded.plain is not None  # open_container requires the key, so the plaintext index is open
             offset, length = chunk * cs, int(loaded.plain[chunk]["size"])
         if offset is None:
             raise InvalidInputError("specify --offset (and optionally --length) or --chunk")
@@ -304,9 +305,10 @@ def _extract_reads(path, output_path, *, offset, length, chunk, key, dna_index, 
         if loaded.manifest.seal.manifest_sha256 != index["manifest_sha256"]:
             raise IntegrityError("DNA index belongs to a different archive than the strands file")
         wanted = _wanted_chunks(loaded, offset, length, chunk)
-    kwargs = {"wanted_chunks": wanted, "dna_index": index} if index is not None else {}
+    kwargs: dict[str, Any] = {"wanted_chunks": wanted, "dna_index": index} if index is not None else {}
     with ReadsArchive(p, key, options=options, workers=workers, temp_dir=temp_dir, **kwargs) as ra:
         loaded = ra.loaded
+        assert loaded.plain is not None and loaded.content is not None  # ReadsArchive requires the key here
         wanted = _wanted_chunks(loaded, offset, length, chunk) if wanted is None else wanted
         start = offset if chunk is None else chunk * loaded.manifest.chunk_size
         stop = (loaded.content.size if length is None else start + length) if chunk is None else start + int(loaded.plain[chunk]["size"])
@@ -409,6 +411,7 @@ def _verify_reads(path, *, key, against, options, workers, temp_dir) -> dict[str
         if loaded.plain is not None:
             check("plaintext-chunks", plain_ok == m.chunk_count, f"{plain_ok}/{m.chunk_count} chunks authenticated and SHA-256 verified")
             if plain_ok == m.chunk_count:
+                assert loaded.content is not None  # opened together with loaded.plain
                 recomputed = digest.hexdigest()
                 check("object-sha256", recomputed == loaded.content.sha256 and size == loaded.content.size, f"recomputed {recomputed}")
                 report.update({"expected_sha256": loaded.content.sha256, "recovered_sha256": recomputed, "recovered_size": size})
@@ -609,12 +612,14 @@ def _pipeline(src: Path, output_path, work: Path, temporary: bool, *, options, k
     produced += [strands, index]
     reads = strands
     if channel is not None:
+        assert raw_reads is not None  # named above whenever a channel is given
         run("sequence", sequence_file, strands, raw_reads, channel, fmt=reads_fmt, overwrite=True, temp_dir=temp_dir)
         produced.append(raw_reads)
         reads = raw_reads
         if need_consensus:
             from .cluster import cluster_file
             from .consensus import consensus_file
+            assert clusters is not None and cons is not None  # named above whenever consensus is needed
             run("cluster", cluster_file, raw_reads, clusters, workers=workers, overwrite=True, temp_dir=temp_dir)
             run("consensus", consensus_file, clusters, cons, overwrite=True)
             produced += [clusters, cons]

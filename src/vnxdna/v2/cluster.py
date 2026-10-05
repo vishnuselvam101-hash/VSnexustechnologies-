@@ -260,6 +260,7 @@ def cluster_file(reads_path: str | os.PathLike, output_path: str | os.PathLike, 
     frame_format, geometry = discover(reads_path)
     if frame_format != FRAME_FORMAT:
         raise InvalidInputError("these are V1 (frame format 4) reads; clustering is a V2 feature")
+    assert geometry is not None  # discover() returns a geometry for every frame format but V1's
     workdir = Path(tempfile.mkdtemp(prefix="vnxdna-cluster-", dir=temp_dir))
     stats: Counter = Counter()
     tmp: Path | None = None  # private temporary output (mkstemp), created when the cluster file is written
@@ -328,7 +329,7 @@ def cluster_file(reads_path: str | os.PathLike, output_path: str | os.PathLike, 
                         weak.write(_record(head, codes, quals))
                         continue
                     groups[(int(head["kind"]), int(head["tag"]), int(head["stripe"]), int(head["shard"]))].append((head, codes, quals))
-                strong_records = []
+                strong_records: list[bytes] = []
                 for address in sorted(groups):
                     members = sorted(groups[address], key=_canonical)
                     verified = [m for m in members if m[0]["status"] == STATUS_VERIFIED]
