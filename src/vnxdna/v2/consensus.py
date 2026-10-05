@@ -240,10 +240,10 @@ def consensus_file(clusters_path: str | os.PathLike, output_path: str | os.PathL
                     verdict = "invalid"
                     stats["consensus_length_mismatch"] += 1
                 if verdict == "invalid" and fallback_to_verified and cluster.get("verified", 0):
-                    # None (no member verifies) reaches `seq == 4` below and fails there; typing it away would change
-                    # what V2 does with such a cluster, so the latent case is kept as is (tracked separately)
-                    seq = _best_verified(cluster, geometry)  # type: ignore[assignment]
-                    if seq is not None:
+                    # no member verifying again leaves the consensus written as "invalid", as without the fallback
+                    best = _best_verified(cluster, geometry)
+                    if best is not None:
+                        seq = best
                         verdict = "fallback"
                         stats["fallback_to_verified_read"] += 1
                 if verdict == "invalid":
