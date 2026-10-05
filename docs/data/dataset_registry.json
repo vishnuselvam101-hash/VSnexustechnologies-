@@ -1,0 +1,1738 @@
+{
+ "_provenance": "Derived from research/competitive-2026-10-05/40-datasets.json (2026-10-05): adds ground_truth_published and suitability_for_vnx; 'better via D01' reworded to 'preferably via D01' in D10, D17, D27.",
+ "generated": "2026-10-05",
+ "source_file": "research/competitive-2026-10-05/40-datasets.json (copied and normalised; no value changed)",
+ "classification": "PUBLIC-DATA-DERIVED registry (metadata only; no reads downloaded except small design/reference files for counting)",
+ "statement": "VNX-DNA has no wet-lab results. All datasets below were produced by other groups. Using them yields PUBLIC-DATA-DERIVED results only.",
+ "method": "Accessions found via EBI search (projects), NCBI SRA runinfo, Zenodo API, figshare API, GitHub API, Europe PMC data-availability statements. Sizes are SRA-normalised sizes from runinfo unless stated.",
+ "evidence_labels": {
+  "PUBLIC-DATA-DERIVED": "a result obtained from public reads or parameters fitted to them",
+  "SIMULATED": "software strands through a software channel; stays SIMULATED even when parameters come from a fitted model"
+ },
+ "normalisation": [
+  "priority converted to integer",
+  "ground_truth_published added (yes/partial/no/unclear/not_found/see_ground_truth_text) derived from the first word of ground_truth",
+  "suitability_for_vnx added, derived by keyword from vnx_use",
+  "original fields kept unchanged except the wording 'better via D01' / 'better done via D01' in three vnx_use strings, changed to 'preferably ...'"
+ ],
+ "datasets": [
+  {
+   "id": "D01",
+   "name": "ETH codec benchmark pool experiments (6 literature codecs, best/worst-case synthesis)",
+   "accessions": [
+    "ENA PRJEB90546"
+   ],
+   "urls": [
+    "https://www.ebi.ac.uk/ena/browser/view/PRJEB90546",
+    "https://github.com/fml-ethz/dt4dds-benchmark_notebooks",
+    "https://github.com/fml-ethz/dt4dds-benchmark",
+    "https://doi.org/10.5281/zenodo.17391328"
+   ],
+   "paper": "Gimpel AL, Remschak A, Stark WJ, Heckel R, Grass RN. Comparison of state-of-the-art error-correction coding for sequence-based DNA data storage. Nat Commun 17:3963 (2026). doi:10.1038/s41467-026-70548-3 (preprint doi:10.1101/2025.07.11.664297)",
+   "paper_status": "peer-reviewed",
+   "licence": "reads: INSDC open access; no explicit licence stated (unclear; INSDC policy places no use restrictions); notebooks+design files: GPL-3.0; article CC BY 4.0",
+   "synthesis": "two scenarios: material-deposition synthesis (high fidelity) and electrochemical synthesis (low fidelity) per paper abstract; vendor names not re-checked in Methods (DT4DDS 2023 from same group used Twist = material deposition, GenScript/CustomArray = electrochemical)",
+   "sequencing": [
+    "ILLUMINA Illumina iSeq 100"
+   ],
+   "error_characteristics": "paper: synthetic benchmark used 53% sub / 45% del / 2% ins composition 'resembling' DT4DDS data; codecs' error tolerance up to 14% error and 65% sequence loss in silico; experimental storage at 43 EB/g (material deposition) and 13 EB/g (electrochemical)",
+   "strand_length": "design_files.fasta (bestcase/Cov10): 11,293 designs x 129 nt (verified by download of the 1.6 MB design file); paper standardised ~150 nt incl. flanks",
+   "primers_included": "design FASTA appears to be data region only; adapter/primer flanks handled in processing notebooks (verify)",
+   "reads": "NCBI SRA runinfo (queried 2026-10-05): 10 runs, 11,398,491 spots, 1,034 MB (SRA-normalised), layout PAIRED",
+   "coverage": "experiments at several sequencing coverages (directories Cov10, Cov1000 etc. in exp_data/bestcase and worstcase)",
+   "data_format": "raw FASTQ (ENA, paired-end); demultiplexed per-codec read text files + design_files.fasta + scafstats in GitHub",
+   "ground_truth": "YES: design_files.fasta per experiment and codec_data/<codec>/encoded.txt for aeon/fountain/goldman/hedges/rs/yinyang (verified file listing)",
+   "size": "ENA ~1.0 GB; GitHub notebooks repo ~544 MB",
+   "reproducibility": "README: bbmap 39.01, NGmerge 0.3, seqtk 1.4; install scripts in 00_Tools; Python 3.10",
+   "vnx_use": [
+    "fit channel models (Illumina iSeq, two synthesis fidelities, multiple coverages)",
+    "run competitor decoders (6 codecs with the exact encoded strands and real reads)",
+    "cannot be decoded by VNX (foreign encoding)"
+   ],
+   "priority": 1,
+   "verified": "ENA project XML, SRA runinfo, Europe PMC data-availability text, GitHub tree listing, design file downloaded (1.6 MB)",
+   "ground_truth_published": "yes",
+   "suitability_for_vnx": {
+    "channel_model_fitting": true,
+    "competitor_decoder_runs": true,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D02",
+   "name": "DT4DDS error and bias characterisation (synthesis, PCR, aging, Illumina SBS)",
+   "accessions": [
+    "ENA PRJEB65931"
+   ],
+   "urls": [
+    "https://www.ebi.ac.uk/ena/browser/view/PRJEB65931",
+    "https://github.com/fml-ethz/dt4dds_notebooks",
+    "https://github.com/fml-ethz/dt4dds",
+    "https://doi.org/10.5281/zenodo.8329043"
+   ],
+   "paper": "Gimpel AL, Stark WJ, Heckel R, Grass RN. A digital twin for DNA data storage based on comprehensive quantification of errors and biases. Nat Commun 14:6026 (2023). doi:10.1038/s41467-023-41729-1",
+   "paper_status": "peer-reviewed",
+   "licence": "reads: INSDC open access; no explicit licence stated (unclear; INSDC policy places no use restrictions); dt4dds code GPL-3.0; notebooks repo licence not stated (unclear); article CC BY 4.0",
+   "synthesis": "Twist Bioscience (material deposition) and GenScript/CustomArray (electrochemical); GC-constrained and unconstrained pools",
+   "sequencing": [
+    "ILLUMINA Illumina iSeq 100"
+   ],
+   "error_characteristics": "across 40 datasets: 6.7±6.9 deletions, 7.9±2.0 substitutions, <0.3±0.2 insertions per 1000 nt; deletions cluster (mean run 2.6 nt) and rise to >5%/nt toward the 5' end for electrochemical synthesis; material deposition <1 deletion per 2000 nt; PCR substitutions 1.09e-4 /nt/cycle (61% A>G/T>C); aging C>T/G>A 1.64e-4 /nt per half-life; iSeq 100 PhiX substitutions 1.8±0.8e-3 /nt, indels <0.1e-3; coverage lognormal, sigma 0.58 (GC-constrained) vs 1.30 (unconstrained) for the synthesis shown in Fig. 2b; low base diversity in priming regions degrades basecalling",
+   "strand_length": "4 pools of 12,000-12,472 sequences, 143-157 nt total (paper); design_files.fasta for Twist GCall = 12,000 x 108 nt data region (downloaded and counted)",
+   "primers_included": "reads include co-synthesised priming regions; design FASTA is the data region",
+   "reads": "NCBI SRA runinfo (queried 2026-10-05): 161 runs, 231,154,225 spots, 10,558 MB (SRA-normalised), layout PAIRED",
+   "coverage": "per-experiment; coverage distributions reported normalised to mean",
+   "data_format": "raw paired-end FASTQ (ENA); processed design/scafstats files in GitHub",
+   "ground_truth": "YES: design_files.fasta per condition in dt4dds_notebooks/data and dt4dds/scripts (random sequences, no encoded file)",
+   "size": "ENA ~10.6 GB (SRA-normalised)",
+   "reproducibility": "dt4dds pip package + notebooks; analysis pipeline included in dt4dds",
+   "vnx_use": [
+    "fit channel models stage-by-stage (synthesis vendor, PCR cycles, aging, sequencing) - best single source for VNX model parameters",
+    "no decoder test (random sequences, no file)"
+   ],
+   "priority": 1,
+   "verified": "Europe PMC full text (data availability + numbers quoted), SRA runinfo, GitHub tree listing",
+   "ground_truth_published": "yes",
+   "suitability_for_vnx": {
+    "channel_model_fitting": true,
+    "competitor_decoder_runs": false,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D03",
+   "name": "Nanopore end-to-end channel dataset (GenScript pool, MinION, guppy fast/HAC)",
+   "accessions": [
+    "Zenodo 10.5281/zenodo.10943282"
+   ],
+   "urls": [
+    "https://doi.org/10.5281/zenodo.10943282",
+    "https://arxiv.org/abs/2406.12955"
+   ],
+   "paper": "Welter L, Sokolovskii R, et al. An End-to-End Coding Scheme for DNA-Based Data Storage With Nanopore-Sequenced Reads. arXiv:2406.12955 (2024)",
+   "paper_status": "preprint (arXiv); journal version not verified",
+   "licence": "CC BY 4.0",
+   "synthesis": "GenScript; 91,766 oligos",
+   "sequencing": [
+    "OXFORD_NANOPORE MinION (pore/flow cell not stated in record); guppy fast and high-accuracy modes; pass (Q>=8) and fail groups kept"
+   ],
+   "error_characteristics": "used to estimate parameters of an end-to-end channel model (see paper); not extracted here",
+   "strand_length": "150 nt = 110-nt pseudo-random payload + 20-nt primer at each end; 3 groups (30,589/30,589/30,588), each with its own primer pair",
+   "primers_included": "yes; primers_synthesis.fasta published",
+   "reads": "clustered read segments (count not extracted)",
+   "coverage": "not extracted",
+   "data_format": "oligos.fasta (14.7 MB), primers_synthesis.fasta, clustered_read_segments.tar.gz (138 MB; 12 sub-archives: 3 files x accuracy mode x pass/fail)",
+   "ground_truth": "YES (oligos.fasta; payload is pseudo-random, no encoded file)",
+   "size": "~153 MB",
+   "reproducibility": "primer search by BLAST, segments 150±15 nt, assignment by Levenshtein distance (record description)",
+   "vnx_use": [
+    "fit nanopore channel models (fast vs HAC, pass vs fail) with primers present",
+    "test VNX primer-trimming/orientation logic on real nanopore segments",
+    "no decoder test (pseudo-random payload)"
+   ],
+   "priority": 1,
+   "verified": "Zenodo API record metadata + file list",
+   "ground_truth_published": "yes",
+   "suitability_for_vnx": {
+    "channel_model_fitting": true,
+    "competitor_decoder_runs": false,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D04",
+   "name": "Clustered Nanopore Reads (CNR) dataset",
+   "accessions": [
+    "GitHub microsoft/clustered-nanopore-reads-dataset"
+   ],
+   "urls": [
+    "https://github.com/microsoft/clustered-nanopore-reads-dataset",
+    "https://arxiv.org/abs/2107.06440"
+   ],
+   "paper": "Srinivasavaradhan SR, Gopi S, Pfister HD, Yekhanin S. Trellis BMA: Coded trace reconstruction on IDS channels for DNA storage. IEEE ISIT 2021, pp. 2453-2458 (arXiv:2107.06440)",
+   "paper_status": "peer-reviewed conference",
+   "licence": "MIT",
+   "synthesis": "Twist Bioscience, PCR amplified",
+   "sequencing": [
+    "OXFORD_NANOPORE MinION (ligation adapters; basecaller not stated in README)"
+   ],
+   "error_characteristics": "IDS channel, nanopore; not quantified in README. Caveat (README, Aug 2024): centers have long-range dependencies, not uniformly random as first stated",
+   "strand_length": "110 nt (Centers.txt, verified)",
+   "primers_included": "no (reads trimmed to strand region)",
+   "reads": "269,709 reads in 10,000 clusters (README)",
+   "coverage": "mean ~27 reads/cluster; some empty clusters (Gu et al. removed them)",
+   "data_format": "Centers.txt + Clusters.txt (plain text, clusters separated by '=' lines)",
+   "ground_truth": "YES (Centers.txt)",
+   "size": "31 MB",
+   "reproducibility": "git clone; no processing needed",
+   "vnx_use": [
+    "fit per-read IDS nanopore model quickly; smoke test of fitting code",
+    "benchmark VNX consensus/trace reconstruction against published TrellisBMA/DNAformer/BBS numbers",
+    "no file decode"
+   ],
+   "priority": 1,
+   "verified": "GitHub API (licence, file sizes), README fetched, Centers line length checked",
+   "ground_truth_published": "yes",
+   "suitability_for_vnx": {
+    "channel_model_fitting": true,
+    "competitor_decoder_runs": false,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D05",
+   "name": "Organick et al. 2018 random-access dataset (file id20 subset)",
+   "accessions": [
+    "GitHub uwmisl/data-nbt17 (Git LFS)"
+   ],
+   "urls": [
+    "https://github.com/uwmisl/data-nbt17",
+    "https://www.microsoft.com/en-us/research/publication/random-access-in-large-scale-dna-data-storage/"
+   ],
+   "paper": "Organick L, et al. Random access in large-scale DNA data storage. Nat Biotechnol 36:242-248 (2018). doi:10.1038/nbt.4079",
+   "paper_status": "peer-reviewed",
+   "licence": "no licence file (unclear)",
+   "synthesis": "Twist Bioscience for most pools per paper (not re-verified for id20)",
+   "sequencing": [
+    "Illumina (instrument for id20 not verified)"
+   ],
+   "error_characteristics": "not extracted; widely used Illumina benchmark (Rashtchian 2017 clustering)",
+   "strand_length": "150 nt incl. primers per paper (not re-verified)",
+   "primers_included": "unknown until download",
+   "reads": "not counted",
+   "coverage": "not extracted",
+   "data_format": "id20.fastq.gz (1,363,110,383 B) + id20.refs.txt.gz (18,284,141 B) via Git LFS (LFS batch API: download available)",
+   "ground_truth": "YES (id20.refs.txt.gz reference strands)",
+   "size": "~1.38 GB",
+   "reproducibility": "git lfs pull; no README in repo",
+   "vnx_use": [
+    "fit Illumina channel (Twist + NextSeq-era chemistry)",
+    "clustering/consensus benchmark at large pool scale",
+    "no file decode"
+   ],
+   "priority": 2,
+   "verified": "GitHub API contents, LFS pointer sizes, LFS batch availability check",
+   "ground_truth_published": "yes",
+   "suitability_for_vnx": {
+    "channel_model_fitting": true,
+    "competitor_decoder_runs": false,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D06",
+   "name": "DNAformer datasets (Technion; Twist; Illumina MiSeq + ONT incl. raw signals)",
+   "accessions": [
+    "Zenodo 10.5281/zenodo.13896773",
+    "Zenodo 10.5281/zenodo.17473983",
+    "Zenodo 10.5281/zenodo.17399364"
+   ],
+   "urls": [
+    "https://doi.org/10.5281/zenodo.13896773",
+    "https://doi.org/10.5281/zenodo.17473983",
+    "https://doi.org/10.5281/zenodo.17399364",
+    "https://github.com/itaiorr/Deep-DNA-based-storage"
+   ],
+   "paper": "Bar-Lev D, Orr I, Sabary O, Etzion T, Yaakobi E. Scalable and robust DNA-based storage via coding theory and deep learning. Nat Mach Intell 7:639-649 (2025). doi:10.1038/s42256-025-01003-z",
+   "paper_status": "peer-reviewed",
+   "licence": "CC BY 4.0 (data); code MIT",
+   "synthesis": "Twist Bioscience",
+   "sequencing": [
+    "ILLUMINA MiSeq paired-end (PEAR-merged)",
+    "OXFORD_NANOPORE (pilot + 2 flow cells; raw FAST5 signals published)"
+   ],
+   "error_characteristics": "not extracted here (see paper)",
+   "strand_length": "not verified here",
+   "primers_included": "raw reads yes; binned files trimmed (reads_preprocessor.py)",
+   "reads": "5 datasets (pilot/test x Illumina/nanopore)",
+   "coverage": "not extracted",
+   "data_format": "raw FASTQ(.gz), binned text (header=reference, '*' separator, reads), FAST5 raw signal zips",
+   "ground_truth": "YES: binned headers give encoded sequence; 17473983 also gives sequences_random_file.txt, sequences_semantic_file.txt, rand_file.bin and semantic_file.zip (original files)",
+   "size": "13896773: ~38.5 GB total (binned files 74-468 MB each); 17473983: ~1.2 GB; 17399364: ~12.4 GB signals",
+   "reproducibility": "scripts in itaiorr/Deep-DNA-based-storage",
+   "vnx_use": [
+    "fit Illumina and nanopore models on the same Twist pool",
+    "raw-signal work (future soft decoding)",
+    "competitor decoder (DNAformer) re-run"
+   ],
+   "priority": 2,
+   "verified": "Zenodo API metadata + file lists for all three records",
+   "ground_truth_published": "yes",
+   "suitability_for_vnx": {
+    "channel_model_fitting": true,
+    "competitor_decoder_runs": true,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D07",
+   "name": "Technion binned benchmark: Grass 2015, Erlich 2017, Srinivasavaradhan 2021",
+   "accessions": [
+    "Zenodo 10.5281/zenodo.14296588"
+   ],
+   "urls": [
+    "https://doi.org/10.5281/zenodo.14296588"
+   ],
+   "paper": "Datasets from Grass et al. Angew Chem 54:2552 (2015) doi:10.1002/anie.201411378; Erlich & Zielinski Science 355:950 (2017) doi:10.1126/science.aaj2038; Srinivasavaradhan et al. ISIT 2021; binned by Bar-Lev et al. Nat Mach Intell 2025",
+   "paper_status": "peer-reviewed sources; binning is DERIVED",
+   "licence": "CC BY 4.0 (record)",
+   "synthesis": "Grass 2015: CustomArray (per Heckel 2019 context; not re-verified); Erlich: Twist; CNR: Twist",
+   "sequencing": [
+    "Illumina (Grass, Erlich)",
+    "ONT MinION (CNR)"
+   ],
+   "error_characteristics": "see sources",
+   "strand_length": "Erlich 152-nt data region (Heckel et al. 2019 Table 1); CNR 110 nt; Grass not extracted",
+   "primers_included": "no (primers detected and truncated by reads_preprocessor.py)",
+   "reads": "not counted",
+   "coverage": "not extracted",
+   "data_format": "binned text: header line = encoded reference, then reads",
+   "ground_truth": "YES (reference per cluster). Only public route found to Grass 2015 reads.",
+   "size": "Grass.txt 310 MB, Erlich.txt 1.98 GB, Srinivasavaradhan.txt 20 MB",
+   "reproducibility": "scripts in itaiorr/Deep-DNA-based-storage",
+   "vnx_use": [
+    "fit models across three chemistries quickly (pre-clustered)",
+    "trace-reconstruction benchmark"
+   ],
+   "priority": 2,
+   "verified": "Zenodo API metadata + file list",
+   "ground_truth_published": "yes",
+   "suitability_for_vnx": {
+    "channel_model_fitting": true,
+    "competitor_decoder_runs": false,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D08",
+   "name": "DNA Fountain raw reads (master pool + dilution/deep-copy experiments)",
+   "accessions": [
+    "ENA PRJEB19305",
+    "ENA PRJEB19307"
+   ],
+   "urls": [
+    "https://www.ebi.ac.uk/ena/browser/view/PRJEB19305",
+    "https://www.ebi.ac.uk/ena/browser/view/PRJEB19307",
+    "https://github.com/TeamErlich/dna-fountain"
+   ],
+   "paper": "Erlich Y, Zielinski D. DNA Fountain enables a robust and efficient storage architecture. Science 355:950-954 (2017). doi:10.1126/science.aaj2038",
+   "paper_status": "peer-reviewed",
+   "licence": "reads: INSDC open access; no explicit licence stated (unclear; INSDC policy places no use restrictions); DNA Fountain code GPL-3.0",
+   "synthesis": "Twist Bioscience (72,000 oligos)",
+   "sequencing": [
+    "ILLUMINA Illumina MiSeq"
+   ],
+   "error_characteristics": "Heckel et al. 2019 (Sci Rep 2019, doi:10.1038/s41598-019-45832-6) re-analysed: substitution-dominated in correct-length reads; dilution series down to low physical redundancy",
+   "strand_length": "152-nt data region (Heckel et al. 2019 Table 1); full oligo incl. primers not re-verified",
+   "primers_included": "yes in raw reads",
+   "reads": "NCBI SRA runinfo (queried 2026-10-05): 16 runs, 479,469,649 spots, 68,720 MB (SRA-normalised), layout PAIRED",
+   "coverage": "281-503x read coverage (Heckel 2019 Table 1)",
+   "data_format": "paired-end FASTQ",
+   "ground_truth": "PARTIAL: reference strands available via Technion binned Erlich.txt (D07); original oligo order file not located in TeamErlich/dna-fountain",
+   "size": "~68.7 GB SRA-normalised (PRJEB19307 is 66.6 GB; PRJEB19305 2.1 GB is enough to start)",
+   "reproducibility": "DNA Fountain decoder in GitHub (Python 2 era)",
+   "vnx_use": [
+    "fit Illumina MiSeq + Twist model; dilution series for dropout vs physical redundancy",
+    "run DNA Fountain decoder as competitor"
+   ],
+   "priority": 2,
+   "verified": "ENA project XML, SRA runinfo, DT4DDS data-availability statement citing both accessions",
+   "ground_truth_published": "partial",
+   "suitability_for_vnx": {
+    "channel_model_fitting": true,
+    "competitor_decoder_runs": true,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D09",
+   "name": "Goldman et al. 2013 (EBI) - 5 files in 153,335 features",
+   "accessions": [
+    "ENA PRJEB1186"
+   ],
+   "urls": [
+    "https://www.ebi.ac.uk/ena/browser/view/PRJEB1186",
+    "https://www.ebi.ac.uk/goldman-srv/DNA-storage/"
+   ],
+   "paper": "Goldman N, et al. Towards practical, high-capacity, low-maintenance information storage in synthesized DNA. Nature (2013). doi:10.1038/nature11875",
+   "paper_status": "peer-reviewed",
+   "licence": "reads: INSDC open access; no explicit licence stated (unclear; INSDC policy places no use restrictions); EBI download page terms not stated (unclear)",
+   "synthesis": "Agilent OLS",
+   "sequencing": [
+    "ILLUMINA Illumina HiSeq 2000"
+   ],
+   "error_characteristics": "re-analysed by Heckel et al. 2019; HiSeq 2000 reads of exactly 104 nt",
+   "strand_length": "117 nt data features (Heckel 2019); features.txt includes a 33-bp adapter at each end (EBI page)",
+   "primers_included": "yes (adapters)",
+   "reads": "NCBI SRA runinfo (queried 2026-10-05): 2 runs, 145,428,991 spots, 18,278 MB (SRA-normalised), layout PAIRED",
+   "coverage": "~519x (Heckel 2019 Table 1)",
+   "data_format": "paired-end FASTQ; AYB base calls on EBI page",
+   "ground_truth": "YES: features.txt (153,335 designed strings) + the 5 encoded files + intermediate DNA strings (EBI page)",
+   "size": "~18.3 GB SRA-normalised",
+   "reproducibility": "EBI page README.html",
+   "vnx_use": [
+    "historic Agilent/HiSeq channel fit",
+    "Goldman codec re-run as competitor (also in D01)"
+   ],
+   "priority": 3,
+   "verified": "ENA XML, SRA runinfo, EBI page fetched",
+   "ground_truth_published": "yes",
+   "suitability_for_vnx": {
+    "channel_model_fitting": true,
+    "competitor_decoder_runs": true,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D10",
+   "name": "HEDGES in vitro test reads",
+   "accessions": [
+    "SRA PRJNA631961 (SAMN14897329-35)"
+   ],
+   "urls": [
+    "https://www.ncbi.nlm.nih.gov/bioproject/PRJNA631961",
+    "https://github.com/whpress/HEDGES"
+   ],
+   "paper": "Press WH, Hawkins JA, Jones SK Jr, Schaub JM, Finkelstein IJ. HEDGES error-correcting code for DNA storage corrects indels and allows sequence constraints. PNAS (2020). doi:10.1073/pnas.2004821117",
+   "paper_status": "peer-reviewed",
+   "licence": "reads: INSDC open access; no explicit licence stated (unclear; INSDC policy places no use restrictions); HEDGES code MIT (includes Numerical Recipes/Schifra routines, non-commercial terms)",
+   "synthesis": "not verified here",
+   "sequencing": [
+    "ILLUMINA Illumina MiSeq"
+   ],
+   "error_characteristics": "see paper",
+   "strand_length": "not verified here",
+   "primers_included": "yes (primers IF538/IF539 given in DAS)",
+   "reads": "NCBI SRA runinfo (queried 2026-10-05): 7 runs, 4,917,226 spots, 1,413 MB (SRA-normalised), layout PAIRED",
+   "coverage": "not extracted",
+   "data_format": "paired-end FASTQ (avg 600 bp per spot = 2x300)",
+   "ground_truth": "NOT FOUND as a strand list (repo has code + demo text only); would need regeneration with HEDGES encoder - unverified",
+   "size": "~1.4 GB",
+   "reproducibility": "C++ build scripts in repo",
+   "vnx_use": [
+    "fit MiSeq 2x300 model only if references can be regenerated",
+    "HEDGES decoder competitor run (preferably done via D01)"
+   ],
+   "priority": 3,
+   "verified": "Europe PMC DAS, SRA runinfo, GitHub tree",
+   "ground_truth_published": "not_found",
+   "suitability_for_vnx": {
+    "channel_model_fitting": true,
+    "competitor_decoder_runs": true,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D11",
+   "name": "Antkowiak et al. 2020 photolithographic synthesis reads",
+   "accessions": [
+    "Figshare collection 10.6084/m9.figshare.c.5128901.v1"
+   ],
+   "urls": [
+    "https://doi.org/10.6084/m9.figshare.c.5128901.v1",
+    "https://github.com/MLI-lab/noisy_dna_data_storage"
+   ],
+   "paper": "Antkowiak PL, et al. Low cost DNA data storage using photolithographic synthesis and advanced information reconstruction and error correction. Nat Commun (2020). doi:10.1038/s41467-020-19148-3",
+   "paper_status": "peer-reviewed",
+   "licence": "CC BY 4.0 (figshare); code Apache-2.0",
+   "synthesis": "photolithographic in-house synthesis (low cost, high error)",
+   "sequencing": [
+    "Illumina (R1 FASTQ files only in figshare; instrument not re-verified)"
+   ],
+   "error_characteristics": "high error rates (photolithography); not extracted",
+   "strand_length": "not verified here",
+   "primers_included": "likely in raw reads (verify)",
+   "reads": "2 files: I16 (100 KB file) 994 MB, I18 (323 KB file) 3,150 MB fastq.gz; file 3 only on request",
+   "coverage": "not extracted",
+   "data_format": "FASTQ.gz",
+   "ground_truth": "UNCLEAR: encoded sequences may be in MLI-lab repo; not verified",
+   "size": "~4.1 GB",
+   "reproducibility": "MLI-lab/noisy_dna_data_storage",
+   "vnx_use": [
+    "stress-test VNX model fitting on a high-error synthesis channel"
+   ],
+   "priority": 3,
+   "verified": "figshare API collection + article file lists; Europe PMC DAS",
+   "ground_truth_published": "unclear",
+   "suitability_for_vnx": {
+    "channel_model_fitting": true,
+    "competitor_decoder_runs": false,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D12",
+   "name": "Chandak et al. nanopore convolutional-code dataset (raw FAST5 + FASTQ + oligos)",
+   "accessions": [
+    "GitHub shubhamchandak94/nanopore_dna_storage_data (branches master, bonito)"
+   ],
+   "urls": [
+    "https://github.com/shubhamchandak94/nanopore_dna_storage_data",
+    "https://github.com/shubhamchandak94/nanopore_dna_storage",
+    "https://doi.org/10.1101/2019.12.20.871939"
+   ],
+   "paper": "Chandak S, et al. Overcoming high nanopore basecaller error rates for DNA storage via basecaller-decoder integration and convolutional codes. IEEE ICASSP 2020. doi:10.1109/ICASSP40776.2020.9053441 (bioRxiv 10.1101/2019.12.20.871939)",
+   "paper_status": "peer-reviewed conference",
+   "licence": "data repo: none stated (unclear); code repo MIT",
+   "synthesis": "not verified here",
+   "sequencing": [
+    "OXFORD_NANOPORE MinION (flow cell not verified); guppy and bonito basecalls"
+   ],
+   "error_characteristics": "stats/merged.sorted.error_stats.csv gives sub/ins/del per read position (samtools stats)",
+   "strand_length": "merged.fa: 12,301 oligos; first oligo 158 nt incl. 25-nt primers at both ends (downloaded and checked)",
+   "primers_included": "yes",
+   "reads": "not counted",
+   "coverage": "not extracted",
+   "data_format": "FAST5 raw signal, FASTQ, oligo FASTA, decoded lists, stats",
+   "ground_truth": "YES: oligo_files (per experiment + merged) and encoded_file",
+   "size": "GitHub repo ~1.9 GB plus externally hosted parts",
+   "reproducibility": "per-directory download instructions",
+   "vnx_use": [
+    "fit nanopore model incl. positional error profile",
+    "raw-signal soft-decoding research",
+    "convolutional-code competitor"
+   ],
+   "priority": 2,
+   "verified": "GitHub API README/listing, oligo file sampled",
+   "ground_truth_published": "yes",
+   "suitability_for_vnx": {
+    "channel_model_fitting": true,
+    "competitor_decoder_runs": true,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D13",
+   "name": "Lopez et al. 2019 nanopore assembly readout",
+   "accessions": [
+    "GitHub uwmisl/data-ncomms19-nanopore (Git LFS)"
+   ],
+   "urls": [
+    "https://github.com/uwmisl/data-ncomms19-nanopore"
+   ],
+   "paper": "Lopez R, et al. DNA assembly for nanopore data storage readout. Nat Commun (2019). doi:10.1038/s41467-019-10978-4",
+   "paper_status": "peer-reviewed",
+   "licence": "none stated (unclear)",
+   "synthesis": "not verified here",
+   "sequencing": [
+    "OXFORD_NANOPORE MinION"
+   ],
+   "error_characteristics": "not extracted",
+   "strand_length": "assembled long constructs (not re-verified)",
+   "primers_included": "unknown",
+   "reads": "5 runs (13,15,16,18,20); run13 fastq.gz 575,880,507 B",
+   "coverage": "not extracted",
+   "data_format": "FASTQ.gz (LFS) + seqs_*.txt references",
+   "ground_truth": "YES: seqs_365-dishes/Vitruvian/apollo/space_shuttle.txt mapped to runs",
+   "size": "several GB",
+   "reproducibility": "read_me file maps files to runs",
+   "vnx_use": [
+    "long-read nanopore channel (assembly) - low relevance to VNX short-strand design"
+   ],
+   "priority": 4,
+   "verified": "GitHub API listing, LFS batch availability",
+   "ground_truth_published": "yes",
+   "suitability_for_vnx": {
+    "channel_model_fitting": false,
+    "competitor_decoder_runs": false,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D14",
+   "name": "Chen et al. 2020 molecular bias coverage data",
+   "accessions": [
+    "GitHub uwmisl/storage-biasing-ncomms20"
+   ],
+   "urls": [
+    "https://github.com/uwmisl/storage-biasing-ncomms20"
+   ],
+   "paper": "Chen YJ, Takahashi CN, Organick L, et al. Quantifying molecular bias in DNA data storage. Nat Commun 11:3264 (2020). doi:10.1038/s41467-020-16958-3",
+   "paper_status": "peer-reviewed",
+   "licence": "none stated (unclear)",
+   "synthesis": "Twist (biased vs non-biased chip; per data_readme)",
+   "sequencing": [
+    "Illumina (coverage arrays derived by BWA)"
+   ],
+   "error_characteristics": "coverage only: PCR from 200 down to 8 copies (triplicates), homopolymer files",
+   "strand_length": "n/a",
+   "primers_included": "n/a",
+   "reads": "no reads; per-strand coverage .npy arrays",
+   "coverage": "the dataset IS coverage distributions",
+   "data_format": ".npy coverage arrays + CSV",
+   "ground_truth": "n/a",
+   "size": "~36 MB",
+   "reproducibility": "notebooks per figure",
+   "vnx_use": [
+    "fit VNX coverage model (negative binomial vs lognormal) and low-copy dropout; DT4DDS used run36/run42 for the same purpose"
+   ],
+   "priority": 2,
+   "verified": "GitHub API README + data_readme.txt",
+   "ground_truth_published": "see_ground_truth_text",
+   "suitability_for_vnx": {
+    "channel_model_fitting": true,
+    "competitor_decoder_runs": false,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D15",
+   "name": "Lee et al. 2019 template-independent enzymatic (TdT) synthesis",
+   "accessions": [
+    "SRA PRJNA521561 / SRP185459"
+   ],
+   "urls": [
+    "https://www.ncbi.nlm.nih.gov/bioproject/PRJNA521561",
+    "https://github.com/citizenlee/DNAinfostorage"
+   ],
+   "paper": "Lee HH, Kalhor R, Goela N, Bolot J, Church GM. Terminator-free template-independent enzymatic DNA synthesis for digital information storage. Nat Commun (2019). doi:10.1038/s41467-019-10258-1",
+   "paper_status": "peer-reviewed",
+   "licence": "reads: INSDC open access; no explicit licence stated (unclear; INSDC policy places no use restrictions)",
+   "synthesis": "enzymatic (TdT, terminator-free; homopolymer-run based)",
+   "sequencing": [
+    "ILLUMINA Illumina MiSeq",
+    "OXFORD_NANOPORE MinION"
+   ],
+   "error_characteristics": "enzymatic synthesis produces variable run lengths; see paper",
+   "strand_length": "short enzymatic strands (see paper)",
+   "primers_included": "see paper",
+   "reads": "NCBI SRA runinfo (queried 2026-10-05): 7 runs, 13,411,764 spots, 1,243 MB (SRA-normalised), layout SINGLE",
+   "coverage": "n/a",
+   "data_format": "FASTQ",
+   "ground_truth": "processed data + code in GitHub (not verified file-level)",
+   "size": "~1.2 GB",
+   "reproducibility": "GitHub code",
+   "vnx_use": [
+    "enzymatic-synthesis channel exploration only (different encoding paradigm)"
+   ],
+   "priority": 4,
+   "verified": "Europe PMC DAS, SRA runinfo",
+   "ground_truth_published": "see_ground_truth_text",
+   "suitability_for_vnx": {
+    "channel_model_fitting": false,
+    "competitor_decoder_runs": false,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D16",
+   "name": "Lee et al. 2020 photon-directed multiplexed enzymatic synthesis",
+   "accessions": [
+    "SRA PRJNA633646 / SRP262219"
+   ],
+   "urls": [
+    "https://www.ncbi.nlm.nih.gov/bioproject/PRJNA633646",
+    "https://github.com/dwiegand740/Photon_Enzymatic_Synthesis"
+   ],
+   "paper": "Lee H, Wiegand DJ, et al. Photon-directed multiplexed enzymatic DNA synthesis for molecular digital data storage. Nat Commun (2020). doi:10.1038/s41467-020-18681-5",
+   "paper_status": "peer-reviewed",
+   "licence": "reads: INSDC open access; no explicit licence stated (unclear; INSDC policy places no use restrictions)",
+   "synthesis": "enzymatic, photon-directed",
+   "sequencing": [
+    "ILLUMINA Illumina MiniSeq",
+    "OXFORD_NANOPORE MinION"
+   ],
+   "error_characteristics": "see paper",
+   "strand_length": "see paper",
+   "primers_included": "see paper",
+   "reads": "NCBI SRA runinfo (queried 2026-10-05): 2 runs, 277,770 spots, 32 MB (SRA-normalised), layout SINGLE",
+   "coverage": "n/a",
+   "data_format": "FASTQ",
+   "ground_truth": "MATLAB scripts in GitHub",
+   "size": "~32 MB",
+   "reproducibility": "MATLAB scripts",
+   "vnx_use": [
+    "enzymatic channel exploration only"
+   ],
+   "priority": 5,
+   "verified": "Europe PMC DAS, SRA runinfo",
+   "ground_truth_published": "see_ground_truth_text",
+   "suitability_for_vnx": {
+    "channel_model_fitting": false,
+    "competitor_decoder_runs": false,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D17",
+   "name": "DNA-Aeon evaluation data",
+   "accessions": [
+    "SRA PRJNA855029 (SRR19954693-97)"
+   ],
+   "urls": [
+    "https://www.ncbi.nlm.nih.gov/bioproject/PRJNA855029",
+    "https://github.com/MW55/DNA-Aeon"
+   ],
+   "paper": "Welzel M, et al. DNA-Aeon provides flexible arithmetic coding for constraint adherence and error correction in DNA storage. Nat Commun (2023). doi:10.1038/s41467-023-36297-3",
+   "paper_status": "peer-reviewed",
+   "licence": "reads: INSDC open access; no explicit licence stated (unclear; INSDC policy places no use restrictions); article CC BY 4.0",
+   "synthesis": "not verified here",
+   "sequencing": [
+    "ILLUMINA Illumina MiSeq"
+   ],
+   "error_characteristics": "see paper/source data",
+   "strand_length": "not verified here",
+   "primers_included": "see paper",
+   "reads": "NCBI SRA runinfo (queried 2026-10-05): 5 runs, 9,618,468 spots, 3,062 MB (SRA-normalised), layout PAIRED",
+   "coverage": "not extracted",
+   "data_format": "paired-end FASTQ (2x300)",
+   "ground_truth": "UNCLEAR (source data files; not verified)",
+   "size": "~3.1 GB",
+   "reproducibility": "DNA-Aeon v1.0 code; MESA config in source data",
+   "vnx_use": [
+    "Illumina channel fit if references obtained",
+    "DNA-Aeon competitor (preferably via D01)"
+   ],
+   "priority": 3,
+   "verified": "Europe PMC DAS, SRA runinfo",
+   "ground_truth_published": "unclear",
+   "suitability_for_vnx": {
+    "channel_model_fitting": true,
+    "competitor_decoder_runs": true,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D18",
+   "name": "DNA StairLoop experiments",
+   "accessions": [
+    "SRA PRJNA1306341",
+    "Figshare 10.6084/m9.figshare.28902032.v2",
+    "Figshare 10.6084/m9.figshare.26212682 (encoded oligos)"
+   ],
+   "urls": [
+    "https://www.ncbi.nlm.nih.gov/bioproject/PRJNA1306341",
+    "https://doi.org/10.6084/m9.figshare.26212682",
+    "https://github.com/Guanjinqu/StairLoop"
+   ],
+   "paper": "Yan Z, Qu G, Chen X, Zheng G, Wu H. DNA StairLoop: enabling high-fidelity data recovery and robust error correction in DNA-based data storage. Nat Commun (2025). doi:10.1038/s41467-025-64230-3",
+   "paper_status": "peer-reviewed",
+   "licence": "reads: INSDC open access; no explicit licence stated (unclear; INSDC policy places no use restrictions); code CC BY 4.0; figshare licence not checked",
+   "synthesis": "not verified here",
+   "sequencing": [
+    "ILLUMINA Illumina MiSeq"
+   ],
+   "error_characteristics": "see paper",
+   "strand_length": "not verified here",
+   "primers_included": "see paper",
+   "reads": "NCBI SRA runinfo (queried 2026-10-05): 3 runs, 62,359,131 spots, 6,102 MB (SRA-normalised), layout PAIRED",
+   "coverage": "not extracted",
+   "data_format": "paired-end FASTQ + figshare raw/encoded files",
+   "ground_truth": "YES per DAS (encoded oligos + raw digital information on figshare; not opened)",
+   "size": "~6.1 GB SRA",
+   "reproducibility": "GitHub + Zenodo 10.5281/zenodo.16837109",
+   "vnx_use": [
+    "Illumina channel fit with published oligos",
+    "StairLoop competitor decoder"
+   ],
+   "priority": 3,
+   "verified": "Europe PMC DAS, SRA runinfo",
+   "ground_truth_published": "yes",
+   "suitability_for_vnx": {
+    "channel_model_fitting": true,
+    "competitor_decoder_runs": true,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D19",
+   "name": "Magnetic DNA RAM with nanopore readout (Stanford)",
+   "accessions": [
+    "SRA PRJNA758230"
+   ],
+   "urls": [
+    "https://www.ncbi.nlm.nih.gov/bioproject/PRJNA758230",
+    "https://github.com/shubhamchandak94/nanopore_dna_storage/tree/bonito"
+   ],
+   "paper": "Lau B, Chandak S, Roy S, Tatwawadi K, et al. Magnetic DNA random access memory with nanopore readouts and exponentially-scaled combinatorial addressing. Sci Rep (2023). doi:10.1038/s41598-023-29575-z",
+   "paper_status": "peer-reviewed",
+   "licence": "reads: INSDC open access; no explicit licence stated (unclear; INSDC policy places no use restrictions)",
+   "synthesis": "not verified here",
+   "sequencing": [
+    "ILLUMINA Illumina iSeq 100",
+    "OXFORD_NANOPORE MinION",
+    "OXFORD_NANOPORE PromethION"
+   ],
+   "error_characteristics": "see paper",
+   "strand_length": "see paper",
+   "primers_included": "see paper",
+   "reads": "NCBI SRA runinfo (queried 2026-10-05): 8 runs, 33,545,876 spots, 9,243 MB (SRA-normalised), layout PAIRED/SINGLE",
+   "coverage": "not extracted",
+   "data_format": "FASTQ (Illumina) + nanopore reads",
+   "ground_truth": "oligo generation code in bonito branch (regenerate; not verified)",
+   "size": "~9.2 GB",
+   "reproducibility": "bonito branch",
+   "vnx_use": [
+    "nanopore (MinION + PromethION) channel fit",
+    "conv-code competitor"
+   ],
+   "priority": 3,
+   "verified": "Europe PMC DAS, SRA runinfo",
+   "ground_truth_published": "see_ground_truth_text",
+   "suitability_for_vnx": {
+    "channel_model_fitting": true,
+    "competitor_decoder_runs": true,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D20",
+   "name": "HEDGES nanopore nominal FAST5/FASTQ evaluation set (NCSU/JHU)",
+   "accessions": [
+    "Zenodo 10.5281/zenodo.11985455"
+   ],
+   "urls": [
+    "https://doi.org/10.5281/zenodo.11985455"
+   ],
+   "paper": "Volkel KD, Hook PW, Keung A, Timp W, Tuck JM. Nanopore decoding with speed and versatility for data storage. Bioinformatics btaf006 (2025). doi:10.1093/bioinformatics/btaf006",
+   "paper_status": "peer-reviewed",
+   "licence": "CC BY 4.0",
+   "synthesis": "not verified here",
+   "sequencing": [
+    "OXFORD_NANOPORE (FAST5 + FASTQ)"
+   ],
+   "error_characteristics": "see paper",
+   "strand_length": "not verified here",
+   "primers_included": "see paper",
+   "reads": "not counted",
+   "coverage": "not extracted",
+   "data_format": "tar.gz with FAST5 + FASTQ",
+   "ground_truth": "UNCLEAR (not opened)",
+   "size": "~7.3 GB",
+   "reproducibility": "code at 10.5281/zenodo.11454877",
+   "vnx_use": [
+    "nanopore channel with HEDGES-encoded strands; soft-decoder comparison"
+   ],
+   "priority": 3,
+   "verified": "Zenodo API metadata",
+   "ground_truth_published": "unclear",
+   "suitability_for_vnx": {
+    "channel_model_fitting": false,
+    "competitor_decoder_runs": false,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D21",
+   "name": "Takahashi et al. 2024 particle-radiation damage reads (Microsoft/UW)",
+   "accessions": [
+    "Zenodo 10.5281/zenodo.12713629"
+   ],
+   "urls": [
+    "https://doi.org/10.5281/zenodo.12713629"
+   ],
+   "paper": "Takahashi CN, Ward DP, Cazzaniga C, Frost C, Rech P, Ganguly K, et al. Evaluating the risk of data loss due to particle radiation damage in a DNA data storage system. Nat Commun (2024). doi:10.1038/s41467-024-51768-x",
+   "paper_status": "peer-reviewed",
+   "licence": "CC BY 4.0",
+   "synthesis": "not verified here",
+   "sequencing": [
+    "Illumina (not verified)"
+   ],
+   "error_characteristics": "irradiated vs control samples (damage-induced loss)",
+   "strand_length": "see sequences files",
+   "primers_included": "see paper",
+   "reads": "not counted",
+   "coverage": "not extracted",
+   "data_format": "radiation_fastqs.zip + 'file 15/31 sequences.txt'",
+   "ground_truth": "YES (sequence files for encoded files 15 and 31; mapping in paper Source Data)",
+   "size": "~6.9 GB",
+   "reproducibility": "Source Data mapping",
+   "vnx_use": [
+    "fit a damage/aging stage (dropout + substitution increase) for VNX storage-loss models"
+   ],
+   "priority": 3,
+   "verified": "Zenodo API metadata, Europe PMC title search",
+   "ground_truth_published": "yes",
+   "suitability_for_vnx": {
+    "channel_model_fitting": true,
+    "competitor_decoder_runs": false,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D22",
+   "name": "Joint index-payload codes: large electrochemical + inkjet pools (Tianjin)",
+   "accessions": [
+    "SRA PRJNA1439609",
+    "Zenodo 10.5281/zenodo.19203651 (encoded sequences)"
+   ],
+   "urls": [
+    "https://www.ncbi.nlm.nih.gov/bioproject/PRJNA1439609",
+    "https://doi.org/10.5281/zenodo.19203651"
+   ],
+   "paper": "'Joint index and payload codes enable secure and indel-resilient DNA data storage' (Chen W, Ge Q, et al., Tianjin Univ.) - publication record not found in Europe PMC on 2026-10-05; treat as unpublished/unknown venue",
+   "paper_status": "unverified",
+   "licence": "reads: INSDC open access; no explicit licence stated (unclear; INSDC policy places no use restrictions); sequences CC BY 4.0",
+   "synthesis": "electrochemical synthesis (ECS-Pool1 999,998 x 170 nt; ECS-Pool2 1,000,000 x 170 nt) and inkjet printing synthesis (IPS-Pool1-3, 4,000 x 248 nt each)",
+   "sequencing": [
+    "ILLUMINA Illumina NovaSeq X Plus",
+    "OXFORD_NANOPORE MinION",
+    "OXFORD_NANOPORE PromethION"
+   ],
+   "error_characteristics": "not extracted",
+   "strand_length": "170 nt and 248 nt",
+   "primers_included": "unknown",
+   "reads": "NCBI SRA runinfo (queried 2026-10-05): 3 runs, 12,140,100 spots, 1,919 MB (SRA-normalised), layout PAIRED/SINGLE",
+   "coverage": "not extracted",
+   "data_format": "FASTQ + encoded sequence text files",
+   "ground_truth": "YES (encoded sequences on Zenodo, 346 MB)",
+   "size": "~1.9 GB SRA + 346 MB",
+   "reproducibility": "not checked",
+   "vnx_use": [
+    "fit ~1M-strand electrochemical channel on Illumina + ONT (scale test for VNX clustering)"
+   ],
+   "priority": 2,
+   "verified": "ENA XML, SRA runinfo, Zenodo API",
+   "ground_truth_published": "yes",
+   "suitability_for_vnx": {
+    "channel_model_fitting": true,
+    "competitor_decoder_runs": false,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D23",
+   "name": "Direct nanopore readout with UEP oligos (Tianjin), 300-nt strands",
+   "accessions": [
+    "SRA PRJNA1505625"
+   ],
+   "urls": [
+    "https://www.ncbi.nlm.nih.gov/bioproject/PRJNA1505625"
+   ],
+   "paper": "not located (BioProject released 2026-07-31)",
+   "paper_status": "unverified",
+   "licence": "reads: INSDC open access; no explicit licence stated (unclear; INSDC policy places no use restrictions)",
+   "synthesis": "not stated in project; 179,928 oligos x 300 nt storing 7.55 MB",
+   "sequencing": [
+    "ILLUMINA Illumina HiSeq 2000",
+    "OXFORD_NANOPORE PromethION",
+    "ONT basecalling in FAST, HAC and SUP modes (project description)"
+   ],
+   "error_characteristics": "not extracted",
+   "strand_length": "300 nt",
+   "primers_included": "unknown",
+   "reads": "NCBI SRA runinfo (queried 2026-10-05): 8 runs, 4,798,080 spots, 594 MB (SRA-normalised), layout PAIRED/SINGLE",
+   "coverage": "not extracted",
+   "data_format": "FASTQ",
+   "ground_truth": "NOT FOUND (no published design file located)",
+   "size": "~0.6 GB",
+   "reproducibility": "unknown",
+   "vnx_use": [
+    "fit fast/HAC/SUP nanopore models at VNX-like strand length (~300 nt) once references are obtained (contact authors)"
+   ],
+   "priority": 3,
+   "verified": "ENA XML, SRA runinfo",
+   "ground_truth_published": "not_found",
+   "suitability_for_vnx": {
+    "channel_model_fitting": true,
+    "competitor_decoder_runs": false,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D24",
+   "name": "Composite ranging codes as indices (Tianjin) - Illumina + MinION + PromethION",
+   "accessions": [
+    "SRA PRJNA1371011",
+    "SRA PRJNA1276869"
+   ],
+   "urls": [
+    "https://www.ncbi.nlm.nih.gov/bioproject/PRJNA1371011",
+    "https://doi.org/10.5281/zenodo.17911697",
+    "https://github.com/dna-storage-lab/DNAStorage_LCRC"
+   ],
+   "paper": "Zhang Y, Qin R, Ge Q, Guo Q, Chen W. From spacecraft ranging to massive DNA data storage: Composite ranging codes as indices and error correction references. Sci Adv (2026). doi:10.1126/sciadv.aec1469",
+   "paper_status": "peer-reviewed",
+   "licence": "reads: INSDC open access; no explicit licence stated (unclear; INSDC policy places no use restrictions)",
+   "synthesis": "not verified here",
+   "sequencing": [
+    "ILLUMINA Illumina NovaSeq 6000",
+    "OXFORD_NANOPORE MinION",
+    "OXFORD_NANOPORE PromethION"
+   ],
+   "error_characteristics": "see paper",
+   "strand_length": "not verified",
+   "primers_included": "see paper",
+   "reads": "NCBI SRA runinfo (queried 2026-10-05): 16 runs, 4,351,182 spots, 833 MB (SRA-normalised), layout PAIRED/SINGLE",
+   "coverage": "not extracted",
+   "data_format": "FASTQ",
+   "ground_truth": "UNCLEAR (Zenodo verification dataset 15550094 has no public files)",
+   "size": "~0.8 GB",
+   "reproducibility": "Zenodo code",
+   "vnx_use": [
+    "cross-platform channel fit if references available"
+   ],
+   "priority": 4,
+   "verified": "Europe PMC DAS, SRA runinfo",
+   "ground_truth_published": "unclear",
+   "suitability_for_vnx": {
+    "channel_model_fitting": true,
+    "competitor_decoder_runs": false,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D25",
+   "name": "High-density low-coverage coding (SWJTU), 2 x 30,000 oligos",
+   "accessions": [
+    "SRA PRJNA1436205"
+   ],
+   "urls": [
+    "https://www.ncbi.nlm.nih.gov/bioproject/PRJNA1436205",
+    "https://arxiv.org/abs/2410.04886"
+   ],
+   "paper": "High information density and low coverage data storage in DNA with efficient channel coding schemes, arXiv:2410.04886 (title from search result; author list not verified)",
+   "paper_status": "preprint (arXiv)",
+   "licence": "reads: INSDC open access; no explicit licence stated (unclear; INSDC policy places no use restrictions)",
+   "synthesis": "phosphoramidite (vendor not verified)",
+   "sequencing": [
+    "ILLUMINA Illumina NovaSeq 6000"
+   ],
+   "error_characteristics": "paper tailors codes to dominant errors of phosphoramidite synthesis + Illumina (not extracted)",
+   "strand_length": "not verified",
+   "primers_included": "unknown",
+   "reads": "NCBI SRA runinfo (queried 2026-10-05): 1 runs, 24,964,645 spots, 3,729 MB (SRA-normalised), layout PAIRED",
+   "coverage": "low coverage is the topic",
+   "data_format": "paired-end FASTQ",
+   "ground_truth": "NOT FOUND",
+   "size": "~3.7 GB",
+   "reproducibility": "unknown",
+   "vnx_use": [
+    "low-coverage channel fit if references obtained"
+   ],
+   "priority": 4,
+   "verified": "ENA XML, SRA runinfo",
+   "ground_truth_published": "not_found",
+   "suitability_for_vnx": {
+    "channel_model_fitting": true,
+    "competitor_decoder_runs": false,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D26",
+   "name": "DNA-of-Things (Stanford bunny, multi-generation)",
+   "accessions": [
+    "ENA PRJEB35217"
+   ],
+   "urls": [
+    "https://www.ebi.ac.uk/ena/browser/view/PRJEB35217"
+   ],
+   "paper": "Koch J, Gantenbein S, Masania K, Stark WJ, Erlich Y, Grass RN. A DNA-of-things storage architecture to create materials with embedded memory. Nat Biotechnol (2020). doi:10.1038/s41587-019-0356-z",
+   "paper_status": "peer-reviewed",
+   "licence": "reads: INSDC open access; no explicit licence stated (unclear; INSDC policy places no use restrictions)",
+   "synthesis": "Twist (DNA Fountain encoding; not re-verified)",
+   "sequencing": [
+    "ILLUMINA Illumina MiSeq"
+   ],
+   "error_characteristics": "used by DT4DDS for coverage-efficiency and external validation",
+   "strand_length": "not verified",
+   "primers_included": "yes in raw reads",
+   "reads": "NCBI SRA runinfo (queried 2026-10-05): 8 runs, 15,714,301 spots, 1,458 MB (SRA-normalised), layout PAIRED",
+   "coverage": "per generation",
+   "data_format": "paired-end FASTQ",
+   "ground_truth": "design files in fml-ethz/dt4dds scripts/bunny_generations/design_files.fasta (listed, not opened)",
+   "size": "~1.5 GB",
+   "reproducibility": "dt4dds notebooks data/DoT",
+   "vnx_use": [
+    "coverage drift over repeated PCR generations"
+   ],
+   "priority": 3,
+   "verified": "ENA XML, SRA runinfo, DT4DDS DAS",
+   "ground_truth_published": "see_ground_truth_text",
+   "suitability_for_vnx": {
+    "channel_model_fitting": false,
+    "competitor_decoder_runs": false,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D27",
+   "name": "Yin-Yang codec experimental data (BGI)",
+   "accessions": [
+    "CNGB CNSA CNP0001650"
+   ],
+   "urls": [
+    "https://db.cngb.org/search/project/CNP0001650/",
+    "https://github.com/ntpz870817/DNA-storage-YYC"
+   ],
+   "paper": "Ping Z, Chen S, Zhou G, et al. Towards practical and robust DNA-based data archiving using the yin-yang codec system. Nat Comput Sci (2022). doi:10.1038/s43588-022-00231-2",
+   "paper_status": "peer-reviewed",
+   "licence": "unclear (CNGB terms)",
+   "synthesis": "not verified here",
+   "sequencing": [
+    "not verified (CNGB record not opened)"
+   ],
+   "error_characteristics": "see paper",
+   "strand_length": "not verified",
+   "primers_included": "unknown",
+   "reads": "not counted",
+   "coverage": "not extracted",
+   "data_format": "raw sequencing (CNSA)",
+   "ground_truth": "UNCLEAR",
+   "size": "unknown",
+   "reproducibility": "YYC code",
+   "vnx_use": [
+    "YYC competitor (preferably via D01, which includes YYC with ground truth)"
+   ],
+   "priority": 4,
+   "verified": "accession taken verbatim from Europe PMC data-availability text; CNGB page itself not fetched",
+   "ground_truth_published": "unclear",
+   "suitability_for_vnx": {
+    "channel_model_fitting": false,
+    "competitor_decoder_runs": true,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D28",
+   "name": "Bidirectional Beam Search post-processed benchmark subsets (CNR, DNAformer, Chandak)",
+   "accessions": [
+    "Zenodo record 16959565"
+   ],
+   "urls": [
+    "https://zenodo.org/records/16959565",
+    "https://github.com/GZHoffie/bbs-test",
+    "https://doi.org/10.1101/2025.04.16.644694"
+   ],
+   "paper": "Gu Z, et al. Efficient trace reconstruction in DNA storage systems using Bidirectional Beam Search. bioRxiv 10.1101/2025.04.16.644694 (2025)",
+   "paper_status": "preprint",
+   "licence": "CC BY 4.0",
+   "synthesis": "as sources",
+   "sequencing": [
+    "ONT (all three sources)"
+   ],
+   "error_characteristics": "script to measure ins/del/sub rates and coverage included",
+   "strand_length": "110 nt (CNR), others per source",
+   "primers_included": "no",
+   "reads": "subsampled clusters",
+   "coverage": "subsampled",
+   "data_format": "clusters/centers text",
+   "ground_truth": "YES (centers/refs)",
+   "size": "~81 MB",
+   "reproducibility": "bbs-test scripts",
+   "vnx_use": [
+    "small, ready-made trace-reconstruction benchmark for VNX consensus"
+   ],
+   "priority": 3,
+   "verified": "Zenodo API metadata",
+   "ground_truth_published": "yes",
+   "suitability_for_vnx": {
+    "channel_model_fitting": false,
+    "competitor_decoder_runs": false,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D29",
+   "name": "SeqFormer datasets (Illumina + ONT, preprocessed)",
+   "accessions": [
+    "Zenodo 10.5281/zenodo.21377476"
+   ],
+   "urls": [
+    "https://doi.org/10.5281/zenodo.21377476"
+   ],
+   "paper": "SeqFormer (Shenzhen University BioinfoSZU) - associated publication not located",
+   "paper_status": "unverified",
+   "licence": "CC BY 4.0",
+   "synthesis": "not stated",
+   "sequencing": [
+    "ILLUMINA",
+    "OXFORD_NANOPORE"
+   ],
+   "error_characteristics": "not stated",
+   "strand_length": "not stated",
+   "primers_included": "unknown",
+   "reads": "not counted",
+   "coverage": "unknown",
+   "data_format": "text + HDF5",
+   "ground_truth": "UNCLEAR",
+   "size": "illumina_data.zip 11 MB, nanopore_data.zip 59 MB (+3 GB benchmark pickles)",
+   "reproducibility": "notebooks",
+   "vnx_use": [
+    "small consensus benchmark; provenance must be checked before use"
+   ],
+   "priority": 4,
+   "verified": "Zenodo API metadata",
+   "ground_truth_published": "unclear",
+   "suitability_for_vnx": {
+    "channel_model_fitting": false,
+    "competitor_decoder_runs": false,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D30",
+   "name": "DNA-DISK enzymatic synthesis on digital microfluidics",
+   "accessions": [
+    "SRA PRJNA1143195"
+   ],
+   "urls": [
+    "https://www.ncbi.nlm.nih.gov/bioproject/PRJNA1143195"
+   ],
+   "paper": "Li K, Lu X, Liao J, et al. DNA-DISK: Automated end-to-end data storage via enzymatic single-nucleotide DNA synthesis and sequencing on digital microfluidics. PNAS 121 (2024). doi:10.1073/pnas.2410164121",
+   "paper_status": "peer-reviewed",
+   "licence": "reads: INSDC open access; no explicit licence stated (unclear; INSDC policy places no use restrictions)",
+   "synthesis": "enzymatic TdT single-nucleotide on DMF",
+   "sequencing": [
+    "ILLUMINA Illumina NovaSeq 6000"
+   ],
+   "error_characteristics": "see paper",
+   "strand_length": "short",
+   "primers_included": "see paper",
+   "reads": "NCBI SRA runinfo (queried 2026-10-05): 24 runs, 11,806,966 spots, 447 MB (SRA-normalised), layout SINGLE",
+   "coverage": "n/a",
+   "data_format": "FASTQ",
+   "ground_truth": "UNCLEAR",
+   "size": "~0.45 GB",
+   "reproducibility": "SI",
+   "vnx_use": [
+    "enzymatic channel exploration"
+   ],
+   "priority": 5,
+   "verified": "Europe PMC DAS, SRA runinfo",
+   "ground_truth_published": "unclear",
+   "suitability_for_vnx": {
+    "channel_model_fitting": false,
+    "competitor_decoder_runs": false,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D31",
+   "name": "PCRobot robotic PCR amplification for DNA data storage (2026, nanopore)",
+   "accessions": [
+    "ENA PRJEB111897"
+   ],
+   "urls": [
+    "https://www.ebi.ac.uk/ena/browser/view/PRJEB111897"
+   ],
+   "paper": "not located",
+   "paper_status": "unverified",
+   "licence": "reads: INSDC open access; no explicit licence stated (unclear; INSDC policy places no use restrictions)",
+   "synthesis": "not stated",
+   "sequencing": [
+    "OXFORD_NANOPORE MinION"
+   ],
+   "error_characteristics": "PCR fidelity focus",
+   "strand_length": "~280-290 nt mean read length (SRA avgLength)",
+   "primers_included": "likely",
+   "reads": "NCBI SRA runinfo (queried 2026-10-05): 6 runs, 3,307,971 spots, 802 MB (SRA-normalised), layout SINGLE",
+   "coverage": "n/a",
+   "data_format": "FASTQ",
+   "ground_truth": "NOT FOUND",
+   "size": "~0.8 GB",
+   "reproducibility": "unknown",
+   "vnx_use": [
+    "PCR-stage error modelling if references obtained"
+   ],
+   "priority": 4,
+   "verified": "ENA XML, SRA runinfo",
+   "ground_truth_published": "not_found",
+   "suitability_for_vnx": {
+    "channel_model_fitting": false,
+    "competitor_decoder_runs": false,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D32",
+   "name": "LANL 'DNA storage error model' reads",
+   "accessions": [
+    "SRA PRJNA978627"
+   ],
+   "urls": [
+    "https://www.ncbi.nlm.nih.gov/bioproject/PRJNA978627"
+   ],
+   "paper": "not located",
+   "paper_status": "unverified",
+   "licence": "reads: INSDC open access; no explicit licence stated (unclear; INSDC policy places no use restrictions)",
+   "synthesis": "not stated",
+   "sequencing": [
+    "ILLUMINA NextSeq 500"
+   ],
+   "error_characteristics": "error-model development (project description only)",
+   "strand_length": "not stated",
+   "primers_included": "unknown",
+   "reads": "NCBI SRA runinfo (queried 2026-10-05): 4 runs, 21,936,290 spots, 2,901 MB (SRA-normalised), layout PAIRED",
+   "coverage": "n/a",
+   "data_format": "FASTQ",
+   "ground_truth": "NOT FOUND",
+   "size": "~2.9 GB",
+   "reproducibility": "unknown",
+   "vnx_use": [
+    "only after references are obtained from authors"
+   ],
+   "priority": 4,
+   "verified": "ENA XML, SRA runinfo",
+   "ground_truth_published": "not_found",
+   "suitability_for_vnx": {
+    "channel_model_fitting": false,
+    "competitor_decoder_runs": false,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D33",
+   "name": "MPHAC-DIS massively parallel homogeneous amplification of chip-scale DNA",
+   "accessions": [
+    "ENA PRJEB82436"
+   ],
+   "urls": [
+    "https://www.ebi.ac.uk/ena/browser/view/PRJEB82436",
+    "https://figshare.com/projects/MPHAC-DIS_Seq/217696",
+    "https://github.com/NABMElab/MPHAC-DIS"
+   ],
+   "paper": "Weng Z, Li J, Wu Y, et al. Massively parallel homogeneous amplification of chip-scale DNA for DNA information storage (MPHAC-DIS). Nat Commun 16 (2025). doi:10.1038/s41467-025-55986-9",
+   "paper_status": "peer-reviewed",
+   "licence": "reads: INSDC open access; no explicit licence stated (unclear; INSDC policy places no use restrictions)",
+   "synthesis": "chip-scale array synthesis",
+   "sequencing": [
+    "ILLUMINA Illumina NovaSeq 6000"
+   ],
+   "error_characteristics": "amplification uniformity focus",
+   "strand_length": "not verified",
+   "primers_included": "see paper",
+   "reads": "NCBI SRA runinfo (queried 2026-10-05): 2 runs, 10,656,626 spots, 483 MB (SRA-normalised), layout SINGLE",
+   "coverage": "amplification bias data",
+   "data_format": "FASTQ + figshare decoding demo",
+   "ground_truth": "decoding demo on figshare (not opened)",
+   "size": "~0.5 GB",
+   "reproducibility": "GitHub + figshare",
+   "vnx_use": [
+    "coverage/amplification-bias model"
+   ],
+   "priority": 4,
+   "verified": "Europe PMC DAS, SRA runinfo",
+   "ground_truth_published": "see_ground_truth_text",
+   "suitability_for_vnx": {
+    "channel_model_fitting": false,
+    "competitor_decoder_runs": false,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D34",
+   "name": "'Error profile of the DNA storage channel' (Wellcome Sanger Institute)",
+   "accessions": [
+    "ENA PRJEB32885"
+   ],
+   "urls": [
+    "https://www.ebi.ac.uk/ena/browser/view/PRJEB32885"
+   ],
+   "paper": "not located (no PubMed link in ENA record)",
+   "paper_status": "unverified",
+   "licence": "reads: INSDC open access; no explicit licence stated (unclear; INSDC policy places no use restrictions)",
+   "synthesis": "not stated",
+   "sequencing": [
+    "ILLUMINA Illumina MiSeq"
+   ],
+   "error_characteristics": "purpose: characterise synthesis/amplification/sequencing noise (project description)",
+   "strand_length": "not stated",
+   "primers_included": "unknown",
+   "reads": "NCBI SRA runinfo (queried 2026-10-05): 135 runs, 59,788,247 spots, 10,384 MB (SRA-normalised), layout PAIRED",
+   "coverage": "n/a",
+   "data_format": "paired-end FASTQ (135 runs)",
+   "ground_truth": "NOT FOUND",
+   "size": "~10.4 GB",
+   "reproducibility": "unknown",
+   "vnx_use": [
+    "potentially valuable error-profile data; needs designs from submitters"
+   ],
+   "priority": 4,
+   "verified": "ENA XML, SRA runinfo",
+   "ground_truth_published": "not_found",
+   "suitability_for_vnx": {
+    "channel_model_fitting": false,
+    "competitor_decoder_runs": false,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D35",
+   "name": "Davos Bitcoin DNA challenge (Goldman encoding), solved 2018",
+   "accessions": [
+    "ENA PRJEB41462"
+   ],
+   "urls": [
+    "https://www.ebi.ac.uk/ena/browser/view/PRJEB41462"
+   ],
+   "paper": "links PubMed 23354052 (Goldman et al. 2013); challenge solution by S. Wuyts (Univ. Antwerp)",
+   "paper_status": "peer-reviewed method; dataset unpublished",
+   "licence": "reads: INSDC open access; no explicit licence stated (unclear; INSDC policy places no use restrictions)",
+   "synthesis": "Agilent (not verified)",
+   "sequencing": [
+    "ILLUMINA Illumina MiSeq"
+   ],
+   "error_characteristics": "not reported",
+   "strand_length": "Goldman scheme",
+   "primers_included": "yes",
+   "reads": "NCBI SRA runinfo (queried 2026-10-05): 1 runs, 23,047,704 spots, 1,384 MB (SRA-normalised), layout PAIRED",
+   "coverage": "n/a",
+   "data_format": "paired-end FASTQ (2x75)",
+   "ground_truth": "NO (challenge files not published as designs)",
+   "size": "~1.4 GB",
+   "reproducibility": "n/a",
+   "vnx_use": [
+    "low value"
+   ],
+   "priority": 5,
+   "verified": "ENA XML, SRA runinfo",
+   "ground_truth_published": "no",
+   "suitability_for_vnx": {
+    "channel_model_fitting": false,
+    "competitor_decoder_runs": false,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D36",
+   "name": "Composite DNA letters (Anavy et al.)",
+   "accessions": [
+    "ENA PRJEB32427"
+   ],
+   "urls": [
+    "https://www.ebi.ac.uk/ena/browser/view/PRJEB32427"
+   ],
+   "paper": "Anavy L, Vaknin I, Atar O, Amit R, Yakhini Z. Data storage in DNA with fewer synthesis cycles using composite DNA letters. Nat Biotechnol (2019). doi:10.1038/s41587-019-0240-x",
+   "paper_status": "peer-reviewed",
+   "licence": "reads: INSDC open access; no explicit licence stated (unclear; INSDC policy places no use restrictions)",
+   "synthesis": "composite-letter synthesis",
+   "sequencing": [
+    "ILLUMINA Illumina HiSeq 2500"
+   ],
+   "error_characteristics": "composite letters - different channel",
+   "strand_length": "see paper",
+   "primers_included": "yes",
+   "reads": "NCBI SRA runinfo (queried 2026-10-05): 7 runs, 441,281,211 spots, 32,795 MB (SRA-normalised), layout PAIRED",
+   "coverage": "very deep",
+   "data_format": "paired-end FASTQ",
+   "ground_truth": "UNCLEAR",
+   "size": "~32.8 GB",
+   "reproducibility": "n/a",
+   "vnx_use": [
+    "not applicable to VNX (composite alphabet)"
+   ],
+   "priority": 5,
+   "verified": "ENA XML, SRA runinfo",
+   "ground_truth_published": "unclear",
+   "suitability_for_vnx": {
+    "channel_model_fitting": false,
+    "competitor_decoder_runs": false,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D37",
+   "name": "Helixworks motif-based storage runs (ONT R10.4.1 FAST5)",
+   "accessions": [
+    "Zenodo 10.5281/zenodo.15839178 (+15839390, 15848607, 15849818, 16032156)"
+   ],
+   "urls": [
+    "https://doi.org/10.5281/zenodo.15839178"
+   ],
+   "paper": "described at OSF 10.17605/OSF.IO/PCDTJ (not peer-reviewed as far as checked)",
+   "paper_status": "vendor/company data release",
+   "licence": "CC BY-SA 4.0",
+   "synthesis": "enzymatic ligation of motifs (Helixworks)",
+   "sequencing": [
+    "OXFORD_NANOPORE R10.4.1 / FLO-MIN114 (FAST5)"
+   ],
+   "error_characteristics": "motif-level",
+   "strand_length": "motif assemblies",
+   "primers_included": "yes",
+   "reads": "large",
+   "coverage": "n/a",
+   "data_format": "FAST5 .7z + encoded.tsv + master_db.txt",
+   "ground_truth": "YES (motif design TSV)",
+   "size": "~28-35 GB per record",
+   "reproducibility": "OSF description",
+   "vnx_use": [
+    "R10.4.1 signal data only; motif channel not applicable to VNX"
+   ],
+   "priority": 5,
+   "verified": "Zenodo API metadata",
+   "ground_truth_published": "yes",
+   "suitability_for_vnx": {
+    "channel_model_fitting": false,
+    "competitor_decoder_runs": false,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  },
+  {
+   "id": "D38",
+   "name": "Single-molecule assembly-free readout from medium-length encoded DNA (plasmids, POD5)",
+   "accessions": [
+    "SRA PRJNA1235219",
+    "Zenodo 10.5281/zenodo.16883332"
+   ],
+   "urls": [
+    "https://www.ncbi.nlm.nih.gov/bioproject/PRJNA1235219",
+    "https://doi.org/10.5281/zenodo.16883332"
+   ],
+   "paper": "Chen W, Qin R, Guo Q, et al. Approaching single-molecule assembly-free readout from medium-length encoded DNA. Nat Commun (2025). doi:10.1038/s41467-025-65004-7",
+   "paper_status": "peer-reviewed",
+   "licence": "reads: INSDC open access; no explicit licence stated (unclear; INSDC policy places no use restrictions); Zenodo CC BY 4.0",
+   "synthesis": "plasmid-cloned medium-length DNA",
+   "sequencing": [
+    "OXFORD_NANOPORE MinION (POD5 + FASTQ)"
+   ],
+   "error_characteristics": "see paper",
+   "strand_length": "kb-scale plasmid inserts",
+   "primers_included": "n/a",
+   "reads": "7,571 reads (SRA)",
+   "coverage": "n/a",
+   "data_format": "FASTQ + POD5",
+   "ground_truth": "YES (original files, codewords, encoded sequences on Zenodo)",
+   "size": "~150 MB",
+   "reproducibility": "GitHub + Zenodo code",
+   "vnx_use": [
+    "not aligned with VNX short-oligo design"
+   ],
+   "priority": 5,
+   "verified": "Europe PMC DAS, Zenodo API, SRA runinfo",
+   "ground_truth_published": "yes",
+   "suitability_for_vnx": {
+    "channel_model_fitting": false,
+    "competitor_decoder_runs": false,
+    "vnx_can_decode_reads": false,
+    "basis": "keyword-derived from the vnx_use field of the source registry; 'vnx_can_decode_reads' is false for every dataset because the VNX decoder only decodes VNX4 frames (research file 00-vnx-baseline-and-readiness.md B.12)"
+   }
+  }
+ ],
+ "searched_not_found": [
+  {
+   "target": "Church, Gao, Kosuri 2012 (Science 337:1628) raw reads",
+   "result": "no SRA/ENA project found by EBI project search; not registered"
+  },
+  {
+   "target": "Grass et al. 2015 raw reads",
+   "result": "no repository accession found; only the Technion binned derivative (D07)"
+  },
+  {
+   "target": "Heckel/Mikutis/Grass 2019 'High/Low PR' CustomArray datasets",
+   "result": "no accession stated in the Sci Rep full text"
+  },
+  {
+   "target": "Sabary SOLQC standalone dataset",
+   "result": "none found; Technion data are D06/D07; Zenodo 7370899 'Deep DNA - First Pilot' (CC BY 4.0, 760 MB FASTQ) has no description of platform or references"
+  },
+  {
+   "target": "Wukong / Storage-D (Tianjin) experimental reads",
+   "result": "no dataset accession verified"
+  },
+  {
+   "target": "Catalog / Biomemory public sequencing data",
+   "result": "none found"
+  },
+  {
+   "target": "Kaggle 'DNA data storage' datasets",
+   "result": "none found"
+  },
+  {
+   "target": "NOREC4DNA / MESA",
+   "result": "software tools; related reads are DNA-Aeon PRJNA855029 (D17)"
+  },
+  {
+   "target": "Zenodo 7995806 (cited by SynDe)",
+   "result": "E. coli genomic nanopore data, not DNA storage; excluded"
+  }
+ ],
+ "other_candidates_not_profiled": [
+  "PRJNA1514025 (distributed implicit indexing, Pool-64K/120K, NovaSeq X + MinION, ~765 MB)",
+  "PRJNA1336187 (secure scalable indel-resilient; HiSeq + MinION; Zenodo 17226943 has no public files)",
+  "PRJNA1345374/PRJNA1258704 (composite letters, Nat Commun 2026 doi:10.1038/s41467-026-68861-y)",
+  "PRJNA1432432 (ZAT-DNA, Nat Commun 2026 doi:10.1038/s41467-026-72869-9)",
+  "PRJNA1022044 (DNA tape CRISPR base editors, doi:10.1038/s41467-023-42223-4)",
+  "PRJNA1225866 (electro-switchable addressing, doi:10.1093/nar/gkaf733)",
+  "PRJNA1447402 (modulation-based encryption, doi:10.1016/j.isci.2026.115933)",
+  "PRJNA1514022 (DNA-Sam, NovaSeq X Plus, ~27 GB)",
+  "PRJNA1522504 (DNA printing, NovaSeq X + iSeq)",
+  "PRJNA1091804 (3D cultural heritage, 11.8 GB)",
+  "PRJNA1465046 (electrically programmable writing, 7.1 GB)",
+  "PRJNA1353600 (chemically modified DNA, SOLiD, 69.5 GB)",
+  "PRJNA292092 (Cambridge dynamic multilayer, 2016)",
+  "PRJNA555140 (DNA micro-disk WORM)",
+  "PRJNA612868 (DNA punch cards)",
+  "PRJNA625964 (in-cell storage)",
+  "PRJNA739508 (NTU, HiSeq 2000)",
+  "PRJEB34960 (UNICEF CRC, EBI)",
+  "PRJEB43002 (photolithographic oligo fidelity)",
+  "PRJEB71104/PRJEB63282 (shortmer combinatorial)",
+  "PRJEB62556/PRJEB104881 (long DNA assembly, ONT)",
+  "PRJEB91149 (polymer fibres)",
+  "Zenodo 22694320 (DNA-GUARD, preprint 2026)",
+  "Zenodo 19158795 (SynDe reproducibility archive, 9.6 GB)",
+  "Zenodo 15523009 (DynaByte raw data, 37.9 GB)",
+  "Zenodo 17112794 (SUSTag nanopore tags)",
+  "GitHub uwmisl/aging_data (processed aging sequencing analysis)",
+  "GitHub uwmisl/2019-spotted-dna-data (primers listed in README)"
+ ],
+ "recommended_first_three": [
+  {
+   "id": "D01",
+   "accession": "ENA PRJEB90546 + https://github.com/fml-ethz/dt4dds-benchmark_notebooks",
+   "why": "Only dataset found with real reads, ground truth, and competitor decoders run on the same reads under a published protocol (bbmap 39.01, NGmerge 0.3, seqtk 1.4 pinned). Any VNX comparison must use matched code rate (0.5/1.0/1.5 bit/nt) and be labelled SIMULATED, because VNX strands are not in that pool.",
+   "paper": "Gimpel et al., Nat Commun 17:3963 (2026), doi:10.1038/s41467-026-70548-3 (peer-reviewed)"
+  },
+  {
+   "id": "D03",
+   "accession": "Zenodo 10.5281/zenodo.10943282 (CC BY 4.0, ~153 MB)",
+   "why": "91,766 GenScript oligos of 150 nt (110-nt payload + 20-nt primers), MinION, guppy fast vs high-accuracy, pass vs fail, primer FASTA published. Small, has primers in the reads, so it tests the primer-trimming and orientation steps that VNX lacks. Source is an arXiv preprint (not peer-reviewed as checked). Start with D04 (CNR, MIT, 31 MB, 110 nt, Twist + MinION) as a day-0 smoke test of the fitting code; note its README caveat (2024) that the centers are not uniformly random.",
+   "paper": "Welter, Sokolovskii et al., arXiv:2406.12955 (2024)"
+  },
+  {
+   "id": "D02",
+   "accession": "ENA PRJEB65931 + https://github.com/fml-ethz/dt4dds_notebooks",
+   "why": "161 iSeq 100 runs (~10.6 GB) covering Twist and GenScript/CustomArray, GC-constrained and unconstrained pools, PCR cycles and accelerated ageing; design FASTAs in GitHub. Source for fitting per-stage parameters of the VNX channel; published numbers can serve as priors before any download.",
+   "paper": "Gimpel et al., Nat Commun 14:6026 (2023), doi:10.1038/s41467-023-41729-1 (peer-reviewed)"
+  }
+ ],
+ "recommended_next": "Next: D05 Organick id20 (1.4 GB, refs included), D12 Chandak (raw FAST5 + oligos), D22 Tianjin ~1M-strand electrochemical pools (Illumina + ONT, encoded sequences on Zenodo), D06 DNAformer (Twist, Illumina + ONT + raw signal, original files published).",
+ "published_priors": [
+  {
+   "quantity": "Overall rates over 40 datasets (Illumina, Twist + GenScript)",
+   "value": "del 6.7+-6.9, sub 7.9+-2.0, ins <0.3+-0.2 per 1000 nt",
+   "source": "Gimpel 2023 Nat Commun (D02) https://doi.org/10.1038/s41467-023-41729-1",
+   "strength": "peer-reviewed, measured"
+  },
+  {
+   "quantity": "Deletion clustering",
+   "value": "runs of consecutive deletions, mean length 2.6 nt; substitutions approximately independent",
+   "source": "Gimpel 2023",
+   "strength": "peer-reviewed"
+  },
+  {
+   "quantity": "Electrochemical synthesis",
+   "value": "deletion rate rises toward 5' end, >5 %/nt at the end",
+   "source": "Gimpel 2023",
+   "strength": "peer-reviewed"
+  },
+  {
+   "quantity": "Material-deposition synthesis",
+   "value": "< 1 deletion per 2000 nt, no strong positional dependence",
+   "source": "Gimpel 2023",
+   "strength": "peer-reviewed"
+  },
+  {
+   "quantity": "PCR (KAPA SYBR FAST, Taq-based)",
+   "value": "1.09e-4 sub /nt /cycle; 61 % A>G/T>C",
+   "source": "Gimpel 2023",
+   "strength": "peer-reviewed"
+  },
+  {
+   "quantity": "Aging (accelerated)",
+   "value": "1.64e-4 sub /nt per half-life; 77 % C>T/G>A",
+   "source": "Gimpel 2023",
+   "strength": "peer-reviewed"
+  },
+  {
+   "quantity": "Illumina iSeq 100 (PhiX)",
+   "value": "sub 1.8+-0.8e-3 /nt; ins and del < 0.1e-3 /nt; minimum near cycle 20, rising after 25",
+   "source": "Gimpel 2023",
+   "strength": "peer-reviewed"
+  },
+  {
+   "quantity": "Coverage distribution",
+   "value": "lognormal; sigma 0.58 (GC-constrained) vs 1.30 (unconstrained) for the synthesis shown in Fig. 2b",
+   "source": "Gimpel 2023",
+   "strength": "peer-reviewed"
+  },
+  {
+   "quantity": "Illumina reading errors",
+   "value": "sub ~4e-4 to 1.5e-3 /nt; indels ~1e-6",
+   "source": "Heckel et al. 2019 Sci Rep (citing a prior study); URL not recorded in the audit",
+   "strength": "peer-reviewed, secondary"
+  },
+  {
+   "quantity": "Homopolymers",
+   "value": "sub and del rise for runs > 6",
+   "source": "Heckel 2019 (citing ref. 24)",
+   "strength": "peer-reviewed, secondary"
+  },
+  {
+   "quantity": "Twist Oligo Pools",
+   "value": "up to 350 nt; error 'up to 1:3,000 nt'; >90 % of oligos within <2x of mean; >0.2 fmol/oligo",
+   "source": "Twist product sheet DOC-001054 REV12 (2026); URL not recorded in the audit, not verified here",
+   "strength": "vendor spec"
+  },
+  {
+   "quantity": "IDT oPools",
+   "value": "40-350 nt; 'error rates below one per 2 kb'; scales 1/10/50 pmol/oligo",
+   "source": "IDT launch material (Lab Manager article); URL not recorded, not verified here",
+   "strength": "vendor spec, secondary"
+  },
+  {
+   "quantity": "Codec benchmark error composition",
+   "value": "53 % sub / 45 % del / 2 % ins (used as a realistic mix)",
+   "source": "Gimpel 2026 Nat Commun (D01) https://doi.org/10.1038/s41467-026-70548-3",
+   "strength": "peer-reviewed"
+  }
+ ],
+ "vnx_gaps": [
+  "docs/V6_PHYSICAL_VALIDATION_INTERFACE.md and experiments/v6/physical/: record schema (synthesis, sample, storage, sequencing, decode, result, attestations), validate.py (VALID/INVALID/INCOMPLETE), and a SYNTHETIC SOFTWARE TEST example (66 strands of 313 nt, profile v4-balanced, illumina-like model). Three evidence classes exist: REAL PHYSICAL RESULT, SIMULATED RESULT, SYNTHETIC SOFTWARE TEST. There is no PUBLIC-DATA-DERIVED class.",
+  "experiments/v6/channel/models/*.json: 14 models, all labelled SIMULATED, 'not fitted to any measured platform'. Parameters: i.i.d. sub/ins/del, dropout, coverage fixed/Poisson/negative-binomial with dispersion, duplication, homopolymer multipliers (min run 3), GC bias (strength/optimum), per-read deletion bursts, N rate, reverse-complement rate, quality scores. Errors are i.i.d. per base apart from the homopolymer, burst and GC terms.",
+  "No ingestion path for real reads: no primer trimming, no paired-end merge, no read-to-reference assignment, no fitting code, no primer design and no order-export tool.",
+  "VNX strands carry no primers. The example strand of 313 nt plus two 20-nt primers comes to 353 nt, over the 350-nt maximum of both Twist and IDT pools (vendor specs above; URLs not recorded, not verified here).",
+  "VNX cannot decode any of these datasets: they use other encodings. They serve to fit channel models and to run competitor decoders on real reads (research file 00-vnx-baseline-and-readiness.md B.12).",
+  "Backlog R-03 (public dataset ingestion and channel fitting, P4) is open; unaddressed read clustering at scale and BAM input are absent."
+ ],
+ "plan_fit_channel_models": [
+  "Model schema v2, opt-in. Add optional fields to the channel JSON; the 14 v1 models stay valid: classification ('SIMULATED' or 'PUBLIC-DATA-DERIVED-FIT'), provenance (accessions, run IDs, SHA-256 of each downloaded file, fitter commit), position_profile (per-position sub/ins/del multipliers, length L or binned), sub_matrix (4x4), deletion_run_length (geometric mean, for the 2.6-nt clustering), coverage_model 'lognormal' with sigma, and a synthesis vs sequencing split. Synthesis errors are shared by all reads from one molecule; sequencing errors are independent per read, which matters for consensus decoding. Simulated output from a fitted model is still SIMULATED; only the parameter file is PUBLIC-DATA-DERIVED.",
+  "Fitter experiments/v7/fit/fit_channel.py (proposed path, not yet in the repository). Inputs: FASTQ(s), a reference FASTA, an optional primer FASTA. Steps: trim primers (cutadapt, error rate as a parameter); merge pairs (NGmerge or bbmerge, as in D01); assign each read to a reference (exact index or minimap2/edlib for nanopore; D03/D04 already supply clusters); global alignment with edlib or the native VNX aligner; count events by position, base context and homopolymer run; estimate coverage per reference and the dropout fraction; compare Poisson, NB and lognormal by AIC; calibrate quality as empirical error against reported Q. Output: model JSON with a provenance sidecar.",
+  "Tests before any real data: (i) round trip: simulate from a known model, fit, check every parameter is recovered within binomial CIs (existing 5-sigma tolerance pattern in tests/v6/channel); (ii) a tiny committed fixture of 50 CNR clusters (MIT-licensed, attribution kept) for a deterministic regression of fitted rates; (iii) determinism across worker counts. Do not commit large data; keep a datasets.lock.json with URL, SHA-256 and size plus a fetch.py that verifies hashes.",
+  "Fitting order: CNR (D04) -> Sokolovskii (D03) -> DT4DDS (D02, per vendor, PCR and ageing) -> ETH benchmark (D01). Proposed output models: illumina-twist-fit, illumina-electrochem-fit, ont-guppy-hac-fit, ont-guppy-fast-fit, each PUBLIC-DATA-DERIVED. Then rerun experiments/v6/channel/evaluate.py on VNX payloads with these models and report the results as SIMULATED using PUBLIC-DATA-DERIVED parameters, with Wilson CIs as now.",
+  "Competitor runs on real reads (D01): use the dt4dds-benchmark harness to rerun the six codecs on the published reads and reproduce their reported outcomes, which validates the pipeline. VNX can only be compared under fitted simulation at matched code rate, strand length (~130-150 nt) and coverage. No superlatives.",
+  "Validator extension: add an evidence class PUBLIC-DATA-DERIVED to record.schema.json. It requires a dataset accession, the SHA-256 values of the downloaded files, and a paper DOI or 'unpublished'. Other classes are unchanged; a test covers it."
+ ],
+ "plan_first_wet_lab_round": [
+  "A strand length that fits vendor limits. Finding: the 313-nt strand plus two 20-nt primers is 353 nt, over the 350-nt maximum of Twist and IDT pools. Add an opt-in profile where payload plus 2x20-nt primers is <=300 nt (a margin under the limit; cost and error rise with length). Alternatively, offer a ~150-200 nt profile, because most public datasets and the ETH benchmark use 110-157 nt; MiSeq/iSeq 2x150 then covers the strand with overlap. Strands of 300 nt need MiSeq 2x300 or ONT. For ONT at about 300 nt, D23 (PRJNA1505625, 300 nt, FAST/HAC/SUP) could later supply a channel fit if the authors provide the references.",
+  "Primer module (vnxdna.v7.primers, proposed, opt-in). Generate or accept primer pairs with these checks: 20 nt; GC 40-60 %; Tm in a narrow window (pairs within about 2-3 C, e.g. 55-62 C nearest-neighbour); no homopolymer > 3; a 3' end with at most 2-3 G/C in the last 5 nt; no self- or cross-dimer above a delta-G threshold; a minimum Hamming/edit distance from every payload window and every other primer (D03 calls this avoiding primer-payload collisions). Organick 2018 designed a large primer library for random access; check its exact rules in the paper before coding. These rules are standard PCR guidance, not measured in the datasets above; treat thresholds as tunable defaults and record them in the order record. Low base diversity in shared primer regions degrades Illumina basecalling (Gimpel 2023): spike in PhiX or use staggered/phased primers, and record which in `sequencing`.",
+  "Order export (`vnx order-export`, proposed). From an encoded archive, write the vendor order file (CSV/XLSX columns name,sequence), the strand FASTA with primers attached, a manifest (VNX version/commit, profile, options, primer set, strand count and length, GC/homopolymer summary) and SHA-256 values that go into synthesis.ordered_fasta of the physical record. Pre-flight checks: length <= vendor max, allowed alphabet, no duplicate sequences, GC per strand and per window, max homopolymer, primer uniqueness.",
+  "Read ingestion for decode: primer search on both orientations (as in D03), trimming, PE merge, length filter, then the existing VNX decoder. Test first on D03/D01 reads (pipeline only), then on simulated reads with primers attached.",
+  "Physical record: it already exists. Add fields for primer set ID, PCR cycles, polymerase, PhiX %, and basecaller model/version for ONT. These are the variables that drive the errors measured in D02."
+ ],
+ "caveats": [
+  "Sizes are SRA-normalised (runinfo size_MB) and can differ from the FASTQ download size.",
+  "Several 2025-2026 BioProjects (D22, D23, D25, D31, D32, D34) have no publication located. Treat them as unverified and do not use them without the design files.",
+  "The CNR README notes a generation error (centers not uniformly random), so a model fitted on it may be biased.",
+  "Fitted models describe the source labs' chemistry and instruments. They do not predict VNX's own future wet-lab results."
+ ]
+}

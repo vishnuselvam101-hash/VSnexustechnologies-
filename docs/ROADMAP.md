@@ -1,5 +1,7 @@
 # Roadmap
 
+> **Forward plan:** [VNX_GLOBAL_ROADMAP.md](VNX_GLOBAL_ROADMAP.md) (V6 → V12 → V50, proposed 2026-10-05 from the research gate; decisions in [VNX_STRATEGIC_DECISION_REPORT.md](VNX_STRATEGIC_DECISION_REPORT.md)). This file keeps the release history and the original V2-era backlog below; where they differ, the global roadmap wins. Released since this file was last updated: V3.0.0, V4.0.0, V5.0.0 (see CHANGELOG.md).
+
 ## History
 
 | version | content | status |
