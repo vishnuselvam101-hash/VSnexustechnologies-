@@ -111,6 +111,7 @@ def iter_reads(path: str | os.PathLike, batch: int = 8192, *, max_reads: int | N
     total = 0
     lines = _lines(p)
     if fmt == "fastq":
+        assert quals is not None
         for header in lines:
             header = header.rstrip(b"\r")
             if not header:

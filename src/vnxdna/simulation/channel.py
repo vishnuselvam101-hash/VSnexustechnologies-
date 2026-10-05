@@ -171,7 +171,7 @@ def simulate_batch(codes: np.ndarray, cfg: ChannelConfig, batch_index: int) -> d
         k = cfg.coverage_dispersion
         reads = rng.poisson(rng.gamma(k, mean / k))
     reads = np.where(drop, 0, reads).astype(np.int64)
-    stats["dropped"] = int(drop.sum())
+    stats["dropped"] = int(np.count_nonzero(drop))
     stats["zero_coverage"] = int(((reads == 0) & ~drop).sum())
     src = np.repeat(np.arange(n), reads)
     m = src.size

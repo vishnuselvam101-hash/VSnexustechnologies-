@@ -10,6 +10,7 @@ import shutil
 import tempfile
 import time
 from collections.abc import Sequence
+from typing import Any
 from pathlib import Path
 
 from vnxdna.archive import container as _ct
@@ -233,8 +234,9 @@ def decode(reads: PathLike, output: PathLike | None = None, *, options: DecodeOp
     if budget is not None:
         opts = replace(opts, recovery_budget=budget)      # never modify the caller's options
     if expect_archive_id is not None or expect_sha256 is not None:
-        opts = replace(opts, **{k: v for k, v in (("expect_archive_id", expect_archive_id),
-                                                  ("expect_sha256", expect_sha256)) if v is not None})
+        expect: dict[str, Any] = {k: v for k, v in (("expect_archive_id", expect_archive_id),
+                                                    ("expect_sha256", expect_sha256)) if v is not None}
+        opts = replace(opts, **expect)
     if output is None and extract_to is None and not select:
         raise VNXConfigurationError("give an output container, an extraction directory, or files to select")
     hasher = InputHasher("reads", [reads], enabled=input_hash)

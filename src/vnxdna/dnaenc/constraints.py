@@ -236,7 +236,7 @@ def validate_file(path: str | os.PathLike, cfg: ConstraintConfig, *, max_reporte
     """Validate every sequence of a FASTA file; returns a summary plus the first ``max_reported`` failures."""
     total = valid = 0
     counts = {r: 0 for r in RULES}
-    failures = []
+    failures: list[dict] = []
     gc_min, gc_max, hp_max = 101.0, -1.0, 0
     for name, seq in iter_fasta(path):
         d = diagnose(seq, cfg)
