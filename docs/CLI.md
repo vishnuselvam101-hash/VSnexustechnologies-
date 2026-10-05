@@ -81,3 +81,11 @@ contiguous run of up to N lost or extra bases), `--archive-tag HEX8` (V3: choose
 | 141 | output closed | standard output was closed early (e.g. `vnx-dna … | head -1`); V3 exits quietly instead of reporting a BrokenPipe as an internal error |
 
 Errors are one line on stderr: `vnx-dna: error [CATEGORY]: message`. Normal operation never prints a traceback.
+
+## Native kernels and backend environment variables
+
+The aligner, the read parser and the inner RS decoder have optional C kernels that `pip install` builds; without them
+the bit-identical NumPy references run. `python -m vnxdna.native` (or `vnx native`) shows which backend each kernel
+uses, and decode reports record it in `native_backends`. The environment variables that select backends
+(`VNXDNA_ALIGN_BACKEND`, `VNXDNA_READS_BACKEND`, `VNXDNA_RS_BACKEND`, `VNX_RS_REFERENCE`, the `*_LIB` paths,
+`VNXDNA_NATIVE_STRICT`) are documented in [NATIVE_KERNELS.md](NATIVE_KERNELS.md).
