@@ -230,7 +230,16 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
         report["status"] = "FAILURE"
         raise VNXIntegrityError("reconstructed container does not match the SHA-256 recorded in the superblock; nothing published",
                                 details=report, code="CONTAINER_HASH_MISMATCH")
-    report["encrypted"] = ct.open_container(work).encrypted     # structural + manifest + Merkle validation
+    # structural + manifest + Merkle validation. V6-SEC-02: with a key or passphrase the container is opened with it
+    # (key check and manifest MAC), and an unencrypted (downgraded) archive is refused unless allow_unencrypted, as
+    # extract does; on refusal nothing is published.
+    if key is not None or passphrase is not None:
+        opened = ct.open_container(work, key=key, passphrase=passphrase, require_key=True,
+                                   allow_unencrypted=allow_unencrypted)
+        report["key_checked"] = opened.sealer is not None
+    else:
+        opened = ct.open_container(work)
+    report["encrypted"] = opened.encrypted
     stage["verify"] = time.perf_counter() - t3
     report["container_sha256"] = h.hexdigest()
     report["status"] = "SUCCESS"

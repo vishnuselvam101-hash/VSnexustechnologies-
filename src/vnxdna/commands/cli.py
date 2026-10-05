@@ -252,7 +252,8 @@ def encode(source: Path = typer.Argument(..., help="A .vnx container, or a file/
            compression: Optional[str] = typer.Option(None, "--compression", help="Archive option: zstd or none."),
            level: Optional[int] = typer.Option(None, "--level", help="Archive option: zstd level 1–22."),
            no_dedup: bool = typer.Option(False, "--no-dedup", help="Archive option: no chunk deduplication."),
-           preserve_metadata: bool = typer.Option(False, "--preserve-metadata", help="Archive option.")) -> None:
+           preserve_metadata: bool = typer.Option(False, "--preserve-metadata", help="Archive option."),
+           allow_unencrypted: bool = UNENC_OPT) -> None:
     """Encode a VNX4 container (or files) into DNA strands. Archive options are passed to the archive builder when SOURCE
     is not a container, and refused (exit 7) when it is one."""
     def go():
@@ -272,7 +273,7 @@ def encode(source: Path = typer.Argument(..., help="A .vnx container, or a file/
                                         **{k: v for k, v in given.items() if k != "chunk_size"}, chunk_size=chunk_size)
         _out(sdk.encode(source, output, dna=opts, archive_options=aopts, key=key, passphrase=pw,
                         verify=bool(perf.get("verify_after_encode")), overwrite=force, keep_archive=keep_archive,
-                        progress=_progress_cb()))
+                        progress=_progress_cb(), allow_unencrypted=allow_unencrypted))
     _run(go)
 
 

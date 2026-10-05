@@ -153,11 +153,14 @@ def locate(container: PathLike, name: str, *, dna_profile: str | None = None, dn
 # ================================================================================================================= encode
 def encode(source: PathLike | Sequence[PathLike], output: PathLike, *, dna: DNAOptions | None = None,
            archive_options: ArchiveOptions | None = None, key: bytes | None = None, passphrase: str | None = None,
-           verify: bool = False, overwrite: bool = False, keep_archive: PathLike | None = None, progress=None) -> EncodeResult:
+           verify: bool = False, overwrite: bool = False, keep_archive: PathLike | None = None, progress=None,
+           allow_unencrypted: bool = False) -> EncodeResult:
     """A container → strands (E7–E14), or files/directories → archive (E0–E6, with ``archive_options``) → strands.
 
     Archive options are passed to the archive builder; for a container source they are refused with
-    ``CONFIGURATION_ERROR`` (the container is already built), never silently ignored (spec §2.3.3)."""
+    ``CONFIGURATION_ERROR`` (the container is already built), never silently ignored (spec §2.3.3). A key or passphrase
+    given with a container source is checked against it (key check, manifest MAC), and an unencrypted container is
+    refused (``KEY_FOR_UNENCRYPTED``) unless ``allow_unencrypted`` (V6-SEC-02)."""
     t0 = time.perf_counter()
     opts = dna or DNAOptions()
     sources = [Path(source)] if isinstance(source, (str, os.PathLike)) else [Path(s) for s in source]
@@ -167,6 +170,9 @@ def encode(source: PathLike | Sequence[PathLike], output: PathLike, *, dna: DNAO
                                     f"({sources[0]} already is one)", details={"source": str(sources[0])})
     if container_source and keep_archive is not None:
         raise VNXConfigurationError("--keep-archive applies only when the source is not a VNX4 container")
+    if container_source and (key is not None or passphrase is not None):
+        _ct.open_container(sources[0], key=key, passphrase=passphrase, require_key=True,
+                           allow_unencrypted=allow_unencrypted)
     tmpdir = None
     src = sources[0]
     archived = None
