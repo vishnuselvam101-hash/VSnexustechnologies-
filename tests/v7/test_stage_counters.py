@@ -255,3 +255,14 @@ def test_terminal_stage_mapping():
     sc.add("alignment", "aligned", 3)
     sc.update({"alignment.aligned": 2})
     assert sc.block(status="SUCCESS")["stages"]["alignment"] == {"aligned": 5}
+
+
+GOLDEN = Path(__file__).resolve().parent / "stage_counters_golden.json"
+
+
+@pytest.mark.parametrize("pool", ["indel", "nanopore"])
+def test_counters_match_the_pinned_golden(pool, harsh_pools, tmp_path):
+    """Regression pin: the whole counter block of two failing SIMULATED pools (identical with the native and the reference
+    backends when it was generated). A change here means the decoder or the instrumentation changed behaviour."""
+    golden = json.loads(GOLDEN.read_text())[pool]
+    assert _run(harsh_pools["reads"][pool], tmp_path / "o.vnx", stage_counters=True)[3] == golden
