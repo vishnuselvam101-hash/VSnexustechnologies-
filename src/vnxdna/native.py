@@ -67,6 +67,9 @@ def kernel_status(kernel: str) -> dict:
            "reference": _REFERENCE[kernel], "load_error": st.get("load_error"), "error": st.get("error")}
     out["library_older_than_source"] = _stale(m, out["library_origin"], out["library"])
     if kernel == "rs":
+        from .v4 import codecs
+        if codecs._REFERENCE_RS:        # VNX_RS_REFERENCE=1 (read at import): InnerRS bypasses native_rs entirely
+            out.update(backend="reference", requested="VNX_RS_REFERENCE=1", reference="vnxdna.ecc.rs_batch")
         out["simd_level"] = active if out["backend"] == "native" else None
         out.update(supported_levels=st.get("supported_levels"), cpu_levels=st.get("cpu_levels"),
                    levels_restricted=st.get("levels_restricted"), fallback_reason=st.get("fallback_reason"),

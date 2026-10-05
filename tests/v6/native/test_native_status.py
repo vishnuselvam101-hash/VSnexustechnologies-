@@ -107,6 +107,15 @@ def test_forced_simd_level_is_reported(monkeypatch):
                                               "library_origin": native.native_status()["kernels"]["rs"]["library_origin"]}
 
 
+def test_vnx_rs_reference_override_is_reported(monkeypatch):
+    """VNX_RS_REFERENCE=1 makes InnerRS use the V3 decoder (vnxdna.ecc.rs_batch) whatever VNXDNA_RS_BACKEND says."""
+    from vnxdna.v4 import codecs
+    monkeypatch.setattr(codecs, "_REFERENCE_RS", True)
+    k = native.native_status()["kernels"]["rs"]
+    assert k["backend"] == "reference" and k["simd_level"] is None and k["reference"] == "vnxdna.ecc.rs_batch"
+    assert k["requested"] == "VNX_RS_REFERENCE=1"
+
+
 def test_invalid_backend_is_reported_not_raised(monkeypatch):
     monkeypatch.setenv("VNXDNA_RS_BACKEND", "bogus")
     monkeypatch.setenv("VNXDNA_READS_BACKEND", "bogus")
