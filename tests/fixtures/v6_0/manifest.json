@@ -1,0 +1,143 @@
+{
+ "cases": {
+  "adaptive-interleaved": {
+   "channel_seed": 60002,
+   "container_sha256": "d55ea181ebe6f1435e556a1da201f5ef8ce51dde8eb7348cfd3708c2cd503f4d",
+   "description": "v4-balanced, outer_plan adaptive (interleaved)",
+   "dna_options": {
+    "column_parity": 0,
+    "outer_plan": "adaptive",
+    "profile": "v4-balanced",
+    "redundancy_budget": null,
+    "strand_order": null,
+    "stripe_depth": 0
+   },
+   "encrypted": false,
+   "files": {
+    "random.bin": "162bae584762f158c1128323005600d54d4ea2ff21ffcdb314427f9c3b5cf481",
+    "text.txt": "b5f141bb5448fdbb206316c5fd7d6c05b4d85fd5619cff46cdac5f22da5755dd"
+   },
+   "payloads": {
+    "random.bin": {
+     "pattern": "random",
+     "seed": 6002,
+     "size": 4000
+    },
+    "text.txt": {
+     "pattern": "text",
+     "seed": 6003,
+     "size": 2000
+    }
+   },
+   "profile": "v4-balanced",
+   "reads": 832,
+   "strand_nt": 313,
+   "strands": 208,
+   "strands_sha256": "c3e85a3144ef4bdfe7a6fc5f4bdb7b41646a03658727a347395966a8877a5afd"
+  },
+  "encrypted-stripes": {
+   "channel_seed": 60004,
+   "container_sha256": "7c6661f4b79532a5dbbb8b3cddf4bad84f75a2cc74d23a4efddaa64f763e68a0",
+   "description": "v4-balanced, D 4, Mc 2, interleaved, AES-256-GCM",
+   "dna_options": {
+    "column_parity": 2,
+    "outer_plan": "fixed",
+    "profile": "v4-balanced",
+    "redundancy_budget": null,
+    "strand_order": "interleaved",
+    "stripe_depth": 4
+   },
+   "encrypted": true,
+   "files": {
+    "random.bin": "2ac3e9cf3eafe4d75b36008f11d9334b33699e0de99bbeea199f46973525da33"
+   },
+   "payloads": {
+    "random.bin": {
+     "pattern": "random",
+     "seed": 6005,
+     "size": 7800
+    }
+   },
+   "profile": "v4-balanced",
+   "reads": 1880,
+   "strand_nt": 313,
+   "strands": 470,
+   "strands_sha256": "c77366e272146011800b0cd3285b514b481f20566fd19ecd8ea97c6eb612487d"
+  },
+  "max-recovery": {
+   "channel_seed": 60003,
+   "container_sha256": "65d12d3551de00a90c1e3b0502493ee05090fa0c300aa583235f443855a2df30",
+   "description": "redundancy profile maximum-recovery (v4-archival, D 8, Mc 2, interleaved)",
+   "dna_options": {
+    "column_parity": 2,
+    "outer_plan": "fixed",
+    "profile": "v4-archival",
+    "redundancy_budget": null,
+    "strand_order": "interleaved",
+    "stripe_depth": 8
+   },
+   "encrypted": false,
+   "files": {
+    "random.bin": "f0dc3914ba9b02f5bbea96cd904af4c36a65827704e18cde41963d28b47132c1"
+   },
+   "payloads": {
+    "random.bin": {
+     "pattern": "random",
+     "seed": 6004,
+     "size": 8200
+    }
+   },
+   "profile": "v4-archival",
+   "reads": 3280,
+   "strand_nt": 313,
+   "strands": 820,
+   "strands_sha256": "befacab56c9399eb2883de8dd7365a1915d1d53ac8afb6fd20860d4fcc943002"
+  },
+  "stripes-seq": {
+   "channel_seed": 60001,
+   "container_sha256": "80597f06ad16f5502272fcb76e2742a86e8e72ed639f370e5599f175820ae332",
+   "description": "v4-balanced, D 4, Mc 2, sequential",
+   "dna_options": {
+    "column_parity": 2,
+    "outer_plan": "fixed",
+    "profile": "v4-balanced",
+    "redundancy_budget": null,
+    "strand_order": "sequential",
+    "stripe_depth": 4
+   },
+   "encrypted": false,
+   "files": {
+    "random.bin": "8232c23fcd8a0b54ab1cc45e14c0786af00fd3f94f862ecaa1e885fc43969a8b"
+   },
+   "payloads": {
+    "random.bin": {
+     "pattern": "random",
+     "seed": 6001,
+     "size": 7800
+    }
+   },
+   "profile": "v4-balanced",
+   "reads": 1856,
+   "strand_nt": 313,
+   "strands": 464,
+   "strands_sha256": "28ae4ffed1824e1bbfc4bd005ff2cc3fee68cc474dbf282292738a489b6f2a16"
+  }
+ },
+ "channel": {
+  "coverage": 4,
+  "coverage_model": "fixed",
+  "deletion_rate": 0.002,
+  "insertion_rate": 0.002,
+  "reverse_complement_rate": 0.1,
+  "seed": 60001,
+  "shuffle_window": 64,
+  "substitution_rate": 0.004
+ },
+ "channel_model": "vnxdna.v4.channel.ChannelConfig (SIMULATED i.i.d. substitutions/indels, fixed coverage, strand flips)",
+ "generated_by_commit": "1309554",
+ "label": "v6.0-golden",
+ "package_version": "5.0.0",
+ "passphrase_for_encrypted_case": "vnx-test-passphrase-NOT-A-SECRET",
+ "statement": "SYNTHETIC SOFTWARE TEST fixtures; no DNA was synthesised or sequenced",
+ "synthetic": true
+}
