@@ -1,0 +1,14 @@
+nanopore-like/cov10 82020 {'off': 'EXPLICIT_FAILURE', 'fallback': 'EXPLICIT_FAILURE'} 53.32
+nanopore-like/cov10 82021 {'off': 'EXPLICIT_FAILURE', 'fallback': 'EXPLICIT_FAILURE'} 53.98
+nanopore-like/cov10 82022 {'off': 'EXPLICIT_FAILURE', 'fallback': 'EXPLICIT_FAILURE'} 51.3
+nanopore-like/cov10 82023 {'off': 'EXPLICIT_FAILURE', 'fallback': 'EXPLICIT_FAILURE'} 54.77
+nanopore-like/cov10 82024 {'off': 'EXPLICIT_FAILURE', 'fallback': 'EXPLICIT_FAILURE'} 51.37
+deletion-heavy/cov10 82020 {'off': 'EXPLICIT_FAILURE', 'fallback': 'EXACT'} 36.71
+deletion-heavy/cov10 82021 {'off': 'EXPLICIT_FAILURE', 'fallback': 'EXACT'} 36.67
+deletion-heavy/cov10 82022 {'off': 'EXPLICIT_FAILURE', 'fallback': 'EXACT'} 38.12
+deletion-heavy/cov10 82023 {'off': 'EXPLICIT_FAILURE', 'fallback': 'EXACT'} 38.22
+deletion-heavy/cov10 82024 {'off': 'EXPLICIT_FAILURE', 'fallback': 'EXACT'} 35.99
+
+real	2m10.729s
+user	7m18.355s
+sys	0m1.751s
