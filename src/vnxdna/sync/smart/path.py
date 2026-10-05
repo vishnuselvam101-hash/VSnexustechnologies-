@@ -115,6 +115,15 @@ def align_with_path(aligner: TemplateAligner, reads: list, quals: list | None = 
         return Projection(out_bases, out_er, ok, ins_n, del_n, mm, cost), rpos
     lengths = np.fromiter((r.size for r in reads), dtype=np.int64, count=n)
     idx = np.flatnonzero(np.abs(lengths - T) <= aligner.band)
+    retry = getattr(aligner, "retry", None)
+    if retry is not None:
+        # V6 opt-in retry band: reads beyond the band, within retry_band, are aligned by the wider twin (as in project)
+        wide = np.flatnonzero((np.abs(lengths - T) > aligner.band) & (np.abs(lengths - T) <= aligner.retry_band))
+        if wide.size:
+            wp, wr = align_with_path(retry, [reads[i] for i in wide], None if quals is None else [quals[i] for i in wide],
+                                     min_quality, backend)
+            out_bases[wide], out_er[wide], ok[wide], ins_n[wide], del_n[wide], mm[wide], cost[wide], rpos[wide] = (
+                wp.bases, wp.erased, wp.ok, wp.insertions, wp.deletions, wp.marker_mismatches, wp.cost, wr)
     if not idx.size:
         return Projection(out_bases, out_er, ok, ins_n, del_n, mm, cost), rpos
     want = backend or aligner.backend

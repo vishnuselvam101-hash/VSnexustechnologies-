@@ -20,10 +20,11 @@ _P: dict = {}
 
 
 def _p_init(layout: Layout, band: int, costs: SyncCosts, min_q: int, rc: bool, smart_cfg=None, soft_cfg=None,
-            defer: bool = False, qw: bool = False) -> None:
+            defer: bool = False, qw: bool = False, retry_band: int = 0) -> None:
     # defer: pass 1 of the deferred schedule — the cheap V4 paths only; smart/soft run later on the pending reads
     # qw: V6 Phase 4 quality-weighted consensus — keep the Phred quality of every projected frame base of pending reads
-    _P.update(lay=layout, al=TemplateAligner(layout, band, costs), min_q=min_q, rc=rc, smart=smart_cfg, soft=soft_cfg,
+    # retry_band: V6 opt-in second, wider band for reads beyond ``band`` (0 = off, the V4 behaviour)
+    _P.update(lay=layout, al=TemplateAligner(layout, band, costs, retry_band=retry_band), min_q=min_q, rc=rc, smart=smart_cfg, soft=soft_cfg,
               defer=defer, qw=qw)
     if smart_cfg is not None or soft_cfg is not None:
         from vnxdna.sync.smart.recovery import Geometry
@@ -268,6 +269,11 @@ def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | N
            "stats": {"reads": int(lengths.size), "fast": int((path == 1).sum()), "sync": int((path == 2).sum()),
                      "reverse_complement": int((rc_used & acc).sum()), "pending": int(pend_fields.shape[0]), "orphans": orphans,
                      "unaligned": int((~acc).sum()) - int(pend.size)}}
+    al = _P["al"]
+    if al.retry_band:
+        # V6 opt-in retry band: reads beyond the band that the wider band aligned (stat absent when the option is off)
+        drift = np.abs(lengths - lay.strand_nt)
+        out["stats"]["retry_band_reads"] = int(((drift > al.band) & (drift <= al.retry_band)).sum())
     if _P.get("smart") is not None or _P.get("soft") is not None:
         if _P.get("smart") is not None:
             out["stats"]["smart"] = int((path == 3).sum())
@@ -275,7 +281,7 @@ def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | N
             out["stats"]["soft"] = int((path == 4).sum())
         out["indel"] = dict(sstats)
         # raw (oriented) reads of pending records, for consensus realignment in pass 2 (and the deferred stage)
-        width = lay.strand_nt + _P["al"].band
+        width = lay.strand_nt + max(_P["al"].band, _P["al"].retry_band)
 
         def pack(sel):
             raw = np.zeros((sel.size, width), dtype=np.uint8)

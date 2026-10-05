@@ -232,7 +232,7 @@ def _soft_consensus(cand_keys, done, starts, ends, keys, pend, lay, opt, stats) 
     from vnxdna.recovery.soft import frames as sf
     from vnxdna.recovery.soft import symbols as ss
     geom = rv.Geometry(lay)
-    al = TemplateAligner(lay, opt.band, opt.sync_costs)
+    al = TemplateAligner(lay, opt.band, opt.sync_costs, retry_band=opt.retry_band)
     icfg = opt.indel_config if opt.indel_recovery == "smart" else None
     wanted = set(cand_keys)
     ist = stats["_indel"] if isinstance(stats.get("_indel"), Counter) else Counter()
@@ -274,7 +274,7 @@ def _smart_consensus(cand_keys, done, starts, ends, keys, pend, lay, opt, stats)
     from vnxdna.sync.smart.consensus import consensus_recover
     from vnxdna.sync.smart.recovery import Geometry
     geom = Geometry(lay)
-    al = TemplateAligner(lay, opt.band, opt.sync_costs)
+    al = TemplateAligner(lay, opt.band, opt.sync_costs, retry_band=opt.retry_band)
     out = {}
     ist = stats["_indel"] if isinstance(stats.get("_indel"), Counter) else Counter()
     wanted = set(cand_keys)

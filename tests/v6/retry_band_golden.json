@@ -1,0 +1,42 @@
+{
+ "description": "Job #80 retry-band golden fingerprints: SHA-256 over every Projection field (dtype, shape, bytes) of TemplateAligner(layout, band 6, retry_band=R).project on 1,024 synthetic drifted reads per case (generator: tests/v6/test_retry_band.py drifted_reads, seeds from default_rng(80005)). Computed with the reference backend; the native backend must match. New cases only; the V5 Phase 1 golden fingerprints (benchmarks/v5/baseline-v4/align.json) are unchanged.",
+ "classification": "SYNTHETIC",
+ "cases": {
+  "default-313nt|band6|retry12": {
+   "reads_sha256": "f7841690f5b679f12e97c730108e5102473a07ceb1f19a83f8d5e3e3bf9379a6",
+   "projection_sha256": "992a0a61dc994304875cdf91c5cd0f240b8cd7f8e7903f03685ef67a14caba1a",
+   "reads": 1024,
+   "aligned": 779
+  },
+  "default-313nt|band6|retry16": {
+   "reads_sha256": "95f39c82b2171d1127cbbbdd71ae0c21025757fe00d4ede756db6471fc8f29df",
+   "projection_sha256": "56673be201a9962ce3415b3ad02e5d0a80f4f6194a37fb0da295442042b266c8",
+   "reads": 1024,
+   "aligned": 813
+  },
+  "default-313nt|band6|retry24": {
+   "reads_sha256": "3f20edd0fa0167d607b6c0cb714c0542ef557ab04e837b59abf3b7f9dd4a39fc",
+   "projection_sha256": "da1bad09187d8ee901cfeed955f175218f98fa8513a79bddf3bbc53d5ee59dee",
+   "reads": 1024,
+   "aligned": 875
+  },
+  "short-178nt|band6|retry12": {
+   "reads_sha256": "a3330e6745a24f5087219e555024455af51ce9d53abef260d65124f4a89118e5",
+   "projection_sha256": "734daafb13a82708f5a8ba51e2e144afd75d501cc3968a91c73f77f73840f04c",
+   "reads": 1024,
+   "aligned": 789
+  },
+  "short-178nt|band6|retry16": {
+   "reads_sha256": "51074db9d6a5b4e5d80f073cb0b259b7a9f06d563ea3aee57c9ad6982a0407d9",
+   "projection_sha256": "80fdd7984ff04db6dda09d16a5ac7d72f87d45b04585631c2b58a9cf4d65594b",
+   "reads": 1024,
+   "aligned": 831
+  },
+  "short-178nt|band6|retry24": {
+   "reads_sha256": "bfec0fff4935fcfae386d60ab96be11163871cfffa1f95b387dc5dd6da8198b4",
+   "projection_sha256": "14c44e4ee6c568e3451538834f51eff1643ec3cb77d81e0f6b37f3457c62599a",
+   "reads": 1024,
+   "aligned": 842
+  }
+ }
+}
