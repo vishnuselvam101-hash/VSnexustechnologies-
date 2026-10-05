@@ -443,3 +443,17 @@ and the label SIMULATED. No result may be described as physical.
 4. **Exit code 10** extends the stable taxonomy (spec §12, question 6).
 5. **The lab venv's editable install points at another worktree** (audit §2.3). Phase 2 benchmarks and tests MUST run with
    an explicit `PYTHONPATH` to the worktree under test.
+
+## Decisions on the open questions (founder-delegated, 2026-10-05)
+
+| # | Question | Decision |
+|---|---|---|
+| 1 | Version bump to `6.0.0.dev0` and the new manifest block break the pinned 5.0.0 container SHA (`tests/v6/test_outer_pipeline.py:70-80`) | **Approved.** The stronger replacement assertions (Phase 2.4) are committed *before* the bump: re-encoding the stored V5 containers must reproduce the V5 strand SHA-256s, and every non-manifest container section must stay byte-identical. The test count must not drop. |
+| 2 | Write `extensions.vnx` by default in 6.x? | **Yes, by default.** It is informational, and it answers "which spec and software produced this archive" (audit §4). Readers ignore it if absent. |
+| 3 | New exit code 10 for provider errors | **Approved**, reserved now and implemented in Phase 7. |
+| 4 | Sector Zero/One layouts | **Deferred** to V9 / DDSA membership. Field naming is aligned already. |
+| 5 | Freezing the short-strand profiles | **Deferred** to V7. Frozen only after experiments on fitted channels. |
+| 6 | CRC-16 for the shortest profile | **Deferred.** Revisit with V7 experiment data. |
+| 7 | `pydantic` to an optional legacy extra | **Deferred** to 7.0, with the legacy package split. |
+
+Next step before any refactor: Phase 2.0 generates the V6 golden fixtures (`tests/fixtures/v6_0`) from the unrefactored tree.
