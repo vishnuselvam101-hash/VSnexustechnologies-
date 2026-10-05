@@ -38,7 +38,6 @@ def _superblocks() -> list[bytes]:
 
 
 def _vxs() -> bytes:
-    from vnxdna.v2 import strandio as sio
     rng = np.random.default_rng(3)
     nt = 37
     rb = -(-nt // 4)
