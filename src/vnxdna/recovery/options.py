@@ -58,8 +58,14 @@ class DecodeOptions:
     # archive ID also selects its archive tag in a pool holding several archives (unless archive_tag is set).
     expect_archive_id: str | None = None        # 16-byte archive ID (manifest/superblock), 32 hex characters
     expect_sha256: str | None = None            # SHA-256 of the whole container file, 64 hex characters
+    # V7 (opt-in, observability only): per-stage counters of the protocol §8.1 failure taxonomy in
+    # report["stage_counters"] (and in the details of a typed decode error); see vnxdna.recovery.stagecount. Never
+    # changes what is decoded or published.
+    stage_counters: bool = False
 
     def validate(self) -> None:
+        if not isinstance(self.stage_counters, bool):
+            raise VNXConfigurationError("stage_counters must be True or False")
         if not 1 <= self.workers <= 256:
             raise VNXConfigurationError("workers must be in 1..256")
         if not 1 <= self.band <= 64:

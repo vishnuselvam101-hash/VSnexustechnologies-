@@ -57,6 +57,7 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
         from vnxdna.recovery.planner import RecoveryPlanner
         planner = RecoveryPlanner()
     t2 = time.perf_counter()
+    sc = stats.get("_stage")              # V7 stage counters (opt-in; observability only)
     if select and recover_groups is not None:
         # random access, first stage: round S (superblock reads) must run before the superblock is decoded, exactly as
         # in a full decode; the stage's groups (the index's stripes) are only known once round S has decoded it
@@ -122,6 +123,7 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
                 for g in targets_b:
                     n_sym = codec.symbols_for(row_k(g))
                     missing.update((KIND_DATA, tag, g, s_) for s_ in range(n_sym) if (KIND_DATA, tag, g, s_) not in symbols)
+                n_pass1 = Counter(k[2] for k in symbols) if sc is not None else None
                 symbols.update(_consensus_symbols(pend, symbols, lay, opt, stats, missing, snap_to))
                 by_group: dict[int, dict[int, np.ndarray]] = {}
                 for (kd, tg, g, s), v in symbols.items():
@@ -132,12 +134,22 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
                 for g in targets:
                     k = row_k(g)
                     syms = by_group.get(g, {})
+                    if sc is not None:
+                        row = {"k": k, "symbols": codec.symbols_for(k), "verified_pass1": n_pass1.get(g, 0),
+                               "from_consensus": len(syms) - n_pass1.get(g, 0), "have": len(syms)}
+                        sc.add("outer_ecc", "rows_attempted")
+                        sc.add("outer_ecc", "symbols_verified_pass1", row["verified_pass1"])
+                        sc.add("outer_ecc", "symbols_from_consensus", row["from_consensus"])
+                        sc.add("outer_ecc", "rows_below_k_symbols", int(len(syms) < k))
                     try:
                         if hasattr(codec, "decode_block"):
                             data = codec.decode_block(syms, k, P, g)
                         else:
                             data = codec.decode(syms, k, P)
                     except VNXDecodeError as error:
+                        if sc is not None:
+                            sc.add("outer_ecc", "rows_failed")
+                            sc.failed_row(g, row)
                         done.add(g)
                         if v6 is not None:
                             v6.row_failed(g, syms, str(error))
@@ -145,6 +157,8 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
                             failed[g] = str(error)
                         continue
                     done.add(g)
+                    if sc is not None:
+                        sc.add("outer_ecc", "rows_decoded")
                     if v6 is not None:
                         v6.row_decoded(g, data, syms)
                         if g >= sb.group_count:
@@ -181,6 +195,9 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
                         rows_recovered_by_columns=None if v6 is None else len(v6.recovered))
         indel = stats.pop("_indel", None)
         schedule = stats.pop("_schedule", None)
+        stats.pop("_stage", None)
+        if sc is not None and v6 is not None:
+            sc.add("outer_ecc", "rows_recovered_by_columns", len(v6.recovered))
         report = {"superblock": {"archive_id": sb.archive_id.hex(), "container_size": sb.container_size, "groups": sb.group_count,
                                  "outer_code": codec.configuration(), "layout": lay.to_dict(),
                                  "version": sb.version},
@@ -232,6 +249,9 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
             h.update(block)
     if ev is not None:
         ev.emit("verify", "integrity", sha256_match=h.digest() == sb.container_sha256)
+    if sc is not None:
+        sc.add("archive", "sha256_checked")
+        sc.add("archive", "sha256_match" if h.digest() == sb.container_sha256 else "sha256_mismatch")
     if h.digest() != sb.container_sha256:
         planner.decide("REJECT", True, "container SHA-256 differs from the superblock: nothing published")
         report["recovery_plan"] = planner.report()
@@ -248,6 +268,8 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
     else:
         opened = ct.open_container(work)
     _check_manifest_id(opened, opt)
+    if sc is not None:
+        sc.add("archive", "container_opened")
     report["encrypted"] = opened.encrypted
     if opt.expect_archive_id is not None or opt.expect_sha256 is not None:
         report["expected"] = {"archive_id": opt.expect_archive_id, "container_sha256": opt.expect_sha256}
