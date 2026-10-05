@@ -83,6 +83,40 @@ are expected in every scan.
 
 Re-check this table when the pins change or a new advisory names an AES-GCM, HKDF, HMAC, scrypt or Fernet code path.
 
+## V6 security model and fuzzing (Phase 6, 2026-10-05)
+
+The V6 threat model is [security/V6_SECURITY_MODEL.md](security/V6_SECURITY_MODEL.md), and the fuzz campaign is
+[security/V6_FUZZ_REPORT.md](security/V6_FUZZ_REPORT.md). There is no CRITICAL or HIGH finding.
+
+**Open findings:**
+
+| ID | Severity | Finding |
+|---|---|---|
+| V6-SEC-01 | MEDIUM | A forged superblock can claim a huge container, and decode time grows with the claimed group count. |
+| V6-SEC-02 | MEDIUM | A full `vnx decode` ignores a given key, so a downgraded (unencrypted) pool decodes to SUCCESS. Extract still refuses it. |
+| V6-SEC-03 | MEDIUM | No expected-archive check, so substitution or rollback is possible. |
+| V6-SEC-05 | LOW | The manifest shown without a key is unauthenticated. |
+| V6-SEC-06 | LOW | The spec §2.3.3 report fields are missing. |
+| V6-SEC-09 | LOW | Implicit native buffer sizes. |
+| V6-SEC-10 | LOW | Extract has a TOCTOU window and a prefix containment check. |
+| V6-SEC-11 | LOW | Deterministic clear IDs and 16-bit tags. |
+| V6-SEC-13 | LOW | No AEAD index-binding test. |
+| V6-SEC-15 | INFO | Passphrases are not Unicode-normalised. |
+| V6-SEC-21 | INFO | The superblock's reserved bytes are not checked. |
+
+**Accepted:**
+- V6-SEC-07: the scrypt default awaits a founder decision.
+- V6-SEC-08: library paths taken from the environment, and the RS test hook.
+- V6-SEC-16, V6-SEC-17, V6-SEC-20.
+
+**Waiting for a push:** V6-SEC-12, the CI jobs for gitleaks, pip-audit and the fuzz smoke.
+
+**Fixed in `work/v6-security`, each with a regression test written first:**
+- V6-SEC-04: type-confused manifest fields;
+- V6-SEC-22: deeply nested manifest JSON;
+- V6-SEC-23: unbounded RS table caches;
+- V6-SEC-14: this page's AAD sentence.
+
 ---
 
 # V3 security — unchanged
