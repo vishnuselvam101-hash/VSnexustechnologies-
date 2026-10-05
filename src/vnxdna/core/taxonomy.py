@@ -17,6 +17,7 @@ code  category                  meaning
 6     UNSUPPORTED_FORMAT        unknown format/version/feature, or legacy input
 7     CONFIGURATION_ERROR       invalid or unsatisfiable parameters
 8     OUTPUT_ERROR              output cannot be written (or already exists)
+10    PROVIDER_ERROR            a DNA provider (or the reference simulator) failed (V6)
 70    INTERNAL_ERROR            bug: unexpected exception
 ====  ========================  =================================================
 
@@ -123,5 +124,6 @@ class OutputError(VNXDNAError):
 
 EXIT_CODES = {
     0: "SUCCESS", 1: "VERIFICATION_FAILED", 2: "USAGE_ERROR", 3: "INVALID_INPUT", 4: "AUTHENTICATION_FAILED",
-    5: "INSUFFICIENT_REDUNDANCY", 6: "UNSUPPORTED_FORMAT", 7: "CONFIGURATION_ERROR", 8: "OUTPUT_ERROR", 70: "INTERNAL_ERROR",
+    5: "INSUFFICIENT_REDUNDANCY", 6: "UNSUPPORTED_FORMAT", 7: "CONFIGURATION_ERROR", 8: "OUTPUT_ERROR", 10: "PROVIDER_ERROR",
+    70: "INTERNAL_ERROR",
 }
