@@ -47,9 +47,9 @@ All counts are `pytest` results from `vnx-task verify` logs under `/root/vnx-dna
 | Phase 8 part 1 merged `f0b69df` | 2441 / 6 / 0 | `task-v6-sprint-20261005-115248.log` |
 | Phase 8 part 2 branch (`work/v6-repro`) | 2539 / 6 / 0 | `task-v6-repro-20261005-180034.log` |
 | Job #79 branch (`work/v6-dropout`) | 2472 / 6 / 0 | `task-v6-dropout-20261005-182609.log` |
-| Release branch, full suite | FINAL_SUITE: <to be filled> | |
+| Release branch `c145fcb` (CI hardening + this report merged), full suite | 2555 / 6 / 0 | `task-v6-sprint-20261005-184911.log` (ruff clean, mypy 0 errors) |
 
-The two branch rows at the end are not on a common base: `work/v6-repro` and `work/v6-dropout` were each verified before the other was merged, so their counts are not comparable with each other. A suite run of the merged tree at `9466479` did not finish (the log `task-v6-sprint-20261005-183728.log` has no result). The release-branch row above is therefore the only suite count for the merged tree.
+The two branch rows at the end are not on a common base: `work/v6-repro` and `work/v6-dropout` were each verified before the other was merged, so their counts are not comparable with each other. A suite run of the merged tree at `9466479` did not finish (the log `task-v6-sprint-20261005-183728.log` has no result). The release-branch row above is the suite count for the merged tree (VERIFIED). The later commit `b38ef2c` changes only a sanitizer shell script.
 
 Before and after: 1013 (V5) to the release-branch count above; 1693 at the V6 audit baseline to the same.
 
@@ -150,7 +150,7 @@ Limits: the fuzz host was shared and loaded; exec/s differs by target by orders 
 
 ## 7. Sanitizers
 
-Class: VERIFIED at the Phase 0 audit (`081697b`); see `/root/vnx-dna-lab/results/v6-audit/VERIFICATION.md` section 3 and the logs `05a`, `05b`, `05c`. Not repeated at the release SHA by this report.
+Class: VERIFIED at the Phase 0 audit (`081697b`); see `/root/vnx-dna-lab/results/v6-audit/VERIFICATION.md` section 3 and the logs `05a`, `05b`, `05c`. Re-run on the release tree with `tools/sanitizers.sh` (CI-sized budgets): aligner, reads parser and RS decoder each passed their native tests and differential stress fuzz under gcc ASan+UBSan, clang ASan+UBSan and clang UBSan trap, with 0 mismatches, and every ASan canary fired (VERIFIED). The table below gives the larger audit-time budgets.
 
 | Kernel | GCC ASan+UBSan | Clang ASan+UBSan | Clang UBSan trap | Differential stress, sanitized |
 |---|---|---|---|---|
@@ -158,7 +158,7 @@ Class: VERIFIED at the Phase 0 audit (`081697b`); see `/root/vnx-dna-lab/results
 | reads parser | 184 passed; 40,000 comparisons, 0 mismatches | 184 passed | 184 passed | 0 mismatches |
 | RS decoder | 119 passed; 126,102 comparisons over scalar/avx2/avx512, 0 mismatches | 119 passed | 119 passed | 0 mismatches |
 
-The ASan canary fired in each. The valgrind step in the repository script failed for a host reason (`/dev/null` was a regular file on the host); re-run by hand it passed (135 passed, no invalid read or write; VERIFICATION section 3). **MSan: NOT RUN** (needs an MSan-instrumented CPython and NumPy). The libFuzzer harnesses in section 6 also run under ASan and UBSan.
+The ASan canary fired in each. The valgrind step in the repository script failed for a host reason (`/dev/null` was a regular file on the host); re-run by hand it passed (135 passed, no invalid read or write; VERIFICATION section 3). The script now omits the ineffective `--suppressions=/dev/null` flag (`b38ef2c`); re-run on the release tree: 135 passed, 0 memory errors. **MSan: NOT RUN** (needs an MSan-instrumented CPython and NumPy). The libFuzzer harnesses in section 6 also run under ASan and UBSan.
 
 ## 8. Security
 
@@ -198,7 +198,7 @@ Source: [COMPATIBILITY.md](COMPATIBILITY.md), [STORAGE_FORMAT.md](STORAGE_FORMAT
 
 Present in `.github/workflows/ci.yml` at the release base: `test`, `install`, `secrets` (gitleaks), `dependencies` (pip-audit), `fuzz-smoke`.
 
-Added by a separate hardening change that is being merged by the release lead (not part of the commit that carries this report; these jobs have not run on this tree): `mypy`, `sanitizers` (`tools/sanitizers.sh`: gcc and clang ASan/UBSan for the aligner, reads parser and RS decoder), `conformance` (both backends), `benchmark-smoke`, and a documentation link check (`tools/check_doc_links.py`). Until that change is merged and its CI run is green, the sanitizer and conformance results above are the audit-time and Phase 8 results, not CI results. Heavy benchmarks stay outside CI.
+Added by the V6 CI hardening (`369588a`, merged as `f947d69`): `mypy`, `sanitizers` (`tools/sanitizers.sh`: gcc and clang ASan/UBSan for the aligner, reads parser and RS decoder), `conformance` (both backends), `benchmark-smoke`, and a documentation link check (`tools/check_doc_links.py`). Each job's command was run locally on the release tree and passed; the GitHub run on the release PR is the CI evidence. Heavy benchmarks stay outside CI.
 
 ## 14. Physical-validation status
 
@@ -231,7 +231,7 @@ MET = built and evidenced here. PARTIAL = built with a stated gap. NOT MET = abs
 | | Parser hardening | MET | V6-SEC-01, -04, -22, -23 fixed with tests; open LOW items listed |
 | | Crypto audit | MET | security model section 3 (review; scrypt default below the OWASP figure it cites, decision open) |
 | | Fuzzing | MET | section 6: 13 targets x 3600 s, 0 new crashes |
-| | Sanitizers | PARTIAL | ASan/UBSan clean on three kernels at the audit; MSan not run; CI job not yet merged; valgrind by hand only |
+| | Sanitizers | PARTIAL | ASan/UBSan clean on three kernels at the audit and on the release tree; CI job added; MSan not run |
 | | Dependency scanning | MET | `dependencies` CI job (pip-audit); two advisories triaged not reachable |
 | Scientific integrity | Labels, pre-registration, negative results reported | MET | every channel result SIMULATED; three REJECT outcomes recorded (C2 quality weighting, C2 and C5 retry band, nanopore-like); PHYSICAL absent |
 | Interoperability | Writer / reader | MET | `DNAWriter`, `DNAReader` |
@@ -239,7 +239,7 @@ MET = built and evidenced here. PARTIAL = built with a stated gap. NOT MET = abs
 | | Lab exchange format | MET | export and import packages; no vendor adapter |
 | Documentation | Spec, architecture, security, channel model, conformance, interoperability, lab interface, completion report | MET | all present; the spec is a DRAFT |
 
-Result: the unmet parts are PARTIAL, not NOT MET: indel and soft-decision efficacy, memory and scaling coverage, and sanitizers (MSan, CI). None is a NOT MET. Whether PARTIAL items block the tag is the founder's decision (directive section 25). This report does not state that the acceptance criteria are met in full.
+Result: the unmet parts are PARTIAL, not NOT MET: indel and soft-decision efficacy, memory and scaling coverage, and sanitizers (MSan). None is a NOT MET. Whether PARTIAL items block the tag is the founder's decision (directive section 25). This report does not state that the acceptance criteria are met in full.
 
 ## 16. Limitations
 
@@ -250,7 +250,7 @@ Result: the unmet parts are PARTIAL, not NOT MET: indel and soft-decision effica
 - Decoder options (`--retry-band`, `--consensus-weighting quality`, `--redundancy-profile high-dropout`) are opt-in; none is a default.
 - Open defects: job #62 (`vnx locate` on V6 striped pools), job #66 (`--select` with failed groups outside the index), job #58 (latent mypy errors in `v2`, `v4`, `ecc`).
 - Encode events are not implemented; M6 and M7 of the migration plan are not done.
-- Fuzz and sanitizer numbers above were taken at earlier SHAs (`b693254` for the one-hour campaign, `081697b` for sanitizers), not at the release SHA.
+- Fuzz and sanitizer numbers above were taken at earlier SHAs (`b693254` for the one-hour campaign; `081697b` for the larger sanitizer budgets, with a CI-sized re-run on the release tree).
 
 ## 17. Deferred work
 

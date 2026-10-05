@@ -6,7 +6,7 @@ second queue, no second knowledge index and no agent dispatcher.
 
 Inputs: the research gate of 2026-10-05 in `research/competitive-2026-10-05/` (cited as `[00]`, `[10]`,
 `[20]`, `[30]`, `[40]`), the workforce documents (`ARCHITECTURE.md`, `RESEARCH_PIPELINE.md`, `TOOL_REGISTRY.md`,
-`JOBS.md`, `WORKFLOWS.md`, `WORKFORCE_HARDENING_PLAN.md`), the scheduled jobs (`openclaw cron list`, read on
+`JOBS.md`, `WORKFLOWS.md`, `WORKFORCE_HARDENING_PLAN.md`), the scheduled jobs (the scheduler's job list, read on
 2026-10-05) and the LAYA router configuration (`/root/vnx-dna-env/config/laya/`).
 
 Terms used below:
@@ -16,7 +16,7 @@ Terms used below:
   classification hints whose output is marked UNTRUSTED;
 - **remote model job**: LAYA tier 3/4 (`strong-remote` / `specialist-research`), the single remote model provider the
   founder has approved; no other remote provider is used;
-- **scheduler**: the existing scheduled-job layer (`openclaw cron`), times in Asia/Kolkata.
+- **scheduler**: the existing scheduled-job layer (host cron scheduler), times in Asia/Kolkata.
 
 ---
 
@@ -320,7 +320,7 @@ the cap stay `confirmed` with `job_id: null` and are listed in the weekly digest
 ## 10. Telegram reporting
 
 Sent by `vnx-watch notify` with
-`openclaw message send --channel telegram --target <chat-id> --message "<text>"` (`--dry-run` in tests). The message
+the messaging gateway's send command (Telegram, `<chat-id>`, `<text>`; dry-run in tests). The message
 ID is stored in the event record. Text is rendered from `events.jsonl`; limit 3 500 characters (Telegram's limit is
 4 096); overflow is cut at a line boundary with "… N more in Intel/weekly-DATE.md".
 
@@ -367,7 +367,7 @@ that is not in a verified source.
 
 - Every write by `vnx-watch` and every `decide` appends a line; `vnx-watch verify-log` checks the chain; a broken chain
   is a health-report FAIL.
-- Scheduler run history (`openclaw cron runs --id <job>`) is the second record for scheduled jobs.
+- Scheduler run history (the scheduler's per-job run log) is the second record for scheduled jobs.
 - The weekly digest lists the audit-log line count and the chain status.
 
 ---
