@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "common.schema.json",
+  "title": "Shared definitions",
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "lowercase hexadecimal SHA-256"
+    },
+    "date": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+      "description": "ISO 8601 calendar date (YYYY-MM-DD)"
+    },
+    "git_commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "public_dataset": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Public dataset a PUBLIC-DATA-DERIVED record was derived from (docs/DNA_STORAGE_DATASET_REGISTRY.md): produced by another group, never by VNX-DNA",
+      "required": [
+        "accession",
+        "doi",
+        "files"
+      ],
+      "properties": {
+        "registry_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "ID in docs/DNA_STORAGE_DATASET_REGISTRY.md, e.g. D04"
+        },
+        "accession": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "description": "repository accession, e.g. ENA PRJEB65931 or Zenodo 10.5281/zenodo.10943282"
+        },
+        "doi": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^(10\\.[0-9]{4,9}/\\S+|unpublished)$",
+          "description": "DOI of the paper describing the data, or 'unpublished'"
+        },
+        "licence": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "files": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "file_name",
+              "sha256"
+            ],
+            "properties": {
+              "file_name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "url": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "path": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "sha256": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/sha256"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "size_bytes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              }
+            }
+          },
+          "description": "every downloaded file, with the SHA-256 of the bytes as downloaded"
+        },
+        "downloaded_on": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

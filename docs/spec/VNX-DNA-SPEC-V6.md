@@ -518,7 +518,7 @@ Result schema: `vnx.probe/1` (V6_ARCHITECTURE §4.3).
 | channel config (`vnx channel simulate`) | `vnx.channel-config/1`; a file without `schema` is read as `/0` | no version (`v4/channel.py:44-66`) |
 | export package | `vnx.export-package/1` | new (§9.3) |
 | import package | `vnx.import-package/1` | new (§9.3) |
-| physical record | `record_version: "1"` (unchanged) | `experiments/v6/physical/schema/record.schema.json` |
+| physical record | `record_version: "1"` (unchanged; evidence class `PUBLIC-DATA-DERIVED` added in V6 Phase 7) | `src/vnxdna/physical/schemas/record.schema.json` (old path `experiments/v6/physical/schema/` is a link) |
 | conformance | `vnx.conformance/1`, `vnx.conformance-vector/1` | new (§6) |
 | experiment manifest | `vnx.experiment/1` | ad-hoc per experiment |
 
@@ -745,10 +745,10 @@ VNX archive. No claim of JPEG DNA conformance is made.
 
 | Item | Interface specified | Interface implemented | Provider integration tested |
 |---|---|---|---|
-| `DNAWriter`, `DNAReader`, `DNAProvider` protocols (§9.2) | yes (here) | no; V6 Phase 7 | — |
-| `ReferenceSimulatorProvider` | yes | no; V6 Phase 7 | **software only, SIMULATED** |
-| Export and import package manifests (§9.3) | yes | no; V6 Phase 7 | — |
-| Physical record schema and validator | yes | **yes** (`experiments/v6/physical/`, `docs/V6_PHYSICAL_VALIDATION_INTERFACE.md`) | no physical run has occurred |
+| `DNAWriter`, `DNAReader`, `DNAProvider` protocols (§9.2) | yes (here) | **yes** (V6 Phase 7, `vnxdna.providers.base`) | software only |
+| `ReferenceSimulatorProvider` | yes | **yes** (V6 Phase 7, `vnxdna.providers.reference`) | **software only, SIMULATED** |
+| Export and import package manifests (§9.3) | yes | **yes** (V6 Phase 7, `vnxdna.providers.packages`; schemas `vnx.export-package/1`, `vnx.import-package/1`) | software only |
+| Physical record schema and validator | yes | **yes** (`vnxdna.physical`, moved from `experiments/v6/physical/` in V6 Phase 7; `docs/V6_PHYSICAL_VALIDATION_INTERFACE.md`) | no physical run has occurred |
 | Any synthesis or sequencing vendor adapter | no | no | **no**; V11 |
 
 ### 9.2 Operations (normative signatures; Python protocols in `vnxdna.providers.base`)
@@ -837,8 +837,8 @@ manifest.json   strands.fasta[.gz]   order.csv   SHA256SUMS   [sector-zero.fasta
 
 - `evidence_class` ∈ {`SIMULATED`, `SYNTHETIC SOFTWARE TEST`, `PUBLIC-DATA-DERIVED`, `REAL PHYSICAL RESULT`}.
 - `REAL PHYSICAL RESULT` requires the provider, order and run fields that the physical-record rules require
-  (`docs/V6_PHYSICAL_VALIDATION_INTERFACE.md`, "Evidence classes"). `PUBLIC-DATA-DERIVED` is a roadmap V7 addition to the
-  record schema.
+  (`docs/V6_PHYSICAL_VALIDATION_INTERFACE.md`, "Evidence classes"). `PUBLIC-DATA-DERIVED` was added to the record schema in V6
+  Phase 7 (it needs a dataset accession, the SHA-256 of every downloaded file and a DOI or `unpublished`).
 - An import package plus its decode report converts to a physical record (`record_version "1"`). The converter fills the
   `synthesis`, `sequencing` and `decode` sections and leaves the attestations empty, which gives `INCOMPLETE` until a person
   attests.

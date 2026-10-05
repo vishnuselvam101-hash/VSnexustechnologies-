@@ -52,7 +52,7 @@ CODES: dict[str, tuple[str, int, bool]] = {
     "VENDOR_MAX_LENGTH": ("CONFIGURATION_ERROR", 7, False),
     "ARCHIVE_TAG_COLLISION": ("CONFIGURATION_ERROR", 7, False),
     "OUTPUT_ERROR": ("OUTPUT_ERROR", 8, False),
-    "PROVIDER_ERROR": ("PROVIDER_ERROR", 10, False),       # reserved (exit 10, V6 decision 3); implemented in Phase 7
+    "PROVIDER_ERROR": ("PROVIDER_ERROR", 10, False),       # exit 10 (V6 decision 3): VNXProviderError, vnxdna.providers
     "INTERNAL_ERROR": ("INTERNAL_ERROR", 70, False),
 }
 
@@ -166,6 +166,18 @@ class VNXOutputError(VNXError, v3.OutputError):
     code = "OUTPUT_ERROR"
 
     stage = "output"
+
+
+class VNXProviderError(VNXError):
+    """A DNA provider (synthesis, storage, retrieval or sequencing service, or the reference simulator standing in for
+    one) failed: exit 10 (spec §9.2, §10; founder decision 3). Never mapped to INSUFFICIENT_REDUNDANCY: a failed
+    retrieval says nothing about the archive's redundancy. Whether a retry can help is provider-defined."""
+
+    exit_code = 10
+    category = "PROVIDER_ERROR"
+    code = "PROVIDER_ERROR"
+
+    stage = "provider"
 
 
 class V6ConfigurationError(VNXConfigurationError):

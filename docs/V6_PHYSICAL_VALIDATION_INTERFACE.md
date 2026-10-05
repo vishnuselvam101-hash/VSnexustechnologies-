@@ -5,7 +5,10 @@ This document describes the record format that a future laboratory partnership (
 would use to report a physical run against VNX-DNA, and the checks applied to such a record. All channel results in the
 repository are SIMULATED.
 
-Files: `experiments/v6/physical/` (schemas, `validate.py`, README, example). Tests: `tests/v6/physical/`.
+Files: package `vnxdna.physical` (`src/vnxdna/physical/`: `schemas/`, `validate.py`; run as `python -m vnxdna.physical`),
+moved there from `experiments/v6/physical/` in V6 Phase 7. The old script `experiments/v6/physical/validate.py` still works,
+and `experiments/v6/physical/schema` is a link to the package schemas. README and example stay in `experiments/v6/physical/`.
+Tests: `tests/v6/physical/` (unchanged) and `tests/physical/` (the package and the PUBLIC-DATA-DERIVED class).
 
 ## Workflow
 
@@ -26,11 +29,12 @@ Files: `experiments/v6/physical/` (schemas, `validate.py`, README, example). Tes
 
 ## Record structure
 
-`schema/record.schema.json` references one schema per section.
+`schemas/record.schema.json` references one schema per section.
 
 | Section | Fields |
 |---|---|
-| top level | `record_version` ("1"), `record_id`, `description`, `evidence_classification`, `statement` |
+| top level | `record_version` ("1"), `record_id`, `description`, `evidence_classification`, `statement`, `public_data` (optional; `PUBLIC-DATA-DERIVED` only) |
+| `public_data` | `registry_id`, `accession`, `doi` (a DOI or `unpublished`), `licence`, `files` (file name, URL, path, SHA-256, size), `downloaded_on` |
 | `synthesis` | `provider_name`, `order_id`, `synthesis_platform`, `oligo_pool_id`, `library_ids`, `strand_ids`, `strand_count`, `strand_length_nt`, `synthesis_date`, `delivery_date`, `provider_qc`, `ordered_fasta` (name, SHA-256, strand count, path), `vnx_source` (version, commit, dirty flag, profile, encoder options, command) |
 | `sample` | `sample_id`, `library_id`, `description`, `chain_of_custody` (step, from, to, date, performed_by) |
 | `storage` | `temperature_c`, `relative_humidity_percent`, `medium`, `encapsulation`, `start_date`, `end_date`, `duration_days`, `notes` |
@@ -49,12 +53,19 @@ null or an empty list; a record with missing fields and no violations is reporte
 | `REAL PHYSICAL RESULT` | data from a physical synthesis, storage and sequencing run | named provider, order ID |
 | `SIMULATED RESULT` | outcome of a software channel simulation | `none (simulation)` |
 | `SYNTHETIC SOFTWARE TEST` | a software test exercising the pipeline or this interface | `none (simulation)` |
+| `PUBLIC-DATA-DERIVED` | derived from a public dataset produced by another group (`docs/DNA_STORAGE_DATASET_REGISTRY.md`) | as published by that group |
 
 A record may carry `REAL PHYSICAL RESULT` only if it has all of: synthesis provider, order ID, synthesis date and ordered-FASTA
 SHA-256; sequencing provider, platform, run ID, run date; at least one FASTQ file and a SHA-256 for every FASTQ file; synthesis
 and sequencing attestations, sign-off and raw-data location. Placeholders such as "TBD" do not count.
 
-## Validator (`validate.py`)
+A record may carry `PUBLIC-DATA-DERIVED` (added in V6 Phase 7, research gate item 6 of the dataset registry) only with
+`public_data`: a dataset accession, at least one downloaded file with the SHA-256 of its bytes as downloaded, and the paper's
+DOI or the word `unpublished`. When a file's `path` is reachable its SHA-256 is re-checked. Simulated reads from a model
+fitted to public data stay `SIMULATED RESULT`; only results computed from the public data themselves are
+`PUBLIC-DATA-DERIVED`. No such record exists yet.
+
+## Validator (`vnxdna.physical.validate`)
 
 `check` returns `VALID` (exit 0), `INVALID` (2) or `INCOMPLETE` (3). Rules beyond the schema:
 

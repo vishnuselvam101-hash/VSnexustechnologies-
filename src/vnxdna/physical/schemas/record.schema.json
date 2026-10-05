@@ -39,19 +39,30 @@
           "enum": [
             "REAL PHYSICAL RESULT",
             "SIMULATED RESULT",
-            "SYNTHETIC SOFTWARE TEST"
+            "SYNTHETIC SOFTWARE TEST",
+            "PUBLIC-DATA-DERIVED"
           ]
         },
         {
           "type": "null"
         }
       ],
-      "description": "REAL PHYSICAL RESULT only with synthesis, sequencing and FASTQ checksum evidence"
+      "description": "REAL PHYSICAL RESULT only with synthesis, sequencing and FASTQ checksum evidence; PUBLIC-DATA-DERIVED only with public_data (accession, file SHA-256s, DOI or 'unpublished')"
     },
     "statement": {
       "type": [
         "string",
         "null"
+      ]
+    },
+    "public_data": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/public_dataset"
+        },
+        {
+          "type": "null"
+        }
       ]
     },
     "synthesis": {
