@@ -382,6 +382,7 @@ def do_orientation(base: str, workers: int, bootstrap: int) -> Path:
            "decision": "merge forward and backward (protocol 5 / plan 3.2)" if agree else
            "keep separate: the substitution matrices differ beyond their 95 % intervals (strand asymmetry); the /2 `asymmetry` effect is not honoured "
            "by the simulator, so no merged model is produced",
+           "model_sha256": {"forward": mf.sha256, "backward": mb.sha256}, "environment": environment_info(),
            "evidence_class": "PUBLIC-DATA-DERIVED"}
     p = d / "results" / f"orientation-{base}.json"
     p.write_text(json.dumps(_jsonable(doc), indent=1, sort_keys=True) + "\n")
