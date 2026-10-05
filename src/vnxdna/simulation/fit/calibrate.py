@@ -18,6 +18,8 @@ from vnxdna.simulation.fit.simulate import simulate_clusters
 from vnxdna.simulation.fit.tally import Layout
 
 CTX_PRIOR = 10.0
+STEP = 0.7            # damping exponent of every multiplicative update (ratio ** STEP)
+CLIP = (0.4, 2.5)     # a single update never changes a parameter by more than this factor
 
 
 def summary(layout: Layout, T: np.ndarray, design: est.Design) -> dict:
@@ -70,6 +72,7 @@ def calibrate(fit: dict, layout: Layout, refs: list, *, real_T: np.ndarray, cove
         ratios["del_mean"] = target["del_mean"] / sim["del_mean"] if sim["del_mean"] else 1.0
         ratios["ins_mean"] = (target["ins_mean"] - 1.0 + 1e-6) / (sim["ins_mean"] - 1.0 + 1e-6)
         trace.append({"iteration": it, "ratios": {k: float(v) for k, v in ratios.items()}})
+        ratios = {k: float(np.clip(v, *CLIP) ** STEP) for k, v in ratios.items()}
         values["sequencing.substitution.rate"] *= ratios["sub"]
         values["sequencing.insertion.rate"] *= ratios["ins"]
         values["sequencing.deletion.rate"] *= ratios["start"]
@@ -84,7 +87,7 @@ def calibrate(fit: dict, layout: Layout, refs: list, *, real_T: np.ndarray, cove
             tr, sr = target["ctx_sub"], sim["ctx_sub"]
             te, se = target["ctx_sub_events"], sim["ctx_sub_events"]
             # per-3-mer rate ratio, shrunk towards 1 by the smaller of the two event counts
-            w = np.minimum(te, se * (te.sum() / max(se.sum(), 1))) / (np.minimum(te, se * (te.sum() / max(se.sum(), 1))) + CTX_PRIOR)
+            w = STEP * np.minimum(te, se * (te.sum() / max(se.sum(), 1))) / (np.minimum(te, se * (te.sum() / max(se.sum(), 1))) + CTX_PRIOR)
             raw_ratio = np.where(sr > 0, tr / np.maximum(sr, 1e-300), 1.0)
             raw_ratio = raw_ratio / (np.sum(raw_ratio * sr) / max(np.sum(sr), 1e-300) if sr.sum() else 1.0) * 1.0
             ctx = np.asarray(values["sequencing.context.substitution"]) * (1.0 + w * (raw_ratio - 1.0))
@@ -95,10 +98,16 @@ def calibrate(fit: dict, layout: Layout, refs: list, *, real_T: np.ndarray, cove
                 tc, B = target["profile"][kind]
                 sc, _ = sim["profile"][kind]
                 tn, sn = tc / tc.sum() * B, sc / max(sc.sum(), 1) * B
-                prof = np.asarray(values[key]) * np.where(sn > 0, tn / np.maximum(sn, 1e-300), 1.0)
+                prof = np.asarray(values[key]) * np.where(sn > 0, np.clip(tn / np.maximum(sn, 1e-300), *CLIP), 1.0) ** STEP
                 values[key] = (prof / prof.mean()).tolist()
-        if max(abs(v - 1.0) for v in ratios.values()) < tol:
+        if max(abs(r - 1.0) for r in trace[-1]["ratios"].values()) < tol:
             break
+    # verification pass at the final values (not applied): how far the simulated statistics are from the targets
+    model = _sim_model(values, design, fit)
+    cl = simulate_clusters(model, refs, coverage, seed * 100 + 99)
+    M, _ = tally_matrix(zip(refs, cl), layout, workers=workers, **(tally_opts or {}))
+    sim = summary(layout, M.sum(axis=0).astype(float), design)
+    residual = {k: float(target[k] / sim[k]) if sim[k] else 1.0 for k in ("sub", "ins", "start", "hp_indel", "hp_sub")}
     factors = {}
     ci = copy.deepcopy(fit["ci95"])
     for key, v in values.items():
@@ -115,4 +124,4 @@ def calibrate(fit: dict, layout: Layout, refs: list, *, real_T: np.ndarray, cove
             ci[key] = {"lo": np.minimum(lo, hi).tolist(), "hi": np.maximum(lo, hi).tolist()}
         else:
             ci[key] = [float(c[0] * f), float(c[1] * f)]
-    return {"values": values, "ci95": ci, "factors": factors, "trace": trace, "raw_values": raw, "target": {k: v for k, v in target.items() if k in ("sub", "ins", "start", "f_del", "del_mean", "ins_mean", "hp_indel", "hp_sub")}}
+    return {"values": values, "ci95": ci, "factors": factors, "trace": trace, "final_residual_ratios": residual, "raw_values": raw, "target": {k: v for k, v in target.items() if k in ("sub", "ins", "start", "f_del", "del_mean", "ins_mean", "hp_indel", "hp_sub")}}

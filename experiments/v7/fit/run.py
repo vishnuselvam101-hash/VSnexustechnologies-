@@ -66,7 +66,7 @@ JOBS["d03-fast-merged"] = {"dataset": "d03-nanopore", "L": 150, "mode": "NW", "g
 JOBS["d02-twist"] = {"dataset": "dt4dds-twist", "L": 108, "mode": "HW", "runs": ["ERR12033806", "ERR12033810"], "control": "ERR12033850",
                      "name": "illumina-iseq-twist-fit", "pub": "d02", "title": "DT4DDS Twist_GCfix Aging_0a/0b (R1) with PhiX stage split"}
 OUT = Path(os.environ.get("VNX_FIT_OUT", Path(__file__).resolve().parents[1]))   # override for dry runs only
-CAL_REFS, CAL_COVERAGE, CAL_ITER = 4000, 10, 3
+CAL_REFS, CAL_COVERAGE, CAL_ITER = 4000, 10, 5
 SEED = 20261005
 
 
@@ -216,7 +216,7 @@ def do_fit(job_id: str, workers: int, bootstrap: int, seed: int = SEED) -> Path:
                "model_sha256": cm.from_doc(doc)[0].sha256, "references": fit["references"], "assigned_reads": fit["assigned_reads"],
                "comparison_with_published": comparison, "published_source": pub["source"],
                "calibration": {"refs": len(cal_refs), "coverage": CAL_COVERAGE, "iterations": CAL_ITER,
-                               "trace": fit["calibration"]["trace"], "factors_scalar": {k: x for k, x in fit["calibration"]["factors"].items() if not isinstance(x, list)}},
+                               "trace": fit["calibration"]["trace"], "final_residual_ratios": fit["calibration"]["final_residual_ratios"], "factors_scalar": {k: x for k, x in fit["calibration"]["factors"].items() if not isinstance(x, list)}},
                "seconds": {"tally": round(t_tally, 1), "fit_bootstrap_calibration": round(t_fit, 1)}, "workers": workers,
                "peak_rss_mb_self_plus_children": round(mem_mb(), 1), "bootstrap": bootstrap, "seed": seed,
                "environment": environment_info(), "evidence_class": "PUBLIC-DATA-DERIVED"}

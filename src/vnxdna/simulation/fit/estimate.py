@@ -20,6 +20,8 @@ import numpy as np
 from vnxdna.simulation.fit.tally import Layout
 
 MIN_BIN_EVENTS = 200           # profiles are not attempted below this many events in total
+MAX_BINS = 30                  # position profiles are smooth (<= 30 equal bins): finer ones are confounded with the context/homopolymer
+                               # multipliers wherever the reference sequence is the same in every strand (D03 primers)
 GEOMETRIC_MIN = 1.02           # mean insertion run length above which runs are modelled as geometric (alignment merges give ~1.01)
 GEOMETRIC_MIN_DEL = 1.10       # same for deletions: adjacent independent deletions and rate heterogeneity already give ~1.03-1.05
 CONTEXT_LR = 100.0             # 2 * log-likelihood gain (about chi-square 63 d.f. at p = 0.002) needed to include a context
@@ -92,7 +94,7 @@ def _bins_for(counts: np.ndarray) -> int | None:
     if total < MIN_BIN_EVENTS:
         return None
     best, best_bic = 1, np.inf
-    for B in _divisors(L):
+    for B in (b for b in _divisors(L) if b <= MAX_BINS):
         c = _profile_counts(counts.astype(float), B)
         s = total / B                                   # expected events per bin under a flat profile (equal sites per bin)
         ok = c > 0

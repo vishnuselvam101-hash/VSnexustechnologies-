@@ -220,6 +220,6 @@ def fit_tallies(M: np.ndarray, layout: Layout, *, seed: int, bootstrap: int = BO
     if calibration:
         from vnxdna.simulation.fit.calibrate import calibrate
         cal = calibrate(out, layout, real_T=T, seed=seed, **calibration)
-        out["calibration"] = {k: cal[k] for k in ("factors", "trace", "raw_values", "target")}
+        out["calibration"] = {k: cal[k] for k in ("factors", "trace", "raw_values", "target", "final_residual_ratios")}
         out["values"], out["ci95"] = cal["values"], cal["ci95"]
     return out
