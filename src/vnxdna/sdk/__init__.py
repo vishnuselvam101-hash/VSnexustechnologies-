@@ -15,8 +15,9 @@ from vnxdna.core.errors import VNXError
 from vnxdna.pipeline.encode import DNAOptions
 from vnxdna.recovery.options import DecodeOptions
 from vnxdna.recovery.planner import RecoveryBudget
-from vnxdna.sdk.api import (archive, benchmark, benchmark_markdown, codec_compare, conformance, decode, encode,
-                            experiment_reproduce, experiment_run, extract, generate, inspect, is_container, keygen,
+from vnxdna.sdk.api import (archive, benchmark, benchmark_markdown, channel_convert, channel_model, channel_models,
+                            channel_sweep, codec_compare, conformance, decode, encode, experiment_reproduce, experiment_run,
+                            extract, generate, inspect, is_container, keygen,
                             list_entries, load_keys, locate, native, parse_size, profiles, simulate, sweep, sweep_table,
                             validate_strands, verify, version)
 from vnxdna.sdk.envelope import (ArchiveResult, BenchmarkResult, ConformanceResult, DecodeResult, EncodeResult,
@@ -26,6 +27,7 @@ from vnxdna.sdk.envelope import (ArchiveResult, BenchmarkResult, ConformanceResu
 __all__ = ["ArchiveOptions", "DNAOptions", "DecodeOptions", "RecoveryBudget", "VNXError", "Result", "ArchiveResult",
            "EncodeResult", "DecodeResult", "InspectResult", "VerifyResult", "ExtractResult", "ListResult", "SimulateResult",
            "BenchmarkResult", "ConformanceResult", "archive", "encode", "decode", "inspect", "verify", "extract",
-           "list_entries", "locate", "simulate", "benchmark", "benchmark_markdown", "codec_compare", "sweep", "sweep_table",
+           "list_entries", "locate", "simulate", "channel_models", "channel_model", "channel_convert", "channel_sweep",
+           "benchmark", "benchmark_markdown", "codec_compare", "sweep", "sweep_table",
            "experiment_run", "experiment_reproduce", "generate", "validate_strands", "profiles", "native", "keygen",
            "load_keys", "parse_size", "is_container", "version", "conformance", "error_json", "provenance"]
