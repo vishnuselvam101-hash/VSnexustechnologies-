@@ -1,0 +1,40 @@
+{
+  "name": "illumina-like-cov2",
+  "version": "1.0.0",
+  "classification": "SIMULATED",
+  "description": "derived from illumina-like 1.0.0",
+  "note": "Phase 4 derived stress profile (SIMULATED); not fitted to any measured platform.",
+  "loss": {
+    "dropout": 0.0,
+    "burst_count": 0,
+    "burst_length": 0
+  },
+  "channel": {
+    "substitution_rate": 0.003,
+    "insertion_rate": 5e-05,
+    "deletion_rate": 5e-05,
+    "dropout_rate": 0.0,
+    "coverage": 2.0,
+    "coverage_model": "poisson",
+    "coverage_dispersion": 5.0,
+    "duplication_rate": 0.02,
+    "homopolymer_min_run": 3,
+    "homopolymer_indel_multiplier": 1.0,
+    "homopolymer_substitution_multiplier": 1.0,
+    "gc_bias_strength": 0.3,
+    "gc_bias_optimum": 0.5,
+    "burst_rate": 0.0,
+    "burst_max_len": 0,
+    "n_rate": 0.0005,
+    "reverse_complement_rate": 0.5,
+    "quality_correct": 37,
+    "quality_error": 12,
+    "quality_informative": 0.8,
+    "shuffle_window": 0
+  },
+  "derived_from": {
+    "name": "illumina-like",
+    "version": "1.0.0",
+    "sha256": "27e6cf39ddf20686467c22e7b24b161808612be569021b21e39ce4c3c77c3978"
+  }
+}

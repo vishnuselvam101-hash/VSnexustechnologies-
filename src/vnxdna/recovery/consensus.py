@@ -38,6 +38,40 @@ def consensus_hard(bases: np.ndarray, threshold: float) -> tuple[np.ndarray, np.
     return best, erased
 
 
+def consensus_quality_weighted(bases: np.ndarray, quals: np.ndarray, threshold: float) -> tuple[np.ndarray, np.ndarray]:
+    """Quality-weighted vote (V6 Phase 4, opt-in): (m, L) codes (4 = erased, abstains) with their (m, L) Phred
+    qualities → (best base, erased) per position.
+
+    Each read base contributes log P(observed | true = x) under the Phred reading of its quality, ε = 10^(−Q/10)
+    clipped to [1e-6, 0.75] (``soft.symbols.phred_error``): log(1 − ε) for x = observed, log(ε/3) otherwise. Reads are
+    treated as independent. The summed log-likelihoods are normalised under a uniform prior; the winner is the argmax
+    and the position is erased when the winner's normalised score is below ``threshold`` or no read has a base there.
+
+    The score is a Phred-interpreted posterior, NOT a calibrated probability: it is only as good as the qualities, which
+    must be measured per platform. Ties (equal score) are erased; with equal qualities a clear majority wins as in
+    ``consensus_hard``. Deterministic (no randomness, fixed reduction order).
+    """
+    bases = np.asarray(bases)
+    quals = np.asarray(quals)
+    if bases.shape != quals.shape or bases.ndim != 2:
+        raise ValueError("bases and qualities must be (reads, positions) arrays of the same shape")
+    eps = np.clip(10.0 ** (-quals.astype(np.float64) / 10.0), 1e-6, 0.75)
+    known = bases < 4
+    l_mis = np.where(known, np.log(eps / 3.0), 0.0)                 # (m, L)
+    gain = np.where(known, np.log1p(-eps) - np.log(eps / 3.0), 0.0)
+    score = np.repeat(l_mis.sum(axis=0)[:, None], 4, axis=1)        # (L, 4)
+    for b in range(4):
+        score[:, b] += (gain * (bases == b)).sum(axis=0)
+    top = score.max(axis=1, keepdims=True)
+    post = np.exp(score - top)
+    post /= post.sum(axis=1, keepdims=True)
+    best = score.argmax(axis=1).astype(np.uint8)
+    p_best = post.max(axis=1)
+    tie = (np.isclose(score, top, rtol=0.0, atol=1e-9).sum(axis=1) > 1)
+    erased = ~known.any(axis=0) | (p_best < threshold) | tie
+    return best, erased
+
+
 def resolve_duplicates(acc: np.ndarray) -> tuple[dict, int]:
     """(kind, tag, group, symbol) → payload by strict majority of identical verified copies; ties are dropped."""
     out: dict = {}
@@ -149,6 +183,10 @@ def _consensus_symbols(pend: np.ndarray, known: dict, lay: Layout, opt: DecodeOp
     order = np.lexsort((keys[:, 3], keys[:, 2], keys[:, 1], keys[:, 0]))
     keys = keys[order]
     bases = pend["bases"][order]
+    weighted = opt.consensus_weighting == "quality" and "pq" in pend.dtype.names
+    if weighted:
+        pq = pend["pq"][order]
+        pqok = pend["pqok"][order].astype(bool)
     change = np.flatnonzero((np.diff(keys, axis=0) != 0).any(axis=1)) + 1
     starts = np.concatenate([[0], change])
     ends = np.concatenate([change, [len(keys)]])
@@ -157,8 +195,15 @@ def _consensus_symbols(pend: np.ndarray, known: dict, lay: Layout, opt: DecodeOp
         key = tuple(int(x) for x in keys[s])
         if key in known:
             continue
-        group = bases[s:min(e, s + opt.max_pending_per_address)]
-        best, erased = consensus_hard(group, opt.consensus_threshold)
+        stop = min(e, s + opt.max_pending_per_address)
+        group = bases[s:stop]
+        if weighted and pqok[s:stop].all():
+            best, erased = consensus_quality_weighted(group, pq[s:stop], opt.consensus_threshold)
+            stats["consensus_weighted"] += 1
+        else:
+            if weighted:
+                stats["consensus_weighting_fallback"] += 1        # some read has no qualities: the V4 count vote
+            best, erased = consensus_hard(group, opt.consensus_threshold)
         cand_keys.append(key)
         frames.append(best)
         ers.append(erased)

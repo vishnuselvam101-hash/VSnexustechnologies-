@@ -11,11 +11,13 @@ import numpy as np
 class Spill:
     """Fixed-width records in bucket files (bucket = group mod B); memory stays bounded by one bucket."""
 
-    def __init__(self, workdir: Path, buckets: int, payload: int, frame_nt: int, raw_nt: int = 0):
+    def __init__(self, workdir: Path, buckets: int, payload: int, frame_nt: int, raw_nt: int = 0, quality_nt: int = 0):
         self.dir = workdir
         self.B = buckets
         self.acc_dtype = np.dtype([("kind", "u1"), ("tag", ">u2"), ("group", ">u4"), ("symbol", ">u2"), ("payload", "u1", (payload,))])
         pend = [("kind", "u1"), ("tag", ">u2"), ("group", ">u4"), ("symbol", ">u2"), ("alt", ">i8", (4,)), ("bases", "u1", (frame_nt,))]
+        if quality_nt:  # V6 Phase 4 quality-weighted consensus: the Phred quality of every projected frame base
+            pend += [("pq", "u1", (quality_nt,)), ("pqok", "u1")]
         if raw_nt:     # V5 smart indel recovery keeps the raw read for consensus realignment
             pend += [("raw", "u1", (raw_nt,)), ("rawq", "u1", (raw_nt,)), ("rawlen", ">u2"), ("hasq", "u1")]
         self.pend_dtype = np.dtype(pend)
@@ -38,6 +40,8 @@ class Spill:
             rec[name] = data
             if name == "bases":
                 rec["alt"] = res["pend_alt"]
+                if "pq" in dtype.names:
+                    rec["pq"], rec["pqok"] = res["pend_pq"], res["pend_pqok"]
                 if "raw" in dtype.names:
                     rec["raw"], rec["rawq"], rec["rawlen"], rec["hasq"] = (res["pend_raw"], res["pend_rawq"], res["pend_rawlen"],
                                                                            res["pend_hasq"])

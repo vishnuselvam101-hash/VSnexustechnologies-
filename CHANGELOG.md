@@ -45,6 +45,9 @@ are SIMULATED.
   refused as `ARCHIVE_TAG_AMBIGUOUS` (exit 3); random access snaps reads like a full decode. The decode outcome is
   tested to be independent of the spill bucket count; consensus internals are not (see tests/v6/test_spill_independence.py).
 - `--report` files are now the `vnx.decode-report/1` envelope; the 5.x report fields stay at the top level.
+- V6 Phase 4 (measurement-driven, SIMULATED): opt-in quality-weighted pass-2 consensus
+  (`--consensus-weighting quality`; default `count` unchanged). Failure taxonomy, pre-registered comparison (efficacy
+  REJECT, no default change), CNR IDS statistics (PUBLIC-DATA-DERIVED): experiments/v6/phase4.
 
 ## Unreleased — V6 Phase 1 (outer-code resilience)
 

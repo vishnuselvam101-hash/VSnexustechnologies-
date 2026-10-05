@@ -20,16 +20,20 @@ _P: dict = {}
 
 
 def _p_init(layout: Layout, band: int, costs: SyncCosts, min_q: int, rc: bool, smart_cfg=None, soft_cfg=None,
-            defer: bool = False) -> None:
+            defer: bool = False, qw: bool = False) -> None:
     # defer: pass 1 of the deferred schedule — the cheap V4 paths only; smart/soft run later on the pending reads
+    # qw: V6 Phase 4 quality-weighted consensus — keep the Phred quality of every projected frame base of pending reads
     _P.update(lay=layout, al=TemplateAligner(layout, band, costs), min_q=min_q, rc=rc, smart=smart_cfg, soft=soft_cfg,
-              defer=defer)
+              defer=defer, qw=qw)
     if smart_cfg is not None or soft_cfg is not None:
         from vnxdna.sync.smart.recovery import Geometry
         _P["geom"] = Geometry(layout)
 
 
-def _try(reads: list[np.ndarray], quals: list | None) -> tuple:
+def _try(reads: list[np.ndarray], quals: list | None, with_quality: bool = False) -> tuple:
+    """Fast and sync paths (plus eager smart/soft) for one list of reads. Returns (acc, fields, payload, projected
+    bases, cost, path, hard bases, stats), and with ``with_quality`` also the projected qualities (None unless the
+    worker keeps them for quality-weighted consensus)."""
     lay: Layout = _P["lay"]
     n = len(reads)
     acc = np.zeros(n, dtype=bool)
@@ -39,16 +43,21 @@ def _try(reads: list[np.ndarray], quals: list | None) -> tuple:
     parsed_fields = np.zeros((n, 4), dtype=np.int64)
     payload = np.zeros((n, lay.payload_bytes), dtype=np.uint8)
     path = np.zeros(n, dtype=np.int8)          # 1 fast, 2 sync
+    # quality of each projected frame base (V6 Phase 4 weighted consensus; 0 where no read base or no qualities)
+    proj_q = np.zeros((n, lay.frame_nt), dtype=np.uint8) if _P.get("qw") else None
     lengths = np.fromiter((r.size for r in reads), dtype=np.int64, count=n)
     exact = np.flatnonzero(lengths == lay.strand_nt)
     if exact.size:
         mat = np.stack([reads[i] for i in exact])
         fb, mism = strip_markers_exact(lay, mat)
         er = fb > 3
-        if quals is not None and _P["min_q"]:
+        if quals is not None and (_P["min_q"] or proj_q is not None):
             qm = np.stack([quals[i] for i in exact])
             tpl, pos = lay.template()
-            er |= qm[:, pos] < _P["min_q"]
+            if _P["min_q"]:
+                er |= qm[:, pos] < _P["min_q"]
+            if proj_q is not None:
+                proj_q[exact] = qm[:, pos]
         frames = nt_to_bytes(np.minimum(fb, 3))
         P = decode_frames(lay, frames, frame_erasures_to_bytes(er))
         ok = P.ok
@@ -75,7 +84,7 @@ def _try(reads: list[np.ndarray], quals: list | None) -> tuple:
     if rest.size:
         rreads = [reads[i] for i in rest]
         rquals = None if quals is None else [quals[i] for i in rest]
-        if smart is None and soft is None:
+        if smart is None and soft is None and not (proj_q is not None and rquals is not None):
             pr = _P["al"].project(rreads, rquals, _P["min_q"])
         else:
             from vnxdna.sync.smart.path import align_with_path
@@ -112,6 +121,15 @@ def _try(reads: list[np.ndarray], quals: list | None) -> tuple:
             for j in cand_all.tolist():
                 soft_jobs.append((int(rest[j]), _soft_evidence(rreads[j], None if rquals is None else rquals[j], pr.bases[j],
                                                                pr.erased[j], rpos[j], None)))
+        if proj_q is not None and rquals is not None:
+            # quality of the read base each frame base was aligned to (the alignment path; −1 = deleted → 0)
+            fpos = lay.template()[1]
+            qlen = np.fromiter((q.size for q in rquals), dtype=np.int64, count=len(rquals))
+            qmat = np.zeros((len(rquals), max(1, int(qlen.max(initial=0)))), dtype=np.uint8)
+            for j, q in enumerate(rquals):
+                qmat[j, : q.size] = q
+            ri = np.asarray(rpos)[:, fpos].astype(np.int64)
+            proj_q[rest] = np.where(ri >= 0, np.take_along_axis(qmat, np.maximum(ri, 0), axis=1), 0)
         cost[rest] = np.where(pr.ok, pr.cost, 1 << 28)
         hard_bases[rest] = np.minimum(pr.bases, 3)
         pb = pr.bases.copy()
@@ -143,6 +161,8 @@ def _try(reads: list[np.ndarray], quals: list | None) -> tuple:
                         path[i] = 4
                         parsed_fields[i] = o.fields
                         payload[i] = o.payload
+    if with_quality:
+        return acc, parsed_fields, payload, proj_bases, cost, path, hard_bases, sstats, proj_q
     return acc, parsed_fields, payload, proj_bases, cost, path, hard_bases, sstats
 
 
@@ -189,7 +209,7 @@ def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | N
             if ql is not None:
                 ql[i] = ql[i][::-1]
         rc_used |= flip
-    acc, fields, payload, proj, cost, path, hard, sstats = _try(reads, ql)
+    acc, fields, payload, proj, cost, path, hard, sstats, pq = _try(reads, ql, with_quality=True)
     oriented = reads                       # the orientation each read's projection refers to (pending raw reads)
     oriented_q = ql
     if _P["rc"]:
@@ -197,13 +217,15 @@ def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | N
         if bad.size:
             rreads = [_RC[reads[i][::-1]] for i in bad]
             rq = None if ql is None else [ql[i][::-1] for i in bad]
-            a2, f2, p2, pr2, c2, path2, h2, s2 = _try(rreads, rq)
+            a2, f2, p2, pr2, c2, path2, h2, s2, q2 = _try(rreads, rq, with_quality=True)
             sstats.update(s2)
             better = a2 | (c2 < cost[bad])
             sel = bad[better]
             acc[sel], fields[sel], payload[sel], proj[sel], cost[sel], path[sel], hard[sel] = (
                 a2[better], f2[better], p2[better], pr2[better], c2[better], path2[better], h2[better])
             rc_used[sel] = ~rc_used[sel]
+            if pq is not None:
+                pq[sel] = q2[better]
             if _P.get("smart") is not None or _P.get("soft") is not None:
                 oriented = list(reads)
                 oriented_q = None if ql is None else list(ql)
@@ -237,8 +259,12 @@ def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | N
         pend_fields = np.where((ta[:, 0] >= 0)[:, None], ta, alt)[good]
         pend_alt = np.where((alt[:, 0] >= 0)[:, None], alt, ta)[good]
         pend_bases = proj[pend][good]
+    if pq is not None:
+        out_pq = pq[pend][good] if pend.size else np.zeros((0, lay.frame_nt), dtype=np.uint8)
     out = {"acc_fields": fields[acc], "acc_payload": payload[acc], "acc_index": np.flatnonzero(acc),
            "pend_fields": pend_fields, "pend_bases": pend_bases, "pend_alt": pend_alt,
+           **({} if pq is None else {"pend_pq": out_pq,
+                                     "pend_pqok": np.full(out_pq.shape[0], int(ql is not None), dtype=np.uint8)}),
            "stats": {"reads": int(lengths.size), "fast": int((path == 1).sum()), "sync": int((path == 2).sum()),
                      "reverse_complement": int((rc_used & acc).sum()), "pending": int(pend_fields.shape[0]), "orphans": orphans,
                      "unaligned": int((~acc).sum()) - int(pend.size)}}
