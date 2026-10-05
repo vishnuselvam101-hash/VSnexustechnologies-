@@ -390,6 +390,9 @@ def decode(reads: Path, output: Optional[Path] = typer.Option(None, "--output", 
            events: Optional[Path] = typer.Option(None, "--events", help="Write structured decode events (JSON lines) here."),
            task_id: Optional[str] = typer.Option(None, "--task-id", help="Task ID recorded in every event."),
            allow_unencrypted: bool = UNENC_OPT,
+           max_container_bytes: Optional[int] = typer.Option(
+               None, "--max-container-bytes",
+               help="Refuse a superblock claiming a larger container (default 4 GiB; exit 3 RESOURCE_LIMIT)."),
            no_input_hash: bool = typer.Option(False, "--no-input-hash", help="Do not compute the SHA-256 of the read file.")
            ) -> None:
     """Reconstruct a verified VNX4 container from DNA reads (FASTA/FASTQ)."""
@@ -401,7 +404,8 @@ def decode(reads: Path, output: Optional[Path] = typer.Option(None, "--output", 
         from vnxdna.sdk.config import decode_options_for
         opts = decode_options_for(config, performance, workers=workers, archive_tag=archive_tag, budget=budget,
                                   profile=profile, band=band, min_quality=min_quality, indel_recovery=indel_recovery,
-                                  soft_decoding=soft_decoding, recovery_schedule=recovery_schedule)
+                                  soft_decoding=soft_decoding, recovery_schedule=recovery_schedule,
+                                  max_container_bytes=max_container_bytes)
         return _decode(reads, output, extract_dir, partial_dir, select, opts, force, key_file, passphrase_env, report, events,
                        task_id, allow_unencrypted, not no_input_hash)
     _run(go)

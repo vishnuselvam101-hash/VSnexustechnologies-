@@ -7,7 +7,8 @@ from collections import Counter
 import numpy as np
 
 from vnxdna.codec.codecs import CauchyRSCodec
-from vnxdna.core.errors import VNXAddressError, VNXDecodeError, VNXFormatError, VNXUnsupportedVersionError
+from vnxdna.core.errors import (VNXAddressError, VNXDecodeError, VNXFormatError, VNXResourceError,
+                               VNXUnsupportedVersionError)
 from vnxdna.dnaenc.layout import KIND_SUPER, Layout
 from vnxdna.recovery.consensus import _consensus_symbols, resolve_duplicates
 from vnxdna.recovery.options import DecodeOptions
@@ -142,4 +143,14 @@ def _decode_superblock(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
                               code="MULTIPLE_ARCHIVES")
     else:
         tag = next(iter(candidates))
-    return candidates[tag], {"archive_tags_seen": [f"{t:04x}" for t in tags], "superblock_conflicts": conflicts}
+    sb = candidates[tag]
+    if sb.container_size > opt.max_container_bytes:
+        # V6-SEC-01: the claim is untrusted (a CRC-valid forgery chooses it). Refused here, for every caller (pass 2,
+        # the deferred smart/soft schedule, random access), before the work file is sized or any group is walked, so
+        # decode work cannot grow with a claimed group count beyond the cap.
+        raise VNXResourceError(f"the superblock claims a container of {sb.container_size:,} bytes, above the limit of "
+                               f"{opt.max_container_bytes:,} bytes; nothing decoded", stage="superblock",
+                               details={"container_size": sb.container_size, "groups": sb.group_count,
+                                        "max_container_bytes": opt.max_container_bytes, "archive_tag": f"{tag:04x}"},
+                               hint="if this archive is genuine, raise the limit with --max-container-bytes")
+    return sb, {"archive_tags_seen": [f"{t:04x}" for t in tags], "superblock_conflicts": conflicts}

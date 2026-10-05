@@ -36,7 +36,7 @@ DNA_KEYS = {"profile", "outer_code", "data_symbols", "parity_symbols", "layout",
             "stripe_depth", "column_parity", "strand_order", "outer_plan", "redundancy_budget"}
 DECODE_KEYS = {"profile", "band", "min_quality", "reverse_complement", "consensus_threshold", "max_pending_per_address",
                "archive_tag", "batch_reads", "workers", "indel_recovery", "soft_decoding",
-               "recovery_schedule"}
+               "recovery_schedule", "max_container_bytes"}
 ARCHIVE_KEYS = {"chunk_size", "compression", "level", "workers", "preserve_metadata", "dedup"}
 
 
