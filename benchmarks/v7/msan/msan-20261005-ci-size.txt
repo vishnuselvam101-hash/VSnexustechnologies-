@@ -1,0 +1,38 @@
+==================== toolchain
+Ubuntu clang version 18.1.3 (1ubuntu1)
+commit 6be3f65  cpu levels: see rs replay levels_mask
+==================== canary
+==44627==WARNING: MemorySanitizer: use-of-uninitialized-value
+==================== golden vectors (reference outputs)
+{"align": {"records": 210, "sha256": "91ffe5b997886c67fad48f242efdf2fc81084bc8369d7f5c1bf69362a92d600d", "golden_sets": 10, "random_rounds": 200, "reads": 60527}, "rs": {"records": 1162, "sha256": "9d824783da459c205cefec4e74b1bfe8aec43a5a1930b4300557cc92040cfcf9", "golden_vectors": 162, "random_rounds": 1000, "words": 75086}, "reads": {"records": 2557, "sha256": "c1404daa551f6d4a4e4b29b9c4ab8394e2980885be5f979c5408ca6ec87696d7", "fuzz_cases": 3000, "reference_errors": 1713, "not_parsed_by_kernel": 447}}
+==================== replay align
+{"kernel": "align", "records": 210, "reads": 60527, "calls": 630, "mismatches": 0}
+==================== replay rs
+{"kernel": "rs", "records": 1162, "words": 75086, "calls": 9296, "levels_mask": 14, "mismatches": 0}
+==================== replay reads
+{"kernel": "reads", "records": 2557, "parsed": 844, "errors": 1713, "bytes": 15979217, "mismatches": 0}
+==================== harness align (corpus + regressions + random)
+{"files": 12, "random_cases": 20000, "random_bytes": 50521772}
+==================== harness reads (corpus + regressions + random)
+{"files": 20, "random_cases": 20000, "random_bytes": 50521772}
+==================== harness rs (corpus + regressions + random)
+{"files": 10, "random_cases": 20000, "random_bytes": 50521772}
+==================== libFuzzer+MSan align 30s
+stat::number_of_executed_units: 27335 stat::new_units_added:          586 
+==================== libFuzzer+MSan reads 30s
+stat::number_of_executed_units: 425587 stat::new_units_added:          1709 
+==================== libFuzzer+MSan rs 30s
+stat::number_of_executed_units: 22707 stat::new_units_added:          699 
+==================== summary
+canary: PASS
+vectors: PASS
+replay-align: PASS
+replay-rs: PASS
+replay-reads: PASS
+harness-align: PASS
+harness-reads: PASS
+harness-rs: PASS
+libfuzzer-align: PASS
+libfuzzer-reads: PASS
+libfuzzer-rs: PASS
+overall: PASS
