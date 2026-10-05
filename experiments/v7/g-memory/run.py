@@ -20,6 +20,7 @@ import argparse
 import hashlib
 import json
 import os
+import shutil
 import sys
 import tempfile
 import time
@@ -74,7 +75,7 @@ def slim(r: dict) -> dict:
     return r
 
 
-def run_size(size_mib: int, out: Path, work: Path, workers_sim: int) -> dict:
+def run_size(size_mib: int, work: Path, workers_sim: int, models: list[str], save) -> dict:
     payload, strands, container = work / "payload.bin", work / "strands.fasta", work / "a.vnx"
     import subprocess
 
@@ -88,8 +89,9 @@ def run_size(size_mib: int, out: Path, work: Path, workers_sim: int) -> dict:
                strands_sha256=sha256_file(strands), strands_bytes=strands.stat().st_size,
                container_sha256=sha256_file(container), container_bytes=container.stat().st_size)
     rows = [enc]
+    save(rows)
     print(json.dumps({k: enc[k] for k in ("op", "size_mib", "exit", "wall_seconds", "peak_rss_bytes")}), flush=True)
-    for model in MODELS:
+    for model in models:
         reads, meta = work / f"reads-{model}.fastq", work / f"sim-{model}.json"
         t = time.perf_counter()
         sim = subprocess.run([*gen[:3], "channel", "simulate", str(strands), str(reads), "--model", model, "--seed",
@@ -100,6 +102,7 @@ def run_size(size_mib: int, out: Path, work: Path, workers_sim: int) -> dict:
             raise SystemExit(f"simulate {model} failed: {sim.stderr[-2000:]}")
         sm = json.loads(meta.read_text())
         events, o = work / f"events-{model}.jsonl", work / "decoded.vnx"
+        free_before = shutil.disk_usage(work).free
         dec = measured(["decode", str(reads), "-o", str(o), "--workers", "1", "--events", str(events), "--force"], work)
         raw = dec.pop("_raw_samples")
         dec["stage_attribution"] = measure.stage_of_peak(raw, events)
@@ -108,8 +111,10 @@ def run_size(size_mib: int, out: Path, work: Path, workers_sim: int) -> dict:
                    simulate_seconds=round(sim_secs, 1),
                    simulation={"model": sm.get("model"), "seed": sm.get("seed"), "reads": sm.get("output", {}).get("reads"),
                                "reads_sha256": sm.get("output", {}).get("sha256"), "realised_rates": sm.get("realised_rates")},
-                   exact=o.exists() and sha256_file(o) == enc["container_sha256"])
+                   exact=o.exists() and sha256_file(o) == enc["container_sha256"],
+                   disk_free_bytes_before_decode=free_before)
         rows.append(dec)
+        save(rows)
         print(json.dumps({k: dec.get(k) for k in ("op", "size_mib", "model", "exit", "exact", "wall_seconds",
                                                   "peak_rss_bytes")}), flush=True)
         for p in (reads, o, events):
@@ -124,21 +129,28 @@ def main(argv=None) -> int:
     ap.add_argument("--out", default=str(HERE / "results"))
     ap.add_argument("--work", default=None, help="scratch directory for strands and reads (needs ~20 GB at 64 MiB)")
     ap.add_argument("--sim-workers", type=int, default=6)
+    ap.add_argument("--models", default=",".join(MODELS),
+                    help="subset of the models; a subset writes size-<S>MiB-<models>.json (disk: one reads file at a time)")
     a = ap.parse_args(argv)
+    models = a.models.split(",")
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     for size in [int(x) for x in a.sizes.split(",")]:
-        with tempfile.TemporaryDirectory(prefix="vnx-g-mem-", dir=a.work) as d:
-            t0 = time.time()
-            res = run_size(size, out, Path(d), a.sim_workers)
+        name = f"size-{size}MiB.json" if models == MODELS else f"size-{size}MiB-{'+'.join(models)}.json"
+        t0 = time.time()
+
+        def save(rows, size=size, name=name, t0=t0):
             doc = {"experiment": "G-MEM", "classification": "SIMULATED channel; wall time and peak RSS MEASURED",
-                   "statement": STATEMENT, "size_mib": size, "models": MODELS, "workers": 1,
+                   "statement": STATEMENT, "size_mib": size, "models": models, "workers": 1,
                    "method": "fresh process per command; peak_rss_bytes = the process's own VmHWM (measure.py)",
                    "git": {"commit": git("rev-parse", "HEAD"),
                            "dirty_tracked": bool(git("status", "--porcelain", "--untracked-files=no"))},
                    "host": host(), "started": time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime(t0)),
-                   "elapsed_seconds": round(time.time() - t0, 1), **res}
-            (out / f"size-{size}MiB.json").write_text(json.dumps(doc, indent=1) + "\n")
+                   "elapsed_seconds": round(time.time() - t0, 1), "complete": len(rows) == 1 + len(models), "rows": rows}
+            (out / name).write_text(json.dumps(doc, indent=1) + "\n")
+
+        with tempfile.TemporaryDirectory(prefix="vnx-g-mem-", dir=a.work) as d:
+            run_size(size, Path(d), a.sim_workers, models, save)
     return 0
 
 
