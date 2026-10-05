@@ -18,6 +18,9 @@ A ``/2`` document has the ``/1`` top-level keys and ``stages`` (every ``/1`` sta
     ``context``               ``{"k": 3, "substitution": [64], "insertion": [64], "deletion": [64]}``: rate multipliers by
                               the reference 3-mer centred on the site (previous, base, next; A=0 C=1 G=2 T=3; an edge uses the
                               base itself as the missing neighbour). HONOURED.
+    ``read_heterogeneity``    ``{"distribution": "gamma", "shape": k}``: every read draws one multiplier m ~ Gamma(k, 1/k)
+                              (mean 1) that scales its per-site sub/ins/del probabilities (protocol 5.5, A2.1). HONOURED.
+                              Present in the canonical form only when set, so models without it keep their SHA-256.
     ``correlation``           P(event at i+1 | event at i): NOT HONOURED by the simulator.
     ``asymmetry``             forward/backward differences: NOT HONOURED by the simulator.
 
@@ -38,7 +41,7 @@ SCHEMA_V2 = _m.SCHEMA_V2
 BASES = ("measured", "estimated", "inferred", "assumed", "synthetic")
 SPLIT_NAMES = ("FIT", "HELDOUT")
 ADEQUACY = ("ADEQUATE", "INADEQUATE", "UNVALIDATED")
-HONOURED = ("context", "insertion.run_length")
+HONOURED = ("context", "insertion.run_length", "read_heterogeneity")
 UNHONOURED = ("correlation", "asymmetry")
 TOP_KEYS_V2 = _m.TOP_KEYS + ("model_id", "parameters", "fit_report")
 PROVENANCE_KEYS_V2 = _m.PROVENANCE_KEYS + ("split", "fitting")
@@ -50,6 +53,8 @@ _HEX64 = re.compile(r"^[0-9a-f]{64}$")
 _SHA40 = re.compile(r"^[0-9a-f]{40}$")
 _TS = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
 CONTEXT_LEN = 64
+HETEROGENEITY_DISTRIBUTIONS = ("gamma",)
+HETEROGENEITY_SHAPE = (0.05, 1e6)
 
 
 def _err(msg: str, **details):
@@ -60,6 +65,7 @@ def _build_defaults() -> dict:
     d = copy.deepcopy(_m.DEFAULTS)
     d["sequencing"]["insertion"]["run_length"] = {"distribution": "single", "mean": 1.0}
     d["sequencing"]["context"] = None
+    d["sequencing"]["read_heterogeneity"] = None
     d["sequencing"]["correlation"] = None
     d["sequencing"]["asymmetry"] = None
     return d
@@ -93,6 +99,16 @@ def _check_context(c: Any, seq: dict) -> dict | None:
     return out
 
 
+def _check_heterogeneity(h: Any) -> dict | None:
+    if h is None:
+        return None
+    h = _m._keys(h, ("distribution", "shape"), "stages.sequencing.read_heterogeneity")
+    if h.get("distribution") not in HETEROGENEITY_DISTRIBUTIONS:
+        raise _err(f"stages.sequencing.read_heterogeneity.distribution must be one of {list(HETEROGENEITY_DISTRIBUTIONS)}")
+    lo, hi = HETEROGENEITY_SHAPE
+    return {"distribution": h["distribution"], "shape": _m._num(h.get("shape"), "stages.sequencing.read_heterogeneity.shape", lo, hi)}
+
+
 def _check_correlation(c: Any) -> dict | None:
     if c is None:
         return None
@@ -124,7 +140,7 @@ def normalize_stages_v2(stages: dict | None) -> dict:
     ext: dict[str, Any] = {}
     run_length = None
     if seq:
-        ext = {k: seq.pop(k) for k in ("context", "correlation", "asymmetry") if k in seq}
+        ext = {k: seq.pop(k) for k in ("context", "read_heterogeneity", "correlation", "asymmetry") if k in seq}
         ins = seq.get("insertion")
         if isinstance(ins, dict) and "run_length" in ins:
             run_length = ins.pop("run_length")
@@ -138,6 +154,9 @@ def normalize_stages_v2(stages: dict | None) -> dict:
         raise _err("stages.sequencing.insertion.run_length: distribution 'single' has mean 1")
     s["insertion"]["run_length"] = rl
     s["context"] = _check_context(ext.get("context"), s)
+    het = _check_heterogeneity(ext.get("read_heterogeneity"))
+    if het is not None:                      # only when set: documents without it keep their canonical form and SHA-256
+        s["read_heterogeneity"] = het
     s["correlation"] = _check_correlation(ext.get("correlation"))
     s["asymmetry"] = _check_asymmetry(ext.get("asymmetry"))
     return out
@@ -158,6 +177,8 @@ def active_effects(stages: dict) -> list[str]:
     rl = seq.get("insertion", {}).get("run_length")
     if rl and rl.get("distribution") != "single":
         out.append("insertion.run_length")
+    if seq.get("read_heterogeneity") is not None:
+        out.append("read_heterogeneity")
     return out + [k for k in UNHONOURED if seq.get(k) is not None]
 
 
@@ -355,7 +376,7 @@ def to_v1_doc(doc: dict) -> dict:
         raise _err(f"model {doc['name']}@{doc['version']} uses /2 effects {eff} that vnx.channel-model/1 cannot express")
     stages = copy.deepcopy(doc["stages"])
     seq = stages["sequencing"]
-    for k in ("context", "correlation", "asymmetry"):
+    for k in ("context", "read_heterogeneity", "correlation", "asymmetry"):
         seq.pop(k, None)
     seq["insertion"].pop("run_length", None)
     prov = {k: copy.deepcopy(doc["provenance"][k]) for k in _m.PROVENANCE_KEYS}

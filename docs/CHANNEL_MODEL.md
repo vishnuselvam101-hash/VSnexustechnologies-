@@ -122,6 +122,7 @@ Opt-in effects in `stages.sequencing` (all default off):
 |---|---|---|
 | `insertion.run_length` `{distribution: single \| geometric, mean}` | bases inserted at one gap (geometric: Geometric(1/mean), capped at 64) | **honoured** |
 | `context` `{k: 3, substitution, insertion, deletion}` | 64 rate multipliers each (or null), indexed by the reference 3-mer centred on the site (`16*previous + 4*base + next`, A=0 C=1 G=2 T=3; an edge uses the base itself as the missing neighbour) | **honoured** |
+| `read_heterogeneity` `{distribution: gamma, shape}` | per-read rate heterogeneity: every read draws one multiplier m ~ Gamma(shape, 1/shape) (mean 1) that scales its per-site sequencing substitution, insertion and deletion probabilities (each site's total clipped at 0.95); own random stream (`TAG_HETEROGENEITY`); present in the canonical document only when set (V7 protocol 5.5) | **honoured** |
 | `correlation` `{lag, p_event_given_event, p_event_given_no_event}` | error correlation | **refused** |
 | `asymmetry` `{orientation, backward_substitution_matrix}` | forward/backward difference | **refused** |
 

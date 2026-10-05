@@ -236,7 +236,7 @@ def set_path(stages: dict, path: str, value: Any, *, v2: bool = False) -> None:
         if tmpl is not None:
             if not isinstance(tmpl, dict) or part not in tmpl:
                 raise _err(f"unknown parameter {path!r}")
-            tmpl = None if part in ("position_profile", "context", "correlation", "asymmetry") else tmpl[part]
+            tmpl = None if part in ("position_profile", "context", "read_heterogeneity", "correlation", "asymmetry") else tmpl[part]
         if node.get(part) is None:
             node[part] = {}
         node = node[part]
