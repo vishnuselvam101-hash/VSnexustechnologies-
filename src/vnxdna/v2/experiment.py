@@ -177,7 +177,7 @@ def run_experiment(input_path: str | os.PathLike, output_dir: str | os.PathLike,
     for r in records:
         if r["outcome"] == "failed-detected":
             errors_by_category[r["error"]] = errors_by_category.get(r["error"], 0) + 1
-    summary = {"simulation": "SOFTWARE SIMULATION", "trials": n, "successful_recovery": exact,
+    summary: dict[str, Any] = {"simulation": "SOFTWARE SIMULATION", "trials": n, "successful_recovery": exact,
                "failed_recovery": n - exact, "detected_failures": outcomes.count("failed-detected"),
                "undetected_corruption": outcomes.count("undetected-corruption"), "internal_errors": outcomes.count("internal-error"),
                "failures_by_category": errors_by_category, "success_rate": exact / n if n else 0.0, "success_ci95": wilson(exact, n),

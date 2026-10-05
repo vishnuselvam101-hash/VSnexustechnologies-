@@ -34,7 +34,7 @@ import shutil
 import tempfile
 import time
 from collections import Counter, deque
-from collections.abc import Callable, Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator, MutableMapping, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -43,7 +43,7 @@ import numpy as np
 
 from ..dna.mapping import get_mapping, reverse_complement_codes
 from ..ecc.cauchy import CauchyErasureCode
-from ..ecc.engine import outer_code
+from ..ecc.engine import OuterCode, outer_code
 from ..ecc.inner_rs import MAX_CODEWORD
 from ..errors import (ConfigurationError, InsufficientRedundancyError, IntegrityError, InvalidInputError, MetadataError,
                       UnrecoverableCorruptionError, VNXDNAError)
@@ -267,6 +267,7 @@ def scan_batch(batch: ReadBatch, geometry: FrameGeometry, options: DecodeOptions
             fixed = int(fw.ok.sum())
             stats["inner_symbols_corrected"] += int(fw_counts[fw.ok].sum())
             if rc_frames is not None and not fw.ok.all():
+                assert rc_erasures is not None  # set together with rc_frames
                 left = ~fw.ok
                 rc, rc_counts = parse_many_corrected(geometry, rc_frames[left], rc_erasures[left])
                 emit(rc.kind[rc.ok], rc.tag[rc.ok], rc.stripe[rc.ok], rc.shard[rc.ok], rc.payload[rc.ok])
@@ -302,7 +303,8 @@ def scan_batch(batch: ReadBatch, geometry: FrameGeometry, options: DecodeOptions
             continue
         stats["reads_length_mismatch"] += 1
     if repaired:
-        emit(*[np.array([r[f] for r in repaired]) for f in range(4)], np.stack([r[4] for r in repaired]))
+        kinds, tags_, stripes_, shards_ = (np.array([r[f] for r in repaired]) for f in range(4))
+        emit(kinds, tags_, stripes_, shards_, np.stack([r[4] for r in repaired]))
     return concat_records(out_parts, rec), stats
 
 
@@ -351,7 +353,8 @@ def scan_file(path: str | os.PathLike, geometry: FrameGeometry, options: DecodeO
                 for start in range(first, first + count, batch_reads):
                     yield ("vxs", start, min(batch_reads, first + count - start))
         else:
-            for byte_range in (byte_ranges or [None]):
+            ranges: Sequence[tuple[int, int] | None] = byte_ranges or [None]
+            for byte_range in ranges:
                 for batch in iter_batches(path, batch_reads, byte_range=byte_range):
                     yield ("batch", batch)
 
@@ -453,18 +456,18 @@ def recover_metadata(meta: np.ndarray, geometry: FrameGeometry, stats: Counter |
         # Several archives in one pool (V3): use the only one whose metadata decodes; otherwise ask for --archive-tag.
         # (VNX-DNA 2.0 always refused such pools.) The choice is safe: the manifest is authenticated afterwards and
         # every data record is filtered by the chosen tag.
-        decodable = []
+        decodable_tags = []
         for t in tags.tolist():
             try:
                 recover_metadata(meta[meta["tag"] == t], geometry, None)
-                decodable.append(t)
+                decodable_tags.append(t)
             except VNXDNAError:
                 continue
         names = [f"{t:08x}" for t in tags.tolist()]
-        if len(decodable) != 1:
+        if len(decodable_tags) != 1:
             raise MetadataError(f"reads contain metadata for several archives (tags {names}); choose one with --archive-tag",
-                                details={"archive_tags": names, "decodable": [f"{t:08x}" for t in decodable]})
-        meta = meta[meta["tag"] == decodable[0]]
+                                details={"archive_tags": names, "decodable": [f"{t:08x}" for t in decodable_tags]})
+        meta = meta[meta["tag"] == decodable_tags[0]]
         if stats is not None:
             stats["metadata_other_archives_ignored"] += len(names) - 1
     tag = int(np.unique(meta["tag"])[0])
@@ -522,7 +525,7 @@ def recover_metadata(meta: np.ndarray, geometry: FrameGeometry, stats: Counter |
 
 
 # ======================================================================= pass 2: assemble
-def _sorted_blocks(scan: ScanResult, loaded: LoadedV2, workdir: Path, stats: Counter) -> Iterator[np.ndarray]:
+def _sorted_blocks(scan: ScanResult, loaded: LoadedV2, workdir: Path, stats: MutableMapping[str, Any]) -> Iterator[np.ndarray]:
     """Yield record blocks in globally non-decreasing stripe order (external bucket sort if needed)."""
     rec = record_dtype(scan.geometry.payload_bytes)
     tag = loaded.manifest.archive_tag
@@ -623,7 +626,7 @@ def assemble_chunks(scan: ScanResult, loaded: LoadedV2, workdir: Path, *, wanted
             failures.append({"chunk": c, "error": error.category, "message": str(error), **error.details})
 
 
-def _decode_chunk(c: int, records: np.ndarray, lo: int, stripes: int, stored_size: int, code: CauchyErasureCode, p: int, k: int,
+def _decode_chunk(c: int, records: np.ndarray, lo: int, stripes: int, stored_size: int, code: OuterCode, p: int, k: int,
                   n: int, loaded: LoadedV2, stats: Counter) -> bytes:
     stats["chunks_assembled"] += 1
     if stripes == 0:
@@ -680,6 +683,7 @@ class ReadsArchive:
                 frame_format, geometry = discover(self.path, quality_erasure_below=options.quality_erasure_below)
                 if frame_format != FRAME_FORMAT:
                     raise InvalidInputError("these are V1 (frame format 4) reads; they are decoded by the V1 decoder")
+                assert geometry is not None  # discover() returns a geometry for every frame format but V1's
             self.geometry = geometry
             scan_kwargs: dict[str, Any] = {}
             self.dna_index = dna_index

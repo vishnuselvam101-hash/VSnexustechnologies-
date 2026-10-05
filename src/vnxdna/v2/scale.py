@@ -212,9 +212,11 @@ def run_measured(command: list[str], *, watch_dir: Path | None = None, env: dict
     sampler = threading.Thread(target=sample, daemon=True)
     sampler.start()
     out_chunks: list[bytes] = []
-    reader = threading.Thread(target=lambda: out_chunks.append(proc.stdout.read()), daemon=True)
+    out_pipe, err_pipe = proc.stdout, proc.stderr
+    assert out_pipe is not None and err_pipe is not None  # both are pipes (Popen above)
+    reader = threading.Thread(target=lambda: out_chunks.append(out_pipe.read()), daemon=True)
     reader.start()
-    err = proc.stderr.read()
+    err = err_pipe.read()
     _, status, usage = os.wait4(proc.pid, 0)
     reader.join()
     stop.set()
