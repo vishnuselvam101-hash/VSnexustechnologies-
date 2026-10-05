@@ -24,8 +24,9 @@ are SIMULATED.
 - **Conformance runner** `vnx conformance` with a packaged vector subset (spec §6).
 - Fixes: `--performance bogus` is exit 7 (was 70); `vnx encode` passes archive options through or refuses them;
   `locate --dna-profile` refuses V6 outer-code layouts (exit 7) and handles custom K/M; archive-tag collisions are
-  refused as `ARCHIVE_TAG_AMBIGUOUS` (exit 3); random access snaps reads like a full decode; pass-2 consensus is
-  independent of the spill bucket count (now tested).
+  refused as `ARCHIVE_TAG_AMBIGUOUS` (exit 3); random access snaps reads like a full decode. The decode outcome is
+  tested to be independent of the spill bucket count; consensus internals are not (see tests/v6/test_spill_independence.py).
+- `--report` files are now the `vnx.decode-report/1` envelope; the 5.x report fields stay at the top level.
 
 ## Unreleased — V6 Phase 1 (outer-code resilience)
 

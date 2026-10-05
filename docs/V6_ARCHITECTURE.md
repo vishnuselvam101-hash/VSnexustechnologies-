@@ -18,7 +18,11 @@
     `reedsolo` (`codec.inner_parity`, equal to the V1 one for every parity size);
   - the read file's SHA-256 is computed in a helper thread during D0, not inline in the parser;
   - the probe decides on variant-consistent nibble shares ≥ 30 % (spec §3.10 implementation notes);
-  - `run_start` carries the inputs without hashes; the hashes are on `command_end`.
+  - `run_start` carries the inputs without hashes; the hashes are on `command_end`;
+  - item 2.8: the decode *outcome* is independent of the spill bucket count, the report's consensus internals are not
+    (cross-group snaps stay within a bucket); open for a decision;
+  - EXP-PROBE-1 (item 2.5) fails its "0 refusals" criterion in 60 nanopore-like samples of 64 reads that no layout
+    decodes; it conflicts with "0 acceptances" at that sample size (experiments/v6/phase2/EXP-PROBE-1/README.md).
 
 ## 1. Problem statement (from the audit)
 
