@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- `vnx locate` / `dna_location` with V6 outer-code options (stripes, column parity, interleaved order, adaptive plan)
+  report the strand-file records the encoder writes for those options instead of refusing them; V4/V5 output is
+  unchanged (job #62).
+
 ## 6.0.0 (unreleased)
 
 Consolidated entry for all V6 phases (development tree `6.0.0.dev0`; version and date to be set at release). The
