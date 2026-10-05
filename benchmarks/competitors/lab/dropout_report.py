@@ -9,6 +9,8 @@ from aggregate import wilson
 
 
 def fmt(k, n):
+    if n == 0:
+        return "-"
     lo, hi = wilson(k, n)
     return f"{k}/{n} ({lo:.2f}-{hi:.2f})"
 
