@@ -321,6 +321,7 @@ def make_outer(name: str, k: int, m: int, seed: int = 0, distribution: str = "de
 
 # ============================================================================ inner RS (V3 code, wrapped)
 _TABLES: dict[tuple[int, int], np.ndarray] = {}
+MAX_CACHED_TABLES = 16                 # per-(k, r) tables are ~k·256·r bytes: bound the cache (cleared when full)
 _REFERENCE_RS = os.environ.get("VNX_RS_REFERENCE") == "1"
 
 
@@ -341,10 +342,12 @@ class InnerRS:
         if self.r == 0 or n == 0:
             return out
         key = (k, self.r)
-        if key not in _TABLES:
+        tables = _TABLES.get(key)
+        if tables is None:
             matrix = _parity_matrix(k, self.r)
-            _TABLES[key] = np.ascontiguousarray(gf256.MUL[:, matrix].transpose(1, 0, 2))
-        tables = _TABLES[key]
+            if len(_TABLES) >= MAX_CACHED_TABLES:
+                _TABLES.clear()            # atomic under the GIL, safe with concurrent readers
+            tables = _TABLES[key] = np.ascontiguousarray(gf256.MUL[:, matrix].transpose(1, 0, 2))
         for i in range(k):
             out ^= tables[i][messages[:, i]]
         return out

@@ -367,6 +367,11 @@ def _int(v, lo: int, hi: int) -> bool:
     return isinstance(v, int) and not isinstance(v, bool) and lo <= v <= hi
 
 
+def _hex(v, length: int) -> bool:
+    """Lower-case hex string of exactly ``length`` characters (as the writer produces)."""
+    return isinstance(v, str) and len(v) == length and all(c in "0123456789abcdef" for c in v)
+
+
 def validate_manifest(m: dict) -> None:
     _require(m.get("format") == "VNX4", "format must be VNX4")
     fv = m.get("format_version")
@@ -389,8 +394,8 @@ def validate_manifest(m: dict) -> None:
     _require(isinstance(enc, dict) and enc.get("algorithm") in ("none", "AES-256-GCM"), "encryption")
     if enc["algorithm"] != "none":
         _require(enc.get("kdf") in ("key-file-hkdf-sha256", "scrypt-hkdf-sha256"), "encryption.kdf")
-        _require(isinstance(enc.get("salt"), str) and len(enc["salt"]) == 2 * crypto.SALT_BYTES, "encryption.salt")
-        _require(isinstance(enc.get("key_check"), str) and len(enc["key_check"]) == 32, "encryption.key_check")
+        _require(_hex(enc.get("salt"), 2 * crypto.SALT_BYTES), "encryption.salt")
+        _require(_hex(enc.get("key_check"), 32), "encryption.key_check")
         if enc["kdf"] == "scrypt-hkdf-sha256":
             sp = enc.get("scrypt")
             _require(isinstance(sp, dict) and set(sp) == {"n", "r", "p"} and crypto.scrypt_params_ok(sp),
@@ -402,6 +407,9 @@ def validate_manifest(m: dict) -> None:
     _require(c["files"] <= MAX_FILES, "too many files")
     t = m.get("tables")
     _require(isinstance(t, dict) and {"chunk_table", "file_table", "refs"} <= set(t), "tables")
+    for name, size_key in (("chunk_table", "entries"), ("file_table", "bytes"), ("refs", "bytes")):
+        _require(isinstance(t[name], dict) and _int(t[name].get(size_key), 0, 1 << 62) and _hex(t[name].get("sha256"), 64),
+                 f"tables.{name}")
     integ = m.get("integrity")
     _require(isinstance(integ, dict) and integ.get("merkle") == "rfc6962-sha256" and isinstance(integ.get("merkle_root"), str),
              "integrity")

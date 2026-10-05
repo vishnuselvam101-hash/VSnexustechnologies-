@@ -40,3 +40,5 @@ src/vnxdna/v6/*.so
 
 # throwaway install-test virtual environments
 .tmp-venvs/
+# fuzz campaign outputs (fuzz/run.sh): working corpora, crash files, logs
+fuzz/out/
