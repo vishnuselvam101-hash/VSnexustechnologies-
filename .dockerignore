@@ -1,4 +1,4 @@
-# keep the build context to what the image needs (pyproject.toml, README.md, LICENSE, src/)
+# keep the build context to what the image needs (pyproject.toml, setup.py, README.md, LICENSE, src/)
 .git
 .github
 .venv
@@ -13,3 +13,6 @@ tests
 .pytest_cache
 .ruff_cache
 .env*
+# local native builds and install-test environments: the image compiles its own kernels
+**/*.so
+.tmp-venvs

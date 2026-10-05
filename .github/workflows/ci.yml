@@ -12,6 +12,22 @@ jobs:
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e '.[dev]'
       - run: vnx-dna --help
+      # the install must have built every native kernel (python -m vnxdna.native prints the backends)
+      - run: python -m vnxdna.native --require-native
+      # strict builds: compiler warnings are errors here (installs and local builds do not use -Werror)
+      - run: |
+          python -m vnxdna.v5.native_alignment build --strict
+          python -m vnxdna.v6.native_reads build --strict
+          python -m vnxdna.v6.native_rs build --strict
       - run: ruff check src tests research
       - run: python -m pytest
       - run: python -m compileall -q src
+  install:
+    # fresh virtual environments: pip install . (all kernels native), CC=/bin/false (installs, reference), pip wheel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with: {python-version: '3.12'}
+      - run: python -m pip install -e '.[dev]'   # the test suite's conftest needs the dependencies
+      - run: VNXDNA_INSTALL_TEST=1 python -m pytest -o addopts= -p no:cacheprovider tests/v6/native/test_install.py
