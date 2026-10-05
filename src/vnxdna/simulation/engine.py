@@ -64,6 +64,8 @@ class Simulator:
     """A compiled channel model: the stage error models built once from the /1 stages."""
 
     def __init__(self, stages: dict):
+        from vnxdna.simulation.model2 import refuse_unsupported
+        refuse_unsupported(stages)                    # /2 effects the simulator cannot honour are refused, never ignored
         self.stages = stages
         syn, sto, amp, seq = (stages[k] for k in ("synthesis", "storage", "amplification", "sequencing"))
         P = em.PositionProfile.from_json
@@ -104,7 +106,9 @@ class Simulator:
         self.shuffle_window = seq["shuffle_window"]
         self.syn_per_base = self.syn_sub.active or self.syn_ins.active or self.syn_del.active
         self.molecular = self.syn_per_base or self.truncation["rate"] > 0 or self.damage.active or self.breakage > 0
-        self.seq_aux = (self.seq_sub.matrix is not None or self.seq_ins.base_weights is not None or self.seq_del.clustered)
+        self.seq_aux = (self.seq_sub.matrix is not None or self.seq_ins.base_weights is not None or self.seq_del.clustered
+                        or self.seq_ins.clustered)
+        self.seq_context = seq.get("context")         # /2: 3-mer multipliers (None for /1 models)
 
     @property
     def pool_loss(self) -> bool:
@@ -234,7 +238,7 @@ class Simulator:
         if self.hp_indel != 1.0 or self.hp_sub != 1.0:
             hp = _homopolymer_mask(hp_codes, self.hp_min)[hp_index]
         rates = em.rate_arrays(base, lens, self.seq_sub, self.seq_ins, self.seq_del, self.seq_profile, hp, self.hp_indel,
-                               self.hp_sub)
+                               self.hp_sub, self.seq_context)
         res = em.per_base_errors(base, lens, rates, rng, a_seq() if self.seq_aux else None, sub=self.seq_sub,
                                  ins=self.seq_ins, dele=self.seq_del, burst_rate=self.burst_rate,
                                  burst_max_len=self.burst_max)
@@ -434,7 +438,7 @@ def metadata(model: ChannelModel, seed: int, strands, output, fmt: str, stats: d
         "evidence_class": "SIMULATED",
         "statement": STATEMENT,
         "seed": seed,
-        "model": {"name": model.name, "version": model.version, "schema": SCHEMA_V1, "read_as": model.read_as,
+        "model": {"name": model.name, "version": model.version, "schema": model.doc["schema"], "read_as": model.read_as,
                   "sha256": model.sha256, "source": model.source, "data_source": model.doc["data_source"],
                   "evidence_class": model.doc["evidence_class"], "provenance": model.doc["provenance"]},
         "parameters": model.parameters(),

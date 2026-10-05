@@ -309,7 +309,7 @@ def _channel_model(model, config):
     if m.read_as in (cm.CONFIG_SCHEMA_V0, cm.CONFIG_SCHEMA_V1):
         labels = {"model": "channel-config", "model_version": None, "model_schema": m.read_as}
     else:
-        labels = {"model": m.name, "model_version": m.version, "model_schema": cm.SCHEMA_V1, "model_read_as": m.read_as,
+        labels = {"model": m.name, "model_version": m.version, "model_schema": m.doc["schema"], "model_read_as": m.read_as,
                   "model_sha256": m.sha256}
     return m, file_seed, labels
 
