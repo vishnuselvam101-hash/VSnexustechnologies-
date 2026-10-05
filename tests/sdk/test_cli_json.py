@@ -122,11 +122,33 @@ def test_remaining_json_commands(ws, tmp_path):
     assert doc["reproduced"] is True
 
 
+def test_channel_model_commands(ws, tmp_path):
+    """channel models / show / convert / sweep and simulate --model print schema-valid JSON (SIMULATED)."""
+    doc = out_json(cli("channel", "models"))
+    assert doc["kind"] == "channel-model" and doc["result"]["count"] >= 14
+    doc = out_json(cli("channel", "show", "illumina-like@1.0.0"))
+    schema.validate(doc["result"]["model"], "vnx.channel-model/1")
+    v0 = out_json(cli("channel", "show", "illumina-like", "--schema", "vnx.channel-model/0"))["result"]["model"]
+    (tmp_path / "old.json").write_text(json.dumps(v0))
+    doc = out_json(cli("channel", "convert", tmp_path / "old.json", tmp_path / "new.json"))
+    assert doc["result"]["read_as"] == "vnx.channel-model/0"
+    schema.validate(json.loads((tmp_path / "new.json").read_text()), "vnx.channel-model/1")
+    doc = out_json(cli("channel", "simulate", ws / "s.fasta", tmp_path / "m.fastq", "--model", "burst-loss", "--seed", "4",
+                       "--metadata", tmp_path / "m.json", "--param", "sequencing.coverage.mean=2"))
+    assert doc["result"]["model"] == "burst-loss" and doc["result"]["model_schema"] == "vnx.channel-model/1"
+    schema.validate(json.loads((tmp_path / "m.json").read_text()), "vnx.simulation-metadata/1")
+    doc = out_json(cli("channel", "sweep", ws / "s.fasta", "--out-dir", tmp_path / "sw", "--model", "clean", "--trials", "2",
+                       "--grid", "sequencing.substitution.rate=[0.0,0.01]", "-o", tmp_path / "sw.json"))
+    assert doc["kind"] == "channel-sweep" and len(doc["result"]["points"]) == 2
+    e = err_json(cli("channel", "simulate", ws / "s.fasta", tmp_path / "z.fastq", "--model", "clean@9.9.9", code=7))
+    assert e["code"] == "CONFIGURATION_ERROR" and not (tmp_path / "z.fastq").exists()
+
+
 def test_every_command_is_covered():
     """A new command must get a JSON-validation case here (sweep, codec-compare and benchmark --human print tables)."""
     covered = {"version", "native", "keygen", "archive", "inspect", "list", "verify", "locate", "extract", "encode", "decode",
                "validate", "simulate", "benchmark", "sweep", "run", "reproduce", "generate", "profiles", "conformance",
-               "codec-compare"}
+               "codec-compare", "models", "show", "convert"}
     names = set()
     for group in [app] + [g.typer_instance for g in app.registered_groups]:
         for c in group.registered_commands:

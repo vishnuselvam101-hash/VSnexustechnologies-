@@ -1,0 +1,128 @@
+{
+  "data_source": "SIMULATED",
+  "description": "Contiguous strand-loss bursts (2 runs of 16 strands in pool order) plus 2 % i.i.d. loss, and short per-read deletion bursts.",
+  "evidence_class": "SIMULATED",
+  "name": "burst-loss",
+  "note": "Synthetic stress profile; parameters are not fitted to any measured platform.",
+  "provenance": {
+    "converted_from": {
+      "file": "burst-loss.json",
+      "schema": "vnx.channel-model/0",
+      "sha256": "d56ed0c7564bb4b13de4f3c0dfc736016b718f90776d7af21a38b142dcd17db6"
+    },
+    "datasets": [],
+    "derived": [],
+    "fitter": null,
+    "references": []
+  },
+  "schema": "vnx.channel-model/1",
+  "stages": {
+    "amplification": {
+      "cycles": 0,
+      "duplicate_rate": 0.0,
+      "efficiency_sigma": 0.0,
+      "gc_bias": {
+        "optimum": 0.5,
+        "strength": 0.0
+      },
+      "substitution_per_cycle": {
+        "from_multipliers": null,
+        "matrix": null,
+        "rate": 0.0
+      }
+    },
+    "sequencing": {
+      "bursts": {
+        "max_length": 8,
+        "rate": 0.02
+      },
+      "coverage": {
+        "dispersion": 5.0,
+        "mean": 10.0,
+        "model": "poisson",
+        "sigma": 0.0
+      },
+      "deletion": {
+        "rate": 0.0005,
+        "run_length": {
+          "distribution": "single",
+          "mean": 1.0
+        }
+      },
+      "duplicate_rate": 0.0,
+      "homopolymer": {
+        "indel_multiplier": 1.0,
+        "min_run": 3,
+        "substitution_multiplier": 1.0
+      },
+      "insertion": {
+        "base_weights": null,
+        "rate": 0.0005
+      },
+      "missing_read_rate": 0.0,
+      "n_rate": 0.0,
+      "position_profile": null,
+      "quality": {
+        "correct": 35,
+        "error": 12,
+        "informative": 0.0,
+        "position_slope": 0.0,
+        "sd": 0.0
+      },
+      "read_length": {
+        "max_length": null,
+        "min_fraction": 0.5,
+        "truncation_rate": 0.0
+      },
+      "reverse_complement_rate": 0.0,
+      "shuffle_window": 0,
+      "substitution": {
+        "from_multipliers": null,
+        "matrix": null,
+        "rate": 0.005
+      }
+    },
+    "storage": {
+      "breakage_rate": 0.0,
+      "contamination_rate": 0.0,
+      "damage": {
+        "from_multipliers": null,
+        "matrix": null,
+        "rate": 0.0
+      },
+      "retention": 1.0,
+      "strand_loss": {
+        "burst_count": 2,
+        "burst_length": 16,
+        "rate": 0.02
+      }
+    },
+    "synthesis": {
+      "deletion": {
+        "rate": 0.0,
+        "run_length": {
+          "distribution": "single",
+          "mean": 1.0
+        }
+      },
+      "dropout_rate": 0.0,
+      "insertion": {
+        "base_weights": null,
+        "rate": 0.0
+      },
+      "molecules_per_strand": 1,
+      "position_profile": null,
+      "substitution": {
+        "from_multipliers": null,
+        "matrix": null,
+        "rate": 0.0
+      },
+      "truncation": {
+        "min_fraction": 0.5,
+        "rate": 0.0
+      },
+      "yield_sigma": 0.0
+    }
+  },
+  "version": "1.0.0"
+}

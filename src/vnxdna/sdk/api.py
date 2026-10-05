@@ -28,7 +28,8 @@ from vnxdna.sdk.envelope import (ArchiveResult, BenchmarkResult, DecodeResult, E
 PathLike = str | os.PathLike
 
 __all__ = ["archive", "encode", "decode", "inspect", "verify", "extract", "list_entries", "locate", "simulate", "benchmark",
-           "codec_compare", "parse_size", "sweep", "experiment_run", "experiment_reproduce", "generate", "validate_strands", "profiles",
+           "codec_compare", "parse_size", "sweep", "channel_models", "channel_model", "channel_convert",
+           "channel_sweep", "experiment_run", "experiment_reproduce", "generate", "validate_strands", "profiles",
            "native", "keygen", "load_keys", "version", "conformance", "is_container"]
 
 CONTAINER = [FORMAT_VERSION[0], FORMAT_VERSION[1]]
@@ -289,29 +290,125 @@ def decode(reads: PathLike, output: PathLike | None = None, *, options: DecodeOp
 
 
 # ================================================================================================================= simulation
-def simulate(strands: PathLike, output: PathLike, *, config=None, seed: int | None = None, coverage: float | None = None,
-             overrides: dict | None = None, workers: int = 1, overwrite: bool = False, progress=None) -> SimulateResult:
-    """SIMULATED storage + sequencing channel: strands → reads. ``config`` is a ChannelConfig, a path to its JSON, or None
-    (defaults). Named channel models (``vnx.channel-model/1``) arrive in V6 Phase 3."""
+def _channel_model(model, config):
+    """(ChannelModel, seed from the source, body labels) for ``simulate``: a named/path model or a ChannelConfig."""
     from vnxdna.simulation import channel as ch
-    t0 = time.perf_counter()
-    if config is None:
-        cfg = ch.ChannelConfig()
-    elif isinstance(config, ch.ChannelConfig):
-        cfg = config
+    from vnxdna.simulation import model as cm
+    from vnxdna.simulation import registry
+    if model is not None and config is not None:
+        raise VNXConfigurationError("give either a channel model or a channel configuration, not both")
+    if model is not None:
+        m, file_seed = (model, None) if isinstance(model, cm.ChannelModel) else registry.resolve(model)
+    elif config is None or isinstance(config, ch.ChannelConfig):
+        cfg = (config or ch.ChannelConfig()).validate()
+        m, file_seed = cm.channel_config_to_model(cfg.to_dict()), cfg.seed
     else:
-        cfg = ch.ChannelConfig.load(config)
-    for name, v in {"seed": seed, "coverage": coverage, **(overrides or {})}.items():
-        if v is not None:
-            setattr(cfg, name, v)
-    if coverage is not None and cfg.coverage_model == "fixed" and float(coverage) != int(coverage):
-        cfg.coverage_model = "poisson"
-    body = ch.simulate_file(strands, output, cfg.validate(), workers=workers, overwrite=overwrite, progress=progress)
-    body = {**body, "model": "channel-config", "model_version": None, "model_schema": "vnx.channel-config/0",
-            "seed": cfg.seed, "coverage": cfg.coverage, "evidence_class": "SIMULATED"}
-    return SimulateResult("simulate", "SUCCESS", body, inputs=(file_ref("strands", strands),),
-                          outputs=(file_ref("reads", output),), seconds=time.perf_counter() - t0, workers=workers,
-                          config=cfg.to_dict() if hasattr(cfg, "to_dict") else None, seeds={"channel": cfg.seed})
+        m, file_seed = cm.read_file(config)
+    if m.read_as in (cm.CONFIG_SCHEMA_V0, cm.CONFIG_SCHEMA_V1):
+        labels = {"model": "channel-config", "model_version": None, "model_schema": m.read_as}
+    else:
+        labels = {"model": m.name, "model_version": m.version, "model_schema": cm.SCHEMA_V1, "model_read_as": m.read_as,
+                  "model_sha256": m.sha256}
+    return m, file_seed, labels
+
+
+def simulate(strands: PathLike, output: PathLike, *, config=None, model=None, seed: int | None = None,
+             coverage: float | None = None, overrides: dict | None = None, workers: int = 1, overwrite: bool = False,
+             progress=None, metadata: PathLike | None = None) -> SimulateResult:
+    """SIMULATED channel: strands → reads, through synthesis → storage → amplification → sequencing.
+
+    ``model`` is a shipped model name, ``NAME@VERSION``, a path to a model JSON (``vnx.channel-model/1`` or ``/0``) or a
+    :class:`~vnxdna.simulation.model.ChannelModel`. ``config`` is the V4 ``ChannelConfig`` (an object or a JSON path,
+    ``vnx.channel-config/0``); with neither, the ChannelConfig defaults are used. ``seed`` defaults to the config's seed
+    (ChannelConfig) or 0 (models). ``coverage`` and ``overrides`` (V4 field names such as ``substitution_rate``, or
+    dotted /1 paths such as ``sequencing.substitution.matrix``) change parameters and are recorded in the metadata.
+    The result body carries ``metadata`` (``vnx.simulation-metadata/1``), also written to ``metadata`` if given."""
+    import json as _json
+    from vnxdna.simulation import engine
+    from vnxdna.simulation import model as cm
+    t0 = time.perf_counter()
+    m, file_seed, labels = _channel_model(model, config)
+    changes = dict(overrides or {})
+    chosen_seed = changes.pop("seed", None)
+    seed = seed if seed is not None else chosen_seed if chosen_seed is not None else file_seed if file_seed is not None else 0
+    changes["coverage"] = coverage
+    paths = cm.override_paths(m, changes)
+    if paths:
+        m = m.with_parameters(paths, label="overrides")
+    body = engine.simulate_file(strands, output, m, seed, workers=workers, overwrite=overwrite, progress=progress,
+                                overrides=paths)
+    outputs = [file_ref("reads", output, body["metadata"]["output"]["sha256"])]
+    if metadata is not None:
+        from vnxdna.core.util import atomic_output
+        with atomic_output(metadata, overwrite=True, mode=0o644) as tmp:
+            Path(tmp).write_text(_json.dumps(body["metadata"], indent=2, sort_keys=True) + "\n")
+        outputs.append(file_ref("metadata", metadata, hash_file=True))
+    cfg_doc = None
+    if labels["model"] == "channel-config" and not cm.v0_expressible(m.stages):
+        cfg_doc = cm.v1_to_v0(m.doc)["channel"]
+        cfg_doc["seed"] = seed
+        body["config"] = cfg_doc
+    seq = m.stages["sequencing"]
+    body = {**body, **labels, "seed": seed, "coverage": seq["coverage"]["mean"], "coverage_model": seq["coverage"]["model"],
+            "data_source": engine.DATA_SOURCE, "evidence_class": "SIMULATED"}
+    return SimulateResult("simulate", "SUCCESS", body, inputs=(file_ref("strands", strands),), outputs=tuple(outputs),
+                          seconds=time.perf_counter() - t0, workers=workers,
+                          config=cfg_doc if cfg_doc is not None else {"model": m.doc, "seed": seed},
+                          seeds={"channel": seed})
+
+
+def channel_models() -> Result:
+    """The shipped channel models (name, version, SHA-256, description, data source, evidence class)."""
+    from vnxdna.simulation import registry
+    models = [registry.load_model(f"{n}@{v}").describe() for n, v in registry.available()]
+    return Result("channel-model", "SUCCESS", {"models": models, "count": len(models), "evidence_class": "SIMULATED"})
+
+
+def channel_model(ref, *, schema: str = "vnx.channel-model/1") -> Result:
+    """One model as its canonical ``vnx.channel-model/1`` document (or ``/0`` when it is expressible there)."""
+    from vnxdna.simulation import model as cm
+    from vnxdna.simulation import registry
+    m, _ = registry.resolve(ref)
+    if schema == cm.SCHEMA_V1:
+        doc = m.to_json()
+    elif schema == cm.SCHEMA_V0:
+        doc = m.to_v0()
+    else:
+        raise VNXConfigurationError(f"schema must be {cm.SCHEMA_V1} or {cm.SCHEMA_V0}")
+    return Result("channel-model", "SUCCESS", {"model": doc, "schema": schema, "info": m.describe()})
+
+
+def channel_convert(source: PathLike, output: PathLike, *, overwrite: bool = False) -> Result:
+    """Read a model in any readable schema (/0, /1, channel-config) and write its canonical ``vnx.channel-model/1``."""
+    from vnxdna.core.util import atomic_output
+    from vnxdna.simulation import model as cm
+    m, _ = cm.read_file(source)
+    with atomic_output(output, overwrite=overwrite, mode=0o644) as tmp:
+        Path(tmp).write_text(m.dumps())
+    return Result("channel-model", "SUCCESS", {"converted": True, "read_as": m.read_as, "schema": cm.SCHEMA_V1,
+                                               "info": m.describe()},
+                  inputs=(file_ref("model", source, hash_file=True),), outputs=(file_ref("model", output, hash_file=True),))
+
+
+def channel_sweep(strands: PathLike, out_dir: PathLike, *, model=None, config=None, grid: dict | None = None,
+                  trials: int = 10, base_seed: int = 0, workers: int = 1, keep_reads: bool = False,
+                  output: PathLike | None = None) -> Result:
+    """Monte Carlo (``trials`` seeds ``base_seed + i``) over every point of a parameter grid; ``vnx.channel-sweep/1``."""
+    import json as _json
+    from vnxdna.simulation import montecarlo
+    t0 = time.perf_counter()
+    m, _, _ = _channel_model(model, config)
+    doc = montecarlo.sweep(m, strands, out_dir, grid, trials=trials, base_seed=base_seed, workers=workers,
+                           keep_reads=keep_reads)
+    outputs = []
+    if output is not None:
+        from vnxdna.core.util import atomic_output
+        with atomic_output(output, overwrite=True, mode=0o644) as tmp:
+            Path(tmp).write_text(_json.dumps(doc, indent=2, sort_keys=True) + "\n")
+        outputs.append(file_ref("results", output, hash_file=True))
+    return Result("channel-sweep", "SUCCESS", doc, inputs=(file_ref("strands", strands),), outputs=tuple(outputs),
+                  seconds=time.perf_counter() - t0, workers=workers, config={"model": m.doc, "grid": grid},
+                  seeds={"base_seed": base_seed, "trials": trials})
 
 
 # ================================================================================================================= benchmarks

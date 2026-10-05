@@ -1,0 +1,18 @@
+{
+  "id": "EXP-SIM-1",
+  "phase": "V6 Phase 3",
+  "evidence_class": "SIMULATED",
+  "question": "Do the migrated channel models reproduce? (V6_ARCHITECTURE section 9)",
+  "models": "all 14 of experiments/v6/channel/models (read as /0) and src/vnxdna/simulation/models (shipped /1)",
+  "strand_files": {
+    "random-2500x120": {"generator": "numpy default_rng(91001).integers(0, 4, (2500, 120))"},
+    "random-300x80": {"generator": "numpy default_rng(91002).integers(0, 4, (300, 80))"},
+    "v6-max-recovery": {"path": "tests/fixtures/v6_0/max-recovery.strands.fasta"}
+  },
+  "seeds": [9100, 9101, 9102, 9103, 9104],
+  "workers": 1,
+  "metric": "SHA-256 of the read file",
+  "reference": "experiments/v6/channel/channel.py compose() = vnxdna.simulation.loss + vnxdna.simulation.channel (the current simulator)",
+  "candidates": ["vnxdna.simulation.engine with the /0 file", "vnxdna.simulation.engine with the shipped /1 model"],
+  "pass": "byte-identical read files in every cell (14 x 3 x 5 = 210 cells, 630 simulations)"
+}

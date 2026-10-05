@@ -3,7 +3,8 @@
     vnx archive ./dataset archive.vnx            files/directories → VNX4 container
     vnx inspect | list | verify | locate | extract archive.vnx ...   (inspect also answers "can I read this?" for reads)
     vnx encode archive.vnx strands.fasta         container (or plain files) → DNA strands
-    vnx channel simulate strands.fasta reads.fastq --config channel.json
+    vnx channel simulate strands.fasta reads.fastq --model illumina-like --seed 7   (or --config channel.json)
+    vnx channel models | show NAME | convert old.json new.json | sweep strands.fasta --model M --grid P=[..]
     vnx decode reads.fastq -o recovered.vnx      reads → verified container (or --extract DIR)
     vnx validate strands.fasta                   biological constraint diagnostics (JSON)
     vnx benchmark --profile balanced             machine-readable benchmark suite
@@ -438,17 +439,76 @@ def validate(sequences: Path, config: Optional[Path] = typer.Option(None, "--con
     _run(go)
 
 
+MODEL_OPT = typer.Option(None, "--model", "-m",
+                         help="Channel model: a shipped NAME, NAME@VERSION, or a model JSON (vnx.channel-model/1 or /0).")
+
+
 @channel_app.command("simulate")
-def channel_simulate(strands: Path, output: Path, config: Optional[Path] = typer.Option(None, "--config", "-c"),
+def channel_simulate(strands: Path, output: Path, config: Optional[Path] = typer.Option(None, "--config", "-c",
+                     help="V4 ChannelConfig JSON (vnx.channel-config/0); a channel-model file is also accepted."),
+                     model: Optional[str] = MODEL_OPT,
                      seed: Optional[int] = typer.Option(None), coverage: Optional[float] = typer.Option(None),
                      substitution_rate: Optional[float] = typer.Option(None), insertion_rate: Optional[float] = typer.Option(None),
                      deletion_rate: Optional[float] = typer.Option(None), dropout_rate: Optional[float] = typer.Option(None),
+                     param: List[str] = typer.Option([], "--param", "-p",
+                                                     help="PATH=JSON parameter change, e.g. sequencing.substitution.rate=0.01."),
+                     metadata: Optional[Path] = typer.Option(None, "--metadata",
+                                                             help="Also write the vnx.simulation-metadata/1 JSON here."),
                      workers: int = typer.Option(1, "--workers", "-w"), force: bool = FORCE_OPT) -> None:
-    """Simulate storage + sequencing (SIMULATION): strands → reads (FASTQ/FASTA)."""
-    _run(lambda: _out(sdk.simulate(strands, output, config=config, seed=seed, coverage=coverage, workers=workers,
-                                   overwrite=force, progress=_progress_cb(),
-                                   overrides={"substitution_rate": substitution_rate, "insertion_rate": insertion_rate,
-                                              "deletion_rate": deletion_rate, "dropout_rate": dropout_rate})))
+    """Simulate synthesis, storage, amplification and sequencing (SIMULATION): strands → reads (FASTQ/FASTA)."""
+    def go():
+        overrides = {"substitution_rate": substitution_rate, "insertion_rate": insertion_rate,
+                     "deletion_rate": deletion_rate, "dropout_rate": dropout_rate, **_params(param)}
+        _out(sdk.simulate(strands, output, config=config, model=model, seed=seed, coverage=coverage, workers=workers,
+                          overwrite=force, progress=_progress_cb(), overrides=overrides, metadata=metadata))
+    _run(go)
+
+
+def _params(items: List[str]) -> dict:
+    out = {}
+    for item in items:
+        path, sep, text = item.partition("=")
+        if not sep or not path:
+            raise VNXConfigurationError(f"--param expects PATH=VALUE, got {item!r}")
+        try:
+            out[path.strip()] = json.loads(text)
+        except ValueError:
+            raise VNXConfigurationError(f"--param {path}: the value must be JSON (e.g. 0.01, \"poisson\", [1, 2])") from None
+    return out
+
+
+@channel_app.command("models")
+def channel_models() -> None:
+    """List the shipped channel models (vnx.channel-model/1; every model is SIMULATED)."""
+    _run(lambda: _out(sdk.channel_models()))
+
+
+@channel_app.command("show")
+def channel_show(model: str, schema: str = typer.Option("vnx.channel-model/1", "--schema",
+                                                        help="vnx.channel-model/1 (default) or vnx.channel-model/0.")) -> None:
+    """Print one channel model as its canonical document."""
+    _run(lambda: _out(sdk.channel_model(model, schema=schema)))
+
+
+@channel_app.command("convert")
+def channel_convert(source: Path, output: Path, force: bool = FORCE_OPT) -> None:
+    """Convert a /0 model or a ChannelConfig JSON to a canonical vnx.channel-model/1 file."""
+    _run(lambda: _out(sdk.channel_convert(source, output, overwrite=force)))
+
+
+@channel_app.command("sweep")
+def channel_sweep(strands: Path, out_dir: Path = typer.Option(..., "--out-dir", help="Directory for the trial reads."),
+                  model: Optional[str] = MODEL_OPT,
+                  config: Optional[Path] = typer.Option(None, "--config", "-c", help="V4 ChannelConfig JSON instead of --model."),
+                  grid: List[str] = typer.Option([], "--grid", "-g",
+                                                 help="PATH=JSON-list sweep axis, e.g. sequencing.substitution.rate=[0.001,0.01]."),
+                  trials: int = typer.Option(10, "--trials", "-n"), base_seed: int = typer.Option(0, "--base-seed"),
+                  keep_reads: bool = typer.Option(False, "--keep-reads"),
+                  output: Optional[Path] = typer.Option(None, "--output", "-o", help="Write the vnx.channel-sweep/1 JSON here."),
+                  workers: int = typer.Option(1, "--workers", "-w")) -> None:
+    """Monte Carlo runs (seeds base-seed + i) over a parameter grid; realised rates per point (SIMULATED)."""
+    _run(lambda: _out(sdk.channel_sweep(strands, out_dir, model=model, config=config, grid=_params(grid), trials=trials,
+                                        base_seed=base_seed, workers=workers, keep_reads=keep_reads, output=output)))
 
 
 @app.command()

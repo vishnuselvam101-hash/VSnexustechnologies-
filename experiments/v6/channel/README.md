@@ -57,3 +57,10 @@ completeness, CLI, and a small end-to-end evaluate run.
 
 Errors are i.i.d. per base apart from the explicit homopolymer, burst and GC-bias terms; real error processes are context-dependent
 and platform-specific. Parameters are stress settings. Results say how the software decoder behaves under these models, nothing more.
+
+## V6 Phase 3
+
+These files are the `vnx.channel-model/0` sources of the 14 models that ship with the package as `vnx.channel-model/1`
+(`src/vnxdna/simulation/models`, `vnx channel models`). The staged simulator `vnxdna.simulation.engine` reproduces this
+composer's reads byte for byte for both forms (EXP-SIM-1, `experiments/v6/phase3/EXP-SIM-1`). The files here stay
+unchanged; see `docs/CHANNEL_MODEL.md`.
