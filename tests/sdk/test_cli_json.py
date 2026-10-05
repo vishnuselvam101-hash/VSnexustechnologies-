@@ -99,3 +99,37 @@ def test_encode_archive_options_pass_through_and_refusal(ws, tmp_path):
     assert m["chunking"]["chunk_size"] == 4096 and doc["archive"]["files"] == 2
     e = err_json(cli("encode", ws / "a.vnx", tmp_path / "t.fasta", "--chunk-size", "4096", code=7))
     assert e["code"] == "CONFIGURATION_ERROR" and not (tmp_path / "t.fasta").exists()
+
+
+def test_remaining_json_commands(ws, tmp_path):
+    """channel simulate, benchmark, experimental encode, experiment run and reproduce: every JSON they print validates."""
+    doc = out_json(cli("channel", "simulate", ws / "s.fasta", tmp_path / "r.fastq", "--seed", "3", "--coverage", "2"))
+    assert doc["kind"] == "simulate" and doc["result"]["evidence_class"] == "SIMULATED"
+    doc = out_json(cli("benchmark", "--profile", "safe", "--size", "8KB"))
+    assert doc["kind"] == "benchmark"
+    doc = out_json(cli("experimental", "encode", ws / "a.vnx", tmp_path / "lt.fasta", "-K", "16", "-M", "8"))
+    assert doc["stability"] == "EXPERIMENTAL" and doc["result"]["stability"] == "EXPERIMENTAL"
+    exp = tmp_path / "exp"
+    exp.mkdir()
+    (exp / "config.json").write_text(json.dumps({
+        "id": "cli-json", "type": "sweep", "purpose": "SYNTHETIC SOFTWARE TEST of the CLI JSON",
+        "input": {"size": 4096, "pattern": "random", "seed": 5}, "dna": {"profile": "v4-balanced"},
+        "channel": {"coverage_model": "fixed", "seed": 6},
+        "sweep": {"grid": {"substitution_rate": [0.0], "coverage": [2]}}, "trials": 1, "workers": 1}))
+    doc = out_json(cli("experiment", "run", exp / "config.json"))
+    assert doc["status"] == "DONE" and doc["kind"] == "experiment"
+    doc = out_json(cli("experiment", "reproduce", exp))
+    assert doc["reproduced"] is True
+
+
+def test_every_command_is_covered():
+    """A new command must get a JSON-validation case here (sweep, codec-compare and benchmark --human print tables)."""
+    covered = {"version", "native", "keygen", "archive", "inspect", "list", "verify", "locate", "extract", "encode", "decode",
+               "validate", "simulate", "benchmark", "sweep", "run", "reproduce", "generate", "profiles", "conformance",
+               "codec-compare"}
+    names = set()
+    for group in [app] + [g.typer_instance for g in app.registered_groups]:
+        for c in group.registered_commands:
+            names.add(c.name or c.callback.__name__.replace("_cmd", "").replace("_", "-"))
+    names = {n.split("-", 1)[1] if n.startswith(("channel-", "experiment-", "experimental-")) else n for n in names}
+    assert names <= covered, names - covered
