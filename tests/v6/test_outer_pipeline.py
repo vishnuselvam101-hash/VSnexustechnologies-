@@ -103,16 +103,11 @@ def test_default_encoding_identical_to_v5_release(tmp_path):
 
 def _build_with_5_0_0_manifest_fields(inputs, out):
     """The default archive exactly as 5.0.0 wrote it: encoder.version 5.0.0 and no writer-provenance block."""
-    from dataclasses import fields
-
     from vnxdna.v4 import container as ct
     old = ct.__version__
     ct.__version__ = "5.0.0"
     try:
-        opts = ar.ArchiveOptions()
-        if "writer_provenance" in {f.name for f in fields(opts)}:      # 6.x: the extensions.vnx block is opt-out
-            opts.writer_provenance = False
-        ar.build_archive(inputs, out, opts)
+        ar.build_archive(inputs, out, ar.ArchiveOptions(writer_provenance=False))     # 6.x: extensions.vnx is opt-out
     finally:
         ct.__version__ = old
 

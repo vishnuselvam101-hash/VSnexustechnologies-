@@ -28,7 +28,7 @@ import numpy as np
 from vnxdna.archive import crypto, merkle
 from vnxdna.core.errors import VNXFormatError, VNXIntegrityError, VNXKeyError, VNXResourceError, VNXUnsupportedVersionError
 from vnxdna.core.util import canonical_json, parse_canonical_json
-from vnxdna.core.version import FORMAT_VERSION, __version__
+from vnxdna.core.version import FORMAT_VERSION, SPEC_VERSION, __version__
 
 MAGIC = b"\x89VNX4\r\n\x1a"
 HEADER_BYTES = 16
@@ -182,6 +182,14 @@ class ContainerWriter:
         digest = self.hash.digest()
         self.f.write(digest)
         return digest, manifest
+
+
+def writer_provenance(archive_id_derivation: str) -> dict:
+    """The ``extensions.vnx`` block (spec §2.3.1): informational; readers never reject an archive for it.
+    ``software`` equals ``encoder.version`` (both read this module's ``__version__``)."""
+    if archive_id_derivation not in ("options-v1", "content-v1", "random"):
+        raise ValueError(f"unknown archive-ID derivation {archive_id_derivation!r}")
+    return {"spec": SPEC_VERSION, "software": __version__, "archive_id_derivation": archive_id_derivation}
 
 
 def base_manifest(*, archive_id: bytes, chunk_size: int, compression: dict, encryption: dict, counts: dict,

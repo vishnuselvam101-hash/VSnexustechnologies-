@@ -43,6 +43,9 @@ class ArchiveOptions:
     passphrase: str | None = None
     scrypt: dict = field(default_factory=lambda: dict(crypto.SCRYPT_DEFAULT))
     follow_symlinks: bool = False
+    # V6 (spec §2.3.1): write the informational ``extensions.vnx`` block (spec version, software version, archive-ID
+    # derivation). On by default; False reproduces the 5.x manifest layout. Never part of the archive-ID derivation.
+    writer_provenance: bool = True
 
     def validate(self) -> None:
         if not ct.MIN_CHUNK_SIZE <= self.chunk_size <= ct.MAX_CHUNK_SIZE:
@@ -197,6 +200,7 @@ def build_archive(inputs: list[str | os.PathLike], output: str | os.PathLike, op
     if opt.compression == "zstd":
         features.add("zstd")
     sealer = None
+    derivation = "random"
     if encrypted:
         salt = salt or os.urandom(crypto.SALT_BYTES)
         archive_id = archive_id or os.urandom(16)
@@ -213,6 +217,7 @@ def build_archive(inputs: list[str | os.PathLike], output: str | os.PathLike, op
         sealer = crypto.Sealer(keys, archive_id)
     else:
         enc = {"algorithm": "none"}
+        derivation = "options-v1" if archive_id is None else "random"   # a caller-supplied ID is not derived
         if archive_id is None:
             # deterministic: derived from the options and the sorted entry list (paths, sizes, metadata)
             h = hashlib.sha256(b"VNX4 archive-id\x00")
@@ -300,8 +305,9 @@ def build_archive(inputs: list[str | os.PathLike], output: str | os.PathLike, op
             counts = {"files": len(entries), "chunks": len(writer.entries), "chunk_refs": len(refs), "content_bytes": content,
                       "stored_bytes": 0}
             comp = {"algorithm": opt.compression, "level": opt.level if compress else 0, "policy": "keep-if-smaller"}
+            ext = {"vnx": ct.writer_provenance(derivation)} if opt.writer_provenance else None
             manifest = ct.base_manifest(archive_id=archive_id, chunk_size=opt.chunk_size, compression=comp, encryption=enc,
-                                        counts=counts, features=features)
+                                        counts=counts, features=features, extensions=ext)
             digest, manifest = writer.finish(manifest, file_table, refs_bytes, sealer.mac if sealer else None)
         size = tmp.stat().st_size
     return BuildReport(str(output), len(entries), content, counts["chunks"], len(refs), manifest["counts"]["stored_bytes"], size,
