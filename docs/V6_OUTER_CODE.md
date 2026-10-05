@@ -47,8 +47,10 @@ version 1 refuse version 2 as an unsupported superblock version (fail closed).
   (0 ≤ i < 4·Ks) is written before data strand ⌊(2i + 1)·N / (2·4·Ks)⌋, where N is the number of non-superblock
   strands (spread evenly over the file).
 
-Order is a property of the written file only; decoders never rely on it. `vnx locate --dna-profile` computes V4
-sequential record ranges and does not apply to V6 archives.
+Order is a property of the written file only; decoders never rely on it. `vnx locate` given the same V6 options as
+`vnx encode` reports the records of that file in this order (`Geometry.data_index`, `file_index`, `superblock_index`):
+merged `[first, count]` runs for every strand of the located groups, for the data strands holding the bytes, for the
+column-parity groups of their stripes and for the superblock strands (job #62).
 
 ## 4. Decoding
 

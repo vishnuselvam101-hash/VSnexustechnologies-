@@ -10,6 +10,9 @@
   group of the selected files is unrecovered; the error details list the other failed groups separately. Every
   selected file is still verified (chunk SHA-256, chunk ID, file SHA-256) before it is written
   (`tests/v6/test_random_access_partial.py`).
+- `vnx locate` / `dna_location` with V6 outer-code options (stripes, column parity, interleaved order, adaptive plan)
+  report the strand-file records the encoder writes for those options instead of refusing them; V4/V5 output is
+  unchanged (job #62).
 
 ## 6.0.0 (unreleased)
 

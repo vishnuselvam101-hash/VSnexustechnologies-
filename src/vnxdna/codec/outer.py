@@ -182,6 +182,44 @@ class Geometry:
             return [0] * n_super
         return [((2 * i + 1) * n_data) // (2 * n_super) for i in range(n_super)]
 
+    def stripe_base(self, s: int) -> int:
+        """Non-superblock strands written before stripe s (every row before the last stripe is full)."""
+        return (self.stripe_start(s) + s * self.Mc) * self.n
+
+    def data_index(self, g: int, syms: np.ndarray) -> np.ndarray:
+        """0-based index, among the non-superblock strands in file order, of transmitted symbols ``syms`` of row g.
+
+        Closed form of :meth:`stripe_order` (which the encoder writes), without enumerating the stripe: only the
+        last data row G − 1 may be short (k < K), and it is the last data row of the last stripe."""
+        s = self.stripe_of(g)
+        data, par = self.stripe_rows(s)
+        d, R, n, K = len(data), len(data) + len(par), self.n, self.K
+        r = g - data[0] if g < self.G else d + g - par[0]
+        ks = self.k_of(self.G - 1)
+        short = s == self.stripes - 1 and ks < K           # the stripe holds the short row, at row index d − 1
+        after_short = short and r > d - 1
+        t = np.asarray(syms, dtype=np.int64)
+        if self.order == "sequential":
+            within = r * n - (K - ks if after_short else 0) + t
+        else:
+            k = self.k_of(g)
+            pos = np.where(t < k, t, K + t - k)
+            before = pos * R - (np.clip(np.minimum(pos, K) - ks, 0, None) if short else 0)
+            skip = ((pos >= ks) & (pos < K)).astype(np.int64) if after_short else 0
+            within = before + r - skip
+        return self.stripe_base(s) + within
+
+    def file_index(self, data_idx: np.ndarray, n_super: int) -> np.ndarray:
+        """Strand-file record index of non-superblock strands ``data_idx`` once the superblock strands are placed."""
+        slots = np.asarray(self.superblock_slots(n_super, self.strands()), dtype=np.int64)
+        data_idx = np.asarray(data_idx, dtype=np.int64)
+        return data_idx + np.searchsorted(slots, data_idx, side="right")
+
+    def superblock_index(self, n_super: int) -> np.ndarray:
+        """Strand-file record indices of the n_super superblock strands."""
+        slots = np.asarray(self.superblock_slots(n_super, self.strands()), dtype=np.int64)
+        return np.minimum(slots, self.strands()) + np.arange(n_super, dtype=np.int64)
+
     def to_dict(self) -> dict:
         return {"K": self.K, "M": self.M, "D": self.D, "Mc": self.Mc, "P": self.P, "order": self.order,
                 "container_size": self.container_size, "groups": self.G, "stripes": self.stripes,
