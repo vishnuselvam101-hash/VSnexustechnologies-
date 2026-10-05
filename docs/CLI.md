@@ -76,6 +76,8 @@ contiguous run of up to N lost or extra bases), `--archive-tag HEX8` (V3: choose
 | 6 | UNSUPPORTED_FORMAT | unknown container/format version or required feature; a legacy archive given to a main command |
 | 7 | CONFIGURATION_ERROR | invalid parameters, unsatisfiable constraints |
 | 8 | OUTPUT_ERROR | output or report exists (no `--force`), not writable, disk full, file too large, read-only file system (V3: these OS errors were exit 70) |
+| 9 | PARTIAL (`vnx` only) | DNA decode recovered only some files; each written file is individually verified, the others are listed in the report |
+| 10 | PROVIDER_ERROR (`vnx` only, V6) | a physical-provider operation failed (`vnxdna.providers`; today only the ReferenceSimulatorProvider exists): damaged tube, unknown pool, closed provider |
 | 70 | INTERNAL_ERROR | a bug; set `VNXDNA_DEBUG=1` for a traceback |
 | 130 | interrupted | Ctrl-C, SIGTERM or SIGHUP (`kill`, `timeout`, `docker stop`, a closed terminal): worker processes are stopped, partial outputs and temporary directories are removed (`store` leaves a resumable checkpoint). Worker processes also exit by themselves if the command is killed with SIGKILL, and an interrupt never waits for running workers (V3 release review) |
 | 141 | output closed | standard output was closed early (e.g. `vnx-dna … | head -1`); V3 exits quietly instead of reporting a BrokenPipe as an internal error |
