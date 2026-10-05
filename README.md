@@ -72,7 +72,7 @@ Opt-in decoder options (all off by default): `--indel-recovery smart`, `--soft-d
 
 | Label | Meaning | Examples in this repository |
 |---|---|---|
-| **VERIFIED** | checked by a committed test or script | native kernels equal their NumPy references (golden cases and fuzzing, [NATIVE_KERNELS.md](docs/NATIVE_KERNELS.md)); the golden archives `v4_0`, `v5_0`, `v6_0` decode; 222 conformance vectors ([BENCHMARKING.md](docs/BENCHMARKING.md)) |
+| **VERIFIED** | checked by a committed test or script | native kernels equal their NumPy references (golden cases and fuzzing, [NATIVE_KERNELS.md](docs/NATIVE_KERNELS.md)); the golden archives `v4_0`, `v5_0`, `v6_0` decode; 226 conformance vectors ([BENCHMARKING.md](docs/BENCHMARKING.md)) |
 | **SIMULATED** | software strands through a software channel | every recovery rate, threshold and benchmark-lab number below |
 | **MEASURED** | time or memory on the development host (shared, x86-64) | installed-path decode 10.8 s to 5.3 s (2.04x) after pip builds the kernels: one host, one workload ([benchmarks/v6/native_packaging/README.md](benchmarks/v6/native_packaging/README.md)) |
 | **PUBLIC-DATA-DERIVED** | statistics from another group's public reads | per-read error rates of the public nanopore CNR dataset ([experiments/v6/phase4/P4-EXP-03-cnr-ids/README.md](experiments/v6/phase4/P4-EXP-03-cnr-ids/README.md)) |

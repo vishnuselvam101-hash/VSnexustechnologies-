@@ -269,7 +269,9 @@ Rrc    = reverse complement of the reverse primer
 ### 3.7 Strand-profile registry
 
 **Frame 4 profiles (IMPLEMENTED; `v4/frame.py:127-135`, VNX4 §11).** v4-balanced 313 nt, v4-dense 280 nt, v4-indel 313 nt,
-v4-archival 313 nt.
+v4-archival 313 nt. Added in 6.0, opt-in: v6-high-dropout 256 nt (payload 46 B, inner parity 4 B, no markers, row code
+160 + 48; `dnaenc/layout.py` `PROFILES`), the layout of the redundancy profile `high-dropout`. It is a frame-4 layout
+with existing options. No format version changes, and the decoder detects it from read length like the other frame-4 profiles.
 
 **Frame 6 candidate profiles (THEORETICAL).** Every number below is arithmetic. Markers use S = 24 and ℓ = 3 where present.
 Strand length is `4·F + ℓ·(⌈4F/S⌉ − 1)`, and F = H + P + 4 + r.
@@ -677,6 +679,7 @@ When frame 6 or superblock 3 is implemented (V7/V8), its vectors are added in th
 | v4-indel | 2e + f ≤ 20 | 16 of 64 (25 %) | as v4-balanced | 3 of 12 |
 | v4-archival | 2e + f ≤ 20 | 32 of 64 (50 %) | as v4-balanced | 3 of 12 |
 | redundancy `maximum-recovery` (v4-archival + D 8, Mc 2, interleaved; `v6/profiles.py:25`) | 2e + f ≤ 20 | 32 of 64 per row, and per stripe ≤ 2 rows beyond that | as v4-balanced | 3 of 12 |
+| redundancy `high-dropout` (v6-high-dropout, 6.0, opt-in) | 2e + f ≤ 4 | any 48 of 208 strands lost (23 %) | **No markers**, as v4-dense. SIMULATED lab result: b0-dropout (`benchmarks/competitors/lab/results/b0-dropout`) | not derived here |
 | f6-* candidates | 2e + f ≤ r (table §3.7) | as the chosen K, M | THEORETICAL | ⌈128/P⌉ of 4× that |
 
 **SIMULATED results** (not guarantees; `experiments/v6/phase1/summary.md`, 20 seeds per cell, 0 false SUCCESS, baseline A.4):

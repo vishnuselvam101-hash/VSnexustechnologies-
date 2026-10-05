@@ -102,9 +102,14 @@ threshold, 1 h limit), so results are not entered in `benchmarks/competitors/rec
 while the other codecs receive the harness's default read set. Stage B1 (HEDGES, YYC, the published protocol, the
 Aeon demo limit, stronger clusterers) has not been run.
 
+Follow-up **b0-dropout** (pre-registered, SIMULATED): at about 1.0 bit/nt, 19 kB, coverage 10 and 10 seeds per cell, the
+lab profile `hd-l256-i4` recovered 88/100 against 35/100 for `s184`. DNA-RS-medium recovered 100/100.
+Under the pre-registered rule it was accepted as the opt-in redundancy profile `high-dropout`
+(`benchmarks/competitors/lab/results/b0-dropout/README.md`).
+
 ### Conformance vectors (`vnx conformance`)
 
-`tests/conformance/` holds 222 vectors (129 positive, 93 negative) listed in `tests/conformance/index.json`
+`tests/conformance/` holds 226 vectors (132 positive, 94 negative) listed in `tests/conformance/index.json`
 (schema `vnx.conformance-index/1`, evidence class `SYNTHETIC SOFTWARE TEST`): GF(256) and Reed-Solomon, CRC and scrambler,
 mapping and markers, frame 4, superblocks 1 and 2, the outer code, strand order, the container, AEAD, end-to-end
 decodes of the stored `v4_0`, `v5_0` and `v6_0` fixtures, and the stable error codes. A packaged subset of 22 vectors

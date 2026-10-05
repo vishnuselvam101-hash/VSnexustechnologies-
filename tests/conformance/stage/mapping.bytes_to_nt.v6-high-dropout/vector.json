@@ -1,0 +1,23 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "mapping.bytes_to_nt.v6-high-dropout",
+ "stage": "E12",
+ "formats": {
+  "frame": 4,
+  "superblock": null,
+  "container": null
+ },
+ "kind": "positive",
+ "operation": "mapping.bytes_to_nt",
+ "params": {
+  "bytes_hex": "8d39895710efb9e33068685eba347b97bcd9a094bb487a94c1be5c6e0a1b969d99beae62bc98a768deaaac25e2290f87af72211ad365c535a8aca3a00c8cf813"
+ },
+ "inputs": {},
+ "expected": {
+  "outputs": {
+   "nt": "GATCATGCGAGCCCCTACAATGTTGTGCTGATATAACGGACGGACCTGGTGGATCACTGTGCCTGTTATCGCGGAAGCCAGTGTCAGACTGGGCCATAACGTTGCCTACGTGAAGGACGTGCCGGCTCGCGCGTTGGGTGCGAGGTTAGCGAGGCTCGGATCTGGGGGGGTAAGCCTGAGAGGCAATTGACTGGTTCTAGAGACACGGTCATCGCCTACCATCCGGGAGGTAGGATGGAAAATAGATATTGAACAT"
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

@@ -575,6 +575,17 @@
    "path": "stage/mapping.bytes_to_nt.v4-archival"
   },
   {
+   "id": "mapping.bytes_to_nt.v6-high-dropout",
+   "stage": "E12",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/mapping.bytes_to_nt.v6-high-dropout"
+  },
+  {
    "id": "markers.insert.l1",
    "stage": "E12",
    "kind": "positive",
@@ -771,6 +782,39 @@
     "container": null
    },
    "path": "negative/frame4.beyond-rs-bound.v4-archival"
+  },
+  {
+   "id": "frame4.parse.v6-high-dropout.clean",
+   "stage": "D5",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/frame4.parse.v6-high-dropout.clean"
+  },
+  {
+   "id": "frame4.parse.v6-high-dropout.errors",
+   "stage": "D5",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "stage/frame4.parse.v6-high-dropout.errors"
+  },
+  {
+   "id": "frame4.beyond-rs-bound.v6-high-dropout",
+   "stage": "D5",
+   "kind": "negative",
+   "formats": {
+    "frame": 4,
+    "superblock": null,
+    "container": null
+   },
+   "path": "negative/frame4.beyond-rs-bound.v6-high-dropout"
   },
   {
    "id": "frame4.parse.r08.kind1",

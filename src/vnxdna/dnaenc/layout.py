@@ -97,4 +97,8 @@ PROFILES = {
     "v4-dense": (Layout(44, 12, 0, 0), 64, 16),
     "v4-indel": (Layout(36, 20, 24, 3), 48, 16),
     "v4-archival": (Layout(36, 20, 24, 3), 32, 32),
+    # 6.0 (opt-in, named redundancy profile "high-dropout"): 256-nt frame-4 strands without markers, 4 B inner parity,
+    # row code 160 + 48 (about 1.0 bit/nt at 19 kB). Existing format options only; selected by the pre-registered
+    # b0-dropout comparison (benchmarks/competitors/lab/results/b0-dropout, SIMULATED). Not a default.
+    "v6-high-dropout": (Layout(46, 4, 0, 0), 160, 48),
 }
