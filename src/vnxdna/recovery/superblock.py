@@ -28,26 +28,51 @@ def _try_superblock(got: dict, ks: int, ms: int, lay: Layout, tag: int):
     return sb if int.from_bytes(sb.archive_id[:2], "big") == tag and sb.layout == lay else None
 
 
-def _colliding_superblocks(values: dict, ks: int, ms: int, lay: Layout, tag: int) -> dict:
+def _codeword(sb: Superblock, ks: int, ms: int, P: int) -> np.ndarray:
+    data = np.zeros((ks, P), dtype=np.uint8)
+    raw = sb.pack()
+    data.reshape(-1)[: len(raw)] = np.frombuffer(raw, dtype=np.uint8)
+    return CauchyRSCodec(ks, ms).encode(data)
+
+
+def _colliding_superblocks(values: dict, ks: int, ms: int, lay: Layout, tag: int, seed_sb: Superblock | None = None) -> dict:
     """Spec §3.10 step 7: superblocks decodable from mutually consistent subsets of a tag's conflicting symbols.
 
-    ``values``: symbol index → the distinct verified payloads seen for it. A deterministic search (seeded by the tag)
-    draws Ks indices and one value each, decodes, and keeps every valid superblock (CRC-32 and full field validation);
-    each superblock found is then completed by every observed value consistent with its codeword. Returns
-    container SHA-256 → Superblock."""
+    ``values``: symbol index → the distinct verified payloads seen for it. Every superblock found (by ``seed_sb``, the
+    strict-majority decode, or by a deterministic random search seeded by the tag: draws of Ks indices with one value
+    each) is *peeled*: the values its codeword explains are removed, and the remaining values are decoded directly.
+    Each candidate must pass the superblock CRC-32 and the full field validation. Returns container SHA-256 →
+    Superblock (stops at two)."""
+    P = lay.payload_bytes
+    vals = {i: sorted(v, key=lambda a: a.tobytes()) for i, v in values.items() if v}
     found: dict = {}
-    idx = sorted(values)
-    if len(idx) < ks:
-        return found
-    rng = np.random.default_rng(0x56C0 ^ tag)
-    for _ in range(COLLISION_TRIALS):
-        pick = rng.choice(len(idx), size=ks, replace=False)
-        got = {idx[i]: values[idx[i]][int(rng.integers(len(values[idx[i]])))] for i in pick}
-        sb = _try_superblock(got, ks, ms, lay, tag)
-        if sb is not None:
-            found.setdefault(sb.container_sha256, sb)
-        if len(found) >= 2:
-            break
+
+    def peel(sb: Superblock) -> None:
+        cw = _codeword(sb, ks, ms, P)
+        rest = {i: [v for v in vs if not np.array_equal(v, cw[i])] for i, vs in vals.items() if i < len(cw)}
+        rest = {i: vs for i, vs in rest.items() if vs}
+        if len(rest) >= ks:
+            other = _try_superblock({i: vs[0] for i, vs in rest.items()}, ks, ms, lay, tag)
+            if other is not None:
+                found.setdefault(other.container_sha256, other)
+
+    if seed_sb is not None:
+        found[seed_sb.container_sha256] = seed_sb
+        peel(seed_sb)
+    idx = sorted(vals)
+    if len(found) < 2 and len(idx) >= ks:
+        rng = np.random.default_rng(0x56C0 ^ tag)
+        trials = int(min(4096, max(COLLISION_TRIALS, 21 * 2 ** ks)))    # ≥ 1 − 1e-9 for two archives, Ks ≤ 7
+        for _ in range(trials):
+            pick = rng.choice(len(idx), size=ks, replace=False)
+            got = {idx[i]: vals[idx[i]][int(rng.integers(len(vals[idx[i]])))] for i in pick}
+            sb = _try_superblock(got, ks, ms, lay, tag)
+            if sb is not None and sb.container_sha256 not in found:
+                found[sb.container_sha256] = sb
+                if len(found) < 2:
+                    peel(sb)
+            if len(found) >= 2:
+                break
     return found
 
 
@@ -75,7 +100,11 @@ def _decode_superblock(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
     for tag in tags:
         per = values.get(tag, {})
         if any(len(v) > 1 for v in per.values()):
-            found = _colliding_superblocks(per, ks, ms, lay, tag)
+            seed = None
+            maj = {k[3]: v for k, v in symbols.items() if k[1] == tag and k[0] == KIND_SUPER and k[2] == 0 and k[3] < ks + ms}
+            if len(maj) >= ks:
+                seed = _try_superblock(maj, ks, ms, lay, tag)
+            found = _colliding_superblocks(per, ks, ms, lay, tag, seed)
             if len(found) > 1:
                 raise VNXAddressError(
                     f"archive tag {tag:04x} is shared by {len(found)} different archives in these reads; refusing to "

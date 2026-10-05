@@ -216,10 +216,11 @@ def choose_layout(p: Probe, band: int = 6) -> tuple[Layout, bool]:
     best = max(p.candidates, key=lambda c: p.scores[c[0]], default=None)
     if best is not None and p.scores[best[0]] > 0:
         return best[1], True
-    err = refusal(p)
+    four = p.supports("VNX4 scrambler", FRAME_VERSION, threshold=SUPPORT_SHARE)
+    err = None if four else refusal(p)       # a pool that shows frame version 4 is never refused as another format
     if err is not None:
         raise err
-    if p.candidates and p.supports("VNX4 scrambler", FRAME_VERSION, threshold=SUPPORT_SHARE):
+    if p.candidates and four:
         # frame version 4 is evident but no sampled frame verifies (very noisy reads, tiny samples): use the candidate
         # most reads fit; a supported pool is never refused here, and the decoder verifies every frame as always
         def fit(c):

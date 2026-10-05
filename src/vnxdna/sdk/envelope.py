@@ -98,10 +98,15 @@ def file_ref(role: str, path: str | os.PathLike | None, sha256: str | None = Non
     return {"role": role, "path": "" if p is None else str(p), "bytes": size, "sha256": sha256}
 
 
-def _hash_now(p: Path) -> str | None:
+def _hash_now(p: Path, hasher: "InputHasher | None" = None) -> str | None:
     try:
+        h = hashlib.sha256()
         with open(p, "rb") as f:
-            return hashlib.file_digest(f, "sha256").hexdigest()
+            while block := f.read(1 << 22):
+                if hasher is not None and hasher.cancelled:
+                    return None
+                h.update(block)
+        return h.hexdigest()
     except OSError:
         return None
 
@@ -114,6 +119,7 @@ class InputHasher:
         self.role = role
         self.paths = [Path(p) for p in paths]
         self.digests: dict = {}
+        self.cancelled = False
         self._t = None
         if enabled:
             self._t = threading.Thread(target=self._run, name="vnx-input-hash", daemon=True)
@@ -121,7 +127,16 @@ class InputHasher:
 
     def _run(self) -> None:
         for p in self.paths:
-            self.digests[p] = _hash_now(p) if p.is_file() else None
+            if self.cancelled:
+                return
+            try:
+                self.digests[p] = _hash_now(p, self) if p.is_file() else None
+            except OSError:
+                self.digests[p] = None
+
+    def cancel(self) -> None:
+        """Stop hashing (the operation failed: nothing will report the digests)."""
+        self.cancelled = True
 
     def refs(self) -> list[dict]:
         if self._t is not None:

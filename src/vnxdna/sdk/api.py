@@ -217,11 +217,13 @@ def decode(reads: PathLike, output: PathLike | None = None, *, options: DecodeOp
     t0 = time.perf_counter()
     opts = options or DecodeOptions()
     if budget is not None:
-        opts.recovery_budget = budget
+        from dataclasses import replace
+        opts = replace(opts, recovery_budget=budget)      # never modify the caller's options
     if output is None and extract_to is None and not select:
         raise VNXConfigurationError("give an output container, an extraction directory, or files to select")
     hasher = InputHasher("reads", [reads], enabled=input_hash)
     target, tmp = output, None
+    ok = False
     try:
         if select:
             res = _de.decode_reads(reads, None, opts, select=list(select), select_dir=extract_to or Path("."), key=key,
@@ -237,7 +239,10 @@ def decode(reads: PathLike, output: PathLike | None = None, *, options: DecodeOp
             if res.status == "SUCCESS" and extract_to is not None and target is not None:
                 res.report["extract"] = _ar.extract(target, extract_to, key=key, passphrase=passphrase, overwrite=overwrite,
                                                     allow_unencrypted=allow_unencrypted)
+        ok = True
     finally:
+        if not ok:
+            hasher.cancel()
         if tmp:
             shutil.rmtree(tmp, ignore_errors=True)
     rep = res.report

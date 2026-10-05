@@ -80,3 +80,28 @@ def test_one_archive_with_duplicates_is_not_ambiguous(pools, tmp_path):
     reads = _mix(tmp_path, s1, s1)
     res = de.decode_reads(reads, tmp_path / "o.vnx", de.DecodeOptions())
     assert res.status == "SUCCESS" and (tmp_path / "o.vnx").read_bytes() == a1.read_bytes()
+
+
+def test_collision_is_found_for_a_custom_layout_with_more_superblock_symbols(tmp_path):
+    """payload 16 B: Ks = 6 superblock data symbols, so a random draw of Ks values rarely picks one archive only; the
+    majority decode plus peeling (remove what one superblock's codeword explains, decode the rest) still finds both."""
+    from vnxdna.v4.frame import Layout
+    lay = Layout(16, 16, 24, 3)
+    paths = []
+    for name, seed in (("one", 191), ("two", 192)):
+        d = tmp_path / name
+        (d / "ds").mkdir(parents=True)
+        datagen.generate(d / "ds" / "f.bin", 3000, "random", seed)
+        ar.build_archive([d / "ds"], d / "a.vnx", ar.ArchiveOptions())
+        en.encode_container(d / "a.vnx", d / "s.fasta", en.DNAOptions(layout=lay, data_symbols=32, parity_symbols=8))
+        paths.append(d / "s.fasta")
+    for cov in ((2, 2), (3, 1)):
+        reads = []
+        for i, (p, c) in enumerate(zip(paths, cov)):
+            r = tmp_path / f"r{i}.fastq"
+            ch.simulate_file(p, r, ch.ChannelConfig(coverage=c, seed=300 + i), overwrite=True)
+            reads.append(r.read_text())
+        (tmp_path / "m.fastq").write_text("".join(reads))
+        with pytest.raises(VNXError) as e:
+            de.decode_reads(tmp_path / "m.fastq", tmp_path / "o.vnx", de.DecodeOptions(layout=lay))
+        assert e.value.code == "ARCHIVE_TAG_AMBIGUOUS", cov
