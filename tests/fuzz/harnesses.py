@@ -204,7 +204,7 @@ def _mutate(m: dict, inp: Input) -> dict:
         if op == 0 and isinstance(parent, dict):
             del parent[last]
         elif op == 1 and isinstance(parent, dict):
-            parent["x" + str(inp.u8())] = _VALUES[inp.u8() % len(_VALUES)]
+            parent["x" + str(inp.u8())] = copy.deepcopy(_VALUES[inp.u8() % len(_VALUES)])  # never share _VALUES
         elif op == 2:
             parent[last] = inp.u32() - (1 << 31)
         elif op == 3:
