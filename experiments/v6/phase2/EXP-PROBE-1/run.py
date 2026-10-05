@@ -118,6 +118,9 @@ def main() -> int:
     ap.add_argument("--seeds", type=int, default=CONFIG["seeds"])
     args = ap.parse_args()
     import vnxdna
+    git = git_state()                     # at the start: the code that produces the results
+    if git["dirty"]:
+        print("warning: the working tree has uncommitted changes to tracked files", file=sys.stderr)
     t0 = time.perf_counter()
     work = Path(tempfile.mkdtemp(prefix="exp-probe-1-"))
     pools = build_pools(work / "pools")
@@ -126,8 +129,10 @@ def main() -> int:
              for s in range(args.seeds)]
     rows: list[dict] = []
     with ProcessPoolExecutor(max_workers=args.workers) as ex:
-        for res in ex.map(run_cell, tasks, chunksize=4):
+        for i, res in enumerate(ex.map(run_cell, tasks, chunksize=4)):
             rows.extend(res)
+            if i % 100 == 0:
+                print(f"{i}/{len(tasks)} cells, {time.perf_counter() - t0:.0f} s", file=sys.stderr, flush=True)
     # ---- verdict
     def ok(r):
         if r["class"] == "supported":
@@ -164,7 +169,7 @@ def main() -> int:
     verdict["pass"] = (not false_refusals and not wrong_layout and not false_accepts and identified >= 0.99 * len(big))
     doc = {"experiment": "EXP-PROBE-1", "evidence_class": "SIMULATED", "schema": "vnx.experiment/1",
            "statement": "SIMULATED: software-generated strands, software channel models; no DNA was synthesised, stored or sequenced.",
-           "software": {"name": "vnxdna", "version": vnxdna.__version__}, "spec": "6.0", "git": git_state(),
+           "software": {"name": "vnxdna", "version": vnxdna.__version__}, "spec": "6.0", "git": git,
            "python": platform.python_version(), "platform": f"{sys.platform}-{platform.machine()}", "cpus": os.cpu_count(),
            "config": CONFIG, "seeds": {"base": CONFIG["seed_base"], "count": args.seeds},
            "models": {m: chm.load_model(m).sha256 for m in CONFIG["models"]},
