@@ -1,0 +1,31 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "frame4.beyond-rs-bound.v4-archival",
+ "stage": "D5",
+ "formats": {
+  "frame": 4,
+  "superblock": null,
+  "container": null
+ },
+ "kind": "negative",
+ "operation": "frame4.accept",
+ "params": {
+  "profile": "v4-archival"
+ },
+ "inputs": {
+  "strand": {
+   "path": "strand.dat",
+   "sha256": "af3f7eeefdaa2e1fe97af7833760b1db19204c54926459d1faea5445fe6d2233"
+  }
+ },
+ "expected": {
+  "error": {
+   "code": "INSUFFICIENT_REDUNDANCY",
+   "category": "INSUFFICIENT_REDUNDANCY",
+   "exit_code": 5,
+   "retryable": true
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

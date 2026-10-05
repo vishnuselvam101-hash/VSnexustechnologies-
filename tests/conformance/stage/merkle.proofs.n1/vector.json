@@ -1,0 +1,28 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "merkle.proofs.n1",
+ "stage": "E6",
+ "formats": {
+  "frame": null,
+  "superblock": null,
+  "container": null
+ },
+ "kind": "positive",
+ "operation": "merkle.proofs",
+ "params": {
+  "records_hex": [
+   "00"
+  ]
+ },
+ "inputs": {},
+ "expected": {
+  "outputs": {
+   "root": "96a296d224f285c67bee93c30f8a309157f0daa35dc5b87e410b78630a09cfc7",
+   "proofs": {
+    "0": []
+   }
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

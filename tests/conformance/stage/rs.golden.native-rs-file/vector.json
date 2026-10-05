@@ -1,0 +1,28 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "rs.golden.native-rs-file",
+ "stage": "D5",
+ "formats": {
+  "frame": null,
+  "superblock": null,
+  "container": null
+ },
+ "kind": "positive",
+ "operation": "rs.golden",
+ "params": {},
+ "inputs": {
+  "golden": {
+   "path": "../../../v6/native/native_rs_golden.json",
+   "sha256": "25faca75ad6b2e4d1ce778670bcb4216372814dbba07c746ecbbc5f94f4b8104"
+  }
+ },
+ "expected": {
+  "outputs": {
+   "within_bound_cases": 87,
+   "beyond_bound_cases": 75,
+   "mismatches": []
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

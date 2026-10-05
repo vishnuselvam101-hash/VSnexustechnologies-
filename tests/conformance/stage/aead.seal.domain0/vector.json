@@ -1,0 +1,41 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "aead.seal.domain0",
+ "stage": "E5",
+ "formats": {
+  "frame": null,
+  "superblock": null,
+  "container": [
+   4,
+   0
+  ]
+ },
+ "kind": "positive",
+ "operation": "aead.seal",
+ "params": {
+  "master_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+  "salt_hex": "65666768696a6b6c6d6e6f7071727374",
+  "archive_id_hex": "0102030405060708090a0b0c0d0e0f10",
+  "domain": 0,
+  "index": 3,
+  "count": 0
+ },
+ "inputs": {
+  "plaintext": {
+   "path": "plaintext.dat",
+   "sha256": "11c51ce80a53ffab6ad6910b110ea9dd4706331517cd7b588456a464fbf72c52"
+  }
+ },
+ "expected": {
+  "outputs": {
+   "key_check_hex": "d956882e88d604fc0ee1e632a5d68e67",
+   "nonce_hex": "000000000000000000000003",
+   "aad_hex": "564e58342061656164000102030405060708090a0b0c0d0e0f100000000000000000000000030000000000000000",
+   "ciphertext_hex": "060aecca6064377a9c4878357c0cf05b87d9273fe3593fd893b0e0aeaadc146a7313063cb725269c8e5d9239875ac1af9f29ebeccab9b2bef4a00b39bae8f5cef50c6bc281c8787e4d64c6a5cec8a69c",
+   "chunk_id_hex": "e12e5073ddee155d6028ac2ff69507251b87e98deeb51f9a68081c100a882fb1",
+   "public_chunk_id_hex": "b973ebaef96af6cddc52159cca2781461b632a84aa14c6847dd53248d85b6323"
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

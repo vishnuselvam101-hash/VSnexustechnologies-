@@ -1,0 +1,32 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "container.rule9.stored-sha-mismatch",
+ "stage": "D12",
+ "formats": {
+  "frame": null,
+  "superblock": null,
+  "container": [
+   4,
+   0
+  ]
+ },
+ "kind": "negative",
+ "operation": "container.read",
+ "params": {},
+ "inputs": {
+  "container": {
+   "path": "container.dat",
+   "sha256": "17b6bafe098efc296342a81688bd70f86e2323396d9c62f5af8ca3cba345c619"
+  }
+ },
+ "expected": {
+  "error": {
+   "code": "INTEGRITY_ERROR",
+   "category": "VERIFICATION_FAILED",
+   "exit_code": 1,
+   "retryable": false
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

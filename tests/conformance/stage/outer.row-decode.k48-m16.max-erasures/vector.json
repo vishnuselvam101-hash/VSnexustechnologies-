@@ -1,0 +1,82 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "outer.row-decode.k48-m16.max-erasures",
+ "stage": "D10",
+ "formats": {
+  "frame": null,
+  "superblock": null,
+  "container": null
+ },
+ "kind": "positive",
+ "operation": "outer.row_decode",
+ "params": {
+  "K": 48,
+  "M": 16,
+  "P": 4,
+  "k": 48,
+  "present": [
+   0,
+   1,
+   2,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   11,
+   13,
+   15,
+   17,
+   18,
+   19,
+   20,
+   22,
+   23,
+   24,
+   26,
+   27,
+   28,
+   30,
+   31,
+   32,
+   33,
+   34,
+   36,
+   37,
+   39,
+   40,
+   41,
+   42,
+   45,
+   46,
+   47,
+   50,
+   52,
+   54,
+   55,
+   56,
+   58,
+   59,
+   60,
+   61,
+   62,
+   63
+  ]
+ },
+ "inputs": {
+  "symbols": {
+   "path": "symbols.dat",
+   "sha256": "7648807526dadfb65fd3c0ff892703ed4a727566ada673ffdda00363761c0f7b"
+  }
+ },
+ "expected": {
+  "outputs": {
+   "data_sha256": "9fb202981029d02a953b2ba20fede4b0a4c60602359c71a000a9bfbf73cb6ebd",
+   "data_hex": "ed6bfd5bb5a1a53423d835351527b0cdcfc820a3dfa6739bd761df1d97f32eba4860c052f8b1ce16dda7204ce3545857f598a378b01aa1be5207d0ae66f8d0ff3b4429caef605f1c5ed4366800a6f4dce3f0f07684744c3fa794a029d65ce74f85e5e702c88fd07b232dc5f1c2ffb5aabe49ee27f55c596d7cb022c6d889c3778227c32cc63f5f00539c91b46df5b6621869429a1d1b58c6be6bd73b159a4e648fd8a31ae35f0c0d2bc7d4a69c84dad5bac4ce35cc8be7250410748472e34b93"
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

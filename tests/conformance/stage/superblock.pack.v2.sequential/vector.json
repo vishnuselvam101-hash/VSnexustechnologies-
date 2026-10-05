@@ -1,0 +1,46 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "superblock.pack.v2.sequential",
+ "stage": "E9",
+ "formats": {
+  "frame": 4,
+  "superblock": 2,
+  "container": null
+ },
+ "kind": "positive",
+ "operation": "superblock.pack",
+ "params": {
+  "outer_code": "cauchy-rs",
+  "K": 48,
+  "M": 16,
+  "profile": "v4-balanced",
+  "lt_distribution": "dense",
+  "lt_seed": 0,
+  "archive_id_hex": "000102030405060708090a0b0c0d0e0f",
+  "container_size": 123456,
+  "container_sha256_hex": "1111111111111111111111111111111111111111111111111111111111111111",
+  "index_offset": 1000,
+  "group_count": 65,
+  "version": 2,
+  "stripe_depth": 8,
+  "column_parity": 2,
+  "strand_order": "sequential"
+ },
+ "inputs": {},
+ "expected": {
+  "outputs": {
+   "superblock_hex": "564e5834534202010030001000281006030000080200000102030405060708090a0b0c0d0e0f000000000001e240111111111111111111111111111111111111111111111111111111111111111100000000000003e8000000410000aeb937bf",
+   "roundtrip": {
+    "version": 2,
+    "K": 48,
+    "M": 16,
+    "repacked_sha256": "ce966f288bdd243c6077df3037008a2684ff195eef03f9c7e9a44320cf5d6e32",
+    "stripe_depth": 8,
+    "column_parity": 2,
+    "strand_order": "sequential"
+   }
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

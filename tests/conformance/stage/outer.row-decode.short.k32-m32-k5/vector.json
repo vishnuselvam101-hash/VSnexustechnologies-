@@ -1,0 +1,39 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "outer.row-decode.short.k32-m32-k5",
+ "stage": "D10",
+ "formats": {
+  "frame": null,
+  "superblock": null,
+  "container": null
+ },
+ "kind": "positive",
+ "operation": "outer.row_decode",
+ "params": {
+  "K": 32,
+  "M": 32,
+  "P": 4,
+  "k": 5,
+  "present": [
+   32,
+   33,
+   34,
+   35,
+   36
+  ]
+ },
+ "inputs": {
+  "symbols": {
+   "path": "symbols.dat",
+   "sha256": "d4647f5a2ce8bb59a89d148e7ce18979a0139f629029e1355c47aa07c95a3b6e"
+  }
+ },
+ "expected": {
+  "outputs": {
+   "data_sha256": "9da5b181432e6c648d8cb5f759698f38f9a06f773b44005fb7f23cbb3f5f27ce",
+   "data_hex": "7ff850e5cbeeabefa77957b2ca22c028e44c5061"
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

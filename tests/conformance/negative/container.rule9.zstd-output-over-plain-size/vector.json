@@ -1,0 +1,32 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "container.rule9.zstd-output-over-plain-size",
+ "stage": "D12",
+ "formats": {
+  "frame": null,
+  "superblock": null,
+  "container": [
+   4,
+   0
+  ]
+ },
+ "kind": "negative",
+ "operation": "container.read",
+ "params": {},
+ "inputs": {
+  "container": {
+   "path": "container.dat",
+   "sha256": "707b2a01cbda7b3bbd134cdf624cfce0c98cd885bb1cef97dc12d278d2158061"
+  }
+ },
+ "expected": {
+  "error": {
+   "code": "INTEGRITY_ERROR",
+   "category": "VERIFICATION_FAILED",
+   "exit_code": 1,
+   "retryable": false
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

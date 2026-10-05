@@ -1,0 +1,54 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "merkle.proofs.n5",
+ "stage": "E6",
+ "formats": {
+  "frame": null,
+  "superblock": null,
+  "container": null
+ },
+ "kind": "positive",
+ "operation": "merkle.proofs",
+ "params": {
+  "records_hex": [
+   "00",
+   "0101",
+   "020202",
+   "03030303",
+   "0404040404"
+  ]
+ },
+ "inputs": {},
+ "expected": {
+  "outputs": {
+   "root": "18905e86210bad694f6ea49e44eeb076e9f10dfdebca44235e7b10d7a12ef88f",
+   "proofs": {
+    "0": [
+     "fbb59ed10e9cd4ff45a12c5bb92cbd80df984ba1fe60f26a30febf218e2f0f5e",
+     "d8cf8579888e82ec3bdc6bf0b84efdfe81b1d9fa5533825907b1e18d3970ce9b",
+     "27e1bf02ed14aaf085ef42cad17ef36f10b84981e9953a18b53fa6e7a64a844d"
+    ],
+    "1": [
+     "96a296d224f285c67bee93c30f8a309157f0daa35dc5b87e410b78630a09cfc7",
+     "d8cf8579888e82ec3bdc6bf0b84efdfe81b1d9fa5533825907b1e18d3970ce9b",
+     "27e1bf02ed14aaf085ef42cad17ef36f10b84981e9953a18b53fa6e7a64a844d"
+    ],
+    "2": [
+     "e1ca8f38432470c5d7cf1f9b4dd2fd3e100218784c9ccafb29457c6abb71080d",
+     "e449187a936d72a12be931fa9e3805c22d852419aff6a60dab9644cc706a052f",
+     "27e1bf02ed14aaf085ef42cad17ef36f10b84981e9953a18b53fa6e7a64a844d"
+    ],
+    "3": [
+     "7e86d2ef801a405df86260a535724abea3f1228fb2db064a2531590e281e2a94",
+     "e449187a936d72a12be931fa9e3805c22d852419aff6a60dab9644cc706a052f",
+     "27e1bf02ed14aaf085ef42cad17ef36f10b84981e9953a18b53fa6e7a64a844d"
+    ],
+    "4": [
+     "5494c29929ce13ec62016c60617fa2779dd3dfa1fc051b5e0f0c752f61fd9f05"
+    ]
+   }
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

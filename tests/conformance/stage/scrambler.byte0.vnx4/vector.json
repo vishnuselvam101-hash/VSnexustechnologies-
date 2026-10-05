@@ -1,0 +1,23 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "scrambler.byte0.vnx4",
+ "stage": "E11",
+ "formats": {
+  "frame": null,
+  "superblock": null,
+  "container": null
+ },
+ "kind": "positive",
+ "operation": "scrambler.byte0",
+ "params": {
+  "domain": "VNX4 scrambler"
+ },
+ "inputs": {},
+ "expected": {
+  "outputs": {
+   "byte0_hex": "3d828ca312fd044bf6a1fdffaad326d9e7fe817105879fae6d686fa8e01edb19bcc918f779ad555b04810853e3cbd5036687b5d8e3c1dc4f1e3ec549044f8b41d8fe575b21a17a7a1e1fc6ffeb0ecd7ebc597e9b33e54620312f68f119410120e93fc87951ea1992cebfd7a6075862d3301f65b9895a33bacdc85ec0feb0e9a0e0d862844eeabfd0feb0461b550ccf5a4f6a5755bc5b4c52949055a41cf5ec49f2fe7fc0b9b21714a2c21651a7c41ef4ce5be7555a2170a5f623b55d3e26395a2fa15ed8e2eea3fe5f6369d72e7be1d9be9103b1847220adfd970cb2a6186da1f91163a79dd84841432c1908e044a69e434f6c4f960cf73adb5132b031bf5a96"
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

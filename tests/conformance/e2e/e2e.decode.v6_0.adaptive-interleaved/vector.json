@@ -1,0 +1,34 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "e2e.decode.v6_0.adaptive-interleaved",
+ "stage": "D0-D14",
+ "formats": {
+  "frame": 4,
+  "superblock": 2,
+  "container": [
+   4,
+   0
+  ]
+ },
+ "kind": "positive",
+ "operation": "e2e.decode",
+ "params": {},
+ "inputs": {
+  "reads": {
+   "path": "../../../fixtures/v6_0/adaptive-interleaved.reads.fastq.gz",
+   "sha256": "623dfc2eac2074e142df468e4b6ebbf15db5ec03244b66d7de4808994a6f9bf7"
+  }
+ },
+ "expected": {
+  "outputs": {
+   "status": "SUCCESS",
+   "container_sha256": "d55ea181ebe6f1435e556a1da201f5ef8ce51dde8eb7348cfd3708c2cd503f4d",
+   "files": {
+    "random.bin": "162bae584762f158c1128323005600d54d4ea2ff21ffcdb314427f9c3b5cf481",
+    "text.txt": "b5f141bb5448fdbb206316c5fd7d6c05b4d85fd5619cff46cdac5f22da5755dd"
+   }
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

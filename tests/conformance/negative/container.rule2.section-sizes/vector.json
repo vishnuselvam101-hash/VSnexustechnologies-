@@ -1,0 +1,32 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "container.rule2.section-sizes",
+ "stage": "D12",
+ "formats": {
+  "frame": null,
+  "superblock": null,
+  "container": [
+   4,
+   0
+  ]
+ },
+ "kind": "negative",
+ "operation": "container.read",
+ "params": {},
+ "inputs": {
+  "container": {
+   "path": "container.dat",
+   "sha256": "a9a8b8b370a23a6d476419aad86a4e726e476e69f4626d44b3b87880a6d53a9c"
+  }
+ },
+ "expected": {
+  "error": {
+   "code": "FORMAT_ERROR",
+   "category": "INVALID_INPUT",
+   "exit_code": 3,
+   "retryable": false
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

@@ -1,0 +1,29 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "superblock.v2.order255",
+ "stage": "D8",
+ "formats": {
+  "frame": 4,
+  "superblock": 2,
+  "container": null
+ },
+ "kind": "negative",
+ "operation": "superblock.unpack",
+ "params": {},
+ "inputs": {
+  "superblock": {
+   "path": "superblock.dat",
+   "sha256": "2ec6687874e79e3825c97d88582f3e65e219722d622a2fba8fad6e5a5ff3b972"
+  }
+ },
+ "expected": {
+  "error": {
+   "code": "FORMAT_ERROR",
+   "category": "INVALID_INPUT",
+   "exit_code": 3,
+   "retryable": false
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

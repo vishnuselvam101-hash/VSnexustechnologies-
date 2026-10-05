@@ -1,0 +1,39 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "e2e.encode.v6_0.encrypted-stripes",
+ "stage": "E7-E14",
+ "formats": {
+  "frame": 4,
+  "superblock": 2,
+  "container": [
+   4,
+   0
+  ]
+ },
+ "kind": "positive",
+ "operation": "e2e.encode",
+ "params": {
+  "dna_options": {
+   "column_parity": 2,
+   "outer_plan": "fixed",
+   "profile": "v4-balanced",
+   "redundancy_budget": null,
+   "strand_order": "interleaved",
+   "stripe_depth": 4
+  }
+ },
+ "inputs": {
+  "container": {
+   "path": "../../../fixtures/v6_0/encrypted-stripes.vnx",
+   "sha256": "7c6661f4b79532a5dbbb8b3cddf4bad84f75a2cc74d23a4efddaa64f763e68a0"
+  }
+ },
+ "expected": {
+  "outputs": {
+   "strands_sha256": "c77366e272146011800b0cd3285b514b481f20566fd19ecd8ea97c6eb612487d",
+   "strands": 470
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

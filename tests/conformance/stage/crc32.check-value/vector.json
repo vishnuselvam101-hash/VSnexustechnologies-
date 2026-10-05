@@ -1,0 +1,26 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "crc32.check-value",
+ "stage": "E10",
+ "formats": {
+  "frame": null,
+  "superblock": null,
+  "container": null
+ },
+ "kind": "positive",
+ "operation": "crc32",
+ "params": {
+  "rows_hex": "313233343536373839",
+  "row_bytes": 9
+ },
+ "inputs": {},
+ "expected": {
+  "outputs": {
+   "crc32": [
+    "cbf43926"
+   ]
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

@@ -565,7 +565,7 @@ def profiles() -> None:
 
 
 @app.command()
-def conformance(vectors: Optional[Path] = typer.Option(None, "--vectors", help="Vector directory (default: the packaged subset)."),
+def conformance(vectors: Optional[Path] = typer.Option(None, "--vectors", help="Vector directory (default: tests/conformance of a source checkout, else the packaged subset)."),
                 select: Optional[List[str]] = typer.Option(None, "--select", help="Only these vector IDs."),
                 backend: str = typer.Option("auto", "--backend", help="auto, native or reference.")) -> None:
     """Run conformance vectors (spec §6): exit 0 if CONFORMANT, 1 otherwise."""

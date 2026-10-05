@@ -1,0 +1,32 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "container.rule4.manifest-digest-mismatch",
+ "stage": "D12",
+ "formats": {
+  "frame": null,
+  "superblock": null,
+  "container": [
+   4,
+   0
+  ]
+ },
+ "kind": "negative",
+ "operation": "container.read",
+ "params": {},
+ "inputs": {
+  "container": {
+   "path": "container.dat",
+   "sha256": "621fa76d8698c733ce2394c787c5a14b2fb7828bf4fd19c55dc9a4331fb55a55"
+  }
+ },
+ "expected": {
+  "error": {
+   "code": "INTEGRITY_ERROR",
+   "category": "VERIFICATION_FAILED",
+   "exit_code": 1,
+   "retryable": false
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}
