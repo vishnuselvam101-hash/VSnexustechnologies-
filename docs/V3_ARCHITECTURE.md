@@ -1,4 +1,4 @@
-# VNX-DNA 3 architecture
+# VNX-DNA 3 architecture (historical; superseded by [ARCHITECTURE.md](ARCHITECTURE.md))
 
 VNX-DNA is a CPU-only Python implementation of the **digital side** of DNA data storage. It turns a file of any
 size into constraint-screened DNA strand sequences, can push them through a reproducible *simulated* synthesis and
