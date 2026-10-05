@@ -1,0 +1,81 @@
+
+📏 Total allocations:
+	458006
+
+📦 Total memory allocated:
+	7.640GB
+
+📈 Peak memory usage:
+	25.027MB
+
+📊 Histogram of allocation size:
+	min: 1.000B
+	---------------------------------------------
+	< 4.000B   :   3358 ▇
+	< 17.000B  :  22765 ▇▇▇▇
+	< 74.000B  :  34611 ▇▇▇▇▇▇
+	< 311.000B :  16777 ▇▇▇
+	< 1.309kB  :  87334 ▇▇▇▇▇▇▇▇▇▇▇▇▇▇
+	< 5.501kB  : 164443 ▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇
+	< 23.116kB :  85068 ▇▇▇▇▇▇▇▇▇▇▇▇▇
+	< 97.124kB :  36185 ▇▇▇▇▇▇
+	< 408.079kB:   5023 ▇
+	<=1.715MB  :   2442 ▇
+	---------------------------------------------
+	max: 1.715MB
+
+📂 Allocator type distribution:
+	 MALLOC: 440147
+	 REALLOC: 9281
+	 CALLOC: 8334
+	 MMAP: 242
+	 POSIX_MEMALIGN: 2
+
+🥇 Top 5 largest allocating locations (by size):
+	- parity:/root/vnx-dna-lab/v7-msan/src/vnxdna/codec/codecs.py:352 -> 1.525GB
+	- crc32_rows:/root/vnx-dna-lab/v7-msan/src/vnxdna/core/crc.py:34 -> 836.704MB
+	- violations_batch:/root/vnx-dna-lab/v7-msan/src/vnxdna/dnaenc/constraints.py:138 -> 702.499MB
+	- cauchy_parity:/root/vnx-dna-lab/v7-msan/src/vnxdna/codec/cauchy.py:166 -> 478.327MB
+	- violations_batch:/root/vnx-dna-lab/v7-msan/src/vnxdna/dnaenc/constraints.py:148 -> 347.977MB
+
+🥇 Top 5 largest allocating locations (by number of allocations):
+	- parity:/root/vnx-dna-lab/v7-msan/src/vnxdna/codec/codecs.py:352 -> 202961
+	- to_codes:/root/vnx-dna-lab/v7-msan/src/vnxdna/dnaenc/constraints.py:37 -> 49863
+	- crc32_rows:/root/vnx-dna-lab/v7-msan/src/vnxdna/core/crc.py:34 -> 45676
+	- cauchy_parity:/root/vnx-dna-lab/v7-msan/src/vnxdna/codec/cauchy.py:166 -> 39893
+	- violations_batch:/root/vnx-dna-lab/v7-msan/src/vnxdna/dnaenc/constraints.py:140 -> 9301
+
+🥇 Top 5 allocating modules (by size):
+	- vnxdna: 7.528GB total | 429956 allocations
+	- numpy: 77.068MB total | 16337 allocations
+	- typer: 33.246MB total | 8612 allocations
+	- cryptography: 778.747kB total | 2938 allocations
+	- <root>: 195.394kB total | 70 allocations
+
+🥇 Top 5 allocating modules (by number of allocations):
+	- vnxdna: 7.528GB total | 429956 allocations
+	- numpy: 77.068MB total | 16337 allocations
+	- typer: 33.246MB total | 8612 allocations
+	- cryptography: 778.747kB total | 2938 allocations
+	- <root>: 195.394kB total | 70 allocations
+
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┓
+┃ Location                                                                                        ┃       Total Memory ┃    Total Memory % ┃      <Own Memory> ┃      Own Memory % ┃  Allocation Count ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━┩
+│ _compile_bytecode at <frozen importlib._bootstrap_external>                                     │            4.182MB │            16.71% │           4.182MB │            16.71% │              1559 │
+│ violations_batch at /root/vnx-dna-lab/v7-msan/src/vnxdna/dnaenc/constraints.py                  │            5.417MB │            21.64% │           3.782MB │            15.11% │              1906 │
+│ _call_with_frames_removed at <frozen importlib._bootstrap>                                      │           10.690MB │            42.71% │           2.559MB │            10.23% │              5628 │
+│ build_strands at /root/vnx-dna-lab/v7-msan/src/vnxdna/dnaenc/frame4.py                          │            9.956MB │            39.78% │           2.366MB │             9.45% │              2202 │
+│ insert_markers at /root/vnx-dna-lab/v7-msan/src/vnxdna/dnaenc/markers.py                        │            1.604MB │             6.41% │           1.603MB │             6.41% │                10 │
+│ _runs at /root/vnx-dna-lab/v7-msan/src/vnxdna/dnaenc/constraints.py                             │            1.584MB │             6.33% │           1.584MB │             6.33% │                 4 │
+│ fdopen at <frozen os>                                                                           │            1.049MB │             4.19% │           1.049MB │             4.19% │                 2 │
+│ find_spec at <frozen importlib._bootstrap_external>                                             │            1.062MB │             4.24% │           1.049MB │             4.19% │                 8 │
+│ __init__ at <frozen importlib._bootstrap>                                                       │            1.049MB │             4.19% │           1.049MB │             4.19% │                 1 │
+│ _signature_from_function at /usr/lib/python3.12/inspect.py                                      │            1.052MB │             4.20% │           1.049MB │             4.19% │                 5 │
+│ <genexpr> at /root/vnx-dna-lab/v7-msan/src/vnxdna/dnaenc/records.py                             │            1.049MB │             4.19% │           1.049MB │             4.19% │                 1 │
+│ _encode_task at /root/vnx-dna-lab/v7-msan/src/vnxdna/pipeline/encode.py                         │           11.909MB │            47.58% │         615.617kB │             2.46% │              2143 │
+│ plain_rows at /root/vnx-dna-lab/v7-msan/src/vnxdna/dnaenc/frame4.py                             │          272.044kB │             1.09% │         272.012kB │             1.09% │                 5 │
+│ cauchy_parity at /root/vnx-dna-lab/v7-msan/src/vnxdna/codec/cauchy.py                           │          270.168kB │             1.08% │         270.168kB │             1.08% │                13 │
+│ parity at /root/vnx-dna-lab/v7-msan/src/vnxdna/codec/codecs.py                                  │          253.040kB │             1.01% │         251.312kB │             1.00% │                60 │
+└─────────────────────────────────────────────────────────────────────────────────────────────────┴────────────────────┴───────────────────┴───────────────────┴───────────────────┴───────────────────┘
