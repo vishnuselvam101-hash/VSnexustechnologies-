@@ -8,10 +8,15 @@ complement have the same canonical k-mers, so the same hashes with every orienta
 
 The constants c_i are fixed here (``SEEDS``): c_i = splitmix64(0x56584E37 + i). The sketch is a pure function of the
 read, so it does not depend on read order, batch size or worker count.
+
+:func:`sketch_reads` runs the native kernel (``vnxdna.native.cluster``) when it is available and selected, else
+:func:`sketch_reads_reference`; both return identical arrays.
 """
 from __future__ import annotations
 
 import numpy as np
+
+from vnxdna.native import cluster as _nc
 
 _M64 = (1 << 64) - 1
 NO_KMER = np.uint64(_M64)
@@ -56,6 +61,15 @@ def canonical_kmers(raw: np.ndarray, lengths: np.ndarray, k: int) -> tuple[np.nd
 
 
 def sketch_reads(raw: np.ndarray, lengths: np.ndarray, k: int, s: int, chunk: int = 512) -> tuple[np.ndarray, np.ndarray]:
+    """Native or reference :func:`sketch_reads_reference` (identical results)."""
+    raw = np.asarray(raw)
+    if raw.ndim == 2 and 1 <= k <= 31 and 1 <= s <= 256 and _nc.resolve_backend() == "native":
+        return _nc.sketch(raw, np.asarray(lengths, dtype=np.int64), k, s)
+    return sketch_reads_reference(raw, lengths, k, s, chunk)
+
+
+def sketch_reads_reference(raw: np.ndarray, lengths: np.ndarray, k: int, s: int,
+                           chunk: int = 512) -> tuple[np.ndarray, np.ndarray]:
     """(n, s) uint32 MinHash values (the top 32 bits; ``0xFFFFFFFF`` with orientation 2 = no valid k-mer) and (n, s)
     uint8 orientation bits of the minimising k-mers."""
     n = raw.shape[0]
