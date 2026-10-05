@@ -1,0 +1,56 @@
+{
+ "description": "B0 sweep B: 5 kB harness input (random/5kB, the harness default), DNA-Aeon feasible size; same channel family. VNX pays a fixed container overhead that is large at 5 kB, so its rate here is below 1.0 bit/nt (flagged).",
+ "input": "random/5kB",
+ "step_timeout_s": 600,
+ "channel": {
+  "ratio": [
+   53,
+   45,
+   2
+  ],
+  "error_rates": [
+   0.001,
+   0.002,
+   0.005
+  ],
+  "coverages": [
+   5,
+   10
+  ],
+  "dropouts": [
+   0.0
+  ],
+  "seeds": [
+   1,
+   2,
+   3
+  ]
+ },
+ "participants": [
+  {
+   "id": "dna-aeon-medium",
+   "codec": "DNAAeon",
+   "factory": "medium_coderate",
+   "clustering": "BasicSet"
+  },
+  {
+   "id": "dna-rs-medium",
+   "codec": "DNARS",
+   "factory": "medium_coderate",
+   "needs_file_size": true,
+   "clustering": "BasicSet"
+  },
+  {
+   "id": "vnx-s184",
+   "codec": "VNX",
+   "profile": "s184",
+   "clustering": "NoClustering"
+  },
+  {
+   "id": "vnx-s148",
+   "codec": "VNX",
+   "profile": "s148",
+   "clustering": "NoClustering"
+  }
+ ]
+}

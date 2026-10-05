@@ -1,0 +1,26 @@
+{
+ "started_utc": "2026-10-05T03:02:30.213663Z",
+ "argv": [
+  "/root/vnx-dna-lab/bench-tools/lab-driver/run_b0.py",
+  "/root/vnx-dna-lab/bench-lab/benchmarks/competitors/lab/configs/b0_sweep_a_19kB.json",
+  "/root/vnx-dna-lab/bench-tools/lab-runs/b0-sweep-a",
+  "--only",
+  "dna-fountain-medium,dna-fountain-high"
+ ],
+ "config_sha256": "0165ebae23498bc10a86fa085a415e0e57e0d0d95bf86480219f97a086a90051",
+ "input": "/root/vnx-dna-lab/bench-tools/fml-ethz__dt4dds-benchmark@0928fd7f26/input_files/random/19kB",
+ "input_sha256": "74b15f7ce012ea696f7231af550277b78b07bd94ec8c6a632d6ddbc7ccf95eaa",
+ "input_bytes": 19456,
+ "step_timeout_s": 900,
+ "loadavg_start": [
+  2.97705078125,
+  6.439453125,
+  6.92578125
+ ],
+ "ended_utc": "2026-10-05T03:05:05.234753Z",
+ "loadavg_end": [
+  8.51806640625,
+  7.42578125,
+  7.21826171875
+ ]
+}

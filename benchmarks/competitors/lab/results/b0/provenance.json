@@ -1,0 +1,235 @@
+{
+ "label": "recovery results SIMULATED; timing and memory MEASURED on this machine",
+ "created_utc": "2026-10-05T05:00:53.647780Z",
+ "vnx": {
+  "timestamp_utc": "2026-10-05T05:00:53Z",
+  "vnx_version": "5.0.0",
+  "vnx4_format_version": [
+   4,
+   0
+  ],
+  "git_commit": "e44d411c6aecc758bf7e1a97e2af8092cb20e0aa",
+  "cpu_model": "Intel(R) Xeon(R) Gold 6240 CPU @ 2.60GHz",
+  "logical_cpus": 8,
+  "ram_bytes": 33654890496,
+  "os": "Linux 6.8.0-146-generic",
+  "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+  "python": "3.12.3",
+  "packages": {
+   "numpy": "2.5.3",
+   "cryptography": "46.0.7",
+   "zstandard": "0.25.0",
+   "reedsolo": "1.7.0",
+   "pydantic": "2.13.5",
+   "typer": "0.27.2"
+  },
+  "v4_control_tag": "v4.0.0",
+  "v4_control_commit": "a358ae8284066d0608f329b47a53e55018bbfa79",
+  "commit_under_test": "e44d411c6aecc758bf7e1a97e2af8092cb20e0aa",
+  "worktree_dirty": false,
+  "native_toolchain": {
+   "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+   "rustc": "rustc 1.75.0 (82e1608df 2023-12-21) (built from a source tarball)",
+   "cargo": "cargo 1.75.0"
+  },
+  "cpu_flags": [
+   "avx",
+   "avx2",
+   "avx512bw",
+   "avx512f",
+   "bmi2",
+   "popcnt",
+   "sse4_2"
+  ]
+ },
+ "vnx_import_path": "/root/vnx-dna-lab/bench-lab/src/vnxdna/__init__.py",
+ "PYTHONPATH": "/root/vnx-dna-lab/bench-lab/src",
+ "vnx_native_backends": {
+  "alignment_v5": {
+   "requested_backend": "auto",
+   "active_backend": "native",
+   "native_available": true,
+   "library": "/root/vnx-dna-lab/bench-lab/src/vnxdna/v5/native/libvnx_align.so",
+   "load_error": null,
+   "abi_version": 2,
+   "error": null,
+   "domain": {
+    "max_band": 64,
+    "max_template_nt": 8192,
+    "max_cost": 65536,
+    "max_guard": 1024,
+    "read_dtype": "uint8"
+   }
+  },
+  "reads_v6": {
+   "requested_backend": "auto",
+   "active_backend": "native",
+   "native_available": true,
+   "library": "/root/vnx-dna-lab/bench-lab/src/vnxdna/v6/native/libvnx_reads.so",
+   "load_error": null,
+   "abi_version": 1,
+   "error": null
+  },
+  "rs_v6": {
+   "requested_backend": "auto",
+   "active_backend": "avx2",
+   "fallback_reason": null,
+   "error": null,
+   "native_available": true,
+   "library": "/root/vnx-dna-lab/bench-lab/src/vnxdna/v6/native/libvnx_rs.so",
+   "load_error": null,
+   "abi_version": 1,
+   "supported_levels": [
+    "scalar",
+    "avx2",
+    "avx512"
+   ],
+   "cpu_levels": [
+    "scalar",
+    "avx2",
+    "avx512"
+   ],
+   "auto_policy": "avx2 > scalar > reference; avx512 only when forced (measured 0.94x of avx2 on Xeon Gold 6240; benchmarks/v6/native_rs/results/bench.json)",
+   "reference": "vnxdna.v4.rs_fast"
+  }
+ },
+ "machine": {
+  "model": "Intel(R) Xeon(R) Gold 6240 CPU @ 2.60GHz",
+  "mhz_first_core": "2593.904",
+  "logical_cpus": 8,
+  "mem_total": "32866104 kB",
+  "kernel": "6.8.0-146-generic",
+  "virtualisation": "shared VPS; other jobs may run concurrently (see loadavg per trial)",
+  "loadavg_now": [
+   1.8974609375,
+   2.427734375,
+   4.4208984375
+  ]
+ },
+ "tools": {
+  "MW55__DNA-Aeon@74bf780fa7": {
+   "dir": "/root/vnx-dna-lab/bench-tools/MW55__DNA-Aeon@74bf780fa7",
+   "head": "74bf780fa786b1934fcd54feb6861233356eba00",
+   "remote": "https://github.com/MW55/DNA-Aeon.git",
+   "dirty_files": "M encode.py",
+   "licence_file": "LICENSE",
+   "licence_sha256": "f18a9983de27be8a5b6997c1e6032032afabd67eea40ad42300abd77d80405de",
+   "submodules": [
+    "b7be172a53a3e32d490540e339084daf679e2417 ConstrainedKaos (v1.1.1-1-gb7be172)",
+    " 9147b7eae30b9832b53f9230b51c0ea595fd373c NOREC4DNA (9147b7e)",
+    " a838de8522f9051df0d1b202473bb6befe648702 Zippy (a838de8)",
+    " ef799d337201e02688c6e07b0cac8912b86f505d abseil-cpp (20220623.0~30)"
+   ]
+  },
+  "fml-ethz__dt4dds-benchmark@0928fd7f26": {
+   "dir": "/root/vnx-dna-lab/bench-tools/fml-ethz__dt4dds-benchmark@0928fd7f26",
+   "head": "0928fd7f26709ce63fd4d0765c50db1be8af0f7d",
+   "remote": "https://github.com/fml-ethz/dt4dds-benchmark.git",
+   "dirty_files": "M dt4dds_benchmark/workflows/bin/workflow_errorgenerator/run.py",
+   "licence_file": "LICENSE",
+   "licence_sha256": "37d3866d5597d606d572c4212d57902452cf70f4722770635413a1637b9a3b40"
+  },
+  "fml-ethz__dt4dds@784b635c88": {
+   "dir": "/root/vnx-dna-lab/bench-tools/fml-ethz__dt4dds@784b635c88",
+   "head": "784b635c88327a467dcbe338ff6ee320157508ee",
+   "remote": "https://github.com/fml-ethz/dt4dds.git",
+   "dirty_files": "",
+   "licence_file": "LICENSE",
+   "licence_sha256": "f371d87603bc6bf210a7d1a5f339ff1ce72154da1cc2858625168455c45618a2"
+  },
+  "jdbrody__dna-fountain@f97c1b8a81": {
+   "dir": "/root/vnx-dna-lab/bench-tools/jdbrody__dna-fountain@f97c1b8a81",
+   "head": "f97c1b8a81f5c5b819209d5b5e26c9c8f4439495",
+   "remote": "https://github.com/jdbrody/dna-fountain.git",
+   "dirty_files": ""
+  },
+  "lab-driver": {
+   "dir": "/root/vnx-dna-lab/bench-tools/lab-driver",
+   "head": "6b5781c8ded66787a25f04b6916da8d62219d79c",
+   "remote": "error: No such remote 'origin'",
+   "dirty_files": ""
+  },
+  "reinhardh__dna_rs_coding@455e1a5182": {
+   "dir": "/root/vnx-dna-lab/bench-tools/reinhardh__dna_rs_coding@455e1a5182",
+   "head": "455e1a5182bf64281f54d434a4ed5ca456c2373e",
+   "remote": "https://github.com/reinhardh/dna_rs_coding.git",
+   "dirty_files": "M include/GF2M.hpp",
+   "licence_file": "apache_licence_20",
+   "licence_sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+  },
+  "whpress__hedges@86812c5049": {
+   "dir": "/root/vnx-dna-lab/bench-tools/whpress__hedges@86812c5049",
+   "head": "86812c50494f524add217a2986ee885176ec644e",
+   "remote": "https://github.com/whpress/hedges.git",
+   "dirty_files": "M Build_Linux/DNAcode.o\n M Build_Linux/DNAcode_demo\n M Build_Linux/DNAcode_demo.o\n M Build_Linux/RSecc.o",
+   "licence_file": "LICENSE",
+   "licence_sha256": "8252b429a361f888ceabb4bf608c0ca4bcd39fde7b5187680de118d8ec71c15c"
+  }
+ },
+ "tool_versions": {
+  "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+  "cmake": "cmake version 3.28.3",
+  "python_system": "3.12.3"
+ },
+ "patches": {
+  "errorgenerator_seed.diff": "307b57da1a1dbf60487d081b9b94a08c13cfdc44b4626cf98b2d1b3f3fd7c87f"
+ },
+ "lab_driver": {
+  "commit": "6b5781c8ded66787a25f04b6916da8d62219d79c",
+  "dirty": false,
+  "files_sha256": {
+   "instrumented.py": "318082edc935b8a29ae56891f7f3dc5ebae181be5da5660aa13f4bf689dcadad",
+   "peakwrap.py": "4da91f1dcc98eb9928e1fbc7a17594645cb8335f2dfe033324ba8b31f2dbd10b",
+   "run_b0.py": "fe66e159c76a5cc73b8d2b4cea70af76b15e109e7beef48b44d85277413b2c14",
+   "vnx_codec.py": "5c43b5f21e961db8dfa1e477b42be033690f20c11ed65c095a291b7c3fdb2bd1"
+  }
+ },
+ "boost": {
+  "version": "1.83.0 (program_options static, headers)",
+  "tarball_sha256": "0c6049764e80aa32754acd7d4f179fd5551d8172a83b71532ae093e7384e98da"
+ },
+ "driver_meta": {
+  "started_utc": "2026-10-05T03:02:30.213663Z",
+  "argv": [
+   "/root/vnx-dna-lab/bench-tools/lab-driver/run_b0.py",
+   "/root/vnx-dna-lab/bench-lab/benchmarks/competitors/lab/configs/b0_sweep_a_19kB.json",
+   "/root/vnx-dna-lab/bench-tools/lab-runs/b0-sweep-a",
+   "--only",
+   "dna-fountain-medium,dna-fountain-high"
+  ],
+  "config_sha256": "0165ebae23498bc10a86fa085a415e0e57e0d0d95bf86480219f97a086a90051",
+  "input": "/root/vnx-dna-lab/bench-tools/fml-ethz__dt4dds-benchmark@0928fd7f26/input_files/random/19kB",
+  "input_sha256": "74b15f7ce012ea696f7231af550277b78b07bd94ec8c6a632d6ddbc7ccf95eaa",
+  "input_bytes": 19456,
+  "step_timeout_s": 900,
+  "loadavg_start": [
+   2.97705078125,
+   6.439453125,
+   6.92578125
+  ],
+  "ended_utc": "2026-10-05T03:05:05.234753Z",
+  "loadavg_end": [
+   8.51806640625,
+   7.42578125,
+   7.21826171875
+  ]
+ },
+ "extra": {
+  "runs": {
+   "repro": "configs/repro_published_style.json",
+   "a": "configs/b0_sweep_a_19kB.json",
+   "b": "configs/b0_sweep_b_5kB.json",
+   "c": "configs/b0_sweep_c_dropout_19kB.json"
+  },
+  "commands": "bench-tools/lab-runs/run_chunk.sh CONFIG OUTDIR ONLY_CSV [TIMEOUT_S] (vnx-lab exp, CPUQuota 100%, MemoryMax 8G, nice 10 via governor scope)",
+  "step_timeout_s": {
+   "repro": 900,
+   "a": 900,
+   "b": 600,
+   "c": 900
+  },
+  "channel_seeds": "LAB_CHANNEL_SEED = trial seed (1,2,3), patched ErrorGenerator",
+  "note": "false-SUCCESS = every pipeline step exit 0 and output file written, but the output does not start with the input bytes",
+  "vnx_src_unchanged_since_base": "git diff c76009d HEAD -- src is empty; adapter files unchanged since commit 6086858 (profiles s148/s184/s280/s456/default313/dense are from that commit); runs started after commit 6086858 with a clean worktree"
+ }
+}

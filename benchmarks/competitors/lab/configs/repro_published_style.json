@@ -1,0 +1,9 @@
+{"description": "Harness demo conditions (dt4dds-benchmark demo/basic_pipeline.py): random_5kB, 1 % substitutions only, coverage 30, no dropout. Run for two public codecs through the unmodified harness codec wrappers; VNX shown for reference.",
+ "input": "random/5kB", "step_timeout_s": 900,
+ "channel": {"ratio": [1, 0, 0], "error_rates": [0.01], "coverages": [30], "seeds": [1]},
+ "participants": [
+  {"id": "dna-rs-high",     "codec": "DNARS",   "factory": "high_coderate",   "needs_file_size": true, "clustering": "BasicSet"},
+  {"id": "dna-aeon-high",   "codec": "DNAAeon", "factory": "high_coderate",   "clustering": "BasicSet"},
+  {"id": "dna-aeon-medium", "codec": "DNAAeon", "factory": "medium_coderate", "clustering": "BasicSet"},
+  {"id": "vnx-s184",        "codec": "VNX", "profile": "s184", "clustering": "NoClustering"}
+ ]}
