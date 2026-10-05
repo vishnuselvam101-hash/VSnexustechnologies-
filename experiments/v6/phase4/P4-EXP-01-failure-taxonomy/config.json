@@ -14,7 +14,8 @@
  },
  "arm_notes": {
   "default": "stock DecodeOptions (segment indel rule, soft decoding off)",
-  "smart-auto": "existing opt-in V5 smart indel recovery + soft decoding auto, deferred schedule (default schedule)"
+  "smart-auto": "existing opt-in V5 smart indel recovery + soft decoding auto, deferred schedule (default schedule)",
+  "restriction": "G2 nanopore-like coverage cells and G4 run the default arm only (CPU budget: smart-auto takes about 30 s per nanopore-like trial and every G1 nanopore-like trial fails before pass 2 in both arms)."
  },
  "baseline": "default",
  "decode_workers": 1,
@@ -257,7 +258,10 @@
      "coverage": 2.0
     }
    },
-   "size": 20000
+   "size": 20000,
+   "arms": [
+    "default"
+   ]
   },
   {
    "id": "G2/nanopore-like-cov3",
@@ -269,7 +273,10 @@
      "coverage": 3.0
     }
    },
-   "size": 20000
+   "size": 20000,
+   "arms": [
+    "default"
+   ]
   },
   {
    "id": "G2/nanopore-like-cov5",
@@ -281,7 +288,10 @@
      "coverage": 5.0
     }
    },
-   "size": 20000
+   "size": 20000,
+   "arms": [
+    "default"
+   ]
   },
   {
    "id": "G2/nanopore-like-cov30",
@@ -293,7 +303,10 @@
      "coverage": 30.0
     }
    },
-   "size": 20000
+   "size": 20000,
+   "arms": [
+    "default"
+   ]
   },
   {
    "id": "G3/s184/b0like-e1-cov5-drop0",
