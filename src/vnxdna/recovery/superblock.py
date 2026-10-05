@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from collections import Counter
 
+import numpy as np
+
 from vnxdna.codec.codecs import CauchyRSCodec
 from vnxdna.core.errors import VNXAddressError, VNXDecodeError, VNXFormatError, VNXUnsupportedVersionError
 from vnxdna.dnaenc.layout import KIND_SUPER, Layout
@@ -11,6 +13,42 @@ from vnxdna.recovery.consensus import _consensus_symbols, resolve_duplicates
 from vnxdna.recovery.options import DecodeOptions
 from vnxdna.recovery.spill import Spill
 from vnxdna.dnaenc.superblock import SB_BYTES, Superblock
+
+
+COLLISION_TRIALS = 256
+
+
+def _try_superblock(got: dict, ks: int, ms: int, lay: Layout, tag: int):
+    """The superblock decoded from ``got`` (symbol index → payload) if it is valid for ``tag`` and ``lay``, else None."""
+    try:
+        data = CauchyRSCodec(ks, ms).decode(got, ks, lay.payload_bytes).reshape(-1).tobytes()
+        sb = Superblock.unpack(data[:SB_BYTES])
+    except (VNXDecodeError, VNXFormatError, VNXUnsupportedVersionError):
+        return None
+    return sb if int.from_bytes(sb.archive_id[:2], "big") == tag and sb.layout == lay else None
+
+
+def _colliding_superblocks(values: dict, ks: int, ms: int, lay: Layout, tag: int) -> dict:
+    """Spec §3.10 step 7: superblocks decodable from mutually consistent subsets of a tag's conflicting symbols.
+
+    ``values``: symbol index → the distinct verified payloads seen for it. A deterministic search (seeded by the tag)
+    draws Ks indices and one value each, decodes, and keeps every valid superblock (CRC-32 and full field validation);
+    each superblock found is then completed by every observed value consistent with its codeword. Returns
+    container SHA-256 → Superblock."""
+    found: dict = {}
+    idx = sorted(values)
+    if len(idx) < ks:
+        return found
+    rng = np.random.default_rng(0x56C0 ^ tag)
+    for _ in range(COLLISION_TRIALS):
+        pick = rng.choice(len(idx), size=ks, replace=False)
+        got = {idx[i]: values[idx[i]][int(rng.integers(len(values[idx[i]])))] for i in pick}
+        sb = _try_superblock(got, ks, ms, lay, tag)
+        if sb is not None:
+            found.setdefault(sb.container_sha256, sb)
+        if len(found) >= 2:
+            break
+    return found
 
 
 def _decode_superblock(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter) -> tuple[Superblock, dict]:
@@ -22,10 +60,27 @@ def _decode_superblock(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
     # consensus rescue for superblock symbols that no single read delivered
     if pend_sb.size:
         symbols.update(_consensus_symbols(pend_sb, symbols, lay, opt, stats))
-    tags = sorted({k[1] for k in symbols})
+    # every distinct verified value of each superblock symbol, per tag (a tag with several values for one symbol may be
+    # two archives sharing a tag: spec §3.10 step 7)
+    values: dict = {}
+    for rec in acc_sb[(acc_sb["group"] == 0) & (acc_sb["symbol"] < ks + ms)]:
+        vs = values.setdefault(int(rec["tag"]), {}).setdefault(int(rec["symbol"]), [])
+        if not any(np.array_equal(v, rec["payload"]) for v in vs):
+            vs.append(np.array(rec["payload"]))
+    tags = sorted({k[1] for k in symbols} | set(values))
     candidates = {}
     unsupported = None
     for tag in tags:
+        per = values.get(tag, {})
+        if any(len(v) > 1 for v in per.values()):
+            found = _colliding_superblocks(per, ks, ms, lay, tag)
+            if len(found) > 1:
+                raise VNXAddressError(
+                    f"archive tag {tag:04x} is shared by {len(found)} different archives in these reads; refusing to "
+                    "choose one", stage="superblock", code="ARCHIVE_TAG_AMBIGUOUS", retryable=False,
+                    details={"archive_tag": f"{tag:04x}", "container_sha256": sorted(h.hex() for h in found),
+                             "conflicting_symbols": sum(len(v) > 1 for v in per.values())},
+                    hint="separate the pools physically (the archives' strands cannot be told apart by their tag)")
         got = {k[3]: v for k, v in symbols.items() if k[1] == tag and k[0] == KIND_SUPER and k[2] == 0 and k[3] < ks + ms}
         if len(got) < ks:
             continue
