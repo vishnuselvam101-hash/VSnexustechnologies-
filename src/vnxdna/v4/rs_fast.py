@@ -25,6 +25,7 @@ from ..ecc import gf256
 from ..ecc.rs_batch import MAX_BATCH, _INV, _MUL, _alpha_powers, _EXP
 
 _TABLES: dict[tuple[int, int], tuple[np.ndarray, np.ndarray]] = {}
+MAX_CACHED_TABLES = 16                 # per-(n, nsym) tables are ~2·n·256·nsym bytes: bound the cache (cleared when full)
 
 
 def _tables(n: int, nsym: int) -> tuple[np.ndarray, np.ndarray]:
@@ -40,6 +41,8 @@ def _tables(n: int, nsym: int) -> tuple[np.ndarray, np.ndarray]:
         k = np.arange(nsym + 1)
         powers = _EXP[(np.outer(k, log_x)) % 255]                     # (nsym+1, n): (X_j⁻¹)^k
         ev = np.ascontiguousarray(gf256.MUL[:, powers].transpose(1, 0, 2))  # (nsym+1, 256, n)
+        if len(_TABLES) >= MAX_CACHED_TABLES:
+            _TABLES.clear()                # atomic under the GIL, safe with concurrent readers
         t = _TABLES[key] = (syn, ev)
     return t
 

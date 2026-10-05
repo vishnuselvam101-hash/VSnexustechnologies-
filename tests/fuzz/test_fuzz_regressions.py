@@ -108,3 +108,27 @@ def test_deeply_nested_manifest_is_a_format_error(tmp_path, depth):
     p.write_bytes(_rewrap(src, blob, hashlib.sha256(blob).digest()))
     with pytest.raises(VNXFormatError):
         ct.open_container(p)
+
+
+# V6-FUZZ-03: the per-geometry GF(256) tables of the inner RS encoder (v4.codecs.InnerRS.parity, ~k·256·r bytes) and
+# of rs_fast (~2·n·256·r bytes) were cached without bound. The py-rs campaign, which draws a new (n, r) almost every
+# run, hit the 2 GiB RSS limit after ~17k runs (one cached entry per geometry, up to ~8 MiB each). A long-lived
+# process that decodes archives of many layouts grows the same way. The caches are now bounded.
+def test_rs_table_caches_are_bounded():
+    import numpy as np
+
+    from vnxdna.ecc import rs_batch
+    from vnxdna.v4 import codecs, rs_fast
+    rng = np.random.default_rng(7)
+    for i in range(60):
+        n, r = 40 + 3 * i, 2 + i % 30
+        rs = codecs.InnerRS(r)
+        msg = rng.integers(0, 256, (3, n - r), dtype=np.uint8)
+        cw = np.concatenate([msg, rs.parity(msg)], axis=1)
+        bad = cw.copy()
+        bad[:, 0] ^= 0x5A
+        out, ok, _ = rs_fast.decode_batch(bad, r)
+        assert ok.all() and np.array_equal(out, cw)
+        assert not rs_batch.syndromes(cw, r).any()
+    assert len(codecs._TABLES) <= codecs.MAX_CACHED_TABLES
+    assert len(rs_fast._TABLES) <= rs_fast.MAX_CACHED_TABLES
