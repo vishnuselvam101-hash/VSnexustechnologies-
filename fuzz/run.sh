@@ -53,15 +53,23 @@ if [ -f "$HERE/native/${target}_fuzz.c" ]; then
     "$bin" "${flags[@]}" -max_len="${MAX_LEN:-65536}" "$@" "$d/corpus" "${seeds[@]}" >> "$log" 2>&1
   rc=$?
 elif python_targets | grep -qx "$target"; then
-  echo "# python $target secs=$secs commit=$(git -C "$REPO" rev-parse --short HEAD) python=$("$PY" -V 2>&1)" > "$log"
-  (cd "$d" && governed env PYTHONPATH="$REPO/src:$REPO/tests" "$PY" -m fuzz.atheris_run "$target" "${flags[@]}" \
-     -max_len="${MAX_LEN:-262144}" "$@" "$d/corpus" "${seeds[@]}" >> "$log" 2>&1)
-  rc=$?
+  # atheris' own memory grows with the run count on NumPy-heavy targets (no leak outside the engine; see
+  # docs/security/V6_FUZZ_REPORT.md), so long campaigns run as restarted slices of PY_SLICE seconds on one corpus.
+  slice=${PY_SLICE:-60}
+  echo "# python $target secs=$secs slice=$slice commit=$(git -C "$REPO" rev-parse --short HEAD) python=$("$PY" -V 2>&1)" > "$log"
+  left=$secs rc=0
+  while [ "$left" -gt 0 ] && [ "$rc" = 0 ]; do
+    s=$(( left < slice ? left : slice ))
+    (cd "$d" && governed env PYTHONPATH="$REPO/src:$REPO/tests" "$PY" -m fuzz.atheris_run "$target" "${flags[@]}" \
+       -max_total_time="$s" -max_len="${MAX_LEN:-262144}" "$@" "$d/corpus" "${seeds[@]}" >> "$log" 2>&1)
+    rc=$?
+    left=$(( left - s ))
+  done
 else
   echo "unknown target: $target (fuzz/run.sh list)"; exit 2
 fi
 after=$(find "$d/crashes" -type f | wc -l)
-runs=$(grep -oE 'stat::number_of_executed_units: *[0-9]+' "$log" | grep -oE '[0-9]+$' | tail -1)
+runs=$(grep -oE 'stat::number_of_executed_units: *[0-9]+' "$log" | grep -oE '[0-9]+$' | awk '{s += $1} END {print s}')
 cov=$(grep -oE 'cov: [0-9]+ ft: [0-9]+' "$log" | tail -1)
 echo "$target secs=$secs rc=$rc runs=${runs:-?} ${cov:-cov: ?} corpus=$(find "$d/corpus" -type f | wc -l) new_crashes=$((after - before)) log=$log"
 [ "$after" -gt "$before" ] && exit 1
