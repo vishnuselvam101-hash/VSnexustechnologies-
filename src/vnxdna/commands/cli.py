@@ -145,6 +145,8 @@ def archive(inputs: List[Path] = typer.Argument(..., help="Files and/or director
             chunk_size: int = typer.Option(1 << 20, help="Chunk size in bytes (4 KiB … 64 MiB)."),
             compression: str = typer.Option("zstd", help="zstd or none."), level: int = typer.Option(3, help="zstd level 1–22."),
             no_dedup: bool = typer.Option(False, "--no-dedup"), preserve_metadata: bool = typer.Option(False, "--preserve-metadata"),
+            archive_id: str = typer.Option("options", "--archive-id",
+                                           help="Unencrypted archive ID: options (options-v1, default) or content (content-v1)."),
             workers: int = typer.Option(1, "--workers", "-w"), performance: Optional[str] = PERF_OPT,
             key_file: Optional[Path] = KEY_OPT, passphrase_env: Optional[str] = PW_OPT, force: bool = FORCE_OPT,
             config: Optional[Path] = CONFIG_OPT, as_json: bool = JSON_OPT) -> None:
@@ -156,7 +158,8 @@ def archive(inputs: List[Path] = typer.Argument(..., help="Files and/or director
         key, pw = sdk.load_keys(key_file, passphrase_env)
         opts = archive_options_for(config, performance, key=key, passphrase=pw,
                                    chunk_size=chunk_size if chunk_size != 1 << 20 else None, workers=workers,
-                                   compression=compression, level=level, dedup=not no_dedup, preserve_metadata=preserve_metadata)
+                                   compression=compression, level=level, dedup=not no_dedup, preserve_metadata=preserve_metadata,
+                                   archive_id=archive_id)
         res = sdk.archive(list(inputs[:-1]), inputs[-1], options=opts, overwrite=force, progress=_progress_cb())
         d = res.body
         _out(res, f"archived {d['files']} entries, {d['content_bytes']:,} B → {d['container_bytes']:,} B ({d['output']})", as_json)

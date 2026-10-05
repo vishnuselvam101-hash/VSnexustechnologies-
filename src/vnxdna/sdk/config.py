@@ -38,7 +38,7 @@ DECODE_KEYS = {"profile", "band", "min_quality", "reverse_complement", "consensu
                "archive_tag", "batch_reads", "workers", "indel_recovery", "soft_decoding",
                "recovery_schedule", "max_container_bytes",
                "expect_archive_id", "expect_sha256"}
-ARCHIVE_KEYS = {"chunk_size", "compression", "level", "workers", "preserve_metadata", "dedup"}
+ARCHIVE_KEYS = {"chunk_size", "compression", "level", "workers", "preserve_metadata", "dedup", "archive_id"}
 
 
 def load_config(path: str | os.PathLike | None) -> dict:
