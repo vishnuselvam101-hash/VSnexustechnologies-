@@ -1,0 +1,38 @@
+{
+ "description": "b0-dropout (pre-registered, see results/b0-dropout/PREREG.md). 19 kB, coverage 10, 53/45/2 error composition. SIMULATED. Secondary (about 0.5 bit/nt), dropout 10/20/30 %. Chunk: DNA-RS-low, seeds 1-3.",
+ "input": "random/19kB",
+ "step_timeout_s": 900,
+ "channel": {
+  "ratio": [
+   53,
+   45,
+   2
+  ],
+  "error_rates": [
+   0.005,
+   0.01
+  ],
+  "coverages": [
+   10
+  ],
+  "dropouts": [
+   0.1,
+   0.2,
+   0.3
+  ],
+  "seeds": [
+   1,
+   2,
+   3
+  ]
+ },
+ "participants": [
+  {
+   "id": "dna-rs-low",
+   "codec": "DNARS",
+   "factory": "low_coderate",
+   "needs_file_size": true,
+   "clustering": "BasicSet"
+  }
+ ]
+}
