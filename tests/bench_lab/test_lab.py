@@ -82,3 +82,24 @@ def test_dropout_report_counts_every_trial_and_rejects_duplicates(tmp_path):
     dup = tmp_path / "d.jsonl"; dup.write_text(f.read_text() + json.dumps(rows[0]) + "\n")
     p = subprocess.run([sys.executable, str(LAB / "dropout_report.py"), str(dup)], capture_output=True, text=True)
     assert p.returncode != 0 and "duplicate trial" in (p.stderr + p.stdout)
+
+
+def test_dropout_report_rule3_decision(tmp_path):
+    """PREREG rule 3 is applied mechanically: a finalist that matches the baseline everywhere and is not separated above it
+    in any cell is REJECTed; one that is separated in a cell and has >= 8/10 at dropout <= 10 % is ACCEPTed."""
+    import json
+    import sys
+    rows = []
+    for pid, exact_at_d10 in [("vnx-base", 0), ("vnx-good", 10), ("vnx-same", 0)]:
+        for d in (0.0, 0.1):
+            for seed in range(1, 11):
+                t = _trial(pid, d == 0.0 or seed <= exact_at_d10); t["dropout"] = d; t["seed"] = seed; rows.append(t)
+    f = tmp_path / "t.jsonl"; f.write_text("".join(json.dumps(t) + "\n" for t in rows))
+
+    def run(finalists):
+        out = tmp_path / "o.json"
+        subprocess.run([sys.executable, str(LAB / "dropout_report.py"), str(f), "--json", str(out), "--baseline", "vnx-base",
+                        "--finalists", finalists], check=True, capture_output=True)
+        return json.loads(out.read_text())["decision_rule3"]
+    assert run("vnx-good,vnx-same")["lead"] == "vnx-good" and run("vnx-good,vnx-same")["decision"] == "ACCEPT"
+    assert run("vnx-same")["decision"] == "REJECT"

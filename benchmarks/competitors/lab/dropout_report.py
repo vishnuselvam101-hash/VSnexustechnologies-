@@ -15,9 +15,38 @@ def fmt(k, n):
     return f"{k}/{n} ({lo:.2f}-{hi:.2f})"
 
 
+def decide(cell, part, errs, drops, base, finalists):
+    """PREREG rule 3: lead profile = most exact trials among finalists (tie: shorter strand); accepted as a named profile only
+    if (a) bits/nt in [0.995, 1.005], (b) false-SUCCESS 0, (c) exact count >= baseline in every cell and Wilson-separated
+    above it in at least one, (d) >= 8/10 exact in every cell with dropout <= 10 %."""
+    def ex(p, e, d):
+        ts = cell.get((p, e, d), []); return sum(t["exact_sha256"] for t in ts), len(ts)
+    def strand_len(p):
+        return min(t["strand_stats"]["mean_len"] for t in part[p])
+    lead = sorted(finalists, key=lambda p: (-sum(t["exact_sha256"] for t in part[p]), strand_len(p)))[0]
+    bits = part[lead][0]["strand_stats"]["bits_per_nt"]
+    fs = sum(t["false_success"] for t in part[lead])
+    ge_all = True; sep = []; low = []
+    for e in errs:
+        for d in drops:
+            (k, n), (kb, nb) = ex(lead, e, d), ex(base, e, d)
+            if k < kb: ge_all = False
+            if n and nb and wilson(k, n)[0] > wilson(kb, nb)[1]: sep.append([e, d])
+            if d <= 0.10 + 1e-12 and (n == 0 or k / n < 0.8): low.append([e, d, k, n])
+    crit = {"a_bits_per_nt_in_0.995_1.005": 0.995 <= bits <= 1.005, "b_false_success_0": fs == 0,
+            "c_ge_baseline_every_cell": ge_all, "c_separated_above_baseline_cells": sep,
+            "d_ge_8_of_10_dropout_le_10pct": not low}
+    ok = crit["a_bits_per_nt_in_0.995_1.005"] and crit["b_false_success_0"] and ge_all and bool(sep) and not low
+    return {"lead": lead, "lead_exact": sum(t["exact_sha256"] for t in part[lead]), "lead_trials": len(part[lead]),
+            "bits_per_nt": bits, "false_success": fs, "criteria": crit, "cells_below_8_of_10": low,
+            "decision": "ACCEPT" if ok else "REJECT"}
+
+
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("trials", nargs="+"); ap.add_argument("--md"); ap.add_argument("--json")
     ap.add_argument("--title", default="b0-dropout (SIMULATED)")
+    ap.add_argument("--baseline", help="PREREG rule 3: baseline participant (e.g. vnx-s184)")
+    ap.add_argument("--finalists", help="PREREG rule 3: comma-separated VNX finalists")
     a = ap.parse_args()
     T = []
     for f in a.trials:
@@ -84,6 +113,10 @@ def main():
                     elif lr[0] > lv[1]: l += 1
                     else: s += 1
             out.append(f"| {v} | {r} | {b} | {l} | {s} |")
+    if a.baseline and a.finalists:
+        dec = decide(cell, part, errs, drops, a.baseline, a.finalists.split(","))
+        js["decision_rule3"] = dec
+        out += ["", "## PREREG rule 3 (computed)", "", "```", json.dumps(dec, indent=1), "```"]
     text = "\n".join(out) + "\n"
     if a.md: pathlib.Path(a.md).write_text(text)
     if a.json: pathlib.Path(a.json).write_text(json.dumps(js, indent=1))
