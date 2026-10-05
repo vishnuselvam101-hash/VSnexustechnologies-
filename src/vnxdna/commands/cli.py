@@ -194,12 +194,28 @@ def verify(container: Path, chunk: Optional[int] = typer.Option(None, "--chunk",
 
 @app.command()
 def locate(container: Path, name: str, key_file: Optional[Path] = KEY_OPT, passphrase_env: Optional[str] = PW_OPT,
-           profile: Optional[str] = typer.Option(None, "--dna-profile", help="Also give strand groups/records for this layout."),
+           profile: Optional[str] = typer.Option(None, "--dna-profile",
+                                                 help="Also give strand groups/records for this strand or redundancy profile."),
+           data_symbols: Optional[int] = typer.Option(None, "-K"), parity_symbols: Optional[int] = typer.Option(None, "-M"),
+           stripe_depth: Optional[int] = V6_STRIPE, column_parity: Optional[int] = V6_COLUMN,
+           strand_order: Optional[str] = V6_ORDER, outer_plan: Optional[str] = V6_PLAN,
            allow_unencrypted: bool = UNENC_OPT) -> None:
-    """Locate a file: chunk indices, container byte ranges and (with --dna-profile) strand groups and strand records."""
+    """Locate a file: chunk indices, container byte ranges and (with --dna-profile) strand groups and strand records.
+
+    The strand mapping exists for the V4/V5 layout only; V6 outer-code options (superblock version 2) are refused."""
     def go():
         key, pw = sdk.load_keys(key_file, passphrase_env)
-        _out(sdk.locate(container, name, dna_profile=profile, key=key, passphrase=pw, allow_unencrypted=allow_unencrypted))
+        explicit = {k: v for k, v in (("data_symbols", data_symbols), ("parity_symbols", parity_symbols),
+                                      ("stripe_depth", stripe_depth), ("column_parity", column_parity),
+                                      ("strand_order", strand_order), ("outer_plan", outer_plan)) if v is not None}
+        dna = None
+        if explicit:
+            from vnxdna.sdk.config import encode_options
+            redundancy = profile if profile in sdk.profiles().body["redundancy"] else None
+            dna, _ = encode_options(None, None, redundancy_profile=redundancy,
+                                    **({} if redundancy else {"profile": profile}), **explicit)
+        _out(sdk.locate(container, name, dna_profile=profile, dna=dna, key=key, passphrase=pw,
+                        allow_unencrypted=allow_unencrypted))
     _run(go)
 
 
