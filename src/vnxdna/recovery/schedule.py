@@ -70,12 +70,15 @@ def _pending_keys(pend: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     return keys, alt
 
 
-def _targeted(pend: np.ndarray, needed: set) -> np.ndarray:
-    """Pending reads whose header reading — either reading, or its unique one-byte snap — is a needed address."""
+def _targeted(pend: np.ndarray, needed: set, snap_to: set | None = None) -> np.ndarray:
+    """Pending reads whose header reading — either reading, or its unique one-byte snap — is a needed address.
+
+    ``snap_to``: the addresses a header may be snapped to (default ``needed``). Random access passes the addresses a
+    full decode would need, so that a read of another group is not snapped onto an address it needs (job #56)."""
     if not len(pend) or not needed:
         return np.zeros(len(pend), dtype=bool)
     keys, alt = _pending_keys(pend)
-    snapped, _ = snap_addresses(keys, needed, alt)
+    snapped, _ = snap_addresses(keys, needed if snap_to is None else snap_to | needed, alt)
     return np.fromiter((tuple(k) in needed for k in snapped.tolist()), dtype=bool, count=len(pend))
 
 
@@ -294,7 +297,10 @@ def _deferred_recovery(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
                 sig["random_access_stage"] = st["calls"]
             if planner.decide(modes, bool(needed), "round A: reads targeting addresses needed by incomplete groups"
                               if needed else "round A skipped: no address is needed", sig):
-                round_over("A", lambda b, pend: _targeted(pend, needed))
+                snap_to = None
+                if groups is not None:          # random access: snap as the full decode would, target only `groups`
+                    snap_to, _, _ = _group_state(spill, sb, codec, lay, opt, consumed, vote, None)
+                round_over("A", lambda b, pend: _targeted(pend, needed, snap_to))
                 needed, _, dec = _group_state(spill, sb, codec, lay, opt, consumed, vote, groups)
             info["groups_decodable_after_round_a"] = dec
             complete = dec == n_groups

@@ -123,8 +123,12 @@ def snap_addresses(keys: np.ndarray, missing: set, alt: np.ndarray | None = None
 
 
 def _consensus_symbols(pend: np.ndarray, known: dict, lay: Layout, opt: DecodeOptions, stats: Counter,
-                       missing: set | None = None) -> dict:
-    """Consensus over pending reads per (snapped) tentative address; addresses already known are skipped."""
+                       missing: set | None = None, snap_to: set | None = None) -> dict:
+    """Consensus over pending reads per (snapped) tentative address; addresses already known are skipped.
+
+    ``snap_to``: the missing addresses that reads may be snapped to (default ``missing``). Random access attempts
+    consensus only for the groups it needs (``missing``) but snaps against every missing address of the bucket, as a
+    full decode does, so that a read of a group it does not need is not snapped onto a needed address (job #56)."""
     out = {}
     if not pend.size:
         return out
@@ -132,7 +136,7 @@ def _consensus_symbols(pend: np.ndarray, known: dict, lay: Layout, opt: DecodeOp
                      pend["symbol"].astype(np.int64)], axis=1)
     if missing is not None:
         alt = np.asarray(pend["alt"], dtype=np.int64) if "alt" in pend.dtype.names else None
-        keys, snapped = snap_addresses(keys, missing, alt)
+        keys, snapped = snap_addresses(keys, missing if snap_to is None else snap_to, alt)
         stats["addresses_snapped"] += snapped
         wanted = np.fromiter((tuple(k) in missing for k in keys.tolist()), dtype=bool, count=len(keys))
         keys, pend = keys[wanted], pend[wanted]

@@ -95,7 +95,16 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
                 acc, pend = spill.load(b)
                 acc = acc[(acc["kind"] == KIND_DATA) & (acc["tag"] == tag)]
                 acc = acc[acc["group"] < total]
+                snap_to = None
                 if groups_filter is not None:
+                    # random access: snap pending reads against every address of the bucket that no verified read
+                    # delivered, exactly as the full decode does (whatever has been decoded since), then attempt
+                    # consensus only for the groups needed now (job #56)
+                    every, _ = resolve_duplicates(acc)
+                    snap_to = set()
+                    for g in range(b, total, spill.B):
+                        snap_to.update((KIND_DATA, tag, g, s_) for s_ in range(codec.symbols_for(row_k(g)))
+                                       if (KIND_DATA, tag, g, s_) not in every)
                     acc = acc[np.isin(acc["group"], list(groups_filter))]
                 symbols, c = resolve_duplicates(acc)
                 conflicts += c
@@ -105,7 +114,7 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
                 for g in targets_b:
                     n_sym = codec.symbols_for(row_k(g))
                     missing.update((KIND_DATA, tag, g, s_) for s_ in range(n_sym) if (KIND_DATA, tag, g, s_) not in symbols)
-                symbols.update(_consensus_symbols(pend, symbols, lay, opt, stats, missing))
+                symbols.update(_consensus_symbols(pend, symbols, lay, opt, stats, missing, snap_to))
                 by_group: dict[int, dict[int, np.ndarray]] = {}
                 for (kd, tg, g, s), v in symbols.items():
                     if kd == KIND_DATA and tg == tag:
