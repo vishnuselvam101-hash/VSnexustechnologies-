@@ -78,7 +78,10 @@ def _colliding_superblocks(values: dict, ks: int, ms: int, lay: Layout, tag: int
     return found
 
 
-def _decode_superblock(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter) -> tuple[Superblock, dict]:
+def _decode_superblock(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter,
+                       cluster=None) -> tuple[Superblock, dict]:
+    """``cluster`` (V7 read clustering, opt-in): a stage whose verified superblock symbols are added at the symbols the
+    6.0 path left unresolved — used only for the retry after the 6.0 symbols alone raised NO_SUPERBLOCK (FC-9)."""
     acc, pend = spill.load(0)
     acc_sb = acc[acc["kind"] == KIND_SUPER]
     # superblock symbols are group 0; a pending kind-1 record of another group has a corrupted header that can never
@@ -110,6 +113,8 @@ def _decode_superblock(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
         vs = values.setdefault(int(rec["tag"]), {}).setdefault(int(rec["symbol"]), [])
         if not any(np.array_equal(v, rec["payload"]) for v in vs):
             vs.append(np.array(rec["payload"]))
+    if cluster is not None:
+        cluster.fill_superblock(symbols, values, ks + ms)
     tags = sorted({k[1] for k in symbols} | set(values))
     candidates = {}
     unsupported = None

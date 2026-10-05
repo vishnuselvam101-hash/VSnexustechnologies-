@@ -62,10 +62,17 @@ class DecodeOptions:
     # report["stage_counters"] (and in the details of a typed decode error); see vnxdna.recovery.stagecount. Never
     # changes what is decoded or published.
     stage_counters: bool = False
+    # V7 item A (opt-in): "off" (default, the 6.0 path byte for byte) | "fallback" = header-independent read clustering
+    # and per-cluster consensus whose verified frames only FILL superblock symbols and data addresses the 6.0 path left
+    # unresolved (FC-9); see vnxdna.recovery.cluster. cluster_config: a ClusterConfig (None = defaults).
+    read_clustering: str = "off"
+    cluster_config: object = None
 
     def validate(self) -> None:
         if not isinstance(self.stage_counters, bool):
             raise VNXConfigurationError("stage_counters must be True or False")
+        from vnxdna.recovery.cluster import validate_mode
+        self.cluster_config = validate_mode(self.read_clustering, self.cluster_config)
         if not 1 <= self.workers <= 256:
             raise VNXConfigurationError("workers must be in 1..256")
         if not 1 <= self.band <= 64:
