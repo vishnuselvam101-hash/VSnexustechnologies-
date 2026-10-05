@@ -42,3 +42,6 @@ src/vnxdna/v6/*.so
 .tmp-venvs/
 # fuzz campaign outputs (fuzz/run.sh): working corpora, crash files, logs
 fuzz/out/
+
+# runtime artefact written by a third-party benchmark codec
+seen_barocdes.json

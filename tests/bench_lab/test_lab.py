@@ -62,3 +62,23 @@ def test_adapter_scripts_roundtrip_text_io(tmp_path):
     reads = tmp_path / "reads.txt"; reads.write_text("\n".join(lines[:-1] * 2) + "\n")
     subprocess.run([str(LAB / "adapters/vnx/decode.sh"), str(reads), str(out), "s184", "7"], check=True)
     assert out.read_bytes() == data
+
+
+def test_dropout_report_counts_every_trial_and_rejects_duplicates(tmp_path):
+    """dropout_report.py counts failures and false-SUCCESS, and refuses a trial file with a duplicated trial key."""
+    import json
+    import sys
+    rows = []
+    for seed, (exact, fs) in enumerate([(True, False), (False, False), (False, True)], start=1):
+        t = _trial("vnx-x", exact, fs); t["seed"] = seed; rows.append(t)
+    r = _trial("dna-ref", True); r["seed"] = 1; rows.append(r)
+    f = tmp_path / "t.jsonl"; f.write_text("".join(json.dumps(t) + "\n" for t in rows))
+    out = tmp_path / "o.json"
+    subprocess.run([sys.executable, str(LAB / "dropout_report.py"), str(f), "--json", str(out), "--md", str(tmp_path / "o.md")],
+                   check=True, capture_output=True)
+    js = json.loads(out.read_text())
+    assert js["participants"]["vnx-x"]["trials"] == 3
+    assert js["participants"]["vnx-x"]["exact"] == 1 and js["participants"]["vnx-x"]["false_success"] == 1
+    dup = tmp_path / "d.jsonl"; dup.write_text(f.read_text() + json.dumps(rows[0]) + "\n")
+    p = subprocess.run([sys.executable, str(LAB / "dropout_report.py"), str(dup)], capture_output=True, text=True)
+    assert p.returncode != 0 and "duplicate trial" in (p.stderr + p.stdout)
