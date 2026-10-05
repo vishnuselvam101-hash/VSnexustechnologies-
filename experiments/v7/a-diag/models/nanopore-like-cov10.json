@@ -1,0 +1,40 @@
+{
+  "name": "nanopore-like-cov10",
+  "version": "1.0.0",
+  "classification": "SIMULATED",
+  "description": "derived from nanopore-like 1.0.0",
+  "note": "Phase 4 derived stress profile (SIMULATED); not fitted to any measured platform.",
+  "loss": {
+    "dropout": 0.0,
+    "burst_count": 0,
+    "burst_length": 0
+  },
+  "channel": {
+    "substitution_rate": 0.02,
+    "insertion_rate": 0.01,
+    "deletion_rate": 0.03,
+    "dropout_rate": 0.0,
+    "coverage": 10.0,
+    "coverage_model": "negative-binomial",
+    "coverage_dispersion": 4.0,
+    "duplication_rate": 0.0,
+    "homopolymer_min_run": 3,
+    "homopolymer_indel_multiplier": 3.0,
+    "homopolymer_substitution_multiplier": 1.5,
+    "gc_bias_strength": 0.0,
+    "gc_bias_optimum": 0.5,
+    "burst_rate": 0.005,
+    "burst_max_len": 6,
+    "n_rate": 0.001,
+    "reverse_complement_rate": 0.5,
+    "quality_correct": 15,
+    "quality_error": 7,
+    "quality_informative": 0.5,
+    "shuffle_window": 0
+  },
+  "derived_from": {
+    "name": "nanopore-like",
+    "version": "1.0.0",
+    "sha256": "c33c6cbb989f7177d0c58e11989add86aec6fc30109baf368f888da5d2972e0e"
+  }
+}

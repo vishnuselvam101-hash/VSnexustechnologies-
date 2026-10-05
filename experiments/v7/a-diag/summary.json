@@ -1,0 +1,709 @@
+{
+ "baseline_reproduction": {
+  "expected_exact": 0,
+  "observed_exact": {
+   "nanopore-like/cov10": 0,
+   "nanopore-like/cov3": 0,
+   "nanopore-like/cov5": 0
+  },
+  "reproduced": true
+ },
+ "cells": {
+  "deletion-heavy/cov10": {
+   "address_reasons_reads_total": {
+    "header_corrupted": 986,
+    "header_unreadable": 317,
+    "scrambler_variant_wrong": 33
+   },
+   "data_rows_would_fail_at_total": {
+    "consensus": 55,
+    "crc": 2,
+    "decodable": 120,
+    "indel_placement": 3
+   },
+   "decoder_terminal_stage": {
+    "outer_ecc": 20
+   },
+   "determinism_1_vs_4_identical": 20,
+   "exact_wilson95": [
+    0.0,
+    0.1611
+   ],
+   "false_success": 0,
+   "false_success_rule_of_three_upper": 0.15,
+   "first_failing_stage": {
+    "consensus": 16,
+    "crc": 1,
+    "indel_placement": 3
+   },
+   "funnel_mean": {
+    "data_rows": {
+     "after_address": 9.0,
+     "after_alignment": 9.0,
+     "after_consensus": 6.0,
+     "after_coverage": 9.0,
+     "after_crc": 8.75,
+     "after_indel_placement": 8.85,
+     "after_inner_ecc": 8.85,
+     "after_orientation": 9.0,
+     "after_read_parsing": 9.0,
+     "total": 9.0
+    },
+    "data_strands": {
+     "after_address": 657.0,
+     "after_alignment": 677.3,
+     "after_consensus": 545.55,
+     "after_coverage": 678.6,
+     "after_crc": 589.05,
+     "after_indel_placement": 595.4,
+     "after_inner_ecc": 592.5,
+     "after_orientation": 678.6,
+     "after_read_parsing": 678.6,
+     "recovered": 545.55,
+     "total": 679.0
+    },
+    "reads": {
+     "oriented_and_aligned": 4440.3,
+     "oriented_correctly": 6688.55,
+     "pending_kept": 3284.15,
+     "placed_at_true_address": 1325.95,
+     "reads": 6882.6,
+     "verified_pass1": 668.55,
+     "verified_wrong_address": 0.0
+    },
+    "superblock_strands": {
+     "after_address": 11.0,
+     "after_alignment": 12.0,
+     "after_consensus": 8.45,
+     "after_coverage": 12.0,
+     "after_crc": 9.1,
+     "after_indel_placement": 9.3,
+     "after_inner_ecc": 9.2,
+     "after_orientation": 12.0,
+     "after_read_parsing": 12.0,
+     "recovered": 8.45,
+     "total": 12.0
+    },
+    "superblock_unit": {
+     "have_symbols_mean": 8.45,
+     "need": 3
+    }
+   },
+   "median_decode_seconds": 0.369,
+   "outcomes": {
+    "CRASH": 0,
+    "EXACT": 0,
+    "EXPLICIT_FAILURE": 20,
+    "FALSE_SUCCESS": 0,
+    "PARTIAL": 0
+   },
+   "pass1_read_fate_total": {
+    "crc": 1827,
+    "drift_beyond_band": 48843,
+    "erasures_exceed_parity": 70076,
+    "inner_ecc": 3535,
+    "verified": 13371
+   },
+   "replication_checked": 20,
+   "replication_ok": 20,
+   "strand_stage_totals": {
+    "data": {
+     "address": 406,
+     "alignment": 26,
+     "consensus": 870,
+     "coverage": 8,
+     "crc": 69,
+     "indel_placement": 1232,
+     "inner_ecc": 58,
+     "recovered": 10911
+    },
+    "superblock": {
+     "address": 20,
+     "consensus": 13,
+     "crc": 2,
+     "indel_placement": 34,
+     "inner_ecc": 2,
+     "recovered": 169
+    }
+   },
+   "trials": 20
+  },
+  "illumina-like/cov10": {
+   "address_reasons_reads_total": {},
+   "data_rows_would_fail_at_total": {
+    "decodable": 180
+   },
+   "decoder_terminal_stage": {
+    "None": 20
+   },
+   "determinism_1_vs_4_identical": 20,
+   "exact_wilson95": [
+    0.8389,
+    1.0
+   ],
+   "false_success": 0,
+   "false_success_rule_of_three_upper": 0.15,
+   "first_failing_stage": {},
+   "funnel_mean": {
+    "data_rows": {
+     "after_address": 9.0,
+     "after_alignment": 9.0,
+     "after_consensus": 9.0,
+     "after_coverage": 9.0,
+     "after_crc": 9.0,
+     "after_indel_placement": 9.0,
+     "after_inner_ecc": 9.0,
+     "after_orientation": 9.0,
+     "after_read_parsing": 9.0,
+     "total": 9.0
+    },
+    "data_strands": {
+     "after_address": 679.0,
+     "after_alignment": 679.0,
+     "after_consensus": 679.0,
+     "after_coverage": 679.0,
+     "after_crc": 679.0,
+     "after_indel_placement": 679.0,
+     "after_inner_ecc": 679.0,
+     "after_orientation": 679.0,
+     "after_read_parsing": 679.0,
+     "recovered": 679.0,
+     "total": 679.0
+    },
+    "reads": {
+     "oriented_and_aligned": 6893.2,
+     "oriented_correctly": 6893.2,
+     "pending_kept": 2.25,
+     "placed_at_true_address": 6890.9,
+     "reads": 6893.2,
+     "verified_pass1": 6890.9,
+     "verified_wrong_address": 0.0
+    },
+    "superblock_strands": {
+     "after_address": 12.0,
+     "after_alignment": 12.0,
+     "after_consensus": 12.0,
+     "after_coverage": 12.0,
+     "after_crc": 12.0,
+     "after_indel_placement": 12.0,
+     "after_inner_ecc": 12.0,
+     "after_orientation": 12.0,
+     "after_read_parsing": 12.0,
+     "recovered": 12.0,
+     "total": 12.0
+    },
+    "superblock_unit": {
+     "have_symbols_mean": 12.0,
+     "need": 3
+    }
+   },
+   "median_decode_seconds": 0.1695,
+   "outcomes": {
+    "CRASH": 0,
+    "EXACT": 20,
+    "EXPLICIT_FAILURE": 0,
+    "FALSE_SUCCESS": 0,
+    "PARTIAL": 0
+   },
+   "pass1_read_fate_total": {
+    "erasures_exceed_parity": 3,
+    "inner_ecc": 43,
+    "verified": 137818
+   },
+   "replication_checked": 20,
+   "replication_ok": 20,
+   "strand_stage_totals": {
+    "data": {
+     "recovered": 13580
+    },
+    "superblock": {
+     "recovered": 240
+    }
+   },
+   "trials": 20
+  },
+  "nanopore-like/cov10": {
+   "address_reasons_reads_total": {
+    "header_corrupted": 12663,
+    "header_unreadable": 15796,
+    "scrambler_variant_wrong": 1880
+   },
+   "data_rows_would_fail_at_total": {
+    "address": 180
+   },
+   "decoder_terminal_stage": {
+    "superblock": 20
+   },
+   "determinism_1_vs_4_identical": 20,
+   "exact_wilson95": [
+    0.0,
+    0.1611
+   ],
+   "false_success": 0,
+   "false_success_rule_of_three_upper": 0.15,
+   "first_failing_stage": {
+    "address": 16,
+    "indel_placement": 4
+   },
+   "funnel_mean": {
+    "data_rows": {
+     "after_address": 0.0,
+     "after_alignment": 9.0,
+     "after_consensus": 0.0,
+     "after_coverage": 9.0,
+     "after_crc": 0.0,
+     "after_indel_placement": 0.0,
+     "after_inner_ecc": 0.0,
+     "after_orientation": 9.0,
+     "after_read_parsing": 9.0,
+     "total": 9.0
+    },
+    "data_strands": {
+     "after_address": 184.8,
+     "after_alignment": 622.45,
+     "after_consensus": 0.65,
+     "after_coverage": 662.6,
+     "after_crc": 21.4,
+     "after_indel_placement": 33.45,
+     "after_inner_ecc": 25.8,
+     "after_orientation": 659.0,
+     "after_read_parsing": 662.6,
+     "recovered": 0.65,
+     "total": 679.0
+    },
+    "reads": {
+     "oriented_and_aligned": 2480.6,
+     "oriented_correctly": 4818.7,
+     "pending_kept": 1304.25,
+     "placed_at_true_address": 228.15,
+     "reads": 6886.95,
+     "verified_pass1": 0.5,
+     "verified_wrong_address": 0.0
+    },
+    "superblock_strands": {
+     "after_address": 1.55,
+     "after_alignment": 11.0,
+     "after_consensus": 0.0,
+     "after_coverage": 11.8,
+     "after_crc": 0.25,
+     "after_indel_placement": 0.35,
+     "after_inner_ecc": 0.25,
+     "after_orientation": 11.65,
+     "after_read_parsing": 11.8,
+     "recovered": 0.0,
+     "total": 12.0
+    },
+    "superblock_unit": {
+     "have_symbols_mean": 0.0,
+     "need": 3
+    }
+   },
+   "median_decode_seconds": 0.3795,
+   "outcomes": {
+    "CRASH": 0,
+    "EXACT": 0,
+    "EXPLICIT_FAILURE": 20,
+    "FALSE_SUCCESS": 0,
+    "PARTIAL": 0
+   },
+   "pass1_read_fate_total": {
+    "crc": 701,
+    "drift_beyond_band": 87938,
+    "erasures_exceed_parity": 47433,
+    "inner_ecc": 1657,
+    "verified": 10
+   },
+   "replication_checked": 0,
+   "replication_ok": 0,
+   "strand_stage_totals": {
+    "data": {
+     "address": 8753,
+     "alignment": 731,
+     "consensus": 415,
+     "coverage": 328,
+     "crc": 88,
+     "indel_placement": 3027,
+     "inner_ecc": 153,
+     "orientation": 72,
+     "recovered": 13
+    },
+    "superblock": {
+     "address": 189,
+     "alignment": 13,
+     "consensus": 5,
+     "coverage": 4,
+     "indel_placement": 24,
+     "inner_ecc": 2,
+     "orientation": 3
+    }
+   },
+   "trials": 20
+  },
+  "nanopore-like/cov15": {
+   "address_reasons_reads_total": {
+    "header_corrupted": 15584,
+    "header_unreadable": 19780,
+    "scrambler_variant_wrong": 2399
+   },
+   "data_rows_would_fail_at_total": {
+    "address": 180
+   },
+   "decoder_terminal_stage": {
+    "superblock": 20
+   },
+   "determinism_1_vs_4_identical": 20,
+   "exact_wilson95": [
+    0.0,
+    0.1611
+   ],
+   "false_success": 0,
+   "false_success_rule_of_three_upper": 0.15,
+   "first_failing_stage": {
+    "address": 13,
+    "indel_placement": 7
+   },
+   "funnel_mean": {
+    "data_rows": {
+     "after_address": 0.0,
+     "after_alignment": 9.0,
+     "after_consensus": 0.0,
+     "after_coverage": 9.0,
+     "after_crc": 0.0,
+     "after_indel_placement": 0.0,
+     "after_inner_ecc": 0.0,
+     "after_orientation": 9.0,
+     "after_read_parsing": 9.0,
+     "total": 9.0
+    },
+    "data_strands": {
+     "after_address": 250.8,
+     "after_alignment": 653.15,
+     "after_consensus": 0.9,
+     "after_coverage": 673.25,
+     "after_crc": 41.9,
+     "after_indel_placement": 58.35,
+     "after_inner_ecc": 49.05,
+     "after_orientation": 671.8,
+     "after_read_parsing": 673.25,
+     "recovered": 0.9,
+     "total": 679.0
+    },
+    "reads": {
+     "oriented_and_aligned": 3705.1,
+     "oriented_correctly": 7213.2,
+     "pending_kept": 1936.4,
+     "placed_at_true_address": 337.65,
+     "reads": 10341.0,
+     "verified_pass1": 0.4,
+     "verified_wrong_address": 0.0
+    },
+    "superblock_strands": {
+     "after_address": 2.35,
+     "after_alignment": 11.6,
+     "after_consensus": 0.0,
+     "after_coverage": 11.9,
+     "after_crc": 0.15,
+     "after_indel_placement": 0.35,
+     "after_inner_ecc": 0.2,
+     "after_orientation": 11.85,
+     "after_read_parsing": 11.9,
+     "recovered": 0.0,
+     "total": 12.0
+    },
+    "superblock_unit": {
+     "have_symbols_mean": 0.0,
+     "need": 3
+    }
+   },
+   "median_decode_seconds": 0.5165,
+   "outcomes": {
+    "CRASH": 0,
+    "EXACT": 0,
+    "EXPLICIT_FAILURE": 20,
+    "FALSE_SUCCESS": 0,
+    "PARTIAL": 0
+   },
+   "pass1_read_fate_total": {
+    "crc": 1029,
+    "drift_beyond_band": 132479,
+    "erasures_exceed_parity": 70788,
+    "inner_ecc": 2516,
+    "verified": 8
+   },
+   "replication_checked": 0,
+   "replication_ok": 0,
+   "strand_stage_totals": {
+    "data": {
+     "address": 8047,
+     "alignment": 373,
+     "consensus": 820,
+     "coverage": 115,
+     "crc": 143,
+     "indel_placement": 3849,
+     "inner_ecc": 186,
+     "orientation": 29,
+     "recovered": 18
+    },
+    "superblock": {
+     "address": 185,
+     "alignment": 5,
+     "consensus": 3,
+     "coverage": 2,
+     "crc": 1,
+     "indel_placement": 40,
+     "inner_ecc": 3,
+     "orientation": 1
+    }
+   },
+   "trials": 20
+  },
+  "nanopore-like/cov3": {
+   "address_reasons_reads_total": {
+    "header_corrupted": 4548,
+    "header_unreadable": 5831,
+    "scrambler_variant_wrong": 666
+   },
+   "data_rows_would_fail_at_total": {
+    "address": 8,
+    "alignment": 14,
+    "coverage": 154,
+    "orientation": 4
+   },
+   "decoder_terminal_stage": {
+    "superblock": 20
+   },
+   "determinism_1_vs_4_identical": 20,
+   "exact_wilson95": [
+    0.0,
+    0.1611
+   ],
+   "false_success": 0,
+   "false_success_rule_of_three_upper": 0.15,
+   "first_failing_stage": {
+    "address": 20
+   },
+   "funnel_mean": {
+    "data_rows": {
+     "after_address": 0.0,
+     "after_alignment": 0.4,
+     "after_consensus": 0.0,
+     "after_coverage": 1.3,
+     "after_crc": 0.0,
+     "after_indel_placement": 0.0,
+     "after_inner_ecc": 0.0,
+     "after_orientation": 1.1,
+     "after_read_parsing": 1.3,
+     "total": 9.0
+    },
+    "data_strands": {
+     "after_address": 57.25,
+     "after_alignment": 367.95,
+     "after_consensus": 0.1,
+     "after_coverage": 479.0,
+     "after_crc": 2.05,
+     "after_indel_placement": 6.05,
+     "after_inner_ecc": 3.5,
+     "after_orientation": 462.55,
+     "after_read_parsing": 479.0,
+     "recovered": 0.1,
+     "total": 679.0
+    },
+    "reads": {
+     "oriented_and_aligned": 733.8,
+     "oriented_correctly": 1441.45,
+     "pending_kept": 381.6,
+     "placed_at_true_address": 64.85,
+     "reads": 2059.8,
+     "verified_pass1": 0.1,
+     "verified_wrong_address": 0.0
+    },
+    "superblock_strands": {
+     "after_address": 0.65,
+     "after_alignment": 6.6,
+     "after_consensus": 0.0,
+     "after_coverage": 8.45,
+     "after_crc": 0.0,
+     "after_indel_placement": 0.05,
+     "after_inner_ecc": 0.0,
+     "after_orientation": 8.25,
+     "after_read_parsing": 8.45,
+     "recovered": 0.0,
+     "total": 12.0
+    },
+    "superblock_unit": {
+     "have_symbols_mean": 0.0,
+     "need": 3
+    }
+   },
+   "median_decode_seconds": 0.1535,
+   "outcomes": {
+    "CRASH": 0,
+    "EXACT": 0,
+    "EXPLICIT_FAILURE": 20,
+    "FALSE_SUCCESS": 0,
+    "PARTIAL": 0
+   },
+   "pass1_read_fate_total": {
+    "crc": 205,
+    "drift_beyond_band": 26474,
+    "erasures_exceed_parity": 14043,
+    "inner_ecc": 472,
+    "verified": 2
+   },
+   "replication_checked": 0,
+   "replication_ok": 0,
+   "strand_stage_totals": {
+    "data": {
+     "address": 6214,
+     "alignment": 1892,
+     "consensus": 39,
+     "coverage": 4000,
+     "crc": 29,
+     "indel_placement": 1024,
+     "inner_ecc": 51,
+     "orientation": 329,
+     "recovered": 2
+    },
+    "superblock": {
+     "address": 119,
+     "alignment": 33,
+     "coverage": 71,
+     "indel_placement": 12,
+     "inner_ecc": 1,
+     "orientation": 4
+    }
+   },
+   "trials": 20
+  },
+  "nanopore-like/cov5": {
+   "address_reasons_reads_total": {
+    "header_corrupted": 7409,
+    "header_unreadable": 9572,
+    "scrambler_variant_wrong": 1040
+   },
+   "data_rows_would_fail_at_total": {
+    "address": 38,
+    "alignment": 134,
+    "coverage": 3,
+    "orientation": 5
+   },
+   "decoder_terminal_stage": {
+    "superblock": 20
+   },
+   "determinism_1_vs_4_identical": 20,
+   "exact_wilson95": [
+    0.0,
+    0.1611
+   ],
+   "false_success": 0,
+   "false_success_rule_of_three_upper": 0.15,
+   "first_failing_stage": {
+    "address": 20
+   },
+   "funnel_mean": {
+    "data_rows": {
+     "after_address": 0.0,
+     "after_alignment": 1.9,
+     "after_consensus": 0.0,
+     "after_coverage": 8.85,
+     "after_crc": 0.0,
+     "after_indel_placement": 0.0,
+     "after_inner_ecc": 0.0,
+     "after_orientation": 8.6,
+     "after_read_parsing": 8.85,
+     "total": 9.0
+    },
+    "data_strands": {
+     "after_address": 97.65,
+     "after_alignment": 502.2,
+     "after_consensus": 0.15,
+     "after_coverage": 593.3,
+     "after_crc": 6.15,
+     "after_indel_placement": 11.45,
+     "after_inner_ecc": 7.9,
+     "after_orientation": 582.0,
+     "after_read_parsing": 593.3,
+     "recovered": 0.15,
+     "total": 679.0
+    },
+    "reads": {
+     "oriented_and_aligned": 1239.35,
+     "oriented_correctly": 2406.65,
+     "pending_kept": 642.2,
+     "placed_at_true_address": 110.25,
+     "reads": 3437.45,
+     "verified_pass1": 0.15,
+     "verified_wrong_address": 0.0
+    },
+    "superblock_strands": {
+     "after_address": 0.6,
+     "after_alignment": 9.2,
+     "after_consensus": 0.0,
+     "after_coverage": 10.9,
+     "after_crc": 0.0,
+     "after_indel_placement": 0.0,
+     "after_inner_ecc": 0.0,
+     "after_orientation": 10.7,
+     "after_read_parsing": 10.9,
+     "recovered": 0.0,
+     "total": 12.0
+    },
+    "superblock_unit": {
+     "have_symbols_mean": 0.0,
+     "need": 3
+    }
+   },
+   "median_decode_seconds": 0.227,
+   "outcomes": {
+    "CRASH": 0,
+    "EXACT": 0,
+    "EXPLICIT_FAILURE": 20,
+    "FALSE_SUCCESS": 0,
+    "PARTIAL": 0
+   },
+   "pass1_read_fate_total": {
+    "crc": 328,
+    "drift_beyond_band": 43857,
+    "erasures_exceed_parity": 23759,
+    "inner_ecc": 802,
+    "verified": 3
+   },
+   "replication_checked": 0,
+   "replication_ok": 0,
+   "strand_stage_totals": {
+    "data": {
+     "address": 8091,
+     "alignment": 1596,
+     "consensus": 120,
+     "coverage": 1714,
+     "crc": 35,
+     "indel_placement": 1724,
+     "inner_ecc": 71,
+     "orientation": 226,
+     "recovered": 3
+    },
+    "superblock": {
+     "address": 172,
+     "alignment": 30,
+     "coverage": 22,
+     "indel_placement": 12,
+     "orientation": 4
+    }
+   },
+   "trials": 20
+  }
+ },
+ "classification": "EXPERIMENTAL / SIMULATED",
+ "config_sha256": "f660f1413d464ab79113d0f4c28206a160cdb5d7f42b739f9733b633b2f1fb2a",
+ "crash_total": 0,
+ "experiment": "A-DIAG",
+ "false_success_total": 0,
+ "git": {
+  "commit": "4bc5e974300026893a8fc296eb59159d390337b3",
+  "dirty": true,
+  "dirty_tracked": false
+ },
+ "record": "summary",
+ "statement": "EXPERIMENTAL (protocol \u00a77 exploration seeds 82000-82099), SIMULATED: software strands and the unfitted V6 channel models. No DNA was synthesised, stored or sequenced; no public data and no fitted model is used. Descriptive diagnostic, not a confirmatory result.",
+ "trials": 120
+}

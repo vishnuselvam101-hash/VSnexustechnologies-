@@ -57,14 +57,23 @@ def decode_reads(reads_path: str | os.PathLike, output: str | os.PathLike | None
     from vnxdna.native import backend_summary
     ev = Events(observer, task_id, t0)
     backends = backend_summary()        # provenance: which kernels run natively (never raises; additive report field)
+    sc = None
+    if opt.stage_counters:
+        from vnxdna.recovery.stagecount import StageCounters
+        sc = StageCounters()
     try:
         res = _decode_reads(reads_path, output, opt, t0, ev, RecoveryPlanner(opt.recovery_budget, t0), overwrite=overwrite,
                             partial_dir=partial_dir, select=select, select_dir=select_dir, key=key, passphrase=passphrase,
-                            progress=progress, workdir=workdir, allow_unencrypted=allow_unencrypted, backends=backends)
+                            progress=progress, workdir=workdir, allow_unencrypted=allow_unencrypted, backends=backends,
+                            stage_counters=sc)
     except Exception as error:
+        if sc is not None and isinstance(getattr(error, "details", None), dict):
+            error.details["stage_counters"] = sc.block(report=error.details, error=error)
         ev.emit("error", getattr(error, "stage", "unknown"), error_class=type(error).__name__, message=str(error)[:500])
         raise
     rep_ = res.report
+    if sc is not None:
+        rep_["stage_counters"] = sc.block(status=res.status, report=rep_)
     rep_["native_backends"] = backends
     ev.emit("decode_end", "output", status=res.status, seconds=round(rep_.get("seconds", 0.0), 4),
             groups_decoded=rep_.get("groups_decoded"), groups_failed=rep_.get("groups_failed"),
@@ -73,7 +82,8 @@ def decode_reads(reads_path: str | os.PathLike, output: str | os.PathLike | None
 
 
 def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner, *, overwrite, partial_dir, select,
-                  select_dir, key, passphrase, progress, workdir, allow_unencrypted=False, backends=None) -> DecodeResult:
+                  select_dir, key, passphrase, progress, workdir, allow_unencrypted=False, backends=None,
+                  stage_counters=None) -> DecodeResult:
     stage: dict = {}
     reads_path = Path(reads_path)
     lay = detect_layout(reads_path, opt)
@@ -103,7 +113,7 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
         deferred = (smart or softm) and opt.recovery_schedule == "deferred"
         base_args = (lay, opt.band, opt.sync_costs, opt.min_quality, opt.reverse_complement, opt.indel_config if smart else None,
                      opt.soft_config if softm else None)
-        initargs = base_args + (deferred, qw, opt.retry_band)
+        initargs = base_args + (deferred, qw, opt.retry_band, stage_counters is not None)
         recovery_args = base_args + (False, False, opt.retry_band)      # the deferred stage: no defer, no qualities
 
         cpu = {"seconds": 0.0, "batches": 0}
@@ -113,6 +123,8 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
             spill.write(res)
             stats.update(res["stats"])
             indel_stats.update(res.get("indel", {}))
+            if stage_counters is not None:
+                stage_counters.update(res["diag"]["counts"])
             cpu["seconds"] += res.get("cpu_seconds", 0.0)
             cpu["batches"] += 1
             if progress:
@@ -146,6 +158,8 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
                 while window:
                     take(window.popleft().result(), len(window))
         spill.close()
+        if stage_counters is not None:
+            stats["_stage"] = stage_counters        # pass 2 adds its counters; popped before report["reads"] is built
         stage["pass1_reads"] = time.perf_counter() - t1
         stage["pass1_worker_cpu"] = cpu["seconds"]
         if stats["reads"] == 0:
