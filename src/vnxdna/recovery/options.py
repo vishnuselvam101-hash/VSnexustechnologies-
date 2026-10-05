@@ -21,6 +21,9 @@ class DecodeOptions:
     workers: int = 1
     batch_reads: int = 8192
     band: int = 6
+    # V6 (opt-in, job #80): 0 = off. Reads whose net drift |len − strand_nt| exceeds ``band`` but not ``retry_band`` are
+    # aligned once more with this wider band instead of being left unaligned. Reads inside ``band`` are unaffected.
+    retry_band: int = 0
     min_quality: int = 0                # bases below this Phred score become erasures (soft-information hook)
     reverse_complement: bool = True
     consensus_threshold: float = 0.6    # minimum posterior for a consensus base; below → erasure
@@ -61,6 +64,9 @@ class DecodeOptions:
             raise VNXConfigurationError("workers must be in 1..256")
         if not 1 <= self.band <= 64:
             raise VNXConfigurationError("band must be in 1..64")
+        if (not isinstance(self.retry_band, int) or isinstance(self.retry_band, bool)
+                or not (self.retry_band == 0 or self.band < self.retry_band <= 64)):
+            raise VNXConfigurationError("retry_band must be 0 (off) or in band+1..64")
         if not 0.25 <= self.consensus_threshold <= 1.0:
             raise VNXConfigurationError("consensus_threshold must be in [0.25, 1]")
         if not 0 <= self.min_quality <= 93:

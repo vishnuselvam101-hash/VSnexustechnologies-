@@ -36,6 +36,12 @@ D[i][d] = min( D[i−1][d]   + c_sub(t[i−1], x[i−1+d]),    match / substitut
 * `c_ins = c_del = 6`. A deletion *at a marker base* costs 6 + 1: an exact tie-break that prefers blaming the frame
   base, so only one segment is erased (measured below).
 * Initial row: leading insertions; the end state is `D[T][n − T]`. Reads with `|n − T| > B` are not aligned.
+* **Retry band (V6, opt-in, `--retry-band R`, default 0 = off).** Reads with `B < |n − T| ≤ R` are aligned once more
+  by the same DP with band R (native kernel unchanged, contract valid for R ≤ 64); reads with `|n − T| ≤ B` never reach
+  it, so their projection is identical. Measured in `experiments/v6/align-band` (SIMULATED): deletion-heavy at
+  coverage 10 goes from 0/20 to 6/20 with R = 16 and no cell loses a decode, but nanopore-like stays 0/20 (its reads
+  then align, yet their headers rarely give the right address and whole-segment erasure leaves too little for
+  consensus), so it is not the default.
 * The insertion recurrence inside a row is solved for all offsets at once:
   `D'[w] = w·c + min_{k ≤ w}(D[k] − k·c)` (a cumulative minimum). This produces the same alignment as the
   sequential loop (verified: identical decode results on the indel test set). In the profiled noisy decode it cut
@@ -105,7 +111,7 @@ Measured on 500 random v4-balanced strands (S = 32, ℓ = 2, r = 16) before and 
 | two indels in different segments plus substitutions exceeding r | read fails RS | CRC/RS reject → pending → consensus or outer code |
 | +1 −1 within a few markers | short markers may "explain" the shift as marker mismatches, so the shifted bytes become *errors* (2 units each) | RS fails → CRC; longer markers (ℓ = 3) reduce this (EXP-0009) |
 | chance marker match (1/16 for ℓ = 2) next to an indel | indel blamed in the neighbouring segment; some bytes wrong but not erased | RS/CRC; shows up as a lower success rate, never as wrong output |
-| net drift > band | read not aligned | counted (`unaligned`) |
+| net drift > band | read not aligned (unless the opt-in retry band covers it) | counted (`unaligned`; `retry_band_reads` with the option) |
 | header bytes erased | read cannot be grouped for consensus | counted (`orphans`); recovery relies on other reads or the outer code |
 | burst longer than the band | read not aligned | counted |
 | indel in every copy of a strand (synthesis error) | consensus reproduces it | the strand fails → outer code |

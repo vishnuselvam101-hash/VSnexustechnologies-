@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased (6.0.0.dev0) — job #80: opt-in retry band (ALIGN-BAND)
+
+Formats unchanged; default unchanged. Channel results are SIMULATED (experiments/v6/align-band).
+
+- **`DecodeOptions.retry_band`** (`--retry-band`, config `decode.retry_band`; 0 = off, the default): reads whose net
+  drift exceeds `band` but not `retry_band` are aligned by a second, wider-band `TemplateAligner` (same DP, same native
+  kernel, no C change) instead of being left unaligned. Reads inside the band are untouched, so default decodes are
+  bit-identical. Pass 1 reports `retry_band_reads` only when the option is on.
+- **AB-EXP-01** (pre-registered, 935 trials, 45 grid cells × 20 paired seeds): 0 false SUCCESS in 1,910 decodes; no
+  harm in any cell (0 pairs where only the stock decoder succeeded); deletion-heavy coverage 10: 0/20 → 6/20; nanopore-like
+  still 0/20 at every coverage (C2 REJECT) and +26 % peak RSS on deletion-heavy at 1 MiB (C5 REJECT): stays opt-in.
+  The ground-truth funnel (AB-DIAG) puts the next nanopore-like bottlenecks at header-address recovery and
+  whole-segment erasure. Native = reference on 102,400 fuzzed reads (AB-FUZZ).
+
 ## Unreleased (6.0.0.dev0) — V6 Phase 3 (channel-model framework)
 
 Plan: docs/V6_ARCHITECTURE.md §8 Phase 3; docs/CHANNEL_MODEL.md. Formats unchanged. Every channel result is SIMULATED.

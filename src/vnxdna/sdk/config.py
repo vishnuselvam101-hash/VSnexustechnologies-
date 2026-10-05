@@ -34,7 +34,7 @@ from vnxdna.pipeline.performance import PERFORMANCE_PROFILES, performance  # noq
 SECTIONS = {"archive", "dna", "constraints", "channel", "decode", "performance"}
 DNA_KEYS = {"profile", "outer_code", "data_symbols", "parity_symbols", "layout", "lt_seed", "lt_distribution", "experimental",
             "stripe_depth", "column_parity", "strand_order", "outer_plan", "redundancy_budget"}
-DECODE_KEYS = {"profile", "band", "min_quality", "reverse_complement", "consensus_threshold", "max_pending_per_address",
+DECODE_KEYS = {"profile", "band", "retry_band", "min_quality", "reverse_complement", "consensus_threshold", "max_pending_per_address",
                "archive_tag", "batch_reads", "workers", "indel_recovery", "soft_decoding",
                "recovery_schedule", "max_container_bytes", "consensus_weighting",
                "expect_archive_id", "expect_sha256"}
