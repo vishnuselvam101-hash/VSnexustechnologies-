@@ -1,10 +1,6 @@
 {
  "violations": [
   {
-   "violation": "R1 vnxdna.native -> vnxdna.v4.codecs",
-   "why": "backend registry reads the VNX_RS_REFERENCE switch from the inner-RS codec (moves to a registry hook in M1)"
-  },
-  {
    "violation": "R1 vnxdna.v4.archive -> vnxdna.v4.encoder",
    "why": "locate --dna-profile maps chunks to DNA groups with the V4 geometry (moves out of the archive layer; bug 2.7)"
   },
@@ -15,14 +11,6 @@
   {
    "violation": "R1 vnxdna.v4.bench -> vnxdna.v4.config",
    "why": "the benchmark reads the CLI performance profiles from v4.config (config moves to sdk.config, M5)"
-  },
-  {
-   "violation": "R1 vnxdna.v6.native_reads -> vnxdna.v4.reads",
-   "why": "the native reads binding falls back to the reference parser itself (dispatch inverted in M1)"
-  },
-  {
-   "violation": "R1 vnxdna.v6.native_rs -> vnxdna.v4.rs_fast",
-   "why": "the native RS binding falls back to the NumPy reference itself (dispatch inverted in M1)"
   },
   {
    "violation": "R1 vnxdna.v6.profiles -> vnxdna.v4.encoder",
@@ -54,6 +42,10 @@
   },
   {
    "violation": "R6 vnxdna.v4.cli -> vnxdna.native",
+   "why": "the CLI still does pipeline work and imports the layers directly (rewritten on the SDK, M5)"
+  },
+  {
+   "violation": "R6 vnxdna.v4.cli -> vnxdna.native.align",
    "why": "the CLI still does pipeline work and imports the layers directly (rewritten on the SDK, M5)"
   },
   {
@@ -102,10 +94,6 @@
   },
   {
    "violation": "R6 vnxdna.v4.cli -> vnxdna.v4.sweep",
-   "why": "the CLI still does pipeline work and imports the layers directly (rewritten on the SDK, M5)"
-  },
-  {
-   "violation": "R6 vnxdna.v4.cli -> vnxdna.v5.native_alignment",
    "why": "the CLI still does pipeline work and imports the layers directly (rewritten on the SDK, M5)"
   },
   {
@@ -166,20 +154,6 @@
     "legacy"
    ],
    "why": "strand file I/O is still the V2 module (fixed in M3)"
-  },
-  {
-   "edge": [
-    "native",
-    "codec"
-   ],
-   "why": "native bindings fall back to / report the codec RS reference (fixed in M1)"
-  },
-  {
-   "edge": [
-    "native",
-    "dnaenc"
-   ],
-   "why": "native reads binding falls back to the reference parser (fixed in M1)"
   }
  ]
 }

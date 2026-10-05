@@ -35,7 +35,7 @@ import numpy as np
 
 from ..ecc.cauchy import CauchyErasureCode
 from ..v2.encoder import cauchy_parity
-from .errors import V6ConfigurationError
+from vnxdna.core.errors import V6ConfigurationError
 
 ORDERS = ("sequential", "interleaved")
 

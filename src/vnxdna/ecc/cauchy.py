@@ -31,7 +31,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from ..errors import ConfigurationError, InsufficientRedundancyError
+from vnxdna.core.taxonomy import ConfigurationError, InsufficientRedundancyError
 from . import gf256
 
 MAX_TOTAL_SHARDS = 256

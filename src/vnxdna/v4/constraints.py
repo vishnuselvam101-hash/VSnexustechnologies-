@@ -22,7 +22,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .errors import VNXConfigurationError, VNXFormatError
+from vnxdna.core.errors import VNXConfigurationError, VNXFormatError
 
 BASES = "ACGT"
 _ASCII = np.full(256, 255, dtype=np.uint8)

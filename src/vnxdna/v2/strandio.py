@@ -43,7 +43,7 @@ from pathlib import Path
 import numpy as np
 
 from ..dna.mapping import INVALID, _ASCII_TO_CODE, _CODE_TO_ASCII
-from ..errors import ConfigurationError, InvalidDNAError, InvalidInputError, OutputError, UnsupportedFormatError
+from vnxdna.core.taxonomy import ConfigurationError, InvalidDNAError, InvalidInputError, OutputError, UnsupportedFormatError
 from .container import fsync_dir
 
 VXS_MAGIC = b"\x89VXSTRD\n"

@@ -25,8 +25,8 @@ from typing import List, Optional
 
 import typer
 
-from .errors import VNXConfigurationError, VNXError
-from .version import __version__
+from vnxdna.core.errors import VNXConfigurationError, VNXError
+from vnxdna.core.version import __version__
 
 app = typer.Typer(add_completion=False, no_args_is_help=True, help="VNX-DNA V4: DNA data-storage software (simulation only).")
 channel_app = typer.Typer(no_args_is_help=True, help="Simulated DNA storage/sequencing channel.")
@@ -78,7 +78,7 @@ def _run(fn):
         typer.echo("vnx: interrupted", err=True)
         raise typer.Exit(130)
     except Exception as error:  # noqa: BLE001 - mapped to the stable contract
-        from ..errors import VNXDNAError
+        from vnxdna.core.taxonomy import VNXDNAError
         if isinstance(error, VNXDNAError):
             typer.echo(json.dumps(error.to_dict(), indent=2, default=str), err=True)
             raise typer.Exit(error.exit_code)
@@ -120,8 +120,8 @@ def main_callback(verbose: bool = typer.Option(False, "--verbose", "-v", help="S
 @app.command()
 def version() -> None:
     """Print versions."""
-    from .version import FORMAT_VERSION
-    from ..v5 import native_alignment as na
+    from vnxdna.core.version import FORMAT_VERSION
+    from vnxdna.native import align as na
     from ..native import backend_summary
     st = na.status()
     typer.echo(json.dumps({"vnx": __version__, "vnx4_format": list(FORMAT_VERSION), "frame_version": 4,
@@ -135,7 +135,7 @@ def native() -> None:
 
     The top-level fields describe the V5 marker aligner (unchanged since V5); ``kernels`` covers all three kernels."""
     from ..native import native_status
-    from ..v5 import native_alignment as na
+    from vnxdna.native import align as na
     st = native_status()
     _emit({**na.status(), "kernels": st["kernels"], "all_native": st["all_native"]})
 
@@ -148,7 +148,7 @@ def keygen(output: Path = typer.Argument(..., help="New key file (mode 0600; ref
         try:
             generate_key_file(output)
         except FileExistsError:
-            from .errors import VNXOutputError
+            from vnxdna.core.errors import VNXOutputError
             raise VNXOutputError(f"{output} exists")
         _emit({"status": "OK", "key_file": str(output)})
     _run(go)
@@ -281,7 +281,7 @@ def encode(source: Path = typer.Argument(..., help="A .vnx container, or a file/
         nonlocal profile, stripe_depth, column_parity, strand_order
         if redundancy_profile is not None:
             from ..v6.profiles import REDUNDANCY_PROFILES
-            from ..v6.errors import V6ConfigurationError
+            from vnxdna.core.errors import V6ConfigurationError
             if redundancy_profile not in REDUNDANCY_PROFILES:
                 raise V6ConfigurationError(f"unknown redundancy profile {redundancy_profile!r}; "
                                            f"available: {sorted(REDUNDANCY_PROFILES)}")
@@ -311,7 +311,7 @@ def encode(source: Path = typer.Argument(..., help="A .vnx container, or a file/
                 res = de.decode_reads(output, None, de.DecodeOptions(layout=opts.resolve()[0], workers=opts.workers))
                 rep["verified_by_decoding"] = res.status == "SUCCESS"
                 if res.status != "SUCCESS":
-                    from .errors import VNXIntegrityError
+                    from vnxdna.core.errors import VNXIntegrityError
                     raise VNXIntegrityError("encode verification failed: the strands do not decode to the container")
             _emit(rep)
         finally:
@@ -339,7 +339,7 @@ def _decode(reads, output, extract_dir, partial_dir, select, profile, workers, p
         return _decode_run(reads, output, extract_dir, partial_dir, select, opts, force, key_file, passphrase_env, report,
                            None, task_id, allow_unencrypted)[0]
     import secrets
-    from ..v6.observe import Events, JsonlObserver
+    from vnxdna.core.observe import Events, JsonlObserver
     jsonl = JsonlObserver(events)
     task_id = task_id or secrets.token_hex(6)
     last: dict = {}
@@ -378,7 +378,7 @@ def _same_file(a: Path, b: Path) -> bool:
 def _check_side_files(reads, key_file, output, report, events, force) -> None:
     """Refuse a --report / --events path that is a symlink or names an input or output of this decode (checked before
     anything is opened or decoded), and an existing report without --force."""
-    from .errors import VNXOutputError
+    from vnxdna.core.errors import VNXOutputError
     for opt, path in (("--report", report), ("--events", events)):
         if path is None:
             continue
@@ -423,7 +423,7 @@ def _decode_run(reads, output, extract_dir, partial_dir, select, opts, force, ke
                 import shutil
                 shutil.rmtree(tmp, ignore_errors=True)
     if report:
-        from .util import atomic_output
+        from vnxdna.core.util import atomic_output
         with atomic_output(report, overwrite=force, mode=0o600) as tmp:
             tmp.write_text(json.dumps(res.report, indent=2, sort_keys=True, default=str) + "\n")
     _emit({"status": res.status, **res.report})

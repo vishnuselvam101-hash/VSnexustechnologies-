@@ -1,8 +1,4 @@
-"""V6 errors (subclasses of the V4 hierarchy, so existing handlers apply)."""
-from __future__ import annotations
+"""Moved to :mod:`vnxdna.core.errors` (V6 Phase 2, M1); this old path is an alias of the same module object."""
+from vnxdna.core._alias import alias_module
 
-from ..v4.errors import VNXConfigurationError
-
-
-class V6ConfigurationError(VNXConfigurationError):
-    """Invalid V6 outer-code configuration."""
+alias_module(__name__, "vnxdna.core.errors")

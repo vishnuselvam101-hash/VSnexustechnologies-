@@ -27,7 +27,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from ...v4.errors import VNXConfigurationError
+from vnxdna.core.errors import VNXConfigurationError
 from ...v4.frame import Layout, decode_frames
 from ..indel.recovery import _false_accept
 from . import symbols as ss

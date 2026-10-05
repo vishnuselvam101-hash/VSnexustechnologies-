@@ -27,7 +27,7 @@ from pathlib import Path
 
 from .channel import ChannelConfig
 from .constraints import ConstraintConfig
-from .errors import VNXConfigurationError
+from vnxdna.core.errors import VNXConfigurationError
 from .frame import Layout
 
 PERFORMANCE_PROFILES = {

@@ -33,9 +33,9 @@ from ..v2.strandio import StrandWriter, format_for_output
 from . import container as ct
 from .codecs import CODE_IDS, CauchyRSCodec, make_outer
 from .constraints import ConstraintConfig
-from .errors import VNXConfigurationError, VNXFormatError
+from vnxdna.core.errors import VNXConfigurationError, VNXFormatError
 from .frame import KIND_DATA, KIND_SUPER, PROFILES, Layout, build_strands
-from .util import sha256_file
+from vnxdna.core.util import sha256_file
 
 SB_MAGIC = b"VNX4SB"
 SB_VERSION = 1
@@ -158,7 +158,7 @@ class Superblock:
         if data[:6] != SB_MAGIC or zlib.crc32(data[:-4]) != struct.unpack(">I", data[-4:])[0]:
             raise VNXFormatError("superblock magic/CRC invalid", stage="superblock")
         if data[6] not in (SB_VERSION, SB_VERSION_V6):
-            from .errors import VNXUnsupportedVersionError
+            from vnxdna.core.errors import VNXUnsupportedVersionError
             raise VNXUnsupportedVersionError(f"unsupported superblock version {data[6]}")
         code = CODE_IDS.get(data[7])
         if code is None:

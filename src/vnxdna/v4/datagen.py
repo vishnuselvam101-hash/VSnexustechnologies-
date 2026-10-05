@@ -12,7 +12,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .errors import VNXConfigurationError
+from vnxdna.core.errors import VNXConfigurationError
 
 PATTERNS = ("random", "text", "repetitive", "binary", "mixed")
 _WORDS = (b"the of and to in is that for it as with was on be by this are or at from have an they which one you were all "

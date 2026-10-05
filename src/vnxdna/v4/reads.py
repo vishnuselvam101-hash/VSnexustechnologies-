@@ -19,7 +19,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .errors import VNXFormatError, VNXResourceError
+from vnxdna.core.errors import VNXFormatError, VNXResourceError
 
 MAX_READ_NT = 100_000
 BLOCK = 8 << 20

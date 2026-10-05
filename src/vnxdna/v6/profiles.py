@@ -17,7 +17,7 @@ from dataclasses import replace
 
 from ..v4.encoder import DNAOptions
 from ..v4.frame import PROFILES
-from .errors import V6ConfigurationError
+from vnxdna.core.errors import V6ConfigurationError
 
 REDUNDANCY_PROFILES: dict[str, dict] = {
     "maximum-density": {"profile": "v4-dense"},

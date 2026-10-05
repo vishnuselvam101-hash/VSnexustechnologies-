@@ -26,7 +26,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from ...v4.errors import VNXConfigurationError
+from vnxdna.core.errors import VNXConfigurationError
 from ...v4.frame import Layout, decode_frames, nt_to_bytes
 from ...v4.sync import Projection
 

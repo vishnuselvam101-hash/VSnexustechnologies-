@@ -38,16 +38,16 @@ from pathlib import Path
 
 import numpy as np
 
-from ..v6.native_reads import iter_reads   # V6: native streaming parser, falls back to .reads.iter_reads
+from vnxdna.native.reads import iter_reads  # V6: native streaming parser, falls back to .reads.iter_reads
 from . import archive as ar
 from . import container as ct
 from .codecs import CauchyRSCodec, make_outer
 from .encoder import SB_BYTES, Superblock, group_k
-from .errors import (VNXAddressError, VNXConfigurationError, VNXDecodeError, VNXFormatError, VNXIntegrityError,
-                     VNXKeyError, VNXUnsupportedVersionError)
+from vnxdna.core.errors import (VNXAddressError, VNXConfigurationError, VNXDecodeError, VNXFormatError,
+    VNXIntegrityError, VNXKeyError, VNXUnsupportedVersionError)
 from .frame import HEADER_BYTES, KIND_DATA, KIND_SUPER, PROFILES, Layout, decode_frames, nt_to_bytes, tentative_address
 from .sync import SyncCosts, TemplateAligner, frame_erasures_to_bytes, strip_markers_exact
-from .util import atomic_output, peak_rss_bytes
+from vnxdna.core.util import atomic_output, peak_rss_bytes
 
 _RC = np.array([3, 2, 1, 0, 4], dtype=np.uint8)
 
@@ -592,7 +592,7 @@ def decode_reads(reads_path: str | os.PathLike, output: str | os.PathLike | None
     opt = options or DecodeOptions()
     opt.validate()
     t0 = time.perf_counter()
-    from ..v6.observe import Events
+    from vnxdna.core.observe import Events
     from ..v6.recovery import RecoveryPlanner
     from ..native import backend_summary
     ev = Events(observer, task_id, t0)
@@ -1487,7 +1487,7 @@ def _partial(sb: Superblock, work: Path, failed: dict, partial_dir, key, passphr
         # the 16-byte header is a constant of format 4.0 (magic, version, zero flags); restoring it lets the surviving
         # index be read. Every file is still verified chunk by chunk (SHA-256 + chunk ID + file SHA-256) below.
         import struct
-        from .version import FORMAT_VERSION
+        from vnxdna.core.version import FORMAT_VERSION
         with open(work, "r+b") as f:
             f.write(ct.MAGIC + struct.pack(">HHI", FORMAT_VERSION[0], FORMAT_VERSION[1], 0))
         info["header_restored"] = True

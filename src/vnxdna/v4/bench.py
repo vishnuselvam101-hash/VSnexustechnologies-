@@ -30,7 +30,7 @@ from . import channel as ch
 from . import datagen
 from . import decoder as de
 from . import encoder as en
-from .util import environment
+from vnxdna.core.util import environment
 
 
 def _rss_now() -> dict:

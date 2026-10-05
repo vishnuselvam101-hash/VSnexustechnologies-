@@ -61,7 +61,7 @@ class TemplateAligner:
     def __init__(self, layout: Layout, band: int = 6, costs: SyncCosts | None = None, backend: str | None = None):
         # backend: "auto" | "native" | "reference" (None = $VNXDNA_ALIGN_BACKEND, default auto). The NumPy code below
         # (_align/_traceback) is the reference; the V5 native kernel reproduces it bit for bit (V5 alignment contract).
-        from ..v5 import native_alignment as _na
+        from vnxdna.native import align as _na
         self.backend = _na.resolve_backend(backend)
         self.layout = layout
         self.band = band
@@ -102,7 +102,7 @@ class TemplateAligner:
         usable = np.abs(lengths - self.T) <= self.band
         idx = np.flatnonzero(usable)
         if self.backend == "native" and idx.size:
-            from ..v5 import native_alignment as _na
+            from vnxdna.native import align as _na
             res = _na.align_usable(self, [reads[i] for i in idx], None if quals is None else [quals[i] for i in idx], min_quality)
             if res is not None:      # None: input outside the native domain -> the reference below
                 out_bases[idx], out_er[idx], ok[idx], ins_n[idx], del_n[idx], mm[idx], cost[idx] = res

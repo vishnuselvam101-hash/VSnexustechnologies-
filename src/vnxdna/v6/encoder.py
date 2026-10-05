@@ -21,9 +21,9 @@ from ..v4 import container as ct
 from ..v4.codecs import CauchyRSCodec
 from ..v4.constraints import ConstraintConfig
 from ..v4.encoder import _ASCII, DNAOptions, SB_VERSION_V6, Superblock, _labels
-from ..v4.errors import VNXConfigurationError
+from vnxdna.core.errors import VNXConfigurationError
 from ..v4.frame import KIND_DATA, KIND_SUPER, Layout, build_strands
-from ..v4.util import sha256_file
+from vnxdna.core.util import sha256_file
 from .outer import Geometry, column_parity_rows, plan, row_codewords
 
 _W: dict = {}

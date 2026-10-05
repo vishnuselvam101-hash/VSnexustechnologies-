@@ -27,8 +27,8 @@ import zstandard
 
 from . import container as ct
 from . import crypto, merkle
-from .errors import (VNXConfigurationError, VNXFormatError, VNXIntegrityError, VNXOutputError, VNXResourceError)
-from .util import atomic_output
+from vnxdna.core.errors import VNXConfigurationError, VNXFormatError, VNXIntegrityError, VNXOutputError, VNXResourceError
+from vnxdna.core.util import atomic_output
 
 
 @dataclass
@@ -317,7 +317,7 @@ def bounded_zstd(stored: bytes, plain_size: int, what: str) -> bytes:
     (it allocates the declared size), so a hostile chunk could force a large allocation; the stream reader cannot.
     """
     from ..container.compression import decompress as v3_decompress
-    from ..errors import IntegrityError
+    from vnxdna.core.taxonomy import IntegrityError
     try:
         return v3_decompress(stored, "zstd", plain_size)
     except IntegrityError as error:

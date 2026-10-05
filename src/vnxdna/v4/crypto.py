@@ -36,7 +36,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
 
-from .errors import VNXConfigurationError, VNXIntegrityError, VNXKeyError
+from vnxdna.core.errors import VNXConfigurationError, VNXIntegrityError, VNXKeyError
 
 TAG_BYTES = 16
 SALT_BYTES = 16

@@ -6,7 +6,7 @@ import zlib
 
 import zstandard
 
-from ..errors import ConfigurationError, IntegrityError
+from vnxdna.core.taxonomy import ConfigurationError, IntegrityError
 
 ALGORITHMS = ("none", "zlib", "zstd")
 LEVELS = {"none": (0, 0), "zlib": (0, 9), "zstd": (1, 22)}

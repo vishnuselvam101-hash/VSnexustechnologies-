@@ -32,7 +32,7 @@ from . import channel as ch
 from . import datagen
 from . import decoder as de
 from . import encoder as en
-from .errors import VNXAddressError, VNXConfigurationError, VNXDecodeError, VNXIntegrityError
+from vnxdna.core.errors import VNXAddressError, VNXConfigurationError, VNXDecodeError, VNXIntegrityError
 
 
 def _seed(base: int, point: int, trial: int) -> int:

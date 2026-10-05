@@ -32,8 +32,8 @@ import math
 import time
 from dataclasses import asdict, dataclass
 
-from ..v4.errors import VNXConfigurationError, VNXDecodeError
-from ..v4.util import peak_rss_bytes
+from vnxdna.core.errors import VNXConfigurationError, VNXDecodeError
+from vnxdna.core.util import peak_rss_bytes
 
 STAGES = ("FAST", "SYNC", "SMART", "SOFT", "EXPENSIVE", "OUTER", "REJECT")
 

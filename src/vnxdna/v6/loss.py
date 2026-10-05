@@ -17,7 +17,7 @@ from dataclasses import asdict, dataclass
 import numpy as np
 
 from ..v4.constraints import iter_fasta
-from .errors import V6ConfigurationError
+from vnxdna.core.errors import V6ConfigurationError
 
 
 @dataclass(frozen=True)

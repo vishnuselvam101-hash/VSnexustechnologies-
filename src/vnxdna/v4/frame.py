@@ -28,11 +28,11 @@ from dataclasses import asdict, dataclass
 
 import numpy as np
 
-from ..v2.crc import crc32_bytes_be, crc32_rows
+from vnxdna.core.crc import crc32_bytes_be, crc32_rows
 from .codecs import InnerRS
 from .constraints import ConstraintConfig, satisfied_batch, to_codes
-from .errors import VNXConfigurationError, VNXConstraintError
-from .version import FRAME_VERSION
+from vnxdna.core.errors import VNXConfigurationError, VNXConstraintError
+from vnxdna.core.version import FRAME_VERSION
 
 HEADER_BYTES = 10
 CRC_BYTES = 4

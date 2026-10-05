@@ -32,8 +32,8 @@ from pathlib import Path
 import numpy as np
 
 from ..v2.strandio import iter_batches
-from .errors import VNXConfigurationError, VNXOutputError
-from .util import atomic_output
+from vnxdna.core.errors import VNXConfigurationError, VNXOutputError
+from vnxdna.core.util import atomic_output
 
 BATCH = 1024
 _ACGTN = np.frombuffer(b"ACGTN", dtype=np.uint8)

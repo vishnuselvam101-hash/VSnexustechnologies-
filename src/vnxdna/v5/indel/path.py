@@ -17,7 +17,7 @@ from __future__ import annotations
 import numpy as np
 
 from ...v4.sync import DEL, DIAG, INS, Projection, TemplateAligner
-from .. import native_alignment as na
+from vnxdna.native import align as na
 
 
 class PathAligner(TemplateAligner):

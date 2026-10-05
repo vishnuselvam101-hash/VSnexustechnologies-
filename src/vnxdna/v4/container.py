@@ -26,9 +26,9 @@ from typing import BinaryIO
 import numpy as np
 
 from . import crypto, merkle
-from .errors import (VNXFormatError, VNXIntegrityError, VNXKeyError, VNXResourceError, VNXUnsupportedVersionError)
-from .util import canonical_json, parse_canonical_json
-from .version import FORMAT_VERSION, __version__
+from vnxdna.core.errors import VNXFormatError, VNXIntegrityError, VNXKeyError, VNXResourceError, VNXUnsupportedVersionError
+from vnxdna.core.util import canonical_json, parse_canonical_json
+from vnxdna.core.version import FORMAT_VERSION, __version__
 
 MAGIC = b"\x89VNX4\r\n\x1a"
 HEADER_BYTES = 16

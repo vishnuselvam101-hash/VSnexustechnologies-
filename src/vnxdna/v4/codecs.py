@@ -39,7 +39,7 @@ from ..ecc.cauchy import CauchyErasureCode
 from ..ecc.inner_rs import _parity_matrix
 from ..ecc import gf256
 from ..v2.encoder import cauchy_parity
-from .errors import VNXConfigurationError, VNXDecodeError
+from vnxdna.core.errors import VNXConfigurationError, VNXDecodeError
 
 
 class OuterCodec(Protocol):
@@ -353,7 +353,7 @@ class InnerRS:
         """→ (corrected, ok, errata). Bounded distance: corrects iff 2e + f ≤ r; callers must re-check the CRC."""
         if _REFERENCE_RS:
             return rs_batch.decode_batch(codewords, self.r, erasures)
-        from ..v6 import native_rs          # V6: native kernel (AVX2/scalar), bit-exact with rs_fast, which it falls back to
+        from vnxdna.native import (rs as native_rs)  # V6: native kernel (AVX2/scalar), bit-exact with rs_fast, which it falls back to
         return native_rs.decode_batch(codewords, self.r, erasures)
 
     def capabilities(self) -> dict:

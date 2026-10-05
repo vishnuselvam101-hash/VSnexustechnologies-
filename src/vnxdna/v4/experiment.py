@@ -26,8 +26,8 @@ import os
 from pathlib import Path
 
 from . import bench, sweep
-from .errors import VNXConfigurationError
-from .util import environment, write_json
+from vnxdna.core.errors import VNXConfigurationError
+from vnxdna.core.util import environment, write_json
 
 TYPES = ("sweep", "end_to_end", "codec_compare", "stages", "scaling", "memory", "v3_vs_v4", "constraints")
 TIMING_KEYS = ("seconds", "_s", "mb_s", "rss", "per_second", "_per_day", "reads_s", "frames_s", "leaves_s", "mbases", "strands_s",
