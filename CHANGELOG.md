@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### Added (V7 Phase D, in development)
+
+- **`vnx.channel-model/2`** extends `/1` (every `/1` model loads unchanged): provenance of fitted models (datasets with
+  SHA-256, split, fitting commit and seed), per-parameter `ci95` and `basis`, and opt-in effects: insertion runs, 3-mer
+  context and per-read rate heterogeneity (`read_heterogeneity`, gamma; honoured by the simulator, present only when set)
+  are honoured; `correlation` and `asymmetry` are refused by every simulation path (docs/CHANNEL_MODEL.md).
+- **Channel-model fitter** `vnxdna.simulation.fit` (V7 fitting plan 3.3/3.4): edlib alignment with leftmost indel
+  normalisation, count estimators, bootstrap over references, simulation calibration, fit-quality metrics M1-M10, and a
+  matched read-length window for length-selected datasets. Data split with a held-out access guard (`experiments/v7/split`).
+- **Fitted models F** for CNR, D03 (guppy HAC and fast, forward and backward) and D02 (Twist, with a PhiX stage split),
+  PUBLIC-DATA-DERIVED; validation reads SIMULATED. Two rounds; round 2 follows protocol amendment 2
+  (docs/V7_PROTOCOL.md 5.5). Verdicts on DEV: every CNR and D03 model is INADEQUATE (D03 on M3, CNR on M2); D02 passes
+  the gating metrics M2, M3, M8 with non-gating misfits. Held-out validation not run (no PREREG yet). Register:
+  docs/V7_CHANNEL_MODELS.md; details: experiments/v7/fit/README.md.
+
 ### Fixed
 
 - **Random access with failed groups outside the selection (job #66).** On a V6 stripe archive the column pass decodes
