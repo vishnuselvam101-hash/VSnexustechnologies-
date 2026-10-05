@@ -1,0 +1,32 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "container.rule1.flags-nonzero",
+ "stage": "D12",
+ "formats": {
+  "frame": null,
+  "superblock": null,
+  "container": [
+   4,
+   0
+  ]
+ },
+ "kind": "negative",
+ "operation": "container.read",
+ "params": {},
+ "inputs": {
+  "container": {
+   "path": "container.dat",
+   "sha256": "5e1ab5f6dc92005d959ac58cfbffd83b989758e38e05cf93e88eacd6c5e72f04"
+  }
+ },
+ "expected": {
+  "error": {
+   "code": "CONTAINER_VERSION_UNSUPPORTED",
+   "category": "UNSUPPORTED_FORMAT",
+   "exit_code": 6,
+   "retryable": false
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

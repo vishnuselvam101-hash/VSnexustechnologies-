@@ -535,9 +535,10 @@ def version() -> dict:
 
 # ================================================================================================================= conformance
 def conformance(vectors: PathLike | None = None, *, select: Sequence[str] | None = None, backend: str = "auto") -> Result:
-    """Run conformance vectors (spec §6; the package ships a small subset); ``result`` is ``vnx.conformance/1``."""
+    """Run conformance vectors (spec §6); ``result`` is ``vnx.conformance/1``. Default vectors: ``tests/conformance`` of a
+    source checkout, otherwise the subset shipped in the package."""
     from vnxdna.conformance import run
     t0 = time.perf_counter()
-    doc = run(vectors, select=select, backend=backend)
+    doc = run(vectors, select=select, backend=backend, services={"version": version})
     status = "SUCCESS" if doc["verdict"] == "CONFORMANT" else "FAILURE"
     return Result("conformance", status, doc, seconds=time.perf_counter() - t0)

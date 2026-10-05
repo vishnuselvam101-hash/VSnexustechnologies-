@@ -1,0 +1,31 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "frame4.kind2",
+ "stage": "D5",
+ "formats": {
+  "frame": 4,
+  "superblock": null,
+  "container": null
+ },
+ "kind": "negative",
+ "operation": "frame4.accept",
+ "params": {
+  "profile": "v4-balanced"
+ },
+ "inputs": {
+  "strand": {
+   "path": "strand.dat",
+   "sha256": "41f4b8921d9541f1d4a2cea4cf53d2872cf68802297b909da57369568bf0aac5"
+  }
+ },
+ "expected": {
+  "error": {
+   "code": "FORMAT_ERROR",
+   "category": "INVALID_INPUT",
+   "exit_code": 3,
+   "retryable": false
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

@@ -1,0 +1,40 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "superblock.pack.v1",
+ "stage": "E9",
+ "formats": {
+  "frame": 4,
+  "superblock": 1,
+  "container": null
+ },
+ "kind": "positive",
+ "operation": "superblock.pack",
+ "params": {
+  "outer_code": "cauchy-rs",
+  "K": 64,
+  "M": 16,
+  "profile": "v4-balanced",
+  "lt_distribution": "dense",
+  "lt_seed": 0,
+  "archive_id_hex": "000102030405060708090a0b0c0d0e0f",
+  "container_size": 123456,
+  "container_sha256_hex": "1111111111111111111111111111111111111111111111111111111111111111",
+  "index_offset": 1000,
+  "group_count": 49,
+  "version": 1
+ },
+ "inputs": {},
+ "expected": {
+  "outputs": {
+   "superblock_hex": "564e5834534201010040001000281006030000000000000102030405060708090a0b0c0d0e0f000000000001e240111111111111111111111111111111111111111111111111111111111111111100000000000003e800000031000036a7beec",
+   "roundtrip": {
+    "version": 1,
+    "K": 64,
+    "M": 16,
+    "repacked_sha256": "40adfe49d511a2c5943ef95b8149f728d045ba952cdc61ed1ed060d3b589f1bd"
+   }
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

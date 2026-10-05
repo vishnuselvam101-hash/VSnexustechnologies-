@@ -1,0 +1,52 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "container.read.clear",
+ "stage": "D12",
+ "formats": {
+  "frame": null,
+  "superblock": null,
+  "container": [
+   4,
+   0
+  ]
+ },
+ "kind": "positive",
+ "operation": "container.read",
+ "params": {},
+ "inputs": {
+  "container": {
+   "path": "container.dat",
+   "sha256": "bbd349a177f3e62798e43fae3c4eea3191029c61e1ff6ef46d7ef5250154638c"
+  }
+ },
+ "expected": {
+  "outputs": {
+   "status": "VERIFIED",
+   "archive_id": "0102030405060708090a0b0c0d0e0f10",
+   "merkle_root": "ab52aa4c0b916e974d0e25d8c6ea0fd70b2bec726cee05dcc1e2f876e8836a8e",
+   "encrypted": false,
+   "files": [
+    {
+     "path": "data/a.txt",
+     "type": 0,
+     "size": 9000,
+     "sha256": "cea3e01bcc2d49bd2373b1456d47fb216d12a65f2206f44bfdeb86dba1a190ef"
+    },
+    {
+     "path": "data/dup.txt",
+     "type": 0,
+     "size": 9000,
+     "sha256": "cea3e01bcc2d49bd2373b1456d47fb216d12a65f2206f44bfdeb86dba1a190ef"
+    },
+    {
+     "path": "data/sub/b.bin",
+     "type": 0,
+     "size": 5000,
+     "sha256": "18bb64839d70677c5ea27d1783bec24e1eaadb6fb600163329129d4221849e4b"
+    }
+   ]
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

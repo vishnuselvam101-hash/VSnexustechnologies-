@@ -1,0 +1,32 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "superblock.unpack.v2.interleaved",
+ "stage": "D8",
+ "formats": {
+  "frame": 4,
+  "superblock": 2,
+  "container": null
+ },
+ "kind": "positive",
+ "operation": "superblock.unpack",
+ "params": {},
+ "inputs": {
+  "superblock": {
+   "path": "superblock.dat",
+   "sha256": "bf4b5267fe1560cb0d7ec721b1bf876c5f2d4b89580dd43db92e841769d85ca7"
+  }
+ },
+ "expected": {
+  "outputs": {
+   "version": 2,
+   "K": 64,
+   "M": 16,
+   "repacked_sha256": "bf4b5267fe1560cb0d7ec721b1bf876c5f2d4b89580dd43db92e841769d85ca7",
+   "stripe_depth": 4,
+   "column_parity": 2,
+   "strand_order": "interleaved"
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

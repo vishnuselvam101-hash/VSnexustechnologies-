@@ -1,0 +1,524 @@
+{
+ "experiment": "P4-EXP-01-failure-taxonomy",
+ "classification": "SIMULATED",
+ "purpose": "Failure analysis of the current decoder (build/v6-sprint @ a6a38f8 + phase-4 harness): classify every non-exact decode by stage; consensus error/erasure statistics against ground truth.",
+ "data_seed": 6201,
+ "base_seed": 41000,
+ "seeds": 20,
+ "arms": {
+  "default": {},
+  "smart-auto": {
+   "indel_recovery": "smart",
+   "soft_decoding": "auto"
+  }
+ },
+ "arm_notes": {
+  "default": "stock DecodeOptions (segment indel rule, soft decoding off)",
+  "smart-auto": "existing opt-in V5 smart indel recovery + soft decoding auto, deferred schedule (default schedule)",
+  "restriction": "G2 nanopore-like coverage cells and G4 run the default arm only (CPU budget: smart-auto takes about 30 s per nanopore-like trial and every G1 nanopore-like trial fails before pass 2 in both arms)."
+ },
+ "baseline": "default",
+ "decode_workers": 1,
+ "cells": [
+  {
+   "id": "G1/burst-loss",
+   "group": "G1 named models",
+   "model": "burst-loss",
+   "size": 20000
+  },
+  {
+   "id": "G1/clean",
+   "group": "G1 named models",
+   "model": "clean",
+   "size": 20000
+  },
+  {
+   "id": "G1/deletion-heavy",
+   "group": "G1 named models",
+   "model": "deletion-heavy",
+   "size": 20000
+  },
+  {
+   "id": "G1/dropout-10",
+   "group": "G1 named models",
+   "model": "dropout-10",
+   "size": 20000
+  },
+  {
+   "id": "G1/dropout-20",
+   "group": "G1 named models",
+   "model": "dropout-20",
+   "size": 20000
+  },
+  {
+   "id": "G1/dropout-5",
+   "group": "G1 named models",
+   "model": "dropout-5",
+   "size": 20000
+  },
+  {
+   "id": "G1/illumina-like",
+   "group": "G1 named models",
+   "model": "illumina-like",
+   "size": 20000
+  },
+  {
+   "id": "G1/insertion-heavy",
+   "group": "G1 named models",
+   "model": "insertion-heavy",
+   "size": 20000
+  },
+  {
+   "id": "G1/mixed-harsh",
+   "group": "G1 named models",
+   "model": "mixed-harsh",
+   "size": 20000
+  },
+  {
+   "id": "G1/mixed-mild",
+   "group": "G1 named models",
+   "model": "mixed-mild",
+   "size": 20000
+  },
+  {
+   "id": "G1/nanopore-like",
+   "group": "G1 named models",
+   "model": "nanopore-like",
+   "size": 20000
+  },
+  {
+   "id": "G1/quality-degradation",
+   "group": "G1 named models",
+   "model": "quality-degradation",
+   "size": 20000
+  },
+  {
+   "id": "G1/substitution-heavy",
+   "group": "G1 named models",
+   "model": "substitution-heavy",
+   "size": 20000
+  },
+  {
+   "id": "G1/uneven-coverage",
+   "group": "G1 named models",
+   "model": "uneven-coverage",
+   "size": 20000
+  },
+  {
+   "id": "G2/mixed-mild-cov2",
+   "group": "G2 coverage",
+   "model": {
+    "base": "mixed-mild",
+    "name": "mixed-mild-cov2",
+    "channel": {
+     "coverage": 2.0
+    }
+   },
+   "size": 20000
+  },
+  {
+   "id": "G2/mixed-mild-cov3",
+   "group": "G2 coverage",
+   "model": {
+    "base": "mixed-mild",
+    "name": "mixed-mild-cov3",
+    "channel": {
+     "coverage": 3.0
+    }
+   },
+   "size": 20000
+  },
+  {
+   "id": "G2/mixed-mild-cov5",
+   "group": "G2 coverage",
+   "model": {
+    "base": "mixed-mild",
+    "name": "mixed-mild-cov5",
+    "channel": {
+     "coverage": 5.0
+    }
+   },
+   "size": 20000
+  },
+  {
+   "id": "G2/mixed-mild-cov30",
+   "group": "G2 coverage",
+   "model": {
+    "base": "mixed-mild",
+    "name": "mixed-mild-cov30",
+    "channel": {
+     "coverage": 30.0
+    }
+   },
+   "size": 20000
+  },
+  {
+   "id": "G2/substitution-heavy-cov2",
+   "group": "G2 coverage",
+   "model": {
+    "base": "substitution-heavy",
+    "name": "substitution-heavy-cov2",
+    "channel": {
+     "coverage": 2.0
+    }
+   },
+   "size": 20000
+  },
+  {
+   "id": "G2/substitution-heavy-cov3",
+   "group": "G2 coverage",
+   "model": {
+    "base": "substitution-heavy",
+    "name": "substitution-heavy-cov3",
+    "channel": {
+     "coverage": 3.0
+    }
+   },
+   "size": 20000
+  },
+  {
+   "id": "G2/substitution-heavy-cov5",
+   "group": "G2 coverage",
+   "model": {
+    "base": "substitution-heavy",
+    "name": "substitution-heavy-cov5",
+    "channel": {
+     "coverage": 5.0
+    }
+   },
+   "size": 20000
+  },
+  {
+   "id": "G2/substitution-heavy-cov30",
+   "group": "G2 coverage",
+   "model": {
+    "base": "substitution-heavy",
+    "name": "substitution-heavy-cov30",
+    "channel": {
+     "coverage": 30.0
+    }
+   },
+   "size": 20000
+  },
+  {
+   "id": "G2/deletion-heavy-cov2",
+   "group": "G2 coverage",
+   "model": {
+    "base": "deletion-heavy",
+    "name": "deletion-heavy-cov2",
+    "channel": {
+     "coverage": 2.0
+    }
+   },
+   "size": 20000
+  },
+  {
+   "id": "G2/deletion-heavy-cov3",
+   "group": "G2 coverage",
+   "model": {
+    "base": "deletion-heavy",
+    "name": "deletion-heavy-cov3",
+    "channel": {
+     "coverage": 3.0
+    }
+   },
+   "size": 20000
+  },
+  {
+   "id": "G2/deletion-heavy-cov5",
+   "group": "G2 coverage",
+   "model": {
+    "base": "deletion-heavy",
+    "name": "deletion-heavy-cov5",
+    "channel": {
+     "coverage": 5.0
+    }
+   },
+   "size": 20000
+  },
+  {
+   "id": "G2/deletion-heavy-cov30",
+   "group": "G2 coverage",
+   "model": {
+    "base": "deletion-heavy",
+    "name": "deletion-heavy-cov30",
+    "channel": {
+     "coverage": 30.0
+    }
+   },
+   "size": 20000
+  },
+  {
+   "id": "G2/nanopore-like-cov2",
+   "group": "G2 coverage",
+   "model": {
+    "base": "nanopore-like",
+    "name": "nanopore-like-cov2",
+    "channel": {
+     "coverage": 2.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default"
+   ]
+  },
+  {
+   "id": "G2/nanopore-like-cov3",
+   "group": "G2 coverage",
+   "model": {
+    "base": "nanopore-like",
+    "name": "nanopore-like-cov3",
+    "channel": {
+     "coverage": 3.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default"
+   ]
+  },
+  {
+   "id": "G2/nanopore-like-cov5",
+   "group": "G2 coverage",
+   "model": {
+    "base": "nanopore-like",
+    "name": "nanopore-like-cov5",
+    "channel": {
+     "coverage": 5.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default"
+   ]
+  },
+  {
+   "id": "G2/nanopore-like-cov30",
+   "group": "G2 coverage",
+   "model": {
+    "base": "nanopore-like",
+    "name": "nanopore-like-cov30",
+    "channel": {
+     "coverage": 30.0
+    }
+   },
+   "size": 20000,
+   "arms": [
+    "default"
+   ]
+  },
+  {
+   "id": "G3/s184/b0like-e1-cov5-drop0",
+   "group": "G3 B0-like (53/45/2 sub/del/ins, 1 %, fixed coverage, uninformative qualities)",
+   "model": {
+    "base": "clean",
+    "name": "b0like-e1-cov5-drop0",
+    "description": "B0-like: 1 % per-base errors split 53/45/2 sub/del/ins (the ETH protocol composition), fixed coverage, i.i.d. strand dropout, constant qualities",
+    "channel": {
+     "substitution_rate": 0.0053,
+     "deletion_rate": 0.0045,
+     "insertion_rate": 0.0002,
+     "coverage": 5.0,
+     "coverage_model": "fixed"
+    },
+    "loss": {
+     "dropout": 0.0
+    }
+   },
+   "size": 19456,
+   "layout": {
+    "payload_bytes": 28,
+    "inner_parity": 4,
+    "marker_period": 0,
+    "marker_len": 0
+   },
+   "data_symbols": 64,
+   "parity_symbols": 8
+  },
+  {
+   "id": "G3/s184/b0like-e1-cov5-drop10",
+   "group": "G3 B0-like (53/45/2 sub/del/ins, 1 %, fixed coverage, uninformative qualities)",
+   "model": {
+    "base": "clean",
+    "name": "b0like-e1-cov5-drop10",
+    "description": "B0-like: 1 % per-base errors split 53/45/2 sub/del/ins (the ETH protocol composition), fixed coverage, i.i.d. strand dropout, constant qualities",
+    "channel": {
+     "substitution_rate": 0.0053,
+     "deletion_rate": 0.0045,
+     "insertion_rate": 0.0002,
+     "coverage": 5.0,
+     "coverage_model": "fixed"
+    },
+    "loss": {
+     "dropout": 0.1
+    }
+   },
+   "size": 19456,
+   "layout": {
+    "payload_bytes": 28,
+    "inner_parity": 4,
+    "marker_period": 0,
+    "marker_len": 0
+   },
+   "data_symbols": 64,
+   "parity_symbols": 8
+  },
+  {
+   "id": "G3/s184/b0like-e1-cov10-drop0",
+   "group": "G3 B0-like (53/45/2 sub/del/ins, 1 %, fixed coverage, uninformative qualities)",
+   "model": {
+    "base": "clean",
+    "name": "b0like-e1-cov10-drop0",
+    "description": "B0-like: 1 % per-base errors split 53/45/2 sub/del/ins (the ETH protocol composition), fixed coverage, i.i.d. strand dropout, constant qualities",
+    "channel": {
+     "substitution_rate": 0.0053,
+     "deletion_rate": 0.0045,
+     "insertion_rate": 0.0002,
+     "coverage": 10.0,
+     "coverage_model": "fixed"
+    },
+    "loss": {
+     "dropout": 0.0
+    }
+   },
+   "size": 19456,
+   "layout": {
+    "payload_bytes": 28,
+    "inner_parity": 4,
+    "marker_period": 0,
+    "marker_len": 0
+   },
+   "data_symbols": 64,
+   "parity_symbols": 8
+  },
+  {
+   "id": "G3/s184/b0like-e1-cov10-drop10",
+   "group": "G3 B0-like (53/45/2 sub/del/ins, 1 %, fixed coverage, uninformative qualities)",
+   "model": {
+    "base": "clean",
+    "name": "b0like-e1-cov10-drop10",
+    "description": "B0-like: 1 % per-base errors split 53/45/2 sub/del/ins (the ETH protocol composition), fixed coverage, i.i.d. strand dropout, constant qualities",
+    "channel": {
+     "substitution_rate": 0.0053,
+     "deletion_rate": 0.0045,
+     "insertion_rate": 0.0002,
+     "coverage": 10.0,
+     "coverage_model": "fixed"
+    },
+    "loss": {
+     "dropout": 0.1
+    }
+   },
+   "size": 19456,
+   "layout": {
+    "payload_bytes": 28,
+    "inner_parity": 4,
+    "marker_period": 0,
+    "marker_len": 0
+   },
+   "data_symbols": 64,
+   "parity_symbols": 8
+  },
+  {
+   "id": "G3/v4-balanced/b0like-e1-cov5-drop0",
+   "group": "G3 B0-like (53/45/2 sub/del/ins, 1 %, fixed coverage, uninformative qualities)",
+   "model": {
+    "base": "clean",
+    "name": "b0like-e1-cov5-drop0",
+    "description": "B0-like: 1 % per-base errors split 53/45/2 sub/del/ins (the ETH protocol composition), fixed coverage, i.i.d. strand dropout, constant qualities",
+    "channel": {
+     "substitution_rate": 0.0053,
+     "deletion_rate": 0.0045,
+     "insertion_rate": 0.0002,
+     "coverage": 5.0,
+     "coverage_model": "fixed"
+    },
+    "loss": {
+     "dropout": 0.0
+    }
+   },
+   "size": 19456
+  },
+  {
+   "id": "G3/v4-balanced/b0like-e1-cov5-drop10",
+   "group": "G3 B0-like (53/45/2 sub/del/ins, 1 %, fixed coverage, uninformative qualities)",
+   "model": {
+    "base": "clean",
+    "name": "b0like-e1-cov5-drop10",
+    "description": "B0-like: 1 % per-base errors split 53/45/2 sub/del/ins (the ETH protocol composition), fixed coverage, i.i.d. strand dropout, constant qualities",
+    "channel": {
+     "substitution_rate": 0.0053,
+     "deletion_rate": 0.0045,
+     "insertion_rate": 0.0002,
+     "coverage": 5.0,
+     "coverage_model": "fixed"
+    },
+    "loss": {
+     "dropout": 0.1
+    }
+   },
+   "size": 19456
+  },
+  {
+   "id": "G3/v4-balanced/b0like-e1-cov10-drop0",
+   "group": "G3 B0-like (53/45/2 sub/del/ins, 1 %, fixed coverage, uninformative qualities)",
+   "model": {
+    "base": "clean",
+    "name": "b0like-e1-cov10-drop0",
+    "description": "B0-like: 1 % per-base errors split 53/45/2 sub/del/ins (the ETH protocol composition), fixed coverage, i.i.d. strand dropout, constant qualities",
+    "channel": {
+     "substitution_rate": 0.0053,
+     "deletion_rate": 0.0045,
+     "insertion_rate": 0.0002,
+     "coverage": 10.0,
+     "coverage_model": "fixed"
+    },
+    "loss": {
+     "dropout": 0.0
+    }
+   },
+   "size": 19456
+  },
+  {
+   "id": "G3/v4-balanced/b0like-e1-cov10-drop10",
+   "group": "G3 B0-like (53/45/2 sub/del/ins, 1 %, fixed coverage, uninformative qualities)",
+   "model": {
+    "base": "clean",
+    "name": "b0like-e1-cov10-drop10",
+    "description": "B0-like: 1 % per-base errors split 53/45/2 sub/del/ins (the ETH protocol composition), fixed coverage, i.i.d. strand dropout, constant qualities",
+    "channel": {
+     "substitution_rate": 0.0053,
+     "deletion_rate": 0.0045,
+     "insertion_rate": 0.0002,
+     "coverage": 10.0,
+     "coverage_model": "fixed"
+    },
+    "loss": {
+     "dropout": 0.1
+    }
+   },
+   "size": 19456
+  },
+  {
+   "id": "G4/mixed-mild-1MiB",
+   "group": "G4 long archive",
+   "model": "mixed-mild",
+   "size": 1048576,
+   "seeds": 5,
+   "arms": [
+    "default"
+   ]
+  },
+  {
+   "id": "G4/nanopore-like-1MiB",
+   "group": "G4 long archive",
+   "model": "nanopore-like",
+   "size": 1048576,
+   "seeds": 5,
+   "arms": [
+    "default"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,41 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "outer.stripe-decode.d4-mc2.columns-repair-rows",
+ "stage": "D11",
+ "formats": {
+  "frame": 4,
+  "superblock": 2,
+  "container": null
+ },
+ "kind": "positive",
+ "operation": "outer.stripe_decode",
+ "params": {
+  "K": 6,
+  "M": 2,
+  "D": 4,
+  "Mc": 2,
+  "P": 4,
+  "known": [
+   "00011111",
+   "11111111",
+   "11111111",
+   "11111111",
+   "11111111",
+   "11111111"
+  ]
+ },
+ "inputs": {
+  "stripe": {
+   "path": "stripe.dat",
+   "sha256": "1a40a30b2192d6f03ca26ab3d4f42a810f76e80537cfc042c88404236f01e830"
+  }
+ },
+ "expected": {
+  "outputs": {
+   "data_sha256": "c2b603490ace94bbe51d20323263b54b825e2bae63cf70319bbe36c3af6374ce",
+   "stripe_sha256": "e3690e771a115d62aca4e8d423ea62f0e9f2558cc26aa8e4f9078ff7ae060f6f"
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

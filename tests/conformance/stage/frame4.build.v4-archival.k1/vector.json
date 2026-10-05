@@ -1,0 +1,33 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "frame4.build.v4-archival.k1",
+ "stage": "E10-E13",
+ "formats": {
+  "frame": 4,
+  "superblock": null,
+  "container": null
+ },
+ "kind": "positive",
+ "operation": "frame4.build",
+ "params": {
+  "profile": "v4-archival",
+  "tag": 4660,
+  "kind": 1,
+  "group": 7,
+  "symbol": 3
+ },
+ "inputs": {
+  "payload": {
+   "path": "payload.dat",
+   "sha256": "949115499fb9d2b5c01ffc7ca5914ef0266f7c96ca7e6e53dbf2a7bd090d4a67"
+  }
+ },
+ "expected": {
+  "outputs": {
+   "strand_sha256": "aea5fb4c8227d4ee3bd580d83f4cf23d9971c4f738a69d1e2ecdcb1278a710ba",
+   "variant": 0
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

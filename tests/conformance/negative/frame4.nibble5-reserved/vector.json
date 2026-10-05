@@ -1,0 +1,31 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "frame4.nibble5-reserved",
+ "stage": "D5",
+ "formats": {
+  "frame": 5,
+  "superblock": null,
+  "container": null
+ },
+ "kind": "negative",
+ "operation": "frame4.accept",
+ "params": {
+  "profile": "v4-balanced"
+ },
+ "inputs": {
+  "strand": {
+   "path": "strand.dat",
+   "sha256": "6e824f8f563fc41c9c8fb4afd518e43f8a1ea33224a6ef50e2b3ad00b9b486c0"
+  }
+ },
+ "expected": {
+  "error": {
+   "code": "FRAME_VERSION_UNSUPPORTED",
+   "category": "UNSUPPORTED_FORMAT",
+   "exit_code": 6,
+   "retryable": false
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

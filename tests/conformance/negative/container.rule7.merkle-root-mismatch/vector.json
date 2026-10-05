@@ -1,0 +1,32 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "container.rule7.merkle-root-mismatch",
+ "stage": "D12",
+ "formats": {
+  "frame": null,
+  "superblock": null,
+  "container": [
+   4,
+   0
+  ]
+ },
+ "kind": "negative",
+ "operation": "container.read",
+ "params": {},
+ "inputs": {
+  "container": {
+   "path": "container.dat",
+   "sha256": "06c8d0554e8bc641b178095f2ea2ad4912f90c3cb96127e1a4e1c5e7b9b80b7c"
+  }
+ },
+ "expected": {
+  "error": {
+   "code": "INTEGRITY_ERROR",
+   "category": "VERIFICATION_FAILED",
+   "exit_code": 1,
+   "retryable": false
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

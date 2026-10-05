@@ -1,0 +1,75 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "container.build.encrypted",
+ "stage": "E5-E6",
+ "formats": {
+  "frame": null,
+  "superblock": null,
+  "container": [
+   4,
+   0
+  ]
+ },
+ "kind": "positive",
+ "operation": "container.build",
+ "params": {
+  "chunk_size": 4096,
+  "compression": "none",
+  "archive_id_hex": "0102030405060708090a0b0c0d0e0f10",
+  "files": [
+   {
+    "path": "a.txt",
+    "input": "a"
+   },
+   {
+    "path": "sub/b.bin",
+    "input": "b"
+   },
+   {
+    "path": "dup.txt",
+    "input": "a"
+   }
+  ],
+  "key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+  "salt_hex": "65666768696a6b6c6d6e6f7071727374"
+ },
+ "inputs": {
+  "a": {
+   "path": "a.dat",
+   "sha256": "cea3e01bcc2d49bd2373b1456d47fb216d12a65f2206f44bfdeb86dba1a190ef"
+  },
+  "b": {
+   "path": "b.dat",
+   "sha256": "18bb64839d70677c5ea27d1783bec24e1eaadb6fb600163329129d4221849e4b"
+  }
+ },
+ "expected": {
+  "outputs": {
+   "archive_id": "0102030405060708090a0b0c0d0e0f10",
+   "merkle_root": "eeb071421d0bf96db226701eb1e9b001532348f34dcc73ef0d90219dae1f48c7",
+   "chunks": 5,
+   "sections_sha256": {
+    "header": "fd0a1ad70dad8a7d9c172980f3f86e2d7b56bf5ee00917bf7d7608de0618394b",
+    "body": "7ff94bc5b453bbb6650eff8bedd8aa479e3f438171b2b513c7daef34cfa7e938",
+    "chunk_table": "f590dc497da7231cd589471f6620998c6758aaa192cba98416ff216a55768fe9",
+    "file_table": "46c059a397d0374d429b55f96409a914565497ee6ebd93d0b14c63c49496f653",
+    "refs": "0d46daef8b216909fadf8b8798e6f29f3c8944af37e9a96fd128a7477d4af9a3"
+   },
+   "manifest_core_sha256": "890d66246e809b53659ff42fd63ac89649e5889f2da6ee560d4f86af5e5ab881",
+   "format_version": [
+    4,
+    0
+   ],
+   "required_features": [
+    "aes-256-gcm",
+    "chunk-fixed",
+    "dedup-content-address",
+    "kdf-hkdf-sha256",
+    "merkle-rfc6962-sha256",
+    "vnx4-container"
+   ]
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

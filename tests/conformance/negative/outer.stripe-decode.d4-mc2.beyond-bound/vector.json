@@ -1,0 +1,43 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "outer.stripe-decode.d4-mc2.beyond-bound",
+ "stage": "D11",
+ "formats": {
+  "frame": 4,
+  "superblock": 2,
+  "container": null
+ },
+ "kind": "negative",
+ "operation": "outer.stripe_decode",
+ "params": {
+  "K": 6,
+  "M": 2,
+  "D": 4,
+  "Mc": 2,
+  "P": 4,
+  "known": [
+   "00000000",
+   "00000000",
+   "00000000",
+   "11111111",
+   "11111111",
+   "11111111"
+  ]
+ },
+ "inputs": {
+  "stripe": {
+   "path": "stripe.dat",
+   "sha256": "00552463bb95910a0c6e777ee58b3a788413887612f780dd65e677e4b9115cf6"
+  }
+ },
+ "expected": {
+  "error": {
+   "code": "INSUFFICIENT_REDUNDANCY",
+   "category": "INSUFFICIENT_REDUNDANCY",
+   "exit_code": 5,
+   "retryable": true
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

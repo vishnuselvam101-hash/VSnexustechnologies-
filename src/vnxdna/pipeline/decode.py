@@ -94,14 +94,17 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
     try:
         smart = opt.indel_recovery == "smart"
         softm = opt.soft_decoding != "off"
+        qw = opt.consensus_weighting == "quality"
         spill = Spill(Path(tmp_root), buckets, lay.payload_bytes, lay.frame_nt,
-                      lay.strand_nt + opt.band if (smart or softm) else 0)
+                      lay.strand_nt + max(opt.band, opt.retry_band) if (smart or softm) else 0, lay.frame_nt if qw else 0)
         stats = Counter()
         indel_stats: Counter = Counter()
         t1 = time.perf_counter()
         deferred = (smart or softm) and opt.recovery_schedule == "deferred"
-        initargs = (lay, opt.band, opt.sync_costs, opt.min_quality, opt.reverse_complement, opt.indel_config if smart else None,
-                    opt.soft_config if softm else None, deferred)
+        base_args = (lay, opt.band, opt.sync_costs, opt.min_quality, opt.reverse_complement, opt.indel_config if smart else None,
+                     opt.soft_config if softm else None)
+        initargs = base_args + (deferred, qw, opt.retry_band)
+        recovery_args = base_args + (False, False, opt.retry_band)      # the deferred stage: no defer, no qualities
 
         cpu = {"seconds": 0.0, "batches": 0}
 
@@ -126,7 +129,7 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
             n = 0
             for batch in iter_reads(reads_path, opt.batch_reads, max_reads=opt.max_reads):
                 n += batch.count
-                q = batch.quals if (opt.min_quality or smart or softm) else None
+                q = batch.quals if (opt.min_quality or smart or softm or qw) else None
                 yield batch.codes, batch.lengths, q
 
         if opt.workers == 1:
@@ -165,7 +168,7 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
 
             def recover_groups(groups) -> dict:
                 tr = time.perf_counter()
-                info = _deferred_recovery(spill, lay, opt, stats, indel_stats, initargs[:-1] + (False,), vote=False,
+                info = _deferred_recovery(spill, lay, opt, stats, indel_stats, recovery_args, vote=False,
                                           planner=planner, groups=groups if callable(groups) else set(groups),
                                           state=ra_state)
                 stage["deferred_recovery"] = stage.get("deferred_recovery", 0.0) + time.perf_counter() - tr
@@ -173,7 +176,7 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
             recover_groups.state = ra_state
         elif deferred:
             t1b = time.perf_counter()
-            stats["_schedule"] = _deferred_recovery(spill, lay, opt, stats, indel_stats, initargs[:-1] + (False,),
+            stats["_schedule"] = _deferred_recovery(spill, lay, opt, stats, indel_stats, recovery_args,
                                                     vote=not select, planner=planner)
             stage["deferred_recovery"] = time.perf_counter() - t1b
             for rnd, r in stats["_schedule"].get("rounds", {}).items():

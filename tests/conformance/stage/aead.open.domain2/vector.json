@@ -1,0 +1,36 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "aead.open.domain2",
+ "stage": "D14",
+ "formats": {
+  "frame": null,
+  "superblock": null,
+  "container": [
+   4,
+   0
+  ]
+ },
+ "kind": "positive",
+ "operation": "aead.open",
+ "params": {
+  "master_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+  "salt_hex": "65666768696a6b6c6d6e6f7071727374",
+  "archive_id_hex": "0102030405060708090a0b0c0d0e0f10",
+  "domain": 2,
+  "index": 0,
+  "count": 1
+ },
+ "inputs": {
+  "ciphertext": {
+   "path": "ciphertext.dat",
+   "sha256": "8b05100f698b3813619764896c8d3555acf56e55451bfda8fc1ed1c23c662ba2"
+  }
+ },
+ "expected": {
+  "outputs": {
+   "plaintext_sha256": "fa5b5ae79876f87125b403442760afb132f5d93b5392f9c894e13b932864ccaf"
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

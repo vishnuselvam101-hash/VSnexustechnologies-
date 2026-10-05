@@ -1,0 +1,25 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "scrambler.keystream.v001",
+ "stage": "E11",
+ "formats": {
+  "frame": null,
+  "superblock": null,
+  "container": null
+ },
+ "kind": "positive",
+ "operation": "scrambler.keystream",
+ "params": {
+  "variant": 1,
+  "span": 53,
+  "bytes": 16
+ },
+ "inputs": {},
+ "expected": {
+  "outputs": {
+   "keystream_hex": "8233fba276a221e6a5f7a2f1a361d338"
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

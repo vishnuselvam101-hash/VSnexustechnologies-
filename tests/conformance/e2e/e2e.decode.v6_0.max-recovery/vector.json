@@ -1,0 +1,33 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "e2e.decode.v6_0.max-recovery",
+ "stage": "D0-D14",
+ "formats": {
+  "frame": 4,
+  "superblock": 2,
+  "container": [
+   4,
+   0
+  ]
+ },
+ "kind": "positive",
+ "operation": "e2e.decode",
+ "params": {},
+ "inputs": {
+  "reads": {
+   "path": "../../../fixtures/v6_0/max-recovery.reads.fastq.gz",
+   "sha256": "ffd1b8ebc5a9c868cdd08e18eef011050005221ab8b333c103ca9446c70ffeeb"
+  }
+ },
+ "expected": {
+  "outputs": {
+   "status": "SUCCESS",
+   "container_sha256": "65d12d3551de00a90c1e3b0502493ee05090fa0c300aa583235f443855a2df30",
+   "files": {
+    "random.bin": "f0dc3914ba9b02f5bbea96cd904af4c36a65827704e18cde41963d28b47132c1"
+   }
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

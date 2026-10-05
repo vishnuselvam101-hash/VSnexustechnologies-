@@ -1,0 +1,34 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "e2e.decode.key-for-unencrypted-archive",
+ "stage": "D14",
+ "formats": {
+  "frame": 4,
+  "superblock": 1,
+  "container": [
+   4,
+   0
+  ]
+ },
+ "kind": "negative",
+ "operation": "e2e.decode",
+ "params": {
+  "passphrase": "vnx-test-passphrase-NOT-A-SECRET"
+ },
+ "inputs": {
+  "reads": {
+   "path": "../../../fixtures/v4_0/balanced.reads.fastq.gz",
+   "sha256": "df5721d7c3b504ec639fd9528e41628570c5e636a134691427d9e8c6387c83f7"
+  }
+ },
+ "expected": {
+  "error": {
+   "code": "KEY_FOR_UNENCRYPTED",
+   "category": "AUTHENTICATION_FAILED",
+   "exit_code": 4,
+   "retryable": false
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

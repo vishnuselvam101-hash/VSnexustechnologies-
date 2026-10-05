@@ -1,0 +1,34 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "e2e.decode.wrong-key",
+ "stage": "D14",
+ "formats": {
+  "frame": 4,
+  "superblock": 1,
+  "container": [
+   4,
+   0
+  ]
+ },
+ "kind": "negative",
+ "operation": "e2e.decode",
+ "params": {
+  "passphrase": "wrong-passphrase"
+ },
+ "inputs": {
+  "reads": {
+   "path": "../../../fixtures/v4_0/encrypted.reads.fastq.gz",
+   "sha256": "074c7ec1724df1a73f01a9b23714547a7191d897092ddb37728f00d59c382496"
+  }
+ },
+ "expected": {
+  "error": {
+   "code": "WRONG_KEY",
+   "category": "AUTHENTICATION_FAILED",
+   "exit_code": 4,
+   "retryable": false
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

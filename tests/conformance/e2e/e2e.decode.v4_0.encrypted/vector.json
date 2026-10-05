@@ -1,0 +1,35 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "e2e.decode.v4_0.encrypted",
+ "stage": "D0-D14",
+ "formats": {
+  "frame": 4,
+  "superblock": 1,
+  "container": [
+   4,
+   0
+  ]
+ },
+ "kind": "positive",
+ "operation": "e2e.decode",
+ "params": {
+  "passphrase": "vnx-test-passphrase-NOT-A-SECRET"
+ },
+ "inputs": {
+  "reads": {
+   "path": "../../../fixtures/v4_0/encrypted.reads.fastq.gz",
+   "sha256": "074c7ec1724df1a73f01a9b23714547a7191d897092ddb37728f00d59c382496"
+  }
+ },
+ "expected": {
+  "outputs": {
+   "status": "SUCCESS",
+   "container_sha256": "f78b162f56f6d95de33aa68df482ac1f59a7ac5349c40db9fc777b9d8dda055d",
+   "files": {
+    "mixed.bin": "d723e03a502b4080896a29fccec5d30434aabd7e9b85a8a3d96cf07cb98fba71"
+   }
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

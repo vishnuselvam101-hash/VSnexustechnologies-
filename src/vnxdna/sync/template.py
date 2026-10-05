@@ -58,14 +58,22 @@ class Projection:
 
 
 class TemplateAligner:
-    def __init__(self, layout: Layout, band: int = 6, costs: SyncCosts | None = None, backend: str | None = None):
+    def __init__(self, layout: Layout, band: int = 6, costs: SyncCosts | None = None, backend: str | None = None,
+                 retry_band: int = 0):
         # backend: "auto" | "native" | "reference" (None = $VNXDNA_ALIGN_BACKEND, default auto). The NumPy code below
         # (_align/_traceback) is the reference; the V5 native kernel reproduces it bit for bit (V5 alignment contract).
+        # retry_band (V6, opt-in; 0 = off): reads with band < |len − T| ≤ retry_band, which the band cannot align, are
+        # aligned by a second aligner of band ``retry_band`` (the same DP and kernel, only a wider band). Reads inside
+        # ``band`` never see it, so their projection is unchanged bit for bit.
         from vnxdna.native import align as _na
         self.backend = _na.resolve_backend(backend)
         self.layout = layout
         self.band = band
         self.costs = costs or SyncCosts()
+        if retry_band and retry_band <= band:
+            raise ValueError("retry_band must be 0 (off) or larger than band")
+        self.retry_band = int(retry_band)
+        self.retry = TemplateAligner(layout, retry_band, self.costs, self.backend) if retry_band else None
         tpl, frame_pos = layout.template()
         self.tpl = tpl.astype(np.int16)
         self.frame_pos = frame_pos
@@ -101,6 +109,13 @@ class TemplateAligner:
         lengths = np.fromiter((r.size for r in reads), dtype=np.int64, count=n)
         usable = np.abs(lengths - self.T) <= self.band
         idx = np.flatnonzero(usable)
+        if self.retry is not None:
+            wide = np.flatnonzero(~usable & (np.abs(lengths - self.T) <= self.retry_band))
+            if wide.size:
+                w = self.retry.project([reads[i] for i in wide], None if quals is None else [quals[i] for i in wide],
+                                       min_quality)
+                out_bases[wide], out_er[wide], ok[wide], ins_n[wide], del_n[wide], mm[wide], cost[wide] = (
+                    w.bases, w.erased, w.ok, w.insertions, w.deletions, w.marker_mismatches, w.cost)
         if self.backend == "native" and idx.size:
             from vnxdna.native import align as _na
             res = _na.align_usable(self, [reads[i] for i in idx], None if quals is None else [quals[i] for i in idx], min_quality)

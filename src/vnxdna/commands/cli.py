@@ -378,6 +378,9 @@ def decode(reads: Path, output: Optional[Path] = typer.Option(None, "--output", 
            profile: Optional[str] = typer.Option(None, help="Layout profile (default: detected from read lengths)."),
            workers: int = typer.Option(0, "--workers", "-w"), performance: Optional[str] = PERF_OPT,
            config: Optional[Path] = CONFIG_OPT, band: Optional[int] = typer.Option(None, help="Max net indel drift per read."),
+           retry_band: Optional[int] = typer.Option(
+               None, "--retry-band",
+               help="Opt-in: align reads beyond --band (net drift up to this) with this wider band; 0 = off (default)."),
            min_quality: Optional[int] = typer.Option(None, help="Phred below this → erasure."),
            archive_tag: Optional[str] = typer.Option(None, help="Hex archive tag when a pool holds several archives."),
            force: bool = FORCE_OPT, key_file: Optional[Path] = KEY_OPT, passphrase_env: Optional[str] = PW_OPT,
@@ -388,6 +391,9 @@ def decode(reads: Path, output: Optional[Path] = typer.Option(None, "--output", 
                                                        help="off (default), erasure (GMD), chase or auto: V5 bounded soft decoding."),
            recovery_schedule: Optional[str] = typer.Option(None, "--recovery-schedule",
                                                            help="deferred (default) or eager: when V5 per-read smart/soft recovery runs."),
+           consensus_weighting: Optional[str] = typer.Option(
+               None, "--consensus-weighting",
+               help="count (V4 vote, default) or quality: pass-2 consensus weighted by Phred quality (opt-in)."),
            max_recovery_reads: Optional[int] = typer.Option(None, "--max-recovery-reads",
                                                             help="V6 budget: reads examined by smart/soft recovery (all rounds)."),
            max_round_b_reads: Optional[int] = typer.Option(None, "--max-round-b-reads",
@@ -415,9 +421,9 @@ def decode(reads: Path, output: Optional[Path] = typer.Option(None, "--output", 
     def go():
         from vnxdna.sdk.config import decode_options_for
         opts = decode_options_for(config, performance, workers=workers, archive_tag=archive_tag, budget=budget,
-                                  profile=profile, band=band, min_quality=min_quality, indel_recovery=indel_recovery,
+                                  profile=profile, band=band, retry_band=retry_band, min_quality=min_quality, indel_recovery=indel_recovery,
                                   soft_decoding=soft_decoding, recovery_schedule=recovery_schedule,
-                                  max_container_bytes=max_container_bytes, expect_archive_id=expect_archive_id,
+                                  consensus_weighting=consensus_weighting, max_container_bytes=max_container_bytes, expect_archive_id=expect_archive_id,
                                   expect_sha256=expect_sha256)
         return _decode(reads, output, extract_dir, partial_dir, select, opts, force, key_file, passphrase_env, report, events,
                        task_id, allow_unencrypted, not no_input_hash)
@@ -565,7 +571,7 @@ def profiles() -> None:
 
 
 @app.command()
-def conformance(vectors: Optional[Path] = typer.Option(None, "--vectors", help="Vector directory (default: the packaged subset)."),
+def conformance(vectors: Optional[Path] = typer.Option(None, "--vectors", help="Vector directory (default: tests/conformance of a source checkout, else the packaged subset)."),
                 select: Optional[List[str]] = typer.Option(None, "--select", help="Only these vector IDs."),
                 backend: str = typer.Option("auto", "--backend", help="auto, native or reference.")) -> None:
     """Run conformance vectors (spec §6): exit 0 if CONFORMANT, 1 otherwise."""

@@ -1,0 +1,36 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "markers.insert.l3",
+ "stage": "E12",
+ "formats": {
+  "frame": 4,
+  "superblock": null,
+  "container": null
+ },
+ "kind": "positive",
+ "operation": "markers.insert",
+ "params": {
+  "layout": {
+   "payload_bytes": 2,
+   "inner_parity": 0,
+   "marker_period": 8,
+   "marker_len": 3
+  },
+  "frame_hex": "ca8651850be9733f0d8f36efc7d633af"
+ },
+ "inputs": {},
+ "expected": {
+  "outputs": {
+   "strand": "TAGGGACGACGCCACGACCTGCAAGTTGGCCATCTATATTTGTAAATCGATTACGATCGTGTTTGCTACTTCCGCATATATGGTT",
+   "markers": 7,
+   "marker_table": [
+    "ACG",
+    "TGC",
+    "CAT",
+    "GTA"
+   ]
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

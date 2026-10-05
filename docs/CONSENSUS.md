@@ -71,6 +71,15 @@ be measured, not assumed. `--quality-erasure-below Q` on `decode`/`recover` turn
 consensus. That helps at coverage 1 and is harmful if qualities are uninformative (then every flagged base is a lost
 erasure-budget slot).
 
+### Quality-weighted pass-2 vote (opt-in, V6 Phase 4)
+
+`vnx decode --consensus-weighting quality` (`DecodeOptions.consensus_weighting`, config `decode.consensus_weighting`)
+weights each projected read base in the decoder's pass-2 address vote by its own Phred quality
+(`recovery.consensus.consensus_quality_weighted`); groups whose reads carry no qualities use the count vote. The score
+is Phred-interpreted, not calibrated. Pre-registered comparison (SIMULATED, `experiments/v6/phase4`): 0 false SUCCESS,
+more symbols recovered by consensus, but no archive-level gain whose 95 % interval excludes 0, at about 1.3 times the
+decode time. The default stays `count`.
+
 ## Statistics reported
 
 `cluster`: reads verified / tentative / orphan, reads with an unknown tag, strong clusters, reads reassigned by

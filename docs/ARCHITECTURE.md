@@ -1,104 +1,141 @@
-# VNX-DNA 3 architecture
+# VNX-DNA 6 architecture
 
-VNX-DNA is a CPU-only Python implementation of the **digital side** of DNA data storage. It turns a file of any
-size into constraint-screened DNA strand sequences, can push them through a reproducible *simulated* synthesis and
-sequencing channel, and recovers the exact original bytes, verified by SHA-256 at several independent layers.
+VNX-DNA is a CPU-only software implementation of the **digital side** of DNA data storage. It turns files and
+directories into a verifiable archive, encodes the archive as constraint-screened DNA strands, can pass the strands
+through a *simulated* storage and sequencing channel, and reconstructs the archive from noisy reads. A result is
+reported as SUCCESS only after SHA-256 and Merkle verification.
 
-> **Scope.** Everything here is software and simulation. No strand has been synthesised or sequenced; the channel
-> is a configurable stress model, not a model fitted to a platform. "Recovery" always means recovery from
-> software-generated DNA through a simulated channel. See [LIMITATIONS.md](LIMITATIONS.md).
+> **Scope.** Everything here is software and simulation. No strand has been synthesised or sequenced by VNX-DNA.
+> The channel models are configurable stress models, none fitted to a measured platform. "Recovery" means recovery
+> from software-generated DNA through a simulated channel (**SIMULATED**). Labels used in this repository:
+> VERIFIED (a committed test or script checks it), SIMULATED, THEORETICAL (specified or computed, not run),
+> PHYSICAL (real DNA; there is none). See [LIMITATIONS.md](LIMITATIONS.md).
 
-V3 is an upgrade of the V2 codebase, not a rewrite: the V2 audit ([V3_AUDIT.md](V3_AUDIT.md)) found the format-5
-design sound, and found 48 implementation defects and 13 documentation errors, which V3 fixes. The architectural additions are a vectorised ECC
-engine behind an explicit interface, single-read burst resynchronisation, a burst-capable channel simulator with an
-error-sweep engine, multi-archive pools, and hardening of every input path. Archives stay format 5, so V2 and V3
-read each other's archives (one documented exception, [COMPATIBILITY.md](COMPATIBILITY.md)).
+This page describes the code at `6.0.0.dev0` (`src/vnxdna/_version.py`). The normative text is the specification,
+[spec/VNX-DNA-SPEC-V6.md](spec/VNX-DNA-SPEC-V6.md); the design record and migration plan are
+[V6_ARCHITECTURE.md](V6_ARCHITECTURE.md), and the audit it started from is [V6_BASELINE_AUDIT.md](V6_BASELINE_AUDIT.md).
+Where the code is behind the plan, [V6_DEFERRED.md](V6_DEFERRED.md) says so.
 
 ## Pipeline
 
+The canonical stage graphs are specified in spec §5 (encode E0-E15, decode D0-D14) and implemented as two
+orchestrators in `vnxdna.pipeline`.
+
 ```
-REAL FILE ───────────────────────────────────────────────────────────── vnx-dna store     (vnxdna.v2.archive)
-  │ bounded reads, one chunk per worker; resumable (HMAC-bound checkpoints)
-  ▼
-COMPRESSION        zstd (or zlib) per chunk, kept only if smaller
-ENCRYPTION         AES-256-GCM per chunk (nonce = epoch‖domain‖index, AD binds archive, index, count); HKDF keys
-CONTAINER          .vxdna v2: header │ stored chunks │ manifest │ chunk index │ plaintext index │ trailer
-  │                                                                    vnx-dna encode    (vnxdna.v2.encoder)
-  ▼
-OUTER ECC          each stored chunk → ECC groups of K data shards; Cauchy RS adds M parity shards (MDS)
-STRAND FRAME       address (archive tag, stripe, shard) + payload + CRC-32 + inner RS parity
-DNA MAPPING        2bit / rotation3 / codebook8; scrambler variants until GC / homopolymer / repeat / motif rules hold
-STRANDS            FASTA or packed 2-bit VXS, plus a DNA index (.vxidx) for random access
-  │                                                                    vnx-dna sequence / simulate / simulate-errors
-  ▼
-SIMULATED CHANNEL  dropout, coverage, synthesis + sequencing substitutions/indels, bursts (V3), truncation, N,
-                   duplicates, reverse complements, junk, contamination, reordering; seeded (vnxdna.v2.sequencing)
-  │                                                                    vnx-dna cluster / consensus (coverage > 1)
-  ▼
-READ PROCESSING    address-indexed clustering, banded-alignment consensus with honest Ns
-  │                                                                    vnx-dna decode / recover / restore
-  ▼
-DECODER pass 1     per read: CRC → reverse complement → vectorised inner RS (V3) → single-read indel or burst
-                   resynchronisation (V3, opt-in) → spill validated shards to disk
-DECODER pass 2     stripe-ordered records → duplicate vote → outer erasure decoding per group → chunk SHA-256
-VERIFICATION       manifest digest/HMAC → body length (V3) → chunk SHA-256 → AES-GCM → plaintext SHA-256 →
-                   whole-object SHA-256 → atomic, no-clobber publish (V3)
+FILES / DIRECTORIES
+  E0-E6   collect, chunk, identify (SHA-256 or HMAC), dedup, compress (zstd, kept if smaller), seal (AES-256-GCM),
+          container (.vnx: canonical manifest, Merkle root, trailer)
+  E7-E9   plan geometry, outer code (Cauchy Reed-Solomon rows, optional column parity over stripes), superblock
+  E10-E14 frame (address, payload, CRC-32), scramble + inner Reed-Solomon, 2-bit map with sync markers,
+          constraint screening (GC, homopolymer, repeat, motif; up to 256 scrambler variants), ordered strand file
+  E15     export package for a laboratory (vnx.export-package/1)           -- never executed by a laboratory
+SIMULATED CHANNEL (vnxdna.simulation, vnxdna.providers.ReferenceSimulatorProvider)
+  strand loss, coverage, synthesis / storage / amplification / sequencing stages, bursts, reverse complements
+  D0-D4   ingest reads, probe the frame version and layout, orient, marker-template alignment (indel -> erasures)
+  D5-D7   inner Reed-Solomon + CRC acceptance, spill to disk, opt-in recovery rounds (smart indel, soft decoding,
+          retry band)
+  D8-D11  superblock selection, consensus per address, outer erasure decoding, stripe (column) decoding
+  D12-D14 verify against the superblock SHA-256, atomic publish (SUCCESS, or PARTIAL with verified files only),
+          extract with per-chunk and per-file verification
 ```
 
-## Components
+Failure is fail-closed: a decode that cannot verify ends as FAILURE (or PARTIAL, listing the verified files) and writes
+no unverified bytes (spec failure contract FC-1 to FC-5). Three committed experiment sets record 0 false SUCCESS for
+VNX-DNA: 1,450 decodes in P4-EXP-01 (`experiments/v6/phase4/README.md`), 1,910 in AB-EXP-01
+(`experiments/v6/align-band/README.md`) and 157 trials in the benchmark lab
+(`benchmarks/competitors/lab/README.md`). All SIMULATED.
 
-The brief for V3 named fifteen components. They map onto the code as follows; where a component already existed
-in V2 and was sound, V3 fixed its defects rather than re-implementing it.
+## Packages and layers
 
-| # | component | module(s) | V3 change |
-|---|---|---|---|
-| 1 | Data engine | `vnxdna.v2.archive` (streaming reads, ordered worker pool), `vnxdna.v2.scale` (test data) | non-UTF-8 names, disk-full handling, chunk-count limit checked up front |
-| 2 | Compression engine | `vnxdna.v2.archive.seal_chunk` / `open_chunk` (zstd, zlib, per-chunk decision) | `--compression none` works without `--level` |
-| 3 | Encryption / authentication | `vnxdna.v2.crypto` (HKDF, AES-256-GCM, HMAC), resume logic in `vnxdna.v2.archive` | two nonce-reuse paths closed; checkpoints HMAC-bound; `final-seal-epoch-v3` |
-| 4 | Chunk engine | `vnxdna.v2.archive` (fixed plaintext chunks), `vnxdna.v2.manifest` (binary chunk index) | body length must equal the authenticated `stored_size` |
-| 5 | DNA encoding engine | `vnxdna.v2.frame`, `vnxdna.dna.mapping`, `vnxdna.v2.constraints`, `vnxdna.v2.encoder` | unchanged output (byte-identical data strands) |
-| 6 | Addressing engine | frame header (archive tag, 32-bit stripe, shard), `vnxdna.v2.encoder.write_dna_index` | pools with several archives: automatic choice or `--archive-tag` |
-| 7 | Metadata engine | `vnxdna.v2.manifest` (canonical JSON, strict schema, features), metadata strands (Cauchy 8+8) | forged metadata lengths bounded by the strands present; metadata repairs reported |
-| 8 | ECC engine | **`vnxdna.ecc.engine`** (interface + registry), `vnxdna.ecc.cauchy`, **`vnxdna.ecc.rs_batch`**, `vnxdna.ecc.inner_rs` | new: vectorised bounded-distance RS decoder; codes chosen by the names the manifest declares |
-| 9 | Archive / container engine | `vnxdna.v2.container` (writer, reader, trailer) | descriptor race fixed; body SHA-256 verified; no-clobber publish |
-| 10 | Index engine | chunk index + plaintext index (`vnxdna.v2.manifest`), DNA index (`vnxdna.v2.encoder`) | trailer-addressable chunk limit enforced |
-| 11 | Random-access engine | `vnxdna.v2.archive.extract_range`, `vnxdna.v2.api._extract_reads` | explicit missing `--dna-index` is an error |
-| 12 | Error / channel simulator | `vnxdna.v2.sequencing`, **`vnxdna.v3.sweep`** | new: burst errors; `simulate-errors`; format-independent shuffling; coverage-bounded batches |
-| 13 | Verification engine | `vnxdna.v2.archive.verify_container`, `vnxdna.v2.api.verify` | stored-body SHA-256 check; truncated bodies reported, not raised; exit 4 without a key |
-| 14 | Benchmark engine | `vnxdna.v2.scale`, `vnxdna.v2.stages`, `vnxdna.v2.experiment`, `research/v3/` | V2-vs-V3 harness, noisy-read and indel benchmarks, error sweeps |
-| 15 | CLI / API | `vnxdna.cli` (Typer, thin), `vnxdna.v2.api` | `simulate-errors`, `--burst-repair`, `--archive-tag`; reports never clobber; clean exits on every bad path |
+Every package is under `src/vnxdna/`. A module may import only from its own package or a lower layer; function-level
+imports count (V6_ARCHITECTURE §3).
 
-The package name `vnxdna.v2` is kept for the format-5 implementation so the VNX-DNA 2 Python API keeps working.
-New V3-only modules live in `vnxdna.ecc.engine`, `vnxdna.ecc.rs_batch` and `vnxdna.v3`. The V1 modules
-(`vnxdna.api`, `vnxdna.container`, `vnxdna.storage`, …) are unchanged and read format-4 archives
-([V1_ARCHITECTURE.md](V1_ARCHITECTURE.md)).
-
-## Architecture decisions added in V3
-
-| # | decision | reason |
+| Layer | Package | Responsibility |
 |---|---|---|
-| AD3-1 | **Keep archive format 5** and frame format 5 | The audit found the format sound. A new format would break V2 interoperability for no gain; every V3 capability fits inside format 5. |
-| AD3-2 | **One vectorised RS decoder** (NumPy Berlekamp–Massey / Chien / Forney over a batch) for every damaged-read path (decoder, clustering, consensus, indel and burst repair) | The per-read `reedsolo` call was the dominant decode cost on noisy reads. The batch decoder is also strictly bounded-distance: it never returns a codeword outside `2e + f ≤ r` (the old path sometimes did; the CRC caught it). |
-| AD3-3 | **ECC interface with a registry keyed by manifest names** | A decoder must apply exactly the code an archive declares. New codes need a name, a registration and a required feature, so older readers refuse them cleanly. Fountain codes are left as a research item because nothing untested is shipped. |
-| AD3-4 | **Burst resynchronisation as F hypotheses** (one per start byte, the burst's bytes as erasures) | A contiguous run of L lost or extra bases would cost O(F^L) independent-indel hypotheses; as a burst it costs F, for any L the inner code can absorb (`⌈(L + 3)/4⌉ ≤ r` with the 2bit mapping). |
-| AD3-5 | **Optional feature `final-seal-epoch-v3`** instead of a new format | Only resumed encrypted stores need the fix for the finalisation nonce. Declaring it as a required feature keeps every other archive byte-compatible and makes V2 refuse the affected ones cleanly instead of failing authentication. |
-| AD3-6 | **Checkpoints authenticated with the archive MAC key** | The AEAD epoch in the checkpoint decides nonce freshness, so it must not be forgeable by anyone who can write to the output directory. |
-| AD3-7 | **Error sweeps reuse the experiment trial function** | One code path for Monte Carlo trials: the sweep adds a grid, not a second simulator. |
+| 0 | `vnxdna.core` | stable error codes, version registry, canonical JSON, hashing, atomic output, CRC-32, JSON Schemas (`core/schemas`), events and report builders |
+| 1 | `vnxdna.native` | loader and backend registry for the three C kernels, ABI and source-hash checks, `native_status` |
+| 2 | `vnxdna.archive` | VNX4 container, chunking, dedup, bounded zstd, AEAD and KDF, Merkle tree, extract, list, locate, verify |
+| 2 | `vnxdna.codec` | GF(256), inner Reed-Solomon (native, NumPy and reference backends), outer Cauchy Reed-Solomon, redundancy profiles |
+| 3 | `vnxdna.dnaenc` | strand layouts, frame 4, superblocks 1 and 2, scrambler, 2-bit mapping, markers, constraints, strand and read file I/O |
+| 3 | `vnxdna.sync` | marker-template alignment, native aligner use, smart indel recovery |
+| 4 | `vnxdna.recovery` | probe and dispatch, pass 1, spill, consensus (count vote; opt-in quality-weighted vote), soft decoding, recovery schedule and budgets, stripes, publish |
+| 5 | `vnxdna.pipeline` | the two orchestrators, stage timing, events |
+| 5 | `vnxdna.simulation` | `vnx.channel-model/1` models, staged simulator, Monte Carlo and sweeps |
+| 5 | `vnxdna.physical` | physical-record schemas and validator (no physical record exists) |
+| 6 | `vnxdna.providers` | `DNAWriter`, `DNAReader`, `DNAProvider` protocols; `ReferenceSimulatorProvider` (the only provider); export and import packages |
+| 6 | `vnxdna.benchmark` | benchmark and experiment harness, data generator, sweeps |
+| 7 | `vnxdna.sdk` | the stable Python API |
+| 7 | `vnxdna.conformance` | conformance vector runner and a packaged vector subset |
+| 8 | `vnxdna.commands` | the `vnx` CLI: argument parsing, one SDK call, JSON output |
+| - | `vnxdna.v2`, `v3`, `v4`, `v5`, `v6`, `api`, `cli`, `legacy`, ... | compatibility paths and frozen older code; whole-module moves are aliases of the same module object, split modules are facades |
 
-## Where each guarantee comes from
+Rules R1-R6 (downward imports only; codec layers do not import simulation, providers, SDK or CLI; no import cycles;
+legacy isolation; only `vnxdna.native` calls `ctypes`; the CLI imports only the SDK and core) are checked by
+`tests/architecture/test_layers.py`, with an allow-list for the compatibility shims that may only shrink
+(`tests/architecture/layer_allowlist.json`). `tests/architecture/test_public_paths.py` checks that every `vnxdna.*`
+path used outside `src/` still imports.
 
-| property | mechanism | tested in |
+The C sources and the in-place library names remain in `vnxdna/v5/native` and `vnxdna/v6/native`; only the bindings
+moved to `vnxdna.native`. `experiments/v6/channel` and `experiments/v6/physical` still carry their own copies of the code
+that `vnxdna.simulation` and `vnxdna.physical` now provide, and `V0.1-V3` code has not been moved into `vnxdna.legacy`
+(except `v0_1`). Both are listed in [V6_DEFERRED.md](V6_DEFERRED.md) section 5.
+
+## Public API and command line
+
+`vnxdna.sdk` is the stable API. Functions: `archive`, `encode`, `decode`, `inspect`, `verify`, `extract`,
+`list_entries`, `locate`, `simulate`, `channel_models` / `channel_model` / `channel_convert` / `channel_sweep`,
+`benchmark`, `sweep`, `experiment_run` / `experiment_reproduce`, `conformance`, `native`, `version`, `keygen`. Results
+are frozen dataclasses with `to_json()`, carried in a `vnx.result/1` envelope (software version, spec version, backends
+with ABI and library SHA-256, input and output SHA-256, formats, timings, resources). Anticipated failures raise
+`VNXError` subclasses with a stable `code` (spec §10), rendered as `vnx.error/1`.
+
+`vnx` (entry point `vnxdna.commands:main`) is a thin layer over the SDK. Reference: [CLI.md](CLI.md). The V1-V3
+`vnx-dna` CLI is unchanged and documented there.
+
+## Formats and version axes
+
+VNX-DNA versions nine things independently (spec §1, §4): software, specification, container format, strand frame,
+superblock, codec identifier, channel model, provider adapter, and report/event/result schemas. At this commit:
+
+| Axis | Value | Source |
 |---|---|---|
-| any M strands of an ECC group may be lost | Cauchy MDS outer code | `tests/v2/test_dna_v2.py`, `tests/v3/test_v3_features.py` |
-| substitutions/erasures inside a strand | inner RS, `2e + f ≤ r`, strict bounded-distance decoding | `tests/v3/test_ecc_decoder_v3.py` |
-| no corrupt strand accepted | CRC-32 after any correction (≈ 2⁻³² per corrupt read) | fuzz tests, `test_correct_frames_accepts_only_crc_verified_corrections` |
-| one indel per read + ⌊(r−1)/2⌋ byte errors (coverage 1) | single-read realignment | `tests/v3/test_ecc_decoder_v3.py` |
-| one burst of L lost/extra bases per read, `⌈(L + b − 1)/b⌉ + 2e ≤ r` (coverage 1) | burst resynchronisation (`--burst-repair`) | `tests/v3/test_v3_features.py` |
-| indels at coverage > 1 | clustering + consensus alignment | `tests/v2/test_channel_cluster_consensus.py`, [ERROR_MODEL.md](ERROR_MODEL.md) |
-| no wrong output ever published | chunk SHA-256 → AES-GCM → plaintext SHA-256 → object SHA-256 → atomic publish | `tests/v2/test_container_v2.py`, `tests/v3/test_container_security_v3.py`, sweeps (0 undetected) |
-| bounded memory | one chunk per worker, disk spill, bounded line reads (V3) | `tests/v2/test_streaming_scale_v2.py`, `tests/v3/test_ecc_decoder_v3.py`, [LARGE_FILES.md](LARGE_FILES.md) |
-| no (key, nonce) reuse | per-archive salt, per-resume epoch persisted before sealing, HMAC-bound checkpoint | `tests/v3/test_container_security_v3.py` |
+| software | `6.0.0.dev0` | `src/vnxdna/_version.py` |
+| specification | 6.0 (draft) | `docs/spec/VNX-DNA-SPEC-V6.md` |
+| container | VNX4 4.0, writer provenance in `extensions.vnx` by default | [VNX4_FORMAT.md](VNX4_FORMAT.md); [STORAGE_FORMAT.md](STORAGE_FORMAT.md) |
+| frame | 4 (frame 6 specified, not implemented: THEORETICAL, V7) | spec §3.5 |
+| superblock | 1 and 2 (3 specified, not implemented: V7) | [V6_OUTER_CODE.md](V6_OUTER_CODE.md), spec §3.8 |
+| channel model | `vnx.channel-model/1`; `/0` files and V4 channel configs are read and converted | [CHANNEL_MODEL.md](CHANNEL_MODEL.md) |
+| providers | `ReferenceSimulatorProvider` only; vendor adapters are V11 | [INTEROPERABILITY.md](INTEROPERABILITY.md), [LAB_INTERFACE.md](LAB_INTERFACE.md) |
 
-Details: [STORAGE_FORMAT.md](STORAGE_FORMAT.md), [ENCODING.md](ENCODING.md), [ECC.md](ECC.md),
-[RANDOM_ACCESS.md](RANDOM_ACCESS.md), [ERROR_MODEL.md](ERROR_MODEL.md), [SECURITY.md](SECURITY.md),
-[BENCHMARKS.md](BENCHMARKS.md), [REPRODUCIBILITY.md](REPRODUCIBILITY.md).
+A reader that meets an unknown frame version refuses with `FRAME_VERSION_UNSUPPORTED` (exit 6); V1 and V3 pools are
+refused with `LEGACY_FORMAT`; reads it cannot place are refused with `LAYOUT_UNDETECTED` (exit 3). V4 and V5 archives
+keep decoding: golden archives `v4_0`, `v5_0` and `v6_0` are decoded by the test suite
+([COMPATIBILITY.md](COMPATIBILITY.md)).
+
+## Native kernels
+
+Three optional C kernels (marker aligner, FASTQ/FASTA read parser, inner Reed-Solomon decoder with run-time AVX2 and
+AVX-512BW selection) accelerate NumPy references that stay normative. `pip install .` builds all three; without a
+compiler the references run, with the same results. Every decode report records the backend that ran
+(`native_backends`). Installation, selection and diagnostics: [NATIVE_KERNELS.md](NATIVE_KERNELS.md).
+
+## Security model
+
+Trust boundaries, findings and fuzz campaigns: [security/V6_SECURITY_MODEL.md](security/V6_SECURITY_MODEL.md) and
+[security/V6_FUZZ_REPORT.md](security/V6_FUZZ_REPORT.md). Container reads cap the size a forged superblock may claim
+(`--max-container-bytes`); `--key-file` is checked on a full decode; `--expect-archive-id` and `--expect-sha256` bind a
+decode to a known archive. No finding rated CRITICAL or HIGH is recorded in the model.
+
+## Research, benchmarks and conformance
+
+- Benchmark methodology, the benchmark lab and conformance vectors: [BENCHMARKING.md](BENCHMARKING.md).
+- Research syntheses: [research/V6_COMPETITIVE_RESEARCH.md](research/V6_COMPETITIVE_RESEARCH.md),
+  [research/V6_TECHNICAL_RESEARCH.md](research/V6_TECHNICAL_RESEARCH.md).
+- What V6 does not contain: [V6_DEFERRED.md](V6_DEFERRED.md).
+
+## History
+
+Earlier architecture documents describe earlier code and are not rewritten:
+[V3_ARCHITECTURE.md](V3_ARCHITECTURE.md) (the previous content of this page, format 5, `vnxdna.v2` / `vnxdna.v3`),
+[V4_ARCHITECTURE.md](V4_ARCHITECTURE.md), [V2_ARCHITECTURE.md](V2_ARCHITECTURE.md),
+[V1_ARCHITECTURE.md](V1_ARCHITECTURE.md), [V5_COMPLETION_REPORT.md](V5_COMPLETION_REPORT.md).

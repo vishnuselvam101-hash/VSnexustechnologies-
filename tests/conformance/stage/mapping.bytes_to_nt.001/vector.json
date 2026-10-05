@@ -1,0 +1,23 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "mapping.bytes_to_nt.001",
+ "stage": "E12",
+ "formats": {
+  "frame": null,
+  "superblock": null,
+  "container": null
+ },
+ "kind": "positive",
+ "operation": "mapping.bytes_to_nt",
+ "params": {
+  "bytes_hex": "00112233445566778899aabbccddeeff"
+ },
+ "inputs": {},
+ "expected": {
+  "outputs": {
+   "nt": "AAAAACACAGAGATATCACACCCCCGCGCTCTGAGAGCGCGGGGGTGTTATATCTCTGTGTTTT"
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}
