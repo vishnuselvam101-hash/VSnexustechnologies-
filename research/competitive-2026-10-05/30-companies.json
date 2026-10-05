@@ -1,0 +1,2588 @@
+[
+ {
+  "name": "AtlasBase (formerly Atlas Data Storage, Inc.)",
+  "aliases": [
+   "Atlas Data Storage",
+   "Atlas",
+   "AtlasBase"
+  ],
+  "category": "DNA storage system vendor (vertically integrated: chip synthesis + service + codec)",
+  "country": "USA (South San Francisco)",
+  "official_website": "https://atlasbase.com/ (atlasds.com 301-redirects here as of 2026-10-05)",
+  "github_accounts": [
+   "https://github.com/atlas-data-storage (org, 0 public repos)",
+   "https://github.com/atlasds (org, 0 public repos)"
+  ],
+  "public_repositories": [
+   "NO SIGNIFICANT PUBLIC GITHUB IMPLEMENTATION FOUND"
+  ],
+  "public_code_availability": "None public. Atlas CTO slides (LoC DSA, 10 Mar 2026) say customers can recover data with a desktop sequencer and 'an open-source script' — script not located on GitHub as of 2026-10-05.",
+  "key_research_papers": [
+   "Bill Banyai, 'DNA Data Storage Product Update', Library of Congress Designing Storage Architectures 2026 (slides) — https://www.digitalpreservation.gov/meetings/DSA2026/0231_banyai_2026.03.10%20Atlas%20LOC%20v1.pdf"
+  ],
+  "patents_found": [
+   {
+    "number": "CA3249936A1",
+    "title": "Codecs for DNA data storage",
+    "assignee": "Atlas Data Storage, Inc.",
+    "priority": "2022-04-21",
+    "url": "https://patents.google.com/patent/CA3249936A1/en"
+   },
+   {
+    "number": "EP4655240A1",
+    "title": "Quality control for DNA data storage",
+    "assignee": "Atlas Data Storage, Inc.",
+    "priority": "2023-01-26",
+    "url": "https://patents.google.com/patent/EP4655240A1/en"
+   },
+   {
+    "number": "US20250368986A1",
+    "title": "Electrochemical synthesis with redox stable nucleotides",
+    "assignee": "Atlas Data Storage, Inc.",
+    "priority": "2023-02-01",
+    "url": "https://patents.google.com/patent/US20250368986A1/en"
+   },
+   {
+    "number": "CN121175115A",
+    "title": "Automated data storage system",
+    "assignee": "Atlas Data Storage (阿特拉斯数据存储股份有限公司)",
+    "priority": "2023-03-28",
+    "url": "https://patents.google.com/patent/CN121175115A/en"
+   },
+   {
+    "number": "US20260125745A1",
+    "title": "Biological based wiring of electronic circuits for molecular sensing",
+    "assignee": "Atlas Data Storage, Inc.",
+    "priority": "2024-11-07",
+    "url": "https://patents.google.com/patent/US20260125745A1/en"
+   },
+   {
+    "number": "US12086722B2",
+    "title": "DNA-based digital information storage with sidewall electrodes (Twist-assigned; storage tech assigned/licensed to Atlas per spin-out)",
+    "assignee": "Twist Bioscience Corporation",
+    "priority": "2018-01-04",
+    "url": "https://patents.google.com/patent/US12086722B2/en"
+   }
+  ],
+  "technical_focus": "Electrochemical DNA synthesis on custom CMOS (Thalia chip: 5.6 billion synthesis sites, TSMC 16nm + imec wet layer); DNA capsules in LTO-like cartridges; molecular computing; codec + boot record/metadata stored as DNA.",
+  "commercialization_status": "Commercial service launched: Atlas Eon 100 announced 2 Dec 2025 (DNA storage service, pricing not disclosed). Early Access Programs for Molecular Data Storage and Molecular Compute (Sep 2026). 'Small end-to-end POCs', TB-scale expected by end of 2026 (Mar 2026 slides).",
+  "major_capabilities": [
+   "Thalia chip: 5.6B electrochemical synthesis sites, ~700x previous chips, ~250 GB per chipset per 24 h (Blocks & Files, 23 Sep 2026)",
+   "Service model: customer sends encrypted data, receives capsules + boot record + metadata as DNA (LoC slides)",
+   "Three recovery paths incl. self-service desktop sequencing + open-source script (LoC slides)",
+   "'Molecular Expression Layer (MXL)' software layer (Blocks & Files)"
+  ],
+  "limitations": [
+   "Pricing undisclosed",
+   "No named customers",
+   "Capacity of Eon 100 not disclosed in launch PR",
+   "Molecular compute claims not independently validated in public sources found"
+  ],
+  "open_source_vs_proprietary": "Proprietary hardware/chemistry; patented codecs (CA3249936A1); states read-back via an open-source script (not yet found publicly).",
+  "standards_involvement": "Twist (parent) co-chaired DDSA; Atlas CTO slides present DDSA Sector Zero/One and Stability spec as path to a standard; Atlas says it stores boot record + metadata as DNA.",
+  "partnerships": [
+   "imec — strategic partnership + imec equity investment, announced 5 Mar 2026",
+   "TSMC — CMOS fab for Thalia (Blocks & Files); TSMC Technology Symposium presentation 26 Apr 2026 (atlasbase.com)",
+   "Twist Bioscience — minority shareholder, royalties, up to $75.0M milestones"
+  ],
+  "funding": "$155M seed (May 2025; ARCH, Deerfield, Bezos Expeditions, Tao Capital, Rsquared, Earth Foundry, In-Q-Tel); imec investment amount undisclosed.",
+  "recent_activity": [
+   {
+    "date": "2025-05-05",
+    "event": "Spin-out from Twist with $155M seed; CEO Varun Mehta, CTO Bill Banyai",
+    "source": "https://www.storagenewsletter.com/2025/05/06/new-company-atlas-data-storage-announces-initial-close-of-seed-financing/"
+   },
+   {
+    "date": "2025-12-02",
+    "event": "Atlas Eon 100 DNA storage service announced (shown at AMIA 2025)",
+    "source": "https://www.storagenewsletter.com/2025/12/02/atlas-data-storage-introduces-the-worlds-first-scalable-dna-data-storage-offering/"
+   },
+   {
+    "date": "2026-03-05",
+    "event": "imec partnership and investment",
+    "source": "https://bits-chips.com/article/imec-partners-with-atlas-to-scale-dna-based-data-storage/"
+   },
+   {
+    "date": "2026-03-10",
+    "event": "LoC DSA talk: 50 employees, POCs, TB-scale by year end, open-source decode script",
+    "source": "https://www.digitalpreservation.gov/meetings/DSA2026/0231_banyai_2026.03.10%20Atlas%20LOC%20v1.pdf"
+   },
+   {
+    "date": "2026-09-23",
+    "event": "As AtlasBase: Thalia chip, Early Access for molecular storage and compute; CEO Jeff Treuhaft (appointed Mar 2026 per article)",
+    "source": "https://www.blocksandfiles.com/data-protection/2026/09/23/atlasbase-makes-thalia-dna-computer-and-storage-chip/5298506"
+   }
+  ],
+  "physical_validation_evidence": "Physical: commercial service and chip fabrication reported; >10 years of Twist DNA storage R&D; no independent third-party decode audit found.",
+  "threat_to_vnx": {
+   "level": "HIGH",
+   "why": "Best-funded vertically integrated player; owns patented codecs (CA3249936A1) and a software layer (MXL); positions read-back via its own open-source script, which could make a third-party codec unnecessary for Atlas capsules."
+  },
+  "relationship_to_vnx": {
+   "PARTNER": "Possible but unlikely near-term (owns codec); best fit is interoperability (reading Atlas archives via Sector Zero/One + its open decode script) or independent verification.",
+   "CUSTOMER": "Low",
+   "PROVIDER": "Possible synthesis-as-a-service provider if Atlas sells raw writing capacity (not announced)."
+  },
+  "sources": [
+   "https://atlasbase.com/",
+   "https://www.blocksandfiles.com/data-protection/2026/09/23/atlasbase-makes-thalia-dna-computer-and-storage-chip/5298506",
+   "https://www.digitalpreservation.gov/meetings/DSA2026/0231_banyai_2026.03.10%20Atlas%20LOC%20v1.pdf",
+   "https://www.storagenewsletter.com/2025/12/02/atlas-data-storage-introduces-the-worlds-first-scalable-dna-data-storage-offering/",
+   "https://bits-chips.com/article/imec-partners-with-atlas-to-scale-dna-based-data-storage/",
+   "https://www.tipranks.com/news/company-announcements/twist-bioscience-spins-out-dna-storage-unit",
+   "https://github.com/atlas-data-storage"
+  ],
+  "notes": "Rename date from Atlas Data Storage to AtlasBase: UNKNOWN. CEO conflict: Varun Mehta named CEO May 2025; Blocks & Files (Sep 2026) reports Jeff Treuhaft appointed CEO Mar 2026."
+ },
+ {
+  "name": "Biomemory",
+  "aliases": [
+   "Biomemory SAS",
+   "Biomemory America, LLC"
+  ],
+  "category": "DNA storage system vendor (enzymatic/biological DNA assembly, datacenter appliances)",
+  "country": "France (Paris) + USA (Boston hub since Mar 2026)",
+  "official_website": "https://www.biomemory.com",
+  "github_accounts": [
+   "https://github.com/Biomemory (org, 0 public repos)"
+  ],
+  "public_repositories": [
+   "NO SIGNIFICANT PUBLIC GITHUB IMPLEMENTATION FOUND"
+  ],
+  "public_code_availability": "None public.",
+  "key_research_papers": [
+   "Core tech licensed from two CNRS / Sorbonne University patents (exclusive worldwide licence with buy option) — https://finder.techleap.nl/news/feed/biomemory-raises-17m-for-dna-storage"
+  ],
+  "patents_found": [
+   {
+    "number": "WO2025120011A1",
+    "title": "Molecular digital data storage using nucleic acids",
+    "assignee": "Biomemory",
+    "priority": "2023-12-04",
+    "url": "https://patents.google.com/patent/WO2025120011A1/en"
+   },
+   {
+    "number": "AU2024336727A1",
+    "title": "Systems and methods for DNA reading",
+    "assignee": "Biomemory America, LLC",
+    "priority": "2023-09-06",
+    "url": "https://patents.google.com/patent/AU2024336727A1/en"
+   },
+   {
+    "number": "(acquired) Catalog portfolio e.g. US11379729B2, US12441101B2",
+    "title": "see Catalog entry",
+    "assignee": "Catalog Technologies, Inc. (assets acquired Mar 2026)",
+    "priority": "",
+    "url": "https://patents.google.com/patent/US11379729B2/en"
+   }
+  ],
+  "technical_focus": "Enzymatic 'bio-secure DNA blocks' assembly + (from Catalog) high-speed DNA printing and high-throughput reading; rackable DNA storage servers with S3 interface for datacenters.",
+  "commercialization_status": "DNA Card (1 KB text, ~$1,000 for two cards, 150-year claim) sold since late 2023 / deliveries from Jan 2024. First end-to-end commercial datacenter solution planned for H2 2026 (not yet confirmed shipped as of 2026-10-05).",
+  "major_capabilities": [
+   "S3-standard interface claimed (Blocks & Files, Mar 2026)",
+   "50–150 year retention with 'IT-compatible Uncorrectable Error Rate' claim",
+   "Combined patent estate >90 patents after Catalog deal (biomemory.com)",
+   "Object-storage integration path via Scality ADI (Jun 2026)"
+  ],
+  "limitations": [
+   "Shipping product capacity today is KB-scale (DNA Card)",
+   "Roadmap claims (100 PB for $150,000 in 2026) are headline targets, unverified",
+   "Pricing for datacenter system not public"
+  ],
+  "open_source_vs_proprietary": "Proprietary.",
+  "standards_involvement": "DDSA board (Stephane Lemaire, 2025); Vincent Franceschini (Biomemory) became DDSA co-chair in 2026.",
+  "partnerships": [
+   "Scality — strategic partnership, 2 Jun 2026 (DNA as cold tier in Scality ADI); Scality CEO sits on Biomemory board",
+   "Imagene — encapsulation technology partner (CNRS article)",
+   "Catalog — asset acquisition, Mar 2026"
+  ],
+  "funding": "€5M (2022) + €17M / ~$18M Series A (Dec 2024, led by Crédit Mutuel Innovation, with Bpifrance). Catalog deal price undisclosed.",
+  "recent_activity": [
+   {
+    "date": "2024-12-10",
+    "event": "$18M Series A",
+    "source": "https://www.businesswire.com/news/home/20241210725720/en/Biomemory-Secures-18-Million-in-Series-A-Funding-to-Revolutionize-Data-Storage-With-Molecular-Technology"
+   },
+   {
+    "date": "2026-03-05",
+    "event": "Acquires Catalog Technologies' assets (patents + key scientists), opens Boston hub; commercial launch targeted H2 2026",
+    "source": "https://www.datacenterdynamics.com/en/news/dna-data-storage-startup-biomemory-acquires-catalog-technologies-plans-data-center-deployment-in-h2-2026/"
+   },
+   {
+    "date": "2026-03-06",
+    "event": "Blocks & Files: rackable servers, S3 interface, 50–150 yr retention",
+    "source": "https://www.blocksandfiles.com/architecture/2026/03/06/french-dna-coming-to-a-datacenter-near-you-soon/4093753"
+   },
+   {
+    "date": "2026-06-02",
+    "event": "Scality partnership for DNA cold-archive tier",
+    "source": "https://www.scality.com/press-releases/dna-data-storage-biomemory-scality"
+   }
+  ],
+  "physical_validation_evidence": "Physical: DNA Cards shipped to buyers (KB scale). Datacenter-scale system not yet publicly demonstrated.",
+  "threat_to_vnx": {
+   "level": "HIGH",
+   "why": "Most aggressive go-to-market toward enterprise IT; already owns the S3/object-storage integration story (Scality) that a software-first VNX would otherwise target; in-house codec."
+  },
+  "relationship_to_vnx": {
+   "PARTNER": "Medium — could license independent verification/benchmark tooling or a Sector Zero/One-compliant reader; unlikely to replace its codec.",
+   "CUSTOMER": "Low-medium",
+   "PROVIDER": "Possible future DNA-write/storage provider for VNX-encoded payloads if it opens a service API (not announced)."
+  },
+  "sources": [
+   "https://www.biomemory.com",
+   "https://www.blocksandfiles.com/architecture/2026/03/06/french-dna-coming-to-a-datacenter-near-you-soon/4093753",
+   "https://www.datacenterdynamics.com/en/news/dna-data-storage-startup-biomemory-acquires-catalog-technologies-plans-data-center-deployment-in-h2-2026/",
+   "https://www.scality.com/press-releases/dna-data-storage-biomemory-scality",
+   "https://www.datacenterdynamics.com/en/news/biomemory-launches-first-commercially-available-dna-storage-solution/",
+   "https://www.notebookcheck.net/Biomemory-DNA-Cards-to-store-data-as-synthetic-DNA-with-150-year-lifespan.778636.0.html",
+   "https://www.techradar.com/pro/1kb-now-100pb-for-dollar150000-in-2026-1000pb-in-2030-biomemory-ceo-sheds-more-light-on-mind-boggling-expectations-for-its-dna-storage-platform",
+   "https://news.cnrs.fr/articles/data-storage-the-dna-revolution",
+   "https://github.com/Biomemory"
+  ],
+  "notes": "DISCREPANCY vs existing VNX dossier: dossier says 'Feb 2026 Biomemory launches DNA Cards'; public sources show DNA Card launched 2023 with deliveries from Jan 2024. Customer counts/bookings: not verified — omitted."
+ },
+ {
+  "name": "Catalog Technologies, Inc. (assets acquired by Biomemory, Mar 2026)",
+  "aliases": [
+   "CATALOG"
+  ],
+  "category": "DNA storage & DNA computing (combinatorial assembly) — now defunct as independent company",
+  "country": "USA (Boston)",
+  "official_website": "UNKNOWN (not found in public sources as of 2026-10-05) (status of catalogdna.com after asset sale not verified)",
+  "github_accounts": [],
+  "public_repositories": [
+   "NO SIGNIFICANT PUBLIC GITHUB IMPLEMENTATION FOUND"
+  ],
+  "public_code_availability": "None public.",
+  "key_research_papers": [
+   "Asimov Press book encoded in DNA with CATALOG, Imagene and Plasmidsaurus (2025) — https://www.asimov.press/p/technology-book"
+  ],
+  "patents_found": [
+   {
+    "number": "US11379729B2",
+    "title": "Nucleic acid-based data storage",
+    "assignee": "Catalog Technologies Inc",
+    "priority": "2016-11-16",
+    "url": "https://patents.google.com/patent/US11379729B2/en"
+   },
+   {
+    "number": "US12441101B2",
+    "title": "Printer-finisher system for data storage in DNA",
+    "assignee": "Catalog Technologies, Inc.",
+    "priority": "2018-05-16",
+    "url": "https://patents.google.com/patent/US12441101B2/en"
+   },
+   {
+    "number": "US12437841B2",
+    "title": "Systems and methods for storing and reading nucleic acid-based data with error protection",
+    "assignee": "Catalog Technologies, Inc.",
+    "priority": "2018-08-03",
+    "url": "https://patents.google.com/patent/US12437841B2/en"
+   },
+   {
+    "number": "US11227219B2",
+    "title": "Compositions and methods for nucleic acid-based data storage",
+    "assignee": "Catalog Technologies, Inc.",
+    "priority": "2018-05-16",
+    "url": "https://patents.google.com/patent/US11227219B2/en"
+   },
+   {
+    "number": "US20250061968A1",
+    "title": "Data structures and operations for searching, computing, and indexing in DNA-based data storage",
+    "assignee": "Catalog Technologies, Inc.",
+    "priority": "2019-05-09",
+    "url": "https://patents.google.com/patent/US20250061968A1/en"
+   },
+   {
+    "number": "US11306353B2",
+    "title": "Programs and functions in DNA-based data storage",
+    "assignee": "Catalog Technologies Inc",
+    "priority": "",
+    "url": "https://patents.google.com/patent/US11306353B2/en"
+   }
+  ],
+  "technical_focus": "Combinatorial printing of pre-made DNA components (not base-by-base synthesis); DNA computing/search.",
+  "commercialization_status": "Assets (patent portfolio, key scientists) acquired by Biomemory, announced 5 Mar 2026; price undisclosed.",
+  "major_capabilities": [
+   "Shannon prototype DNA writer (2018)",
+   "Seagate lab-on-chip collaboration (Sep 2022)",
+   "Search/compute on DNA patents"
+  ],
+  "limitations": [
+   "No longer independent",
+   "No public code"
+  ],
+  "open_source_vs_proprietary": "Proprietary (~48 patent families on Google Patents).",
+  "standards_involvement": "David Turek (Catalog) on DDSA board (Jan 2025 SNIA slides).",
+  "partnerships": [
+   "Seagate (2022)",
+   "Asimov Press / Imagene / Plasmidsaurus DNA book (2025)",
+   "Biomemory (acquirer, 2026)"
+  ],
+  "funding": "Reported $54.3M raised (per existing VNX dossier source S9, Linknovate) — not re-verified here.",
+  "recent_activity": [
+   {
+    "date": "2026-03-05",
+    "event": "Assets acquired by Biomemory",
+    "source": "https://www.storagenewsletter.com/2026/03/10/biomemory-acquires-the-assets-of-catalog-boosting-its-ambitions-in-dna-data-storage-and-computing/"
+   }
+  ],
+  "physical_validation_evidence": "Physical: DNA book shipped commercially (Asimov Press, 2025); Shannon writer prototype.",
+  "threat_to_vnx": {
+   "level": "MEDIUM (via Biomemory)",
+   "why": "Its search/compute and error-protection patents now strengthen Biomemory's software moat."
+  },
+  "relationship_to_vnx": {
+   "PARTNER": "N/A (absorbed)",
+   "CUSTOMER": "N/A",
+   "PROVIDER": "N/A"
+  },
+  "sources": [
+   "https://www.storagenewsletter.com/2026/03/10/biomemory-acquires-the-assets-of-catalog-boosting-its-ambitions-in-dna-data-storage-and-computing/",
+   "https://www.datacenterdynamics.com/en/news/dna-data-storage-startup-biomemory-acquires-catalog-technologies-plans-data-center-deployment-in-h2-2026/",
+   "https://techcrunch.com/2022/09/08/synthetic-dna-startup-catalog-partners-with-seagate-for-its-dna-based-data-storage-platform/",
+   "https://www.asimov.press/p/technology-book",
+   "https://patents.google.com/patent/US11379729B2/en"
+  ],
+  "notes": ""
+ },
+ {
+  "name": "Microsoft (Microsoft Research DNA Storage project)",
+  "aliases": [
+   "MSR DNA Storage",
+   "Microsoft + UW MISL"
+  ],
+  "category": "Big-tech research; DDSA founder",
+  "country": "USA",
+  "official_website": "https://www.microsoft.com/en-us/research/project/dna-storage/",
+  "github_accounts": [
+   "https://github.com/microsoft"
+  ],
+  "public_repositories": [
+   "https://github.com/microsoft/DNABoundedHomopolymerEncoding (MIT; codec with bounded homopolymer runs; created 2025-09-24)",
+   "https://github.com/microsoft/TrellisBMA (MIT; coded trace reconstruction on IDS channels; 2024)",
+   "https://github.com/microsoft/clustered-nanopore-reads-dataset (MIT; real nanopore traces benchmark)",
+   "https://github.com/microsoft/DNATagging (MIT; last push 2026-05-05)",
+   "https://github.com/microsoft/crn-engine (DNA strand displacement programming)"
+  ],
+  "public_code_availability": "Yes — several MIT-licensed codec/reconstruction tools and real-read datasets.",
+  "key_research_papers": [
+   "Organick et al., 'Random access in large-scale DNA data storage', Nature Biotechnology 2018 (data repo https://github.com/uwmisl/data-nbt17)",
+   "Takahashi et al., 'Demonstration of End-to-End Automation of DNA Data Storage', 2019 — https://microsoft.com/en-us/research/?p=574650",
+   "'DNA Assembly for Nanopore Data Storage Readout', Nature Communications 2019 — https://www.microsoft.com/en-us/research/publication/dna-assembly-for-nanopore-data-storage-readout/",
+   "'Trellis BMA: coded trace reconstruction on IDS channels for DNA storage' — https://microsoft.com/en-us/research/?p=745528",
+   "'Ultra-dense data storage and extreme parallelism with electronic-molecular systems' — https://microsoft.com/en-us/research/?p=738655"
+  ],
+  "patents_found": [
+   {
+    "number": "US11600360B2",
+    "title": "Trace reconstruction from reads with indeterminant errors",
+    "assignee": "Microsoft Technology Licensing LLC",
+    "priority": "2018-08-20",
+    "url": "https://patents.google.com/patent/US11600360B2/en"
+   },
+   {
+    "number": "US10774379B2",
+    "title": "Random access of data encoded by polynucleotides",
+    "assignee": "Microsoft Technology Licensing, LLC",
+    "priority": "2017-03-15",
+    "url": "https://patents.google.com/patent/US10774379B2/en"
+   },
+   {
+    "number": "US20170141793A1",
+    "title": "Error correction for nucleotide data stores",
+    "assignee": "Microsoft Technology Licensing, LLC",
+    "priority": "2015-11-13",
+    "url": "https://patents.google.com/patent/US20170141793A1/en"
+   },
+   {
+    "number": "EP4014238B1",
+    "title": "Multiplex similarity search in DNA data storage",
+    "assignee": "Microsoft Technology Licensing, LLC",
+    "priority": "2019-08-14",
+    "url": "https://patents.google.com/patent/EP4014238B1/en"
+   },
+   {
+    "number": "US20240018511A1",
+    "title": "Array-based enzymatic oligonucleotide synthesis",
+    "assignee": "Microsoft Technology Licensing, LLC",
+    "priority": "2019-09-06",
+    "url": "https://patents.google.com/patent/US20240018511A1/en"
+   }
+  ],
+  "technical_focus": "Codecs, trace reconstruction, random access, automation, electronic-molecular synthesis arrays.",
+  "commercialization_status": "Research only; no DNA storage product. 2025–2026 public output limited to open-source repos (no new DNA storage product news found).",
+  "major_capabilities": [
+   "Largest early demos (with UW and Twist)",
+   "Open real-read datasets for benchmarking",
+   "Strong IP estate (~262 results on Google Patents query)"
+  ],
+  "limitations": [
+   "No public 2025–2026 roadmap found",
+   "Archival glass effort (Silica) completed research phase in 2025 — strategic attention may sit there"
+  ],
+  "open_source_vs_proprietary": "Mixed: MIT-licensed tools + broad patent estate.",
+  "standards_involvement": "DDSA founding member (Nov 2020).",
+  "partnerships": [
+   "University of Washington MISL",
+   "Twist Bioscience (bought 10M oligos, 2016)",
+   "DDSA co-founders: Illumina, Twist, Western Digital"
+  ],
+  "funding": "N/A (corporate R&D)",
+  "recent_activity": [
+   {
+    "date": "2025-09-24",
+    "event": "Released DNABoundedHomopolymerEncoding codec repo (MIT)",
+    "source": "https://github.com/microsoft/DNABoundedHomopolymerEncoding"
+   },
+   {
+    "date": "2026-05-05",
+    "event": "DNATagging repo updated",
+    "source": "https://github.com/microsoft/DNATagging"
+   }
+  ],
+  "physical_validation_evidence": "Physical: multiple wet-lab demos (e.g., 1.67 MB decoded via nanopore; automated end-to-end system).",
+  "threat_to_vnx": {
+   "level": "LOW",
+   "why": "Not commercializing DNA storage; its open tools raise the baseline that VNX must beat but also give VNX benchmarks and datasets."
+  },
+  "relationship_to_vnx": {
+   "PARTNER": "Low (research collaboration / dataset use)",
+   "CUSTOMER": "Low",
+   "PROVIDER": "Datasets & reference algorithms (MIT) — usable for VNX benchmarking with attribution."
+  },
+  "sources": [
+   "https://www.microsoft.com/en-us/research/project/dna-storage/news-and-awards",
+   "https://github.com/microsoft/DNABoundedHomopolymerEncoding",
+   "https://github.com/microsoft/TrellisBMA",
+   "https://github.com/microsoft/clustered-nanopore-reads-dataset",
+   "https://www.businesswire.com/news/home/20201112005759/en/Twist-Bioscience-Illumina-and-Western-Digital-Form-Alliance-with-Microsoft-to-Advance-Data-Storage-in-DNA",
+   "https://patents.google.com/patent/US11600360B2/en"
+  ],
+  "notes": ""
+ },
+ {
+  "name": "Microsoft Project Silica (glass storage — NOT DNA; adjacent archival competitor)",
+  "aliases": [
+   "Project Silica"
+  ],
+  "category": "Alternative archival medium (femtosecond-laser glass)",
+  "country": "UK (MSR Cambridge)",
+  "official_website": "https://aka.ms/Silica",
+  "github_accounts": [],
+  "public_repositories": [
+   "NO SIGNIFICANT PUBLIC GITHUB IMPLEMENTATION FOUND"
+  ],
+  "public_code_availability": "None.",
+  "key_research_papers": [
+   "Nature paper (Feb 2026) on borosilicate glass storage, ~4.8 TB per platter, 10,000-year lifetime — https://www.techrepublic.com/article/news-microsoft-project-silica-5tb-glass-data-storage/"
+  ],
+  "patents_found": [],
+  "technical_focus": "Laser-written voxels in glass; ML decode.",
+  "commercialization_status": "Research project 2017–2025 completed; 'viable path towards commercialization gated only by the laser' (Mar 2026). No product announced.",
+  "major_capabilities": [
+   "Phase voxels in borosilicate: simpler/cheaper writers/readers; capacity 4.8 TB→2 TB but lower glass cost per TB",
+   "> 10,000-year lifetime claim (peer-reviewed method)"
+  ],
+  "limitations": [
+   "No product",
+   "Laser cost is gating factor"
+  ],
+  "open_source_vs_proprietary": "Proprietary.",
+  "standards_involvement": "None found.",
+  "partnerships": [
+   "Elire Group (per secondary source; not verified on primary)"
+  ],
+  "funding": "N/A",
+  "recent_activity": [
+   {
+    "date": "2026-02-19",
+    "event": "Nature publication / media: ~5 TB in coaster-size glass",
+    "source": "https://www.techrepublic.com/article/news-microsoft-project-silica-5tb-glass-data-storage/"
+   },
+   {
+    "date": "2026-03-09",
+    "event": "LoC DSA talk: research phase complete",
+    "source": "https://www.digitalpreservation.gov/meetings/DSA2026/0124_Silica-2026-03-09-Library-of-Congress-sharing.pdf"
+   }
+  ],
+  "physical_validation_evidence": "Physical prototypes (write/read).",
+  "threat_to_vnx": {
+   "level": "MEDIUM (indirect)",
+   "why": "Competes for the same 'keep-forever, read-rarely' budget; if glass commercializes first at lower $/TB, DNA archival demand is delayed."
+  },
+  "relationship_to_vnx": {
+   "PARTNER": "None",
+   "CUSTOMER": "None",
+   "PROVIDER": "None"
+  },
+  "sources": [
+   "https://www.digitalpreservation.gov/meetings/DSA2026/0124_Silica-2026-03-09-Library-of-Congress-sharing.pdf",
+   "https://www.techrepublic.com/article/news-microsoft-project-silica-5tb-glass-data-storage/"
+  ],
+  "notes": ""
+ },
+ {
+  "name": "University of Washington Molecular Information Systems Lab (MISL)",
+  "aliases": [
+   "UW MISL"
+  ],
+  "category": "Academic lab; first government DNA-archive contractor",
+  "country": "USA",
+  "official_website": "https://misl.cs.washington.edu (not fetched)",
+  "github_accounts": [
+   "https://github.com/uwmisl"
+  ],
+  "public_repositories": [
+   "https://github.com/uwmisl/data-nbt17",
+   "https://github.com/uwmisl/cas9-random-access (2025)",
+   "https://github.com/uwmisl/storage-biasing-ncomms20",
+   "https://github.com/uwmisl/purpledrop (digital microfluidics)",
+   "https://github.com/uwmisl/primo-similarity-search"
+  ],
+  "public_code_availability": "Yes (datasets, microfluidics hardware, random-access code).",
+  "key_research_papers": [
+   "Random access in large-scale DNA data storage (Nat Biotech 2018)",
+   "Quantifying Molecular Bias in DNA Data Storage (Nat Commun 2020)",
+   "Cas9 random access with nanopore sequencing (repo 2025)"
+  ],
+  "patents_found": [],
+  "technical_focus": "End-to-end DNA storage, random access, microfluidics, molecular tagging.",
+  "commercialization_status": "Academic; contracted by US Library of Congress (Sep 2025) for a 1.5 GB DNA archive pilot; ~1.0 GB synthesized, stored and validated by Mar 2026.",
+  "major_capabilities": [
+   "Only publicly-documented government DNA archive contract",
+   "Time-capsule pellet for America's 250th (Jul 2026)"
+  ],
+  "limitations": [
+   "Academic capacity"
+  ],
+  "open_source_vs_proprietary": "Mostly open (GitHub).",
+  "standards_involvement": "LoC and MISL engaging with DDSA (LoC slides).",
+  "partnerships": [
+   "Library of Congress",
+   "Microsoft (historic)"
+  ],
+  "funding": "LoC contract value: UNKNOWN",
+  "recent_activity": [
+   {
+    "date": "2025-09",
+    "event": "LoC contract awarded",
+    "source": "https://www.digitalpreservation.gov/meetings/DSA2026/0103_budaSmithColtellino_Designing%20Storage%20Architecture%20Conference%202026%20OCIO%20DSD_VC_NBS.pdf"
+   },
+   {
+    "date": "2026-07",
+    "event": "DNA pellet deposited in America's Time Capsule, Philadelphia",
+    "source": "https://lcm.loc.gov/issue/may-june-2026/americas-time-capsule/"
+   }
+  ],
+  "physical_validation_evidence": "Physical: ~1.0 GB synthesized/stored/validated for LoC.",
+  "threat_to_vnx": {
+   "level": "LOW",
+   "why": "Academic; but shows public archives currently buy from labs, not codec vendors."
+  },
+  "relationship_to_vnx": {
+   "PARTNER": "Medium (research/benchmark collaboration)",
+   "CUSTOMER": "Low",
+   "PROVIDER": "Low"
+  },
+  "sources": [
+   "https://github.com/uwmisl",
+   "https://www.digitalpreservation.gov/meetings/DSA2026/0103_budaSmithColtellino_Designing%20Storage%20Architecture%20Conference%202026%20OCIO%20DSD_VC_NBS.pdf",
+   "https://lcm.loc.gov/issue/may-june-2026/americas-time-capsule/"
+  ],
+  "notes": ""
+ },
+ {
+  "name": "Library of Congress (USA) — DNA Data Storage Initiative",
+  "aliases": [
+   "LoC"
+  ],
+  "category": "Archival institution / early buyer",
+  "country": "USA",
+  "official_website": "https://www.loc.gov",
+  "github_accounts": [],
+  "public_repositories": [
+   "NO SIGNIFICANT PUBLIC GITHUB IMPLEMENTATION FOUND"
+  ],
+  "public_code_availability": "N/A",
+  "key_research_papers": [],
+  "patents_found": [],
+  "technical_focus": "Feasibility of DNA for digital preservation collection (~31 PB, >1B objects).",
+  "commercialization_status": "Buyer: pilot under Public Law 118-47; RFI 'Synthetic DNA Data Storage' (030ADV25R0036) issued 2025; contract to UW MISL Sep 2025.",
+  "major_capabilities": [
+   "Public procurement precedent for DNA archival"
+  ],
+  "limitations": [
+   "Pilot scale (1.5 GB)"
+  ],
+  "open_source_vs_proprietary": "N/A",
+  "standards_involvement": "Engaging DDSA; hosts annual Designing Storage Architectures meeting where DDSA, Atlas present.",
+  "partnerships": [
+   "UW MISL"
+  ],
+  "funding": "N/A",
+  "recent_activity": [
+   {
+    "date": "2026-03",
+    "event": "Status: ~1.0 of 1.5 GB validated",
+    "source": "https://www.digitalpreservation.gov/meetings/DSA2026/0103_budaSmithColtellino_Designing%20Storage%20Architecture%20Conference%202026%20OCIO%20DSD_VC_NBS.pdf"
+   },
+   {
+    "date": "2025",
+    "event": "RFI Synthetic DNA Data Storage",
+    "source": "https://oversight.govsignals.ai/opportunity/synthetic-dna-data-storage-library-of-congress-030adv25r0036"
+   }
+  ],
+  "physical_validation_evidence": "Physical (via MISL).",
+  "threat_to_vnx": {
+   "level": "NONE",
+   "why": "Buyer."
+  },
+  "relationship_to_vnx": {
+   "PARTNER": "—",
+   "CUSTOMER": "Reference-customer archetype: national archives need independent verification, format documentation (OAIS) and vendor-neutral decode — VNX's natural pitch. No contact exists.",
+   "PROVIDER": "—"
+  },
+  "sources": [
+   "https://www.digitalpreservation.gov/meetings/DSA2026/0103_budaSmithColtellino_Designing%20Storage%20Architecture%20Conference%202026%20OCIO%20DSD_VC_NBS.pdf",
+   "https://lcm.loc.gov/issue/may-june-2026/americas-time-capsule/",
+   "https://oversight.govsignals.ai/opportunity/synthetic-dna-data-storage-library-of-congress-030adv25r0036"
+  ],
+  "notes": ""
+ },
+ {
+  "name": "Twist Bioscience",
+  "aliases": [
+   "TWST"
+  ],
+  "category": "DNA synthesis provider (silicon-based); storage business spun out to Atlas",
+  "country": "USA",
+  "official_website": "https://www.twistbioscience.com",
+  "github_accounts": [
+   "https://github.com/Twistbioscience (4 repos, none DNA-storage)"
+  ],
+  "public_repositories": [
+   "NO SIGNIFICANT PUBLIC GITHUB IMPLEMENTATION FOUND"
+  ],
+  "public_code_availability": "None for storage.",
+  "key_research_papers": [
+   "Co-author on Microsoft/UW random-access work (Nat Biotech 2018)"
+  ],
+  "patents_found": [
+   {
+    "number": "US11562103B2",
+    "title": "Nucleic acid based data storage",
+    "assignee": "Twist Bioscience Corp",
+    "priority": "2016-09-21",
+    "url": "https://patents.google.com/patent/US11562103B2/en"
+   },
+   {
+    "number": "US12086722B2",
+    "title": "DNA-based digital information storage with sidewall electrodes",
+    "assignee": "Twist Bioscience Corporation",
+    "priority": "2018-01-04",
+    "url": "https://patents.google.com/patent/US12086722B2/en"
+   }
+  ],
+  "technical_focus": "High-throughput oligo pools / genes on silicon for biology; storage IP assigned/licensed to Atlas.",
+  "commercialization_status": "Public company; exited direct storage via May 2025 spin-out; retains Atlas equity (73.0M Series Seed-1 shares), $2.5M upfront, $2.0M notes, up to $75.0M milestones, royalties.",
+  "major_capabilities": [
+   "Commercial oligo pools (the de-facto write provider for many storage papers)"
+  ],
+  "limitations": [
+   "No longer a storage vendor"
+  ],
+  "open_source_vs_proprietary": "Proprietary.",
+  "standards_involvement": "DDSA founder; Esther Singer (Twist) DDSA co-chair (Jan 2025).",
+  "partnerships": [
+   "Atlas (shareholder)",
+   "Microsoft (historic)"
+  ],
+  "funding": "Public (NASDAQ: TWST).",
+  "recent_activity": [
+   {
+    "date": "2025-05-05",
+    "event": "Spin-out of Atlas Data Storage",
+    "source": "https://investors.twistbioscience.com/news-releases/news-release-details/twist-bioscience-spins-out-dna-data-storage-independent-company"
+   }
+  ],
+  "physical_validation_evidence": "Physical (commercial DNA manufacturer).",
+  "threat_to_vnx": {
+   "level": "LOW",
+   "why": "Now a supplier; storage competition flows through Atlas."
+  },
+  "relationship_to_vnx": {
+   "PROVIDER": "HIGH — oligo pool synthesis for VNX wet-lab validation (purchase as an ordinary customer).",
+   "PARTNER": "Low",
+   "CUSTOMER": "Low"
+  },
+  "sources": [
+   "https://www.tipranks.com/news/company-announcements/twist-bioscience-spins-out-dna-storage-unit",
+   "https://www.orrick.com/en/News/2025/05/Twist-Bioscience-Spins-Out-DNA-Data-Storage-as-Independent-Company",
+   "https://patents.google.com/patent/US11562103B2/en",
+   "https://github.com/Twistbioscience"
+  ],
+  "notes": ""
+ },
+ {
+  "name": "Illumina",
+  "aliases": [],
+  "category": "Sequencing (read) provider; DDSA founder",
+  "country": "USA",
+  "official_website": "https://www.illumina.com",
+  "github_accounts": [
+   "https://github.com/Illumina (53 repos)"
+  ],
+  "public_repositories": [
+   "NO SIGNIFICANT PUBLIC GITHUB IMPLEMENTATION FOUND (for DNA data storage; org has general genomics tools)"
+  ],
+  "public_code_availability": "General bioinformatics only.",
+  "key_research_papers": [],
+  "patents_found": [
+   {
+    "number": "EP3977455A1",
+    "title": "System and method for storage",
+    "assignee": "Illumina, Inc.",
+    "priority": "2019-05-31",
+    "url": "https://patents.google.com/patent/EP3977455A1/en"
+   },
+   {
+    "number": "CN112654719A",
+    "title": "System and method for information storage and retrieval using flow cells",
+    "assignee": "Illumina, Inc.",
+    "priority": "2019-05-31",
+    "url": "https://patents.google.com/patent/CN112654719A/en"
+   }
+  ],
+  "technical_focus": "Short-read sequencing; flow-cell based information storage patents.",
+  "commercialization_status": "No DNA-storage product. Ecosystem links: Iridia chairman Jay Flatley also chairs Illumina's board; Illumina supported Cache DNA's seed.",
+  "major_capabilities": [
+   "Dominant read platform"
+  ],
+  "limitations": [
+   "No storage offering"
+  ],
+  "open_source_vs_proprietary": "Proprietary.",
+  "standards_involvement": "DDSA founding member (2020).",
+  "partnerships": [
+   "DDSA"
+  ],
+  "funding": "Public.",
+  "recent_activity": [],
+  "physical_validation_evidence": "N/A",
+  "threat_to_vnx": {
+   "level": "LOW",
+   "why": "Read-side supplier."
+  },
+  "relationship_to_vnx": {
+   "PROVIDER": "HIGH — sequencing (directly or via service labs) for VNX validation.",
+   "PARTNER": "Low-medium (codec tuned to Illumina error profile)",
+   "CUSTOMER": "Low"
+  },
+  "sources": [
+   "https://www.businesswire.com/news/home/20201112005759/en/Twist-Bioscience-Illumina-and-Western-Digital-Form-Alliance-with-Microsoft-to-Advance-Data-Storage-in-DNA",
+   "https://www.blocksandfiles.com/storage-networking/2023/11/27/iridia-looks-to-dna-for-archival-storage-solutions/1608337",
+   "https://www.businesswire.com/news/home/20240507840568/en/Cache-Raises-Seed-Financing-to-Advance-its-Biomolecule-Storage-Technologies",
+   "https://patents.google.com/patent/EP3977455A1/en"
+  ],
+  "notes": ""
+ },
+ {
+  "name": "Western Digital",
+  "aliases": [
+   "WD Research",
+   "Western Digital Capital"
+  ],
+  "category": "Storage incumbent; DDSA founder/chair; codec & nanopore IP",
+  "country": "USA",
+  "official_website": "https://www.westerndigital.com",
+  "github_accounts": [
+   "https://github.com/westerndigitalcorporation (no DNA repos)"
+  ],
+  "public_repositories": [
+   "NO SIGNIFICANT PUBLIC GITHUB IMPLEMENTATION FOUND"
+  ],
+  "public_code_availability": "None for DNA.",
+  "key_research_papers": [
+   "Daniel Bedau (WD Research), 'Solid State Nanopores – A Channel with Unique Properties', ISIT 2024 DNA workshop (SNIA 2025 preview)"
+  ],
+  "patents_found": [
+   {
+    "number": "US20250174272A1",
+    "title": "Generating and using a state transition matrix for decoding data in a DNA-based storage",
+    "assignee": "Western Digital Technologies, Inc.",
+    "priority": "2023-11-29",
+    "url": "https://patents.google.com/patent/US20250174272A1/en"
+   },
+   {
+    "number": "WO2023146570A1",
+    "title": "Encoding and integrity markers for molecular storage applications",
+    "assignee": "Western Digital Technologies, Inc.",
+    "priority": "2022-01-28",
+    "url": "https://patents.google.com/patent/WO2023146570A1/en"
+   },
+   {
+    "number": "WO2026096003A1",
+    "title": "Synthesis and use of biomolecule tape for data storage",
+    "assignee": "Western Digital Technologies, Inc.",
+    "priority": "2024-10-28",
+    "url": "https://patents.google.com/patent/WO2026096003A1/en"
+   }
+  ],
+  "technical_focus": "Solid-state nanopore read channel; decoding/integrity markers; DDSA leadership.",
+  "commercialization_status": "No product. Dave Landsman (WD) chaired DDSA until retiring as chair (reported 2026).",
+  "major_capabilities": [
+   "Codec/decoder IP",
+   "Investor in Iridia (Series B, 2021)"
+  ],
+  "limitations": [
+   "No product; leadership role reduced in 2026"
+  ],
+  "open_source_vs_proprietary": "Proprietary.",
+  "standards_involvement": "DDSA founder; chair through 2025.",
+  "partnerships": [
+   "Iridia (investor via Western Digital Capital)"
+  ],
+  "funding": "Public.",
+  "recent_activity": [
+   {
+    "date": "2025-01-15",
+    "event": "SNIA preview: DDSA 2024 review & 2025 plans presented by Landsman (WD)",
+    "source": "https://snia.org/sites/default/files/Preview/2025/20250115%20-%20DNA%20Data%20Storage%20Alliance%20-%20SNIA%20Preview%202025%20v2.pdf"
+   },
+   {
+    "date": "2026",
+    "event": "Landsman retired as DDSA chair; Franceschini (Biomemory) + Skliaustas (Genomika) co-chairs",
+    "source": "https://www.snia.org/sites/default/files/dna-newsletter/2026-February-DNA-DSA.html"
+   }
+  ],
+  "physical_validation_evidence": "Not public.",
+  "threat_to_vnx": {
+   "level": "LOW",
+   "why": "Holds decoding patents (freedom-to-operate check needed) but no product."
+  },
+  "relationship_to_vnx": {
+   "PARTNER": "Medium — incumbent storage vendor that could want a codec/controller partner; nanopore decoding collaboration.",
+   "CUSTOMER": "Low-medium",
+   "PROVIDER": "Low"
+  },
+  "sources": [
+   "https://snia.org/sites/default/files/Preview/2025/20250115%20-%20DNA%20Data%20Storage%20Alliance%20-%20SNIA%20Preview%202025%20v2.pdf",
+   "https://digitalpreservation.gov/meetings/DSA2025/020101_landsman2_LoC%20DSA%202025%20-%20DNA%20Data%20Storage%20Alliance%20Update.pdf",
+   "https://www.eenewseurope.com/en/dna-based-memory-startup-raises-24-million/",
+   "https://patents.google.com/patent/US20250174272A1/en"
+  ],
+  "notes": ""
+ },
+ {
+  "name": "Seagate Technology (DNA storage research)",
+  "aliases": [
+   "Seagate Research Group"
+  ],
+  "category": "Storage incumbent; DNA lab-on-chip research",
+  "country": "USA",
+  "official_website": "https://www.seagate.com",
+  "github_accounts": [
+   "https://github.com/Seagate (116 repos; none DNA)"
+  ],
+  "public_repositories": [
+   "NO SIGNIFICANT PUBLIC GITHUB IMPLEMENTATION FOUND"
+  ],
+  "public_code_availability": "None for DNA.",
+  "key_research_papers": [],
+  "patents_found": [
+   {
+    "number": "US12551891B2",
+    "title": "Vesicle based DNA data storage",
+    "assignee": "Seagate Technology LLC",
+    "priority": "2021-09-22",
+    "url": "https://patents.google.com/patent/US12551891B2/en"
+   },
+   {
+    "number": "US20260004879A1",
+    "title": "Symbol-linker storage encoding scheme",
+    "assignee": "Seagate Technology LLC",
+    "priority": "2024-06-28",
+    "url": "https://patents.google.com/patent/US20260004879A1/en"
+   },
+   {
+    "number": "US20240282374A1",
+    "title": "DNA backbone editing for DNA data storage",
+    "assignee": "Seagate Technology LLC",
+    "priority": "2020-09-24",
+    "url": "https://patents.google.com/patent/US20240282374A1/en"
+   },
+   {
+    "number": "US20250270608A1",
+    "title": "Synthesis and storage of DNA having attached nanostructure",
+    "assignee": "Seagate Technology LLC",
+    "priority": "2024-02-28",
+    "url": "https://patents.google.com/patent/US20250270608A1/en"
+   }
+  ],
+  "technical_focus": "Lab-on-chip microfluidics for DNA storage chemistry; encoding schemes.",
+  "commercialization_status": "Research; Catalog collaboration (Sep 2022) — Catalog now part of Biomemory. Seagate's LoC 2026 talk did not mention DNA. 2025–2026 DNA news: none found.",
+  "major_capabilities": [
+   "Active patenting through 2024 priority dates"
+  ],
+  "limitations": [
+   "No product, no recent public DNA activity"
+  ],
+  "open_source_vs_proprietary": "Proprietary.",
+  "standards_involvement": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "partnerships": [
+   "Catalog (2022)"
+  ],
+  "funding": "Public.",
+  "recent_activity": [],
+  "physical_validation_evidence": "Not public.",
+  "threat_to_vnx": {
+   "level": "LOW",
+   "why": "Dormant publicly; encoding patents warrant FTO review."
+  },
+  "relationship_to_vnx": {
+   "PARTNER": "Low-medium",
+   "CUSTOMER": "Low",
+   "PROVIDER": "Low"
+  },
+  "sources": [
+   "https://techcrunch.com/2022/09/08/synthetic-dna-startup-catalog-partners-with-seagate-for-its-dna-based-data-storage-platform/",
+   "https://www.digitalpreservation.gov/meetings/DSA2026/0108_LibraryOfCongress_2026_Trantham_Seagate2.pdf",
+   "https://patents.google.com/patent/US12551891B2/en"
+  ],
+  "notes": "Existing VNX dossier says Iridia is 'backed by Seagate'; no primary source found for a Seagate investment in Iridia (WD Capital confirmed)."
+ },
+ {
+  "name": "Quantum Corporation",
+  "aliases": [
+   "Quantum"
+  ],
+  "category": "Archive/tape incumbent; DDSA board; DNA decoding IP",
+  "country": "USA",
+  "official_website": "https://www.quantum.com",
+  "github_accounts": [],
+  "public_repositories": [
+   "NO SIGNIFICANT PUBLIC GITHUB IMPLEMENTATION FOUND"
+  ],
+  "public_code_availability": "None.",
+  "key_research_papers": [],
+  "patents_found": [
+   {
+    "number": "US20230215516A1",
+    "title": "Joint multi-nanopore sequencing for reliable data retrieval in nucleic acid storage",
+    "assignee": "Quantum Corporation",
+    "priority": "2022-01-05",
+    "url": "https://patents.google.com/patent/US20230215516A1/en"
+   },
+   {
+    "number": "US11990920B2",
+    "title": "Artificial intelligence augmented iterative product decoding",
+    "assignee": "Quantum Corporation",
+    "priority": "2021-12-30",
+    "url": "https://patents.google.com/patent/US11990920B2/en"
+   }
+  ],
+  "technical_focus": "Coding/decoding for archival media incl. nanopore DNA retrieval.",
+  "commercialization_status": "No DNA product. Joined DDSA 12 Jan 2021; board seat 2023 (Don Doerner, Turguy Goker).",
+  "major_capabilities": [
+   "Tape/archive channel into hyperscalers"
+  ],
+  "limitations": [
+   "No DNA product"
+  ],
+  "open_source_vs_proprietary": "Proprietary.",
+  "standards_involvement": "DDSA member/board (2023).",
+  "partnerships": [
+   "DDSA"
+  ],
+  "funding": "Public.",
+  "recent_activity": [
+   {
+    "date": "2026-03-09",
+    "event": "Goker (Quantum) presented LTO tape & AI at LoC DSA 2026 (tape, not DNA)",
+    "source": "https://www.digitalpreservation.gov/meetings/storage26.html"
+   }
+  ],
+  "physical_validation_evidence": "Not public.",
+  "threat_to_vnx": {
+   "level": "LOW",
+   "why": "Archive-system vendor with coding expertise; plausible future codec builder but no activity seen."
+  },
+  "relationship_to_vnx": {
+   "PARTNER": "MEDIUM — archive vendor that may want an outsourced DNA codec/tiering layer (no contact).",
+   "CUSTOMER": "Medium",
+   "PROVIDER": "Low"
+  },
+  "sources": [
+   "https://investors.quantum.com/news-events/press-releases/detail/15/quantum-joins-dna-data-storage-alliance",
+   "https://www.snia.org/news_events/newsroom/dna-data-storage-alliance-announces-board-appointments",
+   "https://patents.google.com/patent/US20230215516A1/en"
+  ],
+  "notes": ""
+ },
+ {
+  "name": "DNA Data Storage Alliance (DDSA) — a SNIA Community",
+  "aliases": [
+   "SNIA DNA Technology Affiliate",
+   "DDSA"
+  ],
+  "category": "Standards / industry consortium",
+  "country": "International (SNIA, USA)",
+  "official_website": "https://www.snia.org/groups/snia-dna-technology-affiliate (also dnastoragealliance.org)",
+  "github_accounts": [
+   "https://github.com/SNIA (21 repos; none DNA-specific)"
+  ],
+  "public_repositories": [
+   "No DDSA reference implementation found. Related third-party: https://github.com/jchristn/RosettaStone (MIT, 2023, 'Backend server for DNA data storage Rosetta Stone initiative' — vendor/codec registry API for Sector Zero lookups; inactive since 2023-08)",
+   "SNIA Swordfish repos (https://github.com/SNIA/Swordfish-Publications) — DNA template in draft only"
+  ],
+  "public_code_availability": "Specs are free PDFs; 'Open source codec TBD' (Codecs WG, 2024–2025 slides).",
+  "key_research_papers": [
+   "DNA Data Storage Sector Zero v1.0 (approved 11 Nov 2023; released 12 Mar 2024)",
+   "DNA Data Storage Sector One v1.0 (dated 11 Nov 2023; released 12 Mar 2024)",
+   "DNA Stability Evaluation Method for DNA Data Storage Containment Systems v1.0 (Sep 2024)",
+   "DNA Data Storage Codecs — Examples, Requirements and Metrics v1.0 (30 Jun 2025)",
+   "DNA Data Storage Technology Review v1.0 (30 Jun 2025)",
+   "Biosecurity regulatory policy position (2025)",
+   "Swordfish: 'DNA Data Storage in Swordfish – Working Draft' (Jan 2026)",
+   "DNA chapter in IEEE Mass Storage Roadmap update"
+  ],
+  "patents_found": [],
+  "technical_focus": "Interoperability: archive bootstrapping (Sector 0/1), retention metrics, codec requirements, interoperable interfaces, biosecurity, random access, roadmap.",
+  "commercialization_status": "Non-profit standards community; 40+ members, ~50/50 academia/industry.",
+  "major_capabilities": [
+   "Only industry body for DNA storage interoperability",
+   "Co-organizes SCDNA conference (Paris 2025; Rome 27–29 May 2026 with EIC DigNA portfolio)"
+  ],
+  "limitations": [
+   "No conformance test suite or reference codec found",
+   "Sector Zero is minimal (70 bases: 35 vendor + 35 codec ID) — relies on an external registry ('Rosetta')",
+   "Interoperable Interfaces spec not yet published (as of sources found)"
+  ],
+  "open_source_vs_proprietary": "Open specifications.",
+  "standards_involvement": "Is the standards body; IEEE ISIT 2024 workshop + IEEE JSAIT special issue; SNIA Swordfish integration.",
+  "partnerships": [
+   "SNIA",
+   "EIC DigNA portfolio (SCDNA 2026)",
+   "Library of Congress (engaging)"
+  ],
+  "funding": "Membership-funded (amounts unknown).",
+  "recent_activity": [
+   {
+    "date": "2024-03-12",
+    "event": "First specs released (Sector Zero, Sector One)",
+    "source": "https://www.snia.org/news_events/newsroom/dna-data-storage-alliance-releases-its-first-specifications-storage-digital"
+   },
+   {
+    "date": "2025-06-30",
+    "event": "Codecs white paper + Technology Review published",
+    "source": "https://www.storagenewsletter.com/2025/07/16/snia-published-two-dna-data-storage-white-papers/"
+   },
+   {
+    "date": "2026-01",
+    "event": "Swordfish TWG working draft for managing DNA storage systems (object stores + DNA process resources)",
+    "source": "https://www.snia.org/sites/default/files/technical-work/swordfish/draft/DNA%20Data%20Storage%20in%20Swordfish%20-%20Working%20Draft.pdf"
+   },
+   {
+    "date": "2026",
+    "event": "Co-chairs Vincent Franceschini (Biomemory) and Robertas Skliaustas (Genomika Lietuva); 2026 priorities: Random Access reference paper, stability methods, industry progress report",
+    "source": "https://www.snia.org/sites/default/files/dna-newsletter/2026-August-DNA-DSA.html"
+   },
+   {
+    "date": "2026-03-10",
+    "event": "LoC DSA talk: 2026 work areas = data retention, codecs, interoperability, biosecurity, roadmaps, random access/addressability",
+    "source": "https://www.digitalpreservation.gov/meetings/DSA2026/0230_skilaustas_DNA%20data%20storage%20alliance%20presentation.pdf"
+   }
+  ],
+  "physical_validation_evidence": "N/A",
+  "threat_to_vnx": {
+   "level": "NONE (opportunity)",
+   "why": "Standards are the wedge for a hardware-agnostic software layer."
+  },
+  "relationship_to_vnx": {
+   "PARTNER": "HIGH — join as member; contribute reference implementation / conformance tests for Sector 0/1, codec metrics, Swordfish DNA model.",
+   "CUSTOMER": "—",
+   "PROVIDER": "Specifications"
+  },
+  "sources": [
+   "https://www.snia.org/news_events/newsroom/dna-data-storage-alliance-releases-its-first-specifications-storage-digital",
+   "https://snia.org/standards/technology-standards-software/standards-portfolio/dna-data-storage-sector-one",
+   "https://www.snia.org/educational-library/dna-stability-evaluation-method-dna-data-storage-containment-systems-v10-2024",
+   "https://www.snia.org/educational-library/dna-data-storage-codecs-examples-requirements-and-metrics-2025",
+   "https://www.storagenewsletter.com/2025/07/16/snia-published-two-dna-data-storage-white-papers/",
+   "https://snia.org/sites/default/files/Preview/2025/20250115%20-%20DNA%20Data%20Storage%20Alliance%20-%20SNIA%20Preview%202025%20v2.pdf",
+   "https://www.digitalpreservation.gov/meetings/DSA2026/0230_skilaustas_DNA%20data%20storage%20alliance%20presentation.pdf",
+   "https://www.anandtech.com/show/21304",
+   "https://github.com/jchristn/RosettaStone",
+   "https://eic.ec.europa.eu/events/storage-and-computing-dna-2026-2026-05-27_en"
+  ],
+  "notes": "snia.org returned HTTP 403 to automated fetches; 2026 newsletter facts are from search-engine snippets of the SNIA newsletter URLs and should be re-read manually before citing in investor material."
+ },
+ {
+  "name": "Iridia, Inc.",
+  "aliases": [
+   "formerly Dodo Omnidata"
+  ],
+  "category": "DNA storage chip (nanopore polymer memory) + molecular tagging/anti-counterfeit",
+  "country": "USA (Carlsbad, CA)",
+  "official_website": "UNKNOWN (not found in public sources as of 2026-10-05) (iridia.com not fetched)",
+  "github_accounts": [
+   "(github.com/iridia is an unrelated 'Iridia Productions' account)"
+  ],
+  "public_repositories": [
+   "NO SIGNIFICANT PUBLIC GITHUB IMPLEMENTATION FOUND"
+  ],
+  "public_code_availability": "None.",
+  "key_research_papers": [],
+  "patents_found": [
+   {
+    "number": "US10995373B2",
+    "title": "Systems and methods for writing, reading, and controlling data stored in a polymer",
+    "assignee": "Iridia Inc",
+    "priority": "2016-02-29",
+    "url": "https://patents.google.com/patent/US10995373B2/en"
+   },
+   {
+    "number": "US11152061B2",
+    "title": "Systems and methods for writing and reading data stored in a polymer",
+    "assignee": "Iridia Inc",
+    "priority": "2018-09-07",
+    "url": "https://patents.google.com/patent/US11152061B2/en"
+   },
+   {
+    "number": "US11545213B1",
+    "title": "Systems and methods for writing and reading data stored in a polymer using nano-channels",
+    "assignee": "Iridia, Inc.",
+    "priority": "2020-08-07",
+    "url": "https://patents.google.com/patent/US11545213B1/en"
+   },
+   {
+    "number": "US10859562B2",
+    "title": "Methods, compositions, and devices for information storage",
+    "assignee": "Iridia, Inc.",
+    "priority": "2016-02-29",
+    "url": "https://patents.google.com/patent/US10859562B2/en"
+   },
+   {
+    "number": "KR20260002611A",
+    "title": "System and method for recording data stored in polymers using inkjet droplets",
+    "assignee": "Iridia, Inc.",
+    "priority": "2023-02-17",
+    "url": "https://patents.google.com/patent/KR20260002611A/en"
+   }
+  ],
+  "technical_focus": "Read/write DNA microchip with nanopore cells; DNA-based anti-counterfeiting.",
+  "commercialization_status": "Targeted DNA storage-as-a-service for archives in 2026 (stated 2023); launch not confirmed in sources found. Lunar molecular archive landed 2 Mar 2025 (Firefly Blue Ghost).",
+  "major_capabilities": [
+   "Claimed 5–10x lower TCO; 24–48 h retrieval (2023 interview)"
+  ],
+  "limitations": [
+   "No confirmed 2026 service launch",
+   "Last confirmed funding 2021"
+  ],
+  "open_source_vs_proprietary": "Proprietary.",
+  "standards_involvement": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "partnerships": [
+   "Western Digital Capital (investor)",
+   "Arweave, ASI Alliance, LifeShip (lunar mission, 2025)",
+   "Chairman Jay Flatley (Illumina board chair)"
+  ],
+  "funding": "~$40M total: $8M A, $24M B (Mar 2021, incl. WD Capital), $6M (Dec 2021, Prime Movers Lab follow-on).",
+  "recent_activity": [
+   {
+    "date": "2025-03-04",
+    "event": "Molecular data archive landed on the Moon",
+    "source": "https://www.globenewswire.com/news-release/2025/03/04/3036808/0/en/Iridia-Makes-History-First-Cryptocurrency-and-Molecular-Off-World-Data-Archive-Successfully-Lands-on-the-Moon.html"
+   }
+  ],
+  "physical_validation_evidence": "Physical: small molecular archive flown to Moon; chip-level read/write not publicly demonstrated at scale.",
+  "threat_to_vnx": {
+   "level": "MEDIUM",
+   "why": "Integrated chip+service model with own ECC; uncertain execution."
+  },
+  "relationship_to_vnx": {
+   "PARTNER": "Low-medium",
+   "CUSTOMER": "Low",
+   "PROVIDER": "Low"
+  },
+  "sources": [
+   "https://www.blocksandfiles.com/storage-networking/2023/11/27/iridia-looks-to-dna-for-archival-storage-solutions/1608337",
+   "https://techtarget.com/searchdatabackup/news/366560519/DNA-storage-to-tackle-massive-archives",
+   "https://www.enterprisestorageforum.com/hardware/iridia-6m-funding-round-dna-memory-chips/",
+   "https://www.eenewseurope.com/en/dna-based-memory-startup-raises-24-million/",
+   "https://www.globenewswire.com/news-release/2025/03/04/3036808/0/en/Iridia-Makes-History-First-Cryptocurrency-and-Molecular-Off-World-Data-Archive-Successfully-Lands-on-the-Moon.html",
+   "https://patents.google.com/patent/US10995373B2/en"
+  ],
+  "notes": ""
+ },
+ {
+  "name": "Helixworks Technologies Ltd",
+  "aliases": [
+   "Helixworks"
+  ],
+  "category": "DNA storage service + molecular barcodes; EU MoSS coordinator",
+  "country": "Ireland (Cork)",
+  "official_website": "https://helix.works (returned HTTP 404 on 2026-10-05)",
+  "github_accounts": [
+   "https://github.com/Helixworks"
+  ],
+  "public_repositories": [
+   "https://github.com/Helixworks/helix-dnadrive — 'dnadrive: convert data to and from the openMoSS format' (last push 2017-01-09; 4 stars)"
+  ],
+  "public_code_availability": "Minimal / stale (2017).",
+  "key_research_papers": [
+   "EU MoSS (Molecular Storage System) — CORDIS 101058035"
+  ],
+  "patents_found": [],
+  "technical_focus": "Enzymatic, error-tolerant synthesis for storage; DNADrive consumer product (512 KB, gold pill, sold on Amazon); anti-counterfeiting barcodes.",
+  "commercialization_status": "Small-scale commercial (DNADrive historically); current status unclear (website 404).",
+  "major_capabilities": [
+   "openMoSS format (early open format attempt)"
+  ],
+  "limitations": [
+   "Website down",
+   "No recent news found"
+  ],
+  "open_source_vs_proprietary": "Partially open (openMoSS converter).",
+  "standards_involvement": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "partnerships": [
+   "Imperial College London, EURECOM (MoSS/OligoArchive)"
+  ],
+  "funding": "MoSS EU contribution €2,594,615 (May 2022–Apr 2024).",
+  "recent_activity": [],
+  "physical_validation_evidence": "Physical: DNADrive products shipped (historic).",
+  "threat_to_vnx": {
+   "level": "LOW",
+   "why": "Small, apparently inactive."
+  },
+  "relationship_to_vnx": {
+   "PARTNER": "Low-medium (EU consortium access)",
+   "CUSTOMER": "Low",
+   "PROVIDER": "Low"
+  },
+  "sources": [
+   "https://github.com/Helixworks/helix-dnadrive",
+   "https://cordis.europa.eu/project/id/101058035",
+   "https://www.siliconrepublic.com/video/helixworks-dna-data-storage/"
+  ],
+  "notes": ""
+ },
+ {
+  "name": "DNA Script",
+  "aliases": [],
+  "category": "Enzymatic DNA synthesis provider (benchtop SYNTAX)",
+  "country": "France",
+  "official_website": "https://www.dnascript.com",
+  "github_accounts": [
+   "https://github.com/DNAScript (org, 0 public repos)"
+  ],
+  "public_repositories": [
+   "NO SIGNIFICANT PUBLIC GITHUB IMPLEMENTATION FOUND"
+  ],
+  "public_code_availability": "None.",
+  "key_research_papers": [],
+  "patents_found": [
+   {
+    "number": "US20230313255A1",
+    "title": "Massively Parallel Enzymatic Synthesis of Polynucleotides",
+    "assignee": "DNA Script",
+    "priority": "2020-07-15",
+    "url": "https://patents.google.com/patent/US20230313255A1/en"
+   },
+   {
+    "number": "CN121195075A",
+    "title": "Inkjet-assisted enzymatic nucleic acid synthesis",
+    "assignee": "DNA Script",
+    "priority": "2023-01-16",
+    "url": "https://patents.google.com/patent/CN121195075A/en"
+   }
+  ],
+  "technical_focus": "Template-free enzymatic synthesis (TdT).",
+  "commercialization_status": "Commercial SYNTAX benchtop since 2021; restructuring with layoffs (Mar 2024); new CEO Marc Montserrat (Oct 2024). 2025–2026 storage-specific news: none found.",
+  "major_capabilities": [
+   "Benchtop enzymatic oligo printing"
+  ],
+  "limitations": [
+   "Short oligos; biology focus"
+  ],
+  "open_source_vs_proprietary": "Proprietary.",
+  "standards_involvement": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "partnerships": [],
+  "funding": "$315M raised total incl. $200M Series C (2022).",
+  "recent_activity": [],
+  "physical_validation_evidence": "Physical (commercial instrument).",
+  "threat_to_vnx": {
+   "level": "LOW",
+   "why": "Supplier."
+  },
+  "relationship_to_vnx": {
+   "PROVIDER": "Medium — enzymatic write option for VNX wet tests.",
+   "PARTNER": "Low",
+   "CUSTOMER": "Low"
+  },
+  "sources": [
+   "https://www.biospace.com/dna-script-closes-200-million-series-c-financing-with-completion-of-second-tranche",
+   "https://www.glassdoor.de/Bewertungen/Bewertungen-DNA-Script-E3075392-RVW90699482.htm",
+   "https://github.com/DNAScript"
+  ],
+  "notes": "Layoff/CEO facts come from search-result summaries; primary press release not fetched."
+ },
+ {
+  "name": "Ansa Biotechnologies",
+  "aliases": [
+   "Ansa"
+  ],
+  "category": "Enzymatic DNA synthesis provider (long clonal DNA)",
+  "country": "USA (Emeryville, CA)",
+  "official_website": "https://www.ansabio.com",
+  "github_accounts": [],
+  "public_repositories": [
+   "NO SIGNIFICANT PUBLIC GITHUB IMPLEMENTATION FOUND"
+  ],
+  "public_code_availability": "None.",
+  "key_research_papers": [],
+  "patents_found": [],
+  "technical_focus": "Enzymatic synthesis; sequence-perfect clonal DNA 100 bp–50 kb.",
+  "commercialization_status": "Commercial: 50 kb clonal DNA from $0.28/bp (launched 22 Oct 2025); IDT distribution collaboration (Jan 2026); COO hire (31 Mar 2026).",
+  "major_capabilities": [
+   "Long, perfect DNA (gene-scale)"
+  ],
+  "limitations": [
+   "Priced for biology, not storage ($0.28/bp ≫ storage targets)"
+  ],
+  "open_source_vs_proprietary": "Proprietary.",
+  "standards_involvement": "None found.",
+  "partnerships": [
+   "Integrated DNA Technologies (Jan 2026)"
+  ],
+  "funding": "$54.4M Series B (1 Oct 2025). (VNX dossier states $68M financing — not reconciled.)",
+  "recent_activity": [
+   {
+    "date": "2025-10-01",
+    "event": "$54.4M Series B",
+    "source": "https://www.businesswire.com/news/home/20251001701666/en/Ansa-Biotechnologies-Secures-54.4-Million-in-Series-B-Financing"
+   },
+   {
+    "date": "2025-10-22",
+    "event": "50 kb sequence-perfect clonal DNA, from $0.28/bp",
+    "source": "https://www.businesswire.com/news/home/20251022752858/en"
+   },
+   {
+    "date": "2026-04-29",
+    "event": "SynBioBeta 2026 showcase",
+    "source": "https://www.businesswire.com/news/home/20260429767392/en/Ansa-Biotechnologies-to-Showcase-Breakthrough-DNA-Synthesis-Technology-Backed-by-Industrys-Only-On-Time-Guarantee-at-SynBioBeta-2026-Conference"
+   }
+  ],
+  "physical_validation_evidence": "Physical (commercial).",
+  "threat_to_vnx": {
+   "level": "LOW",
+   "why": "Biology supplier."
+  },
+  "relationship_to_vnx": {
+   "PROVIDER": "Low-medium (long-strand experiments)",
+   "PARTNER": "Low",
+   "CUSTOMER": "Low"
+  },
+  "sources": [
+   "https://www.businesswire.com/news/home/20251001701666/en/Ansa-Biotechnologies-Secures-54.4-Million-in-Series-B-Financing",
+   "https://www.drugdiscoverynews.com/ansa-biotechnologies-redefines-what-s-possible-in-dna-synthesis-with-50-kb-sequence-perfect-clonal-product-16751"
+  ],
+  "notes": ""
+ },
+ {
+  "name": "Molecular Assemblies (assets acquired by Maravai LifeSciences / TriLink, Jan 2025)",
+  "aliases": [],
+  "category": "Enzymatic synthesis (FES) — absorbed",
+  "country": "USA",
+  "official_website": "https://www.maravai.com (acquirer)",
+  "github_accounts": [],
+  "public_repositories": [
+   "NO SIGNIFICANT PUBLIC GITHUB IMPLEMENTATION FOUND"
+  ],
+  "public_code_availability": "None.",
+  "key_research_papers": [],
+  "patents_found": [
+   {
+    "number": "US10982276B2",
+    "title": "Homopolymer encoded nucleic acid memory",
+    "assignee": "Molecular Assemblies, Inc.",
+    "priority": "2017-05-31",
+    "url": "https://patents.google.com/patent/US10982276B2/en"
+   },
+   {
+    "number": "US20230332140A1",
+    "title": "Layered coding architectures for nucleic acid memory",
+    "assignee": "Molecular Assemblies, Inc.",
+    "priority": "2020-08-25",
+    "url": "https://patents.google.com/patent/US20230332140A1/en"
+   }
+  ],
+  "technical_focus": "Fully Enzymatic Synthesis; homopolymer-encoded storage IP.",
+  "commercialization_status": "Assets acquired by Maravai 23 Jan 2025 for $11.2M total consideration; redirected to mRNA/CRISPR inputs.",
+  "major_capabilities": [
+   "Homopolymer-run encoding IP (relevant to low-precision enzymatic writing)"
+  ],
+  "limitations": [
+   "No storage program after acquisition"
+  ],
+  "open_source_vs_proprietary": "Proprietary.",
+  "standards_involvement": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "partnerships": [
+   "Maravai/TriLink"
+  ],
+  "funding": "Acquired ($11.2M).",
+  "recent_activity": [
+   {
+    "date": "2025-01-23",
+    "event": "Maravai completes asset acquisition",
+    "source": "https://www.maravai.com/insights/maravai-lifesciences-acquires-assets-and-intellectual-property-from-molecular-assemblies/"
+   }
+  ],
+  "physical_validation_evidence": "N/A",
+  "threat_to_vnx": {
+   "level": "LOW",
+   "why": "Exited; but 'homopolymer encoded memory' patents are FTO-relevant to any codec using homopolymer symbols."
+  },
+  "relationship_to_vnx": {
+   "PARTNER": "None",
+   "CUSTOMER": "None",
+   "PROVIDER": "None"
+  },
+  "sources": [
+   "https://www.maravai.com/insights/maravai-lifesciences-acquires-assets-and-intellectual-property-from-molecular-assemblies/",
+   "https://www.sec.gov/Archives/edgar/data/1823239/000182323926000011/mrvi-20251231.htm",
+   "https://patents.google.com/patent/US10982276B2/en"
+  ],
+  "notes": ""
+ },
+ {
+  "name": "Imagene",
+  "aliases": [
+   "DNAshell"
+  ],
+  "category": "DNA encapsulation (containment) provider",
+  "country": "France (Pessac/Bordeaux; Evry)",
+  "official_website": "https://www.imagene.eu (not fetched)",
+  "github_accounts": [],
+  "public_repositories": [
+   "NO SIGNIFICANT PUBLIC GITHUB IMPLEMENTATION FOUND"
+  ],
+  "public_code_availability": "None.",
+  "key_research_papers": [
+   "SNIA SDC21 Colotte, 'Storing Data over Millennia' — https://snia.org/sites/default/files/2025-05/SNIA-SDC21-Colotte-Storing-Data-over-Millennia.pdf"
+  ],
+  "patents_found": [],
+  "technical_focus": "Hermetic metal capsules (DNAshell) for room-temperature DNA preservation.",
+  "commercialization_status": "Commercial capsule service; encapsulated Asimov Press DNA book (2025).",
+  "major_capabilities": [
+   "Containment layer used by multiple storage players"
+  ],
+  "limitations": [
+   "No software"
+  ],
+  "open_source_vs_proprietary": "Proprietary.",
+  "standards_involvement": "DDSA board (Marthe Colotte, Jan 2025).",
+  "partnerships": [
+   "Biomemory",
+   "Catalog / Asimov Press"
+  ],
+  "funding": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "recent_activity": [],
+  "physical_validation_evidence": "Physical (commercial capsules).",
+  "threat_to_vnx": {
+   "level": "NONE",
+   "why": "Complementary."
+  },
+  "relationship_to_vnx": {
+   "PROVIDER": "HIGH — containment for VNX archives; DDSA Stability Evaluation Method applies.",
+   "PARTNER": "Medium",
+   "CUSTOMER": "Low"
+  },
+  "sources": [
+   "https://news.cnrs.fr/articles/data-storage-the-dna-revolution",
+   "https://www.asimov.press/p/technology-book",
+   "https://snia.org/sites/default/files/Preview/2025/20250115%20-%20DNA%20Data%20Storage%20Alliance%20-%20SNIA%20Preview%202025%20v2.pdf"
+  ],
+  "notes": ""
+ },
+ {
+  "name": "Evonetix",
+  "aliases": [],
+  "category": "Semiconductor-chip gene synthesis (thermal control)",
+  "country": "UK (Cambridge)",
+  "official_website": "https://www.evonetix.com",
+  "github_accounts": [
+   "(github.com/EvoNetiX is an unrelated German user account)"
+  ],
+  "public_repositories": [
+   "NO SIGNIFICANT PUBLIC GITHUB IMPLEMENTATION FOUND"
+  ],
+  "public_code_availability": "None.",
+  "key_research_papers": [],
+  "patents_found": [
+   {
+    "number": "US11854668B2",
+    "title": "Accessing data storage provided using double-stranded nucleic acid molecules",
+    "assignee": "Evonetix Ltd",
+    "priority": "2018-07-26",
+    "url": "https://patents.google.com/patent/US11854668B2/en"
+   }
+  ],
+  "technical_focus": "Thermally controlled synthesis on silicon; benchtop gene-length DNA.",
+  "commercialization_status": "Early access programme; ADI joint development (Dec 2023); imec scale-up collaboration.",
+  "major_capabilities": [
+   "Chip-scale parallel synthesis"
+  ],
+  "limitations": [
+   "Biology focus; no storage product"
+  ],
+  "open_source_vs_proprietary": "Proprietary.",
+  "standards_involvement": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "partnerships": [
+   "Analog Devices (Dec 2023)",
+   "imec"
+  ],
+  "funding": "Series B >$54M (incl. $24M, Feb 2023).",
+  "recent_activity": [],
+  "physical_validation_evidence": "Physical (early access DNA).",
+  "threat_to_vnx": {
+   "level": "LOW",
+   "why": "Supplier."
+  },
+  "relationship_to_vnx": {
+   "PROVIDER": "Low-medium",
+   "PARTNER": "Low",
+   "CUSTOMER": "Low"
+  },
+  "sources": [
+   "https://www.businesswire.com/news/home/20230207005697/en/Evonetix-Closes-%2424-Million-USD-%C2%A320-Million-Financing",
+   "https://www.imec-int.com/en/articles/evonetix-collaborate-with-imec-to-scale-up-chip-based-technology-production-for-third-generation-dna-synthesis-platform",
+   "https://patents.google.com/patent/US11854668B2/en"
+  ],
+  "notes": ""
+ },
+ {
+  "name": "Cache DNA, Inc.",
+  "aliases": [
+   "Cache"
+  ],
+  "category": "Room-temperature nucleic-acid storage (biobanking first)",
+  "country": "USA (MIT spin-out)",
+  "official_website": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "github_accounts": [],
+  "public_repositories": [
+   "NO SIGNIFICANT PUBLIC GITHUB IMPLEMENTATION FOUND"
+  ],
+  "public_code_availability": "None.",
+  "key_research_papers": [
+   "Based on Bathe lab (MIT) glass encapsulation + search/retrieval research"
+  ],
+  "patents_found": [
+   {
+    "number": "US20260055241A1",
+    "title": "Storage and release of biomolecules",
+    "assignee": "Cache Dna, Inc.",
+    "priority": "2023-02-23",
+    "url": "https://patents.google.com/patent/US20260055241A1/en"
+   },
+   {
+    "number": "WO2025059212A1",
+    "title": "Multiplexed signal amplification for selection of barcoded microparticles",
+    "assignee": "Cache Dna, Inc.",
+    "priority": "2023-09-12",
+    "url": "https://patents.google.com/patent/WO2025059212A1/en"
+   }
+  ],
+  "technical_focus": "Glass-based encapsulation, ambient storage, barcode-based retrieval.",
+  "commercialization_status": "Seed round (May 2024, undisclosed, incl. support from Illumina); NSF grant (2022); biobanking first.",
+  "major_capabilities": [
+   "Containment + barcoded retrieval"
+  ],
+  "limitations": [
+   "Not focused on digital data now"
+  ],
+  "open_source_vs_proprietary": "Proprietary.",
+  "standards_involvement": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "partnerships": [
+   "Illumina (investor support)"
+  ],
+  "funding": "Seed undisclosed.",
+  "recent_activity": [],
+  "physical_validation_evidence": "Physical (biobank samples).",
+  "threat_to_vnx": {
+   "level": "LOW",
+   "why": "Different market."
+  },
+  "relationship_to_vnx": {
+   "PROVIDER": "Medium (containment with random access)",
+   "PARTNER": "Low",
+   "CUSTOMER": "Low"
+  },
+  "sources": [
+   "https://www.businesswire.com/news/home/20240507840568/en/Cache-Raises-Seed-Financing-to-Advance-its-Biomolecule-Storage-Technologies",
+   "https://www.genomeweb.com/business-news/cache-dna-targets-biobanking-first-application-long-term-nucleic-acid-storage-tech",
+   "https://tlo.mit.edu/news/mit-spinout-taking-biomolecule-storage-out-freezer"
+  ],
+  "notes": ""
+ },
+ {
+  "name": "imec",
+  "aliases": [],
+  "category": "Semiconductor R&D hub; Atlas fab partner + shareholder; DNA-writing patents",
+  "country": "Belgium",
+  "official_website": "https://www.imec-int.com",
+  "github_accounts": [],
+  "public_repositories": [
+   "NO SIGNIFICANT PUBLIC GITHUB IMPLEMENTATION FOUND"
+  ],
+  "public_code_availability": "None for DNA.",
+  "key_research_papers": [],
+  "patents_found": [
+   {
+    "number": "US11276003B2",
+    "title": "Method for writing data in DNA based memories",
+    "assignee": "IMEC vzw",
+    "priority": "2017-12-29",
+    "url": "https://patents.google.com/patent/US11276003B2/en"
+   },
+   {
+    "number": "US11276481B2",
+    "title": "Method for writing data in nucleic acid based memories",
+    "assignee": "IMEC vzw",
+    "priority": "2018-03-22",
+    "url": "https://patents.google.com/patent/US11276481B2/en"
+   }
+  ],
+  "technical_focus": "Monolithic nano-electrochemical arrays on CMOS.",
+  "commercialization_status": "Partner/investor in Atlas (5 Mar 2026); also Evonetix collaboration.",
+  "major_capabilities": [
+   "Fab integration"
+  ],
+  "limitations": [
+   "Not a storage vendor"
+  ],
+  "open_source_vs_proprietary": "Proprietary.",
+  "standards_involvement": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "partnerships": [
+   "Atlas/AtlasBase",
+   "Evonetix"
+  ],
+  "funding": "N/A",
+  "recent_activity": [
+   {
+    "date": "2026-03-05",
+    "event": "Atlas partnership + investment",
+    "source": "https://bits-chips.com/article/imec-partners-with-atlas-to-scale-dna-based-data-storage/"
+   }
+  ],
+  "physical_validation_evidence": "Physical (chip fabrication).",
+  "threat_to_vnx": {
+   "level": "LOW",
+   "why": "Aligned with Atlas."
+  },
+  "relationship_to_vnx": {
+   "PARTNER": "Low",
+   "CUSTOMER": "Low",
+   "PROVIDER": "Low"
+  },
+  "sources": [
+   "https://bits-chips.com/article/imec-partners-with-atlas-to-scale-dna-based-data-storage/",
+   "https://patents.google.com/patent/US11276003B2/en"
+  ],
+  "notes": ""
+ },
+ {
+  "name": "Scality",
+  "aliases": [],
+  "category": "Object-storage software vendor; Biomemory integration partner",
+  "country": "France/USA",
+  "official_website": "https://www.scality.com",
+  "github_accounts": [
+   "https://github.com/scality (not inspected for DNA; no DNA repo expected)"
+  ],
+  "public_repositories": [
+   "NO SIGNIFICANT PUBLIC GITHUB IMPLEMENTATION FOUND (DNA-specific)"
+  ],
+  "public_code_availability": "N/A",
+  "key_research_papers": [],
+  "patents_found": [],
+  "technical_focus": "S3 object storage (RING/ARTESCA/ADI); DNA as cold tier.",
+  "commercialization_status": "Partnership announced 2 Jun 2026; integration roadmap 'in coming months'.",
+  "major_capabilities": [
+   "Enterprise channel"
+  ],
+  "limitations": [
+   "Exclusive-looking alignment with Biomemory (CEO on Biomemory board)"
+  ],
+  "open_source_vs_proprietary": "Proprietary (with open-source components).",
+  "standards_involvement": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "partnerships": [
+   "Biomemory"
+  ],
+  "funding": "Private.",
+  "recent_activity": [
+   {
+    "date": "2026-06-02",
+    "event": "Biomemory partnership",
+    "source": "https://www.scality.com/press-releases/dna-data-storage-biomemory-scality"
+   }
+  ],
+  "physical_validation_evidence": "N/A",
+  "threat_to_vnx": {
+   "level": "MEDIUM (indirect)",
+   "why": "Occupies the 'DNA tier inside existing object storage' slot with Biomemory."
+  },
+  "relationship_to_vnx": {
+   "PARTNER": "Low (aligned with Biomemory); other object-storage vendors (MinIO, Cloudian, etc.) are untested targets — no evidence gathered.",
+   "CUSTOMER": "Low",
+   "PROVIDER": "—"
+  },
+  "sources": [
+   "https://www.scality.com/press-releases/dna-data-storage-biomemory-scality",
+   "https://datacenter.news/story/scality-biomemory-team-up-on-dna-archive-storage"
+  ],
+  "notes": ""
+ },
+ {
+  "name": "Mimulus Corp (with GenScript)",
+  "aliases": [
+   "Mimulus",
+   "Molecular Archive Technology (MAT)"
+  ],
+  "category": "DNA archive startup (card form factor, proprietary codec)",
+  "country": "UNKNOWN (not found in public sources as of 2026-10-05) (USA likely; not confirmed)",
+  "official_website": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "github_accounts": [],
+  "public_repositories": [
+   "NO SIGNIFICANT PUBLIC GITHUB IMPLEMENTATION FOUND"
+  ],
+  "public_code_availability": "None.",
+  "key_research_papers": [],
+  "patents_found": [],
+  "technical_focus": "'Glacier Storage Card' in glass; proprietary 'Mimulus Code' compression+encoding; MAT CMOS chip with millions of electrode sites; GenScript synthesis (8M oligos/chip).",
+  "commercialization_status": "Pre-commercial; GenScript strategic collaboration announced Apr 2026.",
+  "major_capabilities": [
+   "Claims up to 2.4 EB per card, 1,000+ yr (unverified marketing claims)"
+  ],
+  "limitations": [
+   "No white papers, pricing or metrics (Blocks & Files)"
+  ],
+  "open_source_vs_proprietary": "Proprietary codec.",
+  "standards_involvement": "None found.",
+  "partnerships": [
+   "GenScript Biotech (Apr 2026)",
+   "Daniel G. Gibson joined Apr 2026 (per Blocks & Files)"
+  ],
+  "funding": "NelGaard Capital; amount undisclosed.",
+  "recent_activity": [
+   {
+    "date": "2026-04-09",
+    "event": "GenScript–Mimulus partnership to industrialize DNA storage",
+    "source": "https://www.biospace.com/press-releases/genscript-and-mimulus-partner-to-industrialize-dna-based-data-storage-for-the-ai-era"
+   },
+   {
+    "date": "2026-06-09",
+    "event": "Blocks & Files profile",
+    "source": "https://www.blocksandfiles.com/file/2026/06/09/mimulus-molecular-dna-storage-project/5252656"
+   }
+  ],
+  "physical_validation_evidence": "None public.",
+  "threat_to_vnx": {
+   "level": "MEDIUM",
+   "why": "New entrant explicitly owning its codec, backed by a large synthesis supplier (GenScript) — signals synthesis suppliers may bundle codecs."
+  },
+  "relationship_to_vnx": {
+   "PARTNER": "Low",
+   "CUSTOMER": "Low",
+   "PROVIDER": "GenScript as a synthesis provider: Medium"
+  },
+  "sources": [
+   "https://www.blocksandfiles.com/file/2026/06/09/mimulus-molecular-dna-storage-project/5252656",
+   "https://www.biospace.com/press-releases/genscript-and-mimulus-partner-to-industrialize-dna-based-data-storage-for-the-ai-era"
+  ],
+  "notes": ""
+ },
+ {
+  "name": "Genomika Lietuva (UAB Genomika)",
+  "aliases": [
+   "Genomika"
+  ],
+  "category": "DNA storage startup; DNAMIC coordinator; DDSA co-chair",
+  "country": "Lithuania (Kaunas)",
+  "official_website": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "github_accounts": [],
+  "public_repositories": [
+   "NO SIGNIFICANT PUBLIC GITHUB IMPLEMENTATION FOUND"
+  ],
+  "public_code_availability": "None.",
+  "key_research_papers": [
+   "DNAMIC project (CORDIS 101115389)"
+  ],
+  "patents_found": [],
+  "technical_focus": "Autonomous low-energy DNA archiving microfactory; OAIS-compliant; dual-level encoding (modifiable metadata + immutable data); replaceable modules.",
+  "commercialization_status": "R&D (EU-funded); aims at 'DNA hard drive'; joined DiDAX (€600k commitment, 2025).",
+  "major_capabilities": [
+   "OAIS alignment",
+   "Interoperable, modular design goal"
+  ],
+  "limitations": [
+   "Small; EU-grant dependent"
+  ],
+  "open_source_vs_proprietary": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "standards_involvement": "Robertas Skliaustas DDSA co-chair (2026).",
+  "partnerships": [
+   "KTU, TUM, MABEAR, Helices (DNAMIC)",
+   "DiDAX consortium"
+  ],
+  "funding": ">€5M EU Pathfinder (2023); DNAMIC EU contribution €2,437,522.50.",
+  "recent_activity": [
+   {
+    "date": "2025-05",
+    "event": "Joins DiDAX",
+    "source": "https://news.pm-global.co.uk/2025/05/lithuanian-biotech-firm-genomika-joins-didax-project-bolstering-dna-data-storage-innovation/?print=pdf"
+   },
+   {
+    "date": "2026-03-10",
+    "event": "Skliaustas presents DDSA at LoC DSA 2026",
+    "source": "https://www.digitalpreservation.gov/meetings/DSA2026/0230_skilaustas_DNA%20data%20storage%20alliance%20presentation.pdf"
+   }
+  ],
+  "physical_validation_evidence": "Not public.",
+  "threat_to_vnx": {
+   "level": "LOW-MEDIUM",
+   "why": "Building its own encoding, but explicitly modular/interoperable."
+  },
+  "relationship_to_vnx": {
+   "PARTNER": "HIGH — modular, OAIS-oriented, standards-led; natural codec/verification partner (no contact).",
+   "CUSTOMER": "Medium",
+   "PROVIDER": "Low"
+  },
+  "sources": [
+   "https://cordis.europa.eu/project/id/101115389",
+   "https://en.ain.ua/2023/07/31/genomika-secures-5m-data-in-dna",
+   "https://en.ktu.edu/news/lithuanians-develop-solutions-for-dna-based-information-storage-technology"
+  ],
+  "notes": ""
+ },
+ {
+  "name": "DNAMIC (EU EIC Pathfinder project)",
+  "aliases": [
+   "DNA Microfactory for Autonomous Archiving"
+  ],
+  "category": "EU research project",
+  "country": "EU (coordinator Lithuania)",
+  "official_website": "https://cordis.europa.eu/project/id/101115389",
+  "github_accounts": [],
+  "public_repositories": [
+   "NO SIGNIFICANT PUBLIC GITHUB IMPLEMENTATION FOUND"
+  ],
+  "public_code_availability": "None found.",
+  "key_research_papers": [],
+  "patents_found": [],
+  "technical_focus": "End-to-end autonomous microfactory: encode, synthesize, store, QC, sequence; OAIS-compliant; dual-level encoding.",
+  "commercialization_status": "Research; runs 1 Oct 2023 – 30 Sep 2026 (ended/ending now).",
+  "major_capabilities": [
+   "OAIS integration"
+  ],
+  "limitations": [
+   "Project-funded"
+  ],
+  "open_source_vs_proprietary": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "standards_involvement": "Coordinator leads DDSA (2026).",
+  "partnerships": [
+   "UAB Genomika (coord.)",
+   "Kaunas University of Technology",
+   "TU Munich",
+   "MABEAR GmbH",
+   "Helices Biological Photolithography GmbH"
+  ],
+  "funding": "EU contribution €2,437,522.50",
+  "recent_activity": [],
+  "physical_validation_evidence": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "threat_to_vnx": {
+   "level": "LOW",
+   "why": "Research."
+  },
+  "relationship_to_vnx": {
+   "PARTNER": "Medium (follow-on EU consortia)",
+   "CUSTOMER": "Low",
+   "PROVIDER": "Low"
+  },
+  "sources": [
+   "https://cordis.europa.eu/project/id/101115389"
+  ],
+  "notes": ""
+ },
+ {
+  "name": "OligoArchive (EU FET/EIC Pathfinder, Imperial College)",
+  "aliases": [],
+  "category": "EU research project (closed)",
+  "country": "EU/UK",
+  "official_website": "https://oligoarchive.github.io/",
+  "github_accounts": [
+   "https://github.com/oligoarchive"
+  ],
+  "public_repositories": [
+   "https://github.com/oligoarchive/postgres-archive — 'Using DNA in the storage hierarchy of the PostgreSQL database' (last push 2018-10-23)"
+  ],
+  "public_code_availability": "Minimal / stale.",
+  "key_research_papers": [
+   "OligoArchive grant 863320"
+  ],
+  "patents_found": [],
+  "technical_focus": "Database-integrated DNA archival (PostgreSQL), encoding to sequencing cycle.",
+  "commercialization_status": "Closed; follow-on MoSS.",
+  "major_capabilities": [
+   "DB-storage-hierarchy integration concept"
+  ],
+  "limitations": [
+   "Inactive"
+  ],
+  "open_source_vs_proprietary": "Open (small).",
+  "standards_involvement": "EURECOM participants contributed to JPEG DNA.",
+  "partnerships": [
+   "Imperial College (coord.)",
+   "EURECOM",
+   "Helixworks"
+  ],
+  "funding": "€2,994,970.78",
+  "recent_activity": [],
+  "physical_validation_evidence": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "threat_to_vnx": {
+   "level": "LOW",
+   "why": "Closed."
+  },
+  "relationship_to_vnx": {
+   "PARTNER": "Low",
+   "CUSTOMER": "Low",
+   "PROVIDER": "Low"
+  },
+  "sources": [
+   "https://eic.ec.europa.eu/eic-summit-2024/project-exhibition/oligoarchive_en",
+   "https://github.com/oligoarchive/postgres-archive"
+  ],
+  "notes": ""
+ },
+ {
+  "name": "MoSS — Molecular Storage System (EU EIC)",
+  "aliases": [],
+  "category": "EU research project (closed)",
+  "country": "EU (coord. Ireland)",
+  "official_website": "https://cordis.europa.eu/project/id/101058035",
+  "github_accounts": [
+   "https://github.com/Helixworks"
+  ],
+  "public_repositories": [
+   "https://github.com/Helixworks/helix-dnadrive (openMoSS format converter, 2017)"
+  ],
+  "public_code_availability": "Minimal.",
+  "key_research_papers": [],
+  "patents_found": [],
+  "technical_focus": "Automated enzymatic, error-tolerant synthesis for storage.",
+  "commercialization_status": "Closed (1 May 2022 – 30 Apr 2024).",
+  "major_capabilities": [
+   "Cost premise: ~$0.001 per nucleotide synthesis; DNA ~7 orders of magnitude costlier than tape (CORDIS)"
+  ],
+  "limitations": [
+   "Closed"
+  ],
+  "open_source_vs_proprietary": "Partly open.",
+  "standards_involvement": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "partnerships": [
+   "Helixworks (coord.)",
+   "EURECOM",
+   "Imperial College"
+  ],
+  "funding": "EU contribution €2,594,615",
+  "recent_activity": [],
+  "physical_validation_evidence": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "threat_to_vnx": {
+   "level": "LOW",
+   "why": "Closed."
+  },
+  "relationship_to_vnx": {
+   "PARTNER": "Low",
+   "CUSTOMER": "Low",
+   "PROVIDER": "Low"
+  },
+  "sources": [
+   "https://cordis.europa.eu/project/id/101058035"
+  ],
+  "notes": ""
+ },
+ {
+  "name": "DiDAX (EU EIC Pathfinder, coord. Technion)",
+  "aliases": [],
+  "category": "EU research project",
+  "country": "EU/Israel",
+  "official_website": "https://portal.fis.leibniz-lsb.tum.de/en/projects/eic-pathfinder-101115134-didax/",
+  "github_accounts": [],
+  "public_repositories": [
+   "NO SIGNIFICANT PUBLIC GITHUB IMPLEMENTATION FOUND"
+  ],
+  "public_code_availability": "None found.",
+  "key_research_papers": [],
+  "patents_found": [],
+  "technical_focus": "Encoding/decoding algorithms, composite DNA, photolithographic synthesis, in-product storage, crypto authentication.",
+  "commercialization_status": "Research; 1 Nov 2023 – 31 Oct 2027.",
+  "major_capabilities": [
+   "Strong coding-theory groups (Technion, ETH, TUM, TU Delft)"
+  ],
+  "limitations": [
+   "Research"
+  ],
+  "open_source_vs_proprietary": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "standards_involvement": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "partnerships": [
+   "Technion",
+   "TUM",
+   "TU Delft",
+   "ETH Zurich",
+   "Genomika (2025)"
+  ],
+  "funding": "Total budget €5.2M (per Genomika release)",
+  "recent_activity": [
+   {
+    "date": "2025-05",
+    "event": "Genomika joins",
+    "source": "https://news.pm-global.co.uk/2025/05/lithuanian-biotech-firm-genomika-joins-didax-project-bolstering-dna-data-storage-innovation/?print=pdf"
+   }
+  ],
+  "physical_validation_evidence": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "threat_to_vnx": {
+   "level": "LOW-MEDIUM",
+   "why": "Academic codecs may be released openly and commoditize codec layer."
+  },
+  "relationship_to_vnx": {
+   "PARTNER": "Medium (research collaboration)",
+   "CUSTOMER": "Low",
+   "PROVIDER": "Low"
+  },
+  "sources": [
+   "https://portal.fis.leibniz-lsb.tum.de/en/projects/eic-pathfinder-101115134-didax/"
+  ],
+  "notes": ""
+ },
+ {
+  "name": "ETH Zurich Functional Materials Lab (Grass lab) — dt4dds",
+  "aliases": [
+   "fml-ethz"
+  ],
+  "category": "Academic open-source simulator/benchmark (commoditizing threat + partner)",
+  "country": "Switzerland",
+  "official_website": "https://github.com/fml-ethz",
+  "github_accounts": [
+   "https://github.com/fml-ethz"
+  ],
+  "public_repositories": [
+   "https://github.com/fml-ethz/dt4dds (digital twin of DNA storage workflow; last push 2025-07-10)",
+   "https://github.com/fml-ethz/dt4dds-benchmark (benchmark suite for codecs and clustering; 2025-10-19)",
+   "https://github.com/fml-ethz/dt4dds-challenges (C++ error-channel challenges)"
+  ],
+  "public_code_availability": "Yes (open source).",
+  "key_research_papers": [
+   "Robert Grass, 'In-depth analysis of the error sources of DNA data storage routines' (ISIT 2024 workshop)"
+  ],
+  "patents_found": [],
+  "technical_focus": "Error-channel simulation, codec benchmarking.",
+  "commercialization_status": "Academic.",
+  "major_capabilities": [
+   "De-facto open benchmark"
+  ],
+  "limitations": [
+   "Academic"
+  ],
+  "open_source_vs_proprietary": "Open source.",
+  "standards_involvement": "Speaker in DDSA ISIT workshop.",
+  "partnerships": [
+   "DiDAX"
+  ],
+  "funding": "N/A",
+  "recent_activity": [
+   {
+    "date": "2025-10-19",
+    "event": "dt4dds-benchmark update",
+    "source": "https://github.com/fml-ethz/dt4dds-benchmark"
+   }
+  ],
+  "physical_validation_evidence": "Simulation calibrated on wet-lab data (per project descriptions).",
+  "threat_to_vnx": {
+   "level": "MEDIUM",
+   "why": "Free, credible benchmark/simulator: VNX's simulation-only results will be judged against it; also reduces value of a closed simulator."
+  },
+  "relationship_to_vnx": {
+   "PARTNER": "HIGH — publish VNX results on dt4dds-benchmark for credibility.",
+   "CUSTOMER": "—",
+   "PROVIDER": "Open tooling"
+  },
+  "sources": [
+   "https://github.com/fml-ethz/dt4dds",
+   "https://github.com/fml-ethz/dt4dds-benchmark",
+   "https://snia.org/sites/default/files/Preview/2025/20250115%20-%20DNA%20Data%20Storage%20Alliance%20-%20SNIA%20Preview%202025%20v2.pdf"
+  ],
+  "notes": ""
+ },
+ {
+  "name": "BGI (BGI-Research Shenzhen / BGI-SynBio)",
+  "aliases": [
+   "深圳华大生命科学研究院"
+  ],
+  "category": "Chinese genomics major; open-source DNA storage codecs",
+  "country": "China",
+  "official_website": "https://www.bgi.com",
+  "github_accounts": [
+   "https://github.com/BGI-SynBio",
+   "https://github.com/ntpz870817 (BGI-affiliated author)"
+  ],
+  "public_repositories": [
+   "https://github.com/BGI-SynBio/Chamaeleo — 'BGI DNA Storage Kit' (MIT)",
+   "https://github.com/ntpz870817/Chamaeleo (46 stars, MIT)",
+   "https://github.com/BGI-SynBio/YinYangCode (MIT; pushed 2025-10-23)",
+   "https://github.com/ntpz870817/DNA-storage-YYC (MIT)",
+   "https://github.com/BGI-SynBio/DNA-BF",
+   "https://github.com/BGI-SynBio/YC-FileVersionControl"
+  ],
+  "public_code_availability": "Yes (MIT).",
+  "key_research_papers": [
+   "Ping et al., 'Towards practical and robust DNA-based data archiving using the yin–yang codec system', Nature Computational Science 2022 (per repo)"
+  ],
+  "patents_found": [
+   {
+    "number": "WO2023108616A1",
+    "title": "Method and system for storing information using DNA",
+    "assignee": "BGI-Research Shenzhen",
+    "priority": "2021-12-17",
+    "url": "https://patents.google.com/patent/WO2023108616A1/en"
+   },
+   {
+    "number": "CN109074424B",
+    "title": "Method for storing text information using DNA, decoding method and application",
+    "assignee": "BGI-Research Shenzhen",
+    "priority": "2016-05-04",
+    "url": "https://patents.google.com/patent/CN109074424B/en"
+   }
+  ],
+  "technical_focus": "Transcoding (YYC), codec kit, sequencing (MGI/DNBSEQ).",
+  "commercialization_status": "No DNA-storage product found.",
+  "major_capabilities": [
+   "Open codec kit + sequencer manufacturer within group"
+  ],
+  "limitations": [
+   "No commercial storage offering seen"
+  ],
+  "open_source_vs_proprietary": "Open-source codecs + patents.",
+  "standards_involvement": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "partnerships": [],
+  "funding": "Public group.",
+  "recent_activity": [
+   {
+    "date": "2025-10-23",
+    "event": "YinYangCode repo update",
+    "source": "https://github.com/BGI-SynBio/YinYangCode"
+   }
+  ],
+  "physical_validation_evidence": "Physical (published wet-lab).",
+  "threat_to_vnx": {
+   "level": "MEDIUM",
+   "why": "Free MIT codecs from a group that also makes sequencers — commoditizes basic encoding."
+  },
+  "relationship_to_vnx": {
+   "PROVIDER": "Medium (DNBSEQ sequencing in Asia; check export/India availability)",
+   "PARTNER": "Low",
+   "CUSTOMER": "Low"
+  },
+  "sources": [
+   "https://github.com/BGI-SynBio/YinYangCode",
+   "https://github.com/ntpz870817/Chamaeleo",
+   "https://patents.google.com/patent/WO2023108616A1/en"
+  ],
+  "notes": ""
+ },
+ {
+  "name": "Tianjin University (Wu Huaming, Center for Applied Mathematics; Yuan Yingjin synthetic biology)",
+  "aliases": [
+   "TJU"
+  ],
+  "category": "Chinese academic leader",
+  "country": "China",
+  "official_website": "https://en.tju.edu.cn",
+  "github_accounts": [
+   "https://github.com/Guanjinqu (author of HELIX & StairLoop repos)"
+  ],
+  "public_repositories": [
+   "https://github.com/Guanjinqu/Helix (biological image storage; 2025-01)",
+   "https://github.com/Guanjinqu/StairLoop (GPL-3.0; 2025-08)"
+  ],
+  "public_code_availability": "Yes.",
+  "key_research_papers": [
+   "HELIX, Nature Computational Science 5, 397–404 (May 2025): ~60 MB omics images in 130,000 strands, wet-lab, 97.20% image quality at 7x coverage",
+   "DNA StairLoop, Nature Communications 2025 (doi 10.1038/s41467-025-64230-3)"
+  ],
+  "patents_found": [
+   {
+    "number": "CN110442472B",
+    "title": "Hybrid error correction and data recovery method for DNA data storage",
+    "assignee": "Tianjin University",
+    "priority": "2019-07-03",
+    "url": "https://patents.google.com/patent/CN110442472B/en"
+   },
+   {
+    "number": "CN114898806A",
+    "title": "DNA movable type writing system and method",
+    "assignee": "Tianjin University",
+    "priority": "2022-05-25",
+    "url": "https://patents.google.com/patent/CN114898806A/en"
+   }
+  ],
+  "technical_focus": "Error-tolerant coding, image-specific compression, movable-type writing.",
+  "commercialization_status": "Academic; spin-out 中合基因 (Zhonghe Gene, Tianjin, 2022) reported — link unverified.",
+  "major_capabilities": [
+   "Wet-lab validated codecs at tens-of-MB scale"
+  ],
+  "limitations": [
+   "Academic"
+  ],
+  "open_source_vs_proprietary": "Open code + patents.",
+  "standards_involvement": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "partnerships": [],
+  "funding": "N/A",
+  "recent_activity": [
+   {
+    "date": "2025-05",
+    "event": "HELIX published",
+    "source": "https://en.tju.edu.cn/info/1010/9376.htm"
+   },
+   {
+    "date": "2025",
+    "event": "StairLoop published",
+    "source": "https://www.nature.com/nature-index/article/10.1038/s41467-025-64230-3"
+   }
+  ],
+  "physical_validation_evidence": "Physical (wet-lab synthesis + sequencing).",
+  "threat_to_vnx": {
+   "level": "MEDIUM",
+   "why": "High-quality open codecs with physical validation set a public bar VNX must exceed."
+  },
+  "relationship_to_vnx": {
+   "PARTNER": "Low-medium (benchmark comparison)",
+   "CUSTOMER": "Low",
+   "PROVIDER": "Low"
+  },
+  "sources": [
+   "https://en.tju.edu.cn/info/1010/9376.htm",
+   "https://www.news.cn/tech/20250609/4970eba7b26f48fa9412da27359e07cd/c.html",
+   "https://github.com/Guanjinqu/StairLoop",
+   "https://patents.google.com/patent/CN110442472B/en"
+  ],
+  "notes": ""
+ },
+ {
+  "name": "Southern University of Science and Technology (SUSTech; Xingyu Jiang lab)",
+  "aliases": [
+   "南方科技大学"
+  ],
+  "category": "Chinese academic (DNA cassette tape)",
+  "country": "China (Shenzhen)",
+  "official_website": "https://www.sustech.edu.cn",
+  "github_accounts": [],
+  "public_repositories": [
+   "NO SIGNIFICANT PUBLIC GITHUB IMPLEMENTATION FOUND (lab); student repo SUSTech-ISACG-Association/Kanagawa_DNA_Storage is coursework"
+  ],
+  "public_code_availability": "None from lab.",
+  "key_research_papers": [
+   "'Compact cassette tape for DNA-based data storage', Science Advances, 10 Sep 2025 (doi 10.1126/sciadv.adw2613): ~550,000 file slots, ~1,570 file positions located per second, 36 PB projected capacity"
+  ],
+  "patents_found": [
+   {
+    "number": "CN119281412A",
+    "title": "Microfluidic chip, chip array and DNA storage method",
+    "assignee": "SUSTech",
+    "priority": "2024-06-30",
+    "url": "https://patents.google.com/patent/CN119281412A/en"
+   },
+   {
+    "number": "CN117238360A",
+    "title": "Methods to improve data storage stability, confidentiality and data accuracy",
+    "assignee": "SUSTech",
+    "priority": "2023-10-11",
+    "url": "https://patents.google.com/patent/CN117238360A/en"
+   }
+  ],
+  "technical_focus": "Tape-format DNA media with barcode-addressed partitions.",
+  "commercialization_status": "Academic prototype.",
+  "major_capabilities": [
+   "Physical random-access media concept"
+  ],
+  "limitations": [
+   "Write rate far too slow (TechRadar)"
+  ],
+  "open_source_vs_proprietary": "Proprietary/patents.",
+  "standards_involvement": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "partnerships": [],
+  "funding": "N/A",
+  "recent_activity": [
+   {
+    "date": "2025-09-10",
+    "event": "Science Advances paper",
+    "source": "https://www.storagenewsletter.com/2025/09/17/rd-compact-cassette-tape-for-dna-based-data-storage/"
+   }
+  ],
+  "physical_validation_evidence": "Physical prototype.",
+  "threat_to_vnx": {
+   "level": "LOW",
+   "why": "Media research; needs file-system/codec software."
+  },
+  "relationship_to_vnx": {
+   "PARTNER": "Low-medium (file-table/addressing software for partitioned media)",
+   "CUSTOMER": "Low",
+   "PROVIDER": "Low"
+  },
+  "sources": [
+   "https://www.storagenewsletter.com/2025/09/17/rd-compact-cassette-tape-for-dna-based-data-storage/",
+   "https://www.earth.com/news/new-dna-cassette-tape-storage-device-holds-36-petabytes-data-over-3-billion-songs/",
+   "https://www.techradar.com/pro/chinese-scientists-want-to-build-a-forever-dna-tape-with-a-80-million-dvds-storage-capacity-but-it-will-take-forever-to-write-at-the-current-rate"
+  ],
+  "notes": ""
+ },
+ {
+  "name": "CAS Beijing Institute of Genomics — Bi Sheng-1 (毕昇一号) DNA movable-type printer",
+  "aliases": [
+   "Bi Sheng-1"
+  ],
+  "category": "Chinese academic device",
+  "country": "China",
+  "official_website": "https://english.cas.cn/newsroom/cas_media/202504/t20250409_1040848.shtml",
+  "github_accounts": [],
+  "public_repositories": [
+   "NO SIGNIFICANT PUBLIC GITHUB IMPLEMENTATION FOUND"
+  ],
+  "public_code_availability": "None found.",
+  "key_research_papers": [
+   "CAS news 9 Apr 2025 (paper reference not captured)"
+  ],
+  "patents_found": [],
+  "technical_focus": "Inkjet 'movable type' printing of pre-made 24-bp DNA blocks.",
+  "commercialization_status": "Research; Bi Sheng-2 in development (TB-scale goal).",
+  "major_capabilities": [
+   "4 bytes/s write; 43.7 KB encoded from 4 files; 168,000 blocks in 5 h",
+   "Cost $122/MB vs $3,260/MB 'commercial' (CAS claim)"
+  ],
+  "limitations": [
+   "KB-scale demos"
+  ],
+  "open_source_vs_proprietary": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "standards_involvement": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "partnerships": [],
+  "funding": "N/A",
+  "recent_activity": [
+   {
+    "date": "2025-04-09",
+    "event": "Bi Sheng-1 announced",
+    "source": "https://english.cas.cn/newsroom/cas_media/202504/t20250409_1040848.shtml"
+   }
+  ],
+  "physical_validation_evidence": "Physical (small).",
+  "threat_to_vnx": {
+   "level": "LOW",
+   "why": "Hardware research."
+  },
+  "relationship_to_vnx": {
+   "PARTNER": "Low",
+   "CUSTOMER": "Low",
+   "PROVIDER": "Low"
+  },
+  "sources": [
+   "https://english.cas.cn/newsroom/cas_media/202504/t20250409_1040848.shtml"
+  ],
+  "notes": ""
+ },
+ {
+  "name": "C-Atom / 中科碳元 (SIAT spin-out, Shenzhen)",
+  "aliases": [
+   "Zhongke Tanyuan"
+  ],
+  "category": "Chinese DNA storage startup (codec-led)",
+  "country": "China",
+  "official_website": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "github_accounts": [],
+  "public_repositories": [
+   "NO SIGNIFICANT PUBLIC GITHUB IMPLEMENTATION FOUND"
+  ],
+  "public_code_availability": "None.",
+  "key_research_papers": [],
+  "patents_found": [],
+  "technical_focus": "'悟空编码' (Wukong coding) proprietary codec — GC-balanced, low homopolymer.",
+  "commercialization_status": "Angel round of 'tens of millions RMB' (Aug 2021, led by 英诺天使基金). 2025–2026 status: UNKNOWN.",
+  "major_capabilities": [
+   "Codec-first startup (closest analogue to VNX found in China)"
+  ],
+  "limitations": [
+   "No recent news"
+  ],
+  "open_source_vs_proprietary": "Proprietary.",
+  "standards_involvement": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "partnerships": [
+   "Shenzhen Institute of Advanced Technology (CAS) / Dai Junbiao team"
+  ],
+  "funding": "Angel 'tens of millions RMB' (2021).",
+  "recent_activity": [],
+  "physical_validation_evidence": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "threat_to_vnx": {
+   "level": "LOW-MEDIUM",
+   "why": "Codec-first model similar to VNX, but China-focused and quiet since 2021."
+  },
+  "relationship_to_vnx": {
+   "PARTNER": "Low",
+   "CUSTOMER": "Low",
+   "PROVIDER": "Low"
+  },
+  "sources": [
+   "https://news.pedaily.cn/202108/475943.shtml",
+   "https://pitchhub.36kr.com/project/1678250784486408"
+  ],
+  "notes": ""
+ },
+ {
+  "name": "Zhonghe Gene / 中合基因 (Tianjin)",
+  "aliases": [],
+  "category": "Chinese startup (desktop DNA storage platform) — LOW CONFIDENCE",
+  "country": "China (Tianjin, founded 2022)",
+  "official_website": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "github_accounts": [],
+  "public_repositories": [
+   "NO SIGNIFICANT PUBLIC GITHUB IMPLEMENTATION FOUND"
+  ],
+  "public_code_availability": "None.",
+  "key_research_papers": [],
+  "patents_found": [],
+  "technical_focus": "Reported 'DNA-DISK' desktop platform integrating enzymatic synthesis, storage and sequencing on digital microfluidics.",
+  "commercialization_status": "Reported product launch (date unknown); not verified from a primary source.",
+  "major_capabilities": [],
+  "limitations": [
+   "Unverified"
+  ],
+  "open_source_vs_proprietary": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "standards_involvement": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "partnerships": [],
+  "funding": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "recent_activity": [],
+  "physical_validation_evidence": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "threat_to_vnx": {
+   "level": "LOW",
+   "why": "Unverified."
+  },
+  "relationship_to_vnx": {
+   "PARTNER": "Unknown",
+   "CUSTOMER": "Unknown",
+   "PROVIDER": "Unknown"
+  },
+  "sources": [
+   "https://www.cbinsights.com/company/zhonghe-gene"
+  ],
+  "notes": "Only search-engine snippets found; treat as lead, not fact."
+ },
+ {
+  "name": "BioCompute (India → San Francisco)",
+  "aliases": [],
+  "category": "Early-stage DNA storage startup",
+  "country": "India (Bengaluru, founded 2024) → relocated to San Francisco (reported Jul 2026)",
+  "official_website": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "github_accounts": [],
+  "public_repositories": [
+   "NO SIGNIFICANT PUBLIC GITHUB IMPLEMENTATION FOUND"
+  ],
+  "public_code_availability": "None.",
+  "key_research_papers": [],
+  "patents_found": [],
+  "technical_focus": "End-to-end DNA storage prototype (lab infrastructure).",
+  "commercialization_status": "Pre-commercial; >₹5 crore raised.",
+  "major_capabilities": [
+   "Only Indian DNA-storage startup found"
+  ],
+  "limitations": [
+   "Moved out of India"
+  ],
+  "open_source_vs_proprietary": "Proprietary.",
+  "standards_involvement": "UNKNOWN (not found in public sources as of 2026-10-05)",
+  "partnerships": [],
+  "funding": ">₹5 crore (angel/seed).",
+  "recent_activity": [
+   {
+    "date": "2026-07-02",
+    "event": "Relocation to San Francisco reported",
+    "source": "https://newskarnataka.com/bengaluru/bengaluru-startups-us-move-reignites-brain-drain-debate/02072026/"
+   }
+  ],
+  "physical_validation_evidence": "Claims thousands of experiments + end-to-end prototype (self-reported).",
+  "threat_to_vnx": {
+   "level": "LOW-MEDIUM",
+   "why": "Closest 'Indian' competitor, but wet-lab-led and now US-based — leaves India software/standards niche open."
+  },
+  "relationship_to_vnx": {
+   "PARTNER": "Low-medium",
+   "CUSTOMER": "Low",
+   "PROVIDER": "Low"
+  },
+  "sources": [
+   "https://trak.in/stories/24-year-old-indian-entrepreneur-wants-to-replace-data-centres-with-dna/",
+   "https://newskarnataka.com/bengaluru/bengaluru-startups-us-move-reignites-brain-drain-debate/02072026/"
+  ],
+  "notes": ""
+ },
+ {
+  "name": "JPEG DNA — ISO/IEC 25508 (JPEG Committee, ISO/IEC JTC 1/SC 29/WG 1)",
+  "aliases": [
+   "JPEG DNA"
+  ],
+  "category": "International standard (image coding for DNA)",
+  "country": "International",
+  "official_website": "https://jpeg.org/items/20260608_press.html",
+  "github_accounts": [],
+  "public_repositories": [
+   "Verification-model code not located on GitHub; related tools: https://github.com/jpegdna-mediacoding/OligoAnalyzer"
+  ],
+  "public_code_availability": "Reference software status UNKNOWN.",
+  "key_research_papers": [
+   "EURECOM, 'Overview of JPEG DNA coding system for image storage on synthetic DNA' — https://www.eurecom.edu/en/node/4899772"
+  ],
+  "patents_found": [],
+  "technical_focus": "Image codec producing nucleotide sequences under biochemical constraints, robust to synthesis/sequencing noise.",
+  "commercialization_status": "Part 1 reached DIS at 111th JPEG meeting (13–17 Apr 2026) after independent wet-lab synthesis/sequencing test; IS publication expected before end of 2026.",
+  "major_capabilities": [
+   "First ISO/IEC standard for DNA media coding"
+  ],
+  "limitations": [
+   "Images only; not a general archive format"
+  ],
+  "open_source_vs_proprietary": "Open standard (ISO, paid document).",
+  "standards_involvement": "Is the standard.",
+  "partnerships": [
+   "EURECOM and others"
+  ],
+  "funding": "N/A",
+  "recent_activity": [
+   {
+    "date": "2026-04-17",
+    "event": "DIS stage reached",
+    "source": "https://jpeg.org/items/20260608_press.html"
+   }
+  ],
+  "physical_validation_evidence": "Physical: independent wet-lab experiments decoded correctly (JPEG press release).",
+  "threat_to_vnx": {
+   "level": "NONE (opportunity)",
+   "why": "VNX can carry JPEG DNA payloads and be an early conformant implementation."
+  },
+  "relationship_to_vnx": {
+   "PARTNER": "Standard to implement",
+   "CUSTOMER": "—",
+   "PROVIDER": "—"
+  },
+  "sources": [
+   "https://jpeg.org/items/20260608_press.html",
+   "https://www.iso.org/standard/90579.html",
+   "https://www.eurecom.edu/en/node/4899772"
+  ],
+  "notes": "One search snippet claimed publication on 2 Jul 2026; not confirmed by jpeg.org (Jun 2026: DIS, IS expected by end-2026). Check iso.org before citing."
+ }
+]
