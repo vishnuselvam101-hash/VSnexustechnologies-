@@ -36,7 +36,7 @@ from vnxdna.native.reads import iter_reads
 from vnxdna.recovery.options import DecodeOptions, DecodeResult
 from vnxdna.recovery.outer import _pass2
 from vnxdna.recovery.pass1 import _p_init, _process
-from vnxdna.recovery.probe import detect_layout
+from vnxdna.recovery.probe import check_unsupported_after_pass1, detect_layout
 from vnxdna.recovery.schedule import _deferred_recovery, _plan_pass1
 from vnxdna.recovery.spill import Spill, _bucket_count
 
@@ -147,6 +147,10 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
         stage["pass1_worker_cpu"] = cpu["seconds"]
         if stats["reads"] == 0:
             raise VNXFormatError("the read file contains no reads", stage="input")
+        if stats["fast"] + stats["sync"] + stats.get("smart", 0) + stats.get("soft", 0) == 0:
+            # spec §3.10 step 7: no frame of the chosen version verified in pass 1. An unsupported or legacy frame
+            # version is refused here (exit 6, not retryable), before any superblock error (exit 5, retryable).
+            check_unsupported_after_pass1(reads_path)
         ev.emit("pass1_end", "pass1", reads_processed=stats["reads"], fast=stats["fast"], sync=stats["sync"],
                 reverse_complement=stats["reverse_complement"], reads_pending=stats["pending"],
                 reads_rejected=stats["unaligned"], orphans=stats["orphans"], seconds=round(stage["pass1_reads"], 4),

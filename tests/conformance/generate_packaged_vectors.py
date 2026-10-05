@@ -39,7 +39,7 @@ def vector(group: str, vid: str, stage: str, operation: str, params: dict, input
     d.mkdir(parents=True)
     refs = {}
     for name, data in (inputs or {}).items():
-        fn = f"{name}.bin" if not name.startswith("reads") else f"{name}.fasta"
+        fn = f"{name}.dat" if not name.startswith("reads") else f"{name}.fasta"   # *.bin is git-ignored
         (d / fn).write_bytes(data)
         refs[name] = {"path": fn, "sha256": sha(data)}
     vec = {"schema": "vnx.conformance-vector/1", "id": vid, "stage": stage,
@@ -96,6 +96,22 @@ def main() -> int:
     forged = {"code": "FORMAT_ERROR", "category": "INVALID_INPUT", "exit_code": 3, "retryable": False}
     vector("negative", "superblock.forged.k0", "D8", "superblock.unpack", {}, {"superblock": sb_bytes(1, b8=0, b9=0)},
            kind="negative", formats=sb1, expected_error=forged)
+    # D1 probe and dispatch (spec §3.10 step 6): reads files of a few hundred strands
+    import tempfile
+    sys.path.insert(0, str(ROOT / "tests"))
+    from v6 import probe_support as ps
+    with tempfile.TemporaryDirectory() as tmp:
+        t = Path(tmp)
+        f4 = ps.frame4_pool(t / "f4", size=3000, seed=61)
+        vector("stage", "probe.frame4.balanced", "D1", "probe", {}, {"reads": f4.read_bytes()},
+               formats={"frame": 4, "superblock": 1, "container": None})
+        cases = (("probe.nibble7", ps.nibble_pool(t / "n7", n=200, seed=62), "FRAME_VERSION_UNSUPPORTED", "UNSUPPORTED_FORMAT", 6, 7),
+                 ("probe.v3-frame5", ps.v3_pool(t / "v3", size=3000, seed=63), "LEGACY_FORMAT", "UNSUPPORTED_FORMAT", 6, 5),
+                 ("probe.random", ps.random_pool(t / "r", n=200, seed=64), "LAYOUT_UNDETECTED", "INVALID_INPUT", 3, None))
+        for vid, path, code, cat, exit_code, frame in cases:
+            vector("negative", vid, "D1", "probe", {}, {"reads": path.read_bytes()}, kind="negative",
+                   formats={"frame": frame, "superblock": None, "container": None},
+                   expected_error={"code": code, "category": cat, "exit_code": exit_code, "retryable": False})
     (OUT / "index.json").write_text(json.dumps({"schema": "vnx.conformance-index/1", "evidence": EVIDENCE,
                                                 "vectors": index}, indent=1) + "\n")
     (OUT / "README.md").write_text("Conformance vector subset shipped with vnxdna (spec §6). Generated once by "

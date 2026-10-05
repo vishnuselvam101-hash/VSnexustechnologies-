@@ -1,0 +1,34 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "probe.frame4.balanced",
+ "stage": "D1",
+ "formats": {
+  "frame": 4,
+  "superblock": 1,
+  "container": null
+ },
+ "kind": "positive",
+ "operation": "probe",
+ "params": {},
+ "inputs": {
+  "reads": {
+   "path": "reads.fasta",
+   "sha256": "b65f3d5b691a73d314691ae295708f8f259fa388c7e18b993467455c91e82231"
+  }
+ },
+ "expected": {
+  "outputs": {
+   "layout": {
+    "payload_bytes": 40,
+    "inner_parity": 16,
+    "marker_period": 24,
+    "marker_len": 3,
+    "frame_bytes": 70,
+    "strand_nt": 313,
+    "markers": 11
+   }
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

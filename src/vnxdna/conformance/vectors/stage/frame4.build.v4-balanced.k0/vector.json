@@ -18,7 +18,7 @@
  },
  "inputs": {
   "payload": {
-   "path": "payload.bin",
+   "path": "payload.dat",
    "sha256": "513ab46f0c9a372aca7341d28c3d192c174e3798666c680762c7eb6210aa4392"
   }
  },

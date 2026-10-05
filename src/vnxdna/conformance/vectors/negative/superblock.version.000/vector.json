@@ -12,7 +12,7 @@
  "params": {},
  "inputs": {
   "superblock": {
-   "path": "superblock.bin",
+   "path": "superblock.dat",
    "sha256": "947c427bb62aea5e726f64df45fecaf69efd340ff1ea0ec5c7886271b02652e7"
   }
  },

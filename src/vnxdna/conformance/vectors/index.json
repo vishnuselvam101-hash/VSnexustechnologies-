@@ -199,6 +199,50 @@
     "container": null
    },
    "path": "negative/superblock.forged.k0"
+  },
+  {
+   "id": "probe.frame4.balanced",
+   "stage": "D1",
+   "kind": "positive",
+   "formats": {
+    "frame": 4,
+    "superblock": 1,
+    "container": null
+   },
+   "path": "stage/probe.frame4.balanced"
+  },
+  {
+   "id": "probe.nibble7",
+   "stage": "D1",
+   "kind": "negative",
+   "formats": {
+    "frame": 7,
+    "superblock": null,
+    "container": null
+   },
+   "path": "negative/probe.nibble7"
+  },
+  {
+   "id": "probe.v3-frame5",
+   "stage": "D1",
+   "kind": "negative",
+   "formats": {
+    "frame": 5,
+    "superblock": null,
+    "container": null
+   },
+   "path": "negative/probe.v3-frame5"
+  },
+  {
+   "id": "probe.random",
+   "stage": "D1",
+   "kind": "negative",
+   "formats": {
+    "frame": null,
+    "superblock": null,
+    "container": null
+   },
+   "path": "negative/probe.random"
   }
  ]
 }

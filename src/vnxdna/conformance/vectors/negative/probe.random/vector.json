@@ -1,24 +1,24 @@
 {
  "schema": "vnx.conformance-vector/1",
- "id": "superblock.forged.k0",
- "stage": "D8",
+ "id": "probe.random",
+ "stage": "D1",
  "formats": {
   "frame": null,
-  "superblock": 1,
+  "superblock": null,
   "container": null
  },
  "kind": "negative",
- "operation": "superblock.unpack",
+ "operation": "probe",
  "params": {},
  "inputs": {
-  "superblock": {
-   "path": "superblock.dat",
-   "sha256": "e4144785a1724a2b7e47fd64d33d39d05be5df6ab6b3107cec3c0f4cd91f3f9a"
+  "reads": {
+   "path": "reads.fasta",
+   "sha256": "ac3278e1cec87a0976e5d0bc16981705f7078b9382daa5e344cc4ec1441e7586"
   }
  },
  "expected": {
   "error": {
-   "code": "FORMAT_ERROR",
+   "code": "LAYOUT_UNDETECTED",
    "category": "INVALID_INPUT",
    "exit_code": 3,
    "retryable": false
