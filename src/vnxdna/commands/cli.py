@@ -8,7 +8,8 @@
     vnx decode reads.fastq -o recovered.vnx      reads → verified container (or --extract DIR)
     vnx validate strands.fasta                   biological constraint diagnostics (JSON)
     vnx benchmark --profile balanced             machine-readable benchmark suite
-    vnx experiment run experiments/EXP-0001/config.json
+    vnx experiment run experiments/EXP-0001/config.json      (also writes manifest.json, vnx.experiment/1)
+    vnx experiment reproduce manifest.json       re-run a vnx.experiment/1 manifest; exit 0 iff result_hash matches
     vnx conformance                              run the conformance vectors (spec §6)
     vnx experimental ...                         experimental features (clearly separated)
 
@@ -460,13 +461,19 @@ def channel_simulate(strands: Path, output: Path, config: Optional[Path] = typer
                                                      help="PATH=JSON parameter change, e.g. sequencing.substitution.rate=0.01."),
                      metadata: Optional[Path] = typer.Option(None, "--metadata",
                                                              help="Also write the vnx.simulation-metadata/1 JSON here."),
+                     manifest: Optional[Path] = typer.Option(None, "--manifest",
+                                                             help="Also write the vnx.experiment/1 manifest here "
+                                                                  "(re-run with `vnx experiment reproduce`)."),
+                     experiment_id: Optional[str] = typer.Option(None, "--experiment-id",
+                                                                 help="experiment_id recorded in --manifest."),
                      workers: int = typer.Option(1, "--workers", "-w"), force: bool = FORCE_OPT) -> None:
     """Simulate synthesis, storage, amplification and sequencing (SIMULATION): strands → reads (FASTQ/FASTA)."""
     def go():
         overrides = {"substitution_rate": substitution_rate, "insertion_rate": insertion_rate,
                      "deletion_rate": deletion_rate, "dropout_rate": dropout_rate, **_params(param)}
         _out(sdk.simulate(strands, output, config=config, model=model, seed=seed, coverage=coverage, workers=workers,
-                          overwrite=force, progress=_progress_cb(), overrides=overrides, metadata=metadata))
+                          overwrite=force, progress=_progress_cb(), overrides=overrides, metadata=metadata,
+                          manifest=manifest, experiment_id=experiment_id))
     _run(go)
 
 
@@ -549,10 +556,17 @@ def experiment_run(config: Path) -> None:
 
 
 @experiment_app.command("reproduce")
-def experiment_reproduce(directory: Path) -> None:
-    """Re-run an experiment directory and compare all deterministic results."""
+def experiment_reproduce(target: Path = typer.Argument(..., metavar="MANIFEST_OR_DIR",
+                                                      help="A vnx.experiment/1 manifest file, or an experiment directory."),
+                         input_path: Optional[Path] = typer.Option(None, "--input",
+                                                                   help="Manifest only: the strand file to use instead of the recorded path."),
+                         workers: Optional[int] = typer.Option(None, "--workers", "-w",
+                                                               help="Manifest only: worker processes (results do not depend on it).")) -> None:
+    """Re-run an experiment: a manifest (compare result_hash) or a directory (compare all deterministic results).
+    Exit 0 reproduced, 1 not reproduced (input or result hash differs), 3 malformed manifest or missing input,
+    6 unsupported manifest schema."""
     def go():
-        res = sdk.experiment_reproduce(directory)
+        res = sdk.experiment_reproduce(target, input_path=input_path, workers=workers)
         _out(res)
         return 0 if res.body["reproduced"] else 1
     _run(go)

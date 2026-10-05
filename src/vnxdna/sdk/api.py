@@ -314,7 +314,8 @@ def _channel_model(model, config):
 
 def simulate(strands: PathLike, output: PathLike, *, config=None, model=None, seed: int | None = None,
              coverage: float | None = None, overrides: dict | None = None, workers: int = 1, overwrite: bool = False,
-             progress=None, metadata: PathLike | None = None) -> SimulateResult:
+             progress=None, metadata: PathLike | None = None, manifest: PathLike | None = None,
+             experiment_id: str | None = None) -> SimulateResult:
     """SIMULATED channel: strands → reads, through synthesis → storage → amplification → sequencing.
 
     ``model`` is a shipped model name, ``NAME@VERSION``, a path to a model JSON (``vnx.channel-model/1`` or ``/0``) or a
@@ -322,11 +323,14 @@ def simulate(strands: PathLike, output: PathLike, *, config=None, model=None, se
     ``vnx.channel-config/0``); with neither, the ChannelConfig defaults are used. ``seed`` defaults to the config's seed
     (ChannelConfig) or 0 (models). ``coverage`` and ``overrides`` (V4 field names such as ``substitution_rate``, or
     dotted /1 paths such as ``sequencing.substitution.matrix``) change parameters and are recorded in the metadata.
-    The result body carries ``metadata`` (``vnx.simulation-metadata/1``), also written to ``metadata`` if given."""
+    The result body carries ``metadata`` (``vnx.simulation-metadata/1``), also written to ``metadata`` if given.
+    ``manifest`` writes the ``vnx.experiment/1`` manifest of this run (``vnx experiment reproduce`` re-runs it)."""
     import json as _json
     from vnxdna.simulation import engine
     from vnxdna.simulation import model as cm
     t0 = time.perf_counter()
+    if manifest is not None and Path(manifest).exists() and not overwrite:
+        raise VNXOutputError(f"output already exists: {manifest} (use --force to overwrite)")
     m, file_seed, labels = _channel_model(model, config)
     changes = dict(overrides or {})
     chosen_seed = changes.pop("seed", None)
@@ -343,6 +347,12 @@ def simulate(strands: PathLike, output: PathLike, *, config=None, model=None, se
         with atomic_output(metadata, overwrite=True, mode=0o644) as tmp:
             Path(tmp).write_text(_json.dumps(body["metadata"], indent=2, sort_keys=True) + "\n")
         outputs.append(file_ref("metadata", metadata, hash_file=True))
+    if manifest is not None:
+        from vnxdna.benchmark import manifest as mf
+        doc = mf.simulation_manifest(body["metadata"], m, strands, workers=workers, manifest_path=manifest,
+                                     experiment_id=experiment_id)
+        mf.write(doc, manifest, overwrite=overwrite)
+        outputs.append(file_ref("manifest", manifest, hash_file=True))
     cfg_doc = None
     if labels["model"] == "channel-config" and not cm.v0_expressible(m.stages):
         cfg_doc = cm.v1_to_v0(m.doc)["channel"]
@@ -462,11 +472,23 @@ def experiment_run(config: PathLike, progress=None) -> Result:
                   inputs=(file_ref("config", config),), seconds=time.perf_counter() - t0)
 
 
-def experiment_reproduce(directory: PathLike) -> Result:
+def experiment_reproduce(target: PathLike, *, input_path: PathLike | None = None, workers: int | None = None) -> Result:
+    """Re-run an experiment and compare. ``target`` is an experiment directory (every deterministic field of
+    ``results.json`` is compared) or a ``vnx.experiment/1`` manifest file (the ``result_hash`` is compared;
+    ``input_path`` and ``workers`` apply to manifests only). Status SUCCESS when reproduced, FAILURE otherwise."""
     from vnxdna.benchmark import experiment
+    from vnxdna.benchmark import manifest as mf
     t0 = time.perf_counter()
-    rep = experiment.reproduce(directory)
-    return Result("experiment", "SUCCESS" if rep.get("reproduced") else "FAILURE", rep, seconds=time.perf_counter() - t0)
+    if Path(target).is_dir():
+        if input_path is not None or workers is not None:
+            raise VNXConfigurationError("--input and --workers apply to a manifest file, not to an experiment directory")
+        rep = experiment.reproduce(target)
+        inputs: tuple = ()
+    else:
+        rep = mf.reproduce(target, input_path=input_path, workers=workers)
+        inputs = (file_ref("manifest", target),)
+    return Result("experiment", "SUCCESS" if rep.get("reproduced") else "FAILURE", rep, inputs=inputs,
+                  seconds=time.perf_counter() - t0)
 
 
 def generate(output: PathLike, size: str | int = "1MB", pattern: str = "mixed", seed: int = 42) -> Result:
