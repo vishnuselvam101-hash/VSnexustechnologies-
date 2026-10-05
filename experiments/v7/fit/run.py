@@ -363,6 +363,12 @@ def do_orientation(base: str, workers: int, bootstrap: int) -> Path:
     overlap = (lo_f <= hi_b) & (lo_b <= hi_f)
     agree = bool(overlap[off].all())
     vf, vb = np.asarray(mf.stages["sequencing"]["substitution"]["matrix"]), np.asarray(mb.stages["sequencing"]["substitution"]["matrix"])
+    # the same comparison in the backward reads' native (basecalled) frame: complement the base labels of the backward matrix
+    comp = np.ix_([3, 2, 1, 0], [3, 2, 1, 0])
+    overlap_n = (lo_f <= hi_b[comp]) & (lo_b[comp] <= hi_f)
+    native = {"max_abs_difference_off_diagonal": float(np.abs(vf - vb[comp])[off].max()), "off_diagonal_intervals_overlap": overlap_n.tolist(),
+              "agree": bool(overlap_n[off].all()),
+              "note": "forward and backward reads compared as basecalled (backward matrix with complemented base labels); informational, the merge rule uses the reference frame"}
     rf, rb = mf.doc["fit_report"]["measured_statistics"], mb.doc["fit_report"]["measured_statistics"]
     rates = {}
     for k in ("substitution", "insertion_bases", "deletion_bases"):
@@ -372,7 +378,7 @@ def do_orientation(base: str, workers: int, bootstrap: int) -> Path:
     doc = {"basecaller": base, "forward_model": jf["name"], "backward_model": jb["name"],
            "substitution_matrix_forward": vf.tolist(), "substitution_matrix_backward": vb.tolist(),
            "max_abs_difference_off_diagonal": float(np.abs(vf - vb)[off].max()), "off_diagonal_intervals_overlap": overlap.tolist(),
-           "matrices_agree_within_ci": agree, "observed_rates": rates,
+           "matrices_agree_within_ci": agree, "native_frame": native, "observed_rates": rates,
            "decision": "merge forward and backward (protocol 5 / plan 3.2)" if agree else
            "keep separate: the substitution matrices differ beyond their 95 % intervals (strand asymmetry); the /2 `asymmetry` effect is not honoured "
            "by the simulator, so no merged model is produced",
