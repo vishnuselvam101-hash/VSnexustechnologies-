@@ -44,13 +44,16 @@ def _decode_superblock(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
             raise unsupported
         raise VNXDecodeError("no superblock could be decoded (too few superblock strands survived, or the layout is wrong)",
                              stage="superblock", details={"superblock_symbols_seen": len(symbols), "tags_seen": [f"{t:04x}" for t in tags]},
-                             hint="check --profile, increase coverage, or confirm the reads come from a VNX4 strand pool")
+                             hint="check --profile, increase coverage, or confirm the reads come from a VNX4 strand pool",
+                             code="NO_SUPERBLOCK")
     if opt.archive_tag is not None:
         if opt.archive_tag not in candidates:
-            raise VNXAddressError(f"archive tag {opt.archive_tag:04x} not found; pools present: {[f'{t:04x}' for t in candidates]}")
+            raise VNXAddressError(f"archive tag {opt.archive_tag:04x} not found; pools present: {[f'{t:04x}' for t in candidates]}",
+                                  code="ARCHIVE_TAG_NOT_FOUND")
         tag = opt.archive_tag
     elif len(candidates) > 1:
-        raise VNXAddressError(f"the reads contain several archives {[f'{t:04x}' for t in candidates]}; choose one with --archive-tag")
+        raise VNXAddressError(f"the reads contain several archives {[f'{t:04x}' for t in candidates]}; choose one with --archive-tag",
+                              code="MULTIPLE_ARCHIVES")
     else:
         tag = next(iter(candidates))
     return candidates[tag], {"archive_tags_seen": [f"{t:04x}" for t in tags], "superblock_conflicts": conflicts}

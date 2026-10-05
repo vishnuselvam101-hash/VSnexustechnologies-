@@ -15,6 +15,7 @@ from vnxdna.archive import container as ct, operations as ar
 from vnxdna.codec.codecs import make_outer
 from vnxdna.core.errors import VNXDecodeError, VNXIntegrityError, VNXKeyError
 from vnxdna.core.util import atomic_output, peak_rss_bytes
+from vnxdna.core.version import FRAME_VERSION, codec_id
 from vnxdna.dnaenc.layout import KIND_DATA, Layout
 from vnxdna.recovery.consensus import _consensus_symbols, resolve_duplicates
 from vnxdna.recovery.options import DecodeOptions, DecodeResult
@@ -55,6 +56,13 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
     sb, sb_info = _decode_superblock(spill, lay, opt, stats)
     if ev is not None:
         ev.archive_id = sb.archive_id.hex()
+        ev.emit("superblock", "superblock", formats={"frame_version": FRAME_VERSION, "superblock_version": sb.version,
+                                                     "codec": codec_id(FRAME_VERSION, sb.version, sb.outer_code),
+                                                     "geometry": {"K": sb.K, "M": sb.M, "groups": sb.group_count,
+                                                                  "stripe_depth": sb.stripe_depth,
+                                                                  "column_parity": sb.column_parity,
+                                                                  "strand_order": sb.strand_order},
+                                                     "layout": lay.to_dict()})
     tag = int.from_bytes(sb.archive_id[:2], "big")
     K, P = sb.K, lay.payload_bytes
     codec = make_outer(sb.outer_code, K, sb.M, sb.lt_seed, sb.lt_distribution)
@@ -157,7 +165,8 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
         indel = stats.pop("_indel", None)
         schedule = stats.pop("_schedule", None)
         report = {"superblock": {"archive_id": sb.archive_id.hex(), "container_size": sb.container_size, "groups": sb.group_count,
-                                 "outer_code": codec.configuration(), "layout": lay.to_dict()},
+                                 "outer_code": codec.configuration(), "layout": lay.to_dict(),
+                                 "version": sb.version},
                   "reads": dict(stats), **sb_info, "duplicate_conflicts": conflicts}
         if v6 is not None:
             report["outer_v6"] = v6.report()
@@ -211,8 +220,8 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
         report["recovery_plan"] = planner.report()
         report["status"] = "FAILURE"
         raise VNXIntegrityError("reconstructed container does not match the SHA-256 recorded in the superblock; nothing published",
-                                details=report)
-    ct.open_container(work)                      # structural + manifest + Merkle validation
+                                details=report, code="CONTAINER_HASH_MISMATCH")
+    report["encrypted"] = ct.open_container(work).encrypted     # structural + manifest + Merkle validation
     stage["verify"] = time.perf_counter() - t3
     report["container_sha256"] = h.hexdigest()
     report["status"] = "SUCCESS"
@@ -251,6 +260,7 @@ def _partial(sb: Superblock, work: Path, failed: dict, partial_dir, key, passphr
     except Exception as error:  # noqa: BLE001 - report, never publish
         info["partial_note"] = f"index section did not validate: {error}"
         return info
+    info["encrypted"] = c.encrypted
     for rec in c.files:
         if rec.type != ct.TYPE_FILE:
             continue
@@ -276,6 +286,7 @@ def _selective(sb, work, fd, run, done, failed, select, select_dir, key, passphr
         raise VNXDecodeError("the archive index could not be decoded; selective extraction impossible",
                              details={"failed_groups": sorted(failed)[:20]})
     c = ct.open_container(work, key=key, passphrase=passphrase, require_key=True, allow_unencrypted=allow_unencrypted)
+    report["encrypted"] = c.encrypted
     need: set[int] = set()
     for name in select:
         rec = c.file(name)

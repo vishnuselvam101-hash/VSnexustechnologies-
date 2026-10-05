@@ -63,3 +63,20 @@ def detect_layout(reads_path: str | os.PathLike, opt: DecodeOptions) -> Layout:
     if best[0] == 0:
         raise VNXFormatError("several layouts match the read lengths and none verifies on a sample; pass --profile", stage="layout")
     return best[2]
+
+
+def probe_file(path: str | os.PathLike, *, deep: bool = False) -> dict:
+    """``vnx.probe/1`` answer for a read or strand file: can this reader decode it, and with which layout?"""
+    from vnxdna.core.errors import VNXError
+    out = {"schema": "vnx.probe/1", "object": "reads", "readable": "yes", "reason": None, "frame": None,
+           "strand_profile": None, "layout": None, "primers": None, "sample_reads": None, "superblock": None,
+           "generated_by": None}
+    try:
+        lay = detect_layout(path, DecodeOptions())
+    except VNXError as error:
+        out.update(readable="unknown" if error.code == "LAYOUT_UNDETECTED" else "no", reason=error.to_dict())
+        return out
+    name = next((n for n, (lay_, _, _) in PROFILES.items() if lay_ == lay), None)
+    out.update(frame={"version": 4, "domain": "VNX4 scrambler"}, strand_profile=name, layout=lay.to_dict(),
+               generated_by={"answer": "VNX4 frame 4: VNX-DNA >= 4.0", "exact": False})
+    return out

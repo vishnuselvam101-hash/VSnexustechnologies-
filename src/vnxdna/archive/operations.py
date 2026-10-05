@@ -456,21 +456,6 @@ def list_container(path: str | os.PathLike, *, key: bytes | None = None, passphr
     return [r.to_dict() for r in c.files]
 
 
-def dna_location(ranges: list[list[int]], profile: str, container_size: int) -> dict:
-    """Strand groups and strand-file record ranges holding container byte ranges (no index file needed: group g covers
-    container bytes [g·K·P, (g+1)·K·P); strand records are the superblock strands, then each group's K+M symbols)."""
-    from vnxdna.dnaenc.superblock import Superblock
-    from vnxdna.dnaenc.layout import PROFILES
-    lay, k, m = PROFILES[profile]
-    span = k * lay.payload_bytes
-    groups = sorted({g for off, n in ranges for g in range(off // span, (off + n - 1) // span + 1)})
-    ks, ms = Superblock.symbols(lay.payload_bytes)
-    total_groups = -(-container_size // span)
-    return {"profile": profile, "groups": groups, "groups_total": total_groups,
-            "strand_records": [[ks + ms + g * (k + m), k + m] for g in groups], "superblock_records": [0, ks + ms],
-            "note": "records are 0-based positions in the strand file written by `vnx encode` with this profile"}
-
-
 def locate(path: str | os.PathLike, name: str, *, key: bytes | None = None, passphrase: str | None = None,
            profile: str | None = None, allow_unencrypted: bool = False) -> dict:
     """Where a file's bytes live: chunk indices and container byte ranges (input to selective DNA decoding)."""
@@ -483,7 +468,9 @@ def locate(path: str | os.PathLike, name: str, *, key: bytes | None = None, pass
            "bytes_to_read": int(sum(r[1] for r in ranges)), "container_bytes": c.size,
            "index_bytes": c.size - ct.HEADER_BYTES - c.manifest["counts"]["stored_bytes"], "lookup_seconds": time.perf_counter() - t0}
     if profile:
-        out["dna"] = dna_location(ranges, profile, c.size)
+        # the strand mapping needs the DNA layer (superblock and strand profiles): vnxdna.pipeline.locate / vnxdna.sdk.locate
+        raise VNXConfigurationError("a DNA profile is resolved by vnxdna.pipeline.locate.locate (vnx locate --dna-profile); "
+                                    "the archive layer only knows container byte ranges")
     return out
 
 

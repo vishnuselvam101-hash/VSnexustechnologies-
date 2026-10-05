@@ -74,7 +74,7 @@ class Superblock:
             raise VNXFormatError("superblock magic/CRC invalid", stage="superblock")
         if data[6] not in (SB_VERSION, SB_VERSION_V6):
             from vnxdna.core.errors import VNXUnsupportedVersionError
-            raise VNXUnsupportedVersionError(f"unsupported superblock version {data[6]}")
+            raise VNXUnsupportedVersionError(f"unsupported superblock version {data[6]}", code="SUPERBLOCK_VERSION_UNSUPPORTED")
         code = CODE_IDS.get(data[7])
         if code is None:
             raise VNXFormatError(f"unknown outer code id {data[7]}", stage="superblock")

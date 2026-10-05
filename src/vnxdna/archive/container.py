@@ -259,15 +259,17 @@ def read_header_trailer(path: Path) -> tuple[int, tuple, bytes, bytes]:
         if head[:8] != MAGIC:
             if head[:6] == b"\x89VXDNA":
                 raise VNXUnsupportedVersionError(f"{path} is a V1–V3 .vxdna container; use the vnx-dna (V3) commands",
-                                                 hint="vnx-dna restore / vnx-dna verify")
+                                                 hint="vnx-dna restore / vnx-dna verify", code="LEGACY_FORMAT")
             raise VNXFormatError(f"{path} is not a VNX4 container (bad magic)")
         major, minor, flags = struct.unpack(">HHI", head[8:16])
         if major != FORMAT_VERSION[0]:
-            raise VNXUnsupportedVersionError(f"unsupported VNX container major version {major} (this reader: {FORMAT_VERSION[0]})")
+            raise VNXUnsupportedVersionError(f"unsupported VNX container major version {major} (this reader: {FORMAT_VERSION[0]})",
+                                             code="CONTAINER_VERSION_UNSUPPORTED")
         if minor > FORMAT_VERSION[1]:
-            raise VNXUnsupportedVersionError(f"VNX4 minor version {minor} is newer than this reader ({FORMAT_VERSION[1]})")
+            raise VNXUnsupportedVersionError(f"VNX4 minor version {minor} is newer than this reader ({FORMAT_VERSION[1]})",
+                                             code="CONTAINER_VERSION_UNSUPPORTED")
         if flags:
-            raise VNXUnsupportedVersionError(f"unsupported header flags 0x{flags:08x}")
+            raise VNXUnsupportedVersionError(f"unsupported header flags 0x{flags:08x}", code="CONTAINER_VERSION_UNSUPPORTED")
         tail = _read_exact(f, size - TRAILER_BYTES, TRAILER_BYTES, "trailer")
     body, ct, ft, rf, mn = struct.unpack(">QQQQQ", tail[:40])
     mac, magic, digest = tail[40:72], tail[72:80], tail[80:112]
@@ -301,7 +303,7 @@ def open_container(path: str | os.PathLike, *, key: bytes | None = None, passphr
     enc = m["encryption"]
     if enc["algorithm"] == "none" and (key is not None or passphrase is not None) and not allow_unencrypted:
         raise VNXKeyError("a key or passphrase was given but this archive is not encrypted (possible encryption "
-                          "downgrade); pass --allow-unencrypted to accept it", stage="crypto")
+                          "downgrade); pass --allow-unencrypted to accept it", stage="crypto", code="KEY_FOR_UNENCRYPTED")
     if enc["algorithm"] != "none":
         if key is None and passphrase is None:
             if require_key:
@@ -377,7 +379,7 @@ def validate_manifest(m: dict) -> None:
     fv = m.get("format_version")
     _require(isinstance(fv, list) and len(fv) == 2 and all(_int(x, 0, 65535) for x in fv), "format_version")
     if fv[0] != FORMAT_VERSION[0] or fv[1] > FORMAT_VERSION[1]:
-        raise VNXUnsupportedVersionError(f"unsupported VNX4 manifest version {fv}")
+        raise VNXUnsupportedVersionError(f"unsupported VNX4 manifest version {fv}", code="CONTAINER_VERSION_UNSUPPORTED")
     req = m.get("required_features")
     _require(isinstance(req, list) and all(isinstance(x, str) for x in req), "required_features")
     unknown = sorted(set(req) - KNOWN_FEATURES)

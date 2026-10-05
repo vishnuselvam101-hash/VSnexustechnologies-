@@ -90,3 +90,22 @@ class JsonlObserver:
 
     def __exit__(self, *exc):
         self.close()
+
+
+EVENT_SCHEMA = "vnx.event/1"
+
+
+class RunStamp:
+    """Observer wrapper that makes a stream of events ``vnx.event/1``: adds ``schema``, ``run_id`` (random 16 hex per
+    invocation) and ``seq`` (0, 1, 2, … in delivery order, so a lost or truncated tail is detectable) to every event of
+    one run, whichever emitter produced it (the decoder's and the command's :class:`Events`)."""
+
+    def __init__(self, observer, run_id: str | None = None):
+        self.observer = observer
+        self.run_id = run_id or secrets.token_hex(8)
+        self.seq = 0
+
+    def __call__(self, event: dict) -> None:
+        rec = {"schema": EVENT_SCHEMA, "seq": self.seq, "run_id": self.run_id, **event}
+        self.seq += 1
+        self.observer(rec)

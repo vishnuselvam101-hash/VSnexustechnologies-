@@ -43,6 +43,7 @@ class VNXBudgetExceeded(VNXDecodeError):
 
     stage = "budget"
     retryable = True  # a larger budget can succeed
+    code = "BUDGET_EXCEEDED"
 
 
 @dataclass(frozen=True)

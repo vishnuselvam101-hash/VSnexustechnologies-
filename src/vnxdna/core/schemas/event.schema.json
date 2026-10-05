@@ -1,0 +1,334 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "urn:vnx:vnx.event/1",
+ "title": "VNX-DNA event (JSON lines; V6_ARCHITECTURE \u00a75.2)",
+ "type": "object",
+ "required": [
+  "schema",
+  "seq",
+  "run_id",
+  "ts",
+  "elapsed",
+  "task_id",
+  "pid",
+  "rss_bytes",
+  "event",
+  "stage"
+ ],
+ "properties": {
+  "schema": {
+   "const": "vnx.event/1"
+  },
+  "seq": {
+   "type": "integer",
+   "minimum": 0
+  },
+  "run_id": {
+   "type": "string",
+   "pattern": "^[0-9a-f]{16}$"
+  },
+  "ts": {
+   "type": "string"
+  },
+  "elapsed": {
+   "type": "number"
+  },
+  "task_id": {
+   "type": "string"
+  },
+  "pid": {
+   "type": "integer"
+  },
+  "rss_bytes": {
+   "type": "integer"
+  },
+  "event": {
+   "enum": [
+    "run_start",
+    "decode_start",
+    "pass1_progress",
+    "pass1_end",
+    "recovery_round",
+    "superblock",
+    "pass2_end",
+    "verify",
+    "decode_end",
+    "error",
+    "command_end"
+   ]
+  },
+  "stage": {
+   "type": "string"
+  },
+  "archive_id": {
+   "type": "string"
+  },
+  "software": {
+   "type": "object",
+   "required": [
+    "name",
+    "version"
+   ],
+   "properties": {
+    "name": {
+     "const": "vnxdna"
+    },
+    "version": {
+     "type": "string"
+    }
+   }
+  },
+  "spec": {
+   "type": "string"
+  },
+  "provenance": {
+   "type": "object",
+   "required": [
+    "git_commit",
+    "git_dirty",
+    "python",
+    "platform",
+    "backends",
+    "config_sha256",
+    "seeds"
+   ],
+   "properties": {
+    "git_commit": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "git_dirty": {
+     "type": [
+      "boolean",
+      "null"
+     ]
+    },
+    "python": {
+     "type": "string"
+    },
+    "platform": {
+     "type": "string"
+    },
+    "backends": {
+     "type": "object",
+     "required": [
+      "align",
+      "reads",
+      "rs"
+     ],
+     "properties": {
+      "align": {
+       "type": "object",
+       "required": [
+        "active"
+       ],
+       "properties": {
+        "active": {
+         "enum": [
+          "native",
+          "reference",
+          null
+         ]
+        },
+        "abi": {
+         "type": [
+          "integer",
+          "null"
+         ]
+        },
+        "level": {
+         "type": [
+          "string",
+          "null"
+         ]
+        },
+        "lib_sha256": {
+         "type": [
+          "string",
+          "null"
+         ],
+         "pattern": "^[0-9a-f]{64}$"
+        },
+        "origin": {
+         "type": [
+          "string",
+          "null"
+         ]
+        },
+        "error": {
+         "type": "string"
+        }
+       }
+      },
+      "reads": {
+       "type": "object",
+       "required": [
+        "active"
+       ],
+       "properties": {
+        "active": {
+         "enum": [
+          "native",
+          "reference",
+          null
+         ]
+        },
+        "abi": {
+         "type": [
+          "integer",
+          "null"
+         ]
+        },
+        "level": {
+         "type": [
+          "string",
+          "null"
+         ]
+        },
+        "lib_sha256": {
+         "type": [
+          "string",
+          "null"
+         ],
+         "pattern": "^[0-9a-f]{64}$"
+        },
+        "origin": {
+         "type": [
+          "string",
+          "null"
+         ]
+        },
+        "error": {
+         "type": "string"
+        }
+       }
+      },
+      "rs": {
+       "type": "object",
+       "required": [
+        "active"
+       ],
+       "properties": {
+        "active": {
+         "enum": [
+          "native",
+          "reference",
+          null
+         ]
+        },
+        "abi": {
+         "type": [
+          "integer",
+          "null"
+         ]
+        },
+        "level": {
+         "type": [
+          "string",
+          "null"
+         ]
+        },
+        "lib_sha256": {
+         "type": [
+          "string",
+          "null"
+         ],
+         "pattern": "^[0-9a-f]{64}$"
+        },
+        "origin": {
+         "type": [
+          "string",
+          "null"
+         ]
+        },
+        "error": {
+         "type": "string"
+        }
+       }
+      }
+     }
+    },
+    "config_sha256": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "pattern": "^[0-9a-f]{64}$"
+    },
+    "seeds": {
+     "type": "object"
+    }
+   }
+  },
+  "inputs": {
+   "type": "array"
+  },
+  "formats": {
+   "type": "object"
+  },
+  "status": {
+   "type": "string"
+  },
+  "exit_code": {
+   "type": "integer"
+  },
+  "report_sha256": {
+   "type": [
+    "string",
+    "null"
+   ]
+  }
+ },
+ "allOf": [
+  {
+   "if": {
+    "properties": {
+     "event": {
+      "const": "run_start"
+     }
+    }
+   },
+   "then": {
+    "required": [
+     "software",
+     "spec",
+     "provenance",
+     "inputs"
+    ]
+   }
+  },
+  {
+   "if": {
+    "properties": {
+     "event": {
+      "const": "superblock"
+     }
+    }
+   },
+   "then": {
+    "required": [
+     "formats"
+    ]
+   }
+  },
+  {
+   "if": {
+    "properties": {
+     "event": {
+      "const": "command_end"
+     }
+    }
+   },
+   "then": {
+    "required": [
+     "status",
+     "exit_code",
+     "report_sha256"
+    ]
+   }
+  }
+ ],
+ "additionalProperties": true
+}

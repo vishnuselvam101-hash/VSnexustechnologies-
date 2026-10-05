@@ -116,3 +116,44 @@ def resolved(obj) -> dict:
         else:
             out[f.name] = v
     return out
+
+
+# ---------------------------------------------------------------------------------------------- command-line option assembly
+def encode_options(config_path=None, performance_name: str | None = None, *, redundancy_profile: str | None = None,
+                   workers: int = 0, experimental: bool | None = None, **explicit):
+    """(DNAOptions, performance profile) from a config file, a performance profile, an optional redundancy profile and
+    explicit options (``None`` = not given). Precedence: explicit > redundancy profile > config file > defaults; the
+    redundancy-profile merge is :func:`vnxdna.codec.profiles.merge` (the only one)."""
+    from vnxdna.codec.profiles import merge
+    cfg = load_config(config_path)
+    p = performance(performance_name or cfg.get("performance"))
+    if redundancy_profile is not None:
+        explicit = merge(redundancy_profile, {k: v for k, v in explicit.items() if v is not None})
+    w = workers if workers else p["workers"]
+    return dna_options(cfg, workers=w, groups_per_task=p["groups_per_task"], experimental=experimental, **explicit), p
+
+
+def decode_options_for(config_path=None, performance_name: str | None = None, *, workers: int = 0,
+                       archive_tag: str | None = None, budget: dict | None = None, **explicit):
+    """DecodeOptions from a config file, a performance profile and explicit options (``None`` = not given)."""
+    from vnxdna.recovery.planner import RecoveryBudget
+    cfg = load_config(config_path)
+    p = performance(performance_name or cfg.get("performance"))
+    opts = decode_options(cfg, workers=workers or p["workers"], batch_reads=p["batch_reads"],
+                          archive_tag=int(archive_tag, 16) if archive_tag else None, **explicit)
+    if budget:
+        opts.recovery_budget = RecoveryBudget(**budget)
+    return opts
+
+
+def archive_options_for(config_path=None, performance_name: str | None = None, *, key=None, passphrase=None,
+                        chunk_size: int | None = None, workers: int | None = None, **explicit):
+    """ArchiveOptions from the config file's ``archive`` section, a performance profile and explicit options."""
+    from vnxdna.archive.operations import ArchiveOptions
+    cfg = load_config(config_path).get("archive", {})
+    w = performance(performance_name)["workers"] if performance_name else workers
+    fields_ = {**cfg, **{k: v for k, v in explicit.items() if v is not None}}
+    fields_["chunk_size"] = chunk_size if chunk_size is not None else cfg.get("chunk_size", 1 << 20)
+    if w is not None:
+        fields_["workers"] = w
+    return ArchiveOptions(**fields_, key=key, passphrase=passphrase)

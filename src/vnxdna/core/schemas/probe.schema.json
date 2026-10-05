@@ -1,0 +1,83 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "urn:vnx:vnx.probe/1",
+ "title": "inspect / probe answer (V6_ARCHITECTURE \u00a74.3)",
+ "type": "object",
+ "required": [
+  "schema",
+  "object",
+  "readable",
+  "reason"
+ ],
+ "properties": {
+  "schema": {
+   "const": "vnx.probe/1"
+  },
+  "object": {
+   "enum": [
+    "container",
+    "reads",
+    "legacy-container",
+    "unknown"
+   ]
+  },
+  "readable": {
+   "enum": [
+    "yes",
+    "no",
+    "legacy",
+    "unknown"
+   ]
+  },
+  "reason": {
+   "oneOf": [
+    {
+     "type": "null"
+    },
+    {
+     "$ref": "urn:vnx:vnx.error/1"
+    }
+   ]
+  },
+  "frame": {
+   "type": [
+    "object",
+    "null"
+   ]
+  },
+  "strand_profile": {
+   "type": [
+    "string",
+    "null"
+   ]
+  },
+  "layout": {
+   "type": [
+    "object",
+    "null"
+   ]
+  },
+  "primers": {
+   "type": "null"
+  },
+  "sample_reads": {
+   "type": [
+    "integer",
+    "null"
+   ]
+  },
+  "superblock": {
+   "type": [
+    "object",
+    "null"
+   ]
+  },
+  "generated_by": {
+   "type": [
+    "object",
+    "null"
+   ]
+  }
+ },
+ "additionalProperties": true
+}

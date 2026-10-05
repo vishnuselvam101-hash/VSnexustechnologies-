@@ -47,9 +47,7 @@ LEGACY_MAY_USE = ("core", "native", "archive", "codec", "dnaenc", "legacy")
 TOP_LEVEL = {"vnxdna._version": "core", "vnxdna._native_build": "native"}
 
 #: modules not yet moved -> the package they move to (V6_ARCHITECTURE §2 table). Shrinks with every M-step.
-PENDING = {
-    "vnxdna.v4.cli": "commands",
-}
+PENDING: dict[str, str] = {}
 #: the version packages' own __init__ files only re-export; they are neither layer code nor legacy
 VERSION_PACKAGES = ("vnxdna.v4", "vnxdna.v5", "vnxdna.v5.indel", "vnxdna.v5.soft", "vnxdna.v6")
 LEGACY = ("vnxdna.v2", "vnxdna.v3", "vnxdna.api", "vnxdna.cli", "vnxdna.cli_v1", "vnxdna.bench", "vnxdna.channel",
