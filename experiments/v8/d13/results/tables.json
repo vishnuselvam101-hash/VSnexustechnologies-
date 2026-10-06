@@ -3,6 +3,7 @@
   "commit": "f6f9f24731f9c76a5bd772c7fd563b96dce66621",
   "dirty_tracked": false
  },
+ "content_sha256_note": "content_sha256 added after the run from the same files (file SHA-256 verified first); stage code then gained the field",
  "environment": {
   "cpus": 8,
   "load_average": [
@@ -33,6 +34,7 @@
  "seconds": 50.4,
  "splits": {
   "DEV": {
+   "content_sha256": "58cce4261ec4d3157d24123e804c5c5ff70a6b41884ad07afb7c4da000ce8a64",
    "inputs": {
     "run15": "14e084fc39c1c3eebc5d5b7795bccd7c8abd6f2de966fe1b24da389048b3807c",
     "run16": "0c70a4f96b8253207b32e2a80cfbdc31dbb964758b27b79177da63d22b081517",
@@ -67,6 +69,7 @@
    "sha256": "55aa0b4617499eb3cbe3b5a379df4ecaaf24789933acb8f95ab55df5beb4e8b0"
   },
   "FIT": {
+   "content_sha256": "b6f32e447baa0750c7b4b29a9c33c05a643b0098cc2017c54a33d6fc6a45fc6f",
    "inputs": {
     "run15": "ba73b57a136a9570e23da8eb7bd9d772c21346f69c063087e91a717c699b072b",
     "run16": "560fd08830a86ce4053d9d5c8c54062212e8e9e343060d5dbc91e520a987d131",

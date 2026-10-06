@@ -278,8 +278,9 @@ def do_tables(workers: int, splits: tuple = (A.FIT,)) -> Path:
                          "excluded": int(lay.get(M, "excluded").sum())}
         M = np.concatenate(Ms)
         p = DERIVED / f"tables.{s}.npz"
-        np.savez(p, M=M, rs=rs_total, run=np.array(labels), ref=np.array(ref_index, dtype=np.int64))
-        rec["splits"][s] = {"path": str(p), "sha256": sha256_path(p), "per_run": rows, "references": int(M.shape[0]),
+        arrays = {"M": M, "rs": rs_total, "run": np.array(labels), "ref": np.array(ref_index, dtype=np.int64)}
+        np.savez(p, **arrays)
+        rec["splits"][s] = {"path": str(p), "sha256": sha256_path(p), "content_sha256": content_sha256(arrays), "per_run": rows, "references": int(M.shape[0]),
                             "reads_tallied": int(lay.get(M, "n_reads").sum()),
                             "inputs": {run: json.loads((RESULTS / f"pipeline-{run}.json").read_text())["outputs"][s]["sha256"]
                                        for run in A.RUNS}}
@@ -288,6 +289,16 @@ def do_tables(workers: int, splits: tuple = (A.FIT,)) -> Path:
     out.write_text(json.dumps(rec, indent=1, sort_keys=True) + "\n")
     print(json.dumps({s: {k: v for k, v in r.items() if k in ("references", "reads_tallied")} for s, r in rec["splits"].items()}))
     return out
+
+
+def content_sha256(arrays: dict) -> str:
+    """SHA-256 of the tables' array contents (name, dtype, shape, bytes), independent of the npz container's timestamps."""
+    h = hashlib.sha256()
+    for k in sorted(arrays):
+        a = np.ascontiguousarray(arrays[k])
+        h.update(f"{k}|{a.dtype.str}|{a.shape}|".encode())
+        h.update(a.tobytes())
+    return h.hexdigest()
 
 
 def load_tables(split: str):
