@@ -39,7 +39,7 @@ Python orchestration and reference implementations, plus C11 native kernels via 
 | # | item | branch / worktree | state |
 |---|---|---|---|
 | 1 | Nanopore frozen corpus + loss funnel + oracle | work/v7-nanodecode | DONE c4e6195 (corpus 7e89b82, `tests/nanopore/`; branch suite 2781/0/3) |
-| 2 | Evidence-backed consensus fix | work/v7-nanodecode | AWAITING FOUNDER DECISION |
+| 2 | Consensus fix PHASE 1 (base-level indel placement, marker anchors; no quality, no RS change; old path kept; held-out 82060-82099) | work/v7-nanodecode | GO 2026-10-06; see notes/SPRINT_STATE.md last entry |
 | 4 | D3 D13/CAS9 characterisation vs simulator | work/v7-nanodata | IN PROGRESS: prereg, manifest, splitter, driver committed (f761f8c); characterisation run interrupted |
 | 5 | A2 native cluster kernel | work/v7-native | review fixes done (e0bd56b, sanitizers PASS); merge pending (full suite) |
 | 6 | Python/C boundary audit | work/v7-pycpp | IN PROGRESS: boundary tests committed (4cdc0ba); 4 uncommitted files; doc not finished |
