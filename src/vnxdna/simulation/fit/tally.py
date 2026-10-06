@@ -131,9 +131,12 @@ def read_events(ref: bytes, rcodes_read: bytes, runs, window_start: int = 0) -> 
 
 def tally_reference(ref: bytes, reads: list, layout: Layout, mode: str = "NW", quals: list | None = None,
                     exclude_frac: float = EXCLUDE_FRAC, aligner: str = "edlib", shift: str = "left",
-                    length_window: tuple | None = None) -> tuple[np.ndarray, np.ndarray]:
+                    length_window: tuple | None = None, max_edit_frac: float | None = None) -> tuple[np.ndarray, np.ndarray]:
     """(count vector of this reference, read-level histogram vector). ``reads`` are upper-case ACGT bytes; for ``HW`` they may
     carry flanks. A read with more than ``exclude_frac * len(ref)`` edits is counted in ``excluded`` and not tallied.
+    ``max_edit_frac`` (V8 amendment A1, the D13 segmentation rule; None = off): a read with more than
+    ``max_edit_frac * len(ref)`` edits is a read the dataset's selection would have removed. It is counted in ``window_out``
+    and contributes to nothing else, not even the read-level histograms.
     ``length_window`` = (lo, hi): only reads with lo <= len(read) - len(ref) <= hi are used (protocol 5.5, A2.2: the
     dataset's read selection applied to simulated reads too); the others are counted in ``window_out`` and nothing else.
     ``ed_n``/``ed_sum``/``ed_sq`` hold the count, sum and sum of squares of the edit distance of the tallied reads."""
@@ -176,6 +179,9 @@ def tally_reference(ref: bytes, reads: list, layout: Layout, mode: str = "NW", q
             vec[layout.fields["excluded"][0]] += 1
             continue
         dist, runs, (ws, we) = res
+        if max_edit_frac is not None and dist > max_edit_frac * L:
+            vec[layout.fields["window_out"][0]] += 1
+            continue
         rs[min(dist, EDIT_BINS - 1)] += 1
         rs[EDIT_BINS + max(0, min(DRIFT_BINS - 1, (we - ws) - L + DRIFT_OFF))] += 1
         if layout.read_rate:            # every aligned read, as the edit-distance histogram above

@@ -39,6 +39,8 @@ PREREG = HERE.parents[2] / "docs" / "V8_PREREGISTRATION.md"
 MODELS, RESULTS = HERE / "models", HERE / "results"
 METHOD = ("vnx-channel-fit/1 (V7 fitter: edlib unit-cost global alignment, leftmost indel normalisation, count estimators, "
           "bootstrap over references, simulation calibration) on D13 segments (V8)")
+#: amendment A1 (docs/V8_PREREGISTRATION-A1.md): the D13 segmentation selection applied to simulated reads in every comparison
+TALLY_OPTS = {"max_edit_frac": 0.30}
 FAMILIES = ("F1",)                                            # F2 only if the pre-registered rule triggers (§2)
 #: V7 basis labels → V8 vocabulary (model2.V8_BASIS)
 V8_LABELS = {k: model2.V8_BASIS[v] for k, v in MO.BASIS.items()}
@@ -161,7 +163,7 @@ def _fit_pairs(rows: set | None = None):
 
 def _in_sample(model, lay, M, rs, clusters, refs, seed, workers) -> dict:
     return V.validate_model(model, lay, dev_refs=refs[:: max(1, len(refs) // SIM_REFS)], dev_clusters=clusters, dev_M=M,
-                            dev_rs=rs, mode="NW", seed=seed, workers=workers, prereg="7B")
+                            dev_rs=rs, mode="NW", seed=seed, workers=workers, prereg="7B", tally_opts=TALLY_OPTS)
 
 
 def do_precheck(family: str, workers: int) -> Path:
@@ -176,12 +178,13 @@ def do_precheck(family: str, workers: int) -> Path:
     clusters = [(r, s) for r, s, _q in _fit_pairs(set(range(0, M.shape[0], max(1, M.shape[0] // M8_CLUSTERS))))][:M8_CLUSTERS]
     full = _in_sample(model, lay, M, rs, clusters, refs, SEED_PRECHECK, workers)
     rt_refs = refs[:: max(1, len(refs) // 3000)][:3000]
-    cal = dict(refs=refs[:: max(1, len(refs) // 2000)][:2000], coverage=CAL_COVERAGE, iterations=CAL_ITER)
-    full["M10"] = AQ.m10_v8(model, lay, rt_refs, coverage=8, seed=SEED_PRECHECK + 5, replicates=3, calibration=cal, workers=workers)
+    cal = dict(refs=refs[:: max(1, len(refs) // 2000)][:2000], coverage=CAL_COVERAGE, iterations=CAL_ITER, tally_opts=TALLY_OPTS)
+    full["M10"] = AQ.m10_v8(model, lay, rt_refs, coverage=8, seed=SEED_PRECHECK + 5, replicates=3, calibration=cal, workers=workers,
+                            tally_opts=TALLY_OPTS)
     halves = []
     for h, idx in enumerate(PC.halves(M.shape[0], SEED_PRECHECK)):
         rows = set(int(i) for i in idx)
-        Mh, rsh = tally_matrix(_fit_pairs(rows), lay, mode="NW", workers=workers)
+        Mh, rsh = tally_matrix(_fit_pairs(rows), lay, mode="NW", workers=workers, **TALLY_OPTS)
         hrefs = [refs[i] for i in sorted(rows)]
         hcl = [c for i, c in enumerate(clusters) if i % 2 == h]
         halves.append(_in_sample(model, lay, Mh, rsh, hcl, hrefs, SEED_PRECHECK + 10 + h, workers))
@@ -200,7 +203,8 @@ def do_precheck(family: str, workers: int) -> Path:
            "tables_sha256": json.loads((RESULTS / "tables.json").read_text())["splits"][A.FIT]["sha256"],
            "seed": SEED_PRECHECK, "code": PL.GIT_AT_START, "environment": PL.environment(), "workers": workers,
            "seconds": round(time.time() - t0, 1)}
-    p = RESULTS / f"precheck-{family.lower()}.json"
+    out["amendments"] = ["A1: matched read selection (max_edit_frac 0.30) on simulated reads"]
+    p = RESULTS / f"precheck-{family.lower()}-a1.json"
     p.write_text(json.dumps(PC_jsonable(out), indent=1, sort_keys=True) + "\n")
     print(json.dumps({"family": family, "decision": decision, "classes": {k: v["class"] for k, v in stab.items()},
                       "seconds": out["seconds"]}, indent=1))
