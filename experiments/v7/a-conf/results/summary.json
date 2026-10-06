@@ -1,0 +1,282 @@
+{
+ "cells": {
+  "10": {
+   "lowcov": {
+    "cases": 40,
+    "data_total": 967,
+    "exact": 40,
+    "exact_wilson95": [
+     0.9124,
+     1.0
+    ],
+    "explicit_failure": 0,
+    "false_frames": 0,
+    "false_success": 0,
+    "load1_range": [
+     2.94,
+     4.7
+    ],
+    "max_decode_seconds": 61.36,
+    "max_peak_rss_mib": 338,
+    "mean_candidate": 935.3,
+    "mean_clustered": 935.3,
+    "mean_consensus_ok": 878.6,
+    "mean_data_frames": 878.6,
+    "mean_strands_total": 979.0,
+    "mean_two_reads": 941.4,
+    "median_decode_seconds": 58.58,
+    "other_outcomes": []
+   },
+   "old": {
+    "cases": 40,
+    "data_total": 679,
+    "exact": 0,
+    "exact_wilson95": [
+     0.0,
+     0.0876
+    ],
+    "explicit_failure": 40,
+    "false_frames": 0,
+    "false_success": 0,
+    "load1_range": [
+     2.51,
+     4.82
+    ],
+    "max_decode_seconds": 2.9,
+    "max_peak_rss_mib": 193,
+    "mean_candidate": 656.1,
+    "mean_clustered": 656.1,
+    "mean_consensus_ok": 511.9,
+    "mean_data_frames": 511.9,
+    "mean_strands_total": 691.0,
+    "mean_two_reads": 661.2,
+    "median_decode_seconds": 2.76,
+    "other_outcomes": []
+   },
+   "phase1": {
+    "cases": 40,
+    "data_total": 679,
+    "exact": 40,
+    "exact_wilson95": [
+     0.9124,
+     1.0
+    ],
+    "explicit_failure": 0,
+    "false_frames": 0,
+    "false_success": 0,
+    "load1_range": [
+     3.5,
+     4.89
+    ],
+    "max_decode_seconds": 44.14,
+    "max_peak_rss_mib": 329,
+    "mean_candidate": 656.1,
+    "mean_clustered": 656.1,
+    "mean_consensus_ok": 618.0,
+    "mean_data_frames": 618.0,
+    "mean_strands_total": 691.0,
+    "mean_two_reads": 661.2,
+    "median_decode_seconds": 42.25,
+    "other_outcomes": []
+   }
+  },
+  "3": {
+   "lowcov": {
+    "cases": 40,
+    "data_total": 967,
+    "exact": 0,
+    "exact_wilson95": [
+     0.0,
+     0.0876
+    ],
+    "explicit_failure": 40,
+    "false_frames": 0,
+    "false_success": 0,
+    "load1_range": [
+     2.63,
+     4.82
+    ],
+    "max_decode_seconds": 26.26,
+    "max_peak_rss_mib": 362,
+    "mean_candidate": 655.6,
+    "mean_clustered": 655.6,
+    "mean_consensus_ok": 418.3,
+    "mean_data_frames": 418.3,
+    "mean_strands_total": 979.0,
+    "mean_two_reads": 688.3,
+    "median_decode_seconds": 23.9,
+    "other_outcomes": []
+   },
+   "old": {
+    "cases": 40,
+    "data_total": 679,
+    "exact": 0,
+    "exact_wilson95": [
+     0.0,
+     0.0876
+    ],
+    "explicit_failure": 40,
+    "false_frames": 0,
+    "false_success": 0,
+    "load1_range": [
+     2.09,
+     5.08
+    ],
+    "max_decode_seconds": 1.09,
+    "max_peak_rss_mib": 94,
+    "mean_candidate": 459.4,
+    "mean_clustered": 459.5,
+    "mean_consensus_ok": 123.1,
+    "mean_data_frames": 123.1,
+    "mean_strands_total": 691.0,
+    "mean_two_reads": 483.4,
+    "median_decode_seconds": 0.98,
+    "other_outcomes": []
+   },
+   "phase1": {
+    "cases": 40,
+    "data_total": 679,
+    "exact": 0,
+    "exact_wilson95": [
+     0.0,
+     0.0876
+    ],
+    "explicit_failure": 40,
+    "false_frames": 0,
+    "false_success": 0,
+    "load1_range": [
+     2.51,
+     5.06
+    ],
+    "max_decode_seconds": 18.14,
+    "max_peak_rss_mib": 340,
+    "mean_candidate": 459.4,
+    "mean_clustered": 459.5,
+    "mean_consensus_ok": 293.4,
+    "mean_data_frames": 293.4,
+    "mean_strands_total": 691.0,
+    "mean_two_reads": 483.4,
+    "median_decode_seconds": 16.84,
+    "other_outcomes": []
+   }
+  },
+  "5": {
+   "lowcov": {
+    "cases": 40,
+    "data_total": 967,
+    "exact": 39,
+    "exact_wilson95": [
+     0.8712,
+     0.9956
+    ],
+    "explicit_failure": 1,
+    "false_frames": 0,
+    "false_success": 0,
+    "load1_range": [
+     3.07,
+     5.06
+    ],
+    "max_decode_seconds": 38.86,
+    "max_peak_rss_mib": 348,
+    "mean_candidate": 823.8,
+    "mean_clustered": 823.8,
+    "mean_consensus_ok": 659.9,
+    "mean_data_frames": 659.9,
+    "mean_strands_total": 979.0,
+    "mean_two_reads": 845.5,
+    "median_decode_seconds": 34.94,
+    "other_outcomes": []
+   },
+   "old": {
+    "cases": 40,
+    "data_total": 679,
+    "exact": 0,
+    "exact_wilson95": [
+     0.0,
+     0.0876
+    ],
+    "explicit_failure": 40,
+    "false_frames": 0,
+    "false_success": 0,
+    "load1_range": [
+     2.09,
+     5.05
+    ],
+    "max_decode_seconds": 1.75,
+    "max_peak_rss_mib": 120,
+    "mean_candidate": 581.8,
+    "mean_clustered": 581.8,
+    "mean_consensus_ok": 278.0,
+    "mean_data_frames": 278.0,
+    "mean_strands_total": 691.0,
+    "mean_two_reads": 596.3,
+    "median_decode_seconds": 1.6,
+    "other_outcomes": []
+   },
+   "phase1": {
+    "cases": 40,
+    "data_total": 679,
+    "exact": 0,
+    "exact_wilson95": [
+     0.0,
+     0.0876
+    ],
+    "explicit_failure": 40,
+    "false_frames": 0,
+    "false_success": 0,
+    "load1_range": [
+     2.9,
+     4.75
+    ],
+    "max_decode_seconds": 26.53,
+    "max_peak_rss_mib": 341,
+    "mean_candidate": 581.8,
+    "mean_clustered": 581.9,
+    "mean_consensus_ok": 460.8,
+    "mean_data_frames": 460.8,
+    "mean_strands_total": 691.0,
+    "mean_two_reads": 596.3,
+    "median_decode_seconds": 24.84,
+    "other_outcomes": []
+   }
+  }
+ },
+ "criteria": {
+  "C1_no_false": true,
+  "C2": {
+   "10": {
+    "exact_not_worse": true,
+    "ge_on_90pct": true,
+    "mean_frames_better": true,
+    "paired_seeds": 40,
+    "pass": true,
+    "phase1_ge_old_seeds": 40
+   },
+   "3": {
+    "exact_not_worse": true,
+    "ge_on_90pct": true,
+    "mean_frames_better": true,
+    "paired_seeds": 40,
+    "pass": true,
+    "phase1_ge_old_seeds": 40
+   },
+   "5": {
+    "exact_not_worse": true,
+    "ge_on_90pct": true,
+    "mean_frames_better": true,
+    "paired_seeds": 40,
+    "pass": true,
+    "phase1_ge_old_seeds": 40
+   }
+  },
+  "C3_cov10_phase1_ge_36": true,
+  "C4_lowcov": true,
+  "C5_harm_seeds": [],
+  "C5_no_harm": true,
+  "decision_lowcov": "CONFIRMED",
+  "decision_phase1": "CONFIRMED",
+  "decodes": 360,
+  "strand_overhead_lowcov_vs_balanced": 0.4168
+ },
+ "label": "EXPERIMENTAL, SIMULATED (nanopore-like stress model, unfitted)"
+}
