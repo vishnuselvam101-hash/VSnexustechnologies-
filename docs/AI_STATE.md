@@ -8,7 +8,7 @@ do not repeat them here.
 |---|---|
 | integration branch | `build/v7-sprint` (local; not pushed) |
 | verified head | `85c96d6` (merge ae396c9 of work/v7-nanodata + split-guard test scoping) |
-| tests | 3117 passed / 0 failed / 6 skipped at 5fbe276 (365 s, `-n 6`, load 0.4→3.4; skips = CLI-on-PATH + opt-in install); ruff clean; mypy gate clean (135 files) |
+| tests | 3127 passed / 0 failed / 6 skipped at f9d17ea (365 s, `-n 6`, load 2.8→3.2; skips = CLI-on-PATH + opt-in install); ruff clean; mypy gate clean (135 files) |
 | previous baseline | `d06e490`, 2723 passed / 0 failed |
 | released | v6.0.0 on `main` (tag untouched; its tree reports `6.0.0.dev0`, recorded in CHANGELOG) |
 | package version | 6.0.0.dev0 (bump to 7.0.0.dev0 pending, its own step) |
@@ -86,7 +86,8 @@ Governing notes: /root/vnx-dna-lab/notes/V7-RESET-DIRECTIVE-2026-10-06.md + foun
 | 6 cov-3 conclusion | DONE (A-FAIL README) | v4-balanced STRUCTURALLY INADEQUATE; v7-lowcov UNSUPPORTED (C+B) |
 | 7A fitted model design | DONE f8d617a docs/V7_NANOPORE_MODEL_DESIGN.md | gap: empirical indel run-length pmf |
 | 7B adequacy prereg | DONE f8d617a experiments/v7/fit-nano/PREREGISTRATION.md | M5/M5i multi-base indel metrics gating |
-| 7 implementation | NEXT: (3) | (1) DONE ae396c9; (2) DONE 5fbe276; /2 empirical run-length pmf + tests; (3) fitter calibration + M5i/M2b/RL metrics; (4) fit FIT, ≤2 DEV looks, freeze, one held-out evaluation |
+| 7 implementation | NEXT: (4), after the M6 decision below | (1) DONE ae396c9; (3) DONE f9d17ea; (2) DONE 5fbe276; /2 empirical run-length pmf + tests; (3) fitter calibration + M5i/M2b/RL metrics; (4) fit FIT, ≤2 DEV looks, freeze, one held-out evaluation |
+| 7 M6 noise floor | OPEN (founder/prereg amendment BEFORE any fit) | prereg M6: 10 % relative per run length with >= 10,000 sites. At the floor (~200 events) real-data sampling noise alone is ~7 % relative, so a perfect model can fail M6 on the sparsest tested bins (same-channel SIMULATED check: 5.8 % at 19.5k sites). Option: add a noise-aware rule (10 % or 3 bootstrap SE, as M1) by a new PREREG before step 4 |
 | 7 matrix | BLOCKED until a model is ADEQUATE on held-out | |
 | 8 final report | after 7 | |
 Do NOT start B/C/optimisation. No V8.
