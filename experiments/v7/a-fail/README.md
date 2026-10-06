@@ -50,7 +50,7 @@ Findings:
 2. **Phase 1 still loses most strands to indel placement** at cov 3 and 5 (34 % and 43 % of failing-row losses), now
    in clusters of few reads. Phase 1 fixes placement where reads outvote each other (cov 10); with 2-3 reads the
    placement is ambiguous.
-3. **Clustering** is 4-7 % of losses and the oracle (true grouping) rescues 0 of 240 failed v4-balanced decodes:
+3. **Clustering** is 4-7 % of losses and the oracle (true grouping) rescues 0 of 200 failed v4-balanced decodes (120 old, 80 Phase 1):
    clustering is not the limiting stage. **Addressing, alignment, frame: 0.**
 4. No category is an implementation failure: every loss has a traced cause, every rerun reproduces, 0 false frames.
 
