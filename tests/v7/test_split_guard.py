@@ -21,10 +21,22 @@ MANIFEST = json.loads((SPLIT / "SPLIT_MANIFEST.json").read_text())
 PROTOCOL_AT_SPLIT = "64a8f7a8af349fcbc4e362cdddc2f215ccd04c8e9b41be66536bb197abc6083d"
 #: SHA-256 of that version's text before "## 5." (sections 1-4: objective, evidence classes, datasets, split rules)
 SPLIT_RULES_SHA256 = "5b766395bd1828e7a471a7281da74fa0c17a6bf048f1bec78fd4b0a5a081f090"
+#: SHA-256 of protocol sections 5.4 (validation before use, the gating rule) and 5.5 (amendment 2), each from its heading
+#: to the next heading: the fits and DEV verdicts of experiments/v7/fit-* were made under exactly this text
+SECTION_SHA256 = {"5.4": "931940952413a15529a8715ee465827514ce9a31ec6e3ea146e71015d1f36cdf",
+                  "5.5": "f9a9d0960cb12b4800303ba9ad11c57b65f912075f76e996ab9d67ef61b2a153"}
 
 
 def _before_section_5(text: bytes) -> bytes:
     return text[:text.index(b"\n## 5. ")]
+
+
+def _section(text: bytes, number: str) -> bytes:
+    import re
+    a = text.index(b"\n### " + number.encode() + b" ") + 1
+    m = re.search(rb"\n(### |## )", text[a:])
+    assert m is not None
+    return text[a:a + m.start() + 1]
 
 
 def _rc(s: bytes) -> bytes:
@@ -83,6 +95,12 @@ def test_committed_manifest_describes_amendment_1():
     # before section 5) must stay byte-identical to the protocol the split was computed under.
     assert hashlib.sha256(_before_section_5((ROOT / "docs/V7_PROTOCOL.md").read_bytes())).hexdigest() == SPLIT_RULES_SHA256
     assert MANIFEST["dataset_manifest"]["sha256"] == hashlib.sha256((ROOT / "experiments/v7/datasets/MANIFEST.json").read_bytes()).hexdigest()
+
+
+@pytest.mark.parametrize("number", sorted(SECTION_SHA256))
+def test_protocol_sections_governing_the_fits_are_unchanged(number):
+    text = (ROOT / "docs/V7_PROTOCOL.md").read_bytes()
+    assert hashlib.sha256(_section(text, number)).hexdigest() == SECTION_SHA256[number]
 
 
 def test_recorded_protocol_version_is_in_history_and_governs_the_split():
@@ -171,7 +189,10 @@ def test_fit_and_dev_yield_only_their_references_heldout_is_refused(tmp_path):
     for split in ("FIT", "DEV"):
         got = [i for i, _c, reads in g.iter_cnr(split, "test")]
         assert set(got) == g.ids("cnr", split) and len(got) == len(set(got))
-    assert not log.exists()                      # FIT / DEV use is not logged (it is recorded in model provenance)
+    assert not log.exists()                      # FIT / DEV use is not in the held-out log ...
+    ledger = [json.loads(x) for x in (tmp_path / G.LEDGER_NAME).read_text().splitlines()]   # ... but in the ledger
+    assert [(e["split"], e["granted"], e["script"], e["purpose"], e["dataset"]) for e in ledger] == \
+        [("FIT", True, "t", "test", "cnr"), ("DEV", True, "t", "test", "cnr")]
     with pytest.raises(G.AccessRefused):
         next(g.iter_cnr("HELDOUT", "test"))
     entry = json.loads(log.read_text().splitlines()[0])
@@ -181,6 +202,29 @@ def test_fit_and_dev_yield_only_their_references_heldout_is_refused(tmp_path):
     assert set(got) == g.ids("cnr", "HELDOUT")
     last = json.loads(log.read_text().splitlines()[-1])
     assert last["granted"] is True and last["prereg_sha"] == prereg and last["commit"] == prereg
+    assert len((tmp_path / G.LEDGER_NAME).read_text().splitlines()) == 2      # held-out requests stay out of the ledger
+
+
+def test_refused_fit_or_dev_requests_are_in_the_ledger(tmp_path):
+    ids = [str(i) for i in range(50)]
+    data = tmp_path / "data"
+    _fake_d03(data, ids)
+    ledger = tmp_path / "ledger.jsonl"
+    g = G.Guard(data, script="t", log_path=tmp_path / "log", ledger_path=ledger, repo=tmp_path)
+    with pytest.raises(G.AccessRefused):
+        next(g.iter_d03("file-1_acc-true_passQ-true/forward", "DEV", "x"))
+    e = json.loads(ledger.read_text().splitlines()[0])
+    assert e["granted"] is False and e["split"] == "DEV" and not (tmp_path / "log").exists()
+
+
+def test_committed_ledger_records_the_dev_looks_and_the_heldout_log_is_empty():
+    ledger = [json.loads(x) for x in (ROOT / "experiments/v7/datasets" / G.LEDGER_NAME).read_text().splitlines()]
+    assert ledger and all(e["split"] in ("FIT", "DEV") for e in ledger)
+    dev = {(e["source"], e["target"]) for e in ledger if e.get("reconstructed")}
+    results = sorted(ROOT.glob("experiments/v7/fit-*/results/*.validation.json")) + \
+        sorted(ROOT.glob("experiments/v7/fit-*/a2/results/*.validation.json"))
+    assert {s for s, _t in dev} == {str(p.relative_to(ROOT)) for p in results}
+    assert (ROOT / "experiments/v7/datasets/ACCESS_LOG.jsonl").read_text() == ""
 
 
 def test_purpose_is_required_and_wrong_sha_never_grants(tmp_path):
@@ -268,3 +312,14 @@ def test_only_the_guard_names_read_files_in_fitting_code():
             text = p.read_text()
             offenders += [f"{p}: {n}" for n in names if n in text]
     assert not offenders, offenders
+
+
+def test_fitting_data_directory_honours_vnx_data_dir():
+    """experiments/v7/fit reads its data directory from VNX_DATA_DIR, like split.py (default: the lab's public data)."""
+    pytest.importorskip("edlib")
+    code = "import sys; sys.path.insert(0, sys.argv[1]); import fitlib; print(fitlib.DATA_DIR)"
+    import os
+    env = dict(os.environ, VNX_DATA_DIR="/elsewhere/public", PYTHONPATH=str(ROOT / "src"))
+    r = subprocess.run([sys.executable, "-c", code, str(ROOT / "experiments/v7/fit")], capture_output=True, text=True, env=env)
+    assert r.returncode == 0, r.stderr
+    assert r.stdout.strip() == "/elsewhere/public"

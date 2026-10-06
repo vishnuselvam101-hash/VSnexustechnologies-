@@ -7,6 +7,7 @@ from __future__ import annotations
 import hashlib
 import importlib.metadata
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -28,7 +29,7 @@ from vnxdna.simulation.fit import pipeline as P  # noqa: E402, F401
 from vnxdna.simulation.fit import validate as V  # noqa: E402, F401
 from vnxdna.simulation.fit.tally import Layout  # noqa: E402
 
-DATA_DIR = "/root/vnx-dna-lab/data/public"
+DATA_DIR = os.environ.get("VNX_DATA_DIR", "/root/vnx-dna-lab/data/public")   # as experiments/v7/split/split.py
 MANIFEST = json.loads((REPO / "experiments/v7/datasets/MANIFEST.json").read_text())
 SPLIT_MANIFEST_BYTES = (REPO / "experiments/v7/split/SPLIT_MANIFEST.json").read_bytes()
 SPLIT_SHA = hashlib.sha256(SPLIT_MANIFEST_BYTES).hexdigest()

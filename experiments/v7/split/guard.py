@@ -10,6 +10,10 @@ requested split (reference lists in ``lists/``, integrity-checked against SPLIT_
 * HELDOUT: refused unless a PREREG commit SHA is given that (a) exists, (b) is an ancestor of HEAD and (c) contains a file
   named ``PREREG*`` under ``experiments/v7``. Every held-out request, granted or refused, is appended to
   ``experiments/v7/datasets/ACCESS_LOG.jsonl`` (commit SHA, script, timestamp, purpose).
+* Every FIT and DEV request (granted or refused) is appended to the access ledger
+  ``experiments/v7/datasets/SPLIT_ACCESS_LEDGER.jsonl`` (same fields), so the looks at DEV that protocol 5.5 counts are
+  recorded where they happen. Entries marked ``reconstructed`` were added from committed validation results for the runs
+  made before the ledger existed.
 * Whole held-out runs (D03 file-1) are not in the FIT or DEV run lists: requesting one of their groups for FIT or DEV is
   refused whatever SHA is given.
 
@@ -33,6 +37,7 @@ import refsplit as rs  # noqa: E402
 
 REPO = HERE.parents[2]
 DEFAULT_LOG = HERE.parent / "datasets" / "ACCESS_LOG.jsonl"
+LEDGER_NAME = "SPLIT_ACCESS_LEDGER.jsonl"
 _SHA = re.compile(r"^[0-9a-f]{40}$")
 OLIGOS = "d03/oligos.fasta"
 
@@ -99,13 +104,15 @@ def fasta_records(path: Path):
 
 class Guard:
     def __init__(self, data_dir, *, prereg_sha: str | None = None, script: str = "unknown", split_dir: Path = HERE,
-                 log_path: Path | None = None, repo: Path = REPO):
+                 log_path: Path | None = None, repo: Path = REPO, ledger_path: Path | None = None):
         self.data = Path(data_dir)
         self.split_dir = Path(split_dir)
         self.manifest = json.loads((self.split_dir / "SPLIT_MANIFEST.json").read_text())
         self.prereg = prereg_sha
         self.script = script
         self.log_path = Path(log_path) if log_path else DEFAULT_LOG
+        # FIT/DEV ledger: next to the held-out log unless given (a test's log path keeps its ledger out of the repository)
+        self.ledger_path = Path(ledger_path) if ledger_path else self.log_path.with_name(LEDGER_NAME)
         self.repo = Path(repo)
         self._ids: dict = {}
         self._runs: dict = {}
@@ -133,11 +140,12 @@ class Guard:
         return self._runs[k]
 
     # -- authorisation ------------------------------------------------------------------------------------------------
-    def _log(self, entry: dict) -> None:
+    def _log(self, entry: dict, path: Path | None = None) -> None:
         entry = {"timestamp_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "commit": head_sha(self.repo),
                  "script": self.script, **entry}
-        self.log_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(self.log_path, "a") as fh:
+        path = path or self.log_path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "a") as fh:
             fh.write(json.dumps(entry, sort_keys=True) + "\n")
 
     def authorize(self, dataset: str, target: str, split: str, purpose: str) -> str:
@@ -148,10 +156,12 @@ class Guard:
             raise AccessRefused("a purpose is required")
         scope = self.runs(dataset, split).get(target)
         if scope is None:
-            if split == rs.HELDOUT:
-                self._log({"dataset": dataset, "target": target, "split": split, "purpose": purpose, "granted": False,
-                           "reason": "run not in the split's run list"})
+            self._log({"dataset": dataset, "target": target, "split": split, "purpose": purpose, "granted": False,
+                       "reason": "run not in the split's run list"}, None if split == rs.HELDOUT else self.ledger_path)
             raise AccessRefused(f"{dataset}/{target} is not in the {split} run list")
+        if split != rs.HELDOUT:
+            self._log({"dataset": dataset, "target": target, "split": split, "purpose": purpose, "granted": True},
+                      self.ledger_path)
         if split == rs.HELDOUT:
             try:
                 sha = check_prereg(self.prereg, self.repo)
