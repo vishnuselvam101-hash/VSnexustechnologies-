@@ -1,0 +1,40 @@
+{
+ "audit": "V8.17",
+ "checks": {
+  "a1_before_its_precheck": true,
+  "author_ok": true,
+  "dev_evaluation_requests": [
+   "experiments/v8/d13/compare.py",
+   "experiments/v8/d13/pipeline.py tables"
+  ],
+  "dev_evaluations_only_after_verdict": true,
+  "disclosure_dev_preprocessing_before_verdict": [
+   "experiments/v8/d13/pipeline.py segment run15",
+   "experiments/v8/d13/pipeline.py segment run16",
+   "experiments/v8/d13/pipeline.py segment run18",
+   "experiments/v8/d13/pipeline.py segment run20"
+  ],
+  "failures_classified_equals_total": true,
+  "failures_total": 88,
+  "false_success_archive": 0,
+  "false_success_matrix": 0,
+  "false_success_oracle": 0,
+  "matrix_cells": 36,
+  "matrix_rows_have_hashes": true,
+  "matrix_seeds_complete": true,
+  "model_parameter_hash_matches": true,
+  "model_scripts_never_requested_dev": true,
+  "no_ai_attribution": true,
+  "no_heldout_granted": true,
+  "no_secrets_in_diff": true,
+  "oracle_seeds_complete": true,
+  "prereg_before_first_data_access": true,
+  "run13_never_granted": true,
+  "stale_results": [],
+  "v7_heldout_log_unchanged_since_v7_close": true,
+  "zero_false_success": true
+ },
+ "failed": [],
+ "head": "c6a477d247ec31818492ba9e13cb6ad27fc474b6",
+ "pass": true
+}
