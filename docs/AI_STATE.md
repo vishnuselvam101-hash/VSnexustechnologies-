@@ -41,8 +41,8 @@ Python orchestration and reference implementations, plus C11 native kernels via 
 | 1 | Nanopore frozen corpus + loss funnel + oracle | work/v7-nanodecode | DONE c4e6195 (corpus 7e89b82, `tests/nanopore/`; branch suite 2781/0/3) |
 | 2 | Consensus fix PHASE 1 (full-template polish, opt-in `consensus_template="full"`) | build/v7-sprint | MERGED 98c7c6d; held-out cov10 EXACT 40/40 vs 0/40 |
 | 3 | Low-coverage outer parity (opt-in profile `v7-lowcov`, row code 64+48) | build/v7-sprint | DONE e57d593 + 39e180a: held-out cov5 EXACT 38/40, cov10 40/40, 0 false; cov3 still 0/40 (structural); cost +42 % strands |
-| 4 | D3 D13/CAS9 characterisation vs simulator | work/v7-nanodata | IN PROGRESS: prereg, manifest, splitter, driver committed (f761f8c); characterisation run interrupted |
-| 5 | A2 native cluster kernel | work/v7-native | review fixes done (e0bd56b, sanitizers PASS); merge pending (full suite) |
+| 4 | D3 D13/CAS9 characterisation vs simulator | work/v7-nanodata | IN PROGRESS (owner root-e4): driver 19ad023 (load avg, 3 workers); clean rerun of d13 + cas9 + compare next |
+| 5 | A2 native cluster kernel | build/v7-sprint | MERGED 93d491a (e0bd56b, sanitizers PASS) |
 | 6 | Python/C boundary audit | work/v7-pycpp | IN PROGRESS: boundary tests committed (4cdc0ba); 4 uncommitted files; doc not finished |
 | 7 | Remaining fitter work | — | nanopore models still INADEQUATE (M3); D02 marginal |
 
