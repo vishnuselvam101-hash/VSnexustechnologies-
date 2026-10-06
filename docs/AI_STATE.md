@@ -72,3 +72,21 @@ Read as V7 items A, B, C to the §25 acceptance gates, then V8. One task at a ti
 | 8 | §21 fuzz targets, §22 security review/threat model | no new crashes, findings fixed |
 | 9 | §24 docs + release gate (vnx release check) | SHA handed to founder; NO push/tag without founder approval |
 | 10 | V8 scope + plan | founder picks scope |
+
+## V7 reset directive (2026-10-06 18:30) — SUPERSEDES the "V7 completion plan" above. Ledger from here.
+Governing notes: /root/vnx-dna-lab/notes/V7-RESET-DIRECTIVE-2026-10-06.md + founder step list of 19:5x (steps 3-8).
+| step | state | evidence |
+|---|---|---|
+| D3 real-data check | DONE on work/v7-nanodata 5386080 (NOT merged) | simulator fails M1-M6 on D13 ×4 + CAS9 |
+| 1 Phase 1 regression test | DONE 0a05444 | 12/12 frozen cases = A-CONS record |
+| 2 reproduction | DONE 3d45b78 | A-CONS 240 + A-PAR 120 rows identical (deterministic fields) |
+| 3 confirmatory A-CONF | DONE prereg b8f3338, results 807e3f6 | Phase 1 CONFIRMED (cov10 40/40), lowcov cov5 39/40, 0 FS / 360 |
+| 4 failure taxonomy A-FAIL | DONE aa62d61 + 5b10920 + 57f0a30 | 283 failed decodes, all reproduced; categories quantified |
+| 5 cov-5 lowcov failures | DONE (A-FAIL README) | same mechanism, STOCHASTIC: 1 row over budget by 1-3 symbols |
+| 6 cov-3 conclusion | DONE (A-FAIL README) | v4-balanced STRUCTURALLY INADEQUATE; v7-lowcov UNSUPPORTED (C+B) |
+| 7A fitted model design | DONE f8d617a docs/V7_NANOPORE_MODEL_DESIGN.md | gap: empirical indel run-length pmf |
+| 7B adequacy prereg | DONE f8d617a experiments/v7/fit-nano/PREREGISTRATION.md | M5/M5i multi-base indel metrics gating |
+| 7 implementation | NEXT | (1) review+merge work/v7-nanodata; (2) /2 empirical run-length pmf + tests; (3) fitter calibration + M5i/M2b/RL metrics; (4) fit FIT, ≤2 DEV looks, freeze, one held-out evaluation |
+| 7 matrix | BLOCKED until a model is ADEQUATE on held-out | |
+| 8 final report | after 7 | |
+Do NOT start B/C/optimisation. No V8.
