@@ -1,0 +1,26 @@
+{
+ "experiment": "V7-D3-CHAR",
+ "label": "PUBLIC-DATA-DERIVED (real reads, FIT/DEV only); SIMULATED (nanopore-like comparison)",
+ "preregistration": "docs/V7_PROTOCOL_AMENDMENT_D3.md",
+ "data_dir": "/root/vnx-dna-lab/data/public",
+ "d13": {
+  "runs": {"run15": "apollo", "run16": "365-dishes", "run18": "apollo", "run20": "vitruvian"},
+  "heldout_run": "run13 (space_shuttle): never opened here",
+  "reference_files": {"365-dishes": "seqs_365-dishes.txt", "apollo": "seqs_apollo.txt", "vitruvian": "seqs_Vitruvian.txt"},
+  "split_params": {"k": 16, "max_occ": 8, "min_hits": 3, "diag_tol": 24, "pad": 30, "max_err": 0.30, "margin": 5, "overlap": 0.5},
+  "max_reads_per_run": 100000
+ },
+ "cas9": {
+  "motif": "TCGCAGAGGTGGCGNNNNNNNNNN",
+  "motif_max_ed": 3,
+  "address_max_ed": 3,
+  "classify_pad": 3,
+  "max_hits": 400,
+  "heldout_address": "g13",
+  "min_units": 4,
+  "max_units": 12,
+  "sim_every": 20,
+  "max_files": null
+ },
+ "compare": {"model": "nanopore-like", "seed_base": 82000, "max_references": 20000, "cas9_max_templates": 3000}
+}

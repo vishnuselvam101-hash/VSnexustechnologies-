@@ -277,7 +277,231 @@ def d03(root: Path, src: dict) -> dict:
     return rec
 
 
-def build(root: Path) -> dict:
+# ---------------------------------------------------------------------------------------------------------------------
+# V7 item D3: D13 (Lopez et al. 2019) and CAS9 (Imburgia et al. 2025). Both GitHub repositories have no licence file:
+# internal use only, no read or reference data and no per-read derived data are committed (sources.json).
+# ---------------------------------------------------------------------------------------------------------------------
+D13_RUNS = {"nanopore_run13.fastq.gz": "space_shuttle", "nanopore_run15.fastq.gz": "apollo", "nanopore_run16.fastq.gz": "365-dishes",
+            "nanopore_run18.fastq.gz": "apollo", "nanopore_run20.fastq.gz": "vitruvian"}
+D13_REFS = {"365-dishes": "seqs_365-dishes.txt", "apollo": "seqs_apollo.txt", "space_shuttle": "seqs_space_shuttle.txt",
+            "vitruvian": "seqs_Vitruvian.txt"}
+CAS9_READS = "cas9/20200715_basecalled_reads"
+CAS9_META = "meta/github-cas9-random-access-basecalled_reads.json"
+CAS9_ROOT_META = "meta/github-cas9-random-access-root.json"
+D13_TREE_META = "meta/github-data-ncomms19-nanopore-tree.json"
+D13_LFS_META = "meta/github-data-ncomms19-nanopore-lfs-pointers.txt"
+D13_COMMIT_META = "meta/github-data-ncomms19-nanopore-head-commit.json"
+CAS9_COMMIT_META = "meta/github-cas9-random-access-head-commit.json"
+D13_HELDOUT_RUN = "nanopore_run13.fastq.gz"  # space_shuttle, amendment D3 PR-3.1
+
+
+def head_commit(root: Path, rel: str) -> dict:
+    doc = json.loads((root / rel).read_text())
+    return {"sha": doc["sha"], "tree": doc["commit"]["tree"]["sha"], "date": doc["commit"]["committer"]["date"],
+            "metadata": file_record(root, rel)}
+
+
+def gzip_intact(path: str) -> bool:
+    """Decompress the whole file without parsing it (CRC and length check of gzip)."""
+    try:
+        with gzip.open(path, "rb") as fh:
+            while fh.read(1 << 24):
+                pass
+    except (OSError, EOFError):
+        return False
+    return True
+
+
+def git_blob_sha1(data: bytes) -> str:
+    return hashlib.sha1(b"blob %d\0" % len(data) + data).hexdigest()  # noqa: S324 (git object ID, compared with GitHub's)
+
+
+def fastq_profile(path: str) -> dict:
+    """Counts of one gzip FASTQ file (worker function): records, malformed records, read lengths, quality values, header
+    fields (run IDs, sample IDs, start-time range, read-ID length). Standard library only; quality bytes are counted in
+    blocks by Counter (C implementation)."""
+    lens: Counter = Counter()
+    quals: Counter = Counter()
+    runids: Counter = Counter()
+    samples: Counter = Counter()
+    idlens: Counter = Counter()
+    tmin = tmax = None
+    reads = bad = 0
+    buf = bytearray()
+    with gzip.open(path, "rb") as fh:
+        while True:
+            h = fh.readline()
+            if not h:
+                break
+            seq, plus, q = fh.readline().rstrip(b"\n"), fh.readline(), fh.readline().rstrip(b"\n")
+            if not h.startswith(b"@") or not plus.startswith(b"+") or len(seq) != len(q):
+                bad += 1
+            reads += 1
+            lens[len(seq)] += 1
+            buf += q
+            if len(buf) > 1 << 24:
+                quals.update(bytes(buf))
+                buf.clear()
+            f = h[1:].split()
+            idlens[len(f[0]) if f else 0] += 1
+            for tok in f[1:]:
+                k, _, v = tok.partition(b"=")
+                if k == b"runid":
+                    runids[v.decode()] += 1
+                elif k == b"sampleid":
+                    samples[v.decode()] += 1
+                elif k == b"start_time":
+                    t = v.decode()
+                    tmin = t if tmin is None or t < tmin else tmin
+                    tmax = t if tmax is None or t > tmax else tmax
+    quals.update(bytes(buf))
+    return {"reads": reads, "bad": bad, "lens": dict(lens), "quals": dict(quals), "runids": dict(runids),
+            "samples": dict(samples), "idlens": dict(idlens), "tmin": tmin, "tmax": tmax}
+
+
+def merge_profiles(profiles: list[dict]) -> dict:
+    out: dict = {"reads": 0, "bad": 0, "tmin": None, "tmax": None}
+    for name in ("lens", "quals", "runids", "samples", "idlens"):
+        out[name] = Counter()
+    for p in profiles:
+        out["reads"] += p["reads"]
+        out["bad"] += p["bad"]
+        for name in ("lens", "quals", "runids", "samples", "idlens"):
+            out[name].update(p[name])
+        if p["tmin"] is not None:
+            out["tmin"] = p["tmin"] if out["tmin"] is None else min(out["tmin"], p["tmin"])
+            out["tmax"] = p["tmax"] if out["tmax"] is None else max(out["tmax"], p["tmax"])
+    return out
+
+
+def profile_record(p: dict) -> dict:
+    quals = p["quals"]
+    total = sum(quals.values())
+    qv = sorted(c - 33 for c in quals)
+    bases = sum(k * v for k, v in p["lens"].items())
+    return {"format": "FASTQ (gzip)", "records": p["reads"], "malformed_records": p["bad"], "bases": bases,
+            "length": length_stats(Counter(p["lens"])),
+            "quality": {"available": True, "encoding": "Phred+33", "distinct_values": len(qv), "binned": len(qv) <= 8,
+                        "min": qv[0] if qv else None, "max": qv[-1] if qv else None,
+                        "mean": round(sum((c - 33) * n for c, n in quals.items()) / total, 3) if total else None,
+                        "fraction_ge_10": round(sum(n for c, n in quals.items() if c - 33 >= 10) / total, 4) if total else None,
+                        "fraction_ge_20": round(sum(n for c, n in quals.items() if c - 33 >= 20) / total, 4) if total else None},
+            "header": {"run_ids": dict(sorted(p["runids"].items())), "sample_ids": dict(sorted(p["samples"].items())),
+                       "start_time_min": p["tmin"], "start_time_max": p["tmax"],
+                       "read_id_lengths": {str(k): v for k, v in sorted(p["idlens"].items())}}}
+
+
+def _pool_map(fn, items: list, workers: int) -> list:
+    if workers <= 1 or len(items) <= 1:
+        return [fn(i) for i in items]
+    import multiprocessing as mp
+    with mp.get_context("fork").Pool(min(workers, len(items))) as pool:
+        return pool.map(fn, items, chunksize=1)
+
+
+def parse_lopez_refs(path: Path) -> list[bytes]:
+    out = []
+    for ln in path.read_bytes().splitlines():
+        s = ln.strip()
+        if s:
+            if not (s.startswith(b"5'-") and s.endswith(b"-3'")):
+                raise SystemExit(f"{path}: unexpected reference line format")
+            out.append(s[3:-3])
+    return out
+
+
+def d13(root: Path, src: dict, workers: int) -> dict:
+    rec = dict(src)
+    tree = {t["path"]: t for t in json.loads((root / D13_TREE_META).read_text())["tree"]}
+    lfs = {}
+    for block in (root / D13_LFS_META).read_text().split("version ")[1:]:
+        kv = dict(ln.split(" ", 1) for ln in block.strip().splitlines()[1:])
+        lfs[int(kv["size"])] = kv["oid"].removeprefix("sha256:")
+    rec["metadata_files"] = [file_record(root, D13_TREE_META), file_record(root, D13_LFS_META)]
+    files = []
+    for name in ["read_me_data-ncomms19-nanopore.txt"] + sorted(D13_REFS.values()) + sorted(D13_RUNS):
+        fr = file_record(root, f"d13/{name}")
+        data_path = root / "d13" / name
+        if name in D13_RUNS:
+            fr["published_lfs_sha256"] = lfs.get(fr["bytes"])
+            fr["sha256_matches_lfs_pointer"] = fr["sha256"] == fr["published_lfs_sha256"]
+        else:
+            fr["published_git_blob_sha1"] = tree[name]["sha"]
+            fr["git_blob_sha1_matches_source"] = git_blob_sha1(data_path.read_bytes()) == tree[name]["sha"]
+        files.append(fr)
+    rec["files"] = files
+    refs = {}
+    canon_by_file = {}
+    for fname, rel in sorted(D13_REFS.items()):
+        seqs = parse_lopez_refs(root / "d13" / rel)
+        canon_by_file[fname] = {canonical(s) for s in seqs}
+        refs[fname] = {"file": f"d13/{rel}", "references": len(seqs), "distinct": len(set(seqs)),
+                       "distinct_canonical": len(canon_by_file[fname]), "length": length_stats(Counter(len(s) for s in seqs)),
+                       "distinct_first_20nt": len({s[:20] for s in seqs}), "distinct_last_20nt": len({s[-20:] for s in seqs}),
+                       "committable": False}
+    names = sorted(canon_by_file)
+    rec["references"] = refs
+    rec["reference_overlap_between_files"] = {f"{a}|{b}": len(canon_by_file[a] & canon_by_file[b])
+                                              for i, a in enumerate(names) for b in names[i + 1:]}
+    rec["source_commit"] = head_commit(root, D13_COMMIT_META)
+    runs = sorted(r for r in D13_RUNS if r != D13_HELDOUT_RUN)
+    profiles = _pool_map(fastq_profile, [str(root / "d13" / r) for r in runs], workers)
+    rec["runs"] = {r.removesuffix(".fastq.gz"): {"file": D13_RUNS[r], "fastq": f"d13/{r}", "split": "FIT/DEV (by reference)",
+                                                 **profile_record(p)} for r, p in zip(runs, profiles)}
+    rec["runs"][D13_HELDOUT_RUN.removesuffix(".fastq.gz")] = {
+        "file": D13_RUNS[D13_HELDOUT_RUN], "fastq": f"d13/{D13_HELDOUT_RUN}", "split": "HELD-OUT (whole run)",
+        "gzip_intact": gzip_intact(str(root / "d13" / D13_HELDOUT_RUN)),
+        "note": "held out (docs/V7_PROTOCOL_AMENDMENT_D3.md PR-3.1): hashed and gzip-checked only, no read-level statistic"}
+    return rec
+
+
+def cas9(root: Path, src: dict, workers: int) -> dict:
+    rec = dict(src)
+    listing = {e["name"]: e for e in json.loads((root / CAS9_META).read_text())}
+    rootmeta = {e["path"]: e for e in json.loads((root / CAS9_ROOT_META).read_text())}
+    rec["metadata_files"] = [file_record(root, CAS9_META), file_record(root, CAS9_ROOT_META)]
+    small = []
+    for name in ("README.md", "20200715_triple_file_access.py", "splint_all.fasta"):
+        fr = file_record(root, f"cas9/{name}")
+        fr["published_git_blob_sha1"] = rootmeta[name]["sha"]
+        fr["git_blob_sha1_matches_source"] = git_blob_sha1((root / "cas9" / name).read_bytes()) == rootmeta[name]["sha"]
+        small.append(fr)
+    rec["files"] = small
+    gz = sorted(p.name for p in (root / CAS9_READS).glob("*.fastq.gz"))
+    reads = []
+    for name in gz:
+        fr = file_record(root, f"{CAS9_READS}/{name}")
+        with gzip.open(root / CAS9_READS / name, "rb") as fh:
+            content = fh.read()
+        src_name = name.removesuffix(".gz")
+        fr["stored_as"] = "gzip of the published file (level 6, mtime 0)"
+        fr["content_bytes"] = len(content)
+        fr["content_sha256"] = hashlib.sha256(content).hexdigest()
+        fr["published_git_blob_sha1"] = listing[src_name]["sha"]
+        fr["git_blob_sha1_matches_source"] = git_blob_sha1(content) == listing[src_name]["sha"]
+        reads.append(fr)
+    rec["read_files"] = reads
+    rec["read_files_summary"] = {"published_files": len(listing), "downloaded_files": len(gz),
+                                 "all_git_blob_sha1_match": all(r["git_blob_sha1_matches_source"] for r in reads),
+                                 "published_bytes": sum(e["size"] for e in listing.values()),
+                                 "content_bytes": sum(r["content_bytes"] for r in reads)}
+    addresses = []
+    name = None
+    for ln in (root / "cas9" / "splint_all.fasta").read_text().splitlines():
+        if ln.startswith(">"):
+            name = ln[1:].strip()
+        elif ln.strip():
+            addresses.append((name, ln.strip()))
+    rec["addresses"] = {"file": "cas9/splint_all.fasta", "count": len(addresses),
+                        "length": length_stats(Counter(len(s) for _, s in addresses)),
+                        "common_prefix": os.path.commonprefix([s for _, s in addresses])}
+    rec["source_commit"] = head_commit(root, CAS9_COMMIT_META)
+    rec["read_statistics"] = ("not in the manifest: the held-out address g13 is a subset of every chunk, so read-level "
+                              "statistics are computed on FIT/DEV reads by experiments/v7/nanodata (amendment D3 PR-2)")
+    return rec
+
+
+def build(root: Path, workers: int = 1) -> dict:
     src = json.loads((HERE / "sources.json").read_text())["datasets"]
     return {
         "schema": "vnx.dataset-manifest/1",
@@ -285,7 +509,9 @@ def build(root: Path) -> dict:
         "statement": "Every dataset was produced by another group; VNX-DNA has synthesised, stored and sequenced nothing. Data live outside the repository. No train/dev/held-out split is defined here.",
         "recompute": "python experiments/v7/datasets/build_manifest.py --check",
         "datasets": {"cnr": cnr(root, src["cnr"]), "dt4dds-twist": d02(root, src["dt4dds-twist"]),
-                     "d03-nanopore": d03(root, src["d03-nanopore"])},
+                     "d03-nanopore": d03(root, src["d03-nanopore"]),
+                     "d13-lopez-nanopore": d13(root, src["d13-lopez-nanopore"], workers),
+                     "cas9-random-access": cas9(root, src["cas9-random-access"], workers)},
     }
 
 
@@ -297,8 +523,10 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--data-dir", default=DEFAULT_DIR)
     ap.add_argument("--check", action="store_true", help="recompute and compare with the committed MANIFEST.json")
+    ap.add_argument("--workers", type=int, default=min(8, os.cpu_count() or 1),
+                    help="processes for the FASTQ scans (the output does not depend on it)")
     a = ap.parse_args(argv)
-    doc = build(Path(a.data_dir))
+    doc = build(Path(a.data_dir), a.workers)
     text = json.dumps(doc, indent=1, sort_keys=True, ensure_ascii=False) + "\n"
     if a.check:
         old = MANIFEST.read_text()
