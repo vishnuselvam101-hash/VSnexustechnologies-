@@ -94,7 +94,15 @@ def test_committed_manifest_describes_amendment_1():
     # Later amendments (protocol 5.5, amendment 2) may add to section 5 onwards; the text that governs the split (everything
     # before section 5) must stay byte-identical to the protocol the split was computed under.
     assert hashlib.sha256(_before_section_5((ROOT / "docs/V7_PROTOCOL.md").read_bytes())).hexdigest() == SPLIT_RULES_SHA256
-    assert MANIFEST["dataset_manifest"]["sha256"] == hashlib.sha256((ROOT / "experiments/v7/datasets/MANIFEST.json").read_bytes()).hexdigest()
+    # The dataset manifest the split was computed from is in history; later items (D3) may only add datasets to it.
+    rel = "experiments/v7/datasets/MANIFEST.json"
+    shas = subprocess.run(["git", "-C", str(ROOT), "log", "--format=%H", "--", rel], capture_output=True, text=True, check=True).stdout.split()
+    blobs = [subprocess.run(["git", "-C", str(ROOT), "show", f"{c}:{rel}"], capture_output=True, check=True).stdout for c in shas]
+    pinned = [b for b in blobs if hashlib.sha256(b).hexdigest() == MANIFEST["dataset_manifest"]["sha256"]]
+    assert pinned, "dataset manifest the split was computed from is not in history"
+    old, new = json.loads(pinned[0]), json.loads((ROOT / rel).read_bytes())
+    assert {k: v for k, v in new.items() if k != "datasets"} == {k: v for k, v in old.items() if k != "datasets"}
+    assert all(new["datasets"][k] == v for k, v in old["datasets"].items())
 
 
 @pytest.mark.parametrize("number", sorted(SECTION_SHA256))
@@ -224,7 +232,11 @@ def test_committed_ledger_records_the_dev_looks_and_the_heldout_log_is_empty():
     results = sorted(ROOT.glob("experiments/v7/fit-*/results/*.validation.json")) + \
         sorted(ROOT.glob("experiments/v7/fit-*/a2/results/*.validation.json"))
     assert {s for s, _t in dev} == {str(p.relative_to(ROOT)) for p in results}
-    assert (ROOT / "experiments/v7/datasets/ACCESS_LOG.jsonl").read_text() == ""
+    # Held-out touches before a PREREG are disclosed here (protocol 4.2). Only the D3 hashing/address-classification
+    # exceptions (docs/V7_PROTOCOL_AMENDMENT_D3.md §2) may appear; the guarded CNR/D03 held-out splits never.
+    access = [json.loads(x) for x in (ROOT / "experiments/v7/datasets/ACCESS_LOG.jsonl").read_text().splitlines()]
+    assert all(e["dataset"] in ("d13-lopez-nanopore", "cas9-random-access") for e in access)
+    assert all(e["script"] and e["purpose"] and e["material"] and e["timestamp_utc"] for e in access)
 
 
 def test_purpose_is_required_and_wrong_sha_never_grants(tmp_path):
