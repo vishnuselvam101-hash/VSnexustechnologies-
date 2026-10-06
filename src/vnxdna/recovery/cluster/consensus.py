@@ -206,10 +206,13 @@ class _Job:
 
 
 def cluster_consensus(lay: Layout, clusters: list, cfg: ClusterConfig, marker_mismatch: int = 4,
-                      counts: Counter | None = None) -> list[dict]:
+                      counts: Counter | None = None, trace: list | None = None) -> list[dict]:
     """``clusters``: list of (cluster ID, [reads oriented relative to the cluster's reference read]), in cluster-ID
     order. Returns the verified frames (dicts: kind, tag, group, symbol, payload, cluster, peel, reads, gmd_step) in
-    cluster-ID then peel order. Clusters are independent; the result does not depend on how they are batched."""
+    cluster-ID then peel order. Clusters are independent; the result does not depend on how they are batched.
+
+    ``trace`` (observability only, default None): when a list, one dict per consensus candidate is appended (cluster,
+    peel, orientation, consensus bases, decided mask, margins, byte erasures, decode result); nothing else changes."""
     counts = Counter() if counts is None else counts
     T = lay.strand_nt
     tpl0, fpos = lay.template()
@@ -235,7 +238,7 @@ def cluster_consensus(lay: Layout, clusters: list, cfg: ClusterConfig, marker_mi
             units.append((job, usable, band))
         if not units:
             break
-        results = _run_units(lay, units, tpl0, fpos, has_markers, cfg, marker_mismatch, counts)
+        results = _run_units(lay, units, tpl0, fpos, has_markers, cfg, marker_mismatch, counts, trace)
         # peel distances of every verified unit's members to its re-created strand, in one batch
         xs, ys = [], []
         for res in results:
@@ -284,13 +287,14 @@ def _usable(members: list, T: int, cap: int) -> tuple[list, int, int]:
     return out, beyond, dups
 
 
-def _run_units(lay, units, tpl0, fpos, has_markers, cfg, marker_mismatch, counts) -> list:
+def _run_units(lay, units, tpl0, fpos, has_markers, cfg, marker_mismatch, counts, trace=None) -> list:
     """Seed, rounds and decode for every unit (one per active cluster); returns per unit (frame, oriented reads, strand)
     or None."""
     T = lay.strand_nt
     base_mc = np.where(tpl0 >= 0, marker_mismatch, 0).astype(np.int32)
     # candidate orientations per unit: markers decide by cost; markerless try both (forward first)
     cands = []                                   # (unit index, reads oriented, band, seed template or None)
+    flips: list = []                             # orientation of each candidate (trace only)
     if has_markers:
         reads_all, bands, owner = [], [], []
         for u, (_, usable, band) in enumerate(units):
@@ -314,6 +318,7 @@ def _run_units(lay, units, tpl0, fpos, has_markers, cfg, marker_mismatch, counts
             tpl = tpl0.copy()
             tpl[fpos[dec]] = best[dec]
             cands.append((u, [reads_all[i] for i in sel.tolist()], band, tpl))
+            flips.append(flip)
     else:
         for u, (_, usable, band) in enumerate(units):
             for flip in (0, 1):
@@ -326,6 +331,7 @@ def _run_units(lay, units, tpl0, fpos, has_markers, cfg, marker_mismatch, counts
                 d = banded_distance([a for a in pick for _ in pick], [b for _ in pick for b in pick], cfg.band_slack)
                 med = pick[int(d.reshape(len(pick), len(pick)).sum(axis=1).argmin())]
                 cands.append((u, rs, band, np.minimum(med, 3).astype(np.int16)))
+                flips.append(flip)
     # rounds: align to the consensus template, vote, until stable
     state = [{"tpl": tpl, "dec": None, "best": None, "margin": None, "stable": False} for (_, _, _, tpl) in cands]
     for _ in range(max(1, cfg.rounds)):
@@ -396,6 +402,14 @@ def _run_units(lay, units, tpl0, fpos, has_markers, cfg, marker_mismatch, counts
         payload[todo[hit]] = P2.payload[hit]
         gmd[todo[hit]] = step
     counts["cluster_rs_crc_trials"] += int(trials.sum())
+    if trace is not None:
+        for k, (u, rs, band, _) in enumerate(cands):
+            s = state[k]
+            trace.append({"cluster": int(units[u][0].cid), "peel": int(units[u][0].peel), "flip": int(flips[k]),
+                          "reads": len(rs), "band": int(band), "best": s["best"].copy(), "decided": s["dec"].copy(),
+                          "margin": s["margin"].copy(), "total": s["total"].copy(), "erased": er[k].copy(),
+                          "bytes": frames[k].copy(), "ok": bool(ok[k]), "gmd": int(gmd[k]), "trials": int(trials[k]),
+                          "fields": tuple(int(x) for x in fields[k]) if ok[k] else None})
     for k, (u, rs, _, _) in enumerate(cands):
         if u in done_unit:
             continue

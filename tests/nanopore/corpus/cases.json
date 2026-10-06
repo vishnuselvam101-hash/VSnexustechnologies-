@@ -1,0 +1,392 @@
+{
+ "schema": "vnx.nanopore-corpus/1",
+ "label": "SIMULATED regression corpus; unfitted nanopore-like channel (V6 stress profile, not fitted to any platform)",
+ "seeds": "protocol section 7 exploration range 82000-82099; corpus seeds 82040-82045; seeds 82060-82099 are kept untouched by tuning for checks on seeds not tuned on",
+ "channel_source": "experiments/v7/a-diag/models/nanopore-like-cov*.json channel block (coverage and seed per case)",
+ "cases": [
+  {
+   "id": "fast-nanopore-cov10-s82040",
+   "tier": "fast",
+   "size": 2000,
+   "data_seed": 6202,
+   "profile": "v4-balanced",
+   "channel": {
+    "substitution_rate": 0.02,
+    "insertion_rate": 0.01,
+    "deletion_rate": 0.03,
+    "dropout_rate": 0.0,
+    "coverage_model": "negative-binomial",
+    "coverage_dispersion": 4.0,
+    "duplication_rate": 0.0,
+    "homopolymer_min_run": 3,
+    "homopolymer_indel_multiplier": 3.0,
+    "homopolymer_substitution_multiplier": 1.5,
+    "burst_rate": 0.005,
+    "burst_max_len": 6,
+    "n_rate": 0.001,
+    "reverse_complement_rate": 0.5,
+    "quality_correct": 15,
+    "quality_error": 7,
+    "quality_informative": 0.5,
+    "coverage": 10.0,
+    "seed": 82040
+   },
+   "decoder": {
+    "read_clustering": "fallback",
+    "cluster_config": {}
+   }
+  },
+  {
+   "id": "fast-nanopore-cov5-s82041",
+   "tier": "fast",
+   "size": 2000,
+   "data_seed": 6202,
+   "profile": "v4-balanced",
+   "channel": {
+    "substitution_rate": 0.02,
+    "insertion_rate": 0.01,
+    "deletion_rate": 0.03,
+    "dropout_rate": 0.0,
+    "coverage_model": "negative-binomial",
+    "coverage_dispersion": 4.0,
+    "duplication_rate": 0.0,
+    "homopolymer_min_run": 3,
+    "homopolymer_indel_multiplier": 3.0,
+    "homopolymer_substitution_multiplier": 1.5,
+    "burst_rate": 0.005,
+    "burst_max_len": 6,
+    "n_rate": 0.001,
+    "reverse_complement_rate": 0.5,
+    "quality_correct": 15,
+    "quality_error": 7,
+    "quality_informative": 0.5,
+    "coverage": 5.0,
+    "seed": 82041
+   },
+   "decoder": {
+    "read_clustering": "fallback",
+    "cluster_config": {}
+   }
+  },
+  {
+   "id": "fast-nanopore-cov3-s82042",
+   "tier": "fast",
+   "size": 2000,
+   "data_seed": 6202,
+   "profile": "v4-balanced",
+   "channel": {
+    "substitution_rate": 0.02,
+    "insertion_rate": 0.01,
+    "deletion_rate": 0.03,
+    "dropout_rate": 0.0,
+    "coverage_model": "negative-binomial",
+    "coverage_dispersion": 4.0,
+    "duplication_rate": 0.0,
+    "homopolymer_min_run": 3,
+    "homopolymer_indel_multiplier": 3.0,
+    "homopolymer_substitution_multiplier": 1.5,
+    "burst_rate": 0.005,
+    "burst_max_len": 6,
+    "n_rate": 0.001,
+    "reverse_complement_rate": 0.5,
+    "quality_correct": 15,
+    "quality_error": 7,
+    "quality_informative": 0.5,
+    "coverage": 3.0,
+    "seed": 82042
+   },
+   "decoder": {
+    "read_clustering": "fallback",
+    "cluster_config": {}
+   }
+  },
+  {
+   "id": "nanopore-cov10-s82043",
+   "tier": "slow",
+   "size": 20000,
+   "data_seed": 6201,
+   "profile": "v4-balanced",
+   "channel": {
+    "substitution_rate": 0.02,
+    "insertion_rate": 0.01,
+    "deletion_rate": 0.03,
+    "dropout_rate": 0.0,
+    "coverage_model": "negative-binomial",
+    "coverage_dispersion": 4.0,
+    "duplication_rate": 0.0,
+    "homopolymer_min_run": 3,
+    "homopolymer_indel_multiplier": 3.0,
+    "homopolymer_substitution_multiplier": 1.5,
+    "burst_rate": 0.005,
+    "burst_max_len": 6,
+    "n_rate": 0.001,
+    "reverse_complement_rate": 0.5,
+    "quality_correct": 15,
+    "quality_error": 7,
+    "quality_informative": 0.5,
+    "coverage": 10.0,
+    "seed": 82043
+   },
+   "decoder": {
+    "read_clustering": "fallback",
+    "cluster_config": {}
+   }
+  },
+  {
+   "id": "nanopore-cov10-s82044",
+   "tier": "slow",
+   "size": 20000,
+   "data_seed": 6201,
+   "profile": "v4-balanced",
+   "channel": {
+    "substitution_rate": 0.02,
+    "insertion_rate": 0.01,
+    "deletion_rate": 0.03,
+    "dropout_rate": 0.0,
+    "coverage_model": "negative-binomial",
+    "coverage_dispersion": 4.0,
+    "duplication_rate": 0.0,
+    "homopolymer_min_run": 3,
+    "homopolymer_indel_multiplier": 3.0,
+    "homopolymer_substitution_multiplier": 1.5,
+    "burst_rate": 0.005,
+    "burst_max_len": 6,
+    "n_rate": 0.001,
+    "reverse_complement_rate": 0.5,
+    "quality_correct": 15,
+    "quality_error": 7,
+    "quality_informative": 0.5,
+    "coverage": 10.0,
+    "seed": 82044
+   },
+   "decoder": {
+    "read_clustering": "fallback",
+    "cluster_config": {}
+   }
+  },
+  {
+   "id": "nanopore-cov10-s82045",
+   "tier": "slow",
+   "size": 20000,
+   "data_seed": 6201,
+   "profile": "v4-balanced",
+   "channel": {
+    "substitution_rate": 0.02,
+    "insertion_rate": 0.01,
+    "deletion_rate": 0.03,
+    "dropout_rate": 0.0,
+    "coverage_model": "negative-binomial",
+    "coverage_dispersion": 4.0,
+    "duplication_rate": 0.0,
+    "homopolymer_min_run": 3,
+    "homopolymer_indel_multiplier": 3.0,
+    "homopolymer_substitution_multiplier": 1.5,
+    "burst_rate": 0.005,
+    "burst_max_len": 6,
+    "n_rate": 0.001,
+    "reverse_complement_rate": 0.5,
+    "quality_correct": 15,
+    "quality_error": 7,
+    "quality_informative": 0.5,
+    "coverage": 10.0,
+    "seed": 82045
+   },
+   "decoder": {
+    "read_clustering": "fallback",
+    "cluster_config": {}
+   }
+  },
+  {
+   "id": "nanopore-cov5-s82043",
+   "tier": "slow",
+   "size": 20000,
+   "data_seed": 6201,
+   "profile": "v4-balanced",
+   "channel": {
+    "substitution_rate": 0.02,
+    "insertion_rate": 0.01,
+    "deletion_rate": 0.03,
+    "dropout_rate": 0.0,
+    "coverage_model": "negative-binomial",
+    "coverage_dispersion": 4.0,
+    "duplication_rate": 0.0,
+    "homopolymer_min_run": 3,
+    "homopolymer_indel_multiplier": 3.0,
+    "homopolymer_substitution_multiplier": 1.5,
+    "burst_rate": 0.005,
+    "burst_max_len": 6,
+    "n_rate": 0.001,
+    "reverse_complement_rate": 0.5,
+    "quality_correct": 15,
+    "quality_error": 7,
+    "quality_informative": 0.5,
+    "coverage": 5.0,
+    "seed": 82043
+   },
+   "decoder": {
+    "read_clustering": "fallback",
+    "cluster_config": {}
+   }
+  },
+  {
+   "id": "nanopore-cov5-s82044",
+   "tier": "slow",
+   "size": 20000,
+   "data_seed": 6201,
+   "profile": "v4-balanced",
+   "channel": {
+    "substitution_rate": 0.02,
+    "insertion_rate": 0.01,
+    "deletion_rate": 0.03,
+    "dropout_rate": 0.0,
+    "coverage_model": "negative-binomial",
+    "coverage_dispersion": 4.0,
+    "duplication_rate": 0.0,
+    "homopolymer_min_run": 3,
+    "homopolymer_indel_multiplier": 3.0,
+    "homopolymer_substitution_multiplier": 1.5,
+    "burst_rate": 0.005,
+    "burst_max_len": 6,
+    "n_rate": 0.001,
+    "reverse_complement_rate": 0.5,
+    "quality_correct": 15,
+    "quality_error": 7,
+    "quality_informative": 0.5,
+    "coverage": 5.0,
+    "seed": 82044
+   },
+   "decoder": {
+    "read_clustering": "fallback",
+    "cluster_config": {}
+   }
+  },
+  {
+   "id": "nanopore-cov5-s82045",
+   "tier": "slow",
+   "size": 20000,
+   "data_seed": 6201,
+   "profile": "v4-balanced",
+   "channel": {
+    "substitution_rate": 0.02,
+    "insertion_rate": 0.01,
+    "deletion_rate": 0.03,
+    "dropout_rate": 0.0,
+    "coverage_model": "negative-binomial",
+    "coverage_dispersion": 4.0,
+    "duplication_rate": 0.0,
+    "homopolymer_min_run": 3,
+    "homopolymer_indel_multiplier": 3.0,
+    "homopolymer_substitution_multiplier": 1.5,
+    "burst_rate": 0.005,
+    "burst_max_len": 6,
+    "n_rate": 0.001,
+    "reverse_complement_rate": 0.5,
+    "quality_correct": 15,
+    "quality_error": 7,
+    "quality_informative": 0.5,
+    "coverage": 5.0,
+    "seed": 82045
+   },
+   "decoder": {
+    "read_clustering": "fallback",
+    "cluster_config": {}
+   }
+  },
+  {
+   "id": "nanopore-cov3-s82043",
+   "tier": "slow",
+   "size": 20000,
+   "data_seed": 6201,
+   "profile": "v4-balanced",
+   "channel": {
+    "substitution_rate": 0.02,
+    "insertion_rate": 0.01,
+    "deletion_rate": 0.03,
+    "dropout_rate": 0.0,
+    "coverage_model": "negative-binomial",
+    "coverage_dispersion": 4.0,
+    "duplication_rate": 0.0,
+    "homopolymer_min_run": 3,
+    "homopolymer_indel_multiplier": 3.0,
+    "homopolymer_substitution_multiplier": 1.5,
+    "burst_rate": 0.005,
+    "burst_max_len": 6,
+    "n_rate": 0.001,
+    "reverse_complement_rate": 0.5,
+    "quality_correct": 15,
+    "quality_error": 7,
+    "quality_informative": 0.5,
+    "coverage": 3.0,
+    "seed": 82043
+   },
+   "decoder": {
+    "read_clustering": "fallback",
+    "cluster_config": {}
+   }
+  },
+  {
+   "id": "nanopore-cov3-s82044",
+   "tier": "slow",
+   "size": 20000,
+   "data_seed": 6201,
+   "profile": "v4-balanced",
+   "channel": {
+    "substitution_rate": 0.02,
+    "insertion_rate": 0.01,
+    "deletion_rate": 0.03,
+    "dropout_rate": 0.0,
+    "coverage_model": "negative-binomial",
+    "coverage_dispersion": 4.0,
+    "duplication_rate": 0.0,
+    "homopolymer_min_run": 3,
+    "homopolymer_indel_multiplier": 3.0,
+    "homopolymer_substitution_multiplier": 1.5,
+    "burst_rate": 0.005,
+    "burst_max_len": 6,
+    "n_rate": 0.001,
+    "reverse_complement_rate": 0.5,
+    "quality_correct": 15,
+    "quality_error": 7,
+    "quality_informative": 0.5,
+    "coverage": 3.0,
+    "seed": 82044
+   },
+   "decoder": {
+    "read_clustering": "fallback",
+    "cluster_config": {}
+   }
+  },
+  {
+   "id": "nanopore-cov3-s82045",
+   "tier": "slow",
+   "size": 20000,
+   "data_seed": 6201,
+   "profile": "v4-balanced",
+   "channel": {
+    "substitution_rate": 0.02,
+    "insertion_rate": 0.01,
+    "deletion_rate": 0.03,
+    "dropout_rate": 0.0,
+    "coverage_model": "negative-binomial",
+    "coverage_dispersion": 4.0,
+    "duplication_rate": 0.0,
+    "homopolymer_min_run": 3,
+    "homopolymer_indel_multiplier": 3.0,
+    "homopolymer_substitution_multiplier": 1.5,
+    "burst_rate": 0.005,
+    "burst_max_len": 6,
+    "n_rate": 0.001,
+    "reverse_complement_rate": 0.5,
+    "quality_correct": 15,
+    "quality_error": 7,
+    "quality_informative": 0.5,
+    "coverage": 3.0,
+    "seed": 82045
+   },
+   "decoder": {
+    "read_clustering": "fallback",
+    "cluster_config": {}
+   }
+  }
+ ]
+}
