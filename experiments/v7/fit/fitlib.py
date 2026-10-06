@@ -54,8 +54,13 @@ def utc_now() -> str:
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
 
+#: code state when the driver started, before the split guard appends this run's own requests to the access ledger (which
+#: would otherwise make every guarded run report a dirty tree); commit the ledger between runs so each starts clean
+GIT_AT_START = git_state(REPO)
+
+
 def fitting_block(seed: int) -> dict:
-    gs = git_state(REPO)
+    gs = GIT_AT_START
     return {"method": METHOD, "version": _version.__version__, "commit": gs["commit"], "dirty": bool(gs["dirty"]), "seed": seed,
             "timestamp_utc": utc_now(), "software": software()}
 
