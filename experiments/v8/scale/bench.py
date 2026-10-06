@@ -82,7 +82,7 @@ def main(argv=None) -> int:
                  "seed": SEED, "profile": {"name": "v4-balanced", "outer_K": K, "outer_M": M, "outer_parity_overhead": M / K},
                  "cpu": os.cpu_count(), "load_average_start": list(os.getloadavg()), "runs": []}
     sizes = [int(s) for s in a.sizes.split(",")]
-    for size in sizes + [1 << 30]:
+    for size in sizes + ([] if (1 << 30) in sizes else [1 << 30]):
         if size not in sizes:
             out["runs"].append({"size": size, "status": "NOT RUN", "note": "1 GiB not run in this benchmark; no extrapolation reported"})
             continue
