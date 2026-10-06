@@ -7,7 +7,12 @@ The confidence intervals of the raw estimator are scaled by the same factors.
 
 With ``design.heterogeneity`` (protocol 5.5, A2.1) the variance of the per-read edit distance is matched as well: Var(m) of
 the per-read gamma multiplier is moved by (var_real - var_sim) / mean_real^2 (damped), since a mixed read-level rate adds
-about mean^2 Var(m) to the variance of the per-read error count."""
+about mean^2 Var(m) to the variance of the per-read error count.
+
+The substitution context is kept at site-weighted mean 1 with the factor folded into the substitution rate (the convention
+of ``estimate._ipf``), and the homopolymer substitution multiplier stays at 1 when it is confounded with the context
+(``estimate.hp_sub_fixed``). Iteration stops when every updated ratio (``calibrated_keys``) is within ``tol`` of 1; the
+verification pass reports all ratios, the deletion and insertion run-length means included."""
 from __future__ import annotations
 
 import copy
@@ -44,12 +49,49 @@ def summary(layout: Layout, T: np.ndarray, design: est.Design) -> dict:
            "del_mean": f_del / (O["deletion"] / nb) if O["deletion"] else 1.0,
            "ins_mean": est._mean_run(ins_runs), "hp_indel": ratio(indel), "hp_sub": ratio(ev["substitution"]),
            "ctx_sub": ev["substitution"].sum(axis=1) / np.maximum(S.sum(axis=1), 1), "ctx_sub_events": ev["substitution"].sum(axis=1),
-           "profile": {}}
+           "ctx_sites_out": S[:, 0], "ctx_sites_in": S[:, 1], "profile": {}}
     out["ed_mean"], out["ed_var"] = est.edit_moments(layout, T)
     for kind, (pos, _c) in est._kind_arrays(layout, T).items():
         B = design.bins.get(kind)
         out["profile"][kind] = (est._profile_counts(pos.astype(float), B), B) if B else None
     return out
+
+
+RATIO_KEYS = ("sub", "ins", "start", "hp_indel", "hp_sub")
+
+
+def ratios_of(target: dict, sim: dict) -> dict:
+    """Target / simulated statistic per calibrated quantity (the insertion run length as a ratio of the excess over 1)."""
+    out = {k: (target[k] / sim[k] if sim[k] else 1.0) for k in RATIO_KEYS}
+    out["del_mean"] = target["del_mean"] / sim["del_mean"] if sim["del_mean"] else 1.0
+    out["ins_mean"] = (target["ins_mean"] - 1.0 + 1e-6) / (sim["ins_mean"] - 1.0 + 1e-6)
+    return out
+
+
+def calibrated_keys(design: est.Design) -> list:
+    """The ratios the calibration updates under ``design``: they decide convergence and are verified at the end."""
+    keys = ["sub", "ins", "start"]
+    if design.use_hp:
+        keys.append("hp_indel")
+        if not est.hp_sub_fixed(design):
+            keys.append("hp_sub")
+    if design.del_geometric:
+        keys.append("del_mean")
+    if design.ins_geometric:
+        keys.append("ins_mean")
+    return keys
+
+
+def renormalise_context(values: dict, sites_out: np.ndarray, sites_in: np.ndarray) -> float:
+    """In place: divide the substitution context by its site-weighted mean (weights = sites per 3-mer, in-run sites times the
+    homopolymer substitution multiplier; the convention of :func:`estimate._ipf`) and multiply the substitution rate by the
+    same factor, so that every site's rate is unchanged. Returns the factor."""
+    ctx = np.asarray(values["sequencing.context.substitution"], dtype=float)
+    w = np.asarray(sites_out, dtype=float) + values["sequencing.homopolymer.substitution_multiplier"] * np.asarray(sites_in, dtype=float)
+    c = float((w * ctx).sum() / w.sum()) if w.sum() > 0 else float(np.mean(ctx))
+    values["sequencing.context.substitution"] = (ctx / c).tolist()
+    values["sequencing.substitution.rate"] *= c
+    return c
 
 
 def _sim_model(values: dict, design: est.Design, fit_like: dict) -> cm.ChannelModel:
@@ -67,15 +109,14 @@ def calibrate(fit: dict, layout: Layout, refs: list, *, real_T: np.ndarray, cove
     values = copy.deepcopy(fit["values"])
     raw = copy.deepcopy(fit["values"])
     target = summary(layout, real_T, design)
+    keys = calibrated_keys(design) + (["ed_var"] if design.heterogeneity else [])
     trace: list[dict] = []
     for it in range(iterations):
         model = _sim_model(values, design, fit)
         cl = simulate_clusters(model, refs, coverage, seed * 100 + it)
         M, _ = tally_matrix(zip(refs, cl), layout, workers=workers, **(tally_opts or {}))
         sim = summary(layout, M.sum(axis=0).astype(float), design)
-        ratios = {k: (target[k] / sim[k] if sim[k] else 1.0) for k in ("sub", "ins", "start", "hp_indel", "hp_sub")}
-        ratios["del_mean"] = target["del_mean"] / sim["del_mean"] if sim["del_mean"] else 1.0
-        ratios["ins_mean"] = (target["ins_mean"] - 1.0 + 1e-6) / (sim["ins_mean"] - 1.0 + 1e-6)
+        ratios = ratios_of(target, sim)
         if design.heterogeneity and values.get("sequencing.read_heterogeneity.shape") is not None and target["ed_mean"] > 0:
             ratios["ed_var"] = target["ed_var"] / sim["ed_var"] if sim["ed_var"] else 1.0
             s2 = 1.0 / values["sequencing.read_heterogeneity.shape"]
@@ -83,6 +124,7 @@ def calibrate(fit: dict, layout: Layout, refs: list, *, real_T: np.ndarray, cove
             s2 = min(max(s2, est.HETEROGENEITY_FLOOR), est.HETEROGENEITY_CEIL)
             values["sequencing.read_heterogeneity.shape"] = 1.0 / s2
         trace.append({"iteration": it, "ratios": {k: float(v) for k, v in ratios.items()}})
+        converged = max(abs(ratios.get(k, 1.0) - 1.0) for k in keys) < tol
         ratios.pop("ed_var", None)
         ratios = {k: float(np.clip(v, *CLIP) ** STEP) for k, v in ratios.items()}
         values["sequencing.substitution.rate"] *= ratios["sub"]
@@ -94,7 +136,8 @@ def calibrate(fit: dict, layout: Layout, refs: list, *, real_T: np.ndarray, cove
             values["sequencing.insertion.run_length.mean"] = max(1.0, 1.0 + (values["sequencing.insertion.run_length.mean"] - 1.0) * ratios["ins_mean"])
         if design.use_hp:
             values["sequencing.homopolymer.indel_multiplier"] *= ratios["hp_indel"]
-            values["sequencing.homopolymer.substitution_multiplier"] *= ratios["hp_sub"]
+            if not est.hp_sub_fixed(design):          # confounded with the context: stays at 1
+                values["sequencing.homopolymer.substitution_multiplier"] *= ratios["hp_sub"]
         if "substitution" in design.context and values["sequencing.context.substitution"] is not None:
             tr, sr = target["ctx_sub"], sim["ctx_sub"]
             te, se = target["ctx_sub_events"], sim["ctx_sub_events"]
@@ -103,7 +146,8 @@ def calibrate(fit: dict, layout: Layout, refs: list, *, real_T: np.ndarray, cove
             raw_ratio = np.where(sr > 0, tr / np.maximum(sr, 1e-300), 1.0)
             raw_ratio = raw_ratio / (np.sum(raw_ratio * sr) / max(np.sum(sr), 1e-300) if sr.sum() else 1.0) * 1.0
             ctx = np.asarray(values["sequencing.context.substitution"]) * (1.0 + w * (raw_ratio - 1.0))
-            values["sequencing.context.substitution"] = (ctx / np.mean(ctx)).tolist()
+            values["sequencing.context.substitution"] = ctx.tolist()
+            renormalise_context(values, target["ctx_sites_out"], target["ctx_sites_in"])
         for kind in ("substitution", "insertion", "deletion"):
             key = f"sequencing.position_profile.{kind}"
             if target["profile"][kind] is not None and values.get(key) is not None:
@@ -112,14 +156,15 @@ def calibrate(fit: dict, layout: Layout, refs: list, *, real_T: np.ndarray, cove
                 tn, sn = tc / tc.sum() * B, sc / max(sc.sum(), 1) * B
                 prof = np.asarray(values[key]) * np.where(sn > 0, np.clip(tn / np.maximum(sn, 1e-300), *CLIP), 1.0) ** STEP
                 values[key] = (prof / prof.mean()).tolist()
-        if max(abs(r - 1.0) for r in trace[-1]["ratios"].values()) < tol:
+        if converged:
             break
     # verification pass at the final values (not applied): how far the simulated statistics are from the targets
     model = _sim_model(values, design, fit)
     cl = simulate_clusters(model, refs, coverage, seed * 100 + 99)
     M, _ = tally_matrix(zip(refs, cl), layout, workers=workers, **(tally_opts or {}))
     sim = summary(layout, M.sum(axis=0).astype(float), design)
-    residual = {k: float(target[k] / sim[k]) if sim[k] else 1.0 for k in ("sub", "ins", "start", "hp_indel", "hp_sub")}
+    # every ratio is target / simulated; the run-length means as plain ratios of the means (also when not calibrated)
+    residual = {k: float(target[k] / sim[k]) if sim[k] else 1.0 for k in RATIO_KEYS + ("del_mean", "ins_mean")}
     if design.heterogeneity:
         residual["ed_var"] = float(target["ed_var"] / sim["ed_var"]) if sim["ed_var"] else 1.0
     factors = {}

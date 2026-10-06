@@ -6,6 +6,7 @@ from typing import Any
 
 from vnxdna.simulation import model as cm
 from vnxdna.simulation import model2
+from vnxdna.simulation.fit import estimate as est
 
 #: default basis label of each fitted parameter (protocol 5.1); callers may override paths
 BASIS = {
@@ -95,7 +96,14 @@ def build(fit: dict, *, name: str, version: str, model_id: str, description: str
            "provenance": {"datasets": ds, "split": split, "fitting": fitting, "references": references or []},
            "stages": stages, "fit_report": fit_report}
     norm = model2.normalize_v2(doc)
-    labels = dict(BASIS, **(basis or {}))
+    labels = dict(BASIS)
+    design = fit.get("design")
+    if design is not None and "substitution" in design.context:
+        # the rate is the baseline of a site whose context multiplier is the site-weighted mean (1), not a counted rate
+        labels["sequencing.substitution.rate"] = "estimated"
+        if est.hp_sub_fixed(design):          # confounded with the context: fixed at 1, not fitted
+            labels["sequencing.homopolymer.substitution_multiplier"] = "assumed"
+    labels.update(basis or {})
     if "sequencing.quality.correct" in fit["values"]:      # FASTQ data: the quality parameters are measured, not assumed
         labels.update({f"sequencing.quality.{k}": "measured" for k in ("correct", "error", "informative", "sd", "position_slope")})
     ci = fit["ci95"]

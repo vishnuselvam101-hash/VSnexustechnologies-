@@ -47,6 +47,14 @@ class Design:
     heterogeneity: bool = False                         # protocol 5.5 A2.1: per-read gamma rate multiplier
 
 
+def hp_sub_fixed(d: Design) -> bool:
+    """True if the homopolymer substitution multiplier is fixed at 1 under design ``d``. With a substitution 3-mer context
+    and min_run <= 2, a site lies in a homopolymer exactly when a neighbour equals its base (edges aside), so the in-run
+    flag is a function of the centred 3-mer: the multiplier and the context are confounded and only their product is
+    identifiable. The context then carries the homopolymer effect."""
+    return "substitution" in d.context and d.min_run <= 2
+
+
 def _div(a, b):
     return a / b if b else 0.0
 
@@ -144,11 +152,13 @@ def _tables(layout: Layout, T: np.ndarray, mi: int, d_eff_over_obs: float = 1.0)
     return S, O
 
 
-def _ipf(S: np.ndarray, O: dict, fm: dict, ctx_on: set, use_hp: bool, iters: int = 200) -> dict:
+def _ipf(S: np.ndarray, O: dict, fm: dict, ctx_on: set, use_hp: bool, iters: int = 200,
+         fixed_hp: frozenset = frozenset()) -> dict:
     """Joint Poisson maximum likelihood of  mu[kind][k, h] = r_kind * fm_kind[k] * ctx_kind[k] * hp_group^h * S[k, h]  by
     iterative proportional fitting: baselines r_kind, per-3-mer multipliers ctx_kind (shrunk by CONTEXT_PRIOR pseudo-events,
     only for kinds in ``ctx_on``) and one in-homopolymer multiplier per group (insertion and deletion share the indel
-    multiplier). The fixed point reproduces the observed in-run and out-of-run totals of every group."""
+    multiplier). The fixed point reproduces the observed in-run and out-of-run totals of every group. Groups in ``fixed_hp``
+    keep the multiplier 1 (see :func:`hp_sub_fixed`)."""
     kinds = list(O)
     group = {"substitution": "substitution", "insertion": "indel", "deletion": "indel"}
     ctx = {k: np.ones(64) for k in kinds}
@@ -165,6 +175,8 @@ def _ipf(S: np.ndarray, O: dict, fm: dict, ctx_on: set, use_hp: bool, iters: int
                 ctx[k] = (O[k].sum(axis=1) + CONTEXT_PRIOR) / (ek1 + CONTEXT_PRIOR)
         if use_hp:
             for g in ("substitution", "indel"):
+                if g in fixed_hp:
+                    continue
                 num = sum(O[k][:, 1].sum() for k in kinds if group[k] == g)
                 den = sum(r[k] * (S[:, 1] * fm[k] * ctx[k]).sum() for k in kinds if group[k] == g)
                 hp[g] = _div(num, den) if num > 0 and den > 0 else 1.0
@@ -229,7 +241,8 @@ def choose_design(layout: Layout, T: np.ndarray) -> Design:
     S, Ot = _tables(layout, T, mi, scale)
     fmv, _mat, _row = _from_mult(layout, T, mi, nb, O["substitution"])
     base = _ipf(S, Ot, _fm(fmv, False), set(), True)
-    full = _ipf(S, Ot, _fm(fmv, True), set(CONTEXT_KINDS), True)
+    full = _ipf(S, Ot, _fm(fmv, True), set(CONTEXT_KINDS), True,
+                fixed_hp=frozenset({"substitution"}) if d.min_run <= 2 else frozenset())
     ctx = []
     for kind in CONTEXT_KINDS:
         lr = 2.0 * (_loglik(Ot[kind], full["mu"][kind]) - _loglik(Ot[kind], base["mu"][kind]))
@@ -287,7 +300,8 @@ def estimate(layout: Layout, T: np.ndarray, d: Design) -> dict:
     for i in range(4):
         matrix[i] = mat[i] / row[i] if row[i] > 0 else np.where(np.arange(4) == i, 0.0, 1.0 / 3.0)
     S, Ot = _tables(layout, T, mi, scale)
-    fit = _ipf(S, Ot, _fm(fmv, "substitution" in d.context), set(d.context), d.use_hp)
+    fit = _ipf(S, Ot, _fm(fmv, "substitution" in d.context), set(d.context), d.use_hp,
+               fixed_hp=frozenset({"substitution"}) if hp_sub_fixed(d) else frozenset())
     ins_mean = _mean_run(layout.get(T, "ins_runs"))
     for kind, (pos, _ctx) in kinds.items():
         B = d.bins.get(kind)
