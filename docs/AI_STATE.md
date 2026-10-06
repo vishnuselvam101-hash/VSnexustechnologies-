@@ -14,12 +14,12 @@ do not repeat them here.
 | package version | 6.0.0.dev0 (bump to 7.0.0.dev0 pending, its own step) |
 
 ## Active objective
-V7 item A: decode the SIMULATED nanopore-like channel (V6: 0/20 at cov 3/5/10; A1 clustering: 0/5 at cov 10,
+V7 item A (root cause found: consensus indel placement): decode the SIMULATED nanopore-like channel (V6: 0/20 at cov 3/5/10; A1 clustering: 0/5 at cov 10,
 511/679 data frames). Gate: no decoder-behaviour change until the loss funnel and the oracle name the first
 irreversible loss (address / clustering / boundary / payload / structural).
 
 ## Mode
-One agent at a time, run sequentially. Heavy experiments run one at a time with ≤4 workers; record the load with every
+Main agent only (no subagents unless justified), context under 100k, compact at checkpoints, one task at a time. Heavy experiments run one at a time with ≤4 workers; record the load with every
 timing. Long logs go to files. Merge into `build/v7-sprint` only when all of these hold: tests pass, the diff has been
 reviewed, the result reproduces, and nothing regresses.
 
@@ -38,12 +38,15 @@ Python orchestration and reference implementations, plus C11 native kernels via 
 ## Open work (priority order)
 | # | item | branch / worktree | state |
 |---|---|---|---|
-| 1 | Nanopore frozen corpus + loss funnel + oracle | work/v7-nanodecode | IN PROGRESS: oracle class tests committed (7f680eb); funnel results not yet produced; 1 uncommitted file |
-| 2 | First irreversible loss → evidence-backed fix | — | blocked on 1 |
+| 1 | Nanopore frozen corpus + loss funnel + oracle | work/v7-nanodecode | DONE c4e6195 (corpus 7e89b82, `tests/nanopore/`; branch suite 2781/0/3) |
+| 2 | Evidence-backed consensus fix | work/v7-nanodecode | AWAITING FOUNDER DECISION |
 | 4 | D3 D13/CAS9 characterisation vs simulator | work/v7-nanodata | IN PROGRESS: prereg, manifest, splitter, driver committed (f761f8c); characterisation run interrupted |
 | 5 | A2 native cluster kernel | work/v7-native | review fixes done (e0bd56b, sanitizers PASS); merge pending (full suite) |
 | 6 | Python/C boundary audit | work/v7-pycpp | IN PROGRESS: boundary tests committed (4cdc0ba); 4 uncommitted files; doc not finished |
 | 7 | Remaining fitter work | — | nanopore models still INADEQUATE (M3); D02 marginal |
+
+## Completed experiments
+- A-LOSS (`experiments/v7/a-loss/`, SIMULATED, seeds 82046-82055): the FIRST IRREVERSIBLE LOSS is per-cluster consensus → inner RS (data strands cov10 658→514, cov5 577→275, cov3 453→121). About 90 % of wrong bases are the true base shifted by one position (indel misplacement). ORACLE (true grouping): 0 address-caused, 1.6–2.1 clustering-caused per trial. cov3 hits a structural limit (~207 strands with <2 reads). 0 FALSE SUCCESS.
 
 ## Known blockers / facts
 - No nanopore channel model is ADEQUATE (`docs/V7_CHANNEL_MODELS.md`).
