@@ -1,0 +1,136 @@
+{
+ "environment": {
+  "cpu_count": 8,
+  "git": {
+   "commit": "b9186c7f04eb51e377e8c075c63508ad99d707c8",
+   "dirty": false
+  },
+  "implementation": "CPython",
+  "libraries": {
+   "cryptography": "46.0.7",
+   "numpy": "2.5.3",
+   "reedsolo": "unknown",
+   "zstandard": "0.25.0"
+  },
+  "machine": "x86_64",
+  "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+  "processor": "x86_64",
+  "python": "3.12.3",
+  "software": {
+   "edlib": "1.3.9.post1",
+   "numpy": "2.5.3",
+   "python": "3.12.3",
+   "vnxdna": "6.0.0.dev0"
+  },
+  "vnxdna_version": "6.0.0.dev0"
+ },
+ "evidence_class": "PUBLIC-DATA-DERIVED (FIT reads) vs SIMULATED (reads from round-1 model F)",
+ "jobs": {
+  "cnr": {
+   "fit_references": 6017,
+   "implied_gamma_shape": 15.364590296378848,
+   "implied_read_multiplier_variance": 0.0650847162670964,
+   "model": "experiments/v7/fit-cnr/models/cnr-ont-fit.json",
+   "model_sha256": "e060e0ee54dab24a8000e4b7cd2d2da53a4680c313fdd5358cd85beb53b14f5e",
+   "real_fit": {
+    "drift_le_0": 0.1777246548709358,
+    "drift_le_3": 0.878119612134848,
+    "drift_le_6": 1.0,
+    "drift_max": 5,
+    "drift_mean": -0.32221420623372177,
+    "drift_min": -4,
+    "drift_var": 4.731983387969518,
+    "edit_mean": 6.34256734449322,
+    "edit_var": 10.868995299156897,
+    "reads": 163562,
+    "var_over_mean": 1.713658635188736
+   },
+   "simulated": {
+    "drift_le_0": 0.16283333333333333,
+    "drift_le_3": 0.8108888888888889,
+    "drift_le_6": 0.9731111111111109,
+    "drift_max": 15,
+    "drift_mean": -0.3597777777777777,
+    "drift_min": -17,
+    "drift_var": 7.653115506172838,
+    "edit_mean": 6.327055555555556,
+    "edit_var": 8.25075688580247,
+    "reads": 18000,
+    "var_over_mean": 1.3040436919441591
+   },
+   "simulated_references": 3000
+  },
+  "d03-fast-fwd": {
+   "fit_references": 36883,
+   "implied_gamma_shape": 12.054056882877813,
+   "implied_read_multiplier_variance": 0.08295962178679032,
+   "model": "experiments/v7/fit-d03/models/ont-guppy-fast-pass-fwd-fit.json",
+   "model_sha256": "b2c7a86a255fd5540d66442949309e4eccd039f2747b0a8504dedec0eb0a3be2",
+   "real_fit": {
+    "drift_le_0": 0.08802731141025037,
+    "drift_le_3": 0.5432420428705635,
+    "drift_le_6": 0.8140576806177816,
+    "drift_max": 15,
+    "drift_mean": -3.2606823349782124,
+    "drift_min": -15,
+    "drift_var": 14.792436011852883,
+    "edit_mean": 14.193128347663775,
+    "edit_var": 31.62692091503549,
+    "reads": 488587,
+    "var_over_mean": 2.2283262815869174
+   },
+   "simulated": {
+    "drift_le_0": 0.07544444444444444,
+    "drift_le_3": 0.5138333333333334,
+    "drift_le_6": 0.8136666666666666,
+    "drift_max": 11,
+    "drift_mean": -3.372611111111111,
+    "drift_min": -22,
+    "drift_var": 12.918105404320986,
+    "edit_mean": 14.139777777777777,
+    "edit_var": 14.915128839506172,
+    "reads": 18000,
+    "var_over_mean": 1.0548347416709014
+   },
+   "simulated_references": 3000
+  },
+  "d03-hac-fwd": {
+   "fit_references": 36883,
+   "implied_gamma_shape": 2.237555004890914,
+   "implied_read_multiplier_variance": 0.4469163876705468,
+   "model": "experiments/v7/fit-d03/models/ont-guppy-hac-pass-fwd-fit.json",
+   "model_sha256": "be342d85228f19a38c9f20e10003839a96fbc92095ebaae2a959f1ce7da7b372",
+   "real_fit": {
+    "drift_le_0": 0.29394884010449596,
+    "drift_le_3": 0.8540389262205492,
+    "drift_le_6": 0.9628039426154381,
+    "drift_max": 15,
+    "drift_mean": -0.7206668725217741,
+    "drift_min": -15,
+    "drift_var": 6.98830491094475,
+    "edit_mean": 6.256250398231607,
+    "edit_var": 25.047080615211,
+    "reads": 408054,
+    "var_over_mean": 4.00352911422644
+   },
+   "simulated": {
+    "drift_le_0": 0.18694444444444444,
+    "drift_le_3": 0.8405,
+    "drift_le_6": 0.9804999999999999,
+    "drift_max": 11,
+    "drift_mean": -0.7868333333333333,
+    "drift_min": -15,
+    "drift_var": 5.9816155277777785,
+    "edit_mean": 6.221166666666667,
+    "edit_var": 7.5544741944444445,
+    "reads": 18000,
+    "var_over_mean": 1.2143179244693296
+   },
+   "simulated_references": 3000
+  }
+ },
+ "read_length_selection": null,
+ "seed": 99,
+ "simulated_reads_per_reference": 6,
+ "split": "FIT"
+}
