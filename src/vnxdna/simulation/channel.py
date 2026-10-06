@@ -138,8 +138,8 @@ class ChannelConfig:
         return cls.from_dict(data)
 
 
-def _homopolymer_mask(codes: np.ndarray, min_run: int) -> np.ndarray:
-    """(n, L) → bool mask of positions inside runs of ≥ min_run equal bases."""
+def _run_lengths(codes: np.ndarray) -> np.ndarray:
+    """(n, L) → int32 length of the run of equal bases each position lies in."""
     n, L = codes.shape
     eq = np.zeros((n, L + 1), dtype=bool)
     eq[:, 1:L] = codes[:, 1:] == codes[:, :-1]
@@ -150,7 +150,12 @@ def _homopolymer_mask(codes: np.ndarray, min_run: int) -> np.ndarray:
     bwd = np.ones((n, L), dtype=np.int32)
     for j in range(L - 2, -1, -1):
         bwd[:, j] = np.where(eq[:, j + 1], bwd[:, j + 1] + 1, 1)
-    return fwd + bwd - 1 >= min_run
+    return fwd + bwd - 1
+
+
+def _homopolymer_mask(codes: np.ndarray, min_run: int) -> np.ndarray:
+    """(n, L) → bool mask of positions inside runs of ≥ min_run equal bases."""
+    return _run_lengths(codes) >= min_run
 
 
 def simulate_batch(codes: np.ndarray, cfg: ChannelConfig, batch_index: int, *, truth: bool = False) -> dict:

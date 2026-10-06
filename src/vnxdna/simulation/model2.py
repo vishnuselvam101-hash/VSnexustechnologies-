@@ -20,6 +20,11 @@ A ``/2`` document has the ``/1`` top-level keys and ``stages`` (every ``/1`` sta
                               P(run >= 8); a run in the last bin is 7 + Geometric with mean ``tail_mean`` - 7 (``tail_mean``
                               = 8: exactly 8). ``mean`` must equal the mean the pmf implies. Sequencing stage only. HONOURED.
                               The /1 deletion form (single / geometric) is unchanged, so existing models keep their SHA-256.
+    ``homopolymer.indel_by_length``  ``[m1, m2, m3, m4, m5, m6]`` (V7 7.4, experiments/v7/fit-nano/d03/CHANGE-HP-BY-LENGTH.md):
+                              insertion and deletion rate multipliers of a site in a homopolymer run of length 1, 2, 3, 4,
+                              5 and 6 or more. It replaces the single step: ``indel_multiplier`` must then be 1
+                              (``min_run`` and ``substitution_multiplier`` still apply to substitutions). Sequencing stage
+                              only; present in the canonical form only when set. HONOURED.
     ``context``               ``{"k": 3, "substitution": [64], "insertion": [64], "deletion": [64]}``: rate multipliers by
                               the reference 3-mer centred on the site (previous, base, next; A=0 C=1 G=2 T=3; an edge uses the
                               base itself as the missing neighbour). HONOURED.
@@ -46,7 +51,7 @@ SCHEMA_V2 = _m.SCHEMA_V2
 BASES = ("measured", "estimated", "inferred", "assumed", "synthetic")
 SPLIT_NAMES = ("FIT", "HELDOUT")
 ADEQUACY = ("ADEQUATE", "INADEQUATE", "UNVALIDATED")
-HONOURED = ("context", "insertion.run_length", "deletion.run_length", "read_heterogeneity")
+HONOURED = ("context", "insertion.run_length", "deletion.run_length", "read_heterogeneity", "homopolymer.indel_by_length")
 UNHONOURED = ("correlation", "asymmetry")
 TOP_KEYS_V2 = _m.TOP_KEYS + ("model_id", "parameters", "fit_report")
 PROVENANCE_KEYS_V2 = _m.PROVENANCE_KEYS + ("split", "fitting")
@@ -63,6 +68,7 @@ HETEROGENEITY_SHAPE = (0.05, 1e6)
 RUN_DISTRIBUTIONS_V2 = _m.RUN_DISTRIBUTIONS + ("empirical",)
 RUN_LENGTH_BINS = 8
 PMF_TOLERANCE = 1e-9
+HP_LENGTH_CLASSES = 6          # homopolymer.indel_by_length: run lengths 1, 2, 3, 4, 5 and 6 or more
 
 
 def _err(msg: str, **details):
@@ -179,6 +185,17 @@ def _check_run_length(given: Any, where: str) -> dict:
     return rl
 
 
+def _check_indel_by_length(v: Any, hp: dict, where: str) -> list:
+    if not isinstance(v, list) or len(v) != HP_LENGTH_CLASSES:
+        raise _err(f"{where} must be a list of {HP_LENGTH_CLASSES} multipliers (run lengths 1..{HP_LENGTH_CLASSES - 1}, "
+                   f"{HP_LENGTH_CLASSES} or more)")
+    out = [float(_m._num(x, f"{where}[{i}]", 0.0, 100.0)) for i, x in enumerate(v)]
+    if hp["indel_multiplier"] != 1.0:
+        raise _err(f"{where} replaces stages.sequencing.homopolymer.indel_multiplier, which must then be 1 "
+                   f"(got {hp['indel_multiplier']!r})")
+    return out
+
+
 def normalize_stages_v2(stages: dict | None) -> dict:
     """The /1 canonical stages plus the /2 opt-in sequencing fields, validated."""
     if stages is not None and not isinstance(stages, dict):
@@ -190,6 +207,7 @@ def normalize_stages_v2(stages: dict | None) -> dict:
     ext: dict[str, Any] = {}
     run_length = None
     del_empirical = None
+    by_length = None
     if seq:
         ext = {k: seq.pop(k) for k in ("context", "read_heterogeneity", "correlation", "asymmetry") if k in seq}
         ins = seq.get("insertion")
@@ -198,11 +216,17 @@ def normalize_stages_v2(stages: dict | None) -> dict:
         dl = seq.get("deletion")
         if isinstance(dl, dict) and isinstance(dl.get("run_length"), dict) and dl["run_length"].get("distribution") == "empirical":
             del_empirical = dl.pop("run_length")    # /1 validation sees the default single run; set back below
+        hpo = seq.get("homopolymer")
+        if isinstance(hpo, dict) and "indel_by_length" in hpo:
+            by_length = hpo.pop("indel_by_length")
     out = _m.normalize_stages(stages)
     s = out["sequencing"]
     s["insertion"]["run_length"] = _check_run_length(run_length, "stages.sequencing.insertion.run_length")
     if del_empirical is not None:
         s["deletion"]["run_length"] = _check_empirical(del_empirical, "stages.sequencing.deletion.run_length")
+    if by_length is not None:                # only when set: documents without it keep their canonical form and SHA-256
+        s["homopolymer"]["indel_by_length"] = _check_indel_by_length(by_length, s["homopolymer"],
+                                                                     "stages.sequencing.homopolymer.indel_by_length")
     s["context"] = _check_context(ext.get("context"), s)
     het = _check_heterogeneity(ext.get("read_heterogeneity"))
     if het is not None:                      # only when set: documents without it keep their canonical form and SHA-256
@@ -231,6 +255,8 @@ def active_effects(stages: dict) -> list[str]:
         out.append("deletion.run_length")
     if seq.get("read_heterogeneity") is not None:
         out.append("read_heterogeneity")
+    if seq.get("homopolymer", {}).get("indel_by_length") is not None:
+        out.append("homopolymer.indel_by_length")
     return out + [k for k in UNHONOURED if seq.get(k) is not None]
 
 

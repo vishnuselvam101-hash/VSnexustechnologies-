@@ -38,7 +38,7 @@ from vnxdna.core.errors import VNXOutputError
 from vnxdna.core.util import atomic_output
 from vnxdna.dnaenc.strandio import iter_batches
 from vnxdna.simulation import errormodels as em
-from vnxdna.simulation.channel import BATCH, _homopolymer_mask, _records, _serialize, _stack
+from vnxdna.simulation.channel import BATCH, _homopolymer_mask, _records, _run_lengths, _serialize, _stack
 from vnxdna.simulation.loss import LossConfig, loss_mask
 from vnxdna.simulation.model import SCHEMA_V1, ChannelModel
 
@@ -98,6 +98,8 @@ class Simulator:
         self.seq_del = em.DeletionModel.from_json(seq["deletion"], qp)
         hp = seq["homopolymer"]
         self.hp_min, self.hp_indel, self.hp_sub = hp["min_run"], hp["indel_multiplier"], hp["substitution_multiplier"]
+        by_length = hp.get("indel_by_length")        # /2 (V7 7.4): indel multiplier per run length 1..5, 6+
+        self.hp_by_length = None if by_length is None else np.asarray([1.0] + list(by_length), dtype=np.float64)
         self.burst_rate, self.burst_max = seq["bursts"]["rate"], seq["bursts"]["max_length"]
         self.n_rate = seq["n_rate"]
         self.rc_rate = seq["reverse_complement_rate"]
@@ -242,8 +244,12 @@ class Simulator:
         hp = None
         if self.hp_indel != 1.0 or self.hp_sub != 1.0:
             hp = _homopolymer_mask(hp_codes, self.hp_min)[hp_index]
+        indel_site = None
+        if self.hp_by_length is not None:
+            runs = np.minimum(_run_lengths(hp_codes), self.hp_by_length.size - 1)[hp_index]
+            indel_site = self.hp_by_length[runs]
         rates = em.rate_arrays(base, lens, self.seq_sub, self.seq_ins, self.seq_del, self.seq_profile, hp, self.hp_indel,
-                               self.hp_sub, self.seq_context)
+                               self.hp_sub, self.seq_context, indel_site)
         if self.het_shape is not None:
             rates = read_heterogeneity(rates, self.het_shape, a_het())
         res = em.per_base_errors(base, lens, rates, rng, a_seq() if self.seq_aux else None, sub=self.seq_sub,

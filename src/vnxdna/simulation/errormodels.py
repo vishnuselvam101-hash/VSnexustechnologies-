@@ -494,10 +494,11 @@ def context_index(base: np.ndarray) -> np.ndarray:
 def rate_arrays(base: np.ndarray, lengths: np.ndarray | None, sub: SubstitutionModel | None, ins: InsertionModel | None,
                 dele: DeletionModel | None, profile: PositionProfile | None = None, hp: np.ndarray | None = None,
                 hp_indel: float = 1.0, hp_sub: float = 1.0,
-                context: dict | None = None) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+                context: dict | None = None, indel_site: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Per-site (m, W) substitution, insertion and deletion probabilities, in the V4 order of float operations.
 
-    ``context`` (/2): ``{"substitution": array(64) | None, "insertion": ..., "deletion": ...}`` multipliers by the centred 3-mer."""
+    ``context`` (/2): ``{"substitution": array(64) | None, "insertion": ..., "deletion": ...}`` multipliers by the centred 3-mer.
+    ``indel_site`` (/2 ``homopolymer.indel_by_length``): (m, W) insertion and deletion multiplier of each site."""
     m, w = base.shape
     sub_r = np.full((m, w), sub.rate if sub else 0.0)
     ins_r = np.full((m, w), ins.rate if ins else 0.0)
@@ -506,6 +507,9 @@ def rate_arrays(base: np.ndarray, lengths: np.ndarray | None, sub: SubstitutionM
         ins_r = np.where(hp, ins_r * hp_indel, ins_r)
         del_r = np.where(hp, del_r * hp_indel, del_r)
         sub_r = np.where(hp, sub_r * hp_sub, sub_r)
+    if indel_site is not None:
+        ins_r = ins_r * indel_site
+        del_r = del_r * indel_site
     if profile is not None:
         for kind, arr in (("substitution", "s"), ("insertion", "i"), ("deletion", "d")):
             mult = profile.multipliers(kind, w, lengths)

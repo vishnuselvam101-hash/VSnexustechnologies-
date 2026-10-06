@@ -17,7 +17,11 @@ verification pass reports all ratios, the deletion and insertion run-length mean
 With ``design.del_empirical`` / ``design.ins_empirical`` (V7 7.2, docs/V7_NANOPORE_MODEL_DESIGN.md section 3) the run-length
 pmf is calibrated bin by bin: p_k *= (target share_k / simulated share_k) ** STEP (clipped), then renormalised, and the
 tail mean (runs >= 8) moves by the ratio of the tail excesses over 8. The convergence quantity is 1 + total-variation
-distance between the target and simulated 8-bin histograms (``del_pmf``, ``ins_pmf``)."""
+distance between the target and simulated 8-bin histograms (``del_pmf``, ``ins_pmf``).
+
+With ``design.hp_by_length`` (V7 7.4, experiments/v7/fit-nano/d03/CHANGE-HP-BY-LENGTH.md) the per-run-length indel
+multipliers take a damped step each towards the target indel rate of their class relative to runs of 1; the convergence
+ratio ``hp_len`` is 1 + the largest relative class misfit, and the single ``hp_indel`` step is not used."""
 from __future__ import annotations
 
 import copy
@@ -59,6 +63,11 @@ def summary(layout: Layout, T: np.ndarray, design: est.Design) -> dict:
         pmf, tail = est.empirical_from_hist(layout.get(T, field_))
         out[f"{kind}_hist"], out[f"{kind}_tail"] = np.asarray(pmf), tail
     out["ed_mean"], out["ed_var"] = est.edit_moments(layout, T)
+    if design.hp_by_length:
+        Sc = est.length_classes(layout, "ctx_sites", T).sum(axis=1)
+        Ec = (est.length_classes(layout, "ctx_ins", T) + est.length_classes(layout, "ctx_del", T)).sum(axis=1)
+        rate = np.where(Sc > 0, Ec / np.maximum(Sc, 1.0), 0.0)
+        out["hp_len"] = rate / rate[0] if rate[0] > 0 else np.ones_like(rate)
     for kind, (pos, _c) in est._kind_arrays(layout, T).items():
         B = design.bins.get(kind)
         out["profile"][kind] = (est._profile_counts(pos.astype(float), B), B) if B else None
@@ -76,7 +85,22 @@ def ratios_of(target: dict, sim: dict) -> dict:
     for kind in ("del", "ins"):
         if f"{kind}_hist" in target and f"{kind}_hist" in sim:
             out[f"{kind}_pmf"] = 1.0 + 0.5 * float(np.abs(target[f"{kind}_hist"] - sim[f"{kind}_hist"]).sum())
+    if "hp_len" in target and "hp_len" in sim:
+        out["hp_len"] = 1.0 + float(np.max(np.abs(_class_ratios(target, sim) - 1.0)))
     return out
+
+
+def _class_ratios(target: dict, sim: dict) -> np.ndarray:
+    t, m = np.asarray(target["hp_len"]), np.asarray(sim["hp_len"])
+    return np.where((m > 0) & (t > 0), t / np.where(m > 0, m, 1.0), 1.0)
+
+
+def update_by_length(values: dict, target: dict, sim: dict) -> None:
+    """In place: one damped step of every per-run-length indel multiplier towards its target class rate (relative to runs
+    of 1, whose multiplier stays 1; the overall indel level is calibrated by the insertion and deletion rates)."""
+    m = np.asarray(values["sequencing.homopolymer.indel_by_length"], dtype=float)
+    m = m * np.clip(_class_ratios(target, sim), *CLIP) ** STEP
+    values["sequencing.homopolymer.indel_by_length"] = (m / m[0] if m[0] > 0 else m).tolist()
 
 
 def update_empirical(values: dict, kind: str, target: dict, sim: dict) -> None:
@@ -100,7 +124,7 @@ def calibrated_keys(design: est.Design) -> list:
     """The ratios the calibration updates under ``design``: they decide convergence and are verified at the end."""
     keys = ["sub", "ins", "start"]
     if design.use_hp:
-        keys.append("hp_indel")
+        keys.append("hp_len" if design.hp_by_length else "hp_indel")
         if not est.hp_sub_fixed(design):
             keys.append("hp_sub")
     if design.del_geometric:
@@ -170,10 +194,12 @@ def calibrate(fit: dict, layout: Layout, refs: list, *, real_T: np.ndarray, cove
             update_empirical(values, "deletion", target, sim)
         if design.ins_empirical:
             update_empirical(values, "insertion", target, sim)
-        if design.use_hp:
+        if design.hp_by_length:
+            update_by_length(values, target, sim)
+        elif design.use_hp:
             values["sequencing.homopolymer.indel_multiplier"] *= ratios["hp_indel"]
-            if not est.hp_sub_fixed(design):          # confounded with the context: stays at 1
-                values["sequencing.homopolymer.substitution_multiplier"] *= ratios["hp_sub"]
+        if design.use_hp and not est.hp_sub_fixed(design):          # confounded with the context: stays at 1
+            values["sequencing.homopolymer.substitution_multiplier"] *= ratios["hp_sub"]
         if "substitution" in design.context and values["sequencing.context.substitution"] is not None:
             tr, sr = target["ctx_sub"], sim["ctx_sub"]
             te, se = target["ctx_sub_events"], sim["ctx_sub_events"]
@@ -204,6 +230,8 @@ def calibrate(fit: dict, layout: Layout, refs: list, *, real_T: np.ndarray, cove
     for kind, on in (("del", design.del_empirical), ("ins", design.ins_empirical)):
         if on:
             residual[f"{kind}_pmf_tv"] = ratios_of(target, sim)[f"{kind}_pmf"] - 1.0
+    if design.hp_by_length:
+        residual["hp_len"] = _class_ratios(target, sim).tolist()
     if design.heterogeneity:
         residual["ed_var"] = float(target["ed_var"] / sim["ed_var"]) if sim["ed_var"] else 1.0
     factors = {}

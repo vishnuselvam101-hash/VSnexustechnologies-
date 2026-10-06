@@ -472,7 +472,8 @@ def design_from_model(model: cm.ChannelModel) -> "est.Design":
                       ins_empirical=seq["insertion"].get("run_length", {}).get("distribution") == "empirical",
                       del_empirical=seq["deletion"]["run_length"]["distribution"] == "empirical",
                       context=tuple(k for k in ("substitution", "insertion", "deletion") if ctx.get(k) is not None),
-                      heterogeneity=seq.get("read_heterogeneity") is not None)
+                      heterogeneity=seq.get("read_heterogeneity") is not None,
+                      hp_by_length=seq["homopolymer"].get("indel_by_length") is not None)
 
 
 def compare_params(target: dict, refit: dict, ci: dict, rel_floor: float = 0.08, abs_floor: float = 0.02) -> dict:

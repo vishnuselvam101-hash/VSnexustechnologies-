@@ -48,6 +48,7 @@ class Design:
     heterogeneity: bool = False                         # protocol 5.5 A2.1: per-read gamma rate multiplier
     ins_empirical: bool = False                         # V7 7.2: empirical insertion run-length pmf (excludes ins_geometric)
     del_empirical: bool = False                         # V7 7.2: empirical deletion run-length pmf (excludes del_geometric)
+    hp_by_length: bool = False                          # V7 7.4: indel multiplier per homopolymer run length 1..5, 6+
 
     def __post_init__(self):
         if (self.ins_geometric and self.ins_empirical) or (self.del_geometric and self.del_empirical):
@@ -206,6 +207,56 @@ def _ipf(S: np.ndarray, O: dict, fm: dict, ctx_on: set, use_hp: bool, iters: int
     return {"r": r, "ctx": ctx, "hp": hp, "mu": mu}
 
 
+HP_CLASSES = model2.HP_LENGTH_CLASSES
+
+
+def length_classes(layout: Layout, block: str, T: np.ndarray) -> np.ndarray:
+    """(HP_CLASSES, 64) counts of a context block by homopolymer run length 1, 2, .., 5, 6 or more (and centred 3-mer),
+    from differences of the min_run 2..6 masks. Needs ``layout.minruns`` to hold 2..HP_CLASSES."""
+    need = tuple(range(2, HP_CLASSES + 1))
+    if not set(need) <= set(layout.minruns):
+        raise ValueError(f"per-run-length homopolymer classes need tally min_runs {need}, layout has {layout.minruns}")
+    a = layout.ctx(T, block).astype(float)
+    inrun = {m: a[layout.minruns.index(m), :, 1] for m in need}
+    rows = [a[layout.minruns.index(2), :, 0]] + [inrun[k] - inrun[k + 1] for k in range(2, HP_CLASSES)] + [inrun[HP_CLASSES]]
+    return np.stack(rows)
+
+
+def _ipf_by_length(S: np.ndarray, O: dict, ctx_on: set, iters: int = 200) -> dict:
+    """Joint Poisson maximum likelihood of  mu[kind][c, k] = r_kind * ctx_kind[k] * m[c] * S[c, k]  for the indel kinds
+    (``O``: insertion, deletion; (HP_CLASSES, 64) each) with one multiplier m[c] per run-length class shared by insertions and
+    deletions, m[0] = 1 (runs of 1 are the baseline), and per-3-mer multipliers only for kinds in ``ctx_on`` (shrunk by
+    CONTEXT_PRIOR, then scaled to a site-weighted mean of 1 as in :func:`_ipf`)."""
+    kinds = list(O)
+    ctx = {k: np.ones(S.shape[1]) for k in kinds}
+    m = np.ones(S.shape[0])
+    r = {k: _div(O[k].sum(), S.sum()) for k in kinds}
+    for _ in range(iters):
+        old = (dict(r), m.copy(), {k: v.copy() for k, v in ctx.items()})
+        for k in kinds:
+            r[k] = _div(O[k].sum(), float((S * m[:, None] * ctx[k][None, :]).sum()))
+            if k in ctx_on:
+                ctx[k] = (O[k].sum(axis=0) + CONTEXT_PRIOR) / (r[k] * (S * m[:, None]).sum(axis=0) + CONTEXT_PRIOR)
+        num = sum(O[k].sum(axis=1) for k in kinds)
+        den = sum(r[k] * (S * ctx[k][None, :]).sum(axis=1) for k in kinds)
+        m = np.where((num > 0) & (den > 0), num / np.where(den > 0, den, 1.0), 1.0)
+        if m[0] > 0:
+            for k in kinds:
+                r[k] *= m[0]
+            m = m / m[0]
+        delta = max(abs(r[k] - old[0][k]) / max(r[k], 1e-12) for k in kinds) + float(np.max(np.abs(m - old[1]))) \
+            + max(float(np.max(np.abs(ctx[k] - old[2][k]))) for k in kinds)
+        if delta < 1e-10:
+            break
+    for k in kinds:
+        if k in ctx_on:
+            w = (S * m[:, None]).sum(axis=0)
+            c = float((w * ctx[k]).sum() / w.sum()) if w.sum() else 1.0
+            ctx[k] = ctx[k] / c
+            r[k] = r[k] * c
+    return {"r": r, "ctx": ctx, "m": m}
+
+
 def _loglik(O: np.ndarray, mu: np.ndarray) -> float:
     ok = (O > 0) & (mu > 0)
     return float(np.sum(O[ok] * np.log(mu[ok])) - mu.sum())
@@ -355,6 +406,16 @@ def estimate(layout: Layout, T: np.ndarray, d: Design) -> dict:
     out["sequencing.homopolymer.substitution_multiplier"] = fit["hp"]["substitution"]
     for kind in ("substitution", "insertion", "deletion"):
         out[f"sequencing.context.{kind}"] = fit["ctx"][kind].tolist() if kind in d.context else None
+    if d.hp_by_length:      # the indel rates, contexts and homopolymer effect from the per-run-length classes (7.4)
+        Sc = length_classes(layout, "ctx_sites", T)
+        Oc = {"insertion": length_classes(layout, "ctx_ins", T), "deletion": length_classes(layout, "ctx_del", T) * scale}
+        byl = _ipf_by_length(Sc, Oc, {k for k in d.context if k in Oc})
+        for kind in Oc:
+            out[f"sequencing.{kind}.rate"] = byl["r"][kind]
+            if kind in d.context:
+                out[f"sequencing.context.{kind}"] = byl["ctx"][kind].tolist()
+        out["sequencing.homopolymer.indel_multiplier"] = 1.0
+        out["sequencing.homopolymer.indel_by_length"] = byl["m"].tolist()
     out["sequencing.read_heterogeneity.shape"] = (1.0 / min(max(heterogeneity_moment(layout, T), HETEROGENEITY_FLOOR), HETEROGENEITY_CEIL)
                                                   if d.heterogeneity else None)
     n00, n01, n10, n11 = layout.get(T, "corr").astype(float)

@@ -18,7 +18,7 @@ BASIS = {
     "sequencing.insertion.run_length.pmf": "estimated", "sequencing.insertion.run_length.tail_mean": "estimated",
     "sequencing.deletion.run_length.pmf": "estimated", "sequencing.deletion.run_length.tail_mean": "estimated",
     "sequencing.homopolymer.min_run": "estimated", "sequencing.homopolymer.indel_multiplier": "estimated",
-    "sequencing.homopolymer.substitution_multiplier": "estimated",
+    "sequencing.homopolymer.substitution_multiplier": "estimated", "sequencing.homopolymer.indel_by_length": "estimated",
     "sequencing.position_profile.substitution": "estimated", "sequencing.position_profile.insertion": "estimated",
     "sequencing.position_profile.deletion": "estimated",
     "sequencing.context.substitution": "measured", "sequencing.context.insertion": "measured",
@@ -65,6 +65,8 @@ def sequencing_stage(fit: dict, extra: dict | None = None) -> dict:
         "homopolymer": {"min_run": d.min_run, "indel_multiplier": v["sequencing.homopolymer.indel_multiplier"],
                         "substitution_multiplier": v["sequencing.homopolymer.substitution_multiplier"]},
     }
+    if getattr(d, "hp_by_length", False):
+        seq["homopolymer"]["indel_by_length"] = v["sequencing.homopolymer.indel_by_length"]
     prof = {k: v[f"sequencing.position_profile.{k}"] for k in ("substitution", "insertion", "deletion")}
     if any(x is not None for x in prof.values()):
         seq["position_profile"] = {"basis": "relative", **prof}
