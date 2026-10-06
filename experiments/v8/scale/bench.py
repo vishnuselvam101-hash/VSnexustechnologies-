@@ -14,7 +14,6 @@ import argparse
 import hashlib
 import json
 import os
-import resource
 import subprocess
 import sys
 import tempfile
@@ -32,15 +31,19 @@ from vnxdna.pipeline.encode import DNAOptions
 from vnxdna.recovery.options import DecodeOptions
 from vnxdna.archive.operations import ArchiveOptions
 stage, a, b, workers = sys.argv[1], Path(sys.argv[2]), Path(sys.argv[3]), int(sys.argv[4])
-t, c = time.perf_counter(), time.process_time()
+def cpu():
+    s, c = resource.getrusage(resource.RUSAGE_SELF), resource.getrusage(resource.RUSAGE_CHILDREN)
+    return s.ru_utime + s.ru_stime + c.ru_utime + c.ru_stime
+t, c0 = time.perf_counter(), cpu()
 if stage == "encode":
     r = sdk.encode([a], b, dna=DNAOptions(profile="v4-balanced", workers=workers), archive_options=ArchiveOptions(workers=workers),
                    allow_unencrypted=True, keep_archive=b.with_suffix(".vnx"))
 else:
     r = sdk.decode(a, b, options=DecodeOptions(workers=workers), allow_unencrypted=True)
 ru = resource.getrusage(resource.RUSAGE_SELF)
-print(json.dumps({"wall_s": time.perf_counter() - t, "cpu_s": ru.ru_utime + ru.ru_stime, "peak_rss_mib": ru.ru_maxrss / 1024,
-                  "status": r.status}))
+rc = resource.getrusage(resource.RUSAGE_CHILDREN)
+print(json.dumps({"wall_s": time.perf_counter() - t, "cpu_s": cpu() - c0, "peak_rss_mib": ru.ru_maxrss / 1024,
+                  "peak_rss_children_mib": rc.ru_maxrss / 1024, "status": r.status}))
 """
 
 
@@ -49,12 +52,10 @@ def run_stage(stage: str, a: Path, b: Path, workers: int, timeout: float) -> dic
     t = time.perf_counter()
     p = subprocess.run([sys.executable, "-c", STAGE, stage, str(a), str(b), str(workers)], capture_output=True, text=True,
                        env=env, timeout=timeout, check=False)
-    ch = resource.getrusage(resource.RUSAGE_CHILDREN)
     if p.returncode:
         return {"status": "ERROR", "stderr": p.stderr[-800:], "wall_s": time.perf_counter() - t}
     r = json.loads(p.stdout.strip().splitlines()[-1])
     r["cpu_utilisation"] = round(r["cpu_s"] / r["wall_s"], 2) if r["wall_s"] else None
-    r["children_maxrss_mib"] = ch.ru_maxrss / 1024
     return r
 
 
