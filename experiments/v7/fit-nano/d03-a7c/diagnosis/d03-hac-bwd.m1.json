@@ -1,0 +1,88 @@
+{
+ "code": {
+  "commit": "2c39307038bb4b28a7325e7cadf88e4e07a98d94",
+  "dirty": true
+ },
+ "decile_sim_over_fit": [
+  0.9687053235037599,
+  1.020487163282668,
+  1.000403275298083,
+  1.0001076612069906,
+  1.0033600339045348,
+  1.0010898403871222,
+  0.9832916696167092,
+  0.9990970124615045,
+  0.9764342271338796,
+  1.0482178032836322
+ ],
+ "evidence_class": "PUBLIC-DATA-DERIVED FIT reads vs SIMULATED reads (in sample; not validation)",
+ "experiment": "V7 7.4 step 3 M1 diagnosis (insertion bases: interior vs read end)",
+ "fit": {
+  "end_insertion_bases_per_base": 0.000492001290396797,
+  "end_insertion_events_per_read": 0.057945318185341994,
+  "end_share": 0.04641305749613893,
+  "insertion_bases_per_base": 0.010600492984926197,
+  "insertion_events_per_base": 0.008416554757254523,
+  "interior_insertion_bases_per_base": 0.010108491694529402,
+  "interior_insertion_events_per_base_by_decile": [
+   0.0008117829565924855,
+   0.0007709203913536745,
+   0.0008226029504072503,
+   0.0007998959680101631,
+   0.0007911099329710552,
+   0.0007894927690264757,
+   0.0007978620092345063,
+   0.0008510783732664461,
+   0.001423120943023313,
+   0.0005586884633691527
+  ],
+  "reads": 399877.0
+ },
+ "job": "d03-hac-bwd",
+ "m1_check": {
+  "deletion": 0.015966259624834635,
+  "insertion": 0.010600492984926197,
+  "reads": 399877.0,
+  "substitution": 0.01631963495441515
+ },
+ "model_sha256": "d69d126a98d40ae3bccf2301ecc59d92f289df207e2e53f608e67a7018da2252",
+ "seeds": [
+  20261008000,
+  20261008001,
+  20261008002,
+  20261008003,
+  20261008004
+ ],
+ "sim_over_fit": {
+  "end_insertion_bases_per_base": 0.01149219972318578,
+  "end_insertion_events_per_read": 0.014201918491931784,
+  "end_share": 0.012086152485081013,
+  "insertion_bases_per_base": 0.9508567542376786,
+  "insertion_events_per_base": 0.9968666808431794,
+  "interior_insertion_bases_per_base": 0.9965775785644434,
+  "reads": 0.297806575521973
+ },
+ "simulated": {
+  "end_insertion_bases_per_base": 5.654177093305118e-06,
+  "end_insertion_events_per_read": 0.0008229346858572796,
+  "end_share": 0.0005609552901971674,
+  "insertion_bases_per_base": 0.010079550352966204,
+  "insertion_events_per_base": 0.008390183004999188,
+  "interior_insertion_bases_per_base": 0.010073896175872898,
+  "interior_insertion_events_per_base_by_decile": [
+   0.0007863784715807624,
+   0.0007867143632892755,
+   0.0008229346858572796,
+   0.0007999820857755459,
+   0.0007937680891680522,
+   0.0007903531901315016,
+   0.0007845310671839399,
+   0.0008503098601011035,
+   0.0013895839981190065,
+   0.0005856271937927213
+  ],
+  "reads": 119086.0
+ },
+ "split_manifest_sha256": "0c90197f3b2173338f28b4f73d4a55b7883933853db184af0b9ef0adb22f3c95",
+ "split_read": "FIT"
+}
