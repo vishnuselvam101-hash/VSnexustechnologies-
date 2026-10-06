@@ -39,6 +39,7 @@ from vnxdna.dnaenc.markers import insert_markers
 from vnxdna.dnaenc.scrambler import VARIANTS, keystreams
 from vnxdna.native import cluster as _nc
 from vnxdna.recovery.cluster import ClusterConfig
+from vnxdna.recovery.cluster import polish as _pl
 from vnxdna.recovery.cluster.editdist import banded_distance, revcomp
 from vnxdna.sync.template import frame_erasures_to_bytes
 
@@ -360,6 +361,8 @@ def _run_units(lay, units, tpl0, fpos, has_markers, cfg, marker_mismatch, counts
             s = state[k]
             s["stable"] = s["dec"] is not None and np.array_equal(tpl, s["tpl"])
             s.update(tpl=tpl, dec=dec, best=best, margin=margin, total=total)
+    if cfg.consensus_template == "full" and has_markers and state:
+        _polish(cands, state, tpl0, fpos, cfg, marker_mismatch, counts)
     # decode every candidate; the GMD ladder for those that fail
     results: list = [None] * len(units)
     done_unit: set = set()
@@ -425,3 +428,106 @@ def _run_units(lay, units, tpl0, fpos, has_markers, cfg, marker_mismatch, counts
                        "payload": np.array(payload[k], dtype=np.uint8), "gmd_step": int(gmd[k])}, rs, strand)
     return results
 
+
+
+def _polish(cands, state, tpl0, fpos, cfg, marker_mismatch, counts) -> None:
+    """``consensus_template="full"`` (EXPERIMENTAL): polish a full template per candidate (:mod:`.polish`), then
+    replace the candidate's vote by the vote of its reads' certain calls against the polished template."""
+    T = tpl0.size
+    seg = _pl.segments(tpl0)
+    frame = tpl0 < 0
+    gap_seg = np.where(frame, seg, np.concatenate([[-1], seg[:-1]]))      # segment of the gap before position i
+    mc = np.where(tpl0 >= 0, marker_mismatch, cfg.c_sub).astype(np.int32)
+    pen = 2 * cfg.c_indel * T
+    tpls = []
+    for s in state:
+        t = tpl0.copy()
+        t[fpos] = np.minimum(s["best"], 3)
+        tpls.append(t)
+    undecided = [np.unique(seg[fpos[~s["dec"]]]) for s in state]
+    reads_all = [r for (_, rs, _, _) in cands for r in rs]
+    owner = np.repeat(np.arange(len(cands)), [len(rs) for (_, rs, _, _) in cands])
+    bands = np.repeat(np.asarray([b for (_, _, b, _) in cands]), [len(rs) for (_, rs, _, _) in cands])
+    for _ in range(max(1, cfg.rounds)):
+        counts["cluster_polish_rounds"] += 1
+        n = len(reads_all)
+        tt = np.stack([tpls[k] for k in owner.tolist()])
+        mm = np.repeat(mc[None, :], n, axis=0)
+        dsub = np.zeros((len(cands), T, 4), dtype=np.int64)
+        ddel = np.zeros((len(cands), T), dtype=np.int64)
+        dins = np.zeros((len(cands), T, 4), dtype=np.int64)
+        for a in range(0, n, FB_CHUNK):
+            sl = slice(a, a + FB_CHUNK)
+            opt, sub, dele, ins = _pl.edit_costs(tt[sl], mm[sl], reads_all[sl], bands[sl], cfg.c_indel, cfg.c_sub)
+            live = opt < INF
+            own = owner[sl][live]
+            np.add.at(dsub, own, np.minimum(sub[live], pen) - opt[live][:, None, None])
+            np.add.at(ddel, own, np.minimum(dele[live], pen) - opt[live][:, None])
+            np.add.at(dins, own, np.minimum(ins[live], pen) - opt[live][:, None, None])
+        # candidate moves per (candidate, hot segment): the improving substitutions together, and shift pairs
+        trial_tpl, trial_key = [], []
+        for k, t in enumerate(tpls):
+            ds = dsub[k].copy()
+            ds[np.arange(T), np.minimum(t, 3)] = 0
+            ds[~frame] = 0
+            de = np.where(frame, ddel[k], pen)
+            di = np.where(gap_seg >= 0, dins[k].min(axis=1), pen)
+            dix = dins[k].argmin(axis=1)
+            improving = np.flatnonzero(frame & (ds.min(axis=1) < 0))
+            hot = set(undecided[k].tolist()) | set(seg[improving].tolist()) | set(seg[frame & (de < 0)].tolist()) \
+                | set(gap_seg[(gap_seg >= 0) & (di < 0)].tolist())
+            for g in sorted(hot):
+                sp = improving[seg[improving] == g]
+                if sp.size:
+                    u = t.copy()
+                    u[sp] = ds[sp].argmin(axis=1)
+                    trial_tpl.append(u)
+                    trial_key.append((k, g))
+                ps = np.flatnonzero(seg == g)
+                qs = np.flatnonzero(gap_seg == g)
+                dels = ps[np.argsort(de[ps], kind="stable")[:_pl.PAIRS_PER_SIDE]]
+                inss = qs[np.argsort(di[qs], kind="stable")[:_pl.PAIRS_PER_SIDE]]
+                for p in dels.tolist():
+                    for q in inss.tolist():
+                        if q in (p, p + 1):
+                            continue
+                        trial_tpl.append(_pl.shift(t, p, q, int(dix[q])))
+                        trial_key.append((k, g))
+        if not trial_tpl:
+            break
+        # exact summed cost of every trial template (all reads of its candidate)
+        rows, towner = [], []
+        for x, (k, _) in enumerate(trial_key):
+            idx = np.flatnonzero(owner == k)
+            rows.append(idx)
+            towner.append(np.full(idx.size, x))
+        rows_a, tow = np.concatenate(rows), np.concatenate(towner)
+        _, opt = fb_calls(np.stack([trial_tpl[x] for x in tow.tolist()]), np.repeat(mc[None, :], rows_a.size, axis=0),
+                          [reads_all[i] for i in rows_a.tolist()], bands[rows_a], cfg.c_indel, 0)
+        cost = np.zeros(len(trial_tpl), dtype=np.int64)
+        np.add.at(cost, tow, np.minimum(opt, pen))
+        basec = np.zeros(len(cands), dtype=np.int64)
+        best_move: dict = {}
+        for x, key in enumerate(trial_key):
+            if key not in best_move or cost[x] < cost[best_move[key]]:
+                best_move[key] = x
+        # the base cost with the same clipping as the trials
+        _, bopt = fb_calls(tt, mm, reads_all, bands, cfg.c_indel, 0)
+        np.add.at(basec, owner, np.minimum(bopt, pen))
+        moved = 0
+        new = [t.copy() for t in tpls]
+        for (k, g), x in sorted(best_move.items()):
+            if cost[x] < basec[k]:
+                m = seg == g
+                new[k][m] = trial_tpl[x][m]
+                moved += 1
+        counts["cluster_polish_moves"] += moved
+        tpls = new
+        if not moved:
+            break
+    # final: certain calls against the polished template, the unchanged vote
+    tt = np.stack([tpls[k] for k in owner.tolist()])
+    calls, _ = fb_calls(tt, np.repeat(mc[None, :], len(reads_all), axis=0), reads_all, bands, cfg.c_indel, cfg.slack)
+    for k, s in enumerate(state):
+        best, dec, margin, total = vote(calls[owner == k][:, fpos], cfg.vote_share, cfg.min_votes)
+        s.update(tpl=tpls[k], dec=dec, best=best, margin=margin, total=total)
