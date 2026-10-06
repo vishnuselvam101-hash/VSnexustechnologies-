@@ -556,16 +556,26 @@ def per_base_errors(base: np.ndarray, lengths: np.ndarray | None, rates: tuple, 
         kmax = int(run.max())
         runlen = np.zeros((m, w), dtype=np.int64)
         runlen[rows, cols] = run
-        extra = aux.integers(0, 4, (m, w, kmax - 1)).astype(np.uint8) if kmax > 1 else np.zeros((m, w, 0), np.uint8)
-        if ins.base_weights is not None and kmax > 1:
-            ew = aux.choice(4, size=(m, w, kmax - 1), p=np.asarray(ins.base_weights, dtype=np.float64)).astype(np.uint8)
-            extra = ew
-        ibases = np.concatenate([ins_base[:, :, None], extra], axis=2)                    # (m, w, kmax)
-        slots = np.concatenate([ibases, subbed[:, :, None]], axis=2).reshape(m, (kmax + 1) * w)
-        ikeep = np.arange(kmax)[None, None, :] < runlen[:, :, None]
-        keep = np.concatenate([ikeep, keep_base[:, :, None]], axis=2).reshape(m, (kmax + 1) * w)
-        err = np.concatenate([ikeep, is_sub[:, :, None]], axis=2).reshape(m, (kmax + 1) * w)
-        return {"codes": slots[keep], "lengths": keep.sum(axis=1).astype(np.int64), "err": err[keep],
+        long_ = run > 1
+        lrows, lcols = rows[long_], cols[long_]
+        extra = _extra_insertion_bases(m, w, kmax, lrows, lcols, ins.base_weights, aux)
+        codes, lengths, err = [], [], []
+        step = _chunk_rows(w, kmax + 1)
+        for a in range(0, m, step):
+            b = min(a + step, m)
+            n = b - a
+            ext = np.zeros((n, w, kmax - 1), np.uint8)
+            i0, i1 = np.searchsorted(lrows, [a, b])
+            ext[lrows[i0:i1] - a, lcols[i0:i1]] = extra[i0:i1]
+            ibases = np.concatenate([ins_base[a:b, :, None], ext], axis=2)                  # (n, w, kmax)
+            slots = np.concatenate([ibases, subbed[a:b, :, None]], axis=2).reshape(n, (kmax + 1) * w)
+            ikeep = np.arange(kmax)[None, None, :] < runlen[a:b, :, None]
+            keep = np.concatenate([ikeep, keep_base[a:b, :, None]], axis=2).reshape(n, (kmax + 1) * w)
+            e = np.concatenate([ikeep, is_sub[a:b, :, None]], axis=2).reshape(n, (kmax + 1) * w)
+            codes.append(slots[keep])
+            lengths.append(keep.sum(axis=1).astype(np.int64))
+            err.append(e[keep])
+        return {"codes": np.concatenate(codes), "lengths": np.concatenate(lengths), "err": np.concatenate(err),
                 "substitutions": int(is_sub.sum()), "insertions": int(runlen.sum()), "deletions": int(is_del.sum()),
                 "bursts": bursts}
     slots = np.stack([ins_base, subbed], axis=2).reshape(m, 2 * w)
@@ -574,6 +584,40 @@ def per_base_errors(base: np.ndarray, lengths: np.ndarray | None, rates: tuple, 
     return {"codes": slots[keep], "lengths": keep.sum(axis=1).astype(np.int64), "err": err[keep],
             "substitutions": int(is_sub.sum()), "insertions": int(is_ins.sum()), "deletions": int(is_del.sum()),
             "bursts": bursts}
+
+
+#: elements (rows x width x slots) per row chunk of the insertion-run step; a bound on its working memory, not on the result
+CHUNK_ELEMENTS = 1 << 21
+
+
+def _chunk_rows(w: int, depth: int) -> int:
+    return max(1, CHUNK_ELEMENTS // max(1, w * depth))
+
+
+def _extra_insertion_bases(m: int, w: int, kmax: int, lrows: np.ndarray, lcols: np.ndarray, base_weights,
+                           aux: np.random.Generator) -> np.ndarray:
+    """(len(lrows), kmax - 1) uint8: the 2nd..kmax-th inserted base at the sites (lrows, lcols) (row-major order, runs > 1).
+
+    The draws are those of one dense ``aux.integers(0, 4, (m, w, kmax - 1))`` followed, with base weights, by one dense
+    ``aux.choice(4, (m, w, kmax - 1), p)`` (the integers are then discarded, as before), made in row chunks so that only
+    the chunk is in memory. A Generator fills an array in C order with no state carried between elements other than the
+    bit stream, so consecutive row chunks consume the stream exactly as the dense call does (tests/simulation/
+    test_sim_insertion_chunks.py checks the values and the final generator state)."""
+    out = np.zeros((lrows.size, max(kmax - 1, 0)), np.uint8)
+    if kmax <= 1:
+        return out
+    step = _chunk_rows(w, kmax - 1)
+    p = np.asarray(base_weights, dtype=np.float64) if base_weights is not None else None
+    for weighted in ((False, True) if p is not None else (False,)):
+        for a in range(0, m, step):
+            b = min(a + step, m)
+            if weighted:
+                block = aux.choice(4, size=(b - a, w, kmax - 1), p=p)
+            else:
+                block = aux.integers(0, 4, (b - a, w, kmax - 1))
+            i0, i1 = np.searchsorted(lrows, [a, b])
+            out[i0:i1] = block[lrows[i0:i1] - a, lcols[i0:i1]].astype(np.uint8)
+    return out
 
 
 def apply_per_base(pool: SequencePool, rng: np.random.Generator, sub: SubstitutionModel | None,
