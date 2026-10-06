@@ -174,6 +174,13 @@
      15
     ],
     "real_reads_removed": 0
+   },
+   "substitution_rate_effective_per_base": {
+    "ci95": [
+     0.0164652594392353,
+     0.01657732035842709
+    ],
+    "value": 0.016521420180602323
    }
   },
   "metrics": {
@@ -604,7 +611,8 @@
    "nanopore quality is assumed (no qualities in the dataset): sequencing.quality is the schema default",
    "applying the model to 313-nt VNX strands extrapolates the relative position profile",
    "protocol 5.5 (amendment 2): read_heterogeneity (per-read gamma rate multiplier) and the read-length window [-15, 15] applied to simulated reads in calibration and validation; the model describes length-selected reads",
-   "INADEQUATE (protocol 5.4): fails ['M3'] on DEV; not used to choose decoder parameters; may be run as a labelled stress condition"
+   "INADEQUATE (protocol 5.4): fails ['M3'] on DEV; not used to choose decoder parameters; may be run as a labelled stress condition",
+   "sequencing.substitution.rate relabelled 'estimated' (V7 review, 2026-10-06; stages unchanged, no refit): with homopolymer min_run 2 the in-homopolymer flag is a function of the centred 3-mer, so the homopolymer substitution multiplier and the substitution context are confounded and the rate is not identifiable separately from them (the context was renormalised by its unweighted mean during calibration). Only the product rate x context x multiplier is determined. The effective per-base substitution rate (observed on FIT) is measured_statistics.substitution_rate_effective_per_base"
   ],
   "validation": {
    "dev_reads_tallied": 135580,
@@ -1384,7 +1392,7 @@
    ]
   },
   "sequencing.substitution.rate": {
-   "basis": "measured",
+   "basis": "estimated",
    "ci95": [
     0.04875983819684943,
     0.04911074259299193

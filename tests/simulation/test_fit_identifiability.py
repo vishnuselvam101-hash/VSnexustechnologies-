@@ -195,3 +195,25 @@ def test_calibrated_fit_with_context_and_min_run_2_keeps_the_multiplier_and_labe
     p = doc["parameters"]
     assert p["sequencing.homopolymer.substitution_multiplier"]["basis"] == "assumed"
     assert p["sequencing.substitution.rate"]["basis"] == "estimated"
+
+
+# -- committed models (relabelled, not refit) ----------------------------------------------------------------------------
+def test_committed_models_with_a_confounded_rate_are_labelled_estimated_with_the_effective_rate():
+    import json
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[2]
+    relabel = json.loads((root / "experiments/v7/fit-d03/RELABEL-2026-10-06.json").read_text())
+    seen = []
+    for p in sorted(root.glob("experiments/v7/fit-*/**/models/*.json")):
+        m = cm.from_doc(json.loads(p.read_text()))[0]
+        seq = m.stages["sequencing"]
+        if not ((seq.get("context") or {}).get("substitution") is not None and seq["homopolymer"]["min_run"] <= 2):
+            continue
+        rel = str(p.relative_to(root))
+        seen.append(rel)
+        assert m.doc["parameters"]["sequencing.substitution.rate"]["basis"] == "estimated", rel
+        ms = m.doc["fit_report"]["measured_statistics"]
+        eff = ms["substitution_rate_effective_per_base"]
+        assert eff["value"] == ms["observed_per_base_rates"]["substitution"] < seq["substitution"]["rate"]
+        assert relabel["models"][rel]["sha256_after"] == m.sha256
+    assert sorted(seen) == sorted(relabel["models"]) and len(seen) == 4

@@ -159,6 +159,13 @@
     },
     "reads_tallied": 488569,
     "references": 36883
+   },
+   "substitution_rate_effective_per_base": {
+    "ci95": [
+     0.03620266853546973,
+     0.03636526670888218
+    ],
+    "value": 0.03628722520940406
    }
   },
   "metrics": {
@@ -557,7 +564,8 @@
    "dropout is an upper bound: empty clusters mix molecular loss with clustering/segmentation loss",
    "nanopore quality is assumed (no qualities in the dataset): sequencing.quality is the schema default",
    "applying the model to 313-nt VNX strands extrapolates the relative position profile",
-   "INADEQUATE (protocol 5.4): fails ['M2', 'M3'] on DEV; not used to choose decoder parameters; may be run as a labelled stress condition"
+   "INADEQUATE (protocol 5.4): fails ['M2', 'M3'] on DEV; not used to choose decoder parameters; may be run as a labelled stress condition",
+   "sequencing.substitution.rate relabelled 'estimated' (V7 review, 2026-10-06; stages unchanged, no refit): with homopolymer min_run 2 the in-homopolymer flag is a function of the centred 3-mer, so the homopolymer substitution multiplier and the substitution context are confounded and the rate is not identifiable separately from them (the context was renormalised by its unweighted mean during calibration). Only the product rate x context x multiplier is determined. The effective per-base substitution rate (observed on FIT) is measured_statistics.substitution_rate_effective_per_base"
   ],
   "validation": {
    "dev_reads_tallied": 162220,
@@ -1328,7 +1336,7 @@
    ]
   },
   "sequencing.substitution.rate": {
-   "basis": "measured",
+   "basis": "estimated",
    "ci95": [
     0.06885603546476818,
     0.06923873225605659

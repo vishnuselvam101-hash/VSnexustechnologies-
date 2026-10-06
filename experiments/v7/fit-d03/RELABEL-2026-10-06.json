@@ -1,0 +1,36 @@
+{
+ "models": {
+  "experiments/v7/fit-d03/a2/models/ont-guppy-fast-pass-fwd-fit.json": {
+   "effective": 0.03628722520940406,
+   "rate": 0.06958426418402837,
+   "sha256_after": "1def4436a740614da1ffe2c38a2932cf856292fd53cf7bdbdf5af8dee482b5b0",
+   "sha256_before": "459eb509ff187420d986e2014f658e4e0f02401625dbc27becebada5459102f4",
+   "sim_digest_identical": true
+  },
+  "experiments/v7/fit-d03/a2/models/ont-guppy-hac-pass-fwd-fit.json": {
+   "effective": 0.016521420180602323,
+   "rate": 0.048928095630009556,
+   "sha256_after": "f5ffdb28b150b17152e41d0e69cb0c435b896d87ddd774b1b4da16044b976c93",
+   "sha256_before": "8f9097d4e1ac17f741f4ac6cf3556da360c656a144ff4677b31e457ab52448fd",
+   "sim_digest_identical": true
+  },
+  "experiments/v7/fit-d03/models/ont-guppy-fast-pass-fwd-fit.json": {
+   "effective": 0.03628722520940406,
+   "rate": 0.06904216000690315,
+   "sha256_after": "b2c7a86a255fd5540d66442949309e4eccd039f2747b0a8504dedec0eb0a3be2",
+   "sha256_before": "705d055723329bff5c966edcaff230192b33eab83992a10759dd4ec655f4beba",
+   "sim_digest_identical": true
+  },
+  "experiments/v7/fit-d03/models/ont-guppy-hac-pass-fwd-fit.json": {
+   "effective": 0.016521420180602323,
+   "rate": 0.04774764422726608,
+   "sha256_after": "be342d85228f19a38c9f20e10003839a96fbc92095ebaae2a959f1ce7da7b372",
+   "sha256_before": "cc434baa9b7d4186d18eabc3431da940cb36573d45c1b759270bc40d6bceacb2",
+   "sim_digest_identical": true
+  }
+ },
+ "simulation_check": "one batch (256 random 150-nt strands, seed 17) simulated from the model before and after: identical SHA-256 of every output array; the stages are equal",
+ "validation_results_note": "results/*.validation.json and orientation-*.json keep the SHA-256 of the model as validated (sha256_before)",
+ "what": "sequencing.substitution.rate basis 'measured' -> 'estimated', fit_report.measured_statistics.substitution_rate_effective_per_base and a fit_report note added (V7 review, 2026-10-06). No refit; stages unchanged.",
+ "why": "homopolymer min_run 2 with a substitution 3-mer context: the homopolymer substitution multiplier and the context are confounded, so the substitution rate is not identifiable separately from them"
+}
