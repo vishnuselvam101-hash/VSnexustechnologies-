@@ -98,6 +98,52 @@ def edit_costs(tpl: np.ndarray, mc: np.ndarray, reads: list, band: np.ndarray, c
     dele = np.empty((n, T), dtype=np.int64)
     ins = np.empty((n, T, 4), dtype=np.int64)
     mc = mc.astype(np.int64)
+    bases = np.arange(4)
+    for i in range(T):
+        jd = i + dvec
+        okd = (jd >= 0) & (jd < lens[None, :])
+        rb = Rp[:, i: i + W].T
+        A = F[i].astype(np.int64)
+        Gn = G[i + 1].astype(np.int64)
+        Gn_dn = np.concatenate([inf_row, Gn[:-1]])            # G[i+1] at diagonal w−1: read index unchanged
+        Gc_up = np.concatenate([G[i][1:].astype(np.int64), inf_row])   # G[i] at diagonal w+1: one read base consumed
+        skip = (A + Gn_dn).min(axis=0)                         # template base i removed
+        dele[:, i] = skip
+        path_del = skip + c_indel                              # base i kept but deleted in the read
+        path_ins_del = (A + G[i].astype(np.int64)).min(axis=0) + c_indel
+        # V8.14: the four candidate bases in one broadcast (W, n, 4) instead of four passes; same integer arithmetic and
+        # the same minima, so the result is bit-identical to _edit_costs_reference (tests/v8/test_polish_equivalence.py)
+        mis = (rb[:, :, None] != bases).astype(np.int64)
+        ok3 = okd[:, :, None]
+        A3 = A[:, :, None]
+        s_best = np.where(ok3, A3 + mis * mc[:, i][None, :, None] + Gn[:, :, None], INF).min(axis=0)
+        i_best = np.where(ok3, A3 + mis * c_sub + Gc_up[:, :, None], INF).min(axis=0)
+        sub[:, i, :] = np.minimum(s_best, path_del[:, None])
+        ins[:, i, :] = np.minimum(i_best, path_ins_del[:, None])
+    dead = opt >= INF
+    for arr in (sub, dele, ins):
+        np.minimum(arr, INF, out=arr)
+        arr[dead] = INF
+    return opt, sub, dele, ins
+
+
+def _edit_costs_reference(tpl: np.ndarray, mc: np.ndarray, reads: list, band: np.ndarray, c_indel: int, c_sub: int):
+    """V7 implementation of :func:`edit_costs`, kept as the equivalence reference (V8.14 tests compare the two bit for bit).
+
+    Per read, the exact optimal cost after one template edit (reads that do not fit their band: INF everywhere).
+
+    Returns (opt (n,), sub (n, T, 4): base b at position i, dele (n, T): position i removed, ins (n, T, 4): base b
+    inserted before position i). An inserted base costs ``c_sub`` on mismatch; a substituted base keeps ``mc``."""
+    F, G, Rp, B, opt = fg(tpl, mc, reads, band, c_indel)
+    T1, W, n = F.shape
+    T = T1 - 1
+    lens = np.fromiter((r.size for r in reads), dtype=np.int64, count=n)
+    dvec = np.arange(-B, B + 1, dtype=np.int64)[:, None]
+    inf_row = np.full((1, n), INF, dtype=np.int64)
+    sub = np.empty((n, T, 4), dtype=np.int64)
+    dele = np.empty((n, T), dtype=np.int64)
+    ins = np.empty((n, T, 4), dtype=np.int64)
+    mc = mc.astype(np.int64)
     for i in range(T):
         jd = i + dvec
         okd = (jd >= 0) & (jd < lens[None, :])
