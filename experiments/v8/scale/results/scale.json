@@ -1,0 +1,170 @@
+{
+ "benchmark": "V8.13 scale (current pipeline, v4-balanced, clean channel)",
+ "cpu": 8,
+ "label": "SIMULATED clean channel",
+ "load_average_end": [
+  1.482421875,
+  2.52880859375,
+  3.17529296875
+ ],
+ "load_average_start": [
+  1.3876953125,
+  2.353515625,
+  3.35986328125
+ ],
+ "profile": {
+  "name": "v4-balanced",
+  "outer_K": 64,
+  "outer_M": 16,
+  "outer_parity_overhead": 0.25
+ },
+ "runs": [
+  {
+   "container_bytes": 5475,
+   "decode": {
+    "cpu_s": 0.10315399999999997,
+    "cpu_utilisation": 1.68,
+    "peak_rss_children_mib": 28.90234375,
+    "peak_rss_mib": 44.875,
+    "status": "SUCCESS",
+    "wall_s": 0.061527825018856674
+   },
+   "encode": {
+    "cpu_s": 0.06487899999999991,
+    "cpu_utilisation": 1.14,
+    "peak_rss_children_mib": 29.23046875,
+    "peak_rss_mib": 44.25,
+    "status": "SUCCESS",
+    "wall_s": 0.056748146016616374
+   },
+   "exact_container": true,
+   "nt_per_byte": 15.054,
+   "nucleotides": 61661,
+   "size": 4096,
+   "strands": 197
+  },
+  {
+   "container_bytes": 1049961,
+   "decode": {
+    "cpu_s": 0.7483339999999999,
+    "cpu_utilisation": 1.72,
+    "peak_rss_children_mib": 69.23046875,
+    "peak_rss_mib": 86.94921875,
+    "status": "SUCCESS",
+    "wall_s": 0.4356933920062147
+   },
+   "encode": {
+    "cpu_s": 0.511868,
+    "cpu_utilisation": 2.61,
+    "peak_rss_children_mib": 44.03515625,
+    "peak_rss_mib": 54.7109375,
+    "status": "SUCCESS",
+    "wall_s": 0.19648334599332884
+   },
+   "exact_container": true,
+   "nt_per_byte": 9.802,
+   "nucleotides": 10278294,
+   "size": 1048576,
+   "strands": 32838
+  },
+  {
+   "container_bytes": 10487943,
+   "decode": {
+    "cpu_s": 4.834302,
+    "cpu_utilisation": 2.31,
+    "peak_rss_children_mib": 77.69140625,
+    "peak_rss_mib": 262.27734375,
+    "status": "SUCCESS",
+    "wall_s": 2.0883519620401785
+   },
+   "decode_worker_scaling": {
+    "1": {
+     "cpu_s": 3.8120410000000002,
+     "cpu_utilisation": 1.1,
+     "peak_rss_children_mib": 0.0,
+     "peak_rss_mib": 257.43359375,
+     "status": "SUCCESS",
+     "wall_s": 3.4524983720039017
+    },
+    "2": {
+     "cpu_s": 4.145163,
+     "cpu_utilisation": 1.75,
+     "peak_rss_children_mib": 74.80078125,
+     "peak_rss_mib": 261.71484375,
+     "status": "SUCCESS",
+     "wall_s": 2.3675897149951197
+    },
+    "4": {
+     "cpu_s": 4.320152,
+     "cpu_utilisation": 2.24,
+     "peak_rss_children_mib": 74.7890625,
+     "peak_rss_mib": 264.26171875,
+     "status": "SUCCESS",
+     "wall_s": 1.9296602369868197
+    }
+   },
+   "encode": {
+    "cpu_s": 4.407550999999999,
+    "cpu_utilisation": 3.73,
+    "peak_rss_children_mib": 50.52734375,
+    "peak_rss_mib": 60.63671875,
+    "status": "SUCCESS",
+    "wall_s": 1.1831311960122548
+   },
+   "exact_container": true,
+   "nt_per_byte": 9.784,
+   "nucleotides": 102589819,
+   "size": 10485760,
+   "strands": 327763
+  },
+  {
+   "container_bytes": 104867709,
+   "decode": {
+    "cpu_s": 39.52421999999999,
+    "cpu_utilisation": 2.32,
+    "peak_rss_children_mib": 74.83203125,
+    "peak_rss_mib": 288.19921875,
+    "status": "SUCCESS",
+    "wall_s": 17.011219531006645
+   },
+   "encode": {
+    "cpu_s": 44.52952500000001,
+    "cpu_utilisation": 3.95,
+    "peak_rss_children_mib": 50.171875,
+    "peak_rss_mib": 63.7265625,
+    "status": "SUCCESS",
+    "wall_s": 11.276766086986754
+   },
+   "exact_container": true,
+   "nt_per_byte": 9.782,
+   "nucleotides": 1025741377,
+   "size": 104857600,
+   "strands": 3277129
+  },
+  {
+   "container_bytes": 1073833251,
+   "decode": {
+    "cpu_s": 464.535402,
+    "cpu_utilisation": 2.48,
+    "peak_rss_children_mib": 78.06640625,
+    "peak_rss_mib": 314.44140625,
+    "status": "SUCCESS",
+    "wall_s": 187.03912621398922
+   },
+   "encode": {
+    "cpu_s": 425.357606,
+    "cpu_utilisation": 4.04,
+    "peak_rss_children_mib": 53.19140625,
+    "peak_rss_mib": 142.76171875,
+    "status": "SUCCESS",
+    "wall_s": 105.37258892401587
+   },
+   "exact_container": true,
+   "nt_per_byte": 9.782,
+   "nucleotides": 10503439908,
+   "size": 1073741824,
+   "strands": 33557316
+  }
+ ],
+ "seed": 83200
+}
