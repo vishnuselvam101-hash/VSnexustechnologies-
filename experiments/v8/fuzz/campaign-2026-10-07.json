@@ -1,0 +1,142 @@
+{
+ "budget_seconds_per_target": 300,
+ "campaign": "V8.15 2026-10-07",
+ "engine": "native: libFuzzer + ASan + UBSan (clang); python: atheris",
+ "new_crashes": 0,
+ "note": "logs and corpora are local (FUZZ_OUT=/root/vnx-dna-lab/tmp/v8-fuzz), not committed",
+ "parallel": 4,
+ "slice": "1 CPU, 4 GiB systemd scope per target",
+ "targets": [
+  {
+   "corpus": 244,
+   "cov": 199,
+   "executions": 3281147,
+   "ft": 1245,
+   "new_crashes": 0,
+   "rc": 0,
+   "seconds": 300,
+   "target": "reads"
+  },
+  {
+   "corpus": 265,
+   "cov": 293,
+   "executions": 185256,
+   "ft": 1304,
+   "new_crashes": 0,
+   "rc": 0,
+   "seconds": 300,
+   "target": "align"
+  },
+  {
+   "corpus": 271,
+   "cov": 358,
+   "executions": 61360,
+   "ft": 2031,
+   "new_crashes": 0,
+   "rc": 0,
+   "seconds": 300,
+   "target": "rs"
+  },
+  {
+   "corpus": 61,
+   "cov": 101,
+   "executions": 16995,
+   "ft": 256,
+   "new_crashes": 0,
+   "rc": 0,
+   "seconds": 300,
+   "target": "py-align"
+  },
+  {
+   "corpus": 56,
+   "cov": 338,
+   "executions": 1255579,
+   "ft": 821,
+   "new_crashes": 0,
+   "rc": 0,
+   "seconds": 300,
+   "target": "py-container"
+  },
+  {
+   "corpus": 164,
+   "cov": 1097,
+   "executions": 48708,
+   "ft": 1733,
+   "new_crashes": 0,
+   "rc": 0,
+   "seconds": 300,
+   "target": "py-decode"
+  },
+  {
+   "corpus": 55,
+   "cov": 93,
+   "executions": 39022,
+   "ft": 211,
+   "new_crashes": 0,
+   "rc": 0,
+   "seconds": 300,
+   "target": "py-frame"
+  },
+  {
+   "corpus": 177,
+   "cov": 308,
+   "executions": 168430,
+   "ft": 829,
+   "new_crashes": 0,
+   "rc": 0,
+   "seconds": 300,
+   "target": "py-manifest"
+  },
+  {
+   "corpus": 314,
+   "cov": 169,
+   "executions": 249495,
+   "ft": 630,
+   "new_crashes": 0,
+   "rc": 0,
+   "seconds": 300,
+   "target": "py-reads"
+  },
+  {
+   "corpus": 108,
+   "cov": 105,
+   "executions": 57933,
+   "ft": 274,
+   "new_crashes": 0,
+   "rc": 0,
+   "seconds": 300,
+   "target": "py-rs"
+  },
+  {
+   "corpus": 26,
+   "cov": 85,
+   "executions": 22322985,
+   "ft": 94,
+   "new_crashes": 0,
+   "rc": 0,
+   "seconds": 300,
+   "target": "py-superblock"
+  },
+  {
+   "corpus": 411,
+   "cov": 131,
+   "executions": 850380,
+   "ft": 476,
+   "new_crashes": 0,
+   "rc": 0,
+   "seconds": 300,
+   "target": "py-vxs"
+  },
+  {
+   "corpus": 14,
+   "cov": 25,
+   "executions": 274190,
+   "ft": 28,
+   "new_crashes": 0,
+   "rc": 0,
+   "seconds": 300,
+   "target": "py-bomb"
+  }
+ ],
+ "total_executions": 28811480
+}
