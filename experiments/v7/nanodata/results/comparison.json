@@ -1,0 +1,1563 @@
+{
+ "commit": "19ad023c95be23eeec94890b63014a7eb5de1ef1",
+ "comparisons": {
+  "cas9": {
+   "M1_rates": {
+    "deletion": {
+     "pass": false,
+     "real": 0.03115,
+     "simulated": 0.033516,
+     "tolerance": 0.0015575
+    },
+    "inserted_bases": {
+     "pass": false,
+     "real": 0.032072,
+     "simulated": 0.014571,
+     "tolerance": 0.0016036
+    },
+    "pass": false,
+    "substitution": {
+     "pass": false,
+     "real": 0.02558,
+     "simulated": 0.021559,
+     "tolerance": 0.001279
+    },
+    "total_edits": {
+     "pass": false,
+     "real": 0.088802,
+     "simulated": 0.069646,
+     "tolerance": 0.0044401
+    }
+   },
+   "M2_edit_distance": {
+    "ks_d": 0.2457,
+    "p90_percent": [
+     15,
+     10
+    ],
+    "p99_percent": [
+     32,
+     18
+    ],
+    "pass": false,
+    "tv": 0.3195
+   },
+   "M3_length_drift": {
+    "abs_drift_le_0": [
+     0.108782,
+     0.082979
+    ],
+    "abs_drift_le_3": [
+     0.618579,
+     0.57958
+    ],
+    "abs_drift_le_6": [
+     0.847183,
+     0.891553
+    ],
+    "pass": false
+   },
+   "M4_position_profile": {
+    "pass": false,
+    "real_max_over_min": 1.958,
+    "real_total": [
+     0.048631,
+     0.068296,
+     0.095199,
+     0.086507,
+     0.081414,
+     0.082395,
+     0.080561,
+     0.07496699999999999,
+     0.08907699999999999,
+     0.084486,
+     0.076652,
+     0.074155,
+     0.083813,
+     0.082765,
+     0.082909
+    ],
+    "sim_over_real": [
+     1.134,
+     1.033,
+     0.7937,
+     0.7704,
+     0.7802,
+     0.7651,
+     0.7814,
+     0.85,
+     0.7026,
+     0.7259,
+     0.8099,
+     0.882,
+     0.8092,
+     1.0385,
+     1.1891
+    ],
+    "simulated_total": [
+     0.05514899999999999,
+     0.070551,
+     0.07555800000000001,
+     0.066649,
+     0.063521,
+     0.063039,
+     0.06295200000000001,
+     0.063724,
+     0.062584,
+     0.061331,
+     0.062077999999999994,
+     0.06540399999999999,
+     0.06782099999999999,
+     0.085954,
+     0.09858299999999999
+    ]
+   },
+   "M5_deletion_runs": {
+    "pass": false,
+    "real_1_to_8plus": [
+     723878,
+     230074,
+     36292,
+     13033,
+     4994,
+     2858,
+     2588,
+     3268
+    ],
+    "real_share_ge2": 0.2882,
+    "simulated_1_to_8plus": [
+     61263,
+     2839,
+     263,
+     114,
+     58,
+     54,
+     47,
+     77
+    ],
+    "simulated_share_ge2": 0.0533,
+    "tv": 0.2349
+   },
+   "M6_homopolymer_indel": {
+    "by_run_length": [
+     {
+      "pass": true,
+      "real_indel_per_site": 0.03891,
+      "real_rel_to_run1": 1.0,
+      "run_length": 1,
+      "simulated_indel_per_site": 0.03642,
+      "simulated_rel_to_run1": 1.0
+     },
+     {
+      "pass": true,
+      "real_indel_per_site": 0.04235,
+      "real_rel_to_run1": 1.088,
+      "run_length": 2,
+      "simulated_indel_per_site": 0.03998,
+      "simulated_rel_to_run1": 1.098
+     },
+     {
+      "pass": false,
+      "real_indel_per_site": 0.06474,
+      "real_rel_to_run1": 1.664,
+      "run_length": 3,
+      "simulated_indel_per_site": 0.09814,
+      "simulated_rel_to_run1": 2.695
+     },
+     {
+      "pass": false,
+      "real_indel_per_site": 0.05689,
+      "real_rel_to_run1": 1.462,
+      "run_length": 4,
+      "simulated_indel_per_site": 0.08455,
+      "simulated_rel_to_run1": 2.322
+     },
+     {
+      "pass": false,
+      "real_indel_per_site": 0.10456,
+      "real_rel_to_run1": 2.687,
+      "run_length": 5,
+      "simulated_indel_per_site": 0.0405,
+      "simulated_rel_to_run1": 1.112
+     }
+    ],
+    "pass": false
+   },
+   "M9_quality": {
+    "real_empirical_phred_at_q": {
+     "10": 10.898,
+     "15": 13.93,
+     "20": 16.365,
+     "25": 18.195,
+     "30": 19.521,
+     "5": 7.13,
+     "7": 8.709
+    },
+    "real_expected_calibration_error": 0.032342,
+    "real_occupied_phred_values": 62,
+    "simulated_empirical_phred_at_q": {
+     "15": 16.441,
+     "7": 0.597
+    },
+    "simulated_expected_calibration_error": 0.019971,
+    "simulated_occupied_phred_values": 2
+   },
+   "basis": "inferred: unit vs leave-one-out consensus of the same molecule's other units (PR-5)",
+   "burstiness": {
+    "real_ins_runs_share_ge2": 0.248,
+    "real_lift": 3.699,
+    "reproduced_within_10pct": false,
+    "simulated_ins_runs_share_ge2": 0.0259,
+    "simulated_lift": 1.143
+   },
+   "read_level_heterogeneity": {
+    "real_variance_over_mean": 6.1778,
+    "reproduced_within_10pct": false,
+    "simulated_variance_over_mean": 1.829
+   },
+   "substitution_spectrum": {
+    "real_transition_share": 0.683373,
+    "simulated_transition_share": 0.341476
+   }
+  },
+  "run15": {
+   "M1_rates": {
+    "deletion": {
+     "pass": false,
+     "real": 0.037104,
+     "simulated": 0.032208,
+     "tolerance": 0.0018552
+    },
+    "inserted_bases": {
+     "pass": false,
+     "real": 0.028167,
+     "simulated": 0.009853,
+     "tolerance": 0.0014084
+    },
+    "pass": false,
+    "substitution": {
+     "pass": false,
+     "real": 0.024251,
+     "simulated": 0.020874,
+     "tolerance": 0.0012126
+    },
+    "total_edits": {
+     "pass": false,
+     "real": 0.089522,
+     "simulated": 0.062934,
+     "tolerance": 0.0044761
+    }
+   },
+   "M2_edit_distance": {
+    "ks_d": 0.2912,
+    "p90_percent": [
+     20,
+     9
+    ],
+    "p99_percent": [
+     29,
+     11
+    ],
+    "pass": false,
+    "tv": 0.4538
+   },
+   "M3_length_drift": {
+    "abs_drift_le_0": [
+     0.105946,
+     0.068803
+    ],
+    "abs_drift_le_3": [
+     0.546357,
+     0.535175
+    ],
+    "abs_drift_le_6": [
+     0.770861,
+     0.892643
+    ],
+    "pass": false
+   },
+   "M4_position_profile": {
+    "pass": false,
+    "real_max_over_min": 1.818,
+    "real_total": [
+     0.049903,
+     0.068101,
+     0.08710199999999998,
+     0.08871,
+     0.089032,
+     0.090315,
+     0.09073300000000001,
+     0.090644,
+     0.089894,
+     0.08913,
+     0.08791,
+     0.08685799999999999,
+     0.082235,
+     0.057446000000000004,
+     0.057941
+    ],
+    "sim_over_real": [
+     1.6018,
+     1.222,
+     0.6956,
+     0.6778,
+     0.6742,
+     0.6652,
+     0.6609,
+     0.6629,
+     0.6665,
+     0.6725,
+     0.6842,
+     0.6911,
+     0.722,
+     1.0501,
+     1.0332
+    ],
+    "simulated_total": [
+     0.079937,
+     0.08321999999999999,
+     0.060590000000000005,
+     0.060128,
+     0.060025999999999996,
+     0.060081999999999997,
+     0.059963,
+     0.060091000000000006,
+     0.059914999999999996,
+     0.05993999999999999,
+     0.060149,
+     0.060024,
+     0.059373999999999996,
+     0.060326,
+     0.059864999999999995
+    ]
+   },
+   "M5_deletion_runs": {
+    "pass": false,
+    "real_1_to_8plus": [
+     2443743,
+     1182624,
+     209094,
+     69067,
+     21609,
+     10926,
+     5392,
+     6857
+    ],
+    "real_share_ge2": 0.3812,
+    "simulated_1_to_8plus": [
+     1335037,
+     51028,
+     2051,
+     270,
+     90,
+     46,
+     2,
+     0
+    ],
+    "simulated_share_ge2": 0.0385,
+    "tv": 0.3427
+   },
+   "M6_homopolymer_indel": {
+    "by_run_length": [
+     {
+      "pass": false,
+      "real_indel_per_site": 0.04456,
+      "real_rel_to_run1": 1.0,
+      "run_length": 1,
+      "simulated_indel_per_site": 0.03478,
+      "simulated_rel_to_run1": 1.0
+     },
+     {
+      "pass": false,
+      "real_indel_per_site": 0.04404,
+      "real_rel_to_run1": 0.988,
+      "run_length": 2,
+      "simulated_indel_per_site": 0.03397,
+      "simulated_rel_to_run1": 0.977
+     },
+     {
+      "pass": false,
+      "real_indel_per_site": 0.01265,
+      "real_rel_to_run1": 0.284,
+      "run_length": 3,
+      "simulated_indel_per_site": 0.08297,
+      "simulated_rel_to_run1": 2.386
+     }
+    ],
+    "pass": false
+   },
+   "M7_coverage": {
+    "cv_pass_at_real_mean": false,
+    "model_nb_at_real_mean_theoretical": {
+     "cv": 0.5541,
+     "le1_fraction": 0.005057,
+     "mean": 17.5465,
+     "zero_fraction": 0.001188
+    },
+    "real": {
+     "cv": 0.4768,
+     "le1_fraction": 0.0201,
+     "mean": 17.5465,
+     "median": 17.0,
+     "p10": 8.0,
+     "p90": 29.0,
+     "zero_fraction": 0.01885
+    },
+    "real_vs_dev_zero_fraction": [
+     0.018311,
+     0.018046
+    ],
+    "simulated_as_shipped": {
+     "cv": 0.5637,
+     "le1_fraction": 0.00865,
+     "mean": 14.9558,
+     "median": 14.0,
+     "p10": 5.0,
+     "p90": 26.0,
+     "zero_fraction": 0.0022
+    }
+   },
+   "M9_quality": {
+    "real_empirical_phred_at_q": {
+     "10": 11.943,
+     "15": 15.5,
+     "20": 17.591,
+     "25": 19.007,
+     "30": 20.104,
+     "5": 7.158,
+     "7": 9.189
+    },
+    "real_expected_calibration_error": 0.029349,
+    "real_occupied_phred_values": 90,
+    "simulated_empirical_phred_at_q": {
+     "15": 17.577,
+     "7": 0.576
+    },
+    "simulated_expected_calibration_error": 0.024918,
+    "simulated_occupied_phred_values": 2
+   },
+   "adequacy": {
+    "adequate": true,
+    "ambiguous_over_accepted": 0.003287,
+    "fit_references_with_segment": 60154,
+    "ge_0_50": true,
+    "ge_2000": true,
+    "le_0_01": true,
+    "share_fitdev_id_reads_with_segment": 0.9495
+   },
+   "burstiness": {
+    "real_ins_runs_share_ge2": 0.3248,
+    "real_lift": 4.12,
+    "reproduced_within_10pct": false,
+    "simulated_ins_runs_share_ge2": 0.0026,
+    "simulated_lift": 0.814
+   },
+   "length_and_quality_dependence": {
+    "read_length_bin_edges": [
+     0,
+     500,
+     1000,
+     1500,
+     2000,
+     3000,
+     4000,
+     5000,
+     6000
+    ],
+    "read_mean_q_bin_edges": [
+     0,
+     8,
+     10,
+     12,
+     14,
+     16,
+     18,
+     20
+    ],
+    "real_total_rate_by_read_length_bin": [
+     0.16,
+     0.112288,
+     0.096949,
+     0.096634,
+     0.115141,
+     0.084789,
+     0.087176,
+     0.090284,
+     0.132565
+    ],
+    "real_total_rate_by_read_mean_q_bin": [
+     0.232504,
+     0.167703,
+     0.087634,
+     0.052641,
+     0.036744,
+     null,
+     null,
+     null
+    ],
+    "simulator": "no read-length or read-quality dependence: every read has the same per-site rates"
+   },
+   "read_length": {
+    "real_reads_fit_id": {
+     "max": 18414,
+     "mean": 4755.69,
+     "median": 5043,
+     "min": 5,
+     "n": 59960,
+     "p05": 3332,
+     "p95": 5614,
+     "p99": 6087
+    },
+    "simulator": "one read per strand of the strand's length (no concatemers, truncation_rate 0)"
+   },
+   "read_level_heterogeneity": {
+    "real_variance_over_mean": 8.3817,
+    "reproduced_within_10pct": false,
+    "simulated_variance_over_mean": 0.9018
+   },
+   "split_check_fit_vs_dev": {
+    "deletion": {
+     "dev": 0.03713,
+     "fit": 0.037104,
+     "z": 0.31
+    },
+    "inserted_bases": {
+     "dev": 0.02809,
+     "fit": 0.028167,
+     "z": -1.15
+    },
+    "substitution": {
+     "dev": 0.024174,
+     "fit": 0.024251,
+     "z": -1.43
+    },
+    "total_edits": {
+     "dev": 0.089394,
+     "fit": 0.089522,
+     "z": -0.84
+    }
+   },
+   "substitution_spectrum": {
+    "real_transition_share": 0.61102,
+    "simulated_transition_share": 0.33376
+   }
+  },
+  "run16": {
+   "M1_rates": {
+    "deletion": {
+     "pass": false,
+     "real": 0.043681,
+     "simulated": 0.030718,
+     "tolerance": 0.002184
+    },
+    "inserted_bases": {
+     "pass": false,
+     "real": 0.037502,
+     "simulated": 0.009687,
+     "tolerance": 0.0018751
+    },
+    "pass": false,
+    "substitution": {
+     "pass": false,
+     "real": 0.030647,
+     "simulated": 0.020372,
+     "tolerance": 0.0015324
+    },
+    "total_edits": {
+     "pass": false,
+     "real": 0.111829,
+     "simulated": 0.060777,
+     "tolerance": 0.0055915
+    }
+   },
+   "M2_edit_distance": {
+    "ks_d": 0.4374,
+    "p90_percent": [
+     23,
+     9
+    ],
+    "p99_percent": [
+     29,
+     11
+    ],
+    "pass": false,
+    "tv": 0.489
+   },
+   "M3_length_drift": {
+    "abs_drift_le_0": [
+     0.080701,
+     0.070899
+    ],
+    "abs_drift_le_3": [
+     0.478666,
+     0.568925
+    ],
+    "abs_drift_le_6": [
+     0.716792,
+     0.910443
+    ],
+    "pass": false
+   },
+   "M4_position_profile": {
+    "pass": false,
+    "real_max_over_min": 1.573,
+    "real_total": [
+     0.07922299999999999,
+     0.08624499999999999,
+     0.104127,
+     0.102904,
+     0.103781,
+     0.10209299999999999,
+     0.103161,
+     0.10317100000000001,
+     0.101579,
+     0.102577,
+     0.101871,
+     0.103584,
+     0.124642,
+     0.085037,
+     0.08955500000000001
+    ],
+    "sim_over_real": [
+     0.7837,
+     0.7175,
+     0.6079,
+     0.5909,
+     0.5713,
+     0.5829,
+     0.5774,
+     0.5818,
+     0.5967,
+     0.5883,
+     0.5857,
+     0.5758,
+     0.4777,
+     0.7074,
+     0.7238
+    ],
+    "simulated_total": [
+     0.06209,
+     0.061884,
+     0.063295,
+     0.060808,
+     0.059287000000000006,
+     0.059515,
+     0.059569000000000004,
+     0.060029,
+     0.060607999999999995,
+     0.060348,
+     0.059667,
+     0.059645000000000004,
+     0.05953699999999999,
+     0.060154,
+     0.064821
+    ]
+   },
+   "M5_deletion_runs": {
+    "pass": false,
+    "real_1_to_8plus": [
+     1344847,
+     521501,
+     80244,
+     25987,
+     7333,
+     2915,
+     1253,
+     1481
+    ],
+    "real_share_ge2": 0.3227,
+    "simulated_1_to_8plus": [
+     79729,
+     2559,
+     90,
+     11,
+     7,
+     1,
+     0,
+     0
+    ],
+    "simulated_share_ge2": 0.0324,
+    "tv": 0.2903
+   },
+   "M6_homopolymer_indel": {
+    "by_run_length": [
+     {
+      "pass": false,
+      "real_indel_per_site": 0.05161,
+      "real_rel_to_run1": 1.0,
+      "run_length": 1,
+      "simulated_indel_per_site": 0.03486,
+      "simulated_rel_to_run1": 1.0
+     },
+     {
+      "pass": false,
+      "real_indel_per_site": 0.0499,
+      "real_rel_to_run1": 0.967,
+      "run_length": 2,
+      "simulated_indel_per_site": 0.03211,
+      "simulated_rel_to_run1": 0.921
+     },
+     {
+      "pass": false,
+      "real_indel_per_site": 0.05281,
+      "real_rel_to_run1": 1.023,
+      "run_length": 3,
+      "simulated_indel_per_site": 0.08693,
+      "simulated_rel_to_run1": 2.494
+     },
+     {
+      "pass": false,
+      "real_indel_per_site": 0.10988,
+      "real_rel_to_run1": 2.129,
+      "run_length": 4,
+      "simulated_indel_per_site": 0.07673,
+      "simulated_rel_to_run1": 2.201
+     }
+    ],
+    "pass": false
+   },
+   "M7_coverage": {
+    "cv_pass_at_real_mean": false,
+    "model_nb_at_real_mean_theoretical": {
+     "cv": 0.5029,
+     "le1_fraction": 0.0,
+     "mean": 349.2419,
+     "zero_fraction": 0.0
+    },
+    "real": {
+     "cv": 0.2079,
+     "le1_fraction": 0.001629,
+     "mean": 349.2419,
+     "median": 354.0,
+     "p10": 267.0,
+     "p90": 434.29999999999995,
+     "zero_fraction": 0.001629
+    },
+    "real_vs_dev_zero_fraction": [
+     0.001629,
+     0.0
+    ],
+    "simulated_as_shipped": {
+     "cv": 0.5611,
+     "le1_fraction": 0.009772,
+     "mean": 15.0578,
+     "median": 13.0,
+     "p10": 6.0,
+     "p90": 26.0,
+     "zero_fraction": 0.003257
+    }
+   },
+   "M9_quality": {
+    "real_empirical_phred_at_q": {
+     "10": 11.179,
+     "15": 14.554,
+     "20": 16.836,
+     "25": 18.608,
+     "30": 20.341,
+     "5": 6.937,
+     "7": 8.734
+    },
+    "real_expected_calibration_error": 0.029233,
+    "real_occupied_phred_values": 90,
+    "simulated_empirical_phred_at_q": {
+     "15": 17.679,
+     "7": 0.573
+    },
+    "simulated_expected_calibration_error": 0.025072,
+    "simulated_occupied_phred_values": 2
+   },
+   "adequacy": {
+    "adequate": false,
+    "ambiguous_over_accepted": 0.005537,
+    "fit_references_with_segment": 1226,
+    "ge_0_50": true,
+    "ge_2000": false,
+    "le_0_01": true,
+    "share_fitdev_id_reads_with_segment": 0.8965
+   },
+   "burstiness": {
+    "real_ins_runs_share_ge2": 0.3276,
+    "real_lift": 3.179,
+    "reproduced_within_10pct": false,
+    "simulated_ins_runs_share_ge2": 0.0026,
+    "simulated_lift": 0.768
+   },
+   "length_and_quality_dependence": {
+    "read_length_bin_edges": [
+     0,
+     500,
+     1000,
+     1500,
+     2000,
+     3000,
+     4000,
+     5000,
+     6000
+    ],
+    "read_mean_q_bin_edges": [
+     0,
+     8,
+     10,
+     12,
+     14,
+     16,
+     18,
+     20
+    ],
+    "real_total_rate_by_read_length_bin": [
+     0.130583,
+     0.122941,
+     0.11544,
+     0.111346,
+     0.108864,
+     0.105285,
+     0.109412,
+     null,
+     0.113185
+    ],
+    "real_total_rate_by_read_mean_q_bin": [
+     0.227413,
+     0.159003,
+     0.078771,
+     0.046918,
+     0.030707,
+     null,
+     null,
+     null
+    ],
+    "simulator": "no read-length or read-quality dependence: every read has the same per-site rates"
+   },
+   "read_length": {
+    "real_reads_fit_id": {
+     "max": 20330,
+     "mean": 1529.38,
+     "median": 1594,
+     "min": 5,
+     "n": 60159,
+     "p05": 611,
+     "p95": 1914,
+     "p99": 3147
+    },
+    "simulator": "one read per strand of the strand's length (no concatemers, truncation_rate 0)"
+   },
+   "read_level_heterogeneity": {
+    "real_variance_over_mean": 7.6629,
+    "reproduced_within_10pct": false,
+    "simulated_variance_over_mean": 0.9107
+   },
+   "split_check_fit_vs_dev": {
+    "deletion": {
+     "dev": 0.043926,
+     "fit": 0.043681,
+     "z": 0.88
+    },
+    "inserted_bases": {
+     "dev": 0.037526,
+     "fit": 0.037502,
+     "z": 0.1
+    },
+    "substitution": {
+     "dev": 0.030921,
+     "fit": 0.030647,
+     "z": 1.85
+    },
+    "total_edits": {
+     "dev": 0.112373,
+     "fit": 0.111829,
+     "z": 1.46
+    }
+   },
+   "substitution_spectrum": {
+    "real_transition_share": 0.600952,
+    "simulated_transition_share": 0.332399
+   }
+  },
+  "run18": {
+   "M1_rates": {
+    "deletion": {
+     "pass": false,
+     "real": 0.040001,
+     "simulated": 0.032234,
+     "tolerance": 0.0020001
+    },
+    "inserted_bases": {
+     "pass": false,
+     "real": 0.024458,
+     "simulated": 0.009862,
+     "tolerance": 0.0012229
+    },
+    "pass": false,
+    "substitution": {
+     "pass": false,
+     "real": 0.023733,
+     "simulated": 0.020862,
+     "tolerance": 0.0011867
+    },
+    "total_edits": {
+     "pass": false,
+     "real": 0.088193,
+     "simulated": 0.062958,
+     "tolerance": 0.0044097
+    }
+   },
+   "M2_edit_distance": {
+    "ks_d": 0.2908,
+    "p90_percent": [
+     19,
+     9
+    ],
+    "p99_percent": [
+     29,
+     11
+    ],
+    "pass": false,
+    "tv": 0.44
+   },
+   "M3_length_drift": {
+    "abs_drift_le_0": [
+     0.101199,
+     0.068094
+    ],
+    "abs_drift_le_3": [
+     0.528971,
+     0.534542
+    ],
+    "abs_drift_le_6": [
+     0.762083,
+     0.892314
+    ],
+    "pass": false
+   },
+   "M4_position_profile": {
+    "pass": false,
+    "real_max_over_min": 1.799,
+    "real_total": [
+     0.050553999999999995,
+     0.06913,
+     0.086631,
+     0.08924699999999999,
+     0.089332,
+     0.09031499999999999,
+     0.090736,
+     0.09096499999999999,
+     0.090314,
+     0.089886,
+     0.08815500000000001,
+     0.087174,
+     0.082037,
+     0.05794,
+     0.057035999999999996
+    ],
+    "sim_over_real": [
+     1.5828,
+     1.2072,
+     0.7006,
+     0.6719,
+     0.6712,
+     0.6641,
+     0.6615,
+     0.6588,
+     0.6649,
+     0.6659,
+     0.6814,
+     0.6915,
+     0.7231,
+     1.0424,
+     1.052
+    ],
+    "simulated_total": [
+     0.080016,
+     0.083451,
+     0.060692,
+     0.059963,
+     0.059963999999999996,
+     0.059982,
+     0.060020000000000004,
+     0.059932,
+     0.060049,
+     0.059858999999999996,
+     0.060068,
+     0.060281,
+     0.059319,
+     0.060397,
+     0.060003
+    ]
+   },
+   "M5_deletion_runs": {
+    "pass": false,
+    "real_1_to_8plus": [
+     2117219,
+     1104675,
+     198775,
+     66607,
+     20561,
+     10077,
+     4933,
+     5972
+    ],
+    "real_share_ge2": 0.4,
+    "simulated_1_to_8plus": [
+     1344094,
+     51762,
+     1879,
+     242,
+     86,
+     54,
+     1,
+     0
+    ],
+    "simulated_share_ge2": 0.0386,
+    "tv": 0.3614
+   },
+   "M6_homopolymer_indel": {
+    "by_run_length": [
+     {
+      "pass": false,
+      "real_indel_per_site": 0.04722,
+      "real_rel_to_run1": 1.0,
+      "run_length": 1,
+      "simulated_indel_per_site": 0.03482,
+      "simulated_rel_to_run1": 1.0
+     },
+     {
+      "pass": false,
+      "real_indel_per_site": 0.04525,
+      "real_rel_to_run1": 0.958,
+      "run_length": 2,
+      "simulated_indel_per_site": 0.0339,
+      "simulated_rel_to_run1": 0.974
+     },
+     {
+      "pass": false,
+      "real_indel_per_site": 0.01309,
+      "real_rel_to_run1": 0.277,
+      "run_length": 3,
+      "simulated_indel_per_site": 0.0832,
+      "simulated_rel_to_run1": 2.389
+     }
+    ],
+    "pass": false
+   },
+   "M7_coverage": {
+    "cv_pass_at_real_mean": false,
+    "model_nb_at_real_mean_theoretical": {
+     "cv": 0.5637,
+     "le1_fraction": 0.008565,
+     "mean": 14.7637,
+     "zero_fraction": 0.002065
+    },
+    "real": {
+     "cv": 0.4909,
+     "le1_fraction": 0.02135,
+     "mean": 14.7637,
+     "median": 14.0,
+     "p10": 7.0,
+     "p90": 24.0,
+     "zero_fraction": 0.0192
+    },
+    "real_vs_dev_zero_fraction": [
+     0.018539,
+     0.018095
+    ],
+    "simulated_as_shipped": {
+     "cv": 0.5712,
+     "le1_fraction": 0.0088,
+     "mean": 15.046,
+     "median": 14.0,
+     "p10": 5.0,
+     "p90": 26.0,
+     "zero_fraction": 0.00185
+    }
+   },
+   "M9_quality": {
+    "real_empirical_phred_at_q": {
+     "10": 12.331,
+     "15": 15.913,
+     "20": 17.878,
+     "25": 19.217,
+     "30": 20.221,
+     "5": 7.318,
+     "7": 9.479
+    },
+    "real_expected_calibration_error": 0.03164,
+    "real_occupied_phred_values": 90,
+    "simulated_empirical_phred_at_q": {
+     "15": 17.576,
+     "7": 0.58
+    },
+    "simulated_expected_calibration_error": 0.02491,
+    "simulated_occupied_phred_values": 2
+   },
+   "adequacy": {
+    "adequate": true,
+    "ambiguous_over_accepted": 0.001859,
+    "fit_references_with_segment": 60140,
+    "ge_0_50": true,
+    "ge_2000": true,
+    "le_0_01": true,
+    "share_fitdev_id_reads_with_segment": 0.9466
+   },
+   "burstiness": {
+    "real_ins_runs_share_ge2": 0.3085,
+    "real_lift": 4.155,
+    "reproduced_within_10pct": false,
+    "simulated_ins_runs_share_ge2": 0.0026,
+    "simulated_lift": 0.816
+   },
+   "length_and_quality_dependence": {
+    "read_length_bin_edges": [
+     0,
+     500,
+     1000,
+     1500,
+     2000,
+     3000,
+     4000,
+     5000,
+     6000
+    ],
+    "read_mean_q_bin_edges": [
+     0,
+     8,
+     10,
+     12,
+     14,
+     16,
+     18,
+     20
+    ],
+    "real_total_rate_by_read_length_bin": [
+     0.158333,
+     0.115067,
+     0.099925,
+     0.101209,
+     0.110086,
+     0.096005,
+     0.086342,
+     0.088003,
+     0.145421
+    ],
+    "real_total_rate_by_read_mean_q_bin": [
+     0.23436,
+     0.160192,
+     0.087692,
+     0.053939,
+     0.035978,
+     null,
+     null,
+     null
+    ],
+    "simulator": "no read-length or read-quality dependence: every read has the same per-site rates"
+   },
+   "read_length": {
+    "real_reads_fit_id": {
+     "max": 11195,
+     "mean": 4896.88,
+     "median": 5149,
+     "min": 5,
+     "n": 47521,
+     "p05": 2896,
+     "p95": 5494,
+     "p99": 5902
+    },
+    "simulator": "one read per strand of the strand's length (no concatemers, truncation_rate 0)"
+   },
+   "read_level_heterogeneity": {
+    "real_variance_over_mean": 7.6238,
+    "reproduced_within_10pct": false,
+    "simulated_variance_over_mean": 0.9009
+   },
+   "split_check_fit_vs_dev": {
+    "deletion": {
+     "dev": 0.039972,
+     "fit": 0.040001,
+     "z": -0.34
+    },
+    "inserted_bases": {
+     "dev": 0.024433,
+     "fit": 0.024458,
+     "z": -0.41
+    },
+    "substitution": {
+     "dev": 0.023672,
+     "fit": 0.023733,
+     "z": -1.07
+    },
+    "total_edits": {
+     "dev": 0.088077,
+     "fit": 0.088193,
+     "z": -0.8
+    }
+   },
+   "substitution_spectrum": {
+    "real_transition_share": 0.616473,
+    "simulated_transition_share": 0.334549
+   }
+  },
+  "run20": {
+   "M1_rates": {
+    "deletion": {
+     "pass": false,
+     "real": 0.046393,
+     "simulated": 0.035687,
+     "tolerance": 0.0023196
+    },
+    "inserted_bases": {
+     "pass": false,
+     "real": 0.037749,
+     "simulated": 0.010721,
+     "tolerance": 0.0018874
+    },
+    "pass": false,
+    "substitution": {
+     "pass": false,
+     "real": 0.031337,
+     "simulated": 0.021871,
+     "tolerance": 0.0015668
+    },
+    "total_edits": {
+     "pass": false,
+     "real": 0.115479,
+     "simulated": 0.068278,
+     "tolerance": 0.0057739
+    }
+   },
+   "M2_edit_distance": {
+    "ks_d": 0.4093,
+    "p90_percent": [
+     24,
+     9
+    ],
+    "p99_percent": [
+     30,
+     12
+    ],
+    "pass": false,
+    "tv": 0.4945
+   },
+   "M3_length_drift": {
+    "abs_drift_le_0": [
+     0.078994,
+     0.055498
+    ],
+    "abs_drift_le_3": [
+     0.469796,
+     0.47536
+    ],
+    "abs_drift_le_6": [
+     0.703331,
+     0.848591
+    ],
+    "pass": false
+   },
+   "M4_position_profile": {
+    "pass": false,
+    "real_max_over_min": 1.521,
+    "real_total": [
+     0.07663400000000001,
+     0.107389,
+     0.09720100000000001,
+     0.105113,
+     0.10460900000000001,
+     0.104449,
+     0.10406299999999999,
+     0.10428599999999999,
+     0.104158,
+     0.10506300000000002,
+     0.105336,
+     0.102408,
+     0.116528,
+     0.09727999999999999,
+     0.102445
+    ],
+    "sim_over_real": [
+     0.7151,
+     0.5825,
+     0.7291,
+     0.6855,
+     0.6952,
+     0.699,
+     0.6956,
+     0.6959,
+     0.6894,
+     0.6889,
+     0.6748,
+     0.7067,
+     0.5654,
+     0.615,
+     0.5782
+    ],
+    "simulated_total": [
+     0.054802000000000003,
+     0.06255,
+     0.07086899999999999,
+     0.072051,
+     0.072723,
+     0.073007,
+     0.072382,
+     0.072571,
+     0.07180500000000001,
+     0.072374,
+     0.071083,
+     0.07236699999999999,
+     0.065885,
+     0.05983000000000001,
+     0.059229
+    ]
+   },
+   "M5_deletion_runs": {
+    "pass": false,
+    "real_1_to_8plus": [
+     932637,
+     243973,
+     70086,
+     21131,
+     7894,
+     3703,
+     1878,
+     3001
+    ],
+    "real_share_ge2": 0.2738,
+    "simulated_1_to_8plus": [
+     368767,
+     18606,
+     1077,
+     106,
+     26,
+     10,
+     1,
+     0
+    ],
+    "simulated_share_ge2": 0.051,
+    "tv": 0.2228
+   },
+   "M6_homopolymer_indel": {
+    "by_run_length": [
+     {
+      "pass": false,
+      "real_indel_per_site": 0.05031,
+      "real_rel_to_run1": 1.0,
+      "run_length": 1,
+      "simulated_indel_per_site": 0.0353,
+      "simulated_rel_to_run1": 1.0
+     },
+     {
+      "pass": false,
+      "real_indel_per_site": 0.05214,
+      "real_rel_to_run1": 1.036,
+      "run_length": 2,
+      "simulated_indel_per_site": 0.03267,
+      "simulated_rel_to_run1": 0.925
+     },
+     {
+      "pass": false,
+      "real_indel_per_site": 0.06809,
+      "real_rel_to_run1": 1.353,
+      "run_length": 3,
+      "simulated_indel_per_site": 0.08636,
+      "simulated_rel_to_run1": 2.446
+     },
+     {
+      "pass": false,
+      "real_indel_per_site": 0.09504,
+      "real_rel_to_run1": 1.889,
+      "run_length": 4,
+      "simulated_indel_per_site": 0.08353,
+      "simulated_rel_to_run1": 2.366
+     },
+     {
+      "pass": false,
+      "real_indel_per_site": 0.15613,
+      "real_rel_to_run1": 3.103,
+      "run_length": 5,
+      "simulated_indel_per_site": 0.08235,
+      "simulated_rel_to_run1": 2.333
+     },
+     {
+      "pass": false,
+      "real_indel_per_site": 0.15885,
+      "real_rel_to_run1": 3.157,
+      "run_length": 6,
+      "simulated_indel_per_site": 0.07852,
+      "simulated_rel_to_run1": 2.224
+     },
+     {
+      "pass": false,
+      "real_indel_per_site": 0.16297,
+      "real_rel_to_run1": 3.239,
+      "run_length": 7,
+      "simulated_indel_per_site": 0.08093,
+      "simulated_rel_to_run1": 2.293
+     },
+     {
+      "pass": false,
+      "real_indel_per_site": 0.19307,
+      "real_rel_to_run1": 3.838,
+      "run_length": 8,
+      "simulated_indel_per_site": 0.06852,
+      "simulated_rel_to_run1": 1.941
+     }
+    ],
+    "pass": false
+   },
+   "M7_coverage": {
+    "cv_pass_at_real_mean": false,
+    "model_nb_at_real_mean_theoretical": {
+     "cv": 0.5195,
+     "le1_fraction": 0.000138,
+     "mean": 50.4048,
+     "zero_fraction": 2.9e-05
+    },
+    "real": {
+     "cv": 0.4287,
+     "le1_fraction": 0.000385,
+     "mean": 50.4048,
+     "median": 47.0,
+     "p10": 25.0,
+     "p90": 81.0,
+     "zero_fraction": 0.000385
+    },
+    "real_vs_dev_zero_fraction": [
+     0.000385,
+     0.000592
+    ],
+    "simulated_as_shipped": {
+     "cv": 0.5597,
+     "le1_fraction": 0.008285,
+     "mean": 14.7516,
+     "median": 13.0,
+     "p10": 5.0,
+     "p90": 26.0,
+     "zero_fraction": 0.002119
+    }
+   },
+   "M9_quality": {
+    "real_empirical_phred_at_q": {
+     "10": 10.72,
+     "15": 14.232,
+     "20": 16.735,
+     "25": 18.149,
+     "30": 19.269,
+     "5": 6.3,
+     "7": 8.191
+    },
+    "real_expected_calibration_error": 0.020558,
+    "real_occupied_phred_values": 90,
+    "simulated_empirical_phred_at_q": {
+     "15": 17.29,
+     "7": 0.611
+    },
+    "simulated_expected_calibration_error": 0.024357,
+    "simulated_occupied_phred_values": 2
+   },
+   "adequacy": {
+    "adequate": true,
+    "ambiguous_over_accepted": 0.002248,
+    "fit_references_with_segment": 5188,
+    "ge_0_50": true,
+    "ge_2000": true,
+    "le_0_01": true,
+    "share_fitdev_id_reads_with_segment": 0.8942
+   },
+   "burstiness": {
+    "real_ins_runs_share_ge2": 0.3221,
+    "real_lift": 3.25,
+    "reproduced_within_10pct": false,
+    "simulated_ins_runs_share_ge2": 0.004,
+    "simulated_lift": 0.851
+   },
+   "length_and_quality_dependence": {
+    "read_length_bin_edges": [
+     0,
+     500,
+     1000,
+     1500,
+     2000,
+     3000,
+     4000,
+     5000,
+     6000
+    ],
+    "read_mean_q_bin_edges": [
+     0,
+     8,
+     10,
+     12,
+     14,
+     16,
+     18,
+     20
+    ],
+    "real_total_rate_by_read_length_bin": [
+     0.184708,
+     0.138095,
+     0.11472,
+     0.206331,
+     0.108287,
+     0.108667,
+     null,
+     null,
+     null
+    ],
+    "real_total_rate_by_read_mean_q_bin": [
+     0.237802,
+     0.177938,
+     0.093092,
+     0.058042,
+     0.044938,
+     null,
+     null,
+     null
+    ],
+    "simulator": "no read-length or read-quality dependence: every read has the same per-site rates"
+   },
+   "read_length": {
+    "real_reads_fit_id": {
+     "max": 9407,
+     "mean": 1192.78,
+     "median": 1214,
+     "min": 5,
+     "n": 60158,
+     "p05": 921,
+     "p95": 1371,
+     "p99": 1485
+    },
+    "simulator": "one read per strand of the strand's length (no concatemers, truncation_rate 0)"
+   },
+   "read_level_heterogeneity": {
+    "real_variance_over_mean": 7.8734,
+    "reproduced_within_10pct": false,
+    "simulated_variance_over_mean": 0.9064
+   },
+   "split_check_fit_vs_dev": {
+    "deletion": {
+     "dev": 0.046688,
+     "fit": 0.046393,
+     "z": 1.58
+    },
+    "inserted_bases": {
+     "dev": 0.037622,
+     "fit": 0.037749,
+     "z": -0.75
+    },
+    "substitution": {
+     "dev": 0.031384,
+     "fit": 0.031337,
+     "z": 0.36
+    },
+    "total_edits": {
+     "dev": 0.115693,
+     "fit": 0.115479,
+     "z": 0.64
+    }
+   },
+   "substitution_spectrum": {
+    "real_transition_share": 0.539503,
+    "simulated_transition_share": 0.330575
+   }
+  }
+ },
+ "label": "PUBLIC-DATA-DERIVED (real, FIT split) vs SIMULATED (nanopore-like)",
+ "schema": "vnx.d3-comparison/1",
+ "thresholds": "docs/research/V7_CHANNEL_FITTING_PLAN.md 3.4 (M1-M7, M9); burstiness and heterogeneity: descriptive, 10 % relative"
+}
