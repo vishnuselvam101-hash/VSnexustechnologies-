@@ -1,0 +1,157 @@
+{
+ "assigned_reads": 488587,
+ "bootstrap": 200,
+ "calibration": {
+  "coverage": 10,
+  "factors_scalar": {
+   "sequencing.deletion.rate": 0.9708611374894529,
+   "sequencing.deletion.run_length.mean": 1.0177731123863463,
+   "sequencing.homopolymer.indel_multiplier": 1.1146295294740785,
+   "sequencing.homopolymer.min_run": 1.0,
+   "sequencing.homopolymer.substitution_multiplier": 0.9034301494251884,
+   "sequencing.insertion.rate": 1.022817369727118,
+   "sequencing.insertion.run_length.mean": 1.0137809093651924,
+   "sequencing.substitution.rate": 1.275818400472695
+  },
+  "final_residual_ratios": {
+   "hp_indel": 1.0025788549494583,
+   "hp_sub": 0.9798034672748115,
+   "ins": 0.9941347200799496,
+   "start": 0.9946746937477956,
+   "sub": 1.0148806058631359
+  },
+  "iterations": 5,
+  "refs": 4000,
+  "trace": [
+   {
+    "iteration": 0,
+    "ratios": {
+     "del_mean": 1.0185646099600008,
+     "hp_indel": 1.091888056496237,
+     "hp_sub": 0.9280302211492845,
+     "ins": 1.059511337434086,
+     "ins_mean": 1.1274049708757976,
+     "start": 1.0138072071571447,
+     "sub": 1.022031409925477
+    }
+   },
+   {
+    "iteration": 1,
+    "ratios": {
+     "del_mean": 1.003230136779384,
+     "hp_indel": 1.0233058353022926,
+     "hp_sub": 0.9860284675985127,
+     "ins": 1.0119757072397524,
+     "ins_mean": 1.012810959982307,
+     "start": 0.9864724370286181,
+     "sub": 1.2162975964717433
+    }
+   },
+   {
+    "iteration": 2,
+    "ratios": {
+     "del_mean": 1.0008347823471277,
+     "hp_indel": 1.024085946503995,
+     "hp_sub": 0.9745302760837504,
+     "ins": 0.9828245767379418,
+     "ins_mean": 1.01234106900322,
+     "start": 0.9825381321992098,
+     "sub": 1.0771877937900098
+    }
+   },
+   {
+    "iteration": 3,
+    "ratios": {
+     "del_mean": 1.0028666200422363,
+     "hp_indel": 1.0128773741689385,
+     "hp_sub": 0.9803815408365206,
+     "ins": 0.9877964306526245,
+     "ins_mean": 1.0068910122559966,
+     "start": 0.9902860584581799,
+     "sub": 1.0384591779854258
+    }
+   },
+   {
+    "iteration": 4,
+    "ratios": {
+     "del_mean": 0.9998509034999783,
+     "hp_indel": 1.0075172876692224,
+     "hp_sub": 0.9893506023290951,
+     "ins": 0.9921517941034735,
+     "ins_mean": 1.0171897998902912,
+     "start": 0.9851505762448559,
+     "sub": 1.0184553661107523
+    }
+   }
+  ]
+ },
+ "comparison_with_published": {
+  "deletion": {
+   "ci95": [
+    0.03993555106182897,
+    0.040125256040268314
+   ],
+   "fitted_observed": 0.04003120678280175,
+   "published": 0.038,
+   "published_inside_ci": false
+  },
+  "insertion": {
+   "ci95": [
+    0.018250575841803448,
+    0.01834067215271335
+   ],
+   "fitted_observed": 0.018292905744463253,
+   "published": 0.014,
+   "published_inside_ci": false
+  },
+  "substitution": {
+   "ci95": [
+    0.03620266853546973,
+    0.03636526670888218
+   ],
+   "fitted_observed": 0.03628722520940406,
+   "published": 0.043,
+   "published_inside_ci": false
+  }
+ },
+ "environment": {
+  "cpu_count": 8,
+  "git": {
+   "commit": "1c0b889c2847c57c98d6c155ecc7086f8f1250e4",
+   "dirty": false
+  },
+  "implementation": "CPython",
+  "libraries": {
+   "cryptography": "46.0.7",
+   "numpy": "2.5.3",
+   "reedsolo": "unknown",
+   "zstandard": "0.25.0"
+  },
+  "machine": "x86_64",
+  "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+  "processor": "x86_64",
+  "python": "3.12.3",
+  "software": {
+   "edlib": "1.3.9.post1",
+   "numpy": "2.5.3",
+   "python": "3.12.3",
+   "vnxdna": "6.0.0.dev0"
+  },
+  "vnxdna_version": "6.0.0.dev0"
+ },
+ "evidence_class": "PUBLIC-DATA-DERIVED",
+ "job": "d03-fast-fwd",
+ "model_file": "fit-d03/models/ont-guppy-fast-pass-fwd-fit.json",
+ "model_sha256": "f99cf68e88e6bc7e926013370066fdb840c2ba3e65439ebe320b68db875e3eb6",
+ "peak_rss_mb_self_plus_children": 2382.6,
+ "published_source": "Welter et al. Table II, file 3, fast basecaller, pass",
+ "references": 36883,
+ "seconds": {
+  "fit_bootstrap_calibration": 33.3,
+  "tally": 10.8
+ },
+ "seed": 20261005,
+ "split": "FIT",
+ "title": "D03 guppy fast, pass, forward",
+ "workers": 8
+}

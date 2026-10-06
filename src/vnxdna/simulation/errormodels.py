@@ -25,6 +25,7 @@ from typing import Any, ClassVar, Sequence
 import numpy as np
 
 PAD = 255                                    # code of padding positions in a SequencePool (never written)
+MAX_INSERTION_RUN = 64                       # /2 insertion runs are capped at this many bases
 _RC = np.array([3, 2, 1, 0, 4], dtype=np.uint8)
 
 
@@ -237,15 +238,26 @@ class InsertionModel(ErrorModel):
     rate: float = 0.0
     base_weights: tuple | None = None            # P(inserted base = A, C, G, T); None = uniform
     profile: PositionProfile | None = None
+    run_distribution: str = "single"             # /2: single | geometric (bases inserted at one gap)
+    run_mean: float = 1.0                        # /2: mean inserted run length (geometric, >= 1)
     kind: ClassVar[str] = "insertion"
 
     @classmethod
     def from_json(cls, doc: dict, profile: PositionProfile | None = None) -> "InsertionModel":
         w = doc.get("base_weights")
-        return cls(doc["rate"], None if w is None else tuple(w), profile)
+        rl = doc.get("run_length") or {"distribution": "single", "mean": 1.0}
+        return cls(doc["rate"], None if w is None else tuple(w), profile, rl["distribution"], rl["mean"])
 
     def parameters(self) -> dict:
-        return {"rate": self.rate, "base_weights": None if self.base_weights is None else list(self.base_weights)}
+        out: dict[str, Any] = {"rate": self.rate,
+                               "base_weights": None if self.base_weights is None else list(self.base_weights)}
+        if self.clustered:
+            out["run_length"] = {"distribution": self.run_distribution, "mean": self.run_mean}
+        return out
+
+    @property
+    def clustered(self) -> bool:
+        return self.run_distribution == "geometric" and self.run_mean > 1.0
 
     @property
     def active(self) -> bool:
@@ -431,10 +443,23 @@ class CompositeModel(ErrorModel):
 
 
 # ================================================================================================================ kernel
+def context_index(base: np.ndarray) -> np.ndarray:
+    """(m, W) index 0..63 of the 3-mer centred on each site: 16 * previous + 4 * base + next (A=0 C=1 G=2 T=3). At an edge
+    (first site, last site of a row, padding) the missing neighbour is the base itself; N counts as A."""
+    cur = np.where(base > 3, 0, base).astype(np.int64)
+    prev = np.concatenate([cur[:, :1], cur[:, :-1]], axis=1)
+    nxt_raw = np.concatenate([base[:, 1:], np.full((base.shape[0], 1), PAD, dtype=base.dtype)], axis=1)
+    nxt = np.where(nxt_raw > 3, cur, nxt_raw).astype(np.int64)
+    return prev * 16 + cur * 4 + nxt
+
+
 def rate_arrays(base: np.ndarray, lengths: np.ndarray | None, sub: SubstitutionModel | None, ins: InsertionModel | None,
                 dele: DeletionModel | None, profile: PositionProfile | None = None, hp: np.ndarray | None = None,
-                hp_indel: float = 1.0, hp_sub: float = 1.0) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Per-site (m, W) substitution, insertion and deletion probabilities, in the V4 order of float operations."""
+                hp_indel: float = 1.0, hp_sub: float = 1.0,
+                context: dict | None = None) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Per-site (m, W) substitution, insertion and deletion probabilities, in the V4 order of float operations.
+
+    ``context`` (/2): ``{"substitution": array(64) | None, "insertion": ..., "deletion": ...}`` multipliers by the centred 3-mer."""
     m, w = base.shape
     sub_r = np.full((m, w), sub.rate if sub else 0.0)
     ins_r = np.full((m, w), ins.rate if ins else 0.0)
@@ -454,6 +479,14 @@ def rate_arrays(base: np.ndarray, lengths: np.ndarray | None, sub: SubstitutionM
                 ins_r = ins_r * mult
             else:
                 del_r = del_r * mult
+    if context is not None:
+        idx = context_index(base)
+        if context.get("substitution") is not None:
+            sub_r = sub_r * np.asarray(context["substitution"], dtype=np.float64)[idx]
+        if context.get("insertion") is not None:
+            ins_r = ins_r * np.asarray(context["insertion"], dtype=np.float64)[idx]
+        if context.get("deletion") is not None:
+            del_r = del_r * np.asarray(context["deletion"], dtype=np.float64)[idx]
     if sub is not None:
         sub_r = sub.site_rates(base, sub_r)
     return sub_r, ins_r, del_r
@@ -514,13 +547,79 @@ def per_base_errors(base: np.ndarray, lengths: np.ndarray | None, rates: tuple, 
         assert aux is not None, "insertion base weights need the auxiliary generator"
         idx = np.nonzero(is_ins)
         ins_base[idx] = aux.choice(4, size=idx[0].size, p=np.asarray(ins.base_weights, dtype=np.float64)).astype(np.uint8)
-    slots = np.stack([ins_base, subbed], axis=2).reshape(m, 2 * w)
     keep_base = ~is_del if valid is None else (~is_del & valid)
+    if ins is not None and ins.clustered and is_ins.any():
+        # /2 insertion runs: Geometric(1/mean) bases inserted before the site (the V4 draw gives the first base)
+        assert aux is not None, "insertion runs need the auxiliary generator"
+        rows, cols = np.nonzero(is_ins)
+        run = np.minimum(aux.geometric(1.0 / ins.run_mean, rows.size), MAX_INSERTION_RUN)
+        kmax = int(run.max())
+        runlen = np.zeros((m, w), dtype=np.int64)
+        runlen[rows, cols] = run
+        long_ = run > 1
+        lrows, lcols = rows[long_], cols[long_]
+        extra = _extra_insertion_bases(m, w, kmax, lrows, lcols, ins.base_weights, aux)
+        c_codes: list[np.ndarray] = []
+        c_lengths: list[np.ndarray] = []
+        c_err: list[np.ndarray] = []
+        step = _chunk_rows(w, kmax + 1)
+        for a in range(0, m, step):
+            b = min(a + step, m)
+            n = b - a
+            ext = np.zeros((n, w, kmax - 1), np.uint8)
+            i0, i1 = np.searchsorted(lrows, [a, b])
+            ext[lrows[i0:i1] - a, lcols[i0:i1]] = extra[i0:i1]
+            ibases = np.concatenate([ins_base[a:b, :, None], ext], axis=2)                  # (n, w, kmax)
+            slots = np.concatenate([ibases, subbed[a:b, :, None]], axis=2).reshape(n, (kmax + 1) * w)
+            ikeep = np.arange(kmax)[None, None, :] < runlen[a:b, :, None]
+            keep = np.concatenate([ikeep, keep_base[a:b, :, None]], axis=2).reshape(n, (kmax + 1) * w)
+            e = np.concatenate([ikeep, is_sub[a:b, :, None]], axis=2).reshape(n, (kmax + 1) * w)
+            c_codes.append(slots[keep])
+            c_lengths.append(keep.sum(axis=1).astype(np.int64))
+            c_err.append(e[keep])
+        return {"codes": np.concatenate(c_codes), "lengths": np.concatenate(c_lengths), "err": np.concatenate(c_err),
+                "substitutions": int(is_sub.sum()), "insertions": int(runlen.sum()), "deletions": int(is_del.sum()),
+                "bursts": bursts}
+    slots = np.stack([ins_base, subbed], axis=2).reshape(m, 2 * w)
     keep = np.stack([is_ins, keep_base], axis=2).reshape(m, 2 * w)
     err = np.stack([is_ins, is_sub], axis=2).reshape(m, 2 * w)
     return {"codes": slots[keep], "lengths": keep.sum(axis=1).astype(np.int64), "err": err[keep],
             "substitutions": int(is_sub.sum()), "insertions": int(is_ins.sum()), "deletions": int(is_del.sum()),
             "bursts": bursts}
+
+
+#: elements (rows x width x slots) per row chunk of the insertion-run step; a bound on its working memory, not on the result
+CHUNK_ELEMENTS = 1 << 21
+
+
+def _chunk_rows(w: int, depth: int) -> int:
+    return max(1, CHUNK_ELEMENTS // max(1, w * depth))
+
+
+def _extra_insertion_bases(m: int, w: int, kmax: int, lrows: np.ndarray, lcols: np.ndarray, base_weights,
+                           aux: np.random.Generator) -> np.ndarray:
+    """(len(lrows), kmax - 1) uint8: the 2nd..kmax-th inserted base at the sites (lrows, lcols) (row-major order, runs > 1).
+
+    The draws are those of one dense ``aux.integers(0, 4, (m, w, kmax - 1))`` followed, with base weights, by one dense
+    ``aux.choice(4, (m, w, kmax - 1), p)`` (the integers are then discarded, as before), made in row chunks so that only
+    the chunk is in memory. A Generator fills an array in C order with no state carried between elements other than the
+    bit stream, so consecutive row chunks consume the stream exactly as the dense call does (tests/simulation/
+    test_sim_insertion_chunks.py checks the values and the final generator state)."""
+    out = np.zeros((lrows.size, max(kmax - 1, 0)), np.uint8)
+    if kmax <= 1:
+        return out
+    step = _chunk_rows(w, kmax - 1)
+    p = np.asarray(base_weights, dtype=np.float64) if base_weights is not None else None
+    for weighted in ((False, True) if p is not None else (False,)):
+        for a in range(0, m, step):
+            b = min(a + step, m)
+            if weighted:
+                block = aux.choice(4, size=(b - a, w, kmax - 1), p=p)
+            else:
+                block = aux.integers(0, 4, (b - a, w, kmax - 1))
+            i0, i1 = np.searchsorted(lrows, [a, b])
+            out[i0:i1] = block[lrows[i0:i1] - a, lcols[i0:i1]].astype(np.uint8)
+    return out
 
 
 def apply_per_base(pool: SequencePool, rng: np.random.Generator, sub: SubstitutionModel | None,

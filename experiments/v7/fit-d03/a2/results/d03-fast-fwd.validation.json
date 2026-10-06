@@ -1,0 +1,448 @@
+{
+ "adequacy": "INADEQUATE",
+ "environment": {
+  "cpu_count": 8,
+  "git": {
+   "commit": "df46fa4ec02bf47de8462a6b9d6e23fd90184d82",
+   "dirty": false
+  },
+  "implementation": "CPython",
+  "libraries": {
+   "cryptography": "46.0.7",
+   "numpy": "2.5.3",
+   "reedsolo": "unknown",
+   "zstandard": "0.25.0"
+  },
+  "machine": "x86_64",
+  "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+  "processor": "x86_64",
+  "python": "3.12.3",
+  "software": {
+   "edlib": "1.3.9.post1",
+   "numpy": "2.5.3",
+   "python": "3.12.3",
+   "vnxdna": "6.0.0.dev0"
+  },
+  "vnxdna_version": "6.0.0.dev0"
+ },
+ "evidence_class": "SIMULATED reads vs PUBLIC-DATA-DERIVED DEV reads",
+ "failed_metrics": [
+  "M3"
+ ],
+ "job": "d03-fast-fwd",
+ "metrics": {
+  "M1": {
+   "pass": true,
+   "rates": {
+    "deletion": {
+     "pass": true,
+     "real": 0.04026170221509884,
+     "real_se": 0.00010827221367952498,
+     "sim": 0.04018059458495027,
+     "tolerance": 0.002013085110754942
+    },
+    "insertion": {
+     "pass": true,
+     "real": 0.018287305305552132,
+     "real_se": 4.372923434696307e-05,
+     "sim": 0.018004650073598288,
+     "tolerance": 0.0009143652652776066
+    },
+    "substitution": {
+     "pass": true,
+     "real": 0.03620996178029836,
+     "real_se": 8.178206093832184e-05,
+     "sim": 0.03571981355100584,
+     "tolerance": 0.001810498089014918
+    }
+   }
+  },
+  "M10": {
+   "parameters": {
+    "sequencing.context.substitution": {
+     "n": 64,
+     "pass": false,
+     "worst_ratio": 1.3739059305937757
+    },
+    "sequencing.deletion.rate": {
+     "n": 1,
+     "pass": true,
+     "worst_ratio": 0.09814817983048839
+    },
+    "sequencing.deletion.run_length.mean": {
+     "n": 1,
+     "pass": true,
+     "worst_ratio": 0.02562309622246415
+    },
+    "sequencing.homopolymer.indel_multiplier": {
+     "n": 1,
+     "pass": true,
+     "worst_ratio": 0.00026695199780519353
+    },
+    "sequencing.homopolymer.min_run": {
+     "n": 1,
+     "pass": true,
+     "worst_ratio": 0.0
+    },
+    "sequencing.homopolymer.substitution_multiplier": {
+     "n": 1,
+     "pass": false,
+     "worst_ratio": 1.5464829812982186
+    },
+    "sequencing.insertion.base_weights": {
+     "n": 4,
+     "pass": true,
+     "worst_ratio": 0.47334247319566125
+    },
+    "sequencing.insertion.rate": {
+     "n": 1,
+     "pass": true,
+     "worst_ratio": 0.13776195769467017
+    },
+    "sequencing.insertion.run_length.mean": {
+     "n": 1,
+     "pass": true,
+     "worst_ratio": 0.021929892009648125
+    },
+    "sequencing.position_profile.deletion": {
+     "n": 30,
+     "pass": true,
+     "worst_ratio": 0.6788957889356622
+    },
+    "sequencing.position_profile.insertion": {
+     "n": 30,
+     "pass": true,
+     "worst_ratio": 0.5384702337392651
+    },
+    "sequencing.position_profile.substitution": {
+     "n": 30,
+     "pass": true,
+     "worst_ratio": 0.6280145457487177
+    },
+    "sequencing.read_heterogeneity.shape": {
+     "n": 1,
+     "pass": true,
+     "worst_ratio": 0.26167898203296447
+    },
+    "sequencing.substitution.from_multipliers": {
+     "n": 4,
+     "pass": true,
+     "worst_ratio": 0.0
+    },
+    "sequencing.substitution.matrix": {
+     "n": 16,
+     "pass": false,
+     "worst_ratio": 1.6170270988616475
+    },
+    "sequencing.substitution.rate": {
+     "n": 1,
+     "pass": false,
+     "worst_ratio": 1.5534949579053356
+    }
+   },
+   "pass": false,
+   "rule": "|refit - target| <= 5 SE + 0.08 * |target| + 0.02"
+  },
+  "M2": {
+   "ks_D": 0.015530445221462075,
+   "p90_p99_rel_diff": {
+    "p90": 0.0,
+    "p99": 0.0
+   },
+   "pass": true,
+   "real": {
+    "mean": 14.214544176842988,
+    "p90": 22,
+    "p99": 29
+   },
+   "sim": {
+    "mean": 14.08575873143316,
+    "p90": 22,
+    "p99": 29
+   },
+   "thresholds": {
+    "ks_D": 0.03,
+    "quantile_rel": 0.1,
+    "tv": 0.05
+   },
+   "tv": 0.017924789862117096
+  },
+  "M3": {
+   "bands": {
+    "abs_drift_le_0": {
+     "diff_pp": -0.30340444354105406,
+     "pass": true,
+     "real": 0.08763862091072167,
+     "sim": 0.08460457647531112
+    },
+    "abs_drift_le_3": {
+     "diff_pp": -1.2262126617548774,
+     "pass": false,
+     "real": 0.5388076906480586,
+     "sim": 0.5265455640305098
+    },
+    "abs_drift_le_6": {
+     "diff_pp": 0.2443745982358747,
+     "pass": true,
+     "real": 0.8094289958883759,
+     "sim": 0.8118727418707347
+    }
+   },
+   "pass": false,
+   "threshold_pp": 1.0
+  },
+  "M3_unselected": {
+   "bands": {
+    "abs_drift_le_0": {
+     "diff_pp": -0.3338620910721665,
+     "pass": true,
+     "real": 0.08763862091072167,
+     "sim": 0.0843
+    },
+    "abs_drift_le_3": {
+     "diff_pp": -1.4157690648058607,
+     "pass": false,
+     "real": 0.5388076906480586,
+     "sim": 0.52465
+    },
+    "abs_drift_le_6": {
+     "diff_pp": -0.047899588837596596,
+     "pass": true,
+     "real": 0.8094289958883759,
+     "sim": 0.80895
+    }
+   },
+   "gating": false,
+   "note": "simulated reads without the dataset's read selection (protocol 5.5, A2.2); not gating",
+   "pass": false,
+   "threshold_pp": 1.0
+  },
+  "M4": {
+   "kinds": {
+    "deletion": {
+     "bins_tested": 11,
+     "chi2": 2568.9922606094337,
+     "pass": false,
+     "ratio_sim_over_real": [
+      1.2122,
+      0.9137,
+      1.0099,
+      1.0197,
+      0.9925,
+      0.9907,
+      1.0024,
+      1.0039,
+      0.9892,
+      1.0266,
+      1.0067
+     ]
+    },
+    "insertion": {
+     "bins_tested": 11,
+     "chi2": 147.2380711236503,
+     "pass": true,
+     "ratio_sim_over_real": [
+      0.9746,
+      1.0171,
+      1.0136,
+      0.9937,
+      1.0108,
+      1.0052,
+      1.0292,
+      1.0248,
+      1.009,
+      1.0377,
+      0.9852
+     ]
+    },
+    "substitution": {
+     "bins_tested": 11,
+     "chi2": 576.5942818304981,
+     "pass": true,
+     "ratio_sim_over_real": [
+      1.011,
+      0.9605,
+      0.9991,
+      0.9937,
+      0.9725,
+      0.9787,
+      0.9999,
+      1.006,
+      0.9792,
+      0.9362,
+      1.0088
+     ]
+    }
+   },
+   "pass": false,
+   "threshold": "each 11-bin ratio within +-10% (bins with >= 100 real events)"
+  },
+  "M5": {
+   "pass": true,
+   "real": [
+    0.8181076124435364,
+    0.13000043446262896,
+    0.03111015734129936,
+    0.010592988826411114,
+    0.0032058075804512884,
+    0.0018774051785312267,
+    0.0004607936973954624,
+    0.00464480046974626
+   ],
+   "sim": [
+    0.7804278193128639,
+    0.16918374044058898,
+    0.038790520488528706,
+    0.008781817144161626,
+    0.002150867480881178,
+    0.0005011556899897272,
+    0.0001194926378267321,
+    4.4586805159228396e-05
+   ],
+   "threshold": 0.05,
+   "tv": 0.046863669125189356
+  },
+  "M6": {
+   "indel_rate_out_in_real": [
+    0.04466923884110675,
+    0.04940421068687713
+   ],
+   "indel_rate_out_in_sim": [
+    0.045226598620714535,
+    0.04928388368942018
+   ],
+   "min_run": 2,
+   "pass": true,
+   "rel_diff": [
+    0.012477485492653605,
+    0.002435561580359565
+   ],
+   "threshold": 0.1
+  },
+  "M7": {
+   "ks_D": 0.04089257828552639,
+   "p10_p90": {
+    "10": {
+     "real": 2.0,
+     "sim": 2.0
+    },
+    "90": {
+     "real": 30.0,
+     "sim": 28.0
+    }
+   },
+   "pass": false,
+   "thresholds": {
+    "ks_D": 0.05,
+    "quantile_rel": 0.1,
+    "zero_fraction": "simulated inside real bootstrap 95% CI"
+   },
+   "zero_fraction": {
+    "real": 0.02112270896687762,
+    "real_ci95": [
+     0.01882140215336566,
+     0.023670584367551574
+    ],
+    "sim": 0.034455
+   }
+  },
+  "M8": {
+   "consensus": "one-pass center-star (median-length pivot, edlib global alignment, majority vote); not the VNX decoder",
+   "curve": {
+    "1": {
+     "clusters": 1500,
+     "pass": true,
+     "real": 0.09196444444444443,
+     "real_wilson95": [
+      0.09077734072525247,
+      0.09316548134254635
+     ],
+     "sim": 0.09368000000000001,
+     "sim_wilson95": [
+      0.09248292052674807,
+      0.09489095407113346
+     ]
+    },
+    "10": {
+     "clusters": 1500,
+     "pass": true,
+     "real": 0.048920000000000005,
+     "real_wilson95": [
+      0.048036390918194206,
+      0.04981901209817812
+     ],
+     "sim": 0.039106666666666665,
+     "sim_wilson95": [
+      0.0383135126018263,
+      0.03991555884350319
+     ]
+    },
+    "2": {
+     "clusters": 1500,
+     "pass": true,
+     "real": 0.0866311111111111,
+     "real_wilson95": [
+      0.08547583952625346,
+      0.0878004979920656
+     ],
+     "sim": 0.08344444444444443,
+     "sim_wilson95": [
+      0.08230881598070366,
+      0.08459429701930117
+     ]
+    },
+    "20": {
+     "clusters": 724,
+     "pass": true,
+     "real": 0.0457366482504604,
+     "real_wilson95": [
+      0.04451010318692573,
+      0.046995330263597805
+     ],
+     "sim": 0.03806629834254144,
+     "sim_wilson95": [
+      0.03694443146502659,
+      0.03922084481006237
+     ]
+    },
+    "5": {
+     "clusters": 1500,
+     "pass": true,
+     "real": 0.053297777777777784,
+     "real_wilson95": [
+      0.05237721426379929,
+      0.054233594820271035
+     ],
+     "sim": 0.04897333333333334,
+     "sim_wilson95": [
+      0.048089262660119786,
+      0.04987280520174734
+     ]
+    }
+   },
+   "exact_length_vote": {
+    "note": "real: all reads of the cluster; simulated: 10 reads per cluster",
+    "real": {
+     "clusters_with_exact_length_read": 683,
+     "exact_share": 0.008784773060029283,
+     "per_base_error": 0.3161542215714983
+    },
+    "sim": {
+     "clusters_with_exact_length_read": 874,
+     "exact_share": 0.003432494279176201,
+     "per_base_error": 0.40174675819984745
+    }
+   },
+   "pass": true,
+   "threshold": "each k: within 2 percentage points or inside each other's Wilson 95% CI"
+  },
+  "M9": {
+   "note": "no qualities in this dataset (nanopore quality is assumed)",
+   "pass": null
+  }
+ },
+ "model_sha256": "459eb509ff187420d986e2014f658e4e0f02401625dbc27becebada5459102f4",
+ "peak_rss_mb_self_plus_children": 1420.3,
+ "seconds": 50.9,
+ "workers": 8
+}

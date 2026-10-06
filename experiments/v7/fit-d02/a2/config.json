@@ -1,0 +1,74 @@
+{
+ "alignment": "edlib unit-cost global (NW) / infix (HW), leftmost indel normalisation; 'dp-diag' = P4-EXP-03 tie-break",
+ "bootstrap_over_references": 200,
+ "calibration": {
+  "coverage": 10,
+  "iterations": 5,
+  "references": 4000
+ },
+ "environment": {
+  "cpu_count": 8,
+  "git": {
+   "commit": "df46fa4ec02bf47de8462a6b9d6e23fd90184d82",
+   "dirty": false
+  },
+  "implementation": "CPython",
+  "libraries": {
+   "cryptography": "46.0.7",
+   "numpy": "2.5.3",
+   "reedsolo": "unknown",
+   "zstandard": "0.25.0"
+  },
+  "machine": "x86_64",
+  "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+  "processor": "x86_64",
+  "python": "3.12.3",
+  "software": {
+   "edlib": "1.3.9.post1",
+   "numpy": "2.5.3",
+   "python": "3.12.3",
+   "vnxdna": "6.0.0.dev0"
+  },
+  "vnxdna_version": "6.0.0.dev0"
+ },
+ "evidence_class": "PUBLIC-DATA-DERIVED (fits); SIMULATED (simulated reads)",
+ "experiment": "fit-d02",
+ "jobs": {
+  "d02-twist": {
+   "L": 108,
+   "control": "ERR12033850",
+   "dataset": "dt4dds-twist",
+   "mode": "HW",
+   "name": "illumina-iseq-twist-fit",
+   "pub": "d02",
+   "runs": [
+    "ERR12033806",
+    "ERR12033810"
+   ],
+   "title": "DT4DDS Twist_GCfix Aging_0a/0b (R1) with PhiX stage split"
+  }
+ },
+ "round": {
+  "length_window": null,
+  "model_version": "2.0.0",
+  "name": "a2",
+  "protocol": "docs/V7_PROTOCOL.md 5.5 (amendment 2)",
+  "read_heterogeneity": "per-read gamma rate multiplier, estimated on FIT (A2.1)"
+ },
+ "seed_fit": 20261005,
+ "seed_validation": 20261006,
+ "split": "FIT (fit), DEV (validation)",
+ "split_manifest_sha256": "0c90197f3b2173338f28b4f73d4a55b7883933853db184af0b9ef0adb22f3c95",
+ "validation": {
+  "gating": [
+   "M2",
+   "M3",
+   "M8"
+  ],
+  "metrics": "M1-M10 (docs/research/V7_CHANNEL_FITTING_PLAN.md 3.4)",
+  "simulated_coverage": 6,
+  "simulated_references_cap": 4000,
+  "simulated_seeds": 5
+ },
+ "workers": "results do not depend on the worker count"
+}

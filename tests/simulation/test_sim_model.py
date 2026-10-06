@@ -30,7 +30,7 @@ def test_minimal_document_is_filled_with_identity_defaults():
     assert again.doc == m.doc and again.sha256 == m.sha256
 
 
-@pytest.mark.parametrize("sid", ["vnx.channel-model/2", "vnx.channel-model/17", "vnx.channel-config/3", "vnx.other/1"])
+@pytest.mark.parametrize("sid", ["vnx.channel-model/3", "vnx.channel-model/17", "vnx.channel-config/3", "vnx.other/1"])
 def test_unknown_schema_is_refused_as_unsupported(sid):
     with pytest.raises(VNXUnsupportedVersionError) as e:
         cm.from_doc(minimal(schema=sid))
