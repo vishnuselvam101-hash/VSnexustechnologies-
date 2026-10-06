@@ -1,0 +1,311 @@
+{
+ "candidates": {
+  "d03-fast-bwd": {
+   "failed_gating_in_sample": [
+    "M3",
+    "M10"
+   ],
+   "m10": {
+    "parameters": {
+     "sequencing.context.substitution": {
+      "elements_bias_z_gt_3": 27,
+      "max_abs_bias_rel": 1.4302272340858075,
+      "max_bias_z": 17.36890406367026,
+      "max_sd_over_bootstrap_se": 3.260796640566676,
+      "target_small_elements": 0
+     },
+     "sequencing.deletion.run_length.pmf": {
+      "elements_bias_z_gt_3": 4,
+      "max_abs_bias_rel": 1.8144250518313574,
+      "max_bias_z": 26.53632196474682,
+      "max_sd_over_bootstrap_se": 3.5554050187441564,
+      "target_small_elements": 4
+     },
+     "sequencing.deletion.run_length.tail_mean": {
+      "elements_bias_z_gt_3": 1,
+      "max_abs_bias_rel": 0.26580527728305964,
+      "max_bias_z": 11.453439589688278,
+      "max_sd_over_bootstrap_se": 7.231978089520861,
+      "target_small_elements": 0
+     },
+     "sequencing.substitution.matrix": {
+      "elements_bias_z_gt_3": 9,
+      "max_abs_bias_rel": 0.2834029419916283,
+      "max_bias_z": 58.71299971250738,
+      "max_sd_over_bootstrap_se": 1.737657914997717,
+      "target_small_elements": 4
+     }
+    },
+    "replicate_pass": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "m1_insertion": {
+    "aggregate_sim_over_fit": 0.9498088205044445,
+    "fit_read_end_share": 0.05757420406126973,
+    "interior_sim_over_fit": 1.0066533249636551,
+    "read_end_sim_over_fit": 0.019327396867150123
+   },
+   "m3": {
+    "fit_corr_I_D": 0.10339898708585038,
+    "fit_insertions_with_deletion_within_2": 0.19912730155007097,
+    "fit_p_drift0": 0.08518627905995528,
+    "sim_corr_I_D": 0.11941029719922101,
+    "sim_insertions_with_deletion_within_2": 0.08215473563146934,
+    "sim_p_drift0": 0.08215225976305397
+   },
+   "model_sha256": "2538bafcb420dd79a02faf88f9c52a421ad9091ad058ce5000944be146a01f90",
+   "precheck_decision": "DEV_LOOK_2_BLOCKED \u2014 FIT PRE-CHECK INADEQUATE",
+   "stability": {
+    "M1": "PASS_UNSTABLE",
+    "M10": "FAIL_STABLE",
+    "M1a": "PASS",
+    "M1c": "PASS",
+    "M2": "PASS",
+    "M2b": "PASS",
+    "M3": "FAIL_STABLE",
+    "M5": "PASS",
+    "M5i": "PASS",
+    "M6r": "PASS",
+    "M8": "PASS",
+    "RL": "PASS"
+   }
+  },
+  "d03-fast-fwd": {
+   "failed_gating_in_sample": [
+    "M10"
+   ],
+   "m10": {
+    "parameters": {
+     "sequencing.context.substitution": {
+      "elements_bias_z_gt_3": 25,
+      "max_abs_bias_rel": 1.2843407796962156,
+      "max_bias_z": 17.787499177282758,
+      "max_sd_over_bootstrap_se": 3.540291280823781,
+      "target_small_elements": 0
+     },
+     "sequencing.deletion.run_length.pmf": {
+      "elements_bias_z_gt_3": 4,
+      "max_abs_bias_rel": 8.340443073691887,
+      "max_bias_z": 8.644925383228589,
+      "max_sd_over_bootstrap_se": 3.184159412209746,
+      "target_small_elements": 4
+     },
+     "sequencing.deletion.run_length.tail_mean": {
+      "elements_bias_z_gt_3": 1,
+      "max_abs_bias_rel": 0.06395201587650368,
+      "max_bias_z": 4.859875869400807,
+      "max_sd_over_bootstrap_se": 4.35117602583465,
+      "target_small_elements": 0
+     },
+     "sequencing.insertion.run_length.tail_mean": {
+      "elements_bias_z_gt_3": 0,
+      "max_abs_bias_rel": 0.15966137968930275,
+      "max_bias_z": 2.5663197234382413,
+      "max_sd_over_bootstrap_se": 1.4930824006614454,
+      "target_small_elements": 0
+     },
+     "sequencing.position_profile.deletion": {
+      "elements_bias_z_gt_3": 3,
+      "max_abs_bias_rel": 0.2617243810820023,
+      "max_bias_z": 5.597647843767714,
+      "max_sd_over_bootstrap_se": 3.427636242416278,
+      "target_small_elements": 0
+     },
+     "sequencing.substitution.matrix": {
+      "elements_bias_z_gt_3": 10,
+      "max_abs_bias_rel": 0.24035557304552735,
+      "max_bias_z": 75.96462485953104,
+      "max_sd_over_bootstrap_se": 1.4336451755262059,
+      "target_small_elements": 4
+     }
+    },
+    "replicate_pass": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "m1_insertion": {
+    "aggregate_sim_over_fit": 0.9842066169588964,
+    "fit_read_end_share": 0.030355019610592855,
+    "interior_sim_over_fit": 1.0070784332416984,
+    "read_end_sim_over_fit": 0.25360119698187883
+   },
+   "m3": {
+    "fit_corr_I_D": 0.08326208381561764,
+    "fit_insertions_with_deletion_within_2": 0.22820186614634438,
+    "fit_p_drift0": 0.08842726068949973,
+    "sim_corr_I_D": 0.10501412687545411,
+    "sim_insertions_with_deletion_within_2": 0.07531475987205954,
+    "sim_p_drift0": 0.08512051716787135
+   },
+   "model_sha256": "03a5b3f32e9b0c852497b19f7d4d39c6a4287c23f72b771ecfcc1dba9d99b4ec",
+   "precheck_decision": "DEV_LOOK_2_BLOCKED \u2014 FIT PRE-CHECK INADEQUATE",
+   "stability": {
+    "M1": "PASS",
+    "M10": "FAIL_STABLE",
+    "M1a": "PASS",
+    "M1c": "PASS",
+    "M2": "PASS",
+    "M2b": "PASS",
+    "M3": "PASS",
+    "M5": "PASS",
+    "M5i": "PASS",
+    "M6r": "PASS",
+    "M8": "PASS",
+    "RL": "PASS"
+   }
+  },
+  "d03-hac-bwd": {
+   "failed_gating_in_sample": [
+    "M3",
+    "M10"
+   ],
+   "m10": {
+    "parameters": {
+     "sequencing.deletion.run_length.tail_mean": {
+      "elements_bias_z_gt_3": 0,
+      "max_abs_bias_rel": 0.08052293561606229,
+      "max_bias_z": 2.214153214925252,
+      "max_sd_over_bootstrap_se": 6.116432131518756,
+      "target_small_elements": 0
+     }
+    },
+    "replicate_pass": [
+     true,
+     false,
+     true,
+     true,
+     true,
+     true
+    ]
+   },
+   "m1_insertion": {
+    "aggregate_sim_over_fit": 0.9508567542376786,
+    "fit_read_end_share": 0.04641305749613893,
+    "interior_sim_over_fit": 0.9965775785644434,
+    "read_end_sim_over_fit": 0.01149219972318578
+   },
+   "m3": {
+    "fit_corr_I_D": 0.2817340799516409,
+    "fit_insertions_with_deletion_within_2": 0.16564330286847345,
+    "fit_p_drift0": 0.2891662120385525,
+    "sim_corr_I_D": 0.2953445520449462,
+    "sim_insertions_with_deletion_within_2": 0.04116032242835411,
+    "sim_p_drift0": 0.2568894483863584
+   },
+   "model_sha256": "d69d126a98d40ae3bccf2301ecc59d92f289df207e2e53f608e67a7018da2252",
+   "precheck_decision": "DEV_LOOK_2_BLOCKED \u2014 FIT PRE-CHECK INADEQUATE",
+   "stability": {
+    "M1": "PASS_UNSTABLE",
+    "M10": "FAIL_STABLE",
+    "M1a": "PASS",
+    "M1c": "PASS",
+    "M2": "PASS",
+    "M2b": "PASS",
+    "M3": "FAIL_STABLE",
+    "M5": "PASS",
+    "M5i": "PASS",
+    "M6r": "PASS",
+    "M8": "PASS",
+    "RL": "PASS"
+   }
+  },
+  "d03-hac-fwd": {
+   "failed_gating_in_sample": [
+    "M3",
+    "M10"
+   ],
+   "m10": {
+    "parameters": {
+     "sequencing.deletion.run_length.tail_mean": {
+      "elements_bias_z_gt_3": 1,
+      "max_abs_bias_rel": 0.14732339332108402,
+      "max_bias_z": 4.690747418737942,
+      "max_sd_over_bootstrap_se": 6.08475071586736,
+      "target_small_elements": 0
+     }
+    },
+    "replicate_pass": [
+     false,
+     false,
+     false,
+     false,
+     true,
+     false
+    ]
+   },
+   "m1_insertion": {
+    "aggregate_sim_over_fit": 0.9655327079090129,
+    "fit_read_end_share": 0.03464142119637997,
+    "interior_sim_over_fit": 0.9894414849716785,
+    "read_end_sim_over_fit": 0.2992626113299679
+   },
+   "m3": {
+    "fit_corr_I_D": 0.26727826170848595,
+    "fit_insertions_with_deletion_within_2": 0.1917168223988295,
+    "fit_p_drift0": 0.29142863568890287,
+    "sim_corr_I_D": 0.2880726062920977,
+    "sim_insertions_with_deletion_within_2": 0.047925184786160244,
+    "sim_p_drift0": 0.2647041979268083
+   },
+   "model_sha256": "d6f40cda48b86a61d422c8345f4384a594a4a3792e0f3bf507ea1d06e4c29802",
+   "precheck_decision": "DEV_LOOK_2_BLOCKED \u2014 FIT PRE-CHECK INADEQUATE",
+   "stability": {
+    "M1": "PASS",
+    "M10": "FAIL_STABLE",
+    "M1a": "PASS",
+    "M1c": "PASS",
+    "M2": "PASS",
+    "M2b": "PASS",
+    "M3": "FAIL_STABLE",
+    "M5": "PASS",
+    "M5i": "PASS",
+    "M6r": "PASS",
+    "M8": "PASS",
+    "RL": "PASS"
+   }
+  }
+ },
+ "decision": "DEV_LOOK_2_BLOCKED \u2014 FIT PRE-CHECK INADEQUATE",
+ "evidence_class": "PUBLIC-DATA-DERIVED FIT reads vs SIMULATED reads from the a7c candidates (in sample; not validation)",
+ "m10_rule_text_note": "validate.compare_params prints its rule as '... + 0.02' (abs_floor) but the formula never used abs_floor; the formula (5 SE + 8 % relative) is what produced every M10 result in V7 and is unchanged; the rule text is corrected (no metric change)",
+ "mechanisms": {
+  "M1": {
+   "class": "1 genuine model misspecification (stratified), revealed by an aggregate metric",
+   "finding": "interior insertion bases match (sim/fit 0.99-1.01 in every decile) but insertions after the last reference base are almost absent from the simulation (sim/fit 0.01-0.30; 1-31 % of real inserted bases are at the read end, most in bwd). The calibration matches interior events only; M1 counts all inserted bases, so the aggregate is 2-5 % low in sample and failed at DEV look 1 for bwd (5-6 %)",
+   "remedy": "a read-end (trailing) insertion component"
+  },
+  "M10": {
+   "class": "mixed: 5 implementation/estimator bias (censoring), 4 metric statistics (SE), 3 sparse bins, 6 identifiability",
+   "finding": [
+    "deletion tail_mean: refits low (bias up to 15 %, z up to 11.5): runs are tallied up to max_run 16 with longer runs folded into the last bin, so a tail mean near 12-15 is censored",
+    "refit seed-to-seed SD is 1.4-7x the bootstrap SE that M10 uses: the bootstrap over references omits the Monte-Carlo noise of the simulation calibration",
+    "empirical pmf bins with target ~1e-4 have bootstrap SE ~0, so any refit difference fails",
+    "fast models (min_run 2 + substitution context; hp_sub_fixed): substitution matrix and context are biased in the refit (z up to 76): not re-identifiable",
+    "hac-bwd: 5/6 replicates pass; its precheck M10 failure is plausibly noise"
+   ],
+   "remedy": "V8 preregistration candidates: uncensored tail tally, calibration-aware SE, sparse-bin rule, substitution-context identifiability constraint. Not applied to V7 (no threshold changed after seeing results)."
+  },
+  "M3": {
+   "class": "1 genuine model misspecification",
+   "finding": "real reads carry co-located insertion+deletion pairs (16.6-22.8 % of insertions have a deletion within 2 reference bases vs 4.1-8.2 % simulated); the /2 model draws insertions and deletions independently, so balanced (zero-drift) reads at low edit distance are under-produced (HAC: 28.9-29.1 % real vs 25.7-26.5 % simulated). Per-read I, D, S means and dispersions match within a few %.",
+   "remedy": "a paired-indel (shift) process; a schema change, out of V7 scope"
+  },
+  "M6r": {
+   "class": "resolved by the per-run-length multiplier",
+   "finding": "passes in sample for all four candidates (FIT, both halves)"
+  }
+ },
+ "schema": "vnx.v7-diagnosis/1",
+ "step": "V7 7.4 step 3 (FIT-only; no DEV look 2, no held-out)"
+}

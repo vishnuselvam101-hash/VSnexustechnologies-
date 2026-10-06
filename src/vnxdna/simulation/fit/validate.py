@@ -496,7 +496,8 @@ def compare_params(target: dict, refit: dict, ci: dict, rel_floor: float = 0.08,
         good = bool(within.all()) if t.ndim == 0 else bool(within.mean() >= 0.99)
         ok &= good
         rows[path] = {"pass": good, "n": int(t.size), "worst_ratio": float(np.max(np.abs(r - t) / (5 * se + rel_floor * np.abs(t) + 1e-12)))}
-    return {"pass": bool(ok), "parameters": rows, "rule": f"|refit - target| <= 5 SE + {rel_floor} * |target| + {abs_floor}"}
+    # abs_floor is accepted for interface compatibility but has never entered the formula (V7 7.4 step 3 note)
+    return {"pass": bool(ok), "parameters": rows, "rule": f"|refit - target| <= 5 SE + {rel_floor} * |target|"}
 
 
 def round_trip(model: cm.ChannelModel, layout: Layout, refs: list, *, coverage: int, seed: int, bootstrap: int = 200,
