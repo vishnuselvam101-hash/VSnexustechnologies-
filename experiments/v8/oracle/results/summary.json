@@ -1,0 +1,65 @@
+{
+ "cells": [
+  {
+   "coverage": 3,
+   "false_success": 0,
+   "n": 5,
+   "oracle_consensus_1read": 5,
+   "oracle_consensus_2reads": 0,
+   "oracle_strand_identity": 0,
+   "production": 0,
+   "profile": "v4-balanced"
+  },
+  {
+   "coverage": 3,
+   "false_success": 0,
+   "n": 5,
+   "oracle_consensus_1read": 5,
+   "oracle_consensus_2reads": 5,
+   "oracle_strand_identity": 0,
+   "production": 0,
+   "profile": "v7-lowcov"
+  },
+  {
+   "coverage": 5,
+   "false_success": 0,
+   "n": 5,
+   "oracle_consensus_1read": 5,
+   "oracle_consensus_2reads": 3,
+   "oracle_strand_identity": 0,
+   "production": 0,
+   "profile": "v4-balanced"
+  },
+  {
+   "coverage": 5,
+   "false_success": 0,
+   "n": 5,
+   "oracle_consensus_1read": 5,
+   "oracle_consensus_2reads": 5,
+   "oracle_strand_identity": 3,
+   "production": 2,
+   "profile": "v7-lowcov"
+  },
+  {
+   "coverage": 10,
+   "false_success": 0,
+   "n": 5,
+   "oracle_consensus_1read": 5,
+   "oracle_consensus_2reads": 5,
+   "oracle_strand_identity": 5,
+   "production": 5,
+   "profile": "v4-balanced"
+  },
+  {
+   "coverage": 10,
+   "false_success": 0,
+   "n": 5,
+   "oracle_consensus_1read": 5,
+   "oracle_consensus_2reads": 5,
+   "oracle_strand_identity": 5,
+   "production": 5,
+   "profile": "v7-lowcov"
+  }
+ ],
+ "label": "UPPER-BOUND / ORACLE (SIMULATED): not achievable production performance"
+}
