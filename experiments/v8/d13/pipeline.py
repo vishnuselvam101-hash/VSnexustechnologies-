@@ -72,6 +72,9 @@ def git_state() -> dict:
     return {"commit": run("rev-parse", "HEAD"), "dirty_tracked": bool(run("status", "--porcelain", "--untracked-files=no"))}
 
 
+GIT_AT_START = git_state()     # the code state this process runs (later commits of ledgers do not change it)
+
+
 def environment() -> dict:
     import platform
     return {"python": sys.version.split()[0], "numpy": np.__version__, "platform": platform.platform(),
@@ -213,7 +216,7 @@ def do_segment(run: str, workers: int) -> Path:
                               "length_hist_100nt_bins": [reads[s]["lengths"].get(i, 0) for i in range(201)],
                               "mean_phred_hist": [reads[s]["mean_q"].get(i, 0) for i in range(60)],
                               "segments_per_read_hist": [reads[s]["segments"].get(i, 0) for i in range(81)]} for s in SPLITS},
-           "code": git_state(), "environment": environment(), "workers": workers, "seconds": round(time.time() - t0, 1),
+           "code": GIT_AT_START, "environment": environment(), "workers": workers, "seconds": round(time.time() - t0, 1),
            "timestamp_utc": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}
     RESULTS.mkdir(parents=True, exist_ok=True)
     out = RESULTS / f"pipeline-{run}.json"
@@ -231,13 +234,16 @@ def run_refs(run: str) -> list[bytes]:
     return nl.parse_d13_refs(DATA / A.REFERENCE_FILES[A.RUNS[run]])
 
 
-def split_pairs(run: str, split: str, refs: list[bytes]):
-    """(reference, segments, qualities) of one run's cached split, for the tally pipeline."""
+def split_pairs(run: str, split: str, refs: list[bytes], index_out: list | None = None):
+    """(reference, segments, qualities) of one run's cached split, for the tally pipeline; the reference indices are appended
+    to ``index_out`` in the same (row) order."""
     rec = json.loads((RESULTS / f"pipeline-{run}.json").read_text())
     p = cache_path(run, split)
     if sha256_path(p) != rec["outputs"][split]["sha256"]:
         raise SystemExit(f"{p}: cache SHA-256 differs from pipeline-{run}.json (altered?)")
     for ref, seqs, quals in read_cache(p):
+        if index_out is not None:
+            index_out.append(ref)
         yield refs[ref], seqs, quals
 
 
@@ -251,12 +257,16 @@ def do_tables(workers: int) -> Path:
         "read_rate": lay.read_rate, "size": lay.size}, "evidence_class": "PUBLIC-DATA-DERIVED (aggregate counts only)",
         "tally_options": {"mode": "NW", "aligner": "edlib", "shift": "left", "length_window": None}, "splits": {}}
     for s in SPLITS:
-        Ms, labels, rows = [], [], {}
+        Ms, labels, rows, ref_index = [], [], {}, []
         rs_total = None
         for run in A.RUNS:
             guard.authorize(run, s, "V8.1 stage 4: tally cached segments")
             refs = run_refs(run)
-            M, rs = P.tally_matrix(split_pairs(run, s, refs), lay, mode="NW", workers=workers)
+            idx: list = []
+            M, rs = P.tally_matrix(split_pairs(run, s, refs, idx), lay, mode="NW", workers=workers)
+            if len(idx) != M.shape[0]:
+                raise SystemExit(f"{run} {s}: {len(idx)} references for {M.shape[0]} tally rows")
+            ref_index += idx
             Ms.append(M)
             labels += [run] * M.shape[0]
             rs_total = rs if rs_total is None else rs_total + rs
@@ -264,12 +274,12 @@ def do_tables(workers: int) -> Path:
                          "excluded": int(lay.get(M, "excluded").sum())}
         M = np.concatenate(Ms)
         p = DERIVED / f"tables.{s}.npz"
-        np.savez(p, M=M, rs=rs_total, run=np.array(labels))
+        np.savez(p, M=M, rs=rs_total, run=np.array(labels), ref=np.array(ref_index, dtype=np.int64))
         rec["splits"][s] = {"path": str(p), "sha256": sha256_path(p), "per_run": rows, "references": int(M.shape[0]),
                             "reads_tallied": int(lay.get(M, "n_reads").sum()),
                             "inputs": {run: json.loads((RESULTS / f"pipeline-{run}.json").read_text())["outputs"][s]["sha256"]
                                        for run in A.RUNS}}
-    rec.update({"code": git_state(), "environment": environment(), "workers": workers, "seconds": round(time.time() - t0, 1)})
+    rec.update({"code": GIT_AT_START, "environment": environment(), "workers": workers, "seconds": round(time.time() - t0, 1)})
     out = RESULTS / "tables.json"
     out.write_text(json.dumps(rec, indent=1, sort_keys=True) + "\n")
     print(json.dumps({s: {k: v for k, v in r.items() if k in ("references", "reads_tallied")} for s, r in rec["splits"].items()}))
@@ -277,13 +287,13 @@ def do_tables(workers: int) -> Path:
 
 
 def load_tables(split: str):
-    """(layout, M, rs, run labels) of a split's fit tables, checked against tables.json."""
+    """(layout, M, rs, run labels, reference indices) of a split's fit tables, checked against tables.json."""
     rec = json.loads((RESULTS / "tables.json").read_text())["splits"][split]
     p = Path(rec["path"])
     if sha256_path(p) != rec["sha256"]:
         raise SystemExit(f"{p}: SHA-256 differs from tables.json")
     z = np.load(p)
-    return layout(), z["M"], z["rs"], z["run"]
+    return layout(), z["M"], z["rs"], z["run"], z["ref"]
 
 
 def main(argv=None) -> int:
