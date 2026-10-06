@@ -18,6 +18,13 @@ from vnxdna.simulation.fit.tally import DRIFT_BINS, DRIFT_OFF, EDIT_BINS, LUT, L
 
 KS_MAX, TV_MAX = 0.03, 0.05
 GATING = ("M2", "M3", "M8")
+#: gating metrics of the fitted-nanopore pre-registration (experiments/v7/fit-nano/PREREGISTRATION.md, step 7B). M1 is
+#: its M1b; M6r is its M6 (per homopolymer run length); M10 comes from :func:`round_trip`. A metric missing from the
+#: report leaves the verdict UNVALIDATED, never ADEQUATE.
+GATING_7B = ("M1a", "M1", "M1c", "M2", "M2b", "M3", "M5", "M5i", "M6r", "M8", "RL", "M10")
+KS_7B = 0.05            # M2b and RL
+SHARE_PP_7B = 3.0       # M5 / M5i: share of runs >= 2 within 3 percentage points
+M6_MIN_SITES = 10_000
 K_CURVE = (1, 2, 5, 10, 20)
 
 
@@ -62,6 +69,59 @@ def m1_rates(layout: Layout, real_M: np.ndarray, sim_T: np.ndarray, seed: int, B
         ok &= good
         out[k] = {"real": float(real[k]), "sim": float(sim[k]), "real_se": se, "tolerance": float(tol), "pass": good}
     return {"pass": bool(ok), "rates": out}
+
+
+def m1a_total(layout: Layout, real_M: np.ndarray, sim_T: np.ndarray, seed: int, B: int = 200) -> dict:
+    """7B M1a: total per-base edit rate (substituted + inserted + deleted bases), M1's tolerance rule."""
+    W = F.bootstrap_weights(real_M.shape[0], B, seed)
+    tot = F.bootstrap_totals(real_M, W)
+
+    def total(T):
+        r = rates(layout, T)
+        return float(r["substitution"] + r["insertion"] + r["deletion"])
+    real, sim = total(real_M.sum(axis=0).astype(float)), total(sim_T)
+    se = float(np.std([total(tot[b]) for b in range(B)], ddof=1))
+    tol = max(0.05 * real, 3 * se)
+    return {"pass": bool(abs(sim - real) <= tol), "real": real, "sim": sim, "real_se": se, "tolerance": float(tol)}
+
+
+def m1c_spectrum(layout: Layout, real_T: np.ndarray, sim_T: np.ndarray) -> dict:
+    """7B M1c: substitution spectrum, the 12 off-diagonal shares of the 4x4 matrix; total-variation distance <= 0.05."""
+    def shares(T):
+        m = layout.get(T, "sub_matrix").reshape(4, 4).astype(float)
+        off = m[~np.eye(4, dtype=bool)]
+        return off / off.sum() if off.sum() else off
+    a, b = shares(real_T), shares(sim_T)
+    tv = float(0.5 * np.abs(a - b).sum())
+    return {"pass": bool(tv <= TV_MAX), "tv": tv, "real": a.tolist(), "sim": b.tolist(), "threshold": TV_MAX}
+
+
+def _ks(a: np.ndarray, b: np.ndarray) -> float:
+    a, b = a.astype(float), b.astype(float)
+    return float(np.max(np.abs(np.cumsum(a / a.sum()) - np.cumsum(b / b.sum()))))
+
+
+def m2b_read_rate(layout: Layout, real_T: np.ndarray, sim_T: np.ndarray) -> dict:
+    """7B M2b: per-read edit rate (edit distance / aligned columns) distribution, KS D <= 0.05. Needs a layout with
+    ``read_rate``; otherwise not evaluated (pass None)."""
+    if not layout.read_rate:
+        return {"pass": None, "note": "layout without the read_rate field"}
+    a, b = layout.get(real_T, "read_rate"), layout.get(sim_T, "read_rate")
+    if a.sum() == 0 or b.sum() == 0:
+        return {"pass": None, "note": "no reads"}
+    D = _ks(a, b)
+    w = np.arange(a.size) + 0.5
+    return {"pass": bool(D <= KS_7B), "ks_D": D, "real_mean": float((a * w).sum() / a.sum() / a.size),
+            "sim_mean": float((b * w).sum() / b.sum() / b.size), "threshold": KS_7B}
+
+
+def m_read_length(real_rs: np.ndarray, sim_rs: np.ndarray) -> dict:
+    """7B RL: read length distribution (read length - reference length on the tallied, fixed-length references), KS D <= 0.05."""
+    a, b = real_rs[EDIT_BINS:], sim_rs[EDIT_BINS:]
+    if a.sum() == 0 or b.sum() == 0:
+        return {"pass": None, "note": "no reads"}
+    D = _ks(a, b)
+    return {"pass": bool(D <= KS_7B), "ks_D": D, "threshold": KS_7B}
 
 
 def m2_edit_distance(real_rs: np.ndarray, sim_rs: np.ndarray) -> dict:
@@ -111,14 +171,30 @@ def m4_profile(layout: Layout, real_T: np.ndarray, sim_T: np.ndarray, bins: int 
     return {"pass": bool(ok), "kinds": out, "threshold": "each 11-bin ratio within +-10% (bins with >= 100 real events)"}
 
 
-def m5_delruns(layout: Layout, real_T: np.ndarray, sim_T: np.ndarray) -> dict:
+def _runs_metric(layout: Layout, real_T: np.ndarray, sim_T: np.ndarray, name: str, share_pp: float | None) -> dict:
     def hist8(T):
-        h = layout.get(T, "del_runs").astype(float)
+        h = layout.get(T, name).astype(float)
         v = np.concatenate([h[:7], [h[7:].sum()]])
         return v / v.sum() if v.sum() else v
     a, b = hist8(real_T), hist8(sim_T)
     tv = float(0.5 * np.abs(a - b).sum())
-    return {"pass": bool(tv <= TV_MAX), "tv": tv, "real": a.tolist(), "sim": b.tolist(), "threshold": TV_MAX}
+    share = {"real": float(a[1:].sum()), "sim": float(b[1:].sum())}
+    ok = tv <= TV_MAX
+    out = {"tv": tv, "real": a.tolist(), "sim": b.tolist(), "threshold": TV_MAX, "share_ge2": share}
+    if share_pp is not None:
+        ok = ok and abs(share["sim"] - share["real"]) * 100 <= share_pp
+        out["share_threshold_pp"] = share_pp
+    return {"pass": bool(ok), **out}
+
+
+def m5_delruns(layout: Layout, real_T: np.ndarray, sim_T: np.ndarray, share_pp: float | None = None) -> dict:
+    """Deletion run-length histogram 1..8+: TV <= 0.05 (and, with ``share_pp``, share of runs >= 2 within that many pp)."""
+    return _runs_metric(layout, real_T, sim_T, "del_runs", share_pp)
+
+
+def m5i_insruns(layout: Layout, real_T: np.ndarray, sim_T: np.ndarray, share_pp: float | None = SHARE_PP_7B) -> dict:
+    """7B M5i: insertion run-length histogram 1..8+, the M5 rule."""
+    return _runs_metric(layout, real_T, sim_T, "ins_runs", share_pp)
 
 
 def m6_homopolymer(layout: Layout, real_T: np.ndarray, sim_T: np.ndarray, min_run: int) -> dict:
@@ -132,6 +208,31 @@ def m6_homopolymer(layout: Layout, real_T: np.ndarray, sim_T: np.ndarray, min_ru
     rel = np.abs(b - a) / np.maximum(a, 1e-12)
     return {"pass": bool(np.all(rel <= 0.10)), "min_run": min_run, "indel_rate_out_in_real": a.tolist(),
             "indel_rate_out_in_sim": b.tolist(), "rel_diff": rel.tolist(), "threshold": 0.10}
+
+
+def m6r_homopolymer_runs(layout: Layout, real_T: np.ndarray, sim_T: np.ndarray, min_sites: int = M6_MIN_SITES) -> dict:
+    """7B M6: indel rate by homopolymer run length 1..5 and 6+ (exact lengths by differencing the cumulative in-run masks
+    of ``layout.minruns``, which must hold 2..6), within 10 % relative wherever the real data has >= ``min_sites`` sites."""
+    if not all(m in layout.minruns for m in range(2, 7)):
+        return {"pass": None, "note": "layout.minruns must contain 2..6"}
+
+    def per_length(T):
+        S, E = {}, {}
+        for m in range(2, 7):
+            mi = layout.minruns.index(m)
+            S[m] = layout.ctx(T, "ctx_sites")[mi].sum(axis=0).astype(float)          # (out, in)
+            E[m] = (layout.ctx(T, "ctx_ins")[mi] + layout.ctx(T, "ctx_del")[mi]).sum(axis=0).astype(float)
+        sites = [S[2][0]] + [S[k][1] - S[k + 1][1] for k in range(2, 6)] + [S[6][1]]
+        events = [E[2][0]] + [E[k][1] - E[k + 1][1] for k in range(2, 6)] + [E[6][1]]
+        return np.array(sites), np.array(events)
+    rs, re_ = per_length(real_T)
+    ss, se = per_length(sim_T)
+    a, b = re_ / np.maximum(rs, 1), se / np.maximum(ss, 1)
+    rel = np.abs(b - a) / np.maximum(a, 1e-12)
+    tested = rs >= min_sites
+    return {"pass": bool(np.all(rel[tested] <= 0.10)), "run_lengths": ["1", "2", "3", "4", "5", "6+"],
+            "real_sites": rs.tolist(), "real": a.tolist(), "sim": b.tolist(), "rel_diff": rel.tolist(),
+            "tested": tested.tolist(), "threshold": 0.10, "min_sites": min_sites}
 
 
 def m7_coverage(real_counts: np.ndarray, model: cm.ChannelModel, seed: int, B: int = 200) -> dict:
@@ -295,7 +396,7 @@ def m8_functional(real_clusters: list, model: cm.ChannelModel, seed: int, *, max
 def validate_model(model: cm.ChannelModel, layout: Layout, *, dev_refs: list, dev_clusters: list, dev_M: np.ndarray,
                    dev_rs: np.ndarray, mode: str = "NW", seed: int = 7, sim_seeds: int = 5, sim_coverage: int = 6,
                    workers: int = 1, sim_refs_cap: int = 4000, with_functional: bool = True,
-                   tally_opts: dict | None = None, dev_counts: np.ndarray | None = None) -> dict:
+                   tally_opts: dict | None = None, dev_counts: np.ndarray | None = None, prereg: str | None = None) -> dict:
     """M1-M8 for ``model`` against DEV data (``dev_M``/``dev_rs`` from the same pipeline; ``dev_clusters`` = (ref, reads)).
     M9 (quality) and M10 (round trip) are separate (see ``quality_calibration`` in the experiment code and ``round_trip``)."""
     refs = dev_refs[:sim_refs_cap]
@@ -325,6 +426,13 @@ def validate_model(model: cm.ChannelModel, layout: Layout, *, dev_refs: list, de
         "M7": m7_coverage(dev_counts if dev_counts is not None else
                           (layout.get(dev_M, "n_reads")[:, 0] + layout.get(dev_M, "excluded")[:, 0]).astype(np.int64), model, seed),
     }
+    if prereg == "7B":
+        rep.update({"M1a": m1a_total(layout, dev_M, sim_T, seed), "M1c": m1c_spectrum(layout, real_T, sim_T),
+                    "M2b": m2b_read_rate(layout, real_T, sim_T), "M5": m5_delruns(layout, real_T, sim_T, SHARE_PP_7B),
+                    "M5i": m5i_insruns(layout, real_T, sim_T), "M6r": m6r_homopolymer_runs(layout, real_T, sim_T),
+                    "RL": m_read_length(dev_rs, simrs)})
+    elif prereg is not None:
+        raise ValueError(f"unknown pre-registration {prereg!r}")
     if layout.quality:
         rep["M9"] = m9_quality(layout, real_T, sim_T)
     if with_functional:
@@ -332,9 +440,9 @@ def validate_model(model: cm.ChannelModel, layout: Layout, *, dev_refs: list, de
     return rep
 
 
-def adequacy(report: dict) -> tuple[str, list]:
-    failed = [m for m in GATING if report.get(m, {}).get("pass") is False]
-    unknown = [m for m in GATING if report.get(m, {}).get("pass") is None]
+def adequacy(report: dict, gating: tuple = GATING) -> tuple[str, list]:
+    failed = [m for m in gating if report.get(m, {}).get("pass") is False]
+    unknown = [m for m in gating if report.get(m, {}).get("pass") is None]
     if failed:
         return "INADEQUATE", failed
     return ("UNVALIDATED", []) if unknown else ("ADEQUATE", [])
@@ -349,6 +457,8 @@ def design_from_model(model: cm.ChannelModel) -> "est.Design":
     return est.Design(min_run=seq["homopolymer"]["min_run"], bins=bins,
                       ins_geometric=seq["insertion"].get("run_length", {}).get("distribution") == "geometric",
                       del_geometric=seq["deletion"]["run_length"]["distribution"] == "geometric",
+                      ins_empirical=seq["insertion"].get("run_length", {}).get("distribution") == "empirical",
+                      del_empirical=seq["deletion"]["run_length"]["distribution"] == "empirical",
                       context=tuple(k for k in ("substitution", "insertion", "deletion") if ctx.get(k) is not None),
                       heterogeneity=seq.get("read_heterogeneity") is not None)
 

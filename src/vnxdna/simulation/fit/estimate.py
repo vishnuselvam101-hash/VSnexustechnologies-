@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+from vnxdna.simulation import model2
 from vnxdna.simulation.fit.tally import Layout
 
 MIN_BIN_EVENTS = 200           # profiles are not attempted below this many events in total
@@ -45,6 +46,12 @@ class Design:
     context: tuple = ()                                 # kinds ("substitution", "insertion", "deletion") with a 3-mer context
     use_hp: bool = True
     heterogeneity: bool = False                         # protocol 5.5 A2.1: per-read gamma rate multiplier
+    ins_empirical: bool = False                         # V7 7.2: empirical insertion run-length pmf (excludes ins_geometric)
+    del_empirical: bool = False                         # V7 7.2: empirical deletion run-length pmf (excludes del_geometric)
+
+    def __post_init__(self):
+        if (self.ins_geometric and self.ins_empirical) or (self.del_geometric and self.del_empirical):
+            raise ValueError("a run length is either geometric or empirical, not both")
 
 
 def hp_sub_fixed(d: Design) -> bool:
@@ -286,6 +293,27 @@ def _mean_run(hist: np.ndarray) -> float:
     return float((hist * np.arange(1, hist.size + 1)).sum() / n) if n else 1.0
 
 
+def empirical_from_hist(hist: np.ndarray, bins: int = 8) -> tuple[list, float]:
+    """(pmf over runs 1..bins-1 and ``bins`` or more, mean run length given >= ``bins``) of an observed run histogram
+    (index i = runs of i + 1; the last tally bin already holds every longer run). A histogram with no runs gives runs of 1."""
+    h = np.asarray(hist, dtype=float)
+    if h.sum() <= 0:
+        return [1.0] + [0.0] * (bins - 1), float(bins)
+    folded = np.concatenate([h[:bins - 1], [h[bins - 1:].sum()]])
+    pmf = folded / folded.sum()
+    tail = h[bins - 1:]
+    tail_mean = float((tail * np.arange(bins, bins + tail.size)).sum() / tail.sum()) if tail.sum() > 0 else float(bins)
+    return pmf.tolist(), max(float(bins), tail_mean)
+
+
+def set_empirical(values: dict, kind: str, pmf: list, tail_mean: float) -> None:
+    """In place: the empirical run-length values of ``kind`` (insertion / deletion), mean consistent with the pmf."""
+    rl = model2.empirical_run_length(pmf, tail_mean)
+    values[f"sequencing.{kind}.run_length.pmf"] = rl["pmf"]
+    values[f"sequencing.{kind}.run_length.tail_mean"] = rl["tail_mean"]
+    values[f"sequencing.{kind}.run_length.mean"] = rl["mean"]
+
+
 def estimate(layout: Layout, T: np.ndarray, d: Design) -> dict:
     """Parameter values (dotted /2 paths) of the sequencing stage from the totals ``T`` under design ``d``."""
     mi = layout.minruns.index(d.min_run)
@@ -319,6 +347,9 @@ def estimate(layout: Layout, T: np.ndarray, d: Design) -> dict:
     out["sequencing.insertion.run_length.mean"] = ins_mean if d.ins_geometric else 1.0
     out["sequencing.deletion.rate"] = fit["r"]["deletion"]
     out["sequencing.deletion.run_length.mean"] = m_del if d.del_geometric else 1.0
+    for kind, on, field_ in (("insertion", d.ins_empirical, "ins_runs"), ("deletion", d.del_empirical, "del_runs")):
+        if on:      # the observed histogram is the starting point; calibration corrects alignment merges (design 7A §3)
+            set_empirical(out, kind, *empirical_from_hist(layout.get(T, field_)))
     out["sequencing.homopolymer.min_run"] = d.min_run
     out["sequencing.homopolymer.indel_multiplier"] = fit["hp"]["indel"]
     out["sequencing.homopolymer.substitution_multiplier"] = fit["hp"]["substitution"]

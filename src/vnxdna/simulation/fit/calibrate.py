@@ -12,7 +12,12 @@ about mean^2 Var(m) to the variance of the per-read error count.
 The substitution context is kept at site-weighted mean 1 with the factor folded into the substitution rate (the convention
 of ``estimate._ipf``), and the homopolymer substitution multiplier stays at 1 when it is confounded with the context
 (``estimate.hp_sub_fixed``). Iteration stops when every updated ratio (``calibrated_keys``) is within ``tol`` of 1; the
-verification pass reports all ratios, the deletion and insertion run-length means included."""
+verification pass reports all ratios, the deletion and insertion run-length means included.
+
+With ``design.del_empirical`` / ``design.ins_empirical`` (V7 7.2, docs/V7_NANOPORE_MODEL_DESIGN.md section 3) the run-length
+pmf is calibrated bin by bin: p_k *= (target share_k / simulated share_k) ** STEP (clipped), then renormalised, and the
+tail mean (runs >= 8) moves by the ratio of the tail excesses over 8. The convergence quantity is 1 + total-variation
+distance between the target and simulated 8-bin histograms (``del_pmf``, ``ins_pmf``)."""
 from __future__ import annotations
 
 import copy
@@ -50,6 +55,9 @@ def summary(layout: Layout, T: np.ndarray, design: est.Design) -> dict:
            "ins_mean": est._mean_run(ins_runs), "hp_indel": ratio(indel), "hp_sub": ratio(ev["substitution"]),
            "ctx_sub": ev["substitution"].sum(axis=1) / np.maximum(S.sum(axis=1), 1), "ctx_sub_events": ev["substitution"].sum(axis=1),
            "ctx_sites_out": S[:, 0], "ctx_sites_in": S[:, 1], "profile": {}}
+    for kind, field_ in (("ins", "ins_runs"), ("del", "del_runs")):
+        pmf, tail = est.empirical_from_hist(layout.get(T, field_))
+        out[f"{kind}_hist"], out[f"{kind}_tail"] = np.asarray(pmf), tail
     out["ed_mean"], out["ed_var"] = est.edit_moments(layout, T)
     for kind, (pos, _c) in est._kind_arrays(layout, T).items():
         B = design.bins.get(kind)
@@ -65,7 +73,27 @@ def ratios_of(target: dict, sim: dict) -> dict:
     out = {k: (target[k] / sim[k] if sim[k] else 1.0) for k in RATIO_KEYS}
     out["del_mean"] = target["del_mean"] / sim["del_mean"] if sim["del_mean"] else 1.0
     out["ins_mean"] = (target["ins_mean"] - 1.0 + 1e-6) / (sim["ins_mean"] - 1.0 + 1e-6)
+    for kind in ("del", "ins"):
+        if f"{kind}_hist" in target and f"{kind}_hist" in sim:
+            out[f"{kind}_pmf"] = 1.0 + 0.5 * float(np.abs(target[f"{kind}_hist"] - sim[f"{kind}_hist"]).sum())
     return out
+
+
+def update_empirical(values: dict, kind: str, target: dict, sim: dict) -> None:
+    """In place: one damped bin-wise step of the empirical run-length pmf of ``kind`` (insertion / deletion) towards the
+    target histogram, and of its tail mean; the mean is recomputed from the pmf."""
+    short = kind[:3]
+    t, m = target[f"{short}_hist"], sim[f"{short}_hist"]
+    pmf = np.asarray(values[f"sequencing.{kind}.run_length.pmf"], dtype=float)
+    r = np.where((m > 0) & (t > 0), t / np.where(m > 0, m, 1.0), np.where(t > 0, CLIP[1], CLIP[0]))
+    pmf = pmf * np.clip(r, *CLIP) ** STEP
+    pmf = np.where((pmf == 0) & (t > 0), t, pmf)           # a bin the model cannot reach restarts at the target share
+    pmf = pmf / pmf.sum()
+    bins = pmf.size
+    tail = values[f"sequencing.{kind}.run_length.tail_mean"]
+    rt = (target[f"{short}_tail"] - bins + 1e-6) / (sim[f"{short}_tail"] - bins + 1e-6)
+    tail = bins + (tail - bins) * float(np.clip(rt, *CLIP)) ** STEP if tail > bins else max(float(bins), target[f"{short}_tail"])
+    est.set_empirical(values, kind, pmf.tolist(), tail)
 
 
 def calibrated_keys(design: est.Design) -> list:
@@ -79,6 +107,10 @@ def calibrated_keys(design: est.Design) -> list:
         keys.append("del_mean")
     if design.ins_geometric:
         keys.append("ins_mean")
+    if design.del_empirical:
+        keys.append("del_pmf")
+    if design.ins_empirical:
+        keys.append("ins_pmf")
     return keys
 
 
@@ -134,6 +166,10 @@ def calibrate(fit: dict, layout: Layout, refs: list, *, real_T: np.ndarray, cove
             values["sequencing.deletion.run_length.mean"] = max(1.0, values["sequencing.deletion.run_length.mean"] * ratios["del_mean"])
         if design.ins_geometric:
             values["sequencing.insertion.run_length.mean"] = max(1.0, 1.0 + (values["sequencing.insertion.run_length.mean"] - 1.0) * ratios["ins_mean"])
+        if design.del_empirical:
+            update_empirical(values, "deletion", target, sim)
+        if design.ins_empirical:
+            update_empirical(values, "insertion", target, sim)
         if design.use_hp:
             values["sequencing.homopolymer.indel_multiplier"] *= ratios["hp_indel"]
             if not est.hp_sub_fixed(design):          # confounded with the context: stays at 1
@@ -165,6 +201,9 @@ def calibrate(fit: dict, layout: Layout, refs: list, *, real_T: np.ndarray, cove
     sim = summary(layout, M.sum(axis=0).astype(float), design)
     # every ratio is target / simulated; the run-length means as plain ratios of the means (also when not calibrated)
     residual = {k: float(target[k] / sim[k]) if sim[k] else 1.0 for k in RATIO_KEYS + ("del_mean", "ins_mean")}
+    for kind, on in (("del", design.del_empirical), ("ins", design.ins_empirical)):
+        if on:
+            residual[f"{kind}_pmf_tv"] = ratios_of(target, sim)[f"{kind}_pmf"] - 1.0
     if design.heterogeneity:
         residual["ed_var"] = float(target["ed_var"] / sim["ed_var"]) if sim["ed_var"] else 1.0
     factors = {}

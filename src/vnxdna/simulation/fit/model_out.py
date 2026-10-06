@@ -14,6 +14,9 @@ BASIS = {
     "sequencing.substitution.from_multipliers": "measured", "sequencing.insertion.rate": "measured",
     "sequencing.insertion.base_weights": "measured", "sequencing.insertion.run_length.mean": "measured",
     "sequencing.deletion.rate": "measured", "sequencing.deletion.run_length.mean": "measured",
+    # empirical run lengths (V7 7.2): observed histogram corrected by simulation calibration; absent paths are skipped
+    "sequencing.insertion.run_length.pmf": "estimated", "sequencing.insertion.run_length.tail_mean": "estimated",
+    "sequencing.deletion.run_length.pmf": "estimated", "sequencing.deletion.run_length.tail_mean": "estimated",
     "sequencing.homopolymer.min_run": "estimated", "sequencing.homopolymer.indel_multiplier": "estimated",
     "sequencing.homopolymer.substitution_multiplier": "estimated",
     "sequencing.position_profile.substitution": "estimated", "sequencing.position_profile.insertion": "estimated",
@@ -40,6 +43,14 @@ def _py(v: Any) -> Any:
     return v.item() if hasattr(v, "item") else v
 
 
+def _run_length(v: dict, kind: str, geometric: bool, empirical: bool) -> dict:
+    if empirical:
+        return model2.empirical_run_length(v[f"sequencing.{kind}.run_length.pmf"], v[f"sequencing.{kind}.run_length.tail_mean"])
+    if geometric:
+        return {"distribution": "geometric", "mean": v[f"sequencing.{kind}.run_length.mean"]}
+    return {"distribution": "single", "mean": 1.0}
+
+
 def sequencing_stage(fit: dict, extra: dict | None = None) -> dict:
     """The /2 ``sequencing`` stage from the fitted values (extra fields such as quality or reverse_complement_rate merged in)."""
     v = fit["values"]
@@ -48,11 +59,9 @@ def sequencing_stage(fit: dict, extra: dict | None = None) -> dict:
         "substitution": {"rate": v["sequencing.substitution.rate"], "matrix": v["sequencing.substitution.matrix"],
                          "from_multipliers": v["sequencing.substitution.from_multipliers"]},
         "insertion": {"rate": v["sequencing.insertion.rate"], "base_weights": v["sequencing.insertion.base_weights"],
-                      "run_length": ({"distribution": "geometric", "mean": v["sequencing.insertion.run_length.mean"]}
-                                     if d.ins_geometric else {"distribution": "single", "mean": 1.0})},
+                      "run_length": _run_length(v, "insertion", d.ins_geometric, getattr(d, "ins_empirical", False))},
         "deletion": {"rate": v["sequencing.deletion.rate"],
-                     "run_length": ({"distribution": "geometric", "mean": v["sequencing.deletion.run_length.mean"]}
-                                    if d.del_geometric else {"distribution": "single", "mean": 1.0})},
+                     "run_length": _run_length(v, "deletion", d.del_geometric, getattr(d, "del_empirical", False))},
         "homopolymer": {"min_run": d.min_run, "indel_multiplier": v["sequencing.homopolymer.indel_multiplier"],
                         "substitution_multiplier": v["sequencing.homopolymer.substitution_multiplier"]},
     }

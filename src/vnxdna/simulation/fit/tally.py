@@ -26,6 +26,7 @@ MAX_RUN = 16
 EDIT_BINS = 301            # per-read edit distance histogram 0..300 (last bin = more)
 DRIFT_OFF = 100            # read length - reference length histogram -100..+100
 DRIFT_BINS = 2 * DRIFT_OFF + 1
+RATE_BINS = 500            # per-read edit rate (edit distance / aligned columns) histogram, width 0.002 (opt-in field)
 EXCLUDE_FRAC = 0.30        # reads with more edits than this share of the reference are counted as mis-assigned, not tallied
 
 
@@ -39,6 +40,7 @@ class Layout:
     quality: bool = False
     qbins: int = 94
     cycles: int = 0            # read cycles tracked for the quality slope (quality only)
+    read_rate: bool = False    # V7 7B metric M2b: per-read edit-rate histogram (field ``read_rate``, RATE_BINS bins)
     fields: dict = field(init=False, compare=False)
     size: int = field(init=False, compare=False)
 
@@ -52,6 +54,8 @@ class Layout:
         if self.quality:
             spec += [("q_correct", self.qbins), ("q_error", self.qbins), ("q_cycle_sum", self.cycles),
                      ("q_cycle_n", self.cycles)]
+        if self.read_rate:
+            spec += [("read_rate", RATE_BINS)]
         off, fields = 0, {}
         for name, n in spec:
             fields[name] = (off, n)
@@ -174,6 +178,9 @@ def tally_reference(ref: bytes, reads: list, layout: Layout, mode: str = "NW", q
         dist, runs, (ws, we) = res
         rs[min(dist, EDIT_BINS - 1)] += 1
         rs[EDIT_BINS + max(0, min(DRIFT_BINS - 1, (we - ws) - L + DRIFT_OFF))] += 1
+        if layout.read_rate:            # every aligned read, as the edit-distance histogram above
+            cols = L + sum(n for op, n in runs if op == "I")
+            vec[layout.fields["read_rate"][0] + min(RATE_BINS - 1, int(RATE_BINS * dist / cols))] += 1
         if dist > exclude_frac * L:
             vec[layout.fields["excluded"][0]] += 1
             continue
