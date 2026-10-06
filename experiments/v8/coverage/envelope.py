@@ -16,6 +16,11 @@ Classification, fixed before the matrix ran:
 * MARGINALLY SUPPORTED: otherwise.
 One successful seed never makes a coverage level supported.
 
+Post-hoc correction (disclosed; the pre-specified result is kept next to it): the q_struct assumption (a strand needs >= 2
+reads) does not hold where the decoder succeeds in pass 1 from single reads (the cluster stage does not run). For cells
+where the cluster stage ran in fewer than half of the decodes, ``envelope`` uses q_struct = P(reads < 1). Those cells are
+marked ``post_hoc: true`` and ``envelope_pre_specified`` keeps the classification of the original rule.
+
     PYTHONPATH=src python experiments/v8/coverage/envelope.py      # reads experiments/v8/matrix/results/matrix.jsonl
 """
 from __future__ import annotations
@@ -106,15 +111,27 @@ def main() -> int:
         p_arch = float(np.prod([binom_cdf(M, n, q) for n in sizes]))
         k = sum(r["outcome"] == "EXACT" for r in rs)
         lo, hi = wilson(k, len(rs))
+        cluster_share = sum(bool(r.get("cluster_stage_ran")) for r in rs) / len(rs)
+        pre = classify(p_arch, lo, hi)
+        post_hoc = cluster_share < 0.5
+        if post_hoc:
+            q1 = qs["p_below_1"] + (1 - qs["p_below_1"]) * q_cons
+            p_arch1 = float(np.prod([binom_cdf(M, n, q1) for n in sizes]))
+        else:
+            p_arch1 = p_arch
         out["cells"].append({"channel": ch, "coverage": cov, "profile": prof, "q_struct": qs, "q_consensus": round(q_cons, 5),
                              "q_total": round(q, 5), "p_archive_analytic": round(p_arch, 4), "exact": k, "n": len(rs),
-                             "wilson95": [round(lo, 4), round(hi, 4)], "envelope": classify(p_arch, lo, hi),
+                             "wilson95": [round(lo, 4), round(hi, 4)], "envelope_pre_specified": pre,
+                             "cluster_stage_share": round(cluster_share, 2), "post_hoc": post_hoc,
+                             "p_archive_analytic_single_read": round(p_arch1, 4) if post_hoc else None,
+                             "envelope": classify(p_arch1, lo, hi),
                              "expected_reads_per_strand": float(cov)})
     p = HERE / "results" / "envelope.json"
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps(out, indent=1, sort_keys=True) + "\n")
     for c in out["cells"]:
-        print(c["channel"], c["coverage"], c["profile"], c["envelope"], c["p_archive_analytic"], f"{c['exact']}/{c['n']}")
+        print(c["channel"], c["coverage"], c["profile"], c["envelope"], "(pre", c["envelope_pre_specified"] + ")" if c["post_hoc"] else "",
+              c["p_archive_analytic"], f"{c['exact']}/{c['n']}")
     return 0
 
 
