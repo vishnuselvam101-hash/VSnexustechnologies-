@@ -283,6 +283,8 @@ def candidates(hashes: np.ndarray, orient: np.ndarray, bucket_cap: int, max_pair
     lib = _lib_or_raise()
     hashes = np.ascontiguousarray(hashes, dtype=np.uint32)
     orient = np.ascontiguousarray(orient, dtype=np.uint8)
+    if hashes.ndim != 2 or orient.shape != hashes.shape:
+        raise ValueError(f"hashes must be 2-D and orient the same shape, got {hashes.shape} and {orient.shape}")
     n, s = hashes.shape
     stats = np.zeros(8, dtype=np.int64)
     cap = max(16, 8 * n)

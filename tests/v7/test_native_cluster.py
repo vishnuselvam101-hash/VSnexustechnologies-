@@ -421,6 +421,10 @@ def test_c_rejects_inconsistent_sizes():
 def test_python_wrappers_check_shapes():
     with pytest.raises(ValueError):
         nc.sketch(np.zeros((3, 4), np.uint8), np.zeros(2, np.int64), 3, 2)
+    with pytest.raises(ValueError):  # orient smaller than hashes: the kernel would read past orient
+        nc.candidates(np.zeros((4000, 8), np.uint32), np.zeros((1, 8), np.uint8), 10**6, 10**9, 1)
+    with pytest.raises(ValueError):
+        nc.candidates(np.zeros(8, np.uint32), np.zeros(8, np.uint8), 10**6, 10**9, 1)
     buf, off, lens = nc.pack([np.zeros(3, np.uint8), np.zeros(2, np.uint8)])
     with pytest.raises(ValueError):
         nc.banded(buf, off, lens, np.array([0]), np.array([1, 0]), None, 3)
