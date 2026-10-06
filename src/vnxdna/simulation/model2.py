@@ -15,6 +15,11 @@ A ``/2`` document has the ``/1`` top-level keys and ``stages`` (every ``/1`` sta
                      and measured statistics that are not model parameters
 * in ``stages.sequencing`` (all optional, default off):
     ``insertion.run_length``  ``{"distribution": "single" | "geometric", "mean"}``: bases inserted at one gap. HONOURED.
+    ``insertion.run_length``, ``deletion.run_length``  ``{"distribution": "empirical", "mean", "pmf": [p1 .. p8],
+                              "tail_mean"}`` (V7 step 7.2, docs/V7_NANOPORE_MODEL_DESIGN.md section 3): P(run = 1..7) and
+                              P(run >= 8); a run in the last bin is 7 + Geometric with mean ``tail_mean`` - 7 (``tail_mean``
+                              = 8: exactly 8). ``mean`` must equal the mean the pmf implies. Sequencing stage only. HONOURED.
+                              The /1 deletion form (single / geometric) is unchanged, so existing models keep their SHA-256.
     ``context``               ``{"k": 3, "substitution": [64], "insertion": [64], "deletion": [64]}``: rate multipliers by
                               the reference 3-mer centred on the site (previous, base, next; A=0 C=1 G=2 T=3; an edge uses the
                               base itself as the missing neighbour). HONOURED.
@@ -41,7 +46,7 @@ SCHEMA_V2 = _m.SCHEMA_V2
 BASES = ("measured", "estimated", "inferred", "assumed", "synthetic")
 SPLIT_NAMES = ("FIT", "HELDOUT")
 ADEQUACY = ("ADEQUATE", "INADEQUATE", "UNVALIDATED")
-HONOURED = ("context", "insertion.run_length", "read_heterogeneity")
+HONOURED = ("context", "insertion.run_length", "deletion.run_length", "read_heterogeneity")
 UNHONOURED = ("correlation", "asymmetry")
 TOP_KEYS_V2 = _m.TOP_KEYS + ("model_id", "parameters", "fit_report")
 PROVENANCE_KEYS_V2 = _m.PROVENANCE_KEYS + ("split", "fitting")
@@ -55,6 +60,9 @@ _TS = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
 CONTEXT_LEN = 64
 HETEROGENEITY_DISTRIBUTIONS = ("gamma",)
 HETEROGENEITY_SHAPE = (0.05, 1e6)
+RUN_DISTRIBUTIONS_V2 = _m.RUN_DISTRIBUTIONS + ("empirical",)
+RUN_LENGTH_BINS = 8
+PMF_TOLERANCE = 1e-9
 
 
 def _err(msg: str, **details):
@@ -129,6 +137,48 @@ def _check_asymmetry(a: Any) -> dict | None:
                                                       "stages.sequencing.asymmetry.backward_substitution_matrix")}
 
 
+def empirical_mean(pmf: list, tail_mean: float) -> float:
+    """Mean run length of an empirical run-length distribution (bins 1..K-1, last bin with mean ``tail_mean``)."""
+    return float(sum((i + 1) * p for i, p in enumerate(pmf[:-1])) + pmf[-1] * tail_mean)
+
+
+def empirical_run_length(pmf: list, tail_mean: float = float(RUN_LENGTH_BINS)) -> dict:
+    """The canonical ``run_length`` object of an empirical distribution (``mean`` computed from ``pmf``)."""
+    pmf = [float(p) for p in pmf]
+    return {"distribution": "empirical", "mean": empirical_mean(pmf, float(tail_mean)), "pmf": pmf,
+            "tail_mean": float(tail_mean)}
+
+
+def _check_empirical(rl: dict, where: str) -> dict:
+    rl = _m._keys(rl, ("distribution", "mean", "pmf", "tail_mean"), where)
+    pmf = rl.get("pmf")
+    if not isinstance(pmf, list) or len(pmf) != RUN_LENGTH_BINS:
+        raise _err(f"{where}.pmf must be a list of {RUN_LENGTH_BINS} probabilities (runs 1..{RUN_LENGTH_BINS - 1}, "
+                   f"{RUN_LENGTH_BINS} or more)")
+    pmf = [_m._prob(p, f"{where}.pmf[{i}]") for i, p in enumerate(pmf)]
+    if abs(sum(pmf) - 1.0) > PMF_TOLERANCE:
+        raise _err(f"{where}.pmf must sum to 1 (got {sum(pmf)!r})")
+    tail = _m._num(rl.get("tail_mean"), f"{where}.tail_mean", float(RUN_LENGTH_BINS), 1000.0)
+    mean = _m._num(rl.get("mean"), f"{where}.mean", 1.0, 1000.0)
+    want = empirical_mean(pmf, tail)
+    if abs(mean - want) > PMF_TOLERANCE * want:
+        raise _err(f"{where}.mean must equal the mean implied by pmf and tail_mean ({want!r}), got {mean!r}")
+    return {"distribution": "empirical", "mean": float(mean), "pmf": pmf, "tail_mean": float(tail)}
+
+
+def _check_run_length(given: Any, where: str) -> dict:
+    """Insertion run length (/2): single / geometric as before, or empirical."""
+    if isinstance(given, dict) and given.get("distribution") == "empirical":
+        return _check_empirical(given, where)
+    rl = _m._merge(DEFAULTS_V2["sequencing"]["insertion"]["run_length"], given, where)
+    if rl["distribution"] not in RUN_DISTRIBUTIONS_V2:
+        raise _err(f"{where}.distribution must be one of {list(RUN_DISTRIBUTIONS_V2)}")
+    _m._num(rl["mean"], f"{where}.mean", 1.0, 1000.0)
+    if rl["distribution"] == "single" and rl["mean"] != 1.0:
+        raise _err(f"{where}: distribution 'single' has mean 1")
+    return rl
+
+
 def normalize_stages_v2(stages: dict | None) -> dict:
     """The /1 canonical stages plus the /2 opt-in sequencing fields, validated."""
     if stages is not None and not isinstance(stages, dict):
@@ -139,20 +189,20 @@ def normalize_stages_v2(stages: dict | None) -> dict:
         raise _err("stages.sequencing must be a JSON object")
     ext: dict[str, Any] = {}
     run_length = None
+    del_empirical = None
     if seq:
         ext = {k: seq.pop(k) for k in ("context", "read_heterogeneity", "correlation", "asymmetry") if k in seq}
         ins = seq.get("insertion")
         if isinstance(ins, dict) and "run_length" in ins:
             run_length = ins.pop("run_length")
+        dl = seq.get("deletion")
+        if isinstance(dl, dict) and isinstance(dl.get("run_length"), dict) and dl["run_length"].get("distribution") == "empirical":
+            del_empirical = dl.pop("run_length")    # /1 validation sees the default single run; set back below
     out = _m.normalize_stages(stages)
     s = out["sequencing"]
-    rl = _m._merge(DEFAULTS_V2["sequencing"]["insertion"]["run_length"], run_length, "stages.sequencing.insertion.run_length")
-    if rl["distribution"] not in _m.RUN_DISTRIBUTIONS:
-        raise _err(f"stages.sequencing.insertion.run_length.distribution must be one of {list(_m.RUN_DISTRIBUTIONS)}")
-    _m._num(rl["mean"], "stages.sequencing.insertion.run_length.mean", 1.0, 1000.0)
-    if rl["distribution"] == "single" and rl["mean"] != 1.0:
-        raise _err("stages.sequencing.insertion.run_length: distribution 'single' has mean 1")
-    s["insertion"]["run_length"] = rl
+    s["insertion"]["run_length"] = _check_run_length(run_length, "stages.sequencing.insertion.run_length")
+    if del_empirical is not None:
+        s["deletion"]["run_length"] = _check_empirical(del_empirical, "stages.sequencing.deletion.run_length")
     s["context"] = _check_context(ext.get("context"), s)
     het = _check_heterogeneity(ext.get("read_heterogeneity"))
     if het is not None:                      # only when set: documents without it keep their canonical form and SHA-256
@@ -177,6 +227,8 @@ def active_effects(stages: dict) -> list[str]:
     rl = seq.get("insertion", {}).get("run_length")
     if rl and rl.get("distribution") != "single":
         out.append("insertion.run_length")
+    if seq.get("deletion", {}).get("run_length", {}).get("distribution") == "empirical":
+        out.append("deletion.run_length")
     if seq.get("read_heterogeneity") is not None:
         out.append("read_heterogeneity")
     return out + [k for k in UNHONOURED if seq.get(k) is not None]

@@ -238,26 +238,28 @@ class InsertionModel(ErrorModel):
     rate: float = 0.0
     base_weights: tuple | None = None            # P(inserted base = A, C, G, T); None = uniform
     profile: PositionProfile | None = None
-    run_distribution: str = "single"             # /2: single | geometric (bases inserted at one gap)
-    run_mean: float = 1.0                        # /2: mean inserted run length (geometric, >= 1)
+    run_distribution: str = "single"             # /2: single | geometric | empirical (bases inserted at one gap)
+    run_mean: float = 1.0                        # /2: mean inserted run length (>= 1)
+    run_pmf: tuple | None = None                 # /2 empirical: P(run = 1..K), last bin = "K or more"
+    run_tail_mean: float = 0.0                   # /2 empirical: mean run length given run >= K
     kind: ClassVar[str] = "insertion"
 
     @classmethod
     def from_json(cls, doc: dict, profile: PositionProfile | None = None) -> "InsertionModel":
         w = doc.get("base_weights")
         rl = doc.get("run_length") or {"distribution": "single", "mean": 1.0}
-        return cls(doc["rate"], None if w is None else tuple(w), profile, rl["distribution"], rl["mean"])
+        return cls(doc["rate"], None if w is None else tuple(w), profile, rl["distribution"], rl["mean"], *_empirical(rl))
 
     def parameters(self) -> dict:
         out: dict[str, Any] = {"rate": self.rate,
                                "base_weights": None if self.base_weights is None else list(self.base_weights)}
         if self.clustered:
-            out["run_length"] = {"distribution": self.run_distribution, "mean": self.run_mean}
+            out["run_length"] = _run_json(self)
         return out
 
     @property
     def clustered(self) -> bool:
-        return self.run_distribution == "geometric" and self.run_mean > 1.0
+        return _clustered(self)
 
     @property
     def active(self) -> bool:
@@ -270,18 +272,20 @@ class InsertionModel(ErrorModel):
 @dataclass(frozen=True)
 class DeletionModel(ErrorModel):
     rate: float = 0.0                            # per-base rate of deletion events (run starts)
-    run_distribution: str = "single"             # single | geometric
-    run_mean: float = 1.0                        # mean run length (geometric, >= 1)
+    run_distribution: str = "single"             # single | geometric | empirical (/2)
+    run_mean: float = 1.0                        # mean run length (>= 1)
     profile: PositionProfile | None = None
+    run_pmf: tuple | None = None                 # /2 empirical: P(run = 1..K), last bin = "K or more"
+    run_tail_mean: float = 0.0                   # /2 empirical: mean run length given run >= K
     kind: ClassVar[str] = "deletion"
 
     @classmethod
     def from_json(cls, doc: dict, profile: PositionProfile | None = None) -> "DeletionModel":
         rl = doc["run_length"]
-        return cls(doc["rate"], rl["distribution"], rl["mean"], profile)
+        return cls(doc["rate"], rl["distribution"], rl["mean"], profile, *_empirical(rl))
 
     def parameters(self) -> dict:
-        return {"rate": self.rate, "run_length": {"distribution": self.run_distribution, "mean": self.run_mean}}
+        return {"rate": self.rate, "run_length": _run_json(self)}
 
     @property
     def active(self) -> bool:
@@ -289,10 +293,44 @@ class DeletionModel(ErrorModel):
 
     @property
     def clustered(self) -> bool:
-        return self.run_distribution == "geometric" and self.run_mean > 1.0
+        return _clustered(self)
 
     def apply(self, pool: SequencePool, rng: np.random.Generator) -> SequencePool:
         return CompositeModel((self,)).apply(pool, rng)
+
+
+def _empirical(rl: dict) -> tuple:
+    if rl["distribution"] != "empirical":
+        return None, 0.0
+    return tuple(rl["pmf"]), rl["tail_mean"]
+
+
+def _run_json(m: "InsertionModel | DeletionModel") -> dict:
+    out: dict[str, Any] = {"distribution": m.run_distribution, "mean": m.run_mean}
+    if m.run_distribution == "empirical":
+        out.update(pmf=list(m.run_pmf or ()), tail_mean=m.run_tail_mean)
+    return out
+
+
+def _clustered(m: "InsertionModel | DeletionModel") -> bool:
+    if m.run_distribution == "empirical":
+        return m.run_pmf is not None and m.run_pmf[0] < 1.0
+    return m.run_distribution == "geometric" and m.run_mean > 1.0
+
+
+def draw_runs(m: "InsertionModel | DeletionModel", n: int, aux: np.random.Generator) -> np.ndarray:
+    """``n`` run lengths (>= 1) of a clustered insertion or deletion model. Geometric: one ``aux.geometric`` call (the
+    V6 draws). Empirical (/2): one ``aux.choice`` over the K bins, then, for runs in the last bin ("K or more") when its
+    mean exceeds K, K - 1 + Geometric(1 / (tail_mean - K + 1)) from one more ``aux.geometric`` call."""
+    if m.run_distribution != "empirical":
+        return aux.geometric(1.0 / m.run_mean, n)
+    p = np.asarray(m.run_pmf, dtype=np.float64)
+    k = p.size
+    runs = aux.choice(k, size=n, p=p / p.sum()).astype(np.int64) + 1
+    tail = np.flatnonzero(runs == k)
+    if tail.size and m.run_tail_mean > k:
+        runs[tail] += aux.geometric(1.0 / (m.run_tail_mean - k + 1), tail.size) - 1
+    return runs
 
 
 @dataclass(frozen=True)
@@ -529,7 +567,7 @@ def per_base_errors(base: np.ndarray, lengths: np.ndarray | None, rates: tuple, 
     if events is not None and events.any():
         assert aux is not None and dele is not None, "clustered deletions need the auxiliary generator"
         rows, cols = np.nonzero(events)
-        runs = aux.geometric(1.0 / dele.run_mean, rows.size)
+        runs = draw_runs(dele, rows.size, aux)
         starts = np.concatenate([[0], np.cumsum(runs)[:-1]])
         rr = np.repeat(rows, runs)
         cc = np.repeat(cols, runs) + (np.arange(int(runs.sum())) - np.repeat(starts, runs))
@@ -549,10 +587,10 @@ def per_base_errors(base: np.ndarray, lengths: np.ndarray | None, rates: tuple, 
         ins_base[idx] = aux.choice(4, size=idx[0].size, p=np.asarray(ins.base_weights, dtype=np.float64)).astype(np.uint8)
     keep_base = ~is_del if valid is None else (~is_del & valid)
     if ins is not None and ins.clustered and is_ins.any():
-        # /2 insertion runs: Geometric(1/mean) bases inserted before the site (the V4 draw gives the first base)
+        # /2 insertion runs: geometric or empirical run of bases inserted before the site (the V4 draw gives the first base)
         assert aux is not None, "insertion runs need the auxiliary generator"
         rows, cols = np.nonzero(is_ins)
-        run = np.minimum(aux.geometric(1.0 / ins.run_mean, rows.size), MAX_INSERTION_RUN)
+        run = np.minimum(draw_runs(ins, rows.size, aux), MAX_INSERTION_RUN)
         kmax = int(run.max())
         runlen = np.zeros((m, w), dtype=np.int64)
         runlen[rows, cols] = run
