@@ -116,7 +116,7 @@ def main() -> int:
     msgs = git("log", "--format=%an|%s%n%b", f"{V7_CLOSE}..HEAD")
     checks["author_ok"] = all(ln.split("|")[0] == "vishnuselvam101-hash" for ln in msgs.splitlines() if "|" in ln)
     checks["no_ai_attribution"] = not re.search(r"(?i)co-authored-by|generated with|claude|anthropic|chatgpt|copilot", msgs)
-    diff = git("diff", V7_CLOSE, "HEAD")
+    diff = git("diff", V7_CLOSE, "HEAD", "--", ".", ":!experiments/v8/audit.py")   # the scanner's own patterns excluded
     checks["no_secrets_in_diff"] = not re.search(r"(BEGIN [A-Z ]*PRIVATE KEY|ghp_[A-Za-z0-9]{20,}|github_pat_|sk-ant-|xox[bp]-|AKIA[0-9A-Z]{16})", diff)
     gate = ["no_heldout_granted", "run13_never_granted", "v7_heldout_log_unchanged_since_v7_close", "dev_evaluations_only_after_verdict",
             "model_scripts_never_requested_dev",
