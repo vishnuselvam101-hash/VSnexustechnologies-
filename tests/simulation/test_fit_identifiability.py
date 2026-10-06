@@ -208,7 +208,8 @@ def test_committed_models_with_a_confounded_rate_are_labelled_estimated_with_the
     relabel: dict = {"models": {}}
     for f in files:
         relabel["models"].update(json.loads(f.read_text())["models"])
-    seen = []
+    seen: list = []
+    native: list = []
     for p in sorted(root.glob("experiments/v7/fit-*/**/models/*.json")):
         m = cm.from_doc(json.loads(p.read_text()))[0]
         seq = m.stages["sequencing"]
@@ -220,8 +221,14 @@ def test_committed_models_with_a_confounded_rate_are_labelled_estimated_with_the
         ms = m.doc["fit_report"]["measured_statistics"]
         eff = ms["substitution_rate_effective_per_base"]
         assert eff["value"] == ms["observed_per_base_rates"]["substitution"] < seq["substitution"]["rate"]
-        assert relabel["models"][rel]["sha256_after"] == m.sha256
-    assert sorted(seen) == sorted(relabel["models"]) and len(seen) == 6
+        if rel in relabel["models"]:            # written before the driver fix: relabelled in place, hashes recorded
+            assert relabel["models"][rel]["sha256_after"] == m.sha256
+        else:                                   # written by the fixed driver (model_out.confounded_substitution)
+            assert MO.CONFOUNDED_SUBSTITUTION_NOTE in m.doc["fit_report"]["notes"], rel
+            native.append(rel)
+    assert set(relabel["models"]) <= set(seen) and len(relabel["models"]) == 6
+    # the a7c forward candidates (fit-nano/d03-a7c, min_run 2 + substitution context) carry it natively
+    assert sorted(native) == [f"experiments/v7/fit-nano/d03-a7c/models/ont-guppy-{k}-pass-fwd-fit.json" for k in ("fast", "hac")]
 
 
 def test_fit_driver_records_the_effective_rate_of_a_confounded_design():
