@@ -23,6 +23,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import fitlib as FL  # noqa: E402
 from fitlib import F, G, MO, P, V, cm  # noqa: E402
+from vnxdna.simulation.fit import precheck as PC  # noqa: E402
 from vnxdna.simulation.fit.tally import Layout  # noqa: E402
 
 D03_FILES = (0, 2)          # non-held-out D03 files (file-1 is the held-out run)
@@ -77,12 +78,15 @@ MODEL_VERSION = "2.0.0"
 #: round a7b (V7 step 7.4): fitted-nanopore pre-registration 7B + amendment A1 (experiments/v7/fit-nano/PREREGISTRATION*.md).
 #: Empirical insertion/deletion run lengths, layout with homopolymer masks 2..6 and the per-read edit-rate field, gating
 #: GATING_7B; outputs under experiments/v7/fit-nano/<dataset>/. Selected with --round a7b.
-ROUNDS = {"a2": {"version": "2.0.0"}, "a7b": {"version": "3.0.0"}}
+#: round a7c (V7 7.4, DEV look 2 candidate): a7b + homopolymer.indel_by_length (experiments/v7/fit-nano/d03/
+#: CHANGE-HP-BY-LENGTH.md); outputs under experiments/v7/fit-nano/<dataset>-a7c/. Its DEV validation is refused unless the
+#: FIT-only pre-check justified it and the candidate is frozen (``dev_look_2_gate``).
+ROUNDS = {"a2": {"version": "2.0.0"}, "a7b": {"version": "3.0.0"}, "a7c": {"version": "3.1.0"}}
 MINRUNS_7B = (2, 3, 4, 5, 6)
 
 
 def is_7b() -> bool:
-    return ROUND == "a7b"
+    return ROUND in ("a7b", "a7c")
 
 
 def layout_for(job: dict) -> Layout:
@@ -96,7 +100,8 @@ def d02_out_dir() -> Path:
 
 def out_dir(job: dict) -> Path:
     if is_7b():
-        return OUT / "fit-nano" / ("d03" if job["dataset"] == "d03-nanopore" else job["dataset"])
+        base = "d03" if job["dataset"] == "d03-nanopore" else job["dataset"]
+        return OUT / "fit-nano" / (base + "-a7c" if ROUND == "a7c" else base)
     return OUT / ("fit-cnr" if job["dataset"] == "cnr" else "fit-d03" if job["dataset"] == "d03-nanopore" else "fit-d02") / ROUND
 
 
@@ -216,7 +221,8 @@ def do_fit(job_id: str, workers: int, bootstrap: int, seed: int = SEED) -> Path:
         import dataclasses
         from vnxdna.simulation.fit import estimate as est
         design = dataclasses.replace(est.choose_design(lay, M.sum(axis=0).astype(np.float64)), ins_geometric=False,
-                                     del_geometric=False, ins_empirical=True, del_empirical=True)
+                                     del_geometric=False, ins_empirical=True, del_empirical=True,
+                                     hp_by_length=ROUND == "a7c")
     fit = F.fit_tallies(M, lay, seed=seed, bootstrap=bootstrap, design=design, calibration=dict(refs=cal_refs, coverage=CAL_COVERAGE, iterations=CAL_ITER, workers=workers, tally_opts=topts(job)))
     t_fit = time.time() - t1
     v, ci = fit["values"], fit["ci95"]
@@ -315,12 +321,26 @@ def validation_notes(rep: dict) -> list[str]:
     return notes
 
 
+def dev_look_2_gate(job_id: str, d: Path, model: cm.ChannelModel) -> None:
+    """Round a7c validation is DEV look 2, the last: refused unless the FIT-only pre-check of this exact model justified it and
+    a freeze record pins the same model SHA-256."""
+    dec_p, frz_p = d / "precheck" / f"{job_id}.precheck.json", d / "FREEZE.json"
+    dec = json.loads(dec_p.read_text())["decision"] if dec_p.exists() else {}
+    frz = json.loads(frz_p.read_text()) if frz_p.exists() else {}
+    if dec.get("decision") != PC.DECISION_JUSTIFIED or dec.get("model_sha256") != model.sha256:
+        raise SystemExit(f"DEV look 2 refused for {job_id}: no FIT pre-check justifying model {model.sha256[:12]}")
+    if frz.get("models", {}).get(job_id, {}).get("model_sha256") != model.sha256:
+        raise SystemExit(f"DEV look 2 refused for {job_id}: model {model.sha256[:12]} is not frozen in {frz_p}")
+
+
 def do_validate(job_id: str, workers: int, seed: int = SEED + 1) -> Path:
     job = JOBS[job_id]
     d = out_dir(job)
     mp = d / "models" / f"{job['name']}.json"
     doc = json.loads(mp.read_text())
     model, _ = cm.from_doc(doc)
+    if ROUND == "a7c":
+        dev_look_2_gate(job_id, d, model)
     guard = G.Guard(FL.DATA_DIR, script=f"experiments/v7/fit/run.py validate {job_id}")
     t0 = time.time()
     lay, Ms, rss, colls, labels = tally_split(guard, job, "DEV", workers, keep_clusters=1500)
@@ -355,6 +375,108 @@ def do_validate(job_id: str, workers: int, seed: int = SEED + 1) -> Path:
          "environment": environment_info(), "evidence_class": "SIMULATED reads vs PUBLIC-DATA-DERIVED DEV reads"}, indent=1, sort_keys=True) + "\n")
     print(job_id, adequacy, failed, {m: rep[m].get("pass") for m in sorted(rep)})
     return mp
+
+
+#: the only split the pre-check may read (data firewall: no DEV, no held-out, no validation artefacts)
+PRECHECK_SPLIT = "FIT"
+#: per group: clusters for the M8 functional check (as do_validate keeps 1500 per group)
+PRECHECK_CLUSTERS_PER_GROUP = 1500
+
+
+def _in_sample(model, lay, job, clusters, M, rs, seed, workers, with_m10: bool, refs=None) -> dict:
+    """The 7B metrics with the FIT data as the real side (in sample), as do_validate computes them on DEV."""
+    refs = refs if refs is not None else [c[0] for c in clusters]
+    rep = V.validate_model(model, lay, dev_refs=refs[::max(1, len(refs) // 4000)], dev_clusters=clusters, dev_M=M, dev_rs=rs,
+                           mode=job["mode"], seed=seed, workers=workers, tally_opts=topts(job), prereg="7B")
+    if with_m10:
+        cal = dict(refs=refs[::max(1, len(refs) // 2000)][:2000], coverage=CAL_COVERAGE, iterations=CAL_ITER, tally_opts=topts(job))
+        rt_refs = refs[::max(1, len(refs) // 3000)][:3000]
+        rep["M10"] = V.round_trip(model, lay, rt_refs, coverage=8, seed=seed + 5, bootstrap=200, workers=workers, calibration=cal,
+                                  tally_opts=topts(job))
+    return rep
+
+
+def _brief(rep: dict) -> dict:
+    """Metric report without the per-element M10 parameter table (kept in full only for the full-data report)."""
+    return {k: ({kk: vv for kk, vv in v.items() if kk != "parameters"} if isinstance(v, dict) else v) for k, v in rep.items()}
+
+
+def do_precheck(job_id: str, workers: int, seed: int = SEED + 2, bootstrap_half: int = 50) -> Path:
+    """FIT-only pre-check of the round a7c candidate (src/vnxdna/simulation/fit/precheck.py): in-sample 7B metrics on the full
+    FIT split and on two disjoint halves of its references, M10 at two seeds, half-split refits (parameter stability) and the
+    per-run-length table. Reads the FIT split only and the candidate model fitted on it."""
+    if ROUND != "a7c":
+        raise SystemExit("precheck is defined for --round a7c (the DEV look 2 candidate)")
+    job = JOBS[job_id]
+    d = out_dir(job)
+    mp = d / "models" / f"{job['name']}.json"
+    model, _ = cm.from_doc(json.loads(mp.read_text()))
+    guard = G.Guard(FL.DATA_DIR, script=f"experiments/v7/fit/run.py precheck {job_id} --round a7c")
+    t0 = time.time()
+    lay, Ms, rss, colls, labels = tally_split(guard, job, PRECHECK_SPLIT, workers, keep_clusters=1 << 40)
+    M = np.concatenate(Ms)
+    rs = sum(rss)
+    refs = [r for c in colls for r in c.refs]
+    m8 = [x for c in colls for x in c.clusters[:PRECHECK_CLUSTERS_PER_GROUP]]
+    allc = [x for c in colls for x in c.clusters]
+    full = _in_sample(model, lay, job, m8, M, rs, seed, workers, True, refs=refs)
+    m10_b = V.round_trip(model, lay, refs[::max(1, len(refs) // 3000)][:3000], coverage=8, seed=seed + 105, bootstrap=200,
+                         workers=workers, tally_opts=topts(job),
+                         calibration=dict(refs=refs[::max(1, len(refs) // 2000)][:2000], coverage=CAL_COVERAGE,
+                                          iterations=CAL_ITER, tally_opts=topts(job), workers=workers))
+    half_reports, half_values, half_meta = [], [], []
+    design = V.design_from_model(model)
+    for h, idx in enumerate(PC.halves(len(allc), seed)):
+        part = [allc[i] for i in idx]
+        Mh, rsh = P.tally_matrix(part, lay, mode=job["mode"], workers=workers, **topts(job))
+        rep = _in_sample(model, lay, job, part[: len(m8) // 2], Mh, rsh, seed + 10 + h, workers, False, refs=[c[0] for c in part])
+        half_reports.append(rep)
+        hrefs = [c[0] for c in part]
+        hf = F.fit_tallies(Mh, lay, seed=seed + 20 + h, bootstrap=bootstrap_half, with_coverage=False, design=design,
+                           calibration=dict(refs=hrefs[::max(1, len(hrefs) // CAL_REFS)][:CAL_REFS], coverage=CAL_COVERAGE,
+                                            iterations=CAL_ITER, workers=workers, tally_opts=topts(job)))
+        half_values.append({k: v for k, v in hf["values"].items() if not k.startswith("_")})
+        half_meta.append({"clusters": len(part), "reads_tallied": int(lay.get(Mh, "n_reads").sum()),
+                          "indel_by_length": hf["values"].get("sequencing.homopolymer.indel_by_length")})
+    full_values = {k: v["value"] for k, v in model.doc["parameters"].items()}
+    full_ci = {k: v["ci95"] for k, v in model.doc["parameters"].items() if v.get("ci95") is not None}
+    stab = PC.stability(full, half_reports)
+    stab["M10"]["second_seed"] = m10_b.get("pass")
+    if stab["M10"]["full"] is False:
+        stab["M10"]["class"] = "FAIL_STABLE" if m10_b.get("pass") is False else "FAIL_NOISE_PLAUSIBLE"
+    decision = PC.decide(full)
+    decision["model_sha256"] = model.sha256
+    out = {"experiment": "V7 7.4 FIT-only pre-check before DEV look 2", "job": job_id, "round": ROUND,
+           "evidence_class": "SIMULATED reads vs PUBLIC-DATA-DERIVED FIT reads (IN SAMPLE: not validation)",
+           "data_firewall": {"split_read": PRECHECK_SPLIT, "dev_read": False, "heldout_read": False,
+                             "validation_artefacts_read": False,
+                             "note": "the only data access is tally_split(guard, job, 'FIT'); every request is in SPLIT_ACCESS_LEDGER.jsonl"},
+           "decision": decision, "stability": stab,
+           "run_length_table": PC.run_length_table(lay, M, seed=seed, B=200),
+           "indel_by_length": {"full_fit": model.stages["sequencing"]["homopolymer"].get("indel_by_length"),
+                               "full_fit_ci95": full_ci.get("sequencing.homopolymer.indel_by_length"),
+                               "half_fits": [m["indel_by_length"] for m in half_meta]},
+           "parameter_stability": PC.parameter_stability(full_values, half_values, full_ci),
+           "metrics_full": full, "metrics_halves": [_brief(r) for r in half_reports], "m10_second_seed": _brief({"M10": m10_b})["M10"],
+           "halves": half_meta,
+           "provenance": {"model_file": str(mp.relative_to(FL.REPO)), "model_sha256": model.sha256,
+                          "model_version": model.doc["version"], "fitting": model.doc["provenance"]["fitting"],
+                          "datasets": [{"id": x["id"], "sha256": x["sha256"], "files": x["files"]}
+                                       for x in model.doc["provenance"]["datasets"]],
+                          "split_manifest_sha256": FL.SPLIT_SHA, "precheck_code": FL.git_state(FL.REPO),
+                          "code_at_start": FL.GIT_AT_START, "seeds": {"metrics": seed, "m10": [seed + 5, seed + 105],
+                                                                      "halves": seed, "half_metrics": [seed + 10, seed + 11],
+                                                                      "half_fits": [seed + 20, seed + 21]},
+                          "bootstrap": {"run_length_table": 200, "half_fits": bootstrap_half, "m10": 200},
+                          "environment": environment_info()},
+           "fit_references": len(refs), "fit_reads_tallied": int(lay.get(M, "n_reads").sum()),
+           "seconds": round(time.time() - t0, 1), "workers": workers, "peak_rss_mb_self_plus_children": round(mem_mb(), 1)}
+    p = d / "precheck" / f"{job_id}.precheck.json"
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps(_jsonable(out), indent=1, sort_keys=True) + "\n")
+    print(json.dumps({"job": job_id, "decision": decision, "classes": {k: v["class"] for k, v in stab.items()},
+                      "seconds": out["seconds"]}, indent=1))
+    return p
 
 
 def _jsonable(o):
@@ -490,7 +612,7 @@ def environment_info() -> dict:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("cmd", choices=["fit", "validate", "smoke", "orientation", "config", "list"])
+    ap.add_argument("cmd", choices=["fit", "validate", "precheck", "smoke", "orientation", "config", "list"])
     ap.add_argument("job", nargs="?")
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--bootstrap", type=int, default=200)
@@ -515,6 +637,9 @@ def main(argv=None) -> int:
     if a.job == "d02-twist":
         import run_d02
         (run_d02.do_fit(a.workers, a.bootstrap) if a.cmd == "fit" else run_d02.do_validate(a.workers))
+        return 0
+    if a.cmd == "precheck":
+        do_precheck(a.job, a.workers)
         return 0
     (do_fit(a.job, a.workers, a.bootstrap) if a.cmd == "fit" else do_validate(a.job, a.workers))
     return 0
