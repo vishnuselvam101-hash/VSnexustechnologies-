@@ -1,0 +1,1294 @@
+{
+ "assumption": "binomial SEs treat reads as independent (lower bounds)",
+ "note": "Sampling and Monte Carlo standard errors of the gating metrics (M2, M3, M8) of every DEV validation, computed only from\nthe committed validation results and model files (no read data is opened; no new look at DEV).",
+ "validations": [
+  {
+   "M2": {
+    "ks_D": 0.05596303554792842,
+    "ks_D_5pct_null_critical": 0.008166069669250006,
+    "ks_threshold": 0.03,
+    "note": "TV and quantile SEs need the read-level histograms (not committed; not re-derived: no new DEV look)",
+    "quantile_se": null,
+    "tv": 0.10473884067339814,
+    "tv_se": null
+   },
+   "M3": {
+    "abs_drift_le_0": {
+     "diff_pp": -0.5542107816507297,
+     "margin_in_se": 1.962754930897146,
+     "margin_to_1pp": 0.4457892183492703,
+     "pass": true,
+     "se_diff_pp": 0.2271242381469941,
+     "se_real_pp": 0.16647370851447535,
+     "se_sim_mc_pp": 0.15450541714545152
+    },
+    "abs_drift_le_3": {
+     "diff_pp": -5.602364797585347,
+     "margin_in_se": -21.626787302775313,
+     "margin_to_1pp": -4.602364797585347,
+     "pass": false,
+     "se_diff_pp": 0.212808529216669,
+     "se_real_pp": 0.14326379134980521,
+     "se_sim_mc_pp": 0.1573624993301814
+    },
+    "abs_drift_le_6": {
+     "diff_pp": -2.244207677997634,
+     "margin_in_se": -20.426504054735744,
+     "margin_to_1pp": -1.2442076779976339,
+     "pass": false,
+     "se_diff_pp": 0.06091143519535214,
+     "se_real_pp": 0.0,
+     "se_sim_mc_pp": 0.06091143519535214
+    }
+   },
+   "M8": {
+    "1": {
+     "diff_pp": -0.17030303030303104,
+     "pass": true,
+     "real": 0.059018181818181824,
+     "se_diff_pp": 0.08149054599121891,
+     "se_real_pp": 0.05801685777890016,
+     "se_sim_pp": 0.05722546023764105,
+     "sim": 0.05731515151515151
+    },
+    "10": {
+     "diff_pp": -0.5291323834370188,
+     "pass": true,
+     "real": 0.0202020202020202,
+     "se_diff_pp": 0.048035417298050685,
+     "se_real_pp": 0.03639308796226516,
+     "se_sim_pp": 0.031351945132139694,
+     "sim": 0.014910696367650012
+    },
+    "2": {
+     "diff_pp": -0.04730426344835975,
+     "pass": true,
+     "real": 0.05779610649523925,
+     "se_diff_pp": 0.08111787953813501,
+     "se_real_pp": 0.05746953537321785,
+     "se_sim_pp": 0.05724825660882475,
+     "sim": 0.057323063860755655
+    },
+    "20": {
+     "diff_pp": -0.5102365545772783,
+     "pass": true,
+     "real": 0.019529012411159438,
+     "se_diff_pp": 0.059508794642719035,
+     "se_real_pp": 0.045078407862030094,
+     "se_sim_pp": 0.038848858212999896,
+     "sim": 0.014426646865386654
+    },
+    "5": {
+     "diff_pp": -0.5884520884520887,
+     "pass": true,
+     "real": 0.02492628992628993,
+     "se_diff_pp": 0.05138972802975891,
+     "se_real_pp": 0.038642284679771405,
+     "se_sim_pp": 0.03387739632409924,
+     "sim": 0.019041769041769043
+    }
+   },
+   "job": "cnr-p4tie",
+   "n_real_reads": 52242,
+   "n_simulated_reads_nominal": 59130,
+   "round": 1,
+   "source": "experiments/v7/fit-cnr/results/cnr-p4tie.validation.json"
+  },
+  {
+   "M2": {
+    "ks_D": 0.05392216075322567,
+    "ks_D_5pct_null_critical": 0.008166069669250006,
+    "ks_threshold": 0.03,
+    "note": "TV and quantile SEs need the read-level histograms (not committed; not re-derived: no new DEV look)",
+    "quantile_se": null,
+    "tv": 0.10338463285963145,
+    "tv_se": null
+   },
+   "M3": {
+    "abs_drift_le_0": {
+     "diff_pp": -1.6703954594792432,
+     "margin_in_se": -2.988587333843297,
+     "margin_to_1pp": -0.6703954594792432,
+     "pass": false,
+     "se_diff_pp": 0.2243185105844374,
+     "se_real_pp": 0.16647370851447535,
+     "se_sim_mc_pp": 0.15035058551351854
+    },
+    "abs_drift_le_3": {
+     "diff_pp": -6.877521232559136,
+     "margin_in_se": -27.21306290166553,
+     "margin_to_1pp": -5.877521232559136,
+     "pass": false,
+     "se_diff_pp": 0.21598161345518413,
+     "se_real_pp": 0.14326379134980521,
+     "se_sim_mc_pp": 0.16162779290327528
+    },
+    "abs_drift_le_6": {
+     "diff_pp": -2.5892102147809903,
+     "margin_in_se": -24.33313688568175,
+     "margin_to_1pp": -1.5892102147809903,
+     "pass": false,
+     "se_diff_pp": 0.06531053609105873,
+     "se_real_pp": 0.0,
+     "se_sim_mc_pp": 0.06531053609105873
+    }
+   },
+   "M8": {
+    "1": {
+     "diff_pp": -0.19151515151515225,
+     "pass": true,
+     "real": 0.059018181818181824,
+     "se_diff_pp": 0.08142066522597068,
+     "se_real_pp": 0.05801685777890016,
+     "se_sim_pp": 0.05712590427557766,
+     "sim": 0.0571030303030303
+    },
+    "10": {
+     "diff_pp": -0.36189711686400383,
+     "pass": true,
+     "real": 0.0202020202020202,
+     "se_diff_pp": 0.049150209174539175,
+     "se_real_pp": 0.03639308796226516,
+     "se_sim_pp": 0.03303462139137946,
+     "sim": 0.016583049033380162
+    },
+    "2": {
+     "diff_pp": -0.09642792164473307,
+     "pass": true,
+     "real": 0.05779610649523925,
+     "se_diff_pp": 0.08095505365353112,
+     "se_real_pp": 0.05746953537321785,
+     "se_sim_pp": 0.057017306285307476,
+     "sim": 0.05683182727879192
+    },
+    "20": {
+     "diff_pp": -0.2906545030232313,
+     "pass": true,
+     "real": 0.019529012411159438,
+     "se_diff_pp": 0.06137568644896265,
+     "se_real_pp": 0.045078407862030094,
+     "se_sim_pp": 0.0416522752284415,
+     "sim": 0.016622467380927125
+    },
+    "5": {
+     "diff_pp": -0.4195331695331699,
+     "pass": true,
+     "real": 0.02492628992628993,
+     "se_diff_pp": 0.05235008342219684,
+     "se_real_pp": 0.038642284679771405,
+     "se_sim_pp": 0.035317206416114966,
+     "sim": 0.020730958230958232
+    }
+   },
+   "job": "cnr",
+   "n_real_reads": 52242,
+   "n_simulated_reads_nominal": 59130,
+   "round": 1,
+   "source": "experiments/v7/fit-cnr/results/cnr.validation.json"
+  },
+  {
+   "M2": {
+    "ks_D": 0.025468502356575384,
+    "ks_D_5pct_null_critical": 0.005563934326836888,
+    "ks_threshold": 0.03,
+    "note": "TV and quantile SEs need the read-level histograms (not committed; not re-derived: no new DEV look)",
+    "quantile_se": null,
+    "tv": 0.029200528712181574,
+    "tv_se": null
+   },
+   "M3": {
+    "abs_drift_le_0": {
+     "diff_pp": -1.1692592713294592,
+     "margin_in_se": -1.7789958639783734,
+     "margin_to_1pp": -0.16925927132945917,
+     "pass": false,
+     "se_diff_pp": 0.095143150558509,
+     "se_real_pp": 0.03389805036711608,
+     "se_sim_mc_pp": 0.08889961349470295
+    },
+    "abs_drift_le_3": {
+     "diff_pp": -0.0463881608520067,
+     "margin_in_se": 38.07176872147839,
+     "margin_to_1pp": 0.9536118391479933,
+     "pass": true,
+     "se_diff_pp": 0.025047741966608663,
+     "se_real_pp": 0.009236725514855706,
+     "se_sim_mc_pp": 0.02328244573469511
+    },
+    "abs_drift_le_6": {
+     "diff_pp": 0.19875907832654915,
+     "margin_in_se": 80.98657788253924,
+     "margin_to_1pp": 0.8012409216734508,
+     "pass": true,
+     "se_diff_pp": 0.00989350263491253,
+     "se_real_pp": 0.007588467188541339,
+     "se_sim_mc_pp": 0.006347957160807933
+    }
+   },
+   "M8": {
+    "1": {
+     "diff_pp": 0.06419753086419744,
+     "pass": true,
+     "real": 0.006567901234567901,
+     "se_diff_pp": 0.029074049194829716,
+     "se_real_pp": 0.020077600352514272,
+     "se_sim_pp": 0.02102832139444557,
+     "sim": 0.007209876543209875
+    },
+    "10": {
+     "diff_pp": -0.0006210100106813722,
+     "pass": true,
+     "real": 1.2420200213627444e-05,
+     "se_diff_pp": 0.0013775416135546063,
+     "se_real_pp": 0.001068468236718033,
+     "se_sim_pp": 0.0008694806059937655,
+     "sim": 6.210100106813722e-06
+    },
+    "2": {
+     "diff_pp": 0.024122318711496983,
+     "pass": true,
+     "real": 0.006265617655063213,
+     "se_diff_pp": 0.028029518889460977,
+     "se_real_pp": 0.019633199379495894,
+     "se_sim_pp": 0.020004784710154013,
+     "sim": 0.006506840842178183
+    },
+    "20": {
+     "diff_pp": -0.002492398185534121,
+     "pass": true,
+     "real": 4.361696824684712e-05,
+     "se_diff_pp": 0.0021512612629958202,
+     "se_real_pp": 0.0017579485332032076,
+     "se_sim_pp": 0.0012399766031159867,
+     "sim": 1.8692986391505906e-05
+    },
+    "5": {
+     "diff_pp": -0.007437156031533538,
+     "pass": true,
+     "real": 0.0001859289007883385,
+     "se_diff_pp": 0.004378477027435407,
+     "se_real_pp": 0.003448096911896803,
+     "se_sim_pp": 0.0026984604436506607,
+     "sim": 0.00011155734047300312
+    }
+   },
+   "job": "d02-twist",
+   "n_real_reads": 393569,
+   "n_simulated_reads_nominal": 70440,
+   "round": 1,
+   "source": "experiments/v7/fit-d02/results/d02-twist.validation.json"
+  },
+  {
+   "M2": {
+    "ks_D": 0.0958142897490053,
+    "ks_D_5pct_null_critical": 0.0053284040317052375,
+    "ks_threshold": 0.03,
+    "note": "TV and quantile SEs need the read-level histograms (not committed; not re-derived: no new DEV look)",
+    "quantile_se": null,
+    "tv": 0.1915375903718725,
+    "tv_se": null
+   },
+   "M3": {
+    "abs_drift_le_0": {
+     "diff_pp": -0.938144432437743,
+     "margin_in_se": 0.5884163631161015,
+     "margin_to_1pp": 0.06185556756225696,
+     "pass": true,
+     "se_diff_pp": 0.10512210645313433,
+     "se_real_pp": 0.07316250053062776,
+     "se_sim_mc_pp": 0.07548447377606868
+    },
+    "abs_drift_le_3": {
+     "diff_pp": -3.435607406575775,
+     "margin_in_se": -12.443351409282071,
+     "margin_to_1pp": -2.435607406575775,
+     "pass": false,
+     "se_diff_pp": 0.19573564439873833,
+     "se_real_pp": 0.132215792720351,
+     "se_sim_mc_pp": 0.14433096217900898
+    },
+    "abs_drift_le_6": {
+     "diff_pp": -0.907427568011343,
+     "margin_in_se": 0.5974434449598868,
+     "margin_to_1pp": 0.09257243198865694,
+     "pass": true,
+     "se_diff_pp": 0.15494760678958056,
+     "se_real_pp": 0.10374576003296936,
+     "se_sim_mc_pp": 0.11508943533183227
+    }
+   },
+   "M8": {
+    "1": {
+     "diff_pp": -0.21599999999999953,
+     "pass": true,
+     "real": 0.10007555555555556,
+     "se_diff_pp": 0.08904205835009013,
+     "se_real_pp": 0.06326720469367896,
+     "se_sim_pp": 0.06265579754076221,
+     "sim": 0.09791555555555556
+    },
+    "10": {
+     "diff_pp": -0.9050873196659072,
+     "pass": true,
+     "real": 0.04932928372563908,
+     "se_diff_pp": 0.06581012438272905,
+     "se_real_pp": 0.04872400851817312,
+     "se_sim_pp": 0.044237353731787145,
+     "sim": 0.040278410528980006
+    },
+    "2": {
+     "diff_pp": -0.22755555555555446,
+     "pass": true,
+     "real": 0.0951911111111111,
+     "se_diff_pp": 0.08702866351839164,
+     "se_real_pp": 0.06187122495049189,
+     "se_sim_pp": 0.061204083171983406,
+     "sim": 0.09291555555555556
+    },
+    "20": {
+     "diff_pp": -0.7289272030651341,
+     "pass": true,
+     "real": 0.04566091954022989,
+     "se_diff_pp": 0.08780406342230886,
+     "se_real_pp": 0.06461052766298964,
+     "se_sim_pp": 0.05945614575953345,
+     "sim": 0.03837164750957855
+    },
+    "5": {
+     "diff_pp": -0.9275555555555558,
+     "pass": true,
+     "real": 0.060880000000000004,
+     "se_diff_pp": 0.06867636322429546,
+     "se_real_pp": 0.05040984983518573,
+     "se_sim_pp": 0.0466400032730422,
+     "sim": 0.051604444444444446
+    }
+   },
+   "job": "d03-fast-bwd",
+   "n_real_reads": 142512,
+   "n_simulated_reads_nominal": 120000,
+   "round": 1,
+   "source": "experiments/v7/fit-d03/results/d03-fast-bwd.validation.json"
+  },
+  {
+   "M2": {
+    "ks_D": 0.10116120766886735,
+    "ks_D_5pct_null_critical": 0.005178333067502631,
+    "ks_threshold": 0.03,
+    "note": "TV and quantile SEs need the read-level histograms (not committed; not re-derived: no new DEV look)",
+    "quantile_se": null,
+    "tv": 0.18841964661813265,
+    "tv_se": null
+   },
+   "M3": {
+    "abs_drift_le_0": {
+     "diff_pp": -1.0371954244055002,
+     "margin_in_se": -0.35675279611863664,
+     "margin_to_1pp": -0.037195424405500166,
+     "pass": false,
+     "se_diff_pp": 0.1042610592269359,
+     "se_real_pp": 0.07020677363129024,
+     "se_sim_mc_pp": 0.07708033087245673
+    },
+    "abs_drift_le_3": {
+     "diff_pp": -2.634102398139193,
+     "margin_in_se": -8.595931145258042,
+     "margin_to_1pp": -1.6341023981391931,
+     "pass": false,
+     "se_diff_pp": 0.19010184824952303,
+     "se_real_pp": 0.12376724468142948,
+     "se_sim_mc_pp": 0.14429269507446263
+    },
+    "abs_drift_le_6": {
+     "diff_pp": 0.6271004111624068,
+     "margin_in_se": 2.511993457340146,
+     "margin_to_1pp": 0.3728995888375932,
+     "pass": true,
+     "se_diff_pp": 0.14844767519117757,
+     "se_real_pp": 0.09751369016535759,
+     "se_sim_mc_pp": 0.11192762170259851
+    }
+   },
+   "M8": {
+    "1": {
+     "diff_pp": 0.02577777777778012,
+     "pass": true,
+     "real": 0.09196444444444443,
+     "se_diff_pp": 0.08621087732265231,
+     "se_real_pp": 0.06092195452280305,
+     "se_sim_pp": 0.06099861331098374,
+     "sim": 0.09222222222222223
+    },
+    "10": {
+     "diff_pp": -0.8382222222222229,
+     "pass": true,
+     "real": 0.048920000000000005,
+     "se_diff_pp": 0.0616177895287163,
+     "se_real_pp": 0.04547503010163048,
+     "se_sim_pp": 0.04157852358683484,
+     "sim": 0.04053777777777778
+    },
+    "2": {
+     "diff_pp": 0.0751111111111119,
+     "pass": true,
+     "real": 0.0866311111111111,
+     "se_diff_pp": 0.0840306406500763,
+     "se_real_pp": 0.05930251188296291,
+     "se_sim_pp": 0.05953453327635397,
+     "sim": 0.08738222222222222
+    },
+    "20": {
+     "diff_pp": -0.6454880294659293,
+     "pass": true,
+     "real": 0.0457366482504604,
+     "se_diff_pp": 0.08657353308012833,
+     "se_real_pp": 0.06339864991510402,
+     "se_sim_pp": 0.05895411621692039,
+     "sim": 0.03928176795580111
+    },
+    "5": {
+     "diff_pp": -0.38177777777777877,
+     "pass": true,
+     "real": 0.053297777777777784,
+     "se_diff_pp": 0.06582605426030036,
+     "se_real_pp": 0.04735664684876892,
+     "se_sim_pp": 0.04572108286907684,
+     "sim": 0.049479999999999996
+    }
+   },
+   "job": "d03-fast-fwd",
+   "n_real_reads": 162220,
+   "n_simulated_reads_nominal": 120000,
+   "round": 1,
+   "source": "experiments/v7/fit-d03/results/d03-fast-fwd.validation.json"
+  },
+  {
+   "M2": {
+    "ks_D": 0.18844671418658768,
+    "ks_D_5pct_null_critical": 0.0054141764868166865,
+    "ks_threshold": 0.03,
+    "note": "TV and quantile SEs need the read-level histograms (not committed; not re-derived: no new DEV look)",
+    "quantile_se": null,
+    "tv": 0.3036207607821624,
+    "tv_se": null
+   },
+   "M3": {
+    "abs_drift_le_0": {
+     "diff_pp": -10.923046466566966,
+     "margin_in_se": -59.94547004374912,
+     "margin_to_1pp": -9.923046466566966,
+     "pass": false,
+     "se_diff_pp": 0.16553455097315903,
+     "se_real_pp": 0.12377198599084069,
+     "se_sim_mc_pp": 0.10991898402809462
+    },
+    "abs_drift_le_3": {
+     "diff_pp": -1.4984425264465862,
+     "margin_in_se": -3.3839339567208064,
+     "margin_to_1pp": -0.49844252644658615,
+     "pass": false,
+     "se_diff_pp": 0.14729676548699572,
+     "se_real_pp": 0.09944589221990263,
+     "se_sim_mc_pp": 0.10865933758089326
+    },
+    "abs_drift_le_6": {
+     "diff_pp": 1.6595160833765443,
+     "margin_in_se": -9.764814963077121,
+     "margin_to_1pp": -0.6595160833765443,
+     "pass": false,
+     "se_diff_pp": 0.06754004923496425,
+     "se_real_pp": 0.05271889561025625,
+     "se_sim_mc_pp": 0.04221819863869489
+    }
+   },
+   "M8": {
+    "1": {
+     "diff_pp": -0.40844444444444394,
+     "pass": true,
+     "real": 0.046435555555555556,
+     "se_diff_pp": 0.061406633350394,
+     "se_real_pp": 0.04436317343800673,
+     "se_sim_pp": 0.04245801999550915,
+     "sim": 0.04235111111111112
+    },
+    "10": {
+     "diff_pp": 0.16760037348272638,
+     "pass": true,
+     "real": 0.009957983193277311,
+     "se_diff_pp": 0.03158263949984542,
+     "se_real_pp": 0.021458221240873952,
+     "se_sim_pp": 0.023173430021360717,
+     "sim": 0.011633986928104575
+    },
+    "2": {
+     "diff_pp": -0.19600000000000034,
+     "pass": true,
+     "real": 0.04252,
+     "se_diff_pp": 0.05949145731458618,
+     "se_real_pp": 0.04253883335250253,
+     "se_sim_pp": 0.04158943556266721,
+     "sim": 0.04056
+    },
+    "20": {
+     "diff_pp": 0.24476650563607077,
+     "pass": true,
+     "real": 0.009323671497584542,
+     "se_diff_pp": 0.05801029667012772,
+     "se_real_pp": 0.03859668292148519,
+     "se_sim_pp": 0.04330693463193354,
+     "sim": 0.01177133655394525
+    },
+    "5": {
+     "diff_pp": -0.07555555555555526,
+     "pass": true,
+     "real": 0.01554222222222222,
+     "se_diff_pp": 0.036439416623683794,
+     "se_real_pp": 0.026080565248219206,
+     "se_sim_pp": 0.02544867776934164,
+     "sim": 0.014786666666666667
+    }
+   },
+   "job": "d03-hac-bwd",
+   "n_real_reads": 133065,
+   "n_simulated_reads_nominal": 120000,
+   "round": 1,
+   "source": "experiments/v7/fit-d03/results/d03-hac-bwd.validation.json"
+  },
+  {
+   "M2": {
+    "ks_D": 0.18555486609480681,
+    "ks_D_5pct_null_critical": 0.005390311998485694,
+    "ks_threshold": 0.03,
+    "note": "TV and quantile SEs need the read-level histograms (not committed; not re-derived: no new DEV look)",
+    "quantile_se": null,
+    "tv": 0.2947259421797056,
+    "tv_se": null
+   },
+   "M3": {
+    "abs_drift_le_0": {
+     "diff_pp": -10.769618106519353,
+     "margin_in_se": -58.508161053824935,
+     "margin_to_1pp": -9.769618106519353,
+     "pass": false,
+     "se_diff_pp": 0.166978724515572,
+     "se_real_pp": 0.12364121950060702,
+     "se_sim_mc_pp": 0.11222630387413637
+    },
+    "abs_drift_le_3": {
+     "diff_pp": -0.29920004154958546,
+     "margin_in_se": 4.927135724423999,
+     "margin_to_1pp": 0.7007999584504145,
+     "pass": true,
+     "se_diff_pp": 0.14223272863715172,
+     "se_real_pp": 0.09704085517749157,
+     "se_sim_mc_pp": 0.10398664107466278
+    },
+    "abs_drift_le_6": {
+     "diff_pp": 1.9687546374491993,
+     "margin_in_se": -14.968178370796172,
+     "margin_to_1pp": -0.9687546374491993,
+     "pass": false,
+     "se_diff_pp": 0.06472094422253136,
+     "se_real_pp": 0.05190101402162273,
+     "se_sim_mc_pp": 0.038666333735994894
+    }
+   },
+   "M8": {
+    "1": {
+     "diff_pp": -0.015555555555556155,
+     "pass": true,
+     "real": 0.04012888888888889,
+     "se_diff_pp": 0.058461739831392856,
+     "se_real_pp": 0.041377134954304715,
+     "se_sim_pp": 0.04130021461308308,
+     "sim": 0.039973333333333326
+    },
+    "10": {
+     "diff_pp": 0.20800000000000002,
+     "pass": true,
+     "real": 0.009964444444444444,
+     "se_diff_pp": 0.03110721495783584,
+     "se_real_pp": 0.02094340068721971,
+     "se_sim_pp": 0.023000712816944845,
+     "sim": 0.012044444444444444
+    },
+    "2": {
+     "diff_pp": 0.09866666666666635,
+     "pass": true,
+     "real": 0.03703555555555556,
+     "se_diff_pp": 0.05666530423669066,
+     "se_real_pp": 0.03981455550386281,
+     "se_sim_pp": 0.04032068791906385,
+     "sim": 0.03802222222222222
+    },
+    "20": {
+     "diff_pp": 0.27419354838709686,
+     "pass": true,
+     "real": 0.009121863799283154,
+     "se_diff_pp": 0.06104417686013808,
+     "se_real_pp": 0.04028264850581161,
+     "se_sim_pp": 0.04586610685341683,
+     "sim": 0.011863799283154123
+    },
+    "5": {
+     "diff_pp": 0.13688888888888884,
+     "pass": true,
+     "real": 0.012817777777777777,
+     "se_diff_pp": 0.0344135079899743,
+     "se_real_pp": 0.023718083653976166,
+     "se_sim_pp": 0.024934755662709297,
+     "sim": 0.014186666666666665
+    }
+   },
+   "job": "d03-hac-fwd",
+   "n_real_reads": 135580,
+   "n_simulated_reads_nominal": 120000,
+   "round": 1,
+   "source": "experiments/v7/fit-d03/results/d03-hac-fwd.validation.json"
+  },
+  {
+   "M2": {
+    "ks_D": 0.036974498327112526,
+    "ks_D_5pct_null_critical": 0.008166069669250006,
+    "ks_threshold": 0.03,
+    "note": "TV and quantile SEs need the read-level histograms (not committed; not re-derived: no new DEV look)",
+    "quantile_se": null,
+    "tv": 0.06629371862661743,
+    "tv_se": null
+   },
+   "M3": {
+    "abs_drift_le_0": {
+     "diff_pp": 1.4357949368201228,
+     "margin_in_se": -1.879909643332477,
+     "margin_to_1pp": -0.4357949368201228,
+     "pass": false,
+     "se_diff_pp": 0.2318169590574567,
+     "se_real_pp": 0.16647370851447535,
+     "se_sim_mc_pp": 0.161324538989219
+    },
+    "abs_drift_le_3": {
+     "diff_pp": 0.2943710345686301,
+     "margin_in_se": 3.6065157826173353,
+     "margin_to_1pp": 0.7056289654313699,
+     "pass": true,
+     "se_diff_pp": 0.19565392416480096,
+     "se_real_pp": 0.14326379134980521,
+     "se_sim_mc_pp": 0.13325143199667747
+    },
+    "abs_drift_le_6": {
+     "diff_pp": 0.0,
+     "margin_in_se": null,
+     "margin_to_1pp": 1.0,
+     "pass": true,
+     "se_diff_pp": 0.0,
+     "se_real_pp": 0.0,
+     "se_sim_mc_pp": 0.0
+    }
+   },
+   "M8": {
+    "1": {
+     "diff_pp": 0.2733333333333324,
+     "pass": true,
+     "real": 0.059018181818181824,
+     "se_diff_pp": 0.08293102594053327,
+     "se_real_pp": 0.05801685777890016,
+     "se_sim_pp": 0.059258748527219796,
+     "sim": 0.06175151515151515
+    },
+    "10": {
+     "diff_pp": -0.28429995317412504,
+     "pass": true,
+     "real": 0.0202020202020202,
+     "se_diff_pp": 0.049657693780022015,
+     "se_real_pp": 0.03639308796226516,
+     "se_sim_pp": 0.033785051429904144,
+     "sim": 0.01735902067027895
+    },
+    "2": {
+     "diff_pp": 0.2128691855176175,
+     "pass": true,
+     "real": 0.05779610649523925,
+     "se_diff_pp": 0.0819718846949613,
+     "se_real_pp": 0.05746953537321785,
+     "se_sim_pp": 0.05845205201214492,
+     "sim": 0.05992479835041543
+    },
+    "20": {
+     "diff_pp": -0.23761536013578027,
+     "pass": true,
+     "real": 0.019529012411159438,
+     "se_diff_pp": 0.0618169327013869,
+     "se_real_pp": 0.045078407862030094,
+     "se_sim_pp": 0.04229976729524952,
+     "sim": 0.017152858809801635
+    },
+    "5": {
+     "diff_pp": -0.277641277641278,
+     "pass": true,
+     "real": 0.02492628992628993,
+     "se_diff_pp": 0.05314082335188319,
+     "se_real_pp": 0.038642284679771405,
+     "se_sim_pp": 0.03647904797611305,
+     "sim": 0.02214987714987715
+    }
+   },
+   "job": "cnr-p4tie",
+   "n_real_reads": 52242,
+   "n_simulated_reads_nominal": 59130,
+   "round": 2,
+   "source": "experiments/v7/fit-cnr/a2/results/cnr-p4tie.validation.json"
+  },
+  {
+   "M2": {
+    "ks_D": 0.038101963766534186,
+    "ks_D_5pct_null_critical": 0.008166069669250006,
+    "ks_threshold": 0.03,
+    "note": "TV and quantile SEs need the read-level histograms (not committed; not re-derived: no new DEV look)",
+    "quantile_se": null,
+    "tv": 0.06475185033740607,
+    "tv_se": null
+   },
+   "M3": {
+    "abs_drift_le_0": {
+     "diff_pp": -0.04509175276747879,
+     "margin_in_se": 4.181556492194861,
+     "margin_to_1pp": 0.9549082472325212,
+     "pass": true,
+     "se_diff_pp": 0.22836191475947235,
+     "se_real_pp": 0.16647370851447535,
+     "se_sim_mc_pp": 0.156319123865412
+    },
+    "abs_drift_le_3": {
+     "diff_pp": -0.5794735731162515,
+     "margin_in_se": 2.118767981890002,
+     "margin_to_1pp": 0.4205264268837485,
+     "pass": true,
+     "se_diff_pp": 0.1984768650829936,
+     "se_real_pp": 0.14326379134980521,
+     "se_sim_mc_pp": 0.13736284818411534
+    },
+    "abs_drift_le_6": {
+     "diff_pp": 0.0,
+     "margin_in_se": null,
+     "margin_to_1pp": 1.0,
+     "pass": true,
+     "se_diff_pp": 0.0,
+     "se_real_pp": 0.0,
+     "se_sim_mc_pp": 0.0
+    }
+   },
+   "M8": {
+    "1": {
+     "diff_pp": 0.28060606060605964,
+     "pass": true,
+     "real": 0.059018181818181824,
+     "se_diff_pp": 0.08295431218832634,
+     "se_real_pp": 0.05801685777890016,
+     "se_sim_pp": 0.05929133262207201,
+     "sim": 0.06182424242424242
+    },
+    "10": {
+     "diff_pp": -0.13044350792695142,
+     "pass": true,
+     "real": 0.0202020202020202,
+     "se_diff_pp": 0.050646527877461225,
+     "se_real_pp": 0.03639308796226516,
+     "se_sim_pp": 0.03522234993031111,
+     "sim": 0.018897585122750686
+    },
+    "2": {
+     "diff_pp": 0.06549821092849822,
+     "pass": true,
+     "real": 0.05779610649523925,
+     "se_diff_pp": 0.08148986507284336,
+     "se_real_pp": 0.05746953537321785,
+     "se_sim_pp": 0.057774134468433894,
+     "sim": 0.058451088604524234
+    },
+    "20": {
+     "diff_pp": -0.006364697146494028,
+     "pass": true,
+     "real": 0.019529012411159438,
+     "se_diff_pp": 0.0636995914495936,
+     "se_real_pp": 0.045078407862030094,
+     "se_sim_pp": 0.045006389496043804,
+     "sim": 0.019465365439694498
+    },
+    "5": {
+     "diff_pp": -0.07248157248157285,
+     "pass": true,
+     "real": 0.02492628992628993,
+     "se_diff_pp": 0.05425974324455101,
+     "se_real_pp": 0.038642284679771405,
+     "se_sim_pp": 0.03809059689335549,
+     "sim": 0.024201474201474203
+    }
+   },
+   "job": "cnr",
+   "n_real_reads": 52242,
+   "n_simulated_reads_nominal": 59130,
+   "round": 2,
+   "source": "experiments/v7/fit-cnr/a2/results/cnr.validation.json"
+  },
+  {
+   "M2": {
+    "ks_D": 0.021157739940959264,
+    "ks_D_5pct_null_critical": 0.005563934326836888,
+    "ks_threshold": 0.03,
+    "note": "TV and quantile SEs need the read-level histograms (not committed; not re-derived: no new DEV look)",
+    "quantile_se": null,
+    "tv": 0.024534854314736957,
+    "tv_se": null
+   },
+   "M3": {
+    "abs_drift_le_0": {
+     "diff_pp": -0.9080440527036826,
+     "margin_in_se": 0.9844971864619646,
+     "margin_to_1pp": 0.0919559472963174,
+     "pass": true,
+     "se_diff_pp": 0.09340397165255897,
+     "se_real_pp": 0.03389805036711608,
+     "se_sim_mc_pp": 0.08703576334921467
+    },
+    "abs_drift_le_3": {
+     "diff_pp": -0.08329900696217862,
+     "margin_in_se": 35.170206912637404,
+     "margin_to_1pp": 0.9167009930378214,
+     "pass": true,
+     "se_diff_pp": 0.026064702869531064,
+     "se_real_pp": 0.009236725514855706,
+     "se_sim_mc_pp": 0.024373174545802487
+    },
+    "abs_drift_le_6": {
+     "diff_pp": 0.18740189490803472,
+     "margin_in_se": 76.1089188449687,
+     "margin_to_1pp": 0.8125981050919653,
+     "pass": true,
+     "se_diff_pp": 0.010676778982331889,
+     "se_real_pp": 0.007588467188541339,
+     "se_sim_mc_pp": 0.007510577552092481
+    }
+   },
+   "M8": {
+    "1": {
+     "diff_pp": 0.0666666666666667,
+     "pass": true,
+     "real": 0.006567901234567901,
+     "se_diff_pp": 0.02909986954665223,
+     "se_real_pp": 0.020077600352514272,
+     "se_sim_pp": 0.02106400654474112,
+     "sim": 0.007234567901234568
+    },
+    "10": {
+     "diff_pp": 0.0018630300320441166,
+     "pass": true,
+     "real": 1.2420200213627444e-05,
+     "se_diff_pp": 0.0018547516151207228,
+     "se_real_pp": 0.001068468236718033,
+     "se_sim_pp": 0.0015160736066951324,
+     "sim": 3.105050053406861e-05
+    },
+    "2": {
+     "diff_pp": 0.021648234741086965,
+     "pass": true,
+     "real": 0.006265617655063213,
+     "se_diff_pp": 0.028002564252227267,
+     "se_real_pp": 0.019633199379495894,
+     "se_sim_pp": 0.019966999945537103,
+     "sim": 0.006482100002474083
+    },
+    "20": {
+     "diff_pp": -0.002492398185534121,
+     "pass": true,
+     "real": 4.361696824684712e-05,
+     "se_diff_pp": 0.0021512612629958202,
+     "se_real_pp": 0.0017579485332032076,
+     "se_sim_pp": 0.0012399766031159867,
+     "sim": 1.8692986391505906e-05
+    },
+    "5": {
+     "diff_pp": -0.00991620804204472,
+     "pass": true,
+     "real": 0.0001859289007883385,
+     "se_diff_pp": 0.004199406412339851,
+     "se_real_pp": 0.003448096911896803,
+     "se_sim_pp": 0.0023970068631876673,
+     "sim": 8.676682036789131e-05
+    }
+   },
+   "job": "d02-twist",
+   "n_real_reads": 393569,
+   "n_simulated_reads_nominal": 70440,
+   "round": 2,
+   "source": "experiments/v7/fit-d02/a2/results/d02-twist.validation.json"
+  },
+  {
+   "M2": {
+    "ks_D": 0.024271601378470065,
+    "ks_D_5pct_null_critical": 0.0053284040317052375,
+    "ks_threshold": 0.03,
+    "note": "TV and quantile SEs need the read-level histograms (not committed; not re-derived: no new DEV look)",
+    "quantile_se": null,
+    "tv": 0.02688045242003006,
+    "tv_se": null
+   },
+   "M3": {
+    "abs_drift_le_0": {
+     "diff_pp": -0.40716800885713944,
+     "margin_in_se": 5.546191511923012,
+     "margin_to_1pp": 0.5928319911428606,
+     "pass": true,
+     "se_diff_pp": 0.10688992435050444,
+     "se_real_pp": 0.07316250053062776,
+     "se_sim_mc_pp": 0.07792755894908074
+    },
+    "abs_drift_le_3": {
+     "diff_pp": -2.151031656607161,
+     "margin_in_se": -5.88081129905847,
+     "margin_to_1pp": -1.1510316566071608,
+     "pass": false,
+     "se_diff_pp": 0.19572667750645958,
+     "se_real_pp": 0.132215792720351,
+     "se_sim_mc_pp": 0.14431880141910414
+    },
+    "abs_drift_le_6": {
+     "diff_pp": -1.431366942932888,
+     "margin_in_se": -2.768931622184212,
+     "margin_to_1pp": -0.4313669429328879,
+     "pass": false,
+     "se_diff_pp": 0.15578822513233945,
+     "se_real_pp": 0.10374576003296936,
+     "se_sim_mc_pp": 0.11621870918688615
+    }
+   },
+   "M8": {
+    "1": {
+     "diff_pp": -0.1600000000000018,
+     "pass": true,
+     "real": 0.10007555555555556,
+     "se_diff_pp": 0.08915429549158657,
+     "se_real_pp": 0.06326720469367896,
+     "se_sim_pp": 0.0628151989159412,
+     "sim": 0.09847555555555554
+    },
+    "10": {
+     "diff_pp": -1.106049101493292,
+     "pass": true,
+     "real": 0.04932928372563908,
+     "se_diff_pp": 0.06509408148690186,
+     "se_real_pp": 0.04872400851817312,
+     "se_sim_pp": 0.04316492138929959,
+     "sim": 0.038268792710706157
+    },
+    "2": {
+     "diff_pp": -0.6884444444444443,
+     "pass": true,
+     "real": 0.0951911111111111,
+     "se_diff_pp": 0.08605972324581555,
+     "se_real_pp": 0.06187122495049189,
+     "se_sim_pp": 0.05981828723953901,
+     "sim": 0.08830666666666666
+    },
+    "20": {
+     "diff_pp": -0.8582375478927213,
+     "pass": true,
+     "real": 0.04566091954022989,
+     "se_diff_pp": 0.08714956565743805,
+     "se_real_pp": 0.06461052766298964,
+     "se_sim_pp": 0.058485267455917096,
+     "sim": 0.037078544061302676
+    },
+    "5": {
+     "diff_pp": -1.027111111111112,
+     "pass": true,
+     "real": 0.060880000000000004,
+     "se_diff_pp": 0.0683865478958728,
+     "se_real_pp": 0.05040984983518573,
+     "se_sim_pp": 0.04621219506481519,
+     "sim": 0.050608888888888884
+    }
+   },
+   "job": "d03-fast-bwd",
+   "n_real_reads": 142512,
+   "n_simulated_reads_nominal": 120000,
+   "round": 2,
+   "source": "experiments/v7/fit-d03/a2/results/d03-fast-bwd.validation.json"
+  },
+  {
+   "M2": {
+    "ks_D": 0.015530445221462075,
+    "ks_D_5pct_null_critical": 0.005178333067502631,
+    "ks_threshold": 0.03,
+    "note": "TV and quantile SEs need the read-level histograms (not committed; not re-derived: no new DEV look)",
+    "quantile_se": null,
+    "tv": 0.017924789862117096,
+    "tv_se": null
+   },
+   "M3": {
+    "abs_drift_le_0": {
+     "diff_pp": -0.30340444354105406,
+     "margin_in_se": 6.5291201552382025,
+     "margin_to_1pp": 0.6965955564589459,
+     "pass": true,
+     "se_diff_pp": 0.10669057084208798,
+     "se_real_pp": 0.07020677363129024,
+     "se_sim_mc_pp": 0.08033608680347433
+    },
+    "abs_drift_le_3": {
+     "diff_pp": -1.2262126617548774,
+     "margin_in_se": -1.1907093625144667,
+     "margin_to_1pp": -0.22621266175487742,
+     "pass": false,
+     "se_diff_pp": 0.18998142525492154,
+     "se_real_pp": 0.12376724468142948,
+     "se_sim_mc_pp": 0.14413400391947245
+    },
+    "abs_drift_le_6": {
+     "diff_pp": 0.2443745982358747,
+     "margin_in_se": 5.067219631705801,
+     "margin_to_1pp": 0.7556254017641253,
+     "pass": true,
+     "se_diff_pp": 0.14912031778455903,
+     "se_real_pp": 0.09751369016535759,
+     "se_sim_mc_pp": 0.11281821398383557
+    }
+   },
+   "M8": {
+    "1": {
+     "diff_pp": 0.17155555555555813,
+     "pass": true,
+     "real": 0.09196444444444443,
+     "se_diff_pp": 0.08651623583574324,
+     "se_real_pp": 0.06092195452280305,
+     "se_sim_pp": 0.06142942715268847,
+     "sim": 0.09368000000000001
+    },
+    "10": {
+     "diff_pp": -0.9813333333333341,
+     "pass": true,
+     "real": 0.048920000000000005,
+     "se_diff_pp": 0.06114094231383817,
+     "se_real_pp": 0.04547503010163048,
+     "se_sim_pp": 0.040868526573390046,
+     "sim": 0.039106666666666665
+    },
+    "2": {
+     "diff_pp": -0.3186666666666671,
+     "pass": true,
+     "real": 0.0866311111111111,
+     "se_diff_pp": 0.08316271973207805,
+     "se_real_pp": 0.05930251188296291,
+     "se_sim_pp": 0.05830308771932413,
+     "sim": 0.08344444444444443
+    },
+    "20": {
+     "diff_pp": -0.7670349907918962,
+     "pass": true,
+     "real": 0.0457366482504604,
+     "se_diff_pp": 0.08597510783096377,
+     "se_real_pp": 0.06339864991510402,
+     "se_sim_pp": 0.058071769006014684,
+     "sim": 0.03806629834254144
+    },
+    "5": {
+     "diff_pp": -0.4324444444444443,
+     "pass": true,
+     "real": 0.053297777777777784,
+     "se_diff_pp": 0.06567167286890176,
+     "se_real_pp": 0.04735664684876892,
+     "se_sim_pp": 0.04549853422519271,
+     "sim": 0.04897333333333334
+    }
+   },
+   "job": "d03-fast-fwd",
+   "n_real_reads": 162220,
+   "n_simulated_reads_nominal": 120000,
+   "round": 2,
+   "source": "experiments/v7/fit-d03/a2/results/d03-fast-fwd.validation.json"
+  },
+  {
+   "M2": {
+    "ks_D": 0.02025356950780066,
+    "ks_D_5pct_null_critical": 0.0054141764868166865,
+    "ks_threshold": 0.03,
+    "note": "TV and quantile SEs need the read-level histograms (not committed; not re-derived: no new DEV look)",
+    "quantile_se": null,
+    "tv": 0.03135797021898606,
+    "tv_se": null
+   },
+   "M3": {
+    "abs_drift_le_0": {
+     "diff_pp": -2.983560288891063,
+     "margin_in_se": -11.236095358075044,
+     "margin_to_1pp": -1.9835602888910628,
+     "pass": false,
+     "se_diff_pp": 0.17653466134617107,
+     "se_real_pp": 0.12377198599084069,
+     "se_sim_mc_pp": 0.1258768530766894
+    },
+    "abs_drift_le_3": {
+     "diff_pp": -0.5884796869661368,
+     "margin_in_se": 2.826980128910533,
+     "margin_to_1pp": 0.41152031303386316,
+     "pass": true,
+     "se_diff_pp": 0.14556887359249165,
+     "se_real_pp": 0.09944589221990263,
+     "se_sim_mc_pp": 0.10630527493767337
+    },
+    "abs_drift_le_6": {
+     "diff_pp": 0.5338260090555047,
+     "margin_in_se": 6.315730317488459,
+     "margin_to_1pp": 0.4661739909444953,
+     "pass": true,
+     "se_diff_pp": 0.0738115732480921,
+     "se_real_pp": 0.05271889561025625,
+     "se_sim_mc_pp": 0.051661072298137295
+    }
+   },
+   "M8": {
+    "1": {
+     "diff_pp": -0.3675555555555557,
+     "pass": true,
+     "real": 0.046435555555555556,
+     "se_diff_pp": 0.06154185714330007,
+     "se_real_pp": 0.04436317343800673,
+     "se_sim_pp": 0.04265335887307924,
+     "sim": 0.04276
+    },
+    "10": {
+     "diff_pp": -0.09477124183006527,
+     "pass": true,
+     "real": 0.009957983193277311,
+     "se_diff_pp": 0.02962274521319533,
+     "se_real_pp": 0.021458221240873952,
+     "se_sim_pp": 0.020421845537159287,
+     "sim": 0.009010270774976658
+    },
+    "2": {
+     "diff_pp": -0.6040000000000003,
+     "pass": true,
+     "real": 0.04252,
+     "se_diff_pp": 0.0580678550919953,
+     "se_real_pp": 0.04253883335250253,
+     "se_sim_pp": 0.039526237513745004,
+     "sim": 0.03648
+    },
+    "20": {
+     "diff_pp": -0.08856682769726262,
+     "pass": true,
+     "real": 0.009323671497584542,
+     "se_diff_pp": 0.0532854451948993,
+     "se_real_pp": 0.03859668292148519,
+     "se_sim_pp": 0.036737375206687684,
+     "sim": 0.008438003220611915
+    },
+    "5": {
+     "diff_pp": -0.2879999999999997,
+     "pass": true,
+     "real": 0.01554222222222222,
+     "se_diff_pp": 0.03515687960729757,
+     "se_real_pp": 0.026080565248219206,
+     "se_sim_pp": 0.023575629367111203,
+     "sim": 0.012662222222222222
+    }
+   },
+   "job": "d03-hac-bwd",
+   "n_real_reads": 133065,
+   "n_simulated_reads_nominal": 120000,
+   "round": 2,
+   "source": "experiments/v7/fit-d03/a2/results/d03-hac-bwd.validation.json"
+  },
+  {
+   "M2": {
+    "ks_D": 0.013831011064447729,
+    "ks_D_5pct_null_critical": 0.005390311998485694,
+    "ks_threshold": 0.03,
+    "note": "TV and quantile SEs need the read-level histograms (not committed; not re-derived: no new DEV look)",
+    "quantile_se": null,
+    "tv": 0.01689317667734235,
+    "tv_se": null
+   },
+   "M3": {
+    "abs_drift_le_0": {
+     "diff_pp": -2.850156047440866,
+     "margin_in_se": -10.422897699303352,
+     "margin_to_1pp": -1.850156047440866,
+     "pass": false,
+     "se_diff_pp": 0.17750879849511783,
+     "se_real_pp": 0.12364121950060702,
+     "se_sim_mc_pp": 0.12736648846373624
+    },
+    "abs_drift_le_3": {
+     "diff_pp": 0.1411565297646855,
+     "margin_in_se": 6.0768859579548336,
+     "margin_to_1pp": 0.8588434702353145,
+     "pass": true,
+     "se_diff_pp": 0.14132953558410316,
+     "se_real_pp": 0.09704085517749157,
+     "se_sim_mc_pp": 0.1027477982967975
+    },
+    "abs_drift_le_6": {
+     "diff_pp": 1.0048630257935343,
+     "margin_in_se": -0.06908555557861691,
+     "margin_to_1pp": -0.004863025793534259,
+     "pass": false,
+     "se_diff_pp": 0.07039135392057908,
+     "se_real_pp": 0.05190101402162273,
+     "se_sim_mc_pp": 0.04755236534915529
+    }
+   },
+   "M8": {
+    "1": {
+     "diff_pp": 0.0146666666666663,
+     "pass": true,
+     "real": 0.04012888888888889,
+     "se_diff_pp": 0.05856730137220786,
+     "se_real_pp": 0.041377134954304715,
+     "se_sim_pp": 0.04144950534079117,
+     "sim": 0.04027555555555555
+    },
+    "10": {
+     "diff_pp": -0.06755555555555559,
+     "pass": true,
+     "real": 0.009964444444444444,
+     "se_diff_pp": 0.029117116172931598,
+     "se_real_pp": 0.02094340068721971,
+     "se_sim_pp": 0.020228208568297885,
+     "sim": 0.009288888888888888
+    },
+    "2": {
+     "diff_pp": -0.14711111111111175,
+     "pass": true,
+     "real": 0.03703555555555556,
+     "se_diff_pp": 0.05576525620484441,
+     "se_real_pp": 0.03981455550386281,
+     "se_sim_pp": 0.03904567798901391,
+     "sim": 0.03556444444444444
+    },
+    "20": {
+     "diff_pp": -0.04121863799283164,
+     "pass": true,
+     "real": 0.009121863799283154,
+     "se_diff_pp": 0.05632798765079207,
+     "se_real_pp": 0.04028264850581161,
+     "se_sim_pp": 0.03937194968686485,
+     "sim": 0.008709677419354838
+    },
+    "5": {
+     "diff_pp": -0.11155555555555537,
+     "pass": true,
+     "real": 0.012817777777777777,
+     "se_diff_pp": 0.032813596216557196,
+     "se_real_pp": 0.023718083653976166,
+     "se_sim_pp": 0.022675639008553766,
+     "sim": 0.011702222222222223
+    }
+   },
+   "job": "d03-hac-fwd",
+   "n_real_reads": 135580,
+   "n_simulated_reads_nominal": 120000,
+   "round": 2,
+   "source": "experiments/v7/fit-d03/a2/results/d03-hac-fwd.validation.json"
+  }
+ ]
+}

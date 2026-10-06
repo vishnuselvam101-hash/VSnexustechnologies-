@@ -13,7 +13,10 @@ The model register is [docs/V7_CHANNEL_MODELS.md](../../../docs/V7_CHANNEL_MODEL
 
 - Split (protocol 4.1, committed in `experiments/v7/split`, manifest SHA-256 `0c90197f…c95`): FIT = reference buckets 0-5
   of the non-held-out runs, DEV = buckets 6-7. HELD-OUT (D03 `file-1` and buckets 8-9) was **not opened**:
-  `experiments/v7/datasets/ACCESS_LOG.jsonl` is empty. Reads are read only through `experiments/v7/split/guard.py`.
+  `experiments/v7/datasets/ACCESS_LOG.jsonl` is empty. Reads are read only through `experiments/v7/split/guard.py`, which
+  records every FIT and DEV request in `experiments/v7/datasets/SPLIT_ACCESS_LEDGER.jsonl` (the DEV requests of both
+  validation rounds, made before the ledger existed, are reconstructed from the committed results). Data directory:
+  `VNX_DATA_DIR` (default `/root/vnx-dna-lab/data/public`).
 - Fit (plan 3.3): edlib unit-cost alignment (NW for nanopore reads, HW for D02 reads with flanks) and leftmost indel
   normalisation; count estimators; 200 bootstrap resamples over references; simulation calibration against FIT statistics
   (4,000 references, coverage 10, 5 damped iterations). Seed 20261005. Code: `vnxdna.simulation.fit`, drivers `run.py`
@@ -73,15 +76,22 @@ percentage point (pp); listed as simulated minus real.
 | cnr | 2 | 0.038 | 0.065 | 14 / 16 | -0.05, -0.58, 0.00 | -2.16, -11.10, -4.25 |
 | cnr-p4tie | 2 | 0.037 | 0.066 | 14 / 16 | +1.44, +0.29, 0.00 | -0.63, -9.27, -3.91 |
 | d03-hac-fwd | 1 | 0.186 | 0.295 | 22 / 14 | -10.77, -0.30, +1.97 | |
-| d03-hac-fwd | 2 | 0.014 | 0.017 | 22 / 22 | -2.85, +0.14, +1.00 | -2.86, +0.12, +0.99 |
+| d03-hac-fwd | 2 | 0.014 | 0.017 | 22 / 22 | -2.85 (fail), +0.14, **+1.0049 (fail)** | -2.86, +0.12, +0.9854 |
 | d03-hac-bwd | 2 | 0.020 | 0.031 | 22 / 22 | -2.98, -0.59, +0.53 | -2.99, -0.61, +0.51 |
-| d03-fast-fwd | 1 | 0.101 | 0.188 | 29 / 24 | -1.04, -2.63, +0.63 | |
+| d03-fast-fwd | 1 | 0.101 | 0.188 | 29 / 24 | -1.0372 (fail), -2.63, +0.63 | |
 | d03-fast-fwd | 2 | 0.016 | 0.018 | 29 / 29 | -0.30, -1.23, +0.24 | -0.33, -1.42, -0.05 |
 | d03-fast-bwd | 2 | 0.024 | 0.027 | 30 / 30 | -0.41, -2.15, -1.43 | -0.44, -2.36, -1.76 |
 | d02-twist | 1 | 0.025 | 0.029 | 4 / 4 | -1.17, -0.05, +0.20 | |
-| d02-twist | 2 | 0.021 | 0.025 | 4 / 4 | -0.91, -0.08, +0.19 | (as selected: D02 has no selection) |
+| d02-twist | 2 | 0.021 | 0.025 | 4 / 4 | -0.9080 (pass by 0.09 pp, SE 0.093 pp), -0.08, +0.19 | (as selected: D02 has no selection) |
 
 M8 (consensus error vs cluster size k = 1, 2, 5, 10, 20 and the exact-length vote) passes for every model in both rounds.
+
+Values within 0.1 pp of the 1 pp limit are printed with four decimals. Standard errors of the gating metrics, computed
+from the committed validation results only (`gating_se.py` -> `results/gating-se.json`; binomial, reads treated as
+independent, so lower bounds): the M3 difference has an SE of 0.09-0.23 pp at drift 0 (D02 0.093 pp, so its 0.09 pp
+margin is about one SE); the M2 KS 5 % null value is 0.005-0.008. The SE of the M2 TV distance and quantiles needs the
+read-level histograms, which are not committed; it is not given because computing it would re-read DEV. Table:
+[docs/V7_CHANNEL_MODELS.md](../../../docs/V7_CHANNEL_MODELS.md).
 
 ### Fitted read heterogeneity (round 2, shape k of Gamma(k, 1/k); Var(m) = 1/k; 95 % CI)
 
@@ -105,7 +115,9 @@ holds a read.
 **Round-1 causes, found on FIT only:**
 
 1. *Model class too simple.* The independent-site model has the right mean edit distance but too little variance:
-   variance/mean 4.00 real vs 1.21 simulated (D03 HAC), 2.23 vs 1.06 (D03 fast), 1.71 vs 1.30 (CNR). Real reads are a mix
+   variance/mean 4.00 real vs 1.21 simulated (D03 HAC), 2.23 vs 1.06 (D03 fast), 1.71 vs 1.30 (CNR). Regenerated from
+   FIT only with `diagnose_a2.py` (round-1 models, seed 99, no length selection; `results/a2-diagnosis.json`): 4.00 vs
+   1.21, 2.23 vs 1.05 (1.0548; the amendment prints 1.06), 1.71 vs 1.30. Real reads are a mix
    of clean and very noisy reads. This also caused most of the D03 HAC M3 gap at drift 0 (clean reads keep their length).
 2. *Split/selection artefact, not an estimator bug.* CNR reads are length-selected (every read has drift in [-4, +5]; this
    comes from the dataset's clustering, it is not documented), and D03 segments are censored at +-15 nt. Simulated reads
@@ -121,7 +133,9 @@ holds a read.
   basecaller that makes length-compensating errors (an insertion near a deletion), or separate per-read variation of indels
   and substitutions, would produce this. Neither is in the model class, and amendment 2 does not allow further changes on
   the basis of these DEV results. **Verdict: INADEQUATE.**
-- *CNR: M2.* The gamma multiplier gives the right variance but a heavier tail than the length-selected real reads
+- *CNR: M2.* M3 passes, but largely automatically: real and simulated reads go through the same matched window [-4, +5],
+  which removes the simulated reads of large drift; without it (`M3_unselected`) the model fails by 11.1 pp at <= 3.
+  The gamma multiplier gives the right variance but a heavier tail than the length-selected real reads
   (p99 16 vs 14; TV 0.065 vs limit 0.05). The length selection also truncates the real edit-distance tail, which a
   read-level multiplier fitted to the variance overshoots. **Verdict: INADEQUATE.** `cnr-p4tie` also misses M3 at drift 0
   (+1.44 pp), because its tie-break changes where indels are counted.
@@ -131,7 +145,9 @@ holds a read.
   real error Phred 12.8 vs simulated 3.0, because the binned iSeq qualities do not fit the Gaussian quality model) fail.
   The fitted heterogeneity (shape 0.56) is large and acts on the sequencing stage only; it partly stands in for the
   deletion-length mixture. ADEQUATE here means only that the gating metrics pass on DEV. It is the weakest kind of
-  ADEQUATE: second look at DEV, split by reference only (protocol 4.3), with several non-gating misfits.
+  ADEQUATE: **marginal** (M3 passes by 0.09 pp, about 1 Monte Carlo SE), second look at DEV, split by reference only
+  (protocol 4.3), with several non-gating misfits. It must not be used for quality-dependent decoder decisions while M9
+  fails (Q11 bin: real 12.8 vs simulated 3.0).
 
 ## Held-out evaluation (protocol 4.2, 5.4)
 
@@ -151,6 +167,10 @@ It runs after the PREREG commit, exactly once per model, and is reported without
   process without the selection and extrapolates the relative position profile.
 - Read heterogeneity absorbs every source of read-to-read variation (hard references, partly mis-assigned reads); it is
   not a claim about one mechanism.
+- D03 forward models (min_run 2): the substitution rate is confounded with the 3-mer context and the homopolymer
+  substitution multiplier; only their product is determined. Its basis is `estimated` and the effective per-base rate
+  is recorded (relabelled 2026-10-06 without a refit, simulated reads unchanged:
+  `experiments/v7/fit-d03/RELABEL-2026-10-06.json`). Fits from this commit on fix the multiplier at 1 in that case.
 - Forward/backward asymmetry, error correlation beyond the per-read factor, indel contexts and deletion bursts are not
   modelled (misfit notes in each model's `fit_report`).
 - No model here is ADEQUATE for nanopore data. Under protocol 5.4 the CNR and D03 models may be used only as labelled

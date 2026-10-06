@@ -13,9 +13,16 @@
   matched read-length window for length-selected datasets. Data split with a held-out access guard (`experiments/v7/split`).
 - **Fitted models F** for CNR, D03 (guppy HAC and fast, forward and backward) and D02 (Twist, with a PhiX stage split),
   PUBLIC-DATA-DERIVED; validation reads SIMULATED. Two rounds; round 2 follows protocol amendment 2
-  (docs/V7_PROTOCOL.md 5.5). Verdicts on DEV: every CNR and D03 model is INADEQUATE (D03 on M3, CNR on M2); D02 passes
-  the gating metrics M2, M3, M8 with non-gating misfits. Held-out validation not run (no PREREG yet). Register:
+  (docs/V7_PROTOCOL.md 5.5). Verdicts on DEV: every CNR and D03 model is INADEQUATE (D03 on M3, CNR on M2); D02 is
+  ADEQUATE (marginal: M3 passes by 0.09 pp, about 1 Monte Carlo SE; DEV already looked at twice), with non-gating
+  misfits, and must not be used for quality-dependent decoder decisions while M9 fails (Q11 bin: real 12.8 vs simulated
+  3.0). Held-out validation not run (no PREREG yet). FIT/DEV requests are recorded in an access ledger. The D03
+  forward models' substitution rate (min_run 2, confounded with the 3-mer context) is relabelled `estimated` without a
+  refit; future fits fix the homopolymer substitution multiplier at 1 in that case. Register:
   docs/V7_CHANNEL_MODELS.md; details: experiments/v7/fit/README.md.
+- The `/2` insertion-run step of the simulator works in row chunks: same reads and generator stream; peak memory stays
+  close to that of the same model without insertion runs instead of about doubling (regression test
+  `tests/simulation/test_sim_insertion_chunks.py`).
 
 ### Fixed
 
