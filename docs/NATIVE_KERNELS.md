@@ -60,7 +60,7 @@ detect an in-place library that is older than a changed C source; `native_status
 | `VNXDNA_RS_LIB` | path | RS library to load first |
 | `VNXDNA_CLUSTER_BACKEND` | `auto` (default), `native`, `reference` | read clustering (only used with `--read-clustering fallback`): same rules as the read parser; inputs outside the kernel's domain (e.g. costs above 1024, codes >= 8 where a reverse complement is needed) run the reference, which is part of the contract |
 | `VNXDNA_CLUSTER_LIB` | path | cluster library to load first |
-| `VNXDNA_CLUSTER_THREADS` | 1-64 (default 1) | threads of the forward-backward kernel within one decode process; results do not depend on it |
+| `VNXDNA_CLUSTER_THREADS` | 1-64 (default 1) | threads of the forward-backward kernel within one decode process; results do not depend on it. Memory scales with it: up to about 0.5 GB per call at the domain extremes (template 8192, band 512), times this count (`benchmarks/v7/native_cluster/README.md`) |
 | `VNX_RS_REFERENCE` | `1` | the inner RS decoder (`vnxdna.v4.codecs.InnerRS.decode`) uses the V3 decoder `vnxdna.ecc.rs_batch` and bypasses `vnxdna.v6.native_rs` and `VNXDNA_RS_BACKEND` entirely. Read once when `vnxdna.v4.codecs` is imported. For reference comparisons and debugging; results are identical (tested), only slower. `native_status()` reports the RS backend as `reference` with `requested: "VNX_RS_REFERENCE=1"` |
 | `VNXDNA_NATIVE_STRICT` | `1` | explicit builds add `-Werror` (same as `build --strict`) |
 | `CC` | compiler | compiler for the explicit builds (and for `pip install`, via setuptools) |

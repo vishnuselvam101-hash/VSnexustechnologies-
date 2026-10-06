@@ -28,7 +28,7 @@ In-process decode seconds (one decode per backend per trial; median of 5 trials 
 
 | cell | outcome (both backends) | reference s | native s | speed-up (median) | per-trial range |
 |---|---|---|---|---|---|
-| nanopore-like/cov10 | EXPLICIT FAILURE 5/5 | 54.58 | 2.80 | 19.5x | 17.3x-20.8x |
+| nanopore-like/cov10 | EXPLICIT FAILURE 5/5 | 54.58 | 2.80 | 19.5x (to EXPLICIT FAILURE) | 17.3x-20.8x |
 | deletion-heavy/cov10 | EXACT 5/5 | 35.77 | 2.59 | 13.8x | 13.6x-14.4x |
 
 hyperfine (whole process including interpreter start, 3 runs each, seed 82020):
@@ -38,7 +38,20 @@ hyperfine (whole process including interpreter start, 3 runs each, seed 82020):
 | nanopore-like/cov10 | 52.32 ± 1.55 s | 3.21 ± 0.21 s | 16.3x |
 | deletion-heavy/cov10 | 35.86 ± 0.05 s | 2.73 ± 0.02 s | 13.2x |
 
+The speed-up on a cell that decodes is **13.8x** (deletion-heavy/cov10, EXACT 5/5). The 19.5x cell reaches the same
+EXPLICIT FAILURE on both backends in 5/5 trials: it measures how much sooner the decoder gives up, not a faster
+successful decode.
+
 Outcomes are identical in all 10 trials: status, protocol §6 outcome, container SHA-256 and the whole decode report
 (timings and the `native_backends` provenance excluded) are equal on both backends (`all_identical: true`). The 6.0
 path of the same decode took about 0.4 s in A1-SMOKE, so the clustering stage still accounts for most of the
 remaining 2.5-3.3 s; how that time splits between the kernels and the Python around them was not profiled here.
+
+## Threads and memory
+
+`VNXDNA_CLUSTER_THREADS` (1-64, default 1) splits each forward-backward chunk over that many threads; results do not
+depend on it. Each thread runs its own kernel call with its own working tables, so memory scales with the thread
+count: the forward table alone is (T + 1) x (2B + 2) x 32 bytes with AVX2 lanes, about 0.27 GB at the domain
+extremes (template T = 8192, band B = 512; measured 0.26 GB peak RSS increase for one call on the development host).
+Budget about 0.5 GB per call at those extremes, times `VNXDNA_CLUSTER_THREADS`. A1-SMOKE templates and bands are far
+smaller.

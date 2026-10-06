@@ -21,7 +21,8 @@
   equivalence, hypothesis at the ctypes boundary, a whole-decode identity test (`tests/v7/test_native_cluster.py`);
   gcc/clang ASan+UBSan and clang UBSan-trap runs (`benchmarks/v7/native_cluster/sanitizers.sh`, in the CI sanitizers
   job). A1-SMOKE decode with clustering on, same 10 trials, identical outcomes: median 54.6 s -> 2.8 s
-  (nanopore-like/cov10) and 35.8 s -> 2.6 s (deletion-heavy/cov10) on the development host (MEASURED,
+  (nanopore-like/cov10, EXPLICIT FAILURE 5/5 on both) and 35.8 s -> 2.6 s, 13.8x (deletion-heavy/cov10, EXACT 5/5) on
+  the development host (MEASURED,
   `benchmarks/v7/native_cluster/results/a1smoke_bench.json`).
 
 ### Fixed
