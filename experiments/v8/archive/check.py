@@ -98,9 +98,14 @@ def main() -> int:
         out["negative"]["tampered_extract"] = refused(lambda: sdk.extract(w / "tampered.vnx", w / "x2", key=key))
         lines = (w / "nanopore-like.fastq").read_text().split("\n")
         (w / "few.fastq").write_text("\n".join(lines[: 4 * 200]) + "\n")                    # 200 reads only
-        out["negative"]["too_few_reads_decode"] = refused(lambda: sdk.decode(w / "few.fastq", w / "few.vnx", options=opts, key=key))
-        out["negative"]["too_few_reads_no_output"] = not (w / "few.vnx").exists()
-    out["false_success"] = sum(1 for v in out["negative"].values() if isinstance(v, dict) and not v.get("refused"))
+        try:
+            d = sdk.decode(w / "few.fastq", w / "few.vnx", options=opts, key=key)
+            out["negative"]["too_few_reads_decode"] = {"refused": d.status != "SUCCESS", "status": d.status}
+        except Exception as e:                                    # noqa: BLE001
+            out["negative"]["too_few_reads_decode"] = {"refused": True, "error": type(e).__name__, "code": getattr(e, "code", None)}
+        out["negative"]["too_few_reads_decode"]["output_written"] = (w / "few.vnx").exists()
+    # a false success = a negative control that was accepted (returned SUCCESS / produced output) instead of refused
+    out["false_success"] = sum(1 for v in out["negative"].values() if isinstance(v, dict) and (not v.get("refused") or v.get("output_written")))
     out["seconds"] = round(time.time() - t0, 1)
     (HERE / "results").mkdir(parents=True, exist_ok=True)
     (HERE / "results" / "check.json").write_text(json.dumps(out, indent=1, sort_keys=True, default=str) + "\n")
