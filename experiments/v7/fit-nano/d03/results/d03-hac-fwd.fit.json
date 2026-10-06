@@ -1,0 +1,180 @@
+{
+ "assigned_reads": 408054,
+ "bootstrap": 200,
+ "calibration": {
+  "coverage": 10,
+  "factors_scalar": {
+   "sequencing.deletion.rate": 0.9719867891092309,
+   "sequencing.deletion.run_length.mean": 1.0733023649282982,
+   "sequencing.deletion.run_length.tail_mean": 1.3830226241405073,
+   "sequencing.homopolymer.indel_multiplier": 1.0679955802757861,
+   "sequencing.homopolymer.min_run": 1.0,
+   "sequencing.homopolymer.substitution_multiplier": 1.0,
+   "sequencing.insertion.rate": 0.9844838107492506,
+   "sequencing.insertion.run_length.mean": 1.0162963206747182,
+   "sequencing.insertion.run_length.tail_mean": 1.0705559164664016,
+   "sequencing.read_heterogeneity.shape": 0.8874838233079594,
+   "sequencing.substitution.rate": 1.0364519866782789
+  },
+  "final_residual_ratios": {
+   "del_mean": 1.0038380294462916,
+   "del_pmf_tv": 0.0019050434921867865,
+   "ed_var": 1.026393578513418,
+   "hp_indel": 1.0057055329718463,
+   "hp_sub": 0.8632922671816299,
+   "ins": 1.0109365654248479,
+   "ins_mean": 1.0003669519795488,
+   "ins_pmf_tv": 0.001998473483344032,
+   "start": 1.0023667551329285,
+   "sub": 0.9995770509881324
+  },
+  "iterations": 5,
+  "refs": 4000,
+  "trace": [
+   {
+    "iteration": 0,
+    "ratios": {
+     "del_mean": 1.016595305860833,
+     "del_pmf": 1.0047650225820097,
+     "ed_var": 1.150861666894582,
+     "hp_indel": 1.0533592685677504,
+     "hp_sub": 0.7779168930443887,
+     "ins": 1.0213606954507792,
+     "ins_mean": 1.1265382403550417,
+     "ins_pmf": 1.0114342337385356,
+     "start": 0.9946619391068262,
+     "sub": 0.9945610840568905
+    }
+   },
+   {
+    "iteration": 1,
+    "ratios": {
+     "del_mean": 1.005165514712031,
+     "del_pmf": 1.0023141877538628,
+     "ed_var": 1.0301041390555703,
+     "hp_indel": 1.019669477625225,
+     "hp_sub": 0.8149191324516328,
+     "ins": 0.9892574626263047,
+     "ins_mean": 1.0062699832355995,
+     "ins_pmf": 1.0013289416695175,
+     "start": 0.9927843429335382,
+     "sub": 1.0092852016943832
+    }
+   },
+   {
+    "iteration": 2,
+    "ratios": {
+     "del_mean": 1.0040634403558764,
+     "del_pmf": 1.005195808141175,
+     "ed_var": 0.9725019011288711,
+     "hp_indel": 1.0200220881178261,
+     "hp_sub": 0.8533949572731243,
+     "ins": 0.9856433744695637,
+     "ins_mean": 1.016282372959075,
+     "ins_pmf": 1.0022661310739354,
+     "start": 0.9920430979340983,
+     "sub": 0.9945210495593493
+    }
+   },
+   {
+    "iteration": 3,
+    "ratios": {
+     "del_mean": 1.0074355976639247,
+     "del_pmf": 1.0011667220081826,
+     "ed_var": 1.0160465336695579,
+     "hp_indel": 1.0083576778434005,
+     "hp_sub": 0.8401277715674712,
+     "ins": 0.9946518608271266,
+     "ins_mean": 1.0233020052204453,
+     "ins_pmf": 1.0028888613603115,
+     "start": 0.991655538262864,
+     "sub": 0.9996575691216647
+    }
+   },
+   {
+    "iteration": 4,
+    "ratios": {
+     "del_mean": 0.9973116489066863,
+     "del_pmf": 1.0020138888523933,
+     "ed_var": 0.9679110568369959,
+     "hp_indel": 0.9943822914144655,
+     "hp_sub": 0.8555994363275535,
+     "ins": 0.9872305521604918,
+     "ins_mean": 0.9621642611941226,
+     "ins_pmf": 1.0030541471907861,
+     "start": 0.9884396201776621,
+     "sub": 1.0002996414772523
+    }
+   }
+  ]
+ },
+ "comparison_with_published": {
+  "deletion": {
+   "ci95": [
+    0.014923803885070887,
+    0.01504900229633239
+   ],
+   "fitted_observed": 0.014990793431395134,
+   "published": 0.014,
+   "published_inside_ci": false
+  },
+  "insertion": {
+   "ci95": [
+    0.010145350434997428,
+    0.010229379192354797
+   ],
+   "fitted_observed": 0.01018736633320426,
+   "published": 0.009,
+   "published_inside_ci": false
+  },
+  "substitution": {
+   "ci95": [
+    0.0164652594392353,
+    0.01657732035842709
+   ],
+   "fitted_observed": 0.016521420180602323,
+   "published": 0.02,
+   "published_inside_ci": false
+  }
+ },
+ "environment": {
+  "cpu_count": 8,
+  "git": {
+   "commit": "32bf0c9657e0a0565017941b5700062184e2a699",
+   "dirty": true
+  },
+  "implementation": "CPython",
+  "libraries": {
+   "cryptography": "46.0.7",
+   "numpy": "2.5.3",
+   "reedsolo": "unknown",
+   "zstandard": "0.25.0"
+  },
+  "machine": "x86_64",
+  "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+  "processor": "x86_64",
+  "python": "3.12.3",
+  "software": {
+   "edlib": "1.3.9.post1",
+   "numpy": "2.5.3",
+   "python": "3.12.3",
+   "vnxdna": "6.0.0.dev0"
+  },
+  "vnxdna_version": "6.0.0.dev0"
+ },
+ "evidence_class": "PUBLIC-DATA-DERIVED",
+ "job": "d03-hac-fwd",
+ "model_file": "fit-nano/d03/models/ont-guppy-hac-pass-fwd-fit.json",
+ "model_sha256": "66ce4ad258df08a85257aba7cb0c9170269649c4bf0e558fd1b21bdf1de4f16d",
+ "peak_rss_mb_self_plus_children": 3160.0,
+ "published_source": "Welter et al. Table II, file 3, accurate basecaller, pass (arXiv:2406.12955)",
+ "references": 36883,
+ "seconds": {
+  "fit_bootstrap_calibration": 41.8,
+  "tally": 12.1
+ },
+ "seed": 20261005,
+ "split": "FIT",
+ "title": "D03 guppy accurate (HAC), pass, forward",
+ "workers": 4
+}
