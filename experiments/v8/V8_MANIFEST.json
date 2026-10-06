@@ -22,8 +22,12 @@
  "compiler": "cc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
  "configurations": [
   {
+   "path": "docs/V8_PREREGISTRATION-A1.md",
+   "sha256": "3e40bd6a9a2941b6a743779972a638f930f4e2de578bd42ab4d71c26e403a9c0"
+  },
+  {
    "path": "docs/V8_PREREGISTRATION.md",
-   "sha256": "6d9e42f5be56aff255d178ab2767b2c403c3e88358b804e892597fcdc64f71b4"
+   "sha256": "adb9731844f0bd3b134d2ce396b91e73ce565115d23eaba2b3964e02bab6c6ac"
   }
  ],
  "datasets": {
@@ -98,8 +102,8 @@
  "evidence_class": "provenance only (no result)",
  "git": {
   "branch": "build/v8-public-channel",
-  "commit": "0fd7c54d1b35178abb38520913797873d1cb22bc",
-  "dirty_tracked": false,
+  "commit": "6c4e3422d715caf042fa02cd22e968a3d7d3e86c",
+  "dirty_tracked": true,
   "v7_parent": "0fd7c54d1b35178abb38520913797873d1cb22bc",
   "v7_parent_is_ancestor": true
  },
@@ -177,7 +181,16 @@
     "version": "3.1.0"
    }
   ],
-  "produced": []
+  "produced": [
+   {
+    "canonical_sha256": "5e81ec793e51fbcf7353207f05906fe9197877436f8dc8cc032676800271e11e",
+    "file_sha256": "9fbec10662bfb44f671cfbb2f57b6bf53257a3f6bd0185fecb8dec043cb19901",
+    "name": "d13-nanopore-f1",
+    "path": "experiments/v8/d13/models/d13-nanopore-f1.json",
+    "schema": "vnx.channel-model/2",
+    "version": "8.0.0"
+   }
+  ]
  },
  "schema": "vnx.v8-manifest/1",
  "seeds": {

@@ -91,3 +91,12 @@ Governing notes: /root/vnx-dna-lab/notes/V7-RESET-DIRECTIVE-2026-10-06.md + foun
 | 7 matrix | NOT RUN: no ADEQUATE model (final decision) | docs/V7_COMPLETION_REPORT.md |
 | 8 final report | DONE docs/V7_COMPLETION_REPORT.md — V7 CLOSED 2026-10-07 | V8 starts on build/v8-public-channel |
 V7 CLOSED. V8 continues on build/v8-public-channel (docs/V8_PLAN.md).
+
+## V8 (build/v8-public-channel, from V7 close 0fd7c54) — founder 2026-10-07: "complete the v8, decide yourself"
+| phase | state | evidence |
+|---|---|---|
+| V8.0–V8.18 | DONE (not merged, not tagged) | docs/V8_COMPLETION_REPORT.md; experiments/v8/results/audit.json |
+| D13 model | INADEQUATE: FIT pre-check blocks DEV (A1 matched selection); F2 rule not triggered; 0 DEV looks, held-out unopened | experiments/v8/d13/README.md |
+| decoder matrix | 360 decodes, 0 false success, 88 failures all classified | experiments/v8/matrix/results/summary.json |
+| tests | 3206 passed / 0 failed / 6 env skips | |
+Next: founder review of V8; V9 candidates: native polish kernel (50 % of noisy decode), paired-indel/read-level heterogeneity model, per-run D13 models.
