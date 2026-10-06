@@ -193,6 +193,9 @@ class ChannelModel:
         derived.append({"from": self.ref, "from_sha256": self.sha256, "label": label,
                         "changes": {k: changes[k] for k in sorted(changes)}})
         doc["provenance"]["derived"] = derived
+        fitting = doc["provenance"].get("fitting")
+        if isinstance(fitting, dict):     # V8.3: the fitted parameter identity no longer describes a derived model
+            fitting.pop("parameter_sha256", None)
         return ChannelModel(normalize_doc(doc), self.read_as, self.source)
 
     def to_v1(self) -> dict:

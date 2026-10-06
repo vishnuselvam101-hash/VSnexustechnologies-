@@ -59,3 +59,14 @@ def test_parameter_hash_ignores_key_order():
     s = cm.from_doc(_doc())[0].doc["stages"]
     shuffled = json.loads(json.dumps(s, sort_keys=False))
     assert model2.parameter_sha256(dict(reversed(list(shuffled.items())))) == model2.parameter_sha256(s)
+
+
+def test_a_derived_model_drops_the_fitted_parameter_hash():
+    d = _doc()
+    m = cm.from_doc(d)[0]
+    d["provenance"]["fitting"]["parameter_sha256"] = model2.parameter_sha256(m.doc["stages"])
+    fitted = cm.from_doc(d)[0]
+    derived = fitted.with_parameters({"sequencing.coverage": {"model": "fixed", "mean": 3}}, label="validation")
+    assert "parameter_sha256" not in derived.doc["provenance"]["fitting"]
+    assert derived.doc["provenance"]["derived"][-1]["from_sha256"] == fitted.sha256          # the origin is still recorded
+    assert fitted.doc["provenance"]["fitting"]["parameter_sha256"] == d["provenance"]["fitting"]["parameter_sha256"]

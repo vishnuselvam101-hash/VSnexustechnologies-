@@ -26,3 +26,7 @@
 {"dataset": "d13-lopez-nanopore", "granted": true, "purpose": "V8.4 fit F1 on pooled FIT tables", "run": "run16", "script": "experiments/v8/d13/fit.py fit F1", "split": "FIT", "timestamp_utc": "2026-10-06T19:28:51Z"}
 {"dataset": "d13-lopez-nanopore", "granted": true, "purpose": "V8.4 fit F1 on pooled FIT tables", "run": "run18", "script": "experiments/v8/d13/fit.py fit F1", "split": "FIT", "timestamp_utc": "2026-10-06T19:28:51Z"}
 {"dataset": "d13-lopez-nanopore", "granted": true, "purpose": "V8.4 fit F1 on pooled FIT tables", "run": "run20", "script": "experiments/v8/d13/fit.py fit F1", "split": "FIT", "timestamp_utc": "2026-10-06T19:28:51Z"}
+{"dataset": "d13-lopez-nanopore", "granted": true, "purpose": "V8.4 FIT-only pre-check of F1", "run": "run15", "script": "experiments/v8/d13/fit.py precheck F1", "split": "FIT", "timestamp_utc": "2026-10-06T19:30:13Z"}
+{"dataset": "d13-lopez-nanopore", "granted": true, "purpose": "V8.4 FIT-only pre-check of F1", "run": "run16", "script": "experiments/v8/d13/fit.py precheck F1", "split": "FIT", "timestamp_utc": "2026-10-06T19:30:13Z"}
+{"dataset": "d13-lopez-nanopore", "granted": true, "purpose": "V8.4 FIT-only pre-check of F1", "run": "run18", "script": "experiments/v8/d13/fit.py precheck F1", "split": "FIT", "timestamp_utc": "2026-10-06T19:30:13Z"}
+{"dataset": "d13-lopez-nanopore", "granted": true, "purpose": "V8.4 FIT-only pre-check of F1", "run": "run20", "script": "experiments/v8/d13/fit.py precheck F1", "split": "FIT", "timestamp_utc": "2026-10-06T19:30:13Z"}
