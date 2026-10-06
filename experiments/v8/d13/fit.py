@@ -91,7 +91,7 @@ def do_fit(family: str, workers: int) -> Path:
               "measured_statistics": {"observed_per_base_rates": obs, "observed_per_base_rates_ci95": fit["ci95"]["_observed"],
                                       "deletion_run_histogram_1_to_32plus": fit["values"]["_stats"]["deletion_runs_hist"],
                                       "insertion_run_histogram_1_to_32plus": fit["values"]["_stats"]["insertion_runs_hist"],
-                                      "design": config["design"]},
+                                      "design": PC_jsonable(config["design"])},
               "notes": ["PUBLIC-DATA-DERIVED parameters (D13, Lopez et al. 2019; FIT split only); reads simulated from this "
                         "model are SIMULATED. No DNA was synthesised, stored or sequenced by VNX-DNA",
                         "pooled over D13 runs 15, 16, 18 and 20 (one ONT MinION R9.4 1D^2 condition; basecaller not stated)",
