@@ -395,6 +395,10 @@ def decode(reads: Path, output: Optional[Path] = typer.Option(None, "--output", 
            consensus_weighting: Optional[str] = typer.Option(
                None, "--consensus-weighting",
                help="count (V4 vote, default) or quality: pass-2 consensus weighted by Phred quality (opt-in)."),
+           read_clustering: Optional[str] = typer.Option(
+               None, "--read-clustering",
+               help="off (default) or fallback: V7 header-independent read clustering + per-cluster consensus whose "
+                    "verified frames only fill what the default path left unresolved (opt-in)."),
            max_recovery_reads: Optional[int] = typer.Option(None, "--max-recovery-reads",
                                                             help="V6 budget: reads examined by smart/soft recovery (all rounds)."),
            max_round_b_reads: Optional[int] = typer.Option(None, "--max-round-b-reads",
@@ -425,7 +429,7 @@ def decode(reads: Path, output: Optional[Path] = typer.Option(None, "--output", 
                                   profile=profile, band=band, retry_band=retry_band, min_quality=min_quality, indel_recovery=indel_recovery,
                                   soft_decoding=soft_decoding, recovery_schedule=recovery_schedule,
                                   consensus_weighting=consensus_weighting, max_container_bytes=max_container_bytes, expect_archive_id=expect_archive_id,
-                                  expect_sha256=expect_sha256)
+                                  expect_sha256=expect_sha256, read_clustering=read_clustering)
         return _decode(reads, output, extract_dir, partial_dir, select, opts, force, key_file, passphrase_env, report, events,
                        task_id, allow_unencrypted, not no_input_hash)
     _run(go)

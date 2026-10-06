@@ -168,17 +168,28 @@ def _consensus_symbols(pend: np.ndarray, known: dict, lay: Layout, opt: DecodeOp
     consensus only for the groups it needs (``missing``) but snaps against every missing address of the bucket, as a
     full decode does, so that a read of a group it does not need is not snapped onto a needed address (job #56)."""
     out = {}
+    sc = stats.get("_stage")              # V7 stage counters (opt-in; observability only)
+    diag = None
+    if sc is not None:
+        diag = {"n_records": int(pend.size), "direct": 0, "snapped": 0, "unplaced": 0}
     if not pend.size:
+        _count_consensus(sc, diag, missing, None, [], [], [], None, out, lay, opt)
         return out
     keys = np.stack([pend["kind"].astype(np.int64), pend["tag"].astype(np.int64), pend["group"].astype(np.int64),
                      pend["symbol"].astype(np.int64)], axis=1)
     if missing is not None:
         alt = np.asarray(pend["alt"], dtype=np.int64) if "alt" in pend.dtype.names else None
+        if diag is not None:
+            diag["direct"] = sum(1 for k in keys.tolist() if tuple(k) in missing)
         keys, snapped = snap_addresses(keys, missing if snap_to is None else snap_to, alt)
         stats["addresses_snapped"] += snapped
         wanted = np.fromiter((tuple(k) in missing for k in keys.tolist()), dtype=bool, count=len(keys))
         keys, pend = keys[wanted], pend[wanted]
+        if diag is not None:
+            diag["unplaced"] = int((~wanted).sum())
+            diag["snapped"] = int(wanted.sum()) - diag["direct"]
         if not len(keys):
+            _count_consensus(sc, diag, missing, keys, [], [], [], None, out, lay, opt)
             return out
     order = np.lexsort((keys[:, 3], keys[:, 2], keys[:, 1], keys[:, 0]))
     keys = keys[order]
@@ -209,6 +220,7 @@ def _consensus_symbols(pend: np.ndarray, known: dict, lay: Layout, opt: DecodeOp
         ers.append(erased)
     stats["consensus_attempted"] += len(cand_keys)
     if not cand_keys:
+        _count_consensus(sc, diag, missing, keys, [], [], [], None, out, lay, opt)
         return out
     fr = nt_to_bytes(np.stack(frames))
     er = frame_erasures_to_bytes(np.stack(ers))
@@ -217,11 +229,29 @@ def _consensus_symbols(pend: np.ndarray, known: dict, lay: Layout, opt: DecodeOp
         if P.ok[i] and (int(P.kind[i]), int(P.tag[i]), int(P.group[i]), int(P.symbol[i])) == key:
             out[key] = P.payload[i]
     stats["consensus_recovered"] += len(out)
+    if sc is not None:
+        vote_in = [bases[s:min(e, s + opt.max_pending_per_address)] for s, e in zip(starts.tolist(), ends.tolist())
+                   if tuple(int(x) for x in keys[s]) not in known]
+        _count_consensus(sc, diag, missing, keys, cand_keys, vote_in, list(er), P, out, lay, opt)
     if opt.indel_recovery == "smart" and "raw" in pend.dtype.names:
         out.update(_smart_consensus(cand_keys, out, starts, ends, keys, pend[order], lay, opt, stats))
     if opt.soft_decoding != "off" and "raw" in pend.dtype.names:
         out.update(_soft_consensus(cand_keys, out, starts, ends, keys, pend[order], lay, opt, stats))
     return out
+
+
+def _count_consensus(sc, diag, missing, keys, cand_keys, vote_in, erased, P, out, lay, opt) -> None:
+    """V7 stage counters of one consensus call (observability only; see vnxdna.recovery.stagecount)."""
+    if sc is None:
+        return
+    from vnxdna.recovery.stagecount import consensus_counts
+    placed: Counter = Counter()
+    if keys is not None and len(keys):
+        placed.update(tuple(int(x) for x in k) for k in keys.tolist())
+    consensus_counts(sc, superblock=missing is None, n_records=diag["n_records"], direct=diag["direct"],
+                     snapped=diag["snapped"], unplaced=diag["unplaced"], missing=missing, placed=placed, groups=vote_in,
+                     erased=erased, P=P, cand_keys=cand_keys, recovered=out, threshold=opt.consensus_threshold,
+                     cap=opt.max_pending_per_address, r=lay.inner_parity)
 
 
 def _soft_consensus(cand_keys, done, starts, ends, keys, pend, lay, opt, stats) -> dict:

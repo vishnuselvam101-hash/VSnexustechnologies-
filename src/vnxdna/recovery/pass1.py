@@ -20,23 +20,31 @@ _P: dict = {}
 
 
 def _p_init(layout: Layout, band: int, costs: SyncCosts, min_q: int, rc: bool, smart_cfg=None, soft_cfg=None,
-            defer: bool = False, qw: bool = False, retry_band: int = 0) -> None:
+            defer: bool = False, qw: bool = False, retry_band: int = 0, diag: bool = False, unplaced: bool = False) -> None:
     # defer: pass 1 of the deferred schedule — the cheap V4 paths only; smart/soft run later on the pending reads
     # qw: V6 Phase 4 quality-weighted consensus — keep the Phred quality of every projected frame base of pending reads
     # retry_band: V6 opt-in second, wider band for reads beyond ``band`` (0 = off, the V4 behaviour)
+    # diag: V7 opt-in stage counters (recovery.stagecount); observability only, never changes a decision
+    # unplaced: V7 opt-in read clustering — also return every unverified read, raw, for the unplaced-read store
     _P.update(lay=layout, al=TemplateAligner(layout, band, costs, retry_band=retry_band), min_q=min_q, rc=rc, smart=smart_cfg, soft=soft_cfg,
-              defer=defer, qw=qw)
+              defer=defer, qw=qw, diag=diag, unpl=unplaced)
     if smart_cfg is not None or soft_cfg is not None:
         from vnxdna.sync.smart.recovery import Geometry
         _P["geom"] = Geometry(layout)
 
 
-def _try(reads: list[np.ndarray], quals: list | None, with_quality: bool = False) -> tuple:
+def _try(reads: list[np.ndarray], quals: list | None, with_quality: bool = False, diag: dict | None = None) -> tuple:
     """Fast and sync paths (plus eager smart/soft) for one list of reads. Returns (acc, fields, payload, projected
     bases, cost, path, hard bases, stats), and with ``with_quality`` also the projected qualities (None unless the
-    worker keeps them for quality-weighted consensus)."""
+    worker keeps them for quality-weighted consensus). ``diag`` (V7 stage counters, observability only): a dict that
+    receives per-read arrays of the last attempt (erased frame bytes, inner RS and CRC outcome, marker mismatches,
+    RS errata); it never changes a result."""
     lay: Layout = _P["lay"]
     n = len(reads)
+    if diag is not None:
+        diag.update(erased_bytes=np.full(n, lay.frame_bytes, dtype=np.int64), rs_ok=np.zeros(n, dtype=bool),
+                    crc_ok=np.zeros(n, dtype=bool), marker_mm=np.zeros(n, dtype=np.int64),
+                    errata=np.zeros(n, dtype=np.int64))
     acc = np.zeros(n, dtype=bool)
     proj_bases = np.full((n, lay.frame_nt), 4, dtype=np.uint8)
     hard_bases = np.zeros((n, lay.frame_nt), dtype=np.uint8)
@@ -68,6 +76,10 @@ def _try(reads: list[np.ndarray], quals: list | None, with_quality: bool = False
         parsed_fields[idx] = np.stack([P.kind, P.tag, P.group, P.symbol], axis=1)[ok]
         payload[idx] = P.payload[ok]
         cost[exact] = mism * _P["al"].costs.marker_mismatch
+        if diag is not None:
+            diag["erased_bytes"][exact] = frame_erasures_to_bytes(er).sum(axis=1)
+            diag["rs_ok"][exact], diag["crc_ok"][exact] = P.rs_ok, P.crc_ok
+            diag["marker_mm"][exact], diag["errata"][exact] = mism, P.errata
         hard_bases[exact] = np.minimum(fb, 3)
         pb = fb.copy()
         pb[er] = 4
@@ -94,6 +106,10 @@ def _try(reads: list[np.ndarray], quals: list | None, with_quality: bool = False
         er = frame_erasures_to_bytes(pr.erased)
         P = decode_frames(lay, frames, er, errors_only_retry=False)   # sync erasures come from detected indels
         ok = P.ok & pr.ok
+        if diag is not None:
+            diag["erased_bytes"][rest] = np.where(pr.ok, er.sum(axis=1), lay.frame_bytes)
+            diag["rs_ok"][rest], diag["crc_ok"][rest] = P.rs_ok & pr.ok, P.crc_ok & pr.ok
+            diag["marker_mm"][rest], diag["errata"][rest] = np.where(pr.ok, pr.marker_mismatches, 0), P.errata
         idx = rest[ok]
         acc[idx] = True
         path[idx] = 2
@@ -202,6 +218,8 @@ def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | N
     reads = [batch_codes[offs[i]:offs[i + 1]] for i in range(lengths.size)]
     ql = None if quals is None else [quals[offs[i]:offs[i + 1]] for i in range(lengths.size)]
     rc_used = np.zeros(lengths.size, dtype=bool)
+    d = {} if _P.get("diag") else None           # V7 stage counters (observability only)
+    flip = np.zeros(lengths.size, dtype=bool)
     if _P["rc"]:
         # orientation pre-pass: marker agreement at the expected (unshifted) positions, forward vs reverse complement
         flip = _orientation(batch_codes, lengths)
@@ -210,7 +228,11 @@ def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | N
             if ql is not None:
                 ql[i] = ql[i][::-1]
         rc_used |= flip
-    acc, fields, payload, proj, cost, path, hard, sstats, pq = _try(reads, ql, with_quality=True)
+    acc, fields, payload, proj, cost, path, hard, sstats, pq = _try(reads, ql, with_quality=True, diag=d)
+    if d is not None:
+        d["flip"] = flip.copy()
+        d["rc_tried"] = np.zeros(lengths.size, dtype=bool)
+        d["rc_adopted"] = np.zeros(lengths.size, dtype=bool)
     oriented = reads                       # the orientation each read's projection refers to (pending raw reads)
     oriented_q = ql
     if _P["rc"]:
@@ -218,10 +240,16 @@ def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | N
         if bad.size:
             rreads = [_RC[reads[i][::-1]] for i in bad]
             rq = None if ql is None else [ql[i][::-1] for i in bad]
-            a2, f2, p2, pr2, c2, path2, h2, s2, q2 = _try(rreads, rq, with_quality=True)
+            d2 = {} if d is not None else None
+            a2, f2, p2, pr2, c2, path2, h2, s2, q2 = _try(rreads, rq, with_quality=True, diag=d2)
             sstats.update(s2)
             better = a2 | (c2 < cost[bad])
             sel = bad[better]
+            if d is not None:
+                d["rc_tried"][bad] = True
+                d["rc_adopted"][sel] = True
+                for k_, v_ in d2.items():
+                    d[k_][sel] = v_[better]
             acc[sel], fields[sel], payload[sel], proj[sel], cost[sel], path[sel], hard[sel] = (
                 a2[better], f2[better], p2[better], pr2[better], c2[better], path2[better], h2[better])
             rc_used[sel] = ~rc_used[sel]
@@ -257,6 +285,9 @@ def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | N
             raw[j, : take.size] = np.minimum(r[take], 3)
         alt = tentative_address(lay, nt_to_bytes(raw))
         good = (ta[:, 0] >= 0) | (alt[:, 0] >= 0)
+        if d is not None:
+            d["header_erased"] = header_erased
+            d["reading"] = np.where(ta[:, 0] >= 0, 1, np.where(alt[:, 0] >= 0, 2, 0))
         pend_fields = np.where((ta[:, 0] >= 0)[:, None], ta, alt)[good]
         pend_alt = np.where((alt[:, 0] >= 0)[:, None], alt, ta)[good]
         pend_bases = proj[pend][good]
@@ -302,5 +333,23 @@ def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | N
             # aligned reads without a readable header: the eager schedule tried them in pass 1, so the deferred stage
             # keeps them (address unknown) for its last round
             out["orph_raw"], out["orph_rawq"], out["orph_rawlen"], out["orph_hasq"] = pack(pend[~good])
+    if d is not None:
+        from vnxdna.recovery.stagecount import pass1_counts
+        pm = np.zeros(lengths.size, dtype=bool)
+        pm[pend] = True
+        pg = np.zeros(lengths.size, dtype=bool)
+        pg[pend[good]] = True
+        d.setdefault("header_erased", np.zeros(0, dtype=bool))
+        d.setdefault("reading", np.zeros(0, dtype=np.int64))
+        d.update(pend=pm, pend_good=pg, rc_used=rc_used)
+        counts, fate = pass1_counts(lay, lengths, batch_codes, d, acc, path, cost, al.band, al.retry_band, 1 << 28)
+        # per-read arrays (batch order) for ground-truth harnesses; the decoder itself only adds up ``counts``
+        out["diag"] = {"counts": counts, "fate": fate, "rc_used": rc_used.copy(),
+                       "pend_index": pend[good].astype(np.int64)}
+    if _P.get("unpl"):
+        # V7 read clustering (opt-in): every read without a verified frame, as read (not re-oriented); decisions above
+        # are unchanged
+        from vnxdna.recovery.cluster.store import select_unplaced
+        out["unpl"] = select_unplaced(batch_codes, lengths, quals, acc, lay.strand_nt)
     out["cpu_seconds"] = time.process_time() - cpu0          # observability only (never in the report)
     return out

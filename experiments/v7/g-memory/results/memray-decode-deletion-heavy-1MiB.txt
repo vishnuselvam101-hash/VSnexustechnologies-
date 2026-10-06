@@ -1,0 +1,82 @@
+
+📏 Total allocations:
+	2617241
+
+📦 Total memory allocated:
+	10.025GB
+
+📈 Peak memory usage:
+	76.310MB
+
+📊 Histogram of allocation size:
+	min: 1.000B
+	----------------------------------------------
+	< 5.000B   :    2335 ▇
+	< 27.000B  :  702849 ▇▇▇▇▇▇▇▇▇▇▇▇▇
+	< 147.000B :   58476 ▇▇
+	< 777.000B :  369650 ▇▇▇▇▇▇▇
+	< 4.107kB  : 1354087 ▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇
+	< 21.689kB :   60748 ▇▇
+	< 114.540kB:   64615 ▇▇
+	< 604.879kB:    2583 ▇
+	< 3.194MB  :    1839 ▇
+	<=16.869MB :      59 ▇
+	----------------------------------------------
+	max: 16.869MB
+
+📂 Allocator type distribution:
+	 MALLOC: 2586817
+	 CALLOC: 17744
+	 REALLOC: 12200
+	 ALIGNED_ALLOC: 246
+	 MMAP: 232
+	 POSIX_MEMALIGN: 2
+
+🥇 Top 5 largest allocating locations (by size):
+	- crc32_rows:/root/vnx-dna-lab/v7-msan/src/vnxdna/core/crc.py:34 -> 2.049GB
+	- _process:/root/vnx-dna-lab/v7-msan/src/vnxdna/recovery/pass1.py:219 -> 1.692GB
+	- nt_to_bytes:/root/vnx-dna-lab/v7-msan/src/vnxdna/dnaenc/mapping.py:36 -> 562.832MB
+	- _sum:/root/vnx-dna-lab/.venv/lib/python3.12/site-packages/numpy/_core/_methods.py:49 -> 471.731MB
+	- full:/root/vnx-dna-lab/.venv/lib/python3.12/site-packages/numpy/_core/numeric.py:385 -> 365.893MB
+
+🥇 Top 5 largest allocating locations (by number of allocations):
+	- _process:/root/vnx-dna-lab/v7-msan/src/vnxdna/recovery/pass1.py:219 -> 1487176
+	- _process:/root/vnx-dna-lab/v7-msan/src/vnxdna/recovery/pass1.py:202 -> 329875
+	- _sum:/root/vnx-dna-lab/.venv/lib/python3.12/site-packages/numpy/_core/_methods.py:49 -> 159172
+	- _process:/root/vnx-dna-lab/v7-msan/src/vnxdna/recovery/pass1.py:209 -> 101949
+	- crc32_rows:/root/vnx-dna-lab/v7-msan/src/vnxdna/core/crc.py:34 -> 100973
+
+🥇 Top 5 allocating modules (by size):
+	- vnxdna: 8.717GB total | 2382387 allocations
+	- numpy: 1.273GB total | 223139 allocations
+	- typer: 33.278MB total | 8612 allocations
+	- cryptography: 778.747kB total | 2938 allocations
+	- <root>: 211.810kB total | 72 allocations
+
+🥇 Top 5 allocating modules (by number of allocations):
+	- vnxdna: 8.717GB total | 2382387 allocations
+	- numpy: 1.273GB total | 223139 allocations
+	- typer: 33.278MB total | 8612 allocations
+	- cryptography: 778.747kB total | 2938 allocations
+	- <root>: 211.810kB total | 72 allocations
+
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┓
+┃ Location                                                                                        ┃       Total Memory ┃    Total Memory % ┃      <Own Memory> ┃      Own Memory % ┃  Allocation Count ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━┩
+│ snap_addresses at /root/vnx-dna-lab/v7-msan/src/vnxdna/recovery/consensus.py                    │           33.187MB │            43.49% │          33.187MB │            43.49% │                33 │
+│ load at /root/vnx-dna-lab/v7-msan/src/vnxdna/recovery/spill.py                                  │           16.805MB │            22.02% │          16.805MB │            22.02% │                 1 │
+│ _compile_bytecode at <frozen importlib._bootstrap_external>                                     │            4.209MB │             5.52% │           4.209MB │             5.52% │              1590 │
+│ _consensus_symbols at /root/vnx-dna-lab/v7-msan/src/vnxdna/recovery/consensus.py                │           38.860MB │            50.92% │           3.797MB │             4.98% │              1607 │
+│ resolve_duplicates at /root/vnx-dna-lab/v7-msan/src/vnxdna/recovery/consensus.py                │            2.626MB │             3.44% │           2.626MB │             3.44% │             13757 │
+│ _call_with_frames_removed at <frozen importlib._bootstrap>                                      │           10.681MB │            14.00% │           2.563MB │             3.36% │              5650 │
+│ <genexpr> at /root/vnx-dna-lab/v7-msan/src/vnxdna/recovery/probe.py                             │            2.097MB │             2.75% │           2.097MB │             2.75% │                 2 │
+│ stack at /root/vnx-dna-lab/.venv/lib/python3.12/site-packages/numpy/_core/shape_base.py         │            1.704MB │             2.23% │           1.704MB │             2.23% │                10 │
+│ find_spec at <frozen importlib._bootstrap_external>                                             │            1.062MB │             1.39% │           1.049MB │             1.37% │                 8 │
+│ _get_module_lock at <frozen importlib._bootstrap>                                               │            1.049MB │             1.37% │           1.049MB │             1.37% │                 1 │
+│ __newobj__ at /usr/lib/python3.12/copyreg.py                                                    │            1.049MB │             1.37% │           1.049MB │             1.37% │                 1 │
+│ run at /root/vnx-dna-lab/v7-msan/src/vnxdna/recovery/outer.py                                   │           59.282MB │            77.69% │         984.073kB │             1.29% │             15539 │
+│ decode_frames at /root/vnx-dna-lab/v7-msan/src/vnxdna/dnaenc/frame4.py                          │          407.704kB │             0.53% │         311.483kB │             0.41% │               687 │
+│ iter_reads_native at /root/vnx-dna-lab/v7-msan/src/vnxdna/native/reads.py                       │          306.194kB │             0.40% │         296.692kB │             0.39% │                19 │
+│ cleandoc at /usr/lib/python3.12/inspect.py                                                      │          198.621kB │             0.26% │         198.621kB │             0.26% │               103 │
+└─────────────────────────────────────────────────────────────────────────────────────────────────┴────────────────────┴───────────────────┴───────────────────┴───────────────────┴───────────────────┘

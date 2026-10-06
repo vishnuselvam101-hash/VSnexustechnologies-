@@ -142,6 +142,7 @@ Opt-in decoder options (defaults unchanged; effects are SIMULATED results docume
 | `--consensus-weighting quality` | pass-2 vote weighted by Phred quality; `count` is the default. Efficacy criterion REJECT in the pre-registered test | `experiments/v6/phase4/P4-EXP-02-qw-consensus/README.md` |
 | `--retry-band R` | reads beyond `--band` are aligned again with band R (0 = off, the default); suggested value 16 | `experiments/v6/align-band/README.md` |
 | `--max-recovery-reads N`, `--max-round-b-reads N` | budgets for the recovery rounds | `--help` |
+| `--read-clustering fallback` | V7 item A reference (EXPERIMENTAL): header-independent read clustering and per-cluster consensus; its verified frames only fill superblock symbols and addresses the default path left unresolved (FC-9), and the container SHA-256 still decides SUCCESS. `off` is the default. Budget: 4,000,000 unplaced reads (stage stops and is reported) | [V7_ARCHITECTURE.md](V7_ARCHITECTURE.md) §5, `experiments/v7/a1-smoke/README.md` |
 
 Exit code 9 (PARTIAL) and 10 (PROVIDER_ERROR) are `vnx` only. Provider operations (`prepare`, `write`, `retrieve`, `read`)
 are SDK/Python calls on `vnxdna.providers`, not CLI commands ([INTEROPERABILITY.md](INTEROPERABILITY.md)).

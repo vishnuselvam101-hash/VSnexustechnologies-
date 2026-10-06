@@ -1,0 +1,58 @@
+{
+ "clustering": {
+  "buckets_over_cap": 0,
+  "candidate_pairs": 15865,
+  "candidate_pairs_below_min_shared": 19129,
+  "cluster_reads_capped": 56,
+  "clustered_reads": 996,
+  "clusters": 91,
+  "clusters_decoded": 84,
+  "components": 91,
+  "components_refined": 1,
+  "edges_accepted": 1413,
+  "edges_rejected": 3239,
+  "frames_data": 74,
+  "frames_superblock": 10,
+  "pairs_rejected_length": 0,
+  "pairs_skipped_same_component": 11213,
+  "pairs_verified": 4652,
+  "reads": 997,
+  "reads_without_sketch": 0,
+  "refine_representatives": 1,
+  "refine_unassigned": 0,
+  "unassigned": 1
+ },
+ "consensus": {
+  "ambiguous_columns": 1131,
+  "consensus_attempted": 91,
+  "decode_failed": 7,
+  "duplicate_reads": 0,
+  "empty_columns": 243,
+  "erased_bytes": 398,
+  "erasures_exceed_parity": 12,
+  "frames_verified": 84,
+  "frames_verified_gmd": 0,
+  "orientation_flipped": 49,
+  "peeled_reads": 800,
+  "reads_beyond_band": 0,
+  "rounds": 195,
+  "rs_crc_trials": 182
+ },
+ "container_sha256": "3b7062c39497039f39d7b3b1e4efe3865324f80377c79d91a9b0aaadbc1e8305",
+ "fill": {
+  "data_cluster_conflicts": 0,
+  "data_confirmations": 47,
+  "data_symbols": 27,
+  "rows_filled": 1,
+  "rows_short": 1
+ },
+ "frames_verified": 84,
+ "status": "SUCCESS",
+ "store": {
+  "unplaced_offered": 997,
+  "unplaced_over_budget": 0,
+  "unplaced_stored": 997,
+  "unplaced_too_long": 0,
+  "unplaced_too_short": 0
+ }
+}

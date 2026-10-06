@@ -24,6 +24,18 @@
   close to that of the same model without insertion runs instead of about doubling (regression test
   `tests/simulation/test_sim_insertion_chunks.py`).
 
+### Added
+
+- **V7 item A reference (opt-in, EXPERIMENTAL): header-independent read clustering with fill-only merge.**
+  `DecodeOptions(read_clustering="fallback")` / `vnx decode --read-clustering fallback`; the default `off` is the 6.0
+  decode path byte for byte. Pass 1 keeps every unverified read in an unplaced-read store (budget 4,000,000 reads);
+  a lazy stage D7c clusters them by k-mer sketches and banded edit distance, builds a per-cluster consensus with
+  forward-backward certain calls (indels erase only the positions their placement affects), and accepts frames only
+  after inner RS + CRC-32. Cluster frames fill only superblock symbols and data addresses the 6.0 path left
+  unresolved (FC-9); the container SHA-256 still decides SUCCESS. Python/NumPy reference (native kernels: step A2);
+  design `docs/V7_ARCHITECTURE.md` §5, deviations in the module docstrings; smoke run
+  `experiments/v7/a1-smoke/README.md` (EXPERIMENTAL, SIMULATED, no efficacy claim). Formats unchanged.
+
 ### Fixed
 
 - **Random access with failed groups outside the selection (job #66).** On a V6 stripe archive the column pass decodes
@@ -40,9 +52,13 @@
   `invalid`, as without the fallback (`tests/v2/test_channel_cluster_consensus.py`). mypy now gates `vnxdna.v2`,
   `vnxdna.v4` and `vnxdna.ecc` (164 errors fixed, no new ignores).
 
-## 6.0.0 (unreleased)
+## 6.0.0 (2026-10-05)
 
-Consolidated entry for all V6 phases (development tree `6.0.0.dev0`; version and date to be set at release). The
+Tagged `v6.0.0` at 16b5811 (merge of PR #8). The tagged tree still reports the package version `6.0.0.dev0`: the
+release did not set `_version.py` to `6.0.0`, so archives written by it name `6.0.0.dev0` as their writer. The tag is
+not moved.
+
+Consolidated entry for all V6 phases (development tree `6.0.0.dev0`). The
 per-phase entries below it are kept as written during development. Formats are unchanged from 5.0.0 (VNX4 container,
 frame 4, superblocks 1 and 2); defaults are unchanged except where stated. Every channel result is SIMULATED; time and
 memory figures are MEASURED on a shared development host; the CNR statistics are PUBLIC-DATA-DERIVED. No DNA was
