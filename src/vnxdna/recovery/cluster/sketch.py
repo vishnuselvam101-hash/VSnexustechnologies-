@@ -63,7 +63,8 @@ def canonical_kmers(raw: np.ndarray, lengths: np.ndarray, k: int) -> tuple[np.nd
 def sketch_reads(raw: np.ndarray, lengths: np.ndarray, k: int, s: int, chunk: int = 512) -> tuple[np.ndarray, np.ndarray]:
     """Native or reference :func:`sketch_reads_reference` (identical results)."""
     raw = np.asarray(raw)
-    if raw.ndim == 2 and 1 <= k <= 31 and 1 <= s <= 256 and _nc.resolve_backend() == "native":
+    # native only for uint8 codes: the kernel takes uint8, and casting other dtypes would wrap codes such as 256 to 0
+    if raw.dtype == np.uint8 and raw.ndim == 2 and 1 <= k <= 31 and 1 <= s <= 256 and _nc.resolve_backend() == "native":
         return _nc.sketch(raw, np.asarray(lengths, dtype=np.int64), k, s)
     return sketch_reads_reference(raw, lengths, k, s, chunk)
 

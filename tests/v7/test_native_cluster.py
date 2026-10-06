@@ -190,6 +190,19 @@ def test_out_of_domain_inputs_route_to_the_reference():
             sketch.sketch_reads(raw, lens, 12, 257)
 
 
+def test_sketch_of_non_uint8_codes_routes_to_the_reference():
+    rng = np.random.default_rng(79)
+    raw = rng.integers(0, 4, (12, 40)).astype(np.int64)
+    raw[3, 5] = 256                                         # would wrap to code 0 if cast to uint8
+    raw[7, 20] = -1                                         # would wrap to code 255
+    lens = np.full(12, 40, dtype=np.int64)
+    ref = sketch.sketch_reads_reference(raw, lens, 12, 8)
+    for name in ("reference", "native"):
+        with backend(name):
+            got = sketch.sketch_reads(raw, lens, 12, 8)
+            assert np.array_equal(got[0], ref[0]) and np.array_equal(got[1], ref[1]), name
+
+
 # ------------------------------------------------------------------------------------------------ forward-backward variants
 def _fits16(case) -> bool:
     lens = [r.size for r in case["reads"]]
