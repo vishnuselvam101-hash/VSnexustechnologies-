@@ -8,7 +8,7 @@ do not repeat them here.
 |---|---|
 | integration branch | `build/v7-sprint` (local; not pushed) |
 | verified head | `85c96d6` (merge ae396c9 of work/v7-nanodata + split-guard test scoping) |
-| tests | 3127 passed / 0 failed / 6 skipped at f9d17ea (365 s, `-n 6`, load 2.8→3.2; skips = CLI-on-PATH + opt-in install); ruff clean; mypy gate clean (135 files) |
+| tests | 3166 passed / 0 failed / 6 skipped at 753b245; earlier 3127 passed / 0 failed / 6 skipped at f9d17ea (365 s, `-n 6`, load 2.8→3.2; skips = CLI-on-PATH + opt-in install); ruff clean; mypy gate clean (135 files) |
 | previous baseline | `d06e490`, 2723 passed / 0 failed |
 | released | v6.0.0 on `main` (tag untouched; its tree reports `6.0.0.dev0`, recorded in CHANGELOG) |
 | package version | 6.0.0.dev0 (bump to 7.0.0.dev0 pending, its own step) |
@@ -86,8 +86,8 @@ Governing notes: /root/vnx-dna-lab/notes/V7-RESET-DIRECTIVE-2026-10-06.md + foun
 | 6 cov-3 conclusion | DONE (A-FAIL README) | v4-balanced STRUCTURALLY INADEQUATE; v7-lowcov UNSUPPORTED (C+B) |
 | 7A fitted model design | DONE f8d617a docs/V7_NANOPORE_MODEL_DESIGN.md | gap: empirical indel run-length pmf |
 | 7B adequacy prereg | DONE f8d617a experiments/v7/fit-nano/PREREGISTRATION.md | M5/M5i multi-base indel metrics gating |
-| 7 implementation | (4) IN PROGRESS: D03 DEV look 1 done, all 4 INADEQUATE (M5/M5i now pass; M6r structural) — see experiments/v7/fit-nano/d03/README.md; per-run-length hp multiplier IMPLEMENTED 1ec3e79 (note CHANGE-HP-BY-LENGTH.md, 23 tests, SIMULATED recovery ≤8 %); OPEN: suite has 1 failure since d3b57fe (test_fit_identifiability committed-model glob matches fit-nano/d03 models lacking substitution_rate_effective_per_base); NEXT: fix that, add round a7c to run.py, FIT-only pre-check, then DEV look 2; D13 driver not yet built | (1) DONE ae396c9; (3) DONE f9d17ea; (2) DONE 5fbe276; /2 empirical run-length pmf + tests; (3) fitter calibration + M5i/M2b/RL metrics; (4) fit FIT, ≤2 DEV looks, freeze, one held-out evaluation |
+| 7 implementation | CLOSED: a7b DEV look 1 all INADEQUATE; a7c FIT-only pre-check → DEV_LOOK_2_BLOCKED — FIT PRE-CHECK INADEQUATE (be2e70d); DEV look 2 not spent; held-out never opened | experiments/v7/fit-nano/d03-a7c/README.md, DIAGNOSIS.json |
 | 7 M6 noise floor | DONE b82bc81 (amendment A1, founder yes) | prereg M6: 10 % relative per run length with >= 10,000 sites. At the floor (~200 events) real-data sampling noise alone is ~7 % relative, so a perfect model can fail M6 on the sparsest tested bins (same-channel SIMULATED check: 5.8 % at 19.5k sites). Option: add a noise-aware rule (10 % or 3 bootstrap SE, as M1) by a new PREREG before step 4 |
-| 7 matrix | BLOCKED until a model is ADEQUATE on held-out | |
-| 8 final report | after 7 | |
-Do NOT start B/C/optimisation. No V8.
+| 7 matrix | NOT RUN: no ADEQUATE model (final decision) | docs/V7_COMPLETION_REPORT.md |
+| 8 final report | DONE docs/V7_COMPLETION_REPORT.md — V7 CLOSED 2026-10-07 | V8 starts on build/v8-public-channel |
+V7 CLOSED. V8 continues on build/v8-public-channel (docs/V8_PLAN.md).
