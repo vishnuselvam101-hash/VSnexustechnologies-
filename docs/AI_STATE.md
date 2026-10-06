@@ -57,3 +57,18 @@ Python orchestration and reference implementations, plus C11 native kernels via 
 ## Known blockers / facts
 - No nanopore channel model is ADEQUATE (`docs/V7_CHANNEL_MODELS.md`).
 - `consensus_weighting=quality` and `retry_band` gave no nanopore gain (V6_DEFERRED §3).
+
+## V7 completion plan (founder 2026-10-06 18:0x: "abc ... fully complete the v7, next v8"; owner root-e4)
+Read as V7 items A, B, C to the §25 acceptance gates, then V8. One task at a time, merge gate each.
+| step | item | done when |
+|---|---|---|
+| 1 | D3 D13/CAS9 characterisation (rerun from 19ad023) | results + comparison committed, merged |
+| 2 | Python/C boundary audit (v7-pycpp, rebase on A2) | audit run on idle host, docs/V7_PYTHON_CPP_ARCHITECTURE.md, merged |
+| 3 | A close-out: cov3 analysis + v7-lowcov opt-in decision, docs/V7_NANOPORE_DECODING.md | doc + decision recorded |
+| 4 | C soft decisions (§13): prereg, re-run on the fitted (ADEQUATE) model + held-out; opt-in unless significant | results committed |
+| 5 | B frame 6 + superblock 3 (§15): EXP-F6-1 first; implement only if it earns it, else documented deferral | experiment + decision; impl with goldens/negatives/compat if go |
+| 6 | F primers/flanks, `vnx order-export`, short-strand profile (§16-17), CRC-16 | spec + tests |
+| 7 | E benchmark round 2 HEDGES/YYC/VNX (§18) | results with CIs |
+| 8 | §21 fuzz targets, §22 security review/threat model | no new crashes, findings fixed |
+| 9 | §24 docs + release gate (vnx release check) | SHA handed to founder; NO push/tag without founder approval |
+| 10 | V8 scope + plan | founder picks scope |
