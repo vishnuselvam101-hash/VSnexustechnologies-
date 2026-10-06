@@ -10,3 +10,7 @@
 {"dataset": "d13-lopez-nanopore", "granted": true, "purpose": "V8.1 stage 4: tally cached segments", "run": "run16", "script": "experiments/v8/d13/pipeline.py tables", "split": "FIT", "timestamp_utc": "2026-10-06T19:21:41Z"}
 {"dataset": "d13-lopez-nanopore", "granted": true, "purpose": "V8.1 stage 4: tally cached segments", "run": "run18", "script": "experiments/v8/d13/pipeline.py tables", "split": "FIT", "timestamp_utc": "2026-10-06T19:22:02Z"}
 {"dataset": "d13-lopez-nanopore", "granted": true, "purpose": "V8.1 stage 4: tally cached segments", "run": "run20", "script": "experiments/v8/d13/pipeline.py tables", "split": "FIT", "timestamp_utc": "2026-10-06T19:22:49Z"}
+{"dataset": "d13-lopez-nanopore", "granted": true, "purpose": "V8.2 aggregate error extraction (FIT)", "run": "run15", "script": "experiments/v8/d13/extract.py", "split": "FIT", "timestamp_utc": "2026-10-06T19:23:18Z"}
+{"dataset": "d13-lopez-nanopore", "granted": true, "purpose": "V8.2 aggregate error extraction (FIT)", "run": "run16", "script": "experiments/v8/d13/extract.py", "split": "FIT", "timestamp_utc": "2026-10-06T19:23:18Z"}
+{"dataset": "d13-lopez-nanopore", "granted": true, "purpose": "V8.2 aggregate error extraction (FIT)", "run": "run18", "script": "experiments/v8/d13/extract.py", "split": "FIT", "timestamp_utc": "2026-10-06T19:23:18Z"}
+{"dataset": "d13-lopez-nanopore", "granted": true, "purpose": "V8.2 aggregate error extraction (FIT)", "run": "run20", "script": "experiments/v8/d13/extract.py", "split": "FIT", "timestamp_utc": "2026-10-06T19:23:18Z"}

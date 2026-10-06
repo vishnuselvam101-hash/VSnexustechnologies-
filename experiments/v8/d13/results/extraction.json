@@ -1,0 +1,580 @@
+{
+ "bootstrap": 200,
+ "code": {
+  "commit": "5cb85445f12c74643d8c5915f3ebd4650852d65c",
+  "dirty_tracked": false
+ },
+ "context_3mer": {
+  "deletion": {
+   "rate_over_mean_max": 3.9405219307403105,
+   "rate_over_mean_median": 0.9556898836651081,
+   "rate_over_mean_min": 0.04181591070986168,
+   "three_mers_with_ge_200_events": 64
+  },
+  "insertion": {
+   "rate_over_mean_max": 2.1673894501395927,
+   "rate_over_mean_median": 0.9540631567689182,
+   "rate_over_mean_min": 0.13569839171833764,
+   "three_mers_with_ge_200_events": 64
+  },
+  "substitution": {
+   "rate_over_mean_max": 2.3485749086534815,
+   "rate_over_mean_median": 0.9466333968962731,
+   "rate_over_mean_min": 0.40984780293111434,
+   "three_mers_with_ge_200_events": 64
+  }
+ },
+ "coverage_per_reference_with_segment": {
+  "cv": 1.6584678388537741,
+  "mean": 21.102621776052025,
+  "median": 16.0,
+  "p10": 8.0,
+  "p90": 30.0,
+  "references": 126708
+ },
+ "deletion_run_length": {
+  "histogram_1_to_32plus": [
+   5914887,
+   2700113,
+   699999,
+   243573,
+   90301,
+   44234,
+   22534,
+   12455,
+   8215,
+   5795,
+   4204,
+   3417,
+   2804,
+   2381,
+   2037,
+   1819,
+   1659,
+   1422,
+   1395,
+   1201,
+   999,
+   951,
+   830,
+   804,
+   653,
+   607,
+   558,
+   509,
+   430,
+   418,
+   362,
+   1855
+  ],
+  "mean": 1.6426075373198392,
+  "runs": 9773421,
+  "runs_in_last_bin_censored": 1855,
+  "share_ge2": 0.39479870968415254
+ },
+ "drift": {
+  "segments": 2673871,
+  "share_abs_le_3": 0.5221097053672372,
+  "share_zero": 0.09764943783750225
+ },
+ "evidence_class": "PUBLIC-DATA-DERIVED (aggregate statistics of D13 FIT segments)",
+ "excluded_segments": 0,
+ "experiment": "V8.2 D13 error extraction",
+ "homopolymer_run_length": [
+  {
+   "bootstrap_se": 5.330943713572668e-05,
+   "ci95": [
+    0.043269990255039276,
+    0.04346344660687428
+   ],
+   "deletion_events": 8066538,
+   "indel_rate": 0.043367711980728696,
+   "insertion_events": 6499132,
+   "run_length": "1",
+   "sites": 335864387,
+   "sparse": false,
+   "zero_events": false,
+   "zero_sites": false
+  },
+  {
+   "bootstrap_se": 6.76645737211665e-05,
+   "ci95": [
+    0.041122055882351974,
+    0.04138123914703572
+   ],
+   "deletion_events": 1342913,
+   "indel_rate": 0.04126021532534291,
+   "insertion_events": 650106,
+   "run_length": "2",
+   "sites": 48303650,
+   "sparse": false,
+   "zero_events": false,
+   "zero_sites": false
+  },
+  {
+   "bootstrap_se": 0.0001339497367289406,
+   "ci95": [
+    0.02656060232439723,
+    0.027072084130456447
+   ],
+   "deletion_events": 266011,
+   "indel_rate": 0.026817089482871977,
+   "insertion_events": 150361,
+   "run_length": "3",
+   "sites": 15526368,
+   "sparse": false,
+   "zero_events": false,
+   "zero_sites": false
+  },
+  {
+   "bootstrap_se": 0.0005280897928908728,
+   "ci95": [
+    0.08338503905808098,
+    0.0853397730052645
+   ],
+   "deletion_events": 59897,
+   "indel_rate": 0.0843399870690008,
+   "insertion_events": 22545,
+   "run_length": "4",
+   "sites": 977496,
+   "sparse": false,
+   "zero_events": false,
+   "zero_sites": false
+  },
+  {
+   "bootstrap_se": 0.000672187502727973,
+   "ci95": [
+    0.13831684021281218,
+    0.14114521771441776
+   ],
+   "deletion_events": 29040,
+   "indel_rate": 0.13965606368680428,
+   "insertion_events": 11484,
+   "run_length": "5",
+   "sites": 290170,
+   "sparse": false,
+   "zero_events": false,
+   "zero_sites": false
+  },
+  {
+   "bootstrap_se": 0.0008176007040663921,
+   "ci95": [
+    0.10854846027304009,
+    0.11191014484979925
+   ],
+   "deletion_events": 9022,
+   "indel_rate": 0.11002791388019802,
+   "insertion_events": 4025,
+   "run_length": "6+",
+   "sites": 118579,
+   "sparse": false,
+   "zero_events": false,
+   "zero_sites": false
+  }
+ ],
+ "identifiability": {
+  "basecaller / chemistry dependence": "NOT IDENTIFIABLE FROM DATA (one condition, basecaller not stated)",
+  "dropout (molecule loss)": "NOT IDENTIFIABLE FROM DATA (upper bound only: assembly, PCR and segmentation losses mixed)",
+  "insertion and deletion rate / run length / homopolymer / position / context": "IDENTIFIABLE",
+  "read-level (whole read) length": "IDENTIFIABLE as concatemer length; NOT a single-oligo read length",
+  "substitution rate / spectrum / position / quality": "IDENTIFIABLE",
+  "synthesis vs sequencing errors": "NOT IDENTIFIABLE FROM DATA (no sequencing-only control)"
+ },
+ "insertion_run_length": {
+  "histogram_1_to_32plus": [
+   4769896,
+   1546126,
+   597431,
+   222767,
+   101266,
+   48918,
+   24371,
+   12385,
+   6584,
+   3447,
+   1829,
+   1021,
+   586,
+   323,
+   211,
+   129,
+   88,
+   66,
+   51,
+   25,
+   29,
+   26,
+   14,
+   14,
+   13,
+   11,
+   5,
+   6,
+   8,
+   3,
+   1,
+   3
+  ],
+  "mean": 1.6034888812539922,
+  "runs": 7337653,
+  "runs_in_last_bin_censored": 3,
+  "share_ge2": 0.3499425497498996
+ },
+ "per_base_rates": {
+  "bases": 401080650.0,
+  "deletion": {
+   "ci95": [
+    0.03997444511561745,
+    0.04011927216893229
+   ],
+   "se": 3.796602733359503e-05,
+   "value": 0.04004273953380698
+  },
+  "insertion": {
+   "ci95": [
+    0.029247426760330576,
+    0.029430259425595576
+   ],
+   "se": 4.748270290669269e-05,
+   "value": 0.029335364346297934
+  },
+  "substitution": {
+   "ci95": [
+    0.02574554199694959,
+    0.02587475561367607
+   ],
+   "se": 3.3065378247278086e-05,
+   "value": 0.025810190543971642
+  }
+ },
+ "per_run": {
+  "run15": {
+   "bases": 161415450.0,
+   "deletion": {
+    "ci95": [
+     0.03701091265440802,
+     0.03717995866574034
+    ],
+    "se": 4.530783711535106e-05,
+    "value": 0.03709636840835248
+   },
+   "insertion": {
+    "ci95": [
+     0.028097984875198653,
+     0.02822445967828762
+    ],
+    "se": 3.333672557246036e-05,
+    "value": 0.028159888040457094
+   },
+   "substitution": {
+    "ci95": [
+     0.024208141536665333,
+     0.02431136905544587
+    ],
+    "se": 2.561366101230996e-05,
+    "value": 0.024265830811115045
+   }
+  },
+  "run16": {
+   "bases": 64330350.0,
+   "deletion": {
+    "ci95": [
+     0.04334512033959832,
+     0.04390885484889271
+    ],
+    "se": 0.00015257525235222035,
+    "value": 0.04363714794028013
+   },
+   "insertion": {
+    "ci95": [
+     0.037190218670939135,
+     0.03764715022734551
+    ],
+    "se": 0.0001125963304638746,
+    "value": 0.03745841581772834
+   },
+   "substitution": {
+    "ci95": [
+     0.030599483690321238,
+     0.030896818470321098
+    ],
+    "se": 7.191925600360402e-05,
+    "value": 0.030733238665730873
+   }
+  },
+  "run18": {
+   "bases": 136094700.0,
+   "deletion": {
+    "ci95": [
+     0.03994236290955946,
+     0.04009454708467959
+    ],
+    "se": 4.155256269688965e-05,
+    "value": 0.04002084577871144
+   },
+   "insertion": {
+    "ci95": [
+     0.024426764999240402,
+     0.024544065893415595
+    ],
+    "se": 3.0814775742362044e-05,
+    "value": 0.024477573336801506
+   },
+   "substitution": {
+    "ci95": [
+     0.023646336615154084,
+     0.02374582997065957
+    ],
+    "se": 2.7584458275629158e-05,
+    "value": 0.02369419970064962
+   }
+  },
+  "run20": {
+   "bases": 39240150.0,
+   "deletion": {
+    "ci95": [
+     0.04615066861038791,
+     0.046500242455092655
+    ],
+    "se": 9.185753451426255e-05,
+    "value": 0.04634597472231885
+   },
+   "insertion": {
+    "ci95": [
+     0.03754803785702004,
+     0.03783794535769955
+    ],
+    "se": 7.998020111785522e-05,
+    "value": 0.03770181816328429
+   },
+   "substitution": {
+    "ci95": [
+     0.03132358619039809,
+     0.031530694356119306
+    ],
+    "se": 6.0524648774019064e-05,
+    "value": 0.031430894122474046
+   }
+  }
+ },
+ "position_deciles_events_per_base": {
+  "deletion_start": [
+   0.020589450027070615,
+   0.02602730897140014,
+   0.026329891506857786,
+   0.025788080277619977,
+   0.025724950829714672,
+   0.025416085268636122,
+   0.025363776587077932,
+   0.025198198915853957,
+   0.022318603502811715,
+   0.020920854695932103
+  ],
+  "insertion": [
+   0.011434732640430297,
+   0.019319181815427893,
+   0.020429706593923194,
+   0.020834886948547626,
+   0.020995727417914577,
+   0.021004179583333178,
+   0.02085204060579836,
+   0.020694416447165926,
+   0.019184695147970863,
+   0.00819750341982342
+  ],
+  "substitution": [
+   0.023909779741306394,
+   0.02684425189796616,
+   0.027515712862238553,
+   0.026987265528765847,
+   0.026805830697641482,
+   0.026589365505416428,
+   0.026526959104110355,
+   0.026706623717698674,
+   0.026649453171076688,
+   0.019566663213495837
+  ]
+ },
+ "quality_dependence": [
+  {
+   "bases": 10656415,
+   "error_probability": 0.2798684172866766,
+   "phred": "0-4",
+   "phred_implied": 0.6309573444801932
+  },
+  {
+   "bases": 86294890,
+   "error_probability": 0.12338381797578049,
+   "phred": "5-9",
+   "phred_implied": 0.19952623149688797
+  },
+  {
+   "bases": 108347440,
+   "error_probability": 0.04823701418326081,
+   "phred": "10-14",
+   "phred_implied": 0.06309573444801933
+  },
+  {
+   "bases": 78677767,
+   "error_probability": 0.02351467346550392,
+   "phred": "15-19",
+   "phred_implied": 0.0199526231496888
+  },
+  {
+   "bases": 49540333,
+   "error_probability": 0.01509961590286444,
+   "phred": "20-24",
+   "phred_implied": 0.00630957344480193
+  },
+  {
+   "bases": 33124184,
+   "error_probability": 0.01102726032435999,
+   "phred": "25-29",
+   "phred_implied": 0.001995262314968879
+  },
+  {
+   "bases": 19899051,
+   "error_probability": 0.008781474051199728,
+   "phred": "30-34",
+   "phred_implied": 0.000630957344480193
+  },
+  {
+   "bases": 7157913,
+   "error_probability": 0.008524412073742724,
+   "phred": "35-39",
+   "phred_implied": 0.00019952623149688788
+  },
+  {
+   "bases": 1727421,
+   "error_probability": 0.010717132650349856,
+   "phred": "40-44",
+   "phred_implied": 6.309573444801929e-05
+  },
+  {
+   "bases": 344051,
+   "error_probability": 0.02713551188631918,
+   "phred": "45-49",
+   "phred_implied": 1.9952623149688786e-05
+  },
+  {
+   "bases": 264826,
+   "error_probability": 0.03152258464048092,
+   "phred": "50-54",
+   "phred_implied": 6.30957344480193e-06
+  },
+  {
+   "bases": 227108,
+   "error_probability": 0.03242069852228895,
+   "phred": "55-59",
+   "phred_implied": 1.9952623149688787e-06
+  }
+ ],
+ "read_level": {
+  "run15": {
+   "concatemer_length_median_100nt_bin": 50,
+   "reads": 59960,
+   "reads_without_segment_share": 0.050183455637091395,
+   "segments_per_read_mean": 17.961307538358906
+  },
+  "run16": {
+   "concatemer_length_median_100nt_bin": 15,
+   "reads": 60159,
+   "reads_without_segment_share": 0.10404095812762845,
+   "segments_per_read_mean": 7.132631858907229
+  },
+  "run18": {
+   "concatemer_length_median_100nt_bin": 51,
+   "reads": 47521,
+   "reads_without_segment_share": 0.05300814376801835,
+   "segments_per_read_mean": 19.08282653984554
+  },
+  "run20": {
+   "concatemer_length_median_100nt_bin": 12,
+   "reads": 60158,
+   "reads_without_segment_share": 0.10597094318295155,
+   "segments_per_read_mean": 4.336962664982214
+  }
+ },
+ "references": 126708,
+ "references_without_segment_upper_bound_on_dropout": {
+  "run15": {
+   "references_in_split": 61276,
+   "references_with_segment": 60154,
+   "share_without_segment": 0.018310594686337223
+  },
+  "run16": {
+   "references_in_split": 1228,
+   "references_with_segment": 1226,
+   "share_without_segment": 0.0016286644951140072
+  },
+  "run18": {
+   "references_in_split": 61276,
+   "references_with_segment": 60140,
+   "share_without_segment": 0.018539069129838714
+  },
+  "run20": {
+   "references_in_split": 5190,
+   "references_with_segment": 5188,
+   "share_without_segment": 0.0003853564547205979
+  }
+ },
+ "seconds": 17.5,
+ "seed": 20261013,
+ "segments_tallied": 2673871,
+ "split": "FIT",
+ "substitution_spectrum": {
+  "counts_from_to_ACGT": [
+   [
+    0,
+    461567,
+    1770683,
+    546314
+   ],
+   [
+    526255,
+    0,
+    346262,
+    992133
+   ],
+   [
+    1358762,
+    428899,
+    0,
+    659823
+   ],
+   [
+    587029,
+    2112901,
+    561340,
+    0
+   ]
+  ],
+  "row_normalised": [
+   [
+    0.0,
+    0.16611710221538895,
+    0.6372655083705108,
+    0.19661738941410023
+   ],
+   [
+    0.2822272276298501,
+    0.0,
+    0.18569812029067118,
+    0.5320746520794787
+   ],
+   [
+    0.555166857066277,
+    0.17524077787638245,
+    0.0,
+    0.2695923650573405
+   ],
+   [
+    0.18000012265160506,
+    0.6478767474020857,
+    0.17212312994630927,
+    0.0
+   ]
+  ]
+ },
+ "tables_sha256": "81994182b672e5ecbbab5f6e131ec7f6b508b47e49e59f2a582175e49d873aac"
+}
