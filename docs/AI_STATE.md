@@ -86,8 +86,8 @@ Governing notes: /root/vnx-dna-lab/notes/V7-RESET-DIRECTIVE-2026-10-06.md + foun
 | 6 cov-3 conclusion | DONE (A-FAIL README) | v4-balanced STRUCTURALLY INADEQUATE; v7-lowcov UNSUPPORTED (C+B) |
 | 7A fitted model design | DONE f8d617a docs/V7_NANOPORE_MODEL_DESIGN.md | gap: empirical indel run-length pmf |
 | 7B adequacy prereg | DONE f8d617a experiments/v7/fit-nano/PREREGISTRATION.md | M5/M5i multi-base indel metrics gating |
-| 7 implementation | NEXT: (4), after the M6 decision below | (1) DONE ae396c9; (3) DONE f9d17ea; (2) DONE 5fbe276; /2 empirical run-length pmf + tests; (3) fitter calibration + M5i/M2b/RL metrics; (4) fit FIT, ≤2 DEV looks, freeze, one held-out evaluation |
-| 7 M6 noise floor | OPEN (founder/prereg amendment BEFORE any fit) | prereg M6: 10 % relative per run length with >= 10,000 sites. At the floor (~200 events) real-data sampling noise alone is ~7 % relative, so a perfect model can fail M6 on the sparsest tested bins (same-channel SIMULATED check: 5.8 % at 19.5k sites). Option: add a noise-aware rule (10 % or 3 bootstrap SE, as M1) by a new PREREG before step 4 |
+| 7 implementation | (4) IN PROGRESS: D03 DEV look 1 done, all 4 INADEQUATE (M5/M5i now pass; M6r structural) — see experiments/v7/fit-nano/d03/README.md; NEXT: per-run-length homopolymer indel multiplier (8-question note, schema+sim+fit+tests), then DEV look 2; D13 driver not yet built | (1) DONE ae396c9; (3) DONE f9d17ea; (2) DONE 5fbe276; /2 empirical run-length pmf + tests; (3) fitter calibration + M5i/M2b/RL metrics; (4) fit FIT, ≤2 DEV looks, freeze, one held-out evaluation |
+| 7 M6 noise floor | DONE b82bc81 (amendment A1, founder yes) | prereg M6: 10 % relative per run length with >= 10,000 sites. At the floor (~200 events) real-data sampling noise alone is ~7 % relative, so a perfect model can fail M6 on the sparsest tested bins (same-channel SIMULATED check: 5.8 % at 19.5k sites). Option: add a noise-aware rule (10 % or 3 bootstrap SE, as M1) by a new PREREG before step 4 |
 | 7 matrix | BLOCKED until a model is ADEQUATE on held-out | |
 | 8 final report | after 7 | |
 Do NOT start B/C/optimisation. No V8.
