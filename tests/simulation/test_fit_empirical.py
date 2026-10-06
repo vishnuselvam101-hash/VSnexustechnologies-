@@ -169,3 +169,15 @@ def test_fitted_empirical_model_loads_and_implies_the_same_design(calibrated):
     m = cm.from_doc({"schema": cm.SCHEMA_V2, "name": "fit", "version": "0.0.1", "stages": {"sequencing": seq}})[0]
     d = V.design_from_model(m)
     assert d.del_empirical and d.ins_empirical and not d.del_geometric and not d.ins_geometric
+
+
+def test_m6r_amendment_a1_tolerates_sampling_noise_but_not_a_real_difference(two_channels):
+    lay, (M1, T1, _), (_M2, T2, _), _ = two_channels
+    assert not V.m6r_homopolymer_runs(lay, T1, T2, min_sites=2000)["pass"]            # plain 10 %: noise in sparse bins fails
+    a1 = V.m6r_homopolymer_runs(lay, T1, T2, min_sites=2000, real_M=M1, seed=1, B=100)
+    assert a1["pass"] and "amendment A1" in a1["rule"]
+    worse = T2.copy()
+    for name in ("ctx_ins", "ctx_del"):                                            # indel events x 1.5 everywhere
+        o, n = lay.fields[name]
+        worse[o:o + n] *= 1.5
+    assert not V.m6r_homopolymer_runs(lay, T1, worse, min_sites=2000, real_M=M1, seed=1, B=100)["pass"]

@@ -210,9 +210,12 @@ def m6_homopolymer(layout: Layout, real_T: np.ndarray, sim_T: np.ndarray, min_ru
             "indel_rate_out_in_sim": b.tolist(), "rel_diff": rel.tolist(), "threshold": 0.10}
 
 
-def m6r_homopolymer_runs(layout: Layout, real_T: np.ndarray, sim_T: np.ndarray, min_sites: int = M6_MIN_SITES) -> dict:
+def m6r_homopolymer_runs(layout: Layout, real_T: np.ndarray, sim_T: np.ndarray, min_sites: int = M6_MIN_SITES, *,
+                         real_M: np.ndarray | None = None, seed: int = 0, B: int = 200) -> dict:
     """7B M6: indel rate by homopolymer run length 1..5 and 6+ (exact lengths by differencing the cumulative in-run masks
-    of ``layout.minruns``, which must hold 2..6), within 10 % relative wherever the real data has >= ``min_sites`` sites."""
+    of ``layout.minruns``, which must hold 2..6), wherever the real data has >= ``min_sites`` sites: within 10 % relative,
+    or, with ``real_M`` (amendment A1, experiments/v7/fit-nano/PREREGISTRATION-A1.md), within max(10 % relative,
+    3 bootstrap SE of the real rate), the M1 rule."""
     if not all(m in layout.minruns for m in range(2, 7)):
         return {"pass": None, "note": "layout.minruns must contain 2..6"}
 
@@ -230,9 +233,18 @@ def m6r_homopolymer_runs(layout: Layout, real_T: np.ndarray, sim_T: np.ndarray, 
     a, b = re_ / np.maximum(rs, 1), se / np.maximum(ss, 1)
     rel = np.abs(b - a) / np.maximum(a, 1e-12)
     tested = rs >= min_sites
-    return {"pass": bool(np.all(rel[tested] <= 0.10)), "run_lengths": ["1", "2", "3", "4", "5", "6+"],
+    tol = 0.10 * a
+    out: dict = {}
+    if real_M is not None:
+        tot = F.bootstrap_totals(real_M, F.bootstrap_weights(real_M.shape[0], B, seed))
+        reps = np.array([(lambda se_: se_[1] / np.maximum(se_[0], 1))(per_length(tot[i])) for i in range(B)])
+        sd = reps.std(axis=0, ddof=1)
+        tol = np.maximum(tol, 3 * sd)
+        out = {"real_se": sd.tolist(), "rule": "max(10 % relative, 3 bootstrap SE) (amendment A1)"}
+    good = np.abs(b - a) <= tol + 1e-15
+    return {"pass": bool(np.all(good[tested])), "run_lengths": ["1", "2", "3", "4", "5", "6+"],
             "real_sites": rs.tolist(), "real": a.tolist(), "sim": b.tolist(), "rel_diff": rel.tolist(),
-            "tested": tested.tolist(), "threshold": 0.10, "min_sites": min_sites}
+            "tolerance": tol.tolist(), "tested": tested.tolist(), "threshold": 0.10, "min_sites": min_sites, **out}
 
 
 def m7_coverage(real_counts: np.ndarray, model: cm.ChannelModel, seed: int, B: int = 200) -> dict:
@@ -429,7 +441,7 @@ def validate_model(model: cm.ChannelModel, layout: Layout, *, dev_refs: list, de
     if prereg == "7B":
         rep.update({"M1a": m1a_total(layout, dev_M, sim_T, seed), "M1c": m1c_spectrum(layout, real_T, sim_T),
                     "M2b": m2b_read_rate(layout, real_T, sim_T), "M5": m5_delruns(layout, real_T, sim_T, SHARE_PP_7B),
-                    "M5i": m5i_insruns(layout, real_T, sim_T), "M6r": m6r_homopolymer_runs(layout, real_T, sim_T),
+                    "M5i": m5i_insruns(layout, real_T, sim_T), "M6r": m6r_homopolymer_runs(layout, real_T, sim_T, real_M=dev_M, seed=seed),
                     "RL": m_read_length(dev_rs, simrs)})
     elif prereg is not None:
         raise ValueError(f"unknown pre-registration {prereg!r}")
