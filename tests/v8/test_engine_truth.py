@@ -52,3 +52,25 @@ def test_truth_with_errors_keeps_the_draws():
     a, b = sim.simulate_batch(codes, 2, 1), sim.simulate_batch(codes, 2, 1, truth=True)
     assert np.array_equal(a["codes"], b["codes"]) and np.array_equal(a["quals"], b["quals"])
     assert b["source"].tolist() == np.repeat(np.arange(30), 3).tolist()
+
+
+def test_simulate_file_with_truth_is_byte_identical_and_maps_reads(tmp_path):
+    import random
+    from vnxdna.simulation import engine, registry
+    rnd = random.Random(1)
+    seqs = ["".join(rnd.choice("ACGT") for _ in range(80)) for _ in range(700)]           # > one batch
+    p = tmp_path / "s.fasta"
+    p.write_text("".join(f">s{i}\n{s}\n" for i, s in enumerate(seqs)))
+    m = registry.load_model("mixed-harsh")                                                # 5 % strand loss, errors
+    a = engine.simulate_file(p, tmp_path / "a.fastq", m, 7)
+    t = engine.simulate_file_with_truth(p, tmp_path / "b.fastq", m, 7)
+    assert (tmp_path / "a.fastq").read_bytes() == (tmp_path / "b.fastq").read_bytes()
+    assert t["source"].size == a["reads"] and t["lost_strands"] and not set(t["lost_strands"]) & set(t["source"].tolist())
+    clean = registry.load_model("clean").with_parameters({"sequencing.coverage": {"model": "fixed", "mean": 2},
+                                                           "sequencing.reverse_complement_rate": 0.5})
+    t = engine.simulate_file_with_truth(p, tmp_path / "c.fastq", clean, 3)
+    reads = (tmp_path / "c.fastq").read_text().split("\n")[1::4]
+    comp = str.maketrans("ACGT", "TGCA")
+    for r, s, rc in zip(reads, t["source"], t["reverse_complement"]):
+        assert (r.translate(comp)[::-1] if rc else r) == seqs[s]
+    assert t["reverse_complement"].any() and sorted(set(t["source"].tolist())) == list(range(700))

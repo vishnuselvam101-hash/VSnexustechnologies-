@@ -462,6 +462,47 @@ def simulate_file(strands, output, model: ChannelModel, seed: int, *, fmt: str |
     return body
 
 
+def simulate_file_with_truth(strands, output, model: ChannelModel, seed: int, *, fmt: str = "fastq",
+                             overwrite: bool = False) -> dict:
+    """``simulate_file`` (one worker) plus the ground truth of every read (V8.7): ``source`` = the read's strand index in the
+    strand file (-1 for a contaminant), ``reverse_complement`` (bool). The read file is byte-identical to
+    ``simulate_file(strands, output, model, seed, fmt=fmt)``. Refuses models with a shuffle window (truth is in file order).
+    Returns ``{"source", "reverse_complement", "reads_sha256", "lost_strands", "stats"}``."""
+    import hashlib
+    sim = Simulator(model.stages)
+    if sim.shuffle_window:
+        raise VNXOutputError("simulate_file_with_truth needs shuffle_window = 0 (truth is recorded in file order)")
+    mask = None
+    pool_n = _count_strands(strands)
+    if sim.pool_loss:
+        sl = sim.strand_loss
+        mask = loss_mask(pool_n, LossConfig(dropout=sl["rate"], burst_count=sl["burst_count"],
+                                            burst_length=sl["burst_length"], seed=seed))
+    kept = np.arange(pool_n) if mask is None else np.flatnonzero(mask)
+    src, rc = [], []
+    totals: dict = {k: 0 for k in V4_STATS + EXT_STATS}
+    count = 0
+    with atomic_output(output, overwrite=overwrite, mode=0o644) as tmp:
+        with open(tmp, "wb", buffering=1 << 20) as out:
+            for index, codes in strand_batches(strands, mask):
+                res = sim.simulate_batch(codes, seed, index, truth=True)
+                for k, v in res["stats"].items():
+                    totals[k] = totals.get(k, 0) + v
+                out.write(_serialize(res, fmt, count))
+                count += int(res["lengths"].size)
+                s = res["source"]
+                g = kept[index * BATCH + np.maximum(s, 0)]
+                src.append(np.where(s < 0, -1, g))
+                rc.append(res["reverse_complement"])
+    h = hashlib.sha256()
+    with open(output, "rb") as fh:
+        while b := fh.read(1 << 22):
+            h.update(b)
+    return {"source": np.concatenate(src) if src else np.zeros(0, dtype=np.int64),
+            "reverse_complement": np.concatenate(rc) if rc else np.zeros(0, dtype=bool), "reads_sha256": h.hexdigest(),
+            "lost_strands": [] if mask is None else np.flatnonzero(~mask).tolist(), "stats": totals}
+
+
 def versions() -> dict:
     return {"software": __version__, "simulator": SIMULATOR, "simulator_version": SIMULATOR_VERSION,
             "model_schema": SCHEMA_V1, "metadata_schema": METADATA_SCHEMA, "numpy": np.__version__,
