@@ -69,6 +69,7 @@ class Simulator:
         from vnxdna.simulation.model2 import refuse_unsupported
         refuse_unsupported(stages)                    # /2 effects the simulator cannot honour are refused, never ignored
         self.stages = stages
+        self._trace: dict | None = None               # per-batch truth, only while simulate_batch(truth=True) runs
         syn, sto, amp, seq = (stages[k] for k in ("synthesis", "storage", "amplification", "sequencing"))
         P = em.PositionProfile.from_json
         self.syn_dropout = em.DropoutModel(syn["dropout_rate"])
@@ -160,8 +161,12 @@ class Simulator:
         return var, lens, intact
 
     # ------------------------------------------------------------------------------------------------------ batch
-    def simulate_batch(self, codes: np.ndarray, seed: int, batch_index: int) -> dict:
-        """Reads for one batch of equal-length strands (n, L): a pure function of (codes, model, seed, batch_index)."""
+    def simulate_batch(self, codes: np.ndarray, seed: int, batch_index: int, *, truth: bool = False) -> dict:
+        """Reads for one batch of equal-length strands (n, L): a pure function of (codes, model, seed, batch_index).
+
+        ``truth`` (V8.7) adds ``source`` (strand index of each read in the batch, -1 for a contaminant read) and
+        ``reverse_complement`` (bool per read). It only records; the draws and the reads are identical either way."""
+        self._trace = {} if truth else None
         rng = np.random.default_rng([seed, batch_index])
         streams: dict[int, np.random.Generator] = {}
 
@@ -216,6 +221,8 @@ class Simulator:
             vidx = None if vidx is None else vidx[order]
             stats["amplification_duplicates"] = int(dup.sum())
         m = src.size
+        if self._trace is not None:
+            self._trace.update(source=src.copy(), rc=np.zeros(m, dtype=bool))
         if m == 0:
             flat, lengths, q = np.zeros(0, dtype=np.uint8), np.zeros(0, dtype=np.int64), np.zeros(0, dtype=np.uint8)
         else:
@@ -224,7 +231,12 @@ class Simulator:
         flat, lengths, q = self._post(flat, lengths, q, L, a_seq, a_sto, stats)
         stats["reads"] = int(lengths.size)
         stats["bases"] = int(flat.size)
-        return {"codes": flat, "lengths": lengths, "quals": q, "stats": stats}
+        out = {"codes": flat, "lengths": lengths, "quals": q, "stats": stats}
+        if self._trace is not None:
+            if self._trace["source"].size != lengths.size:
+                raise RuntimeError("simulation truth lost track of the reads")
+            out["source"], out["reverse_complement"] = self._trace["source"], self._trace["rc"]
+        return out
 
     def _sequence(self, codes, mol, src, vidx, rng, a_amp, a_seq, stats, a_het=None):
         m = src.size
@@ -267,6 +279,8 @@ class Simulator:
         if rc.any():
             em.reverse_complement_flat(flat, q, lengths, np.flatnonzero(rc))
             stats["reverse_complement"] = int(rc.sum())
+        if self._trace is not None:
+            self._trace["rc"] = rc.copy()
         if self.quality.varies:
             q = self.quality.vary(q, lengths, a_seq())
         stats["substitutions"] = res["substitutions"]
@@ -281,6 +295,8 @@ class Simulator:
                 q = np.concatenate([q[offs[r]:offs[r + 1]] for r in order])
                 lengths = lengths[order]
                 stats["duplicates"] = int(dup.sum())
+                if self._trace is not None:
+                    self._trace["source"], self._trace["rc"] = self._trace["source"][order], self._trace["rc"][order]
         return flat, lengths, q
 
     def _post(self, flat, lengths, q, L, a_seq, a_sto, stats):
@@ -302,6 +318,8 @@ class Simulator:
                 keep = np.repeat(~miss, lengths)
                 flat, q, lengths = flat[keep], q[keep], lengths[~miss]
                 stats["missing_reads"] = int(miss.sum())
+                if self._trace is not None:
+                    self._trace["source"], self._trace["rc"] = self._trace["source"][~miss], self._trace["rc"][~miss]
         if self.contamination and lengths.size:
             r = a_sto()
             k = int(r.poisson(lengths.size * self.contamination / (1.0 - self.contamination)))
@@ -310,6 +328,9 @@ class Simulator:
                 q = np.concatenate([q, np.full(k * L, self.quality.correct, dtype=np.uint8)])
                 lengths = np.concatenate([lengths, np.full(k, L, dtype=np.int64)])
                 stats["contaminant_reads"] = k
+                if self._trace is not None:
+                    self._trace["source"] = np.concatenate([self._trace["source"], np.full(k, -1, dtype=np.int64)])
+                    self._trace["rc"] = np.concatenate([self._trace["rc"], np.zeros(k, dtype=bool)])
         return flat, lengths, q
 
 
