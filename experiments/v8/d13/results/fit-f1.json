@@ -1,0 +1,176 @@
+{
+ "calibration": {
+  "final_residual_ratios": {
+   "del_mean": 1.0015732765474312,
+   "del_pmf_tv": 0.004030470605148606,
+   "ed_var": 0.996592705148794,
+   "hp_indel": 0.9520758874363288,
+   "hp_len": [
+    1.0,
+    1.0387867410142146,
+    1.0471158514530556,
+    0.9307239399354034,
+    1.0679530691814714,
+    0.9555067298295884
+   ],
+   "hp_sub": 0.6673387453823165,
+   "ins": 1.0070347524805694,
+   "ins_mean": 1.0065063387201614,
+   "ins_pmf_tv": 0.0069098417236201914,
+   "start": 0.9979047169406575,
+   "sub": 0.9956320244590278
+  },
+  "trace": [
+   {
+    "iteration": 0,
+    "ratios": {
+     "del_mean": 1.0750742896377112,
+     "del_pmf": 1.0536302427416595,
+     "ed_var": 1.4828947647040085,
+     "hp_indel": 1.2339743831040562,
+     "hp_len": 1.4976042098548341,
+     "hp_sub": 0.7750984871807046,
+     "ins": 1.0377691715482864,
+     "ins_mean": 1.3367897053829643,
+     "ins_pmf": 1.0629544356528202,
+     "start": 1.011478936096597,
+     "sub": 1.0021476873256574
+    }
+   },
+   {
+    "iteration": 1,
+    "ratios": {
+     "del_mean": 1.0365413115632562,
+     "del_pmf": 1.0266058403951157,
+     "ed_var": 1.1790151431879226,
+     "hp_indel": 1.1752037078633428,
+     "hp_len": 1.5311494392078482,
+     "hp_sub": 0.7846061816356156,
+     "ins": 1.0063710680036373,
+     "ins_mean": 1.1269927865466511,
+     "ins_pmf": 1.0278918197991818,
+     "start": 1.0146881364551197,
+     "sub": 1.015688157733602
+    }
+   },
+   {
+    "iteration": 2,
+    "ratios": {
+     "del_mean": 1.016698503369269,
+     "del_pmf": 1.013857608652042,
+     "ed_var": 1.0764049776580351,
+     "hp_indel": 1.1843670356366138,
+     "hp_len": 1.2286819639479076,
+     "hp_sub": 0.6911491205447065,
+     "ins": 1.0154271784190447,
+     "ins_mean": 1.051069108925959,
+     "ins_pmf": 1.0120659627552382,
+     "start": 1.00995144359973,
+     "sub": 1.0120709022204266
+    }
+   },
+   {
+    "iteration": 3,
+    "ratios": {
+     "del_mean": 1.009585615359474,
+     "del_pmf": 1.0068044140740868,
+     "ed_var": 1.0465251037267909,
+     "hp_indel": 1.0648441237578685,
+     "hp_len": 1.251011236427599,
+     "hp_sub": 0.7831833454697399,
+     "ins": 1.014167622333289,
+     "ins_mean": 1.029946126105337,
+     "ins_pmf": 1.0093671388535,
+     "start": 1.013059077738377,
+     "sub": 1.0121260773192124
+    }
+   },
+   {
+    "iteration": 4,
+    "ratios": {
+     "del_mean": 1.0068492711731842,
+     "del_pmf": 1.0068972654464026,
+     "ed_var": 1.017895677600547,
+     "hp_indel": 1.062058866800267,
+     "hp_len": 1.0872556575695345,
+     "hp_sub": 0.9531219619673932,
+     "ins": 1.0020913516169618,
+     "ins_mean": 1.0252816251366328,
+     "ins_pmf": 1.0055617407154283,
+     "start": 1.0051826619419777,
+     "sub": 1.0103602812096837
+    }
+   }
+  ]
+ },
+ "code": {
+  "commit": "d313b14ceed30d6e7aa6d5ebed4d14f13e4f3ac4",
+  "dirty_tracked": false
+ },
+ "configuration": {
+  "bootstrap": 200,
+  "calibration": {
+   "coverage": 10,
+   "iterations": 5,
+   "refs": 4000
+  },
+  "design": {
+   "bins": {
+    "deletion": 25,
+    "insertion": 25,
+    "substitution": 30
+   },
+   "context": [
+    "substitution"
+   ],
+   "del_empirical": true,
+   "del_geometric": false,
+   "heterogeneity": true,
+   "hp_by_length": true,
+   "ins_empirical": true,
+   "ins_geometric": false,
+   "min_run": 4,
+   "use_hp": true
+  },
+  "family": "F1",
+  "layout": {
+   "L": 150,
+   "cycles": 150,
+   "max_run": 32,
+   "minruns": [
+    2,
+    3,
+    4,
+    5,
+    6
+   ],
+   "quality": true,
+   "read_rate": true,
+   "size": 4244
+  },
+  "prereg_sha256": "adb9731844f0bd3b134d2ce396b91e73ce565115d23eaba2b3964e02bab6c6ac",
+  "seed": 20261010,
+  "tables_sha256": "81994182b672e5ecbbab5f6e131ec7f6b508b47e49e59f2a582175e49d873aac"
+ },
+ "configuration_sha256": "7172a11d87b6f7ec156dc39f1fc1971d466d6d67c6ad2d294f8d84d247d1640d",
+ "environment": {
+  "cpus": 8,
+  "load_average": [
+   1.99951171875,
+   2.0302734375,
+   2.771484375
+  ],
+  "numpy": "2.5.3",
+  "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+  "python": "3.12.3"
+ },
+ "evidence_class": "PUBLIC-DATA-DERIVED",
+ "family": "F1",
+ "model_file": "experiments/v8/d13/models/d13-nanopore-f1.json",
+ "model_sha256": "5e81ec793e51fbcf7353207f05906fe9197877436f8dc8cc032676800271e11e",
+ "parameter_sha256": "e17f0048761d92589e04e202faf31bb984cfe688bbd50a142fe000884d360b21",
+ "reads_tallied": 2673871,
+ "references": 126708,
+ "seconds": 73.1,
+ "workers": 4
+}
