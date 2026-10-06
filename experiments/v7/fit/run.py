@@ -74,6 +74,19 @@ CAL_REFS, CAL_COVERAGE, CAL_ITER = 4000, 10, 5
 #: this code writes round 2 (protocol 5.5) to fit-<dataset>/a2/{models,results}
 ROUND = "a2"
 MODEL_VERSION = "2.0.0"
+#: round a7b (V7 step 7.4): fitted-nanopore pre-registration 7B + amendment A1 (experiments/v7/fit-nano/PREREGISTRATION*.md).
+#: Empirical insertion/deletion run lengths, layout with homopolymer masks 2..6 and the per-read edit-rate field, gating
+#: GATING_7B; outputs under experiments/v7/fit-nano/<dataset>/. Selected with --round a7b.
+ROUNDS = {"a2": {"version": "2.0.0"}, "a7b": {"version": "3.0.0"}}
+MINRUNS_7B = (2, 3, 4, 5, 6)
+
+
+def is_7b() -> bool:
+    return ROUND == "a7b"
+
+
+def layout_for(job: dict) -> Layout:
+    return Layout(job["L"], minruns=MINRUNS_7B, read_rate=True) if is_7b() else Layout(job["L"])
 SEED = 20261005
 
 
@@ -82,6 +95,8 @@ def d02_out_dir() -> Path:
 
 
 def out_dir(job: dict) -> Path:
+    if is_7b():
+        return OUT / "fit-nano" / ("d03" if job["dataset"] == "d03-nanopore" else job["dataset"])
     return OUT / ("fit-cnr" if job["dataset"] == "cnr" else "fit-d03" if job["dataset"] == "d03-nanopore" else "fit-d02") / ROUND
 
 
@@ -132,7 +147,7 @@ def check_window(job: dict, rs: np.ndarray, M: np.ndarray, lay) -> dict:
 
 
 def tally_split(guard: G.Guard, job: dict, split: str, workers: int, keep_clusters: int = 0):
-    lay = Layout(job["L"])
+    lay = layout_for(job)
     Ms, rss, colls, labels = [], [], [], []
     for label, src in sources(guard, job, split):
         coll = FL.Collector(src, orient_backward=label.endswith("/backward"), keep_clusters=keep_clusters)
@@ -196,7 +211,13 @@ def do_fit(job_id: str, workers: int, bootstrap: int, seed: int = SEED) -> Path:
     step = max(1, len(refs) // CAL_REFS)
     cal_refs = refs[::step][:CAL_REFS]
     t1 = time.time()
-    fit = F.fit_tallies(M, lay, seed=seed, bootstrap=bootstrap, calibration=dict(refs=cal_refs, coverage=CAL_COVERAGE, iterations=CAL_ITER, workers=workers, tally_opts=topts(job)))
+    design = None
+    if is_7b():     # FIT-chosen design (min_run, profiles, context, heterogeneity) with empirical run lengths (7A §3)
+        import dataclasses
+        from vnxdna.simulation.fit import estimate as est
+        design = dataclasses.replace(est.choose_design(lay, M.sum(axis=0).astype(np.float64)), ins_geometric=False,
+                                     del_geometric=False, ins_empirical=True, del_empirical=True)
+    fit = F.fit_tallies(M, lay, seed=seed, bootstrap=bootstrap, design=design, calibration=dict(refs=cal_refs, coverage=CAL_COVERAGE, iterations=CAL_ITER, workers=workers, tally_opts=topts(job)))
     t_fit = time.time() - t1
     v, ci = fit["values"], fit["ci95"]
     per_group = {lab: group_rates(lay, m, c) for lab, m, c in zip(labels, Ms, colls)}
@@ -222,7 +243,9 @@ def do_fit(job_id: str, workers: int, bootstrap: int, seed: int = SEED) -> Path:
                                                  "context_kinds": list(fit["design"].context),
                                                  "insertion_runs_geometric": fit["design"].ins_geometric,
                                                  "read_heterogeneity": fit["design"].heterogeneity,
-                                                 "deletion_runs_geometric": fit["design"].del_geometric}},
+                                                 "deletion_runs_geometric": fit["design"].del_geometric,
+                                                 "insertion_runs_empirical": fit["design"].ins_empirical,
+                                                 "deletion_runs_empirical": fit["design"].del_empirical}},
               "misfit": {"notes": misfit_notes(fit)},
               "notes": ["PUBLIC-DATA-DERIVED parameters; reads simulated from this model are SIMULATED",
                         "dropout is an upper bound: empty clusters mix molecular loss with clustering/segmentation loss",
@@ -274,6 +297,14 @@ def validation_notes(rep: dict) -> list[str]:
     if m8.get("pass") is False:
         bad = [k for k, v in m8["curve"].items() if v.get("pass") is False]
         notes.append(f"M8 fails at k = {bad}")
+    if is_7b():
+        for m in V.GATING_7B:
+            if m not in ("M2", "M3", "M5", "M8") and rep.get(m, {}).get("pass") is False:
+                notes.append(f"{m} fails (gating under pre-registration 7B; see metrics)")
+        for m in ("M4", "M6", "M9"):
+            if rep.get(m, {}).get("pass") is False:
+                notes.append(f"{m} fails (not gating under 7B; see metrics)")
+        return notes
     for m in ("M1", "M4", "M6", "M9"):
         if rep.get(m, {}).get("pass") is False:
             notes.append(f"{m} fails (not gating; see metrics)")
@@ -294,12 +325,13 @@ def do_validate(job_id: str, workers: int, seed: int = SEED + 1) -> Path:
     refs = [r for c in colls for r in c.refs]
     clusters = [x for c in colls for x in c.clusters][:6000]
     rep = V.validate_model(model, lay, dev_refs=refs[::max(1, len(refs) // 4000)], dev_clusters=clusters, dev_M=M, dev_rs=rs,
-                           mode=job["mode"], seed=seed, workers=workers, tally_opts=topts(job))
+                           mode=job["mode"], seed=seed, workers=workers, tally_opts=topts(job),
+                           prereg="7B" if is_7b() else None)
     cal = dict(refs=refs[::max(1, len(refs) // 2000)][:2000], coverage=CAL_COVERAGE, iterations=CAL_ITER, tally_opts=topts(job))
     rt_refs = refs[::max(1, len(refs) // 3000)][:3000]
     rep["M9"] = {"pass": None, "note": "no qualities in this dataset (nanopore quality is assumed)"}
     rep["M10"] = V.round_trip(model, lay, rt_refs, coverage=8, seed=seed + 5, bootstrap=200, workers=workers, calibration=cal, tally_opts=topts(job))
-    adequacy, failed = V.adequacy(rep)
+    adequacy, failed = V.adequacy(rep, V.GATING_7B if is_7b() else V.GATING)
     fr = dict(doc["fit_report"])
     fr["adequacy"], fr["failed_metrics"] = adequacy, failed
     fr["validation"] = {"split": "DEV", "dev_references": int(M.shape[0]), "dev_reads_tallied": int(lay.get(M, "n_reads").sum()),
@@ -308,7 +340,8 @@ def do_validate(job_id: str, workers: int, seed: int = SEED + 1) -> Path:
     fr["metrics"] = _jsonable(rep)
     fr["misfit"] = {"notes": list(fr["misfit"]["notes"]) + validation_notes(rep)}
     if adequacy == "INADEQUATE":
-        fr["notes"] = list(fr["notes"]) + [f"INADEQUATE (protocol 5.4): fails {failed} on DEV; not used to choose decoder parameters; may be run as a labelled stress condition"]
+        rule = "pre-registration 7B + A1" if is_7b() else "protocol 5.4"
+        fr["notes"] = list(fr["notes"]) + [f"INADEQUATE ({rule}): fails {failed} on DEV; not used to choose decoder parameters; may be run as a labelled stress condition"]
     doc["fit_report"] = fr
     new = cm.from_doc(json.loads(json.dumps(doc)))[0]
     mp.write_text(json.dumps(new.doc, indent=1, sort_keys=True) + "\n")
@@ -457,7 +490,10 @@ def main(argv=None) -> int:
     ap.add_argument("job", nargs="?")
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--bootstrap", type=int, default=200)
+    ap.add_argument("--round", choices=sorted(ROUNDS), default="a2")
     a = ap.parse_args(argv)
+    global ROUND, MODEL_VERSION
+    ROUND, MODEL_VERSION = a.round, ROUNDS[a.round]["version"]
     if a.cmd == "list":
         print("\n".join(JOBS))
         return 0
