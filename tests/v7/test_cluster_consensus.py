@@ -197,3 +197,20 @@ def test_markerless_layout_uses_the_medoid_seed(tmp_path):
     clusters[1] = (1, [revcomp(r) for r in clusters[1][1]])
     fr = cluster_consensus(lay, clusters, ClusterConfig())
     assert len(fr) == 10 and all(frame_key(f) in truth for f in fr)
+
+
+def test_trace_is_observability_only(balanced):
+    """``trace`` records one entry per consensus candidate and changes neither the frames nor the counters."""
+    lay, strands, truth = balanced
+    rng = np.random.default_rng(77)
+    clusters = [(i, [noisy(rng, strands[i]) for _ in range(5)]) for i in range(0, len(strands), 3)]
+    c1, c2 = Counter(), Counter()
+    a = cluster_consensus(lay, clusters, ClusterConfig(), 4, c1)
+    trace: list = []
+    b = cluster_consensus(lay, clusters, ClusterConfig(), 4, c2, trace)
+    assert [frame_key(f) for f in a] == [frame_key(f) for f in b] and c1 == c2
+    assert len(trace) == c1["cluster_consensus_attempted"] - c1["cluster_insufficient_reads"]
+    for t in trace:
+        assert t["best"].shape == t["decided"].shape == (lay.frame_nt,)
+        assert t["erased"].shape == (lay.frame_bytes,) and t["ok"] == (t["fields"] is not None)
+    assert sum(t["ok"] for t in trace) == c1["cluster_frames_verified"]

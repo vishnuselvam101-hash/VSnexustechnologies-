@@ -25,6 +25,9 @@ from vnxdna.core.errors import VNXConfigurationError
 READ_CLUSTERING_MODES = ("off", "fallback")
 
 
+CONSENSUS_TEMPLATES = ("wildcard", "full")
+
+
 @dataclass(frozen=True)
 class ClusterConfig:
     """Parameters of the clustering and consensus stage (V7_ARCHITECTURE §5.2, §5.3; defaults as stated there)."""
@@ -57,6 +60,10 @@ class ClusterConfig:
     gmd_steps: int = 4
     peel_theta: float = 0.15                    # a member is peeled when its distance to the verified strand <= this * T
     medoid_members: int = 16
+    # §5.3 alignment template of the consensus rounds (EXPERIMENTAL, opt-in): "wildcard" (default, the reference path)
+    # aligns to decided bases and leaves undecided frame positions as cost-0 wildcards; "full" fills every frame position
+    # that has certain calls with its plurality base, so indels are placed against base values, not wildcards
+    consensus_template: str = "wildcard"
 
     def validate(self) -> ClusterConfig:
         ints = {"max_unplaced_reads": 0, "k": 4, "sketch_size": 1, "bucket_cap": 2, "min_shared_slots": 1, "max_candidate_pairs": 0,
@@ -79,6 +86,8 @@ class ClusterConfig:
                 raise VNXConfigurationError(f"cluster config {name} must be in (0, 1)")
         if not isinstance(self.vote_share, (int, float)) or not 0.5 <= self.vote_share <= 1.0:
             raise VNXConfigurationError("cluster config vote_share must be in [0.5, 1]")
+        if self.consensus_template not in CONSENSUS_TEMPLATES:
+            raise VNXConfigurationError("cluster config consensus_template must be 'wildcard' or 'full'")
         return self
 
     def to_dict(self) -> dict:
