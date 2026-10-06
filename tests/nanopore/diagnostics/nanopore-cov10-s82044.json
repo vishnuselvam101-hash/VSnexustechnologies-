@@ -67,11 +67,11 @@
   },
   "cluster_status": "ran",
   "cluster_trigger": "superblock",
-  "decode_seconds": 3.02,
+  "decode_seconds": 4.414,
   "error_code": null,
   "groups_failed": 6,
   "outcome": "EXPLICIT_FAILURE",
-  "peak_rss_bytes": 188420096,
+  "peak_rss_bytes": 189952000,
   "reason": "status FAILURE",
   "status": "FAILURE",
   "terminal_stage": "outer_ecc"
@@ -110,14 +110,16 @@
   "archive_outcome": "EXPLICIT_FAILURE",
   "archive_sha_match": false,
   "classes_failed_strands": {
-   "ADDRESS-CAUSED": 2,
+   "ADDRESS-CAUSED": 0,
    "BOUNDARY-CAUSED": 87,
+   "CLUSTERING-CAUSED": 2,
    "PAYLOAD-CAUSED": 54,
    "STRUCTURAL": 16
   },
   "failed_reads_by_class": {
-   "ADDRESS-CAUSED": 11,
+   "ADDRESS-CAUSED": 0,
    "BOUNDARY-CAUSED": 440,
+   "CLUSTERING-CAUSED": 11,
    "PAYLOAD-CAUSED": 162,
    "STRUCTURAL": 12
   },
@@ -135,7 +137,7 @@
   "total": 9
  },
  "schema": "vnx.nanopore-funnel/1",
- "seconds": 7.03,
+ "seconds": 10.44,
  "strands_total": 691,
  "lost_strands": [
   {"address_assigned":[],"candidate":{"e":0,"e_star":42,"f":60,"reads":2,"recoverable":false,"shifted_nt":0,"wrong_nt":1},"clustered_reads":2,"clusters":1,"group":0,"home_cluster_reads":2,"home_purity":1.0,"kind":"superblock","lost_at":"rs_recoverable","oracle_class":"PAYLOAD-CAUSED","orientation_ok":true,"reads":2,"reason":"errors/erasures: e=0 f=60 > r=16 (erasures exceed parity)","stored":2,"strand":5,"symbol":5},
@@ -150,7 +152,7 @@
   {"address_assigned":[],"candidate":{"e":0,"e_star":16,"f":55,"reads":2,"recoverable":false,"shifted_nt":2,"wrong_nt":2},"clustered_reads":2,"clusters":1,"group":0,"home_cluster_reads":2,"home_purity":1.0,"kind":"data","lost_at":"rs_recoverable","oracle_class":"PAYLOAD-CAUSED","orientation_ok":true,"reads":2,"reason":"errors/erasures: e=0 f=55 > r=16 (erasures exceed parity)","stored":2,"strand":54,"symbol":42},
   {"clustered_reads":0,"clusters":0,"group":0,"kind":"data","lost_at":"two_reads","oracle_class":"STRUCTURAL","reads":1,"reason":"one read only (consensus needs 2)","stored":1,"strand":55,"symbol":43},
   {"address_assigned":[],"candidate":{"e":9,"e_star":24,"f":17,"reads":4,"recoverable":false,"shifted_nt":31,"wrong_nt":34},"clustered_reads":4,"clusters":1,"group":0,"home_cluster_reads":4,"home_purity":1.0,"kind":"data","lost_at":"rs_recoverable","oracle_class":"BOUNDARY-CAUSED","orientation_ok":true,"reads":4,"reason":"shifted segment (indel placed wrong): e=9 f=17 > r=16 (erasures exceed parity)","stored":4,"strand":56,"symbol":44},
-  {"address_assigned":[],"candidate":{"e":1,"e_star":16,"f":22,"reads":4,"recoverable":false,"shifted_nt":2,"wrong_nt":2},"clustered_reads":4,"clusters":1,"group":0,"home_cluster_reads":4,"home_purity":1.0,"kind":"data","lost_at":"rs_recoverable","oracle_class":"ADDRESS-CAUSED","orientation_ok":true,"reads":5,"reason":"errors/erasures: e=1 f=22 > r=16 (erasures exceed parity)","stored":5,"strand":64,"symbol":52},
+  {"address_assigned":[],"candidate":{"e":1,"e_star":16,"f":22,"reads":4,"recoverable":false,"shifted_nt":2,"wrong_nt":2},"clustered_reads":4,"clusters":1,"group":0,"home_cluster_reads":4,"home_purity":1.0,"kind":"data","lost_at":"rs_recoverable","oracle_class":"CLUSTERING-CAUSED","orientation_ok":true,"reads":5,"reason":"errors/erasures: e=1 f=22 > r=16 (erasures exceed parity)","stored":5,"strand":64,"symbol":52},
   {"address_assigned":[],"candidate":{"e":1,"e_star":23,"f":35,"reads":3,"recoverable":false,"shifted_nt":2,"wrong_nt":2},"clustered_reads":3,"clusters":1,"group":0,"home_cluster_reads":3,"home_purity":1.0,"kind":"data","lost_at":"rs_recoverable","oracle_class":"PAYLOAD-CAUSED","orientation_ok":true,"reads":3,"reason":"errors/erasures: e=1 f=35 > r=16 (erasures exceed parity)","stored":3,"strand":65,"symbol":53},
   {"address_assigned":[],"candidate":{"e":0,"e_star":21,"f":38,"reads":4,"recoverable":false,"shifted_nt":0,"wrong_nt":0},"clustered_reads":4,"clusters":1,"group":0,"home_cluster_reads":4,"home_purity":1.0,"kind":"data","lost_at":"rs_recoverable","oracle_class":"PAYLOAD-CAUSED","orientation_ok":true,"reads":4,"reason":"errors/erasures: e=0 f=38 > r=16 (erasures exceed parity)","stored":4,"strand":69,"symbol":57},
   {"address_assigned":[],"candidate":{"e":10,"e_star":15,"f":7,"reads":5,"recoverable":false,"shifted_nt":29,"wrong_nt":29},"clustered_reads":5,"clusters":1,"group":0,"home_cluster_reads":5,"home_purity":1.0,"kind":"data","lost_at":"rs_recoverable","oracle_class":"BOUNDARY-CAUSED","orientation_ok":true,"reads":5,"reason":"shifted segment (indel placed wrong): e=10 f=7 > r=16 (2e+f > r)","stored":5,"strand":81,"symbol":69},
@@ -236,7 +238,7 @@
   {"address_assigned":[],"candidate":{"e":2,"e_star":22,"f":27,"reads":5,"recoverable":false,"shifted_nt":7,"wrong_nt":7},"clustered_reads":5,"clusters":1,"group":5,"home_cluster_reads":5,"home_purity":1.0,"kind":"data","lost_at":"rs_recoverable","oracle_class":"BOUNDARY-CAUSED","orientation_ok":true,"reads":5,"reason":"shifted segment (indel placed wrong): e=2 f=27 > r=16 (erasures exceed parity)","stored":5,"strand":416,"symbol":4},
   {"address_assigned":[],"candidate":{"e":0,"e_star":37,"f":67,"reads":2,"recoverable":false,"shifted_nt":0,"wrong_nt":0},"clustered_reads":2,"clusters":1,"group":5,"home_cluster_reads":2,"home_purity":1.0,"kind":"data","lost_at":"rs_recoverable","oracle_class":"PAYLOAD-CAUSED","orientation_ok":true,"reads":2,"reason":"errors/erasures: e=0 f=67 > r=16 (erasures exceed parity)","stored":2,"strand":418,"symbol":6},
   {"address_assigned":[],"candidate":{"e":1,"e_star":14,"f":20,"reads":4,"recoverable":false,"shifted_nt":7,"wrong_nt":7},"clustered_reads":4,"clusters":1,"group":5,"home_cluster_reads":4,"home_purity":1.0,"kind":"data","lost_at":"rs_recoverable","oracle_class":"BOUNDARY-CAUSED","orientation_ok":true,"reads":4,"reason":"shifted segment (indel placed wrong): e=1 f=20 > r=16 (erasures exceed parity)","stored":4,"strand":419,"symbol":7},
-  {"address_assigned":[],"candidate":{"e":3,"e_star":18,"f":15,"reads":5,"recoverable":false,"shifted_nt":10,"wrong_nt":10},"clustered_reads":5,"clusters":1,"group":5,"home_cluster_reads":5,"home_purity":1.0,"kind":"data","lost_at":"rs_recoverable","oracle_class":"ADDRESS-CAUSED","orientation_ok":true,"reads":6,"reason":"shifted segment (indel placed wrong): e=3 f=15 > r=16 (2e+f > r)","stored":6,"strand":421,"symbol":9},
+  {"address_assigned":[],"candidate":{"e":3,"e_star":18,"f":15,"reads":5,"recoverable":false,"shifted_nt":10,"wrong_nt":10},"clustered_reads":5,"clusters":1,"group":5,"home_cluster_reads":5,"home_purity":1.0,"kind":"data","lost_at":"rs_recoverable","oracle_class":"CLUSTERING-CAUSED","orientation_ok":true,"reads":6,"reason":"shifted segment (indel placed wrong): e=3 f=15 > r=16 (2e+f > r)","stored":6,"strand":421,"symbol":9},
   {"address_assigned":[],"candidate":{"e":8,"e_star":10,"f":6,"reads":5,"recoverable":false,"shifted_nt":25,"wrong_nt":25},"clustered_reads":5,"clusters":1,"group":5,"home_cluster_reads":5,"home_purity":1.0,"kind":"data","lost_at":"rs_recoverable","oracle_class":"BOUNDARY-CAUSED","orientation_ok":true,"reads":5,"reason":"shifted segment (indel placed wrong): e=8 f=6 > r=16 (2e+f > r)","stored":5,"strand":423,"symbol":11},
   {"address_assigned":[],"candidate":{"e":4,"e_star":9,"f":14,"reads":6,"recoverable":false,"shifted_nt":9,"wrong_nt":9},"clustered_reads":6,"clusters":1,"group":5,"home_cluster_reads":6,"home_purity":1.0,"kind":"data","lost_at":"rs_recoverable","oracle_class":"BOUNDARY-CAUSED","orientation_ok":true,"reads":6,"reason":"shifted segment (indel placed wrong): e=4 f=14 > r=16 (2e+f > r)","stored":6,"strand":424,"symbol":12},
   {"address_assigned":[],"candidate":{"e":2,"e_star":23,"f":42,"reads":3,"recoverable":false,"shifted_nt":2,"wrong_nt":3},"clustered_reads":3,"clusters":1,"group":5,"home_cluster_reads":3,"home_purity":1.0,"kind":"data","lost_at":"rs_recoverable","oracle_class":"PAYLOAD-CAUSED","orientation_ok":true,"reads":3,"reason":"errors/erasures: e=2 f=42 > r=16 (erasures exceed parity)","stored":3,"strand":433,"symbol":21},

@@ -62,7 +62,7 @@
   },
   "cluster_status": "ran",
   "cluster_trigger": "superblock",
-  "decode_seconds": 0.992,
+  "decode_seconds": 1.433,
   "error_code": "NO_SUPERBLOCK",
   "groups_failed": null,
   "outcome": "EXPLICIT_FAILURE",
@@ -108,12 +108,14 @@
   "classes_failed_strands": {
    "ADDRESS-CAUSED": 0,
    "BOUNDARY-CAUSED": 170,
+   "CLUSTERING-CAUSED": 0,
    "PAYLOAD-CAUSED": 184,
    "STRUCTURAL": 201
   },
   "failed_reads_by_class": {
    "ADDRESS-CAUSED": 0,
    "BOUNDARY-CAUSED": 634,
+   "CLUSTERING-CAUSED": 0,
    "PAYLOAD-CAUSED": 480,
    "STRUCTURAL": 124
   },
@@ -131,7 +133,7 @@
   "total": 9
  },
  "schema": "vnx.nanopore-funnel/1",
- "seconds": 2.34,
+ "seconds": 3.72,
  "strands_total": 691,
  "lost_strands": [
   {"address_assigned":[],"candidate":{"e":4,"e_star":22,"f":24,"reads":3,"recoverable":false,"shifted_nt":19,"wrong_nt":19},"clustered_reads":3,"clusters":1,"group":0,"home_cluster_reads":3,"home_purity":1.0,"kind":"superblock","lost_at":"rs_recoverable","oracle_class":"BOUNDARY-CAUSED","orientation_ok":true,"reads":3,"reason":"shifted segment (indel placed wrong): e=4 f=24 > r=16 (erasures exceed parity)","stored":3,"strand":0,"symbol":0},

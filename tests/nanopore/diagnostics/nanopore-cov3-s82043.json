@@ -62,7 +62,7 @@
   },
   "cluster_status": "ran",
   "cluster_trigger": "superblock",
-  "decode_seconds": 1.201,
+  "decode_seconds": 1.507,
   "error_code": "NO_SUPERBLOCK",
   "groups_failed": null,
   "outcome": "EXPLICIT_FAILURE",
@@ -107,12 +107,14 @@
   "classes_failed_strands": {
    "ADDRESS-CAUSED": 0,
    "BOUNDARY-CAUSED": 156,
+   "CLUSTERING-CAUSED": 0,
    "PAYLOAD-CAUSED": 183,
    "STRUCTURAL": 206
   },
   "failed_reads_by_class": {
    "ADDRESS-CAUSED": 0,
    "BOUNDARY-CAUSED": 601,
+   "CLUSTERING-CAUSED": 0,
    "PAYLOAD-CAUSED": 477,
    "STRUCTURAL": 118
   },
@@ -130,7 +132,7 @@
   "total": 9
  },
  "schema": "vnx.nanopore-funnel/1",
- "seconds": 2.6,
+ "seconds": 3.62,
  "strands_total": 691,
  "lost_strands": [
   {"address_assigned":[],"candidate":{"e":0,"e_star":40,"f":70,"reads":2,"recoverable":false,"shifted_nt":0,"wrong_nt":0},"clustered_reads":2,"clusters":1,"group":0,"home_cluster_reads":2,"home_purity":1.0,"kind":"superblock","lost_at":"rs_recoverable","oracle_class":"PAYLOAD-CAUSED","orientation_ok":true,"reads":2,"reason":"errors/erasures: e=0 f=70 > r=16 (erasures exceed parity)","stored":2,"strand":0,"symbol":0},

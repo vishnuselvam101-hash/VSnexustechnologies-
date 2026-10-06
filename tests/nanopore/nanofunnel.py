@@ -21,7 +21,10 @@ nothing else — no orientation (each read is oriented relative to the group's f
 distance, as the decoder would), no offsets, boundaries or bases — and the unchanged consensus, inner RS + CRC and
 fill-only merge run on those groups, then the outer code and the container SHA-256. A strand the normal decode lost is
 
-* ADDRESS-CAUSED  when the oracle grouping recovers it;
+* ADDRESS-CAUSED  when the oracle grouping recovers it and the normal home cluster verified a frame at another
+                  address (the cluster-first path reads the address from the verified frame only);
+* CLUSTERING-CAUSED when the oracle grouping recovers it otherwise (unassigned, split, merged, or a cluster whose
+                  membership or orientation differs from the true strand's reads);
 * STRUCTURAL      when the oracle fails and the pool holds fewer than 2 stored reads of it (no consensus possible);
 * BOUNDARY-CAUSED when the oracle fails and the oracle consensus is wrong mainly by shifted runs (an indel placed at
                   the wrong position: most wrong decided bases equal the true base one position to the left or right);
@@ -62,7 +65,7 @@ CORPUS = HERE / "corpus" / "cases.json"
 SCHEMA = "vnx.nanopore-funnel/1"
 LABEL = "DIAGNOSTIC / SIMULATED (oracle results are ORACLE / DIAGNOSTIC, never decoding or acceptance results)"
 STAGES = ("observed", "two_reads", "stored", "clustered", "oriented", "candidate", "rs_recoverable", "valid_frame")
-ORACLE_CLASSES = ("ADDRESS-CAUSED", "BOUNDARY-CAUSED", "PAYLOAD-CAUSED", "STRUCTURAL")
+ORACLE_CLASSES = ("ADDRESS-CAUSED", "CLUSTERING-CAUSED", "BOUNDARY-CAUSED", "PAYLOAD-CAUSED", "STRUCTURAL")
 
 
 def load_corpus(path: Path = CORPUS) -> list[dict]:
@@ -452,7 +455,10 @@ def oracle_block(arc: dict, sim: dict, strands: list, ocap: Capture, otrace: lis
         s = r["strand"]
         k = keys[s]
         if k in ok:
-            c = "ADDRESS-CAUSED"
+            # the oracle grouping recovers it: the normal decode lost it to the grouping. ADDRESS-CAUSED when the
+            # normal home cluster verified a frame at another address; CLUSTERING-CAUSED otherwise (unassigned, split,
+            # merged, or a cluster whose membership/orientation differs from the true strand's reads)
+            c = "ADDRESS-CAUSED" if r["reason"].startswith("home cluster verified another address") else "CLUSTERING-CAUSED"
         elif r["stored"] < 2:
             c = "STRUCTURAL"
         elif s in tr0:

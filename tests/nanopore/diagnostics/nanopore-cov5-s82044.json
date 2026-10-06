@@ -66,11 +66,11 @@
   },
   "cluster_status": "ran",
   "cluster_trigger": "superblock",
-  "decode_seconds": 1.665,
+  "decode_seconds": 1.816,
   "error_code": null,
   "groups_failed": 9,
   "outcome": "EXPLICIT_FAILURE",
-  "peak_rss_bytes": 128704512,
+  "peak_rss_bytes": 129216512,
   "reason": "status FAILURE",
   "status": "FAILURE",
   "terminal_stage": "outer_ecc"
@@ -109,14 +109,16 @@
   "archive_outcome": "EXPLICIT_FAILURE",
   "archive_sha_match": false,
   "classes_failed_strands": {
-   "ADDRESS-CAUSED": 1,
+   "ADDRESS-CAUSED": 0,
    "BOUNDARY-CAUSED": 179,
+   "CLUSTERING-CAUSED": 1,
    "PAYLOAD-CAUSED": 133,
    "STRUCTURAL": 94
   },
   "failed_reads_by_class": {
-   "ADDRESS-CAUSED": 4,
+   "ADDRESS-CAUSED": 0,
    "BOUNDARY-CAUSED": 769,
+   "CLUSTERING-CAUSED": 4,
    "PAYLOAD-CAUSED": 357,
    "STRUCTURAL": 75
   },
@@ -134,7 +136,7 @@
   "total": 9
  },
  "schema": "vnx.nanopore-funnel/1",
- "seconds": 3.86,
+ "seconds": 5.61,
  "strands_total": 691,
  "lost_strands": [
   {"address_assigned":[],"candidate":{"e":13,"e_star":30,"f":25,"reads":4,"recoverable":false,"shifted_nt":48,"wrong_nt":48},"clustered_reads":4,"clusters":1,"group":0,"home_cluster_reads":4,"home_purity":1.0,"kind":"superblock","lost_at":"rs_recoverable","oracle_class":"BOUNDARY-CAUSED","orientation_ok":true,"reads":4,"reason":"shifted segment (indel placed wrong): e=13 f=25 > r=16 (erasures exceed parity)","stored":4,"strand":0,"symbol":0},
@@ -461,7 +463,7 @@
   {"address_assigned":[],"candidate":{"e":9,"e_star":10,"f":1,"reads":8,"recoverable":false,"shifted_nt":23,"wrong_nt":24},"clustered_reads":8,"clusters":1,"group":6,"home_cluster_reads":8,"home_purity":1.0,"kind":"data","lost_at":"rs_recoverable","oracle_class":"BOUNDARY-CAUSED","orientation_ok":true,"reads":8,"reason":"shifted segment (indel placed wrong): e=9 f=1 > r=16 (2e+f > r)","stored":8,"strand":541,"symbol":49},
   {"address_assigned":[],"candidate":{"e":3,"e_star":9,"f":15,"reads":3,"recoverable":false,"shifted_nt":8,"wrong_nt":8},"clustered_reads":3,"clusters":1,"group":6,"home_cluster_reads":3,"home_purity":1.0,"kind":"data","lost_at":"rs_recoverable","oracle_class":"BOUNDARY-CAUSED","orientation_ok":true,"reads":3,"reason":"shifted segment (indel placed wrong): e=3 f=15 > r=16 (2e+f > r)","stored":3,"strand":542,"symbol":50},
   {"address_assigned":[],"candidate":{"e":3,"e_star":22,"f":36,"reads":4,"recoverable":false,"shifted_nt":10,"wrong_nt":10},"clustered_reads":4,"clusters":1,"group":6,"home_cluster_reads":4,"home_purity":1.0,"kind":"data","lost_at":"rs_recoverable","oracle_class":"BOUNDARY-CAUSED","orientation_ok":true,"reads":4,"reason":"shifted segment (indel placed wrong): e=3 f=36 > r=16 (erasures exceed parity)","stored":4,"strand":543,"symbol":51},
-  {"address_assigned":[],"candidate":{"e":1,"e_star":20,"f":38,"reads":3,"recoverable":false,"shifted_nt":3,"wrong_nt":3},"clustered_reads":3,"clusters":1,"group":6,"home_cluster_reads":3,"home_purity":1.0,"kind":"data","lost_at":"rs_recoverable","oracle_class":"ADDRESS-CAUSED","orientation_ok":true,"reads":4,"reason":"shifted segment (indel placed wrong): e=1 f=38 > r=16 (erasures exceed parity)","stored":4,"strand":547,"symbol":55},
+  {"address_assigned":[],"candidate":{"e":1,"e_star":20,"f":38,"reads":3,"recoverable":false,"shifted_nt":3,"wrong_nt":3},"clustered_reads":3,"clusters":1,"group":6,"home_cluster_reads":3,"home_purity":1.0,"kind":"data","lost_at":"rs_recoverable","oracle_class":"CLUSTERING-CAUSED","orientation_ok":true,"reads":4,"reason":"shifted segment (indel placed wrong): e=1 f=38 > r=16 (erasures exceed parity)","stored":4,"strand":547,"symbol":55},
   {"address_assigned":[],"candidate":{"e":8,"e_star":13,"f":11,"reads":5,"recoverable":false,"shifted_nt":22,"wrong_nt":26},"clustered_reads":5,"clusters":1,"group":6,"home_cluster_reads":5,"home_purity":1.0,"kind":"data","lost_at":"rs_recoverable","oracle_class":"BOUNDARY-CAUSED","orientation_ok":true,"reads":5,"reason":"shifted segment (indel placed wrong): e=8 f=11 > r=16 (2e+f > r)","stored":5,"strand":550,"symbol":58},
   {"address_assigned":[],"candidate":{"e":8,"e_star":17,"f":28,"reads":4,"recoverable":false,"shifted_nt":15,"wrong_nt":25},"clustered_reads":4,"clusters":1,"group":6,"home_cluster_reads":4,"home_purity":1.0,"kind":"data","lost_at":"rs_recoverable","oracle_class":"PAYLOAD-CAUSED","orientation_ok":true,"reads":4,"reason":"errors/erasures: e=8 f=28 > r=16 (erasures exceed parity)","stored":4,"strand":552,"symbol":60},
   {"clustered_reads":0,"clusters":0,"group":6,"kind":"data","lost_at":"clustered","oracle_class":"PAYLOAD-CAUSED","reads":2,"reason":"unassigned: fewer than 2 reads in any cluster","stored":2,"strand":555,"symbol":63},

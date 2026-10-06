@@ -62,7 +62,7 @@
   },
   "cluster_status": "ran",
   "cluster_trigger": "superblock",
-  "decode_seconds": 0.198,
+  "decode_seconds": 0.412,
   "error_code": "NO_SUPERBLOCK",
   "groups_failed": null,
   "outcome": "EXPLICIT_FAILURE",
@@ -107,12 +107,14 @@
   "classes_failed_strands": {
    "ADDRESS-CAUSED": 0,
    "BOUNDARY-CAUSED": 29,
+   "CLUSTERING-CAUSED": 0,
    "PAYLOAD-CAUSED": 28,
    "STRUCTURAL": 47
   },
   "failed_reads_by_class": {
    "ADDRESS-CAUSED": 0,
    "BOUNDARY-CAUSED": 120,
+   "CLUSTERING-CAUSED": 0,
    "PAYLOAD-CAUSED": 66,
    "STRUCTURAL": 29
   },
@@ -130,7 +132,7 @@
   "total": 2
  },
  "schema": "vnx.nanopore-funnel/1",
- "seconds": 0.53,
+ "seconds": 0.87,
  "strands_total": 129,
  "lost_strands": [
   {"clustered_reads":0,"clusters":0,"group":0,"kind":"superblock","lost_at":"two_reads","oracle_class":"STRUCTURAL","reads":1,"reason":"one read only (consensus needs 2)","stored":1,"strand":0,"symbol":0},

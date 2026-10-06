@@ -37,6 +37,7 @@
   "classes_failed_strands": {
    "ADDRESS-CAUSED": 0,
    "BOUNDARY-CAUSED": 29,
+   "CLUSTERING-CAUSED": 0,
    "PAYLOAD-CAUSED": 28,
    "STRUCTURAL": 47
   },

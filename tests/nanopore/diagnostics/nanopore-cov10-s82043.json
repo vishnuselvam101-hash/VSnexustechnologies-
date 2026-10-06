@@ -67,11 +67,11 @@
   },
   "cluster_status": "ran",
   "cluster_trigger": "superblock",
-  "decode_seconds": 2.995,
+  "decode_seconds": 3.526,
   "error_code": null,
   "groups_failed": 5,
   "outcome": "EXPLICIT_FAILURE",
-  "peak_rss_bytes": 187424768,
+  "peak_rss_bytes": 187256832,
   "reason": "status FAILURE",
   "status": "FAILURE",
   "terminal_stage": "outer_ecc"
@@ -112,12 +112,14 @@
   "classes_failed_strands": {
    "ADDRESS-CAUSED": 0,
    "BOUNDARY-CAUSED": 99,
+   "CLUSTERING-CAUSED": 0,
    "PAYLOAD-CAUSED": 45,
    "STRUCTURAL": 12
   },
   "failed_reads_by_class": {
    "ADDRESS-CAUSED": 0,
    "BOUNDARY-CAUSED": 517,
+   "CLUSTERING-CAUSED": 0,
    "PAYLOAD-CAUSED": 144,
    "STRUCTURAL": 10
   },
@@ -135,7 +137,7 @@
   "total": 9
  },
  "schema": "vnx.nanopore-funnel/1",
- "seconds": 6.83,
+ "seconds": 9.08,
  "strands_total": 691,
  "lost_strands": [
   {"address_assigned":[],"candidate":{"e":2,"e_star":12,"f":28,"reads":4,"recoverable":false,"shifted_nt":7,"wrong_nt":7},"clustered_reads":4,"clusters":1,"group":0,"home_cluster_reads":4,"home_purity":1.0,"kind":"superblock","lost_at":"rs_recoverable","oracle_class":"BOUNDARY-CAUSED","orientation_ok":true,"reads":4,"reason":"shifted segment (indel placed wrong): e=2 f=28 > r=16 (erasures exceed parity)","stored":4,"strand":3,"symbol":3},

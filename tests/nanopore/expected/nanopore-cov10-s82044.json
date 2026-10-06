@@ -35,8 +35,9 @@
  "oracle": {
   "archive_outcome": "EXPLICIT_FAILURE",
   "classes_failed_strands": {
-   "ADDRESS-CAUSED": 2,
+   "ADDRESS-CAUSED": 0,
    "BOUNDARY-CAUSED": 87,
+   "CLUSTERING-CAUSED": 2,
    "PAYLOAD-CAUSED": 54,
    "STRUCTURAL": 16
   },
