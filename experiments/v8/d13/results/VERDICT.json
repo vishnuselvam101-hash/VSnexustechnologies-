@@ -1,0 +1,44 @@
+{
+ "basis": "docs/V8_PREREGISTRATION.md \u00a72/\u00a74 + amendment A1: the only candidate family fitted (F1) fails gating metrics in sample on FIT; the F2 rule did not trigger (pair ratio 1.44 <= 1.5)",
+ "candidate": {
+  "failed_gating_in_sample": [
+   "M1c",
+   "M2",
+   "M2b",
+   "M3",
+   "M10"
+  ],
+  "family": "F1",
+  "model_sha256": "5e81ec793e51fbcf7353207f05906fe9197877436f8dc8cc032676800271e11e",
+  "parameter_sha256": "e17f0048761d92589e04e202faf31bb984cfe688bbd50a142fe000884d360b21",
+  "stability": {
+   "M1": "PASS",
+   "M10": "FAIL_NOISE_PLAUSIBLE",
+   "M1a": "PASS",
+   "M1c": "FAIL_STABLE",
+   "M2": "FAIL_STABLE",
+   "M2b": "FAIL_STABLE",
+   "M3": "FAIL_STABLE",
+   "M5": "PASS",
+   "M5i": "PASS",
+   "M6r": "PASS_UNSTABLE",
+   "M8": "PASS_UNSTABLE",
+   "RL": "PASS"
+  }
+ },
+ "consequence": "the D13-derived channel is a stress condition only in the V8 decoder matrix (pre-registration \u00a75)",
+ "dataset": "D13 (Lopez et al. 2019), runs 15/16/18/20, FIT split only",
+ "decision": "DEV_LOOK_BLOCKED \u2014 FIT PRE-CHECK INADEQUATE",
+ "dev_looks_spent": 0,
+ "evidence_class": "PUBLIC-DATA-DERIVED (FIT) vs SIMULATED; in sample; not validation",
+ "f2_rule": {
+  "m3_fails": true,
+  "pair_ratio": 1.4381310521991417,
+  "pair_share_fit": 0.09184497052173587,
+  "pair_share_sim": 0.06386411751647364,
+  "triggers": false
+ },
+ "heldout_opened": false,
+ "schema": "vnx.v8-verdict/1",
+ "verdict": "INADEQUATE"
+}
