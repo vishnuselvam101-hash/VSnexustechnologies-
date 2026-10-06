@@ -1,7 +1,7 @@
 """V8.1 D13 public-data driver: RAW PUBLIC DATA → PINNED PREPROCESSING → NORMALISED OBSERVATIONS → MODEL-FIT TABLES.
 
     PYTHONPATH=src python experiments/v8/d13/pipeline.py segment run15 [--workers 4]   # stages 1-3 for one run
-    PYTHONPATH=src python experiments/v8/d13/pipeline.py tables [--workers 4]          # stage 4, all runs, FIT and DEV
+    PYTHONPATH=src python experiments/v8/d13/pipeline.py tables [--split FIT|DEV]       # stage 4, all runs, one split
 
 Stage 1 (RAW): the run's FASTQ and its reference file are SHA-256 checked against experiments/v7/datasets/MANIFEST.json.
 Stage 2 (PREPROCESSING): the V7 D3 subsample (first 100,000 read IDs in SHA-256('VNX-D3-SUBSAMPLE/' + ID) order) is split
@@ -247,7 +247,7 @@ def split_pairs(run: str, split: str, refs: list[bytes], index_out: list | None 
         yield refs[ref], seqs, quals
 
 
-def do_tables(workers: int) -> Path:
+def do_tables(workers: int, splits: tuple = (A.FIT,)) -> Path:
     from vnxdna.simulation.fit import pipeline as P
     guard = A.V8Guard("experiments/v8/d13/pipeline.py tables")
     lay = layout()
@@ -256,7 +256,11 @@ def do_tables(workers: int) -> Path:
         "L": lay.L, "minruns": list(lay.minruns), "max_run": lay.max_run, "quality": lay.quality, "cycles": lay.cycles,
         "read_rate": lay.read_rate, "size": lay.size}, "evidence_class": "PUBLIC-DATA-DERIVED (aggregate counts only)",
         "tally_options": {"mode": "NW", "aligner": "edlib", "shift": "left", "length_window": None}, "splits": {}}
-    for s in SPLITS:
+    old = RESULTS / "tables.json"
+    if old.exists():
+        prev = json.loads(old.read_text())
+        rec["splits"].update({k: v for k, v in prev["splits"].items() if k not in splits})
+    for s in splits:
         Ms, labels, rows, ref_index = [], [], {}, []
         rs_total = None
         for run in A.RUNS:
@@ -301,13 +305,14 @@ def main(argv=None) -> int:
     ap.add_argument("cmd", choices=["segment", "tables"])
     ap.add_argument("run", nargs="?")
     ap.add_argument("--workers", type=int, default=4)
+    ap.add_argument("--split", choices=SPLITS, default=A.FIT, help="tables: the split to tally (DEV only at a DEV look)")
     a = ap.parse_args(argv)
     if a.cmd == "segment":
         if a.run not in A.RUNS:
             ap.error(f"run must be one of {list(A.RUNS)} (run 13 is held out)")
         do_segment(a.run, a.workers)
     else:
-        do_tables(a.workers)
+        do_tables(a.workers, (a.split,))
     return 0
 
 
