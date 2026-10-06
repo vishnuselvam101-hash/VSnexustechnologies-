@@ -559,7 +559,9 @@ def per_base_errors(base: np.ndarray, lengths: np.ndarray | None, rates: tuple, 
         long_ = run > 1
         lrows, lcols = rows[long_], cols[long_]
         extra = _extra_insertion_bases(m, w, kmax, lrows, lcols, ins.base_weights, aux)
-        codes, lengths, err = [], [], []
+        c_codes: list[np.ndarray] = []
+        c_lengths: list[np.ndarray] = []
+        c_err: list[np.ndarray] = []
         step = _chunk_rows(w, kmax + 1)
         for a in range(0, m, step):
             b = min(a + step, m)
@@ -572,10 +574,10 @@ def per_base_errors(base: np.ndarray, lengths: np.ndarray | None, rates: tuple, 
             ikeep = np.arange(kmax)[None, None, :] < runlen[a:b, :, None]
             keep = np.concatenate([ikeep, keep_base[a:b, :, None]], axis=2).reshape(n, (kmax + 1) * w)
             e = np.concatenate([ikeep, is_sub[a:b, :, None]], axis=2).reshape(n, (kmax + 1) * w)
-            codes.append(slots[keep])
-            lengths.append(keep.sum(axis=1).astype(np.int64))
-            err.append(e[keep])
-        return {"codes": np.concatenate(codes), "lengths": np.concatenate(lengths), "err": np.concatenate(err),
+            c_codes.append(slots[keep])
+            c_lengths.append(keep.sum(axis=1).astype(np.int64))
+            c_err.append(e[keep])
+        return {"codes": np.concatenate(c_codes), "lengths": np.concatenate(c_lengths), "err": np.concatenate(c_err),
                 "substitutions": int(is_sub.sum()), "insertions": int(runlen.sum()), "deletions": int(is_del.sum()),
                 "bursts": bursts}
     slots = np.stack([ins_base, subbed], axis=2).reshape(m, 2 * w)
