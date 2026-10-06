@@ -245,7 +245,7 @@ def extract(container: Path, output_dir: Path, names: Optional[List[str]] = type
 @app.command()
 def encode(source: Path = typer.Argument(..., help="A .vnx container, or a file/directory (archived first)."),
            output: Path = typer.Argument(..., help="Strand file (.fasta or .fastq)."),
-           profile: Optional[str] = typer.Option(None, help="v4-balanced (default), v4-dense, v4-indel, v4-archival, v6-high-dropout."),
+           profile: Optional[str] = typer.Option(None, help="v4-balanced (default), v4-dense, v4-indel, v4-archival, v6-high-dropout, v7-lowcov (experimental)."),
            outer_code: Optional[str] = typer.Option(None, help="cauchy-rs (default)."),
            data_symbols: Optional[int] = typer.Option(None, "-K"), parity_symbols: Optional[int] = typer.Option(None, "-M"),
            workers: int = typer.Option(0, "--workers", "-w", help="0 = from the performance profile."),

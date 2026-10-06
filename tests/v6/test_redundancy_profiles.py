@@ -104,3 +104,30 @@ def test_high_dropout_rate_and_dropout_tolerance(tmp_path):
     res = de.decode_reads(tmp_path / "d.fasta", tmp_path / "out.vnx", de.DecodeOptions(), overwrite=True)
     assert res.status == "SUCCESS"
     assert (tmp_path / "out.vnx").read_bytes() == (tmp_path / "a.vnx").read_bytes()
+
+
+def test_v7_lowcov_survives_strand_loss_beyond_balanced(tmp_path):
+    """v7-lowcov (opt-in, experiments/v7/a-par, SIMULATED) keeps the v4-balanced strand layout with row code 64 + 48:
+    the archive decodes exactly, with layout auto-detection, from strands with 30 % of them dropped, while v4-balanced
+    (64 + 16) refuses the same loss explicitly instead of returning wrong data."""
+    import random
+
+    from vnxdna.dnaenc.layout import PROFILES
+    assert PROFILES["v7-lowcov"][0] == PROFILES["v4-balanced"][0]
+    assert PROFILES["v7-lowcov"][1:] == (64, 48)
+    datagen.generate(tmp_path / "in.bin", 12_000, "random", 8104)
+    ar.build_archive([tmp_path / "in.bin"], tmp_path / "a.vnx", ar.ArchiveOptions(compression="none"))
+    for profile, ok in (("v7-lowcov", True), ("v4-balanced", False)):
+        en.encode_container(tmp_path / "a.vnx", tmp_path / f"{profile}.fasta", en.DNAOptions(profile=profile))
+        lines = (tmp_path / f"{profile}.fasta").read_text().split("\n")
+        recs = [(lines[i], lines[i + 1]) for i in range(0, len(lines) - 1, 2) if lines[i].startswith(">")]
+        rng = random.Random(8105)
+        kept = [r for r in recs if rng.random() >= 0.30]
+        (tmp_path / "d.fasta").write_text("".join(f"{h}\n{s}\n" for h, s in kept))
+        out = tmp_path / f"{profile}.vnx"
+        res = de.decode_reads(tmp_path / "d.fasta", out, de.DecodeOptions(), overwrite=True)
+        if ok:
+            assert res.status == "SUCCESS"
+            assert out.read_bytes() == (tmp_path / "a.vnx").read_bytes()
+        else:
+            assert res.status != "SUCCESS"
