@@ -1,0 +1,151 @@
+{
+ "code": {
+  "commit": "9f81c8ba3522eff5c5ca0b90360192b59eb8ab14",
+  "dirty": true
+ },
+ "code_at_start": {
+  "commit": "9f81c8ba3522eff5c5ca0b90360192b59eb8ab14",
+  "dirty": false
+ },
+ "evidence_class": "PUBLIC-DATA-DERIVED FIT reads vs SIMULATED reads (in sample; not validation)",
+ "experiment": "V7 7.4 step 3 diagnosis (M3, M10) of the a7c candidate",
+ "job": "d03-hac-bwd",
+ "m10": {
+  "m10_pass_per_replicate": [
+   true,
+   false,
+   true,
+   true,
+   true,
+   true
+  ],
+  "parameters": {
+   "sequencing.deletion.run_length.tail_mean": {
+    "elements_bias_z_gt_3": 0,
+    "max_abs_bias_rel": 0.08052293561606229,
+    "max_bias_z": 2.214153214925252,
+    "max_sd_over_bootstrap_se": 6.116432131518756,
+    "median_sd_over_bootstrap_se": 6.116432131518756,
+    "n": 1,
+    "target_small_elements": 0,
+    "worst_elements": [
+     {
+      "bias_z": -2.214153214925252,
+      "bootstrap_se": 0.2181422468459526,
+      "i": 0,
+      "refit_mean": 13.771818449857747,
+      "seed_sd": 1.3342522478502805,
+      "target": 14.977881432077977
+     }
+    ]
+   }
+  },
+  "replicates": 6
+ },
+ "m3": {
+  "fit_reads": {
+   "by_edit_distance": {
+    "0-2": {
+     "p_drift0": 0.610103918304917,
+     "reads": 22229,
+     "share_indel_bases": 0.5871272948222733
+    },
+    "10-14": {
+     "p_drift0": 0.11164274322169059,
+     "reads": 13794,
+     "share_indel_bases": 0.6204622930182412
+    },
+    "15-inf": {
+     "p_drift0": 0.07555619763074256,
+     "reads": 6922,
+     "share_indel_bases": 0.6220267855033895
+    },
+    "3-5": {
+     "p_drift0": 0.26456927526071333,
+     "reads": 22822,
+     "share_indel_bases": 0.6125027563395811
+    },
+    "6-9": {
+     "p_drift0": 0.17009497231849485,
+     "reads": 22217,
+     "share_indel_bases": 0.6197503116498714
+    }
+   },
+   "corr_I_D": 0.2817340799516409,
+   "insertions_with_deletion_within_2": 0.16564330286847345,
+   "mean_D": 2.3785688306964903,
+   "mean_I": 1.5831401163847973,
+   "mean_S": 2.4491612111292964,
+   "p_balanced_indels": 0.14095744680851063,
+   "p_drift0": 0.2891662120385525,
+   "p_no_indel": 0.14820876523004184,
+   "reads": 87984,
+   "var_over_mean_D": 2.6852034126567847,
+   "var_over_mean_I": 2.0775342990476426
+  },
+  "length_window": [
+   -15,
+   15
+  ],
+  "references": 8000,
+  "simulated_coverage": 11,
+  "simulated_reads": {
+   "by_edit_distance": {
+    "0-2": {
+     "p_drift0": 0.5602326101543279,
+     "reads": 22355,
+     "share_indel_bases": 0.535016768593411
+    },
+    "10-14": {
+     "p_drift0": 0.10244779854539766,
+     "reads": 12787,
+     "share_indel_bases": 0.6247921645181919
+    },
+    "15-inf": {
+     "p_drift0": 0.06441992245750075,
+     "reads": 6706,
+     "share_indel_bases": 0.6482134395605278
+    },
+    "3-5": {
+     "p_drift0": 0.21466688901859418,
+     "reads": 23986,
+     "share_indel_bases": 0.5812569257558968
+    },
+    "6-9": {
+     "p_drift0": 0.1407221758098951,
+     "reads": 21546,
+     "share_indel_bases": 0.6052623226584568
+    }
+   },
+   "corr_I_D": 0.2953445520449462,
+   "insertions_with_deletion_within_2": 0.04116032242835411,
+   "mean_D": 2.354314488441291,
+   "mean_I": 1.5082856488899061,
+   "mean_S": 2.4397917143511103,
+   "p_balanced_indels": 0.10891508354314489,
+   "p_drift0": 0.2568894483863584,
+   "p_no_indel": 0.14797436484321355,
+   "reads": 87380,
+   "var_over_mean_D": 2.940523154957503,
+   "var_over_mean_I": 2.1606674142237408
+  }
+ },
+ "model_sha256": "d69d126a98d40ae3bccf2301ecc59d92f289df207e2e53f608e67a7018da2252",
+ "precheck_failing_m10_parameters": [
+  "sequencing.deletion.run_length.tail_mean"
+ ],
+ "seconds": 181.3,
+ "seeds": {
+  "m10_replicates": [
+   20262007,
+   20262008,
+   20262009,
+   20262010,
+   20262011,
+   20262012
+  ],
+  "m3_simulation": 20261007
+ },
+ "split_manifest_sha256": "0c90197f3b2173338f28b4f73d4a55b7883933853db184af0b9ef0adb22f3c95",
+ "split_read": "FIT"
+}
