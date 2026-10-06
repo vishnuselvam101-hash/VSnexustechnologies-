@@ -67,7 +67,8 @@ def provenance(cfg_path: Path, workers: int) -> dict:
             "commit": git("rev-parse", "HEAD"), "dirty_tracked": bool(status),
             "config": str(cfg_path.relative_to(REPO)) if cfg_path.is_relative_to(REPO) else str(cfg_path),
             "config_sha256": hashlib.sha256(cfg_path.read_bytes()).hexdigest(), "workers": workers,
-            "started_utc": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "environment": environment()}
+            "started_utc": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "environment": environment(),
+            "load_average_at_start": [round(x, 2) for x in os.getloadavg()]}
 
 
 def manifest_sha(dataset: str, rel: str) -> str:
@@ -413,7 +414,8 @@ def run_d13(cfg: dict, cfg_path: Path, workers: int, out_dir: Path) -> None:
         real_same = {"errors_note": "FIT statistics over all FIT references; coverage restricted to the simulated references",
                      "coverage_per_reference": coverage_stats(np.array([pr.get(i, [0])[0] for i in sim_ids], dtype=np.int64))}
         doc = {"schema": "vnx.d3-characterisation/1", "dataset": "d13-lopez-nanopore", "run": run, "file": fname,
-               "provenance": prov | {"wall_seconds": round(time.time() - t0, 1)},
+               "provenance": prov | {"wall_seconds": round(time.time() - t0, 1),
+                                 "load_average_at_end": [round(x, 2) for x in os.getloadavg()]},
                "inputs": {"fastq": f"d13/{fastq.name}", "fastq_sha256": manifest_sha("d13-lopez-nanopore", f"d13/{fastq.name}"),
                           "references": f"d13/{reffile.name}", "references_sha256": manifest_sha("d13-lopez-nanopore", f"d13/{reffile.name}"),
                           "subsample": None if keep is None else {"reads": len(keep), "rule": "PR-9 SHA-256 order"}},
@@ -617,7 +619,8 @@ def run_cas9(cfg: dict, cfg_path: Path, workers: int, out_dir: Path) -> None:
                    "error_by_units_in_read": p2["units_dep"][s].export(list(range(13))),
                    "error_by_read_mean_quality": p2["mq_dep"][s].export(MQ_EDGES[:-1])}
     doc = {"schema": "vnx.d3-characterisation/1", "dataset": "cas9-random-access",
-           "provenance": prov | {"wall_seconds": round(time.time() - t0, 1)},
+           "provenance": prov | {"wall_seconds": round(time.time() - t0, 1),
+                                 "load_average_at_end": [round(x, 2) for x in os.getloadavg()]},
            "inputs": {"chunks": len(files), "chunk_sha256_source": "MANIFEST.json read_files"},
            "unit_rule": {"modal_unit_length_fit": U, "admissible_range": list(unit_range),
                          "inter_hit_distance_fit_stats": _length_stats(p1["unit_lengths_fit"]),
@@ -785,7 +788,7 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("what", choices=["d13", "cas9", "compare"])
     ap.add_argument("--config", default=str(HERE / "config.json"))
-    ap.add_argument("--workers", type=int, default=7)
+    ap.add_argument("--workers", type=int, default=3)
     ap.add_argument("--out", default=str(HERE / "results"))
     a = ap.parse_args(argv)
     cfg_path = Path(a.config).resolve()
