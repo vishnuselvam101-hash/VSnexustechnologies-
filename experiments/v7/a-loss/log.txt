@@ -1,0 +1,35 @@
+nanopore-like/cov3 a1-default 82046 EXPLICIT_FAILURE frames=121 rows=0 oracle=123 t=2.487
+nanopore-like/cov3 a1-default 82047 EXPLICIT_FAILURE frames=119 rows=0 oracle=120 t=3.02
+nanopore-like/cov3 a1-default 82048 EXPLICIT_FAILURE frames=128 rows=0 oracle=130 t=3.659
+nanopore-like/cov3 a1-default 82049 EXPLICIT_FAILURE frames=125 rows=0 oracle=126 t=1.079
+nanopore-like/cov3 a1-default 82050 EXPLICIT_FAILURE frames=124 rows=0 oracle=129 t=0.942
+nanopore-like/cov3 a1-default 82051 EXPLICIT_FAILURE frames=115 rows=0 oracle=117 t=0.94
+nanopore-like/cov3 a1-default 82052 EXPLICIT_FAILURE frames=120 rows=0 oracle=119 t=0.94
+nanopore-like/cov3 a1-default 82053 EXPLICIT_FAILURE frames=124 rows=0 oracle=127 t=1.024
+nanopore-like/cov3 a1-default 82054 EXPLICIT_FAILURE frames=128 rows=0 oracle=129 t=0.964
+nanopore-like/cov3 a1-default 82055 EXPLICIT_FAILURE frames=109 rows=0 oracle=111 t=0.916
+nanopore-like/cov5 a1-default 82046 EXPLICIT_FAILURE frames=283 rows=0 oracle=284 t=1.659
+nanopore-like/cov5 a1-default 82047 EXPLICIT_FAILURE frames=277 rows=0 oracle=278 t=1.665
+nanopore-like/cov5 a1-default 82048 EXPLICIT_FAILURE frames=280 rows=0 oracle=283 t=1.517
+nanopore-like/cov5 a1-default 82049 EXPLICIT_FAILURE frames=254 rows=0 oracle=255 t=1.513
+nanopore-like/cov5 a1-default 82050 EXPLICIT_FAILURE frames=288 rows=0 oracle=289 t=1.561
+nanopore-like/cov5 a1-default 82051 EXPLICIT_FAILURE frames=291 rows=0 oracle=292 t=1.652
+nanopore-like/cov5 a1-default 82052 EXPLICIT_FAILURE frames=264 rows=0 oracle=264 t=1.546
+nanopore-like/cov5 a1-default 82053 EXPLICIT_FAILURE frames=272 rows=0 oracle=275 t=1.692
+nanopore-like/cov5 a1-default 82054 EXPLICIT_FAILURE frames=272 rows=0 oracle=274 t=1.656
+nanopore-like/cov5 a1-default 82055 EXPLICIT_FAILURE frames=264 rows=0 oracle=265 t=1.575
+nanopore-like/cov10 a1-default 82046 EXPLICIT_FAILURE frames=518 rows=3 oracle=520 t=2.69
+nanopore-like/cov10 a1-default 82047 EXPLICIT_FAILURE frames=506 rows=1 oracle=509 t=2.594
+nanopore-like/cov10 a1-default 82048 EXPLICIT_FAILURE frames=518 rows=3 oracle=518 t=2.781
+nanopore-like/cov10 a1-default 82049 EXPLICIT_FAILURE frames=503 rows=3 oracle=503 t=2.624
+nanopore-like/cov10 a1-default 82050 EXPLICIT_FAILURE frames=527 rows=3 oracle=529 t=2.717
+nanopore-like/cov10 a1-default 82051 EXPLICIT_FAILURE frames=507 rows=2 oracle=507 t=2.654
+nanopore-like/cov10 a1-default 82052 EXPLICIT_FAILURE frames=518 rows=4 oracle=518 t=2.762
+nanopore-like/cov10 a1-default 82053 EXPLICIT_FAILURE frames=521 rows=3 oracle=524 t=2.848
+nanopore-like/cov10 a1-default 82054 EXPLICIT_FAILURE frames=522 rows=3 oracle=524 t=2.72
+nanopore-like/cov10 a1-default 82055 EXPLICIT_FAILURE frames=499 rows=1 oracle=502 t=2.534
+30 trials, 0 FALSE SUCCESS, 21.8 s -> /root/vnx-dna-lab/v7-nanodecode/experiments/v7/a-loss/trials.jsonl
+
+real	0m22.240s
+user	1m50.906s
+sys	0m3.919s
