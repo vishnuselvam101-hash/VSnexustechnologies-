@@ -9,8 +9,8 @@ NumPy reference implementations (``vnxdna.native_status()`` / ``python -m vnxdna
 Flags: ``-O3 -std=c11 -Wall -Wextra`` everywhere. ``-Werror`` is only added to *strict* builds (CI and the sanitizer
 scripts, ``python -m vnxdna.<module> build --strict`` or ``VNXDNA_NATIVE_STRICT=1``), so a warning introduced by a
 newer compiler cannot make an install or a local build silently fall back to the reference. No ``-march``/``-mavx*``:
-the RS decoder selects its SIMD level (scalar / AVX2 / AVX-512BW) at run time from cpuid + xgetbv, so one binary (and
-one wheel) is correct on every x86-64 CPU.
+the RS decoder (scalar / AVX2 / AVX-512BW) and the cluster forward-backward kernel (baseline / AVX2) select their SIMD
+level at run time from cpuid + xgetbv, so one binary (and one wheel) is correct on every x86-64 CPU.
 """
 from __future__ import annotations
 
@@ -21,6 +21,7 @@ KERNELS = {
     "vnxdna.v5._vnx_align": "src/vnxdna/v5/native/align.c",
     "vnxdna.v6._vnx_reads": "src/vnxdna/v6/native/reads.c",
     "vnxdna.v6._vnx_rs": "src/vnxdna/v6/native/rs.c",
+    "vnxdna._vnx_cluster": "src/vnxdna/native/c/cluster.c",
 }
 
 #: compile flags shared by setup.py and the explicit builds (setuptools adds -fPIC/-shared itself)

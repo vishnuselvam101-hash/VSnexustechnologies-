@@ -20,6 +20,10 @@ then a bounded GMD ladder that erases the lowest-margin bytes ``gmd_step`` at a 
 trials per cluster and peel, counted). The address is read from the verified frame only. Peel: the exact transmitted
 strand of the verified frame is re-created, the members within ``peel_theta · strand_nt`` of it are removed, and a
 residual of ≥ 2 reads is decoded again (at most ``max_peels`` per cluster).
+
+:func:`fb_calls` runs the native forward-backward kernel (``vnxdna.native.cluster``) when it is available and selected
+(``VNXDNA_CLUSTER_BACKEND``), on the same chunks of ``FB_CHUNK`` reads with the same shared band, else
+:func:`fb_calls_reference`; both return identical calls and costs.
 """
 from __future__ import annotations
 
@@ -33,6 +37,7 @@ from vnxdna.dnaenc.layout import Layout
 from vnxdna.dnaenc.mapping import bytes_to_nt, nt_to_bytes
 from vnxdna.dnaenc.markers import insert_markers
 from vnxdna.dnaenc.scrambler import VARIANTS, keystreams
+from vnxdna.native import cluster as _nc
 from vnxdna.recovery.cluster import ClusterConfig
 from vnxdna.recovery.cluster.editdist import banded_distance, revcomp
 from vnxdna.sync.template import frame_erasures_to_bytes
@@ -48,7 +53,41 @@ def fb_calls(tpl: np.ndarray, mc: np.ndarray, reads: list, band: np.ndarray, c_i
 
     ``tpl``: (n, T) template codes (−1 = wildcard); ``mc``: (n, T) mismatch cost per position (ignored at wildcards);
     ``band``: (n,) maximal |j − i| per read. Returns ((n, T) uint8 calls, 4 = not certain; (n,) optimal cost, INF when
-    the read does not fit its band)."""
+    the read does not fit its band). Native kernel or :func:`fb_calls_reference` (identical results)."""
+    if _nc.resolve_backend() == "native":
+        out = _fb_calls_native(tpl, mc, reads, band, c_indel, slack, chunk)
+        if out is not None:
+            return out
+    return fb_calls_reference(tpl, mc, reads, band, c_indel, slack, chunk)
+
+
+def _fb_calls_native(tpl, mc, reads, band, c_indel, slack, chunk):
+    """The reference's chunks (shared band = the chunk's largest band) in the native kernel; None outside its domain."""
+    n, T = tpl.shape
+    band = np.asarray(band, dtype=np.int64)
+    if n == 0 or band.size != n or (band.size and int(band.min()) < 0):
+        return None
+    tpl16 = np.ascontiguousarray(np.asarray(tpl).astype(np.int16))
+    mc32 = np.ascontiguousarray(np.asarray(mc).astype(np.int32))
+    buf, off, lens = _nc.pack(list(reads[:n]))
+    calls = np.full((n, T), 4, dtype=np.uint8)
+    opt = np.full(n, int(INF), dtype=np.int64)
+    for c0 in range(0, n, chunk):
+        c1 = min(n, c0 + chunk)
+        B = int(band[c0:c1].max(initial=0))
+        if not _nc.fb_in_domain(T, B, mc32[c0:c1], c_indel, slack, lens[c0:c1]):
+            return None
+    for c0 in range(0, n, chunk):
+        c1 = min(n, c0 + chunk)
+        B = int(band[c0:c1].max(initial=0))
+        calls[c0:c1], opt[c0:c1] = _nc.fb(tpl16[c0:c1], mc32[c0:c1], buf, off[c0:c1], lens[c0:c1], band[c0:c1], B,
+                                          c_indel, slack)
+    return calls, opt
+
+
+def fb_calls_reference(tpl: np.ndarray, mc: np.ndarray, reads: list, band: np.ndarray, c_indel: int, slack: int = 0,
+                       chunk: int = FB_CHUNK) -> tuple[np.ndarray, np.ndarray]:
+    """NumPy reference of :func:`fb_calls`."""
     n, T = tpl.shape
     calls = np.full((n, T), 4, dtype=np.uint8)
     opt = np.full(n, int(INF), dtype=np.int64)

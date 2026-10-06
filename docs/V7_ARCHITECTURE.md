@@ -288,6 +288,11 @@ ID order. Output must not depend on worker count (criterion C6).
   (`v5/native/align.c:357, 370`) are not changed, so the V6 path stays bit-identical; the ABI version is bumped only for
   the added symbol.
 
+As built (A2): both live in one new kernel, `src/vnxdna/native/c/cluster.c` (binding `vnxdna.native.cluster`,
+extension `vnxdna._vnx_cluster`), which also runs the candidate-pair step and the verification loop. The per-read
+template forward-backward pass is `vnx_cl_fb` there rather than a new `align.c` entry point, so `align.c` and its ABI
+are untouched. Equivalence evidence: `tests/v7/test_native_cluster.py`; speed: `benchmarks/v7/native_cluster/README.md`.
+
 ### 5.8 Failure modes and refusal
 
 | Failure | Detection | Effect |

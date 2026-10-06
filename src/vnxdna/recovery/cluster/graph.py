@@ -24,6 +24,10 @@ so verification time was dominated by them. THEORETICAL: two reads of one strand
 Every read gets an explicit assignment score 1 − d / max(La, Lb) of the edge (or representative distance) that placed
 it; reads that no accepted edge reaches stay UNASSIGNED (label −1, score NaN) and are counted — a read is never put into
 the nearest cluster without passing the threshold (directive §9, protocol §8.2).
+
+Native kernels (``vnxdna.native.cluster``, selected by ``VNXDNA_CLUSTER_BACKEND``) run the candidate step and the
+verification loop (same chunks of ``VERIFY_CHUNK`` pairs, same union-find) when available; the results, including
+which counters exist, are identical to the reference functions ``candidate_pairs_reference`` and the reference loop.
 """
 from __future__ import annotations
 
@@ -32,6 +36,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+from vnxdna.native import cluster as _nc
 from vnxdna.recovery.cluster import ClusterConfig
 from vnxdna.recovery.cluster.editdist import banded_distance, revcomp
 
@@ -49,6 +54,26 @@ class Clustering:
 
 def candidate_pairs(hashes: np.ndarray, orient: np.ndarray, bucket_cap: int, max_pairs: int, counts: Counter,
                     min_shared: int = 1) -> tuple[np.ndarray, np.ndarray, np.ndarray, dict | None]:
+    """Native or reference :func:`candidate_pairs_reference` (identical results and counters)."""
+    if hashes.ndim == 2 and hashes.shape[1] >= 1 and hashes.shape[0] <= (1 << 31) and _nc.resolve_backend() == "native":
+        a, b, rel, st = _nc.candidates(hashes, orient, bucket_cap, max_pairs, min_shared)
+        if st[5]:
+            counts["buckets_over_cap"] += int(st[0])
+        if st[2]:
+            counts["candidate_pairs_slots"] = int(st[1])
+            return np.zeros(0, np.int64), np.zeros(0, np.int64), np.zeros(0, np.uint8), {
+                "limit": "max_candidate_pairs", "allowed": max_pairs, "used": int(st[1]),
+                "effect": "clustering stage stopped; no cluster frame produced"}
+        if not st[6]:
+            return np.zeros(0, np.int64), np.zeros(0, np.int64), np.zeros(0, np.uint8), None
+        counts["candidate_pairs"] += int(st[3])
+        counts["candidate_pairs_below_min_shared"] += int(st[4])
+        return a, b, rel, None
+    return candidate_pairs_reference(hashes, orient, bucket_cap, max_pairs, counts, min_shared)
+
+
+def candidate_pairs_reference(hashes: np.ndarray, orient: np.ndarray, bucket_cap: int, max_pairs: int, counts: Counter,
+                              min_shared: int = 1) -> tuple[np.ndarray, np.ndarray, np.ndarray, dict | None]:
     """(a, b, relative orientation) with a < b for pairs sharing at least ``min_shared`` retained buckets, sorted by
     shared slots (descending), then (a, b); and the budget record if ``max_pairs`` was exceeded."""
     n, s = hashes.shape
@@ -158,13 +183,69 @@ def cluster_reads(reads: list, hashes: np.ndarray, orient_bits: np.ndarray, cfg:
     if budget is not None:
         counts["unassigned"] = n
         return Clustering(labels, orient, score, counts, budget)
-    uf = _UF(n)
-    best = np.full(n, -np.inf)          # best assignment score of each read over its accepted edges
     maxlen = np.maximum(lens[a], lens[b]) if a.size else np.zeros(0, np.int64)
     # a length difference beyond the threshold already rejects the pair (the distance is at least |dL|)
     feasible = np.abs(lens[a] - lens[b]) <= cfg.theta * maxlen
     counts["pairs_rejected_length"] = int((~feasible).sum())
     a, b, rel, maxlen = a[feasible], b[feasible], rel[feasible], maxlen[feasible]
+    native = _verify_native(reads, a, b, rel, maxlen, cfg, counts)
+    if native is not None:
+        root, orient, best = native
+    else:
+        root, orient, best = _verify_reference(reads, a, b, rel, maxlen, cfg, counts)
+    size = np.bincount(root, minlength=n)
+    member = size[root] >= 2
+    labels[member] = root[member]
+    score[member] = best[member]
+    counts["components"] = int((size >= 2).sum())
+    refine_left = [cfg.max_refine_pairs]
+    for c in np.flatnonzero(size > cfg.max_cluster_reads).tolist():
+        counts["components_refined"] += 1
+        mem = np.flatnonzero(root == c)
+        _refine(reads, mem, orient, labels, score, cfg, counts, refine_left)
+    if refine_left[0] < 0:
+        budget = {"limit": "max_refine_pairs", "allowed": cfg.max_refine_pairs,
+                  "effect": "members of oversized components beyond the budget left unassigned"}
+    final = np.bincount(labels[labels >= 0], minlength=n)
+    single = (labels >= 0) & (final[np.maximum(labels, 0)] < 2)
+    labels[single] = -1
+    score[single] = np.nan
+    counts["clusters"] = int((final >= 2).sum())
+    counts["clustered_reads"] = int((labels >= 0).sum())
+    counts["unassigned"] = int((labels < 0).sum())
+    return Clustering(labels, orient, score, counts, budget)
+
+
+def _verify_native(reads: list, a: np.ndarray, b: np.ndarray, rel: np.ndarray, maxlen: np.ndarray, cfg: ClusterConfig,
+                   counts: Counter):
+    """The verification loop in the native kernel; None when the reference must run (backend, domain)."""
+    if not 0 <= cfg.band_slack <= _nc.MAX_SLACK or _nc.resolve_backend() != "native":
+        return None
+    if maxlen.size and int(maxlen.min()) < 1:
+        return None
+    buf, off, lens = _nc.pack(reads)
+    if not _nc.codes_in_domain(buf) or not _nc.lengths_in_domain(lens):
+        return None
+    root, orient, best, c = _nc.verify(buf, off, lens, a, b, rel, maxlen, cfg.theta, cfg.band_slack, VERIFY_CHUNK)
+    skipped, verified, accepted, rejected, conflicts = (int(x) for x in c)
+    # the counters the reference loop creates (a Counter keeps keys incremented by 0, and reports list them)
+    if a.size:
+        counts["pairs_skipped_same_component"] += skipped
+    if verified:
+        counts["pairs_verified"] += verified
+        counts["edges_accepted"] += accepted
+        counts["edges_rejected"] += rejected
+    if conflicts:
+        counts["orientation_conflicts"] += conflicts
+    return root, orient, best
+
+
+def _verify_reference(reads: list, a: np.ndarray, b: np.ndarray, rel: np.ndarray, maxlen: np.ndarray,
+                      cfg: ClusterConfig, counts: Counter):
+    """Verify candidate pairs in chunks, unite accepted edges; (root, orientation parity, best score) per read."""
+    n = len(reads)
+    uf = _UF(n)
+    best = np.full(n, -np.inf)          # best assignment score of each read over its accepted edges
     for c0 in range(0, a.size, VERIFY_CHUNK):
         ca, cb, cr, cm = a[c0:c0 + VERIFY_CHUNK], b[c0:c0 + VERIFY_CHUNK], rel[c0:c0 + VERIFY_CHUNK], maxlen[c0:c0 + VERIFY_CHUNK]
         roots = np.array([uf.find(int(x))[0] for x in np.concatenate([ca, cb]).tolist()], dtype=np.int64)
@@ -187,29 +268,10 @@ def cluster_reads(reads: list, hashes: np.ndarray, orient_bits: np.ndarray, cfg:
             if not uf.union(i, j, r):
                 counts["orientation_conflicts"] += 1
     root = np.empty(n, dtype=np.int64)
+    orient = np.zeros(n, dtype=np.uint8)
     for x in range(n):
         root[x], orient[x] = uf.find(x)
-    size = np.bincount(root, minlength=n)
-    member = size[root] >= 2
-    labels[member] = root[member]
-    score[member] = best[member]
-    counts["components"] = int((size >= 2).sum())
-    refine_left = [cfg.max_refine_pairs]
-    for c in np.flatnonzero(size > cfg.max_cluster_reads).tolist():
-        counts["components_refined"] += 1
-        mem = np.flatnonzero(root == c)
-        _refine(reads, mem, orient, labels, score, cfg, counts, refine_left)
-    if refine_left[0] < 0:
-        budget = {"limit": "max_refine_pairs", "allowed": cfg.max_refine_pairs,
-                  "effect": "members of oversized components beyond the budget left unassigned"}
-    final = np.bincount(labels[labels >= 0], minlength=n)
-    single = (labels >= 0) & (final[np.maximum(labels, 0)] < 2)
-    labels[single] = -1
-    score[single] = np.nan
-    counts["clusters"] = int((final >= 2).sum())
-    counts["clustered_reads"] = int((labels >= 0).sum())
-    counts["unassigned"] = int((labels < 0).sum())
-    return Clustering(labels, orient, score, counts, budget)
+    return root, orient, best
 
 
 def _dist_matrix(xs: list, ys: list, slack: int) -> np.ndarray:

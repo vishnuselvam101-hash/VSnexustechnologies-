@@ -1,0 +1,18 @@
+kernel source sha256: 2ad2a7b3e8d62633208da8d50f792efe87e4e27abdd291e661db7d4934bee9f8
+gcc:   gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+clang: Ubuntu clang version 18.1.3 (1ubuntu1)
+commit: dd239c28421143bc1deb1d324e5cf5d35839ebe0  dirty: 0 tracked files modified
+== warnings (-O3 -Wall -Wextra -Wconversion -Wsign-conversion -Wshadow -Wpedantic; reported, not gating)
+gcc: exit=0 warnings=0
+clang: exit=0 warnings=0
+gcc -fanalyzer: exit=0 warnings=0
+== sanitizer builds
+gcc-asan-ubsan: native cluster tests exit=0 (33 passed, 4 warnings in 237.91s (0:03:57))
+gcc-asan-ubsan: stress fuzz exit=0 {"rounds": 100, "seed": 7, "cases": {"sketch": 110, "candidates": 100, "banded": 110, "pool": 110, "fb": 110}, "reads_or_pairs": {"sketch": 31078, "candidates": 15880, "banded": 16165, "pool": 10382, "fb": 9327}, "mismatches": 0, "mismatches_by_kernel": {}, "e
+clang-asan-ubsan: native cluster tests exit=0 (33 passed, 4 warnings in 244.10s (0:04:04))
+clang-asan-ubsan: stress fuzz exit=0 {"rounds": 100, "seed": 7, "cases": {"sketch": 110, "candidates": 100, "banded": 110, "pool": 110, "fb": 110}, "reads_or_pairs": {"sketch": 31078, "candidates": 15880, "banded": 16165, "pool": 10382, "fb": 9327}, "mismatches": 0, "mismatches_by_kernel": {}, "e
+clang-ubsan-trap: native cluster tests exit=0 (33 passed, 4 warnings in 88.04s (0:01:28))
+clang-ubsan-trap: stress fuzz exit=0 {"rounds": 100, "seed": 7, "cases": {"sketch": 110, "candidates": 100, "banded": 110, "pool": 110, "fb": 110}, "reads_or_pairs": {"sketch": 31078, "candidates": 15880, "banded": 16165, "pool": 10382, "fb": 9327}, "mismatches": 0, "mismatches_by_kernel": {}, "e
+gcc canary: AddressSanitizer fired as expected
+clang canary: AddressSanitizer fired as expected
+overall: PASS

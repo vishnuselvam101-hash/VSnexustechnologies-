@@ -6,10 +6,16 @@ reversing both, so dist(a, b) = dist(b, a) and dist(a, rc(b)) = dist(rc(a), b). 
 considered, so the banded value is ≥ the true distance (a pair can only be rejected, never accepted, by the band).
 N (code 4) matches nothing, not even N. The architecture names the bit-parallel algorithm of Myers (1999) for the
 native kernel; this reference computes the same banded values with a plain dynamic program.
+
+:func:`banded_distance` runs the native kernel (``vnxdna.native.cluster``: Myers bit-vector distance, exact banded
+program where the band can matter) when it is available and selected (``VNXDNA_CLUSTER_BACKEND``), else
+:func:`banded_distance_reference`; both return identical values.
 """
 from __future__ import annotations
 
 import numpy as np
+
+from vnxdna.native import cluster as _nc
 
 INF = np.int32(1 << 28)
 _RC = np.array([3, 2, 1, 0, 4, 5, 6, 7], dtype=np.uint8)
@@ -20,7 +26,16 @@ def revcomp(read: np.ndarray) -> np.ndarray:
 
 
 def banded_distance(a: list, b: list, slack: int = 32, chunk: int = 2048) -> np.ndarray:
-    """(P,) int64 banded edit distances of the pairs (a[p], b[p]) (lists of uint8 code arrays)."""
+    """(P,) int64 banded edit distances of the pairs (a[p], b[p]) (lists of uint8 code arrays); native or reference."""
+    if len(a) and 0 <= slack <= _nc.MAX_SLACK and _nc.resolve_backend() == "native":
+        lens = [x.size for x in a] + [x.size for x in b]
+        if max(lens) <= _nc.MAX_READ:
+            return _nc.banded_distance(a, b, slack)
+    return banded_distance_reference(a, b, slack, chunk)
+
+
+def banded_distance_reference(a: list, b: list, slack: int = 32, chunk: int = 2048) -> np.ndarray:
+    """(P,) int64 banded edit distances of the pairs (a[p], b[p]) (lists of uint8 code arrays); NumPy reference."""
     p_all = len(a)
     out = np.zeros(p_all, dtype=np.int64)
     for c0 in range(0, p_all, chunk):
