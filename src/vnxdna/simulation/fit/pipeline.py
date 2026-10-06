@@ -37,7 +37,7 @@ def tally_matrix(pairs, layout: Layout, *, mode: str = "NW", workers: int = 1, a
     """(M, read histogram totals) for an iterable of ``(ref, reads)`` or ``(ref, reads, quals)``. Row order = input order.
     ``length_window``: see :func:`tally_reference`."""
     blocks, total = [], np.zeros(EDIT_BINS + DRIFT_BINS, dtype=np.int64)
-    opts = {"aligner": aligner, "shift": shift, "length_window": length_window}
+    opts: dict = {"aligner": aligner, "shift": shift, "length_window": length_window}
     if max_edit_frac is not None:               # V8 A1; absent otherwise, so V7 calls are unchanged
         opts["max_edit_frac"] = max_edit_frac
     tasks = _chunks(pairs, layout, mode, opts)
