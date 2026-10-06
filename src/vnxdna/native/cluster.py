@@ -34,6 +34,7 @@ import os
 import shutil
 import subprocess
 import sysconfig
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -75,6 +76,7 @@ _lib_path: str | None = None
 _fallback_logged = False
 _pool: ThreadPoolExecutor | None = None
 _pool_size = 0
+_pool_lock = threading.Lock()
 
 
 def _candidates() -> list[Path]:
@@ -354,12 +356,14 @@ def fb_in_domain(T: int, B: int, mc: np.ndarray, c_indel: int, slack: int, lens:
 
 
 def _get_pool(n: int) -> ThreadPoolExecutor:
+    """A shared pool with at least ``n`` workers. Creation and replacement hold a lock, and the pool only grows: a
+    replaced pool is not shut down (another thread may be about to submit to it); it is dropped and its idle workers
+    exit once nothing references it."""
     global _pool, _pool_size
-    if _pool is None or _pool_size != n:
-        if _pool is not None:
-            _pool.shutdown(wait=True)
-        _pool, _pool_size = ThreadPoolExecutor(max_workers=n, thread_name_prefix="vnx-cluster"), n
-    return _pool
+    with _pool_lock:
+        if _pool is None or _pool_size < n:
+            _pool, _pool_size = ThreadPoolExecutor(max_workers=n, thread_name_prefix="vnx-cluster"), n
+        return _pool
 
 
 def fb(tpl: np.ndarray, mc: np.ndarray, buf: np.ndarray, off: np.ndarray, lens: np.ndarray, band: np.ndarray, B: int,
@@ -393,7 +397,7 @@ def fb(tpl: np.ndarray, mc: np.ndarray, buf: np.ndarray, off: np.ndarray, lens: 
     if parts == 1:
         rcs = [run(0)]
     else:
-        rcs = list(_get_pool(parts).map(run, range(parts)))
+        rcs = list(_get_pool(nt).map(run, range(parts)))
     for rc in rcs:
         _check(rc, "forward-backward")
     return calls, opt

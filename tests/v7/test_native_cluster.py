@@ -237,6 +237,28 @@ def test_forward_backward_threads_env_does_not_change_results(monkeypatch):
     assert same(one, run_kernel("fb", case, "native"))
 
 
+def test_forward_backward_concurrent_calls_share_the_pool_safely(monkeypatch):
+    from concurrent.futures import ThreadPoolExecutor
+    rng = np.random.default_rng(80)
+    case = fb_case(rng, n=300, T=32)
+    buf, off, lens = nc.pack(case["reads"])
+    B = int(case["band"].max(initial=0))
+    ref = consensus.fb_calls_reference(case["tpl"], case["mc"], case["reads"], case["band"], case["c_indel"],
+                                       case["slack"])
+    monkeypatch.setenv("VNXDNA_CLUSTER_THREADS", "3")
+
+    def call(i: int):
+        # environment thread count, and explicit counts that make the shared pool grow while other calls run
+        nthreads = None if i % 2 == 0 else 2 + i % 5
+        return nc.fb(case["tpl"], case["mc"], buf, off, lens, case["band"], B, case["c_indel"], case["slack"],
+                     nthreads=nthreads)
+
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        results = list(ex.map(call, range(48)))
+    for got in results:
+        assert same(ref, got)
+
+
 def test_int16_lanes_refused_when_the_bound_does_not_hold():
     rng = np.random.default_rng(78)
     case = fb_case(rng, n=4, T=30)
