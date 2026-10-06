@@ -7,8 +7,8 @@ do not repeat them here.
 | item | value |
 |---|---|
 | integration branch | `build/v7-sprint` (local; not pushed) |
-| verified head | `1f931e7` (merge of work/v7-fitter; tree identical to 9e3e6d8) |
-| tests | 2990 passed / 0 failed / 3 skipped (327 s, `-n 6`); ruff clean; mypy clean (133 files) |
+| verified head | `85c96d6` (merge ae396c9 of work/v7-nanodata + split-guard test scoping) |
+| tests | 3086 passed / 0 failed / 6 skipped (358 s, `-n 6`, load 1.2→3.3; skips = CLI-on-PATH + opt-in install); ruff clean; mypy gate clean (135 files) |
 | previous baseline | `d06e490`, 2723 passed / 0 failed |
 | released | v6.0.0 on `main` (tag untouched; its tree reports `6.0.0.dev0`, recorded in CHANGELOG) |
 | package version | 6.0.0.dev0 (bump to 7.0.0.dev0 pending, its own step) |
@@ -77,7 +77,7 @@ Read as V7 items A, B, C to the §25 acceptance gates, then V8. One task at a ti
 Governing notes: /root/vnx-dna-lab/notes/V7-RESET-DIRECTIVE-2026-10-06.md + founder step list of 19:5x (steps 3-8).
 | step | state | evidence |
 |---|---|---|
-| D3 real-data check | DONE on work/v7-nanodata 5386080 (NOT merged) | simulator fails M1-M6 on D13 ×4 + CAS9 |
+| D3 real-data check | DONE 5386080, MERGED ae396c9 (+85c96d6 guard tests: manifest may only gain datasets; ACCESS_LOG holds only disclosed D3 entries) | simulator fails M1-M6 on D13 ×4 + CAS9 |
 | 1 Phase 1 regression test | DONE 0a05444 | 12/12 frozen cases = A-CONS record |
 | 2 reproduction | DONE 3d45b78 | A-CONS 240 + A-PAR 120 rows identical (deterministic fields) |
 | 3 confirmatory A-CONF | DONE prereg b8f3338, results 807e3f6 | Phase 1 CONFIRMED (cov10 40/40), lowcov cov5 39/40, 0 FS / 360 |
@@ -86,7 +86,7 @@ Governing notes: /root/vnx-dna-lab/notes/V7-RESET-DIRECTIVE-2026-10-06.md + foun
 | 6 cov-3 conclusion | DONE (A-FAIL README) | v4-balanced STRUCTURALLY INADEQUATE; v7-lowcov UNSUPPORTED (C+B) |
 | 7A fitted model design | DONE f8d617a docs/V7_NANOPORE_MODEL_DESIGN.md | gap: empirical indel run-length pmf |
 | 7B adequacy prereg | DONE f8d617a experiments/v7/fit-nano/PREREGISTRATION.md | M5/M5i multi-base indel metrics gating |
-| 7 implementation | NEXT | (1) review+merge work/v7-nanodata; (2) /2 empirical run-length pmf + tests; (3) fitter calibration + M5i/M2b/RL metrics; (4) fit FIT, ≤2 DEV looks, freeze, one held-out evaluation |
+| 7 implementation | NEXT: (2) | (1) DONE ae396c9; (2) /2 empirical run-length pmf + tests; (3) fitter calibration + M5i/M2b/RL metrics; (4) fit FIT, ≤2 DEV looks, freeze, one held-out evaluation |
 | 7 matrix | BLOCKED until a model is ADEQUATE on held-out | |
 | 8 final report | after 7 | |
 Do NOT start B/C/optimisation. No V8.
