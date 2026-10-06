@@ -255,6 +255,10 @@ def do_fit(job_id: str, workers: int, bootstrap: int, seed: int = SEED) -> Path:
                         f"{window.get('declared')} applied to simulated reads in calibration and validation; the model describes "
                         "length-selected reads"]}
     report["misfit"] = {"notes": report["misfit"]["notes"]}
+    eff = MO.confounded_substitution(fit)
+    if eff is not None:          # the fitted rate is not identifiable: record the measured effective rate (V7 review, 7c00d42)
+        report["measured_statistics"]["substitution_rate_effective_per_base"] = eff
+        report["notes"].append(MO.CONFOUNDED_SUBSTITUTION_NOTE)
     doc = MO.build(
         fit, name=job["name"], version=MODEL_VERSION, model_id=f"{job['name']}-F-{ROUND}",
         description=f"Model F fitted to the FIT split of {job['title']}.",

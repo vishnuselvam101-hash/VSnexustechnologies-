@@ -51,6 +51,23 @@ def _run_length(v: dict, kind: str, geometric: bool, empirical: bool) -> dict:
     return {"distribution": "single", "mean": 1.0}
 
 
+#: fit_report note of a model whose substitution rate is confounded (est.hp_sub_fixed); the V7 review wording (7c00d42)
+CONFOUNDED_SUBSTITUTION_NOTE = (
+    "sequencing.substitution.rate is 'estimated': with homopolymer min_run 2 the in-homopolymer flag is a function of the "
+    "centred 3-mer, so the homopolymer substitution multiplier and the substitution context are confounded and the rate is "
+    "not identifiable separately from them. Only the product rate x context x multiplier is determined. The effective "
+    "per-base substitution rate (observed on FIT) is measured_statistics.substitution_rate_effective_per_base")
+
+
+def confounded_substitution(fit: dict) -> dict | None:
+    """``{"value", "ci95"}`` of the effective per-base substitution rate observed on FIT when the design makes the fitted rate
+    unidentifiable (:func:`estimate.hp_sub_fixed`), else None. Recorded in ``fit_report.measured_statistics``."""
+    d = fit.get("design")
+    if d is None or not est.hp_sub_fixed(d):
+        return None
+    return {"value": fit["values"]["_observed"]["substitution"], "ci95": _py(fit["ci95"]["_observed"]["substitution"])}
+
+
 def sequencing_stage(fit: dict, extra: dict | None = None) -> dict:
     """The /2 ``sequencing`` stage from the fitted values (extra fields such as quality or reverse_complement_rate merged in)."""
     v = fit["values"]

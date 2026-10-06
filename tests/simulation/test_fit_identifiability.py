@@ -202,7 +202,12 @@ def test_committed_models_with_a_confounded_rate_are_labelled_estimated_with_the
     import json
     from pathlib import Path
     root = Path(__file__).resolve().parents[2]
-    relabel = json.loads((root / "experiments/v7/fit-d03/RELABEL-2026-10-06.json").read_text())
+    # every recorded relabel (fit-d03 2026-10-06: the a2 models; fit-nano/d03 2026-10-07: the a7b DEV-look-1 models)
+    files = sorted(root.glob("experiments/v7/fit-*/**/RELABEL-*.json"))
+    assert len(files) == 2, files
+    relabel: dict = {"models": {}}
+    for f in files:
+        relabel["models"].update(json.loads(f.read_text())["models"])
     seen = []
     for p in sorted(root.glob("experiments/v7/fit-*/**/models/*.json")):
         m = cm.from_doc(json.loads(p.read_text()))[0]
@@ -216,4 +221,14 @@ def test_committed_models_with_a_confounded_rate_are_labelled_estimated_with_the
         eff = ms["substitution_rate_effective_per_base"]
         assert eff["value"] == ms["observed_per_base_rates"]["substitution"] < seq["substitution"]["rate"]
         assert relabel["models"][rel]["sha256_after"] == m.sha256
-    assert sorted(seen) == sorted(relabel["models"]) and len(seen) == 4
+    assert sorted(seen) == sorted(relabel["models"]) and len(seen) == 6
+
+
+def test_fit_driver_records_the_effective_rate_of_a_confounded_design():
+    """model_out.confounded_substitution: the measured per-base rate for designs with an unidentifiable rate, else None."""
+    fit = {"values": {"_observed": {"substitution": 0.02}}, "ci95": {"_observed": {"substitution": [0.019, 0.021]}}}
+    assert MO.confounded_substitution({**fit, "design": est.Design(min_run=2, context=("substitution",))}) == \
+        {"value": 0.02, "ci95": [0.019, 0.021]}
+    assert MO.confounded_substitution({**fit, "design": est.Design(min_run=3, context=("substitution",))}) is None
+    assert MO.confounded_substitution({**fit, "design": est.Design(min_run=2)}) is None
+    assert "substitution_rate_effective_per_base" in MO.CONFOUNDED_SUBSTITUTION_NOTE

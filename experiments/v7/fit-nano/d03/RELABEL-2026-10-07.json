@@ -1,0 +1,22 @@
+{
+ "models": {
+  "experiments/v7/fit-nano/d03/models/ont-guppy-fast-pass-fwd-fit.json": {
+   "effective": 0.03628722520940406,
+   "rate": 0.03847755811628883,
+   "sha256_after": "9136b4f35ecb9321ad46817ec36241afe00e055a705dd6451cf14af50c6dafe3",
+   "sha256_before": "4d88f51f28e2ceb306620b40956a23be051ef3ed9fb6d02031a5db29caf7f31f",
+   "sim_digest_identical": true
+  },
+  "experiments/v7/fit-nano/d03/models/ont-guppy-hac-pass-fwd-fit.json": {
+   "effective": 0.016521420180602323,
+   "rate": 0.017123835315961112,
+   "sha256_after": "37a537d77188ee6a0ba749d4234eae88781d4b096adb0468e589f1cf8e0c5beb",
+   "sha256_before": "96a337ebf5c6c1ff88218ddc22ec90899bf18a276eea62d66e159e6070ab9e49",
+   "sim_digest_identical": true
+  }
+ },
+ "simulation_check": "one batch (256 random 150-nt strands, seed 17) simulated before and after: identical SHA-256 of every output array; the stages are equal",
+ "validation_results_note": "results/*.validation.json keep the SHA-256 of the model as validated (sha256_before)",
+ "what": "fit_report.measured_statistics.substitution_rate_effective_per_base and the confounded-rate note added (no refit; stages unchanged)",
+ "why": "the fit driver did not write them for confounded designs (est.hp_sub_fixed); test_fit_identifiability requires them on every committed confounded model"
+}
