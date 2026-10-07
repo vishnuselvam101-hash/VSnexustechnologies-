@@ -144,6 +144,7 @@ def do_fit(workers: int) -> Path:
     f1 = json.loads((V8 / "models" / "d13-nanopore-f1.json").read_text())
     doc = copy.deepcopy(f1)
     doc["provenance"]["fitting"].pop("parameter_sha256", None)      # recomputed for the G1 stages below
+    doc["parameters"].pop("sequencing.read_heterogeneity.shape", None)   # F1's gamma shape is replaced by the classes
     seq = doc["stages"]["sequencing"]
     seq["read_heterogeneity"] = {"distribution": "latent-states", "states": states}
     doc["name"], doc["version"], doc["model_id"] = "d13-nanopore-g1", "1.0.0", "d13-nanopore-G1"
@@ -159,6 +160,8 @@ def do_fit(workers: int) -> Path:
         cal.append({"iteration": it, "sim": {k: sim[k] for k in ratio}, "ratio": ratio})
         for k in ratio:
             seq[k]["rate"] = float(min(0.5, seq[k]["rate"] * ratio[k]))
+            # the uncertainty entry describes the recalibrated value now: F1's interval no longer applies
+            doc["parameters"][f"sequencing.{k}.rate"] = {"value": seq[k]["rate"], "basis": "fitted"}
     g = _git()
     prov = doc["provenance"]["fitting"]
     prov.update(method="V9 G1: per-read Poisson-mixture EM (K by BIC) on V8 F1 + 3-rate calibration (experiments/v9/d13/g1.py)",

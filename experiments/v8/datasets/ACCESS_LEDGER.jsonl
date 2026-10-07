@@ -54,3 +54,7 @@
 {"dataset": "d13-lopez-nanopore", "granted": true, "purpose": "V9 G1 fit (per-read EM + calibration) on FIT", "run": "run16", "script": "experiments/v9/d13/g1.py fit", "split": "FIT", "timestamp_utc": "2026-10-07T13:29:23Z"}
 {"dataset": "d13-lopez-nanopore", "granted": true, "purpose": "V9 G1 fit (per-read EM + calibration) on FIT", "run": "run18", "script": "experiments/v9/d13/g1.py fit", "split": "FIT", "timestamp_utc": "2026-10-07T13:29:23Z"}
 {"dataset": "d13-lopez-nanopore", "granted": true, "purpose": "V9 G1 fit (per-read EM + calibration) on FIT", "run": "run20", "script": "experiments/v9/d13/g1.py fit", "split": "FIT", "timestamp_utc": "2026-10-07T13:29:23Z"}
+{"dataset": "d13-lopez-nanopore", "granted": true, "purpose": "V9 G1 fit (per-read EM + calibration) on FIT", "run": "run15", "script": "experiments/v9/d13/g1.py fit", "split": "FIT", "timestamp_utc": "2026-10-07T13:31:02Z"}
+{"dataset": "d13-lopez-nanopore", "granted": true, "purpose": "V9 G1 fit (per-read EM + calibration) on FIT", "run": "run16", "script": "experiments/v9/d13/g1.py fit", "split": "FIT", "timestamp_utc": "2026-10-07T13:31:02Z"}
+{"dataset": "d13-lopez-nanopore", "granted": true, "purpose": "V9 G1 fit (per-read EM + calibration) on FIT", "run": "run18", "script": "experiments/v9/d13/g1.py fit", "split": "FIT", "timestamp_utc": "2026-10-07T13:31:02Z"}
+{"dataset": "d13-lopez-nanopore", "granted": true, "purpose": "V9 G1 fit (per-read EM + calibration) on FIT", "run": "run20", "script": "experiments/v9/d13/g1.py fit", "split": "FIT", "timestamp_utc": "2026-10-07T13:31:02Z"}
