@@ -48,7 +48,7 @@ archive or decoder module was modified: the archive gate calls the existing arch
 | Replay protection (nonce + timestamp window) | `identity.ReplayGuard` | IMPLEMENTED, TESTED |
 | Authorization (deny-by-default policy, explicit deny wins) | `policy.py` | IMPLEMENTED, TESTED, fuzzed |
 | Security events and findings | `events.py` | IMPLEMENTED, TESTED |
-| Deterministic detectors (14 rules) | `detect.py` | IMPLEMENTED, TESTED, fuzzed |
+| Deterministic detectors (16 rules) | `detect.py` | IMPLEMENTED, TESTED, fuzzed |
 | Explainable risk score | `risk.py` | IMPLEMENTED, TESTED |
 | Containment playbook (idempotent actions) | `contain.py`, `control._contain` | IMPLEMENTED, TESTED |
 | Session isolation, credential revocation, rate limiting | `control.py` | IMPLEMENTED, TESTED |
@@ -89,7 +89,8 @@ re-implemented. The existing layer already fails closed on a corrupted chunk bod
 (AES-256-GCM tag), chunk-ID mismatch, malformed tables, truncated files and bad Merkle proofs. The gate adds:
 
 - authorization before any byte is read;
-- a quarantine check on the archive's SHA-256, so quarantined bytes are refused under any file name;
+- a quarantine check on the archive's SHA-256, so quarantined bytes are refused under any file name. The hash is cached
+  per file identity and stat, so a large archive is hashed once, not per request; any change re-hashes it;
 - a Merkle inclusion-proof check against the manifest root before `read_chunk` returns;
 - a file-hash check before `read_file` returns;
 - conversion of every archive-layer exception into an audited `SecurityFailure` (`malformed`, `integrity`,

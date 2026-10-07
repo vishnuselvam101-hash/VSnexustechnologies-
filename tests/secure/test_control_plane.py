@@ -212,3 +212,11 @@ def test_containment_state_serialises():
     c.contain_session("s")
     c.quarantine("ab" * 32, {"resource": "r"})
     assert ContainmentState.from_dict(json.loads(json.dumps(c.to_dict()))).to_dict() == c.to_dict()
+
+
+def test_forged_token_spray_is_detected(cp, nonce):
+    for i in range(5):
+        with pytest.raises(AccessDenied):
+            cp.authorize(f"vnxt1.forged{i}.sig", "s-spray", nonce(), cp.clock(), "archive:a.vnx", "read")
+    assert any(f.detector == "invalid_tokens" and f.subject == "s-spray" for f in cp.findings)
+    assert "s-spray" in cp.cont.contained_sessions

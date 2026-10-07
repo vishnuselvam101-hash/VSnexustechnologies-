@@ -40,11 +40,12 @@ class SecureArchive:
         self.resource = resource or f"archive:{self.path.name}"
         # sandbox=True: list/verify/locate parse the archive in a resource-limited child process (sandbox.py)
         self.sandbox, self.limits = sandbox, {"mem_bytes": mem_bytes, "cpu_seconds": cpu_seconds}
+        self._sha_key, self._sha_val = None, ""
 
     def _call(self, req: dict, operation: str, fn):
         claims = self.cp.authorize(req["token"], req["session"], req["nonce"], req["ts"], self.resource, operation)
         try:
-            sha = file_sha256(self.path)
+            sha = self._sha()
         except OSError as e:
             ev = self.cp.observe_failure(claims, req["session"], self.resource, operation, "malformed", f"unreadable: {e}")
             raise SecurityFailure("malformed", "archive unreadable", ev)
@@ -66,6 +67,15 @@ class SecureArchive:
             ev = self.cp.observe_failure(claims, req["session"], self.resource, operation, code, f"{type(e).__name__}: {e}",
                                          input_sha256=sha, input_path=str(self.path))
             raise SecurityFailure(code, f"{type(e).__name__}: {e}", ev) from None
+
+    def _sha(self) -> str:
+        """SHA-256 of the archive file, cached by (device, inode, size, mtime_ns, ctime_ns): a large archive is hashed once,
+        not on every request; any change to the file (or its replacement) recomputes it."""
+        st = os.stat(self.path)
+        key = (st.st_dev, st.st_ino, st.st_size, st.st_mtime_ns, st.st_ctime_ns)
+        if self._sha_key != key:
+            self._sha_val, self._sha_key = file_sha256(self.path), key
+        return self._sha_val
 
     def _open(self, require_key: bool = False):
         return ct.open_container(self.path, key=self.key, require_key=require_key, allow_unencrypted=self.key is None)

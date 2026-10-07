@@ -131,3 +131,18 @@ def test_security_overhead_is_measured(lab):
     from vnxdna.secure.simulator import overhead
     o = overhead(lab, reps=3)
     assert o["read_file_gated_ms"] > 0 and o["reps"] == 3
+
+
+def test_archive_hash_is_cached_until_the_file_changes(lab, monkeypatch):
+    from vnxdna.secure import gate
+    calls = []
+    real = gate.file_sha256
+    monkeypatch.setattr(gate, "file_sha256", lambda p: calls.append(p) or real(p))
+    t = lab.login("alice", "s-a")
+    for _ in range(3):
+        lab.vault.list(lab.req(t, "s-a"))
+    assert len(calls) == 1
+    lab.archive.write_bytes(lab.archive.read_bytes() + b"x")          # any change re-hashes (and then fails closed)
+    with pytest.raises((SecurityFailure, AccessDenied)):
+        lab.vault.list(lab.req(t, "s-a"))
+    assert len(calls) == 2

@@ -38,6 +38,10 @@ not been tested against real attackers, and has not been measured on real traffi
     is not encrypted at rest. For DNA media, custody of the molecules is outside the software.
 11. **VNX-RAM and VNX-Q** are ARCHITECTURAL only. No hardware exists, and no quantum mechanism is used or claimed.
 12. **Post-quantum cryptography** is PLANNED, not implemented.
+13. **Local operator.** The `vnx security` CLI trusts the OS user who owns the home directory (mode 0700). For example,
+    `recover` asks for no further authentication. The control plane cannot distinguish a session's real origin: it has
+    no network address and no device identity. An attacker who rotates session ids therefore spreads the per-session
+    detection windows; per-principal login locks and rate limits still apply.
 
 ## Evidence classes
 

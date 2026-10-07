@@ -85,6 +85,7 @@ timestamps.
 | Detector | Rule | Severity |
 |---|---|---|
 | `auth_failures` | ≥ 5 failed logins for one principal in 300 s | HIGH |
+| `invalid_tokens` | ≥ 5 requests with forged, malformed or expired tokens per claimed session in 300 s | HIGH |
 | `revoked_credential_use` | a revoked token, session or principal is presented | HIGH |
 | `replay` | nonce reused, or timestamp outside the skew | HIGH |
 | `token_misuse` | token presented for another session | HIGH |

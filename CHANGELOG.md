@@ -7,7 +7,7 @@
 - **VNX-Secure** (`vnxdna.secure`, `vnx security …`): a defensive security control plane. It provides:
   - scrypt principals and HMAC session tokens with revocation and replay protection;
   - a deny-by-default policy;
-  - 15 deterministic detectors with an explainable additive risk score;
+  - 16 deterministic detectors with an explainable additive risk score;
   - idempotent containment (session containment, token revocation, login lock, rate limit, input quarantine, resource
     lock, workload-isolation interface, evidence bundles);
   - an HMAC-chained audit log with an anchor;

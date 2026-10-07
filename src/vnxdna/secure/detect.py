@@ -63,6 +63,12 @@ class Detector:
             if len(q) >= t.auth_failures and self._once("auth", ev.principal or ses, ev.timestamp, t.window):
                 find("auth_failures", "authentication_anomalies", "HIGH",
                      f"{len(q)} failed authentications for {ev.principal!r} in {t.window:.0f}s", [x[1] for x in q])
+        # 1b. invalid tokens presented on requests (forgery / token guessing), per claimed session
+        if ev.kind == "request" and ev.result == "deny" and code in ("bad_signature", "malformed_token", "expired"):
+            q = self._push("token", ses, ev, t.window)
+            if len(q) >= t.auth_failures and self._once("token", ses, ev.timestamp, t.window):
+                find("invalid_tokens", "authentication_anomalies", "HIGH",
+                     f"{len(q)} requests with invalid tokens in {t.window:.0f}s", [x[1] for x in q])
         # 2. revoked / replayed / misbound credentials
         if code in ("token_revoked", "session_revoked", "principal_revoked"):
             find("revoked_credential_use", "authentication_anomalies", "HIGH", f"use of a revoked credential ({code})", [ev.event_id])
