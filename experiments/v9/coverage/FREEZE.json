@@ -1,0 +1,103 @@
+{
+ "chosen": {
+  "false_terminations": 0,
+  "level": "all",
+  "m": 0,
+  "mean_reads": 5463.1
+ },
+ "commit": "6a406668a4060051c0f6891cd7d96891baf88cc4",
+ "dev_cases": 20,
+ "dev_file": "experiments/v9/coverage/results/dev.jsonl",
+ "table": [
+  {
+   "false_terminations": 0,
+   "level": "pass1",
+   "m": 0,
+   "mean_reads": 11064.6
+  },
+  {
+   "false_terminations": 0,
+   "level": "pass1",
+   "m": 1,
+   "mean_reads": 11372.8
+  },
+  {
+   "false_terminations": 0,
+   "level": "pass1",
+   "m": 2,
+   "mean_reads": 11495.3
+  },
+  {
+   "false_terminations": 0,
+   "level": "pass1",
+   "m": 4,
+   "mean_reads": 11782.2
+  },
+  {
+   "false_terminations": 0,
+   "level": "pass1",
+   "m": 8,
+   "mean_reads": 12232.4
+  },
+  {
+   "false_terminations": 0,
+   "level": "consensus",
+   "m": 0,
+   "mean_reads": 10721.6
+  },
+  {
+   "false_terminations": 0,
+   "level": "consensus",
+   "m": 1,
+   "mean_reads": 10893.1
+  },
+  {
+   "false_terminations": 0,
+   "level": "consensus",
+   "m": 2,
+   "mean_reads": 11064.6
+  },
+  {
+   "false_terminations": 0,
+   "level": "consensus",
+   "m": 4,
+   "mean_reads": 11285.1
+  },
+  {
+   "false_terminations": 0,
+   "level": "consensus",
+   "m": 8,
+   "mean_reads": 12063.55
+  },
+  {
+   "false_terminations": 0,
+   "level": "all",
+   "m": 0,
+   "mean_reads": 5463.1
+  },
+  {
+   "false_terminations": 0,
+   "level": "all",
+   "m": 1,
+   "mean_reads": 5855.2
+  },
+  {
+   "false_terminations": 0,
+   "level": "all",
+   "m": 2,
+   "mean_reads": 6052.7
+  },
+  {
+   "false_terminations": 0,
+   "level": "all",
+   "m": 4,
+   "mean_reads": 6448.15
+  },
+  {
+   "false_terminations": 0,
+   "level": "all",
+   "m": 8,
+   "mean_reads": 7871.8
+  }
+ ]
+}
