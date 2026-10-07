@@ -22,9 +22,9 @@ from __future__ import annotations
 import argparse
 import copy
 import datetime as dt
-import hashlib
 import json
 import math
+import os
 import subprocess
 import sys
 import time
@@ -39,7 +39,7 @@ sys.path.insert(0, str(V8))
 import access as A                                                                      # noqa: E402
 import fit as F8                                                                        # noqa: E402
 import pipeline as PL                                                                   # noqa: E402
-from vnxdna.simulation import model as cm                                               # noqa: E402
+from vnxdna.simulation import model as cm, model2                                       # noqa: E402
 from vnxdna.simulation.fit import adequacy as AQ, precheck as PC, simulate as S        # noqa: E402
 from vnxdna.simulation.fit import validate as V                                        # noqa: E402
 from vnxdna.simulation.fit.align import align                                          # noqa: E402
@@ -54,6 +54,7 @@ MAX_EDIT_FRAC = F8.TALLY_OPTS["max_edit_frac"]
 MODEL = HERE / "models" / "d13-nanopore-g1.json"
 RESULTS = HERE / "results"
 PREREG = ROOT / "docs" / "V9_PREREGISTRATION.md"
+DERIVED = Path(os.environ.get("VNX_V9_DERIVED", "/root/vnx-dna-lab/data/derived/v9/d13"))
 
 
 def _git() -> dict:
@@ -128,13 +129,21 @@ def do_fit(workers: int) -> Path:
     t0 = time.time()
     lay, M, rs, runs, ref_rows = PL.load_tables(A.FIT)
     rows = set(range(0, M.shape[0], ROW_STRIDE))
-    X4 = per_read_counts(F8._fit_pairs(rows), lay.L)
+    tsha = json.loads((V8 / "results" / "tables.json").read_text())["splits"][A.FIT]["sha256"]
+    cache = DERIVED / f"g1-per-read-{tsha[:16]}-s{ROW_STRIDE}.npy"           # derived counts (not committed; rebuilt if absent)
+    if cache.exists():
+        X4 = np.load(cache)
+    else:
+        X4 = per_read_counts(F8._fit_pairs(rows), lay.L)
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        np.save(cache, X4)
     X = X4[:, :3]
     sols = {K: em(X, K) for K in KS}
     K = min(KS, key=lambda k: sols[k]["bic"])
     states = multipliers(sols[K])
     f1 = json.loads((V8 / "models" / "d13-nanopore-f1.json").read_text())
     doc = copy.deepcopy(f1)
+    doc["provenance"]["fitting"].pop("parameter_sha256", None)      # recomputed for the G1 stages below
     seq = doc["stages"]["sequencing"]
     seq["read_heterogeneity"] = {"distribution": "latent-states", "states": states}
     doc["name"], doc["version"], doc["model_id"] = "d13-nanopore-g1", "1.0.0", "d13-nanopore-G1"
@@ -155,8 +164,7 @@ def do_fit(workers: int) -> Path:
     prov.update(method="V9 G1: per-read Poisson-mixture EM (K by BIC) on V8 F1 + 3-rate calibration (experiments/v9/d13/g1.py)",
                 version="v9-g1/1", commit=g["commit"], dirty=g["dirty"], seed=SEED_FIT,
                 timestamp_utc=dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))
-    params = json.dumps(doc["stages"], sort_keys=True).encode()
-    prov["parameter_sha256"] = hashlib.sha256(params).hexdigest()
+    prov["parameter_sha256"] = model2.parameter_sha256(cm.from_doc(doc)[0].doc["stages"])
     model, _ = cm.from_doc(doc)
     MODEL.parent.mkdir(parents=True, exist_ok=True)
     MODEL.write_text(model.dumps())
