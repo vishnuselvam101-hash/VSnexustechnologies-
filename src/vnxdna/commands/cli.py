@@ -40,6 +40,10 @@ experimental_app = typer.Typer(no_args_is_help=True, help="EXPERIMENTAL features
 app.add_typer(channel_app, name="channel")
 app.add_typer(experiment_app, name="experiment")
 app.add_typer(experimental_app, name="experimental")
+security_app = typer.Typer(no_args_is_help=True, help="VNX-Secure: defensive security control plane (audit, integrity, recovery).")
+security_audit_app = typer.Typer(no_args_is_help=True, help="The HMAC-chained security audit log.")
+app.add_typer(security_app, name="security")
+security_app.add_typer(security_audit_app, name="audit")
 
 EXIT_PARTIAL = 9
 STATE = {"verbose": False, "progress": False}
@@ -626,6 +630,111 @@ def experimental_codec_compare(trials: int = typer.Option(100), output: Optional
             output.write_text(json.dumps(res.body, indent=2) + "\n")
         typer.echo(sdk.benchmark_markdown(res.body))
     _run(go)
+
+
+# ============================================================================ vnx security (VNX-Secure)
+HOME_OPT = typer.Option(None, "--home", help="VNX-Secure home directory (default $VNX_SECURE_HOME or ~/.vnx-secure).")
+
+
+def _sec(fn, fail_if=None):
+    """Run a VNX-Secure call; print JSON; exit 1 when ``fail_if(result)`` is true, 3 on a missing home or bad input."""
+    from vnxdna.sdk import security as sec  # noqa: F401 - imported here so `vnx --help` stays fast
+    try:
+        res = fn()
+    except (FileNotFoundError, FileExistsError, ValueError) as e:
+        typer.echo(json.dumps({"error": type(e).__name__, "message": str(e)}), err=True)
+        raise typer.Exit(3)
+    _emit(res if isinstance(res, dict) else {"items": res})
+    raise typer.Exit(1 if fail_if and fail_if(res) else 0)
+
+
+@security_app.command("init")
+def security_init(home: Optional[Path] = HOME_OPT,
+                  admin: Optional[str] = typer.Option(None, "--admin", help="Create an admin principal with this name."),
+                  admin_secret_env: Optional[str] = typer.Option(None, "--admin-secret-env", help="Env var holding the admin secret.")) -> None:
+    """Create a VNX-Secure home: master key (0600), known-good policy, integrity baseline, audit chain."""
+    from vnxdna.sdk import security as sec
+    adm = None
+    if admin:
+        secret = os.environ.get(admin_secret_env or "")
+        if not secret:
+            typer.echo(json.dumps({"error": "ValueError", "message": "--admin needs --admin-secret-env naming a set variable"}), err=True)
+            raise typer.Exit(3)
+        adm = (admin, secret)
+    _sec(lambda: sec.init(home, admin=adm))
+
+
+@security_app.command("status")
+def security_status(home: Optional[Path] = HOME_OPT) -> None:
+    """Security state, integrity state, containment and revocations. Exit 1 unless TRUSTED/VERIFIED."""
+    from vnxdna.sdk import security as sec
+    _sec(lambda: sec.status(home), lambda r: r["state"] not in ("TRUSTED", "VERIFIED"))
+
+
+@security_audit_app.command("verify")
+def security_audit_verify(home: Optional[Path] = HOME_OPT) -> None:
+    """Verify the audit chain (and its anchor). Exit 1 unless VERIFIED."""
+    from vnxdna.sdk import security as sec
+    _sec(lambda: sec.audit_verify(home), lambda r: r["status"] != "VERIFIED")
+
+
+@security_audit_app.command("show")
+def security_audit_show(home: Optional[Path] = HOME_OPT, n: int = typer.Option(20, "-n", help="Last N events.")) -> None:
+    """Print the last N audit events (JSON)."""
+    from vnxdna.sdk import security as sec
+    _sec(lambda: sec.audit_tail(home, n))
+
+
+@security_app.command("integrity")
+def security_integrity(home: Optional[Path] = HOME_OPT) -> None:
+    """Integrity snapshot vs the authenticated baseline: VERIFIED / MODIFIED / UNKNOWN / FAILED. Exit 1 unless VERIFIED."""
+    from vnxdna.sdk import security as sec
+    _sec(lambda: sec.integrity(home), lambda r: r["status"] != "VERIFIED")
+
+
+@security_app.command("sessions")
+def security_sessions(home: Optional[Path] = HOME_OPT) -> None:
+    """Contained sessions, rate limits, locks, quarantined inputs and revocations."""
+    from vnxdna.sdk import security as sec
+    _sec(lambda: sec.sessions(home))
+
+
+@security_app.command("policy")
+def security_policy(home: Optional[Path] = HOME_OPT,
+                    check: Optional[Path] = typer.Option(None, "--check", help="Validate a policy file instead of showing the current one.")) -> None:
+    """Show the current policy, or validate a policy file (exit 3 if invalid)."""
+    from vnxdna.sdk import security as sec
+    _sec(lambda: sec.policy_check(check) if check else sec.policy_show(home))
+
+
+@security_app.command("simulate")
+def security_simulate(quick: bool = typer.Option(False, "--quick", help="Scenarios only (no benign workload, no overhead benchmark)."),
+                      output: Optional[Path] = typer.Option(None, "--output", "-o", help="Also write the JSON report here.")) -> None:
+    """SIMULATED: run the safe local attack simulator (synthetic events only). Exit 1 unless every scenario passes."""
+    from vnxdna.sdk import security as sec
+
+    def go():
+        r = sec.simulate(quick)
+        if output:
+            output.write_text(json.dumps(r, indent=2, sort_keys=True) + "\n")
+        return r
+    _sec(go, lambda r: r["summary"]["passed"] != r["summary"]["scenarios"])
+
+
+@security_app.command("recover")
+def security_recover(home: Optional[Path] = HOME_OPT, archives: Optional[List[Path]] = typer.Option(None, "--archive", help="Also verify these archives."),
+                     key_file: Optional[Path] = KEY_OPT) -> None:
+    """Defensive recovery: verify audit chain, restore known-good policy, rotate credentials, verify integrity. Exit 1 unless VERIFIED."""
+    from vnxdna.sdk import security as sec
+    key = sdk.load_keys(key_file, None)[0] if key_file else None
+    _sec(lambda: sec.recover(home, archives=[str(a) for a in archives or []], key=key), lambda r: r["result"] != "VERIFIED")
+
+
+@security_app.command("crypto")
+def security_crypto() -> None:
+    """Cryptographic algorithm registry: IMPLEMENTED / PLANNED / EXPERIMENTAL, with purpose and migration path."""
+    from vnxdna.sdk import security as sec
+    _sec(lambda: sec.crypto_registry())
 
 
 def main() -> None:  # pragma: no cover - console entry point
