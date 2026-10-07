@@ -1,0 +1,35 @@
+nanopore-like/cov10 82020 EXPLICIT_FAILURE 50.516 -> 2.804 identical
+nanopore-like/cov10 82021 EXPLICIT_FAILURE 57.649 -> 2.771 identical
+nanopore-like/cov10 82022 EXPLICIT_FAILURE 54.583 -> 2.865 identical
+nanopore-like/cov10 82023 EXPLICIT_FAILURE 56.522 -> 3.271 identical
+nanopore-like/cov10 82024 EXPLICIT_FAILURE 49.797 -> 2.733 identical
+deletion-heavy/cov10 82020 EXACT 35.765 -> 2.485 identical
+deletion-heavy/cov10 82021 EXACT 34.688 -> 2.45 identical
+deletion-heavy/cov10 82022 EXACT 35.731 -> 2.585 identical
+deletion-heavy/cov10 82023 EXACT 45.856 -> 3.188 identical
+deletion-heavy/cov10 82024 EXACT 39.541 -> 2.901 identical
+Benchmark 1: reference
+  Time (mean ± σ):     52.315 s ±  1.553 s    [User: 50.102 s, System: 0.334 s]
+  Range (min … max):   51.221 s … 54.093 s    3 runs
+ 
+Benchmark 2: native
+  Time (mean ± σ):      3.211 s ±  0.207 s    [User: 3.333 s, System: 0.083 s]
+  Range (min … max):    2.984 s …  3.388 s    3 runs
+ 
+Summary
+  native ran
+   16.29 ± 1.15 times faster than reference
+Benchmark 1: reference
+  Time (mean ± σ):     35.863 s ±  0.050 s    [User: 36.340 s, System: 0.106 s]
+  Range (min … max):   35.832 s … 35.920 s    3 runs
+ 
+  Warning: Statistical outliers were detected. Consider re-running this benchmark on a quiet system without any interferences from other programs. It might help to use the '--warmup' or '--prepare' options.
+ 
+Benchmark 2: native
+  Time (mean ± σ):      2.726 s ±  0.020 s    [User: 3.256 s, System: 0.086 s]
+  Range (min … max):    2.704 s …  2.744 s    3 runs
+ 
+Summary
+  native ran
+   13.16 ± 0.10 times faster than reference
+{"all_identical": true, "cells": {"deletion-heavy/cov10": {"trials": 5, "median_decode_seconds": {"reference": 35.765, "native": 2.585}, "median_speedup": 13.84, "speedup_range": [13.63, 14.39], "outcomes": ["EXACT"]}, "nanopore-like/cov10": {"trials": 5, "median_decode_seconds": {"reference": 54.583, "native": 2.804}, "median_speedup": 19.47, "speedup_range": [17.28, 20.8], "outcomes": ["EXPLICIT_FAILURE"]}}, "hyperfine": {"nanopore-like/cov10/82020": {"runs": 3, "mean_seconds": {"reference": 52.32, "native": 3.21}, "stddev_seconds": {"reference": 1.55, "native": 0.21}, "speedup_mean": 16.29, "file": "hyperfine-nanopore-like_cov10-82020.json"}, "deletion-heavy/cov10/82020": {"runs": 3, "mean_seconds": {"reference": 35.86, "native": 2.73}, "stddev_seconds": {"reference": 0.05, "native": 0.02}, "speedup_mean": 13.16, "file": "hyperfine-deletion-heavy_cov10-82020.json"}}}

@@ -93,10 +93,46 @@ plus `from_multipliers`, `deletion.run_length`, `coverage.model: "lognormal"` wi
 | `"schema": "vnx.channel-model/1"` | /1 |
 | no `schema`, with `name`, `loss`, `channel` (the Phase 1 files) | `/0`, converted exactly: `loss` → `storage.strand_loss`; `channel.dropout_rate` → `synthesis.dropout_rate`; `gc_bias_*` → `amplification.gc_bias`; every other field → `sequencing` |
 | no `schema` otherwise, or `vnx.channel-config/0` or `/1` | a V4 `ChannelConfig` (its own validation, unchanged; its `seed` is the default seed) |
+| `"schema": "vnx.channel-model/2"` | /2 (V7, see below) |
 | any other `vnx.channel-model/N` or `vnx.channel-config/N`, or another schema | refused: `SCHEMA_UNSUPPORTED`, exit 6 |
 
 `/1 → /0` is available when a model uses only V4 mechanisms (`ChannelModel.to_v0()`, `vnx channel show NAME --schema
 vnx.channel-model/0`); otherwise it is refused with the list of parameters `/0` cannot express.
+
+### `vnx.channel-model/2` (V7)
+
+`/2` (V7 protocol section 5.3; code `vnxdna.simulation.model2`) is `/1` plus the provenance of fitted models, per-parameter
+confidence intervals and opt-in effects that `/1` cannot express. Every `/1` model loads unchanged (tests assert the SHA-256 of
+all 14 shipped models and their simulated reads against the pre-`/2` code). A `/1` document with a `/2` field is refused
+("unknown keys"). `/2` is a superset: a `/2` model with no active effect converts to `/1` (`ChannelModel.to_v1`); one with an
+active effect is refused by `to_v1` and `to_v0` instead of being converted with the effect dropped.
+
+| key | meaning |
+|---|---|
+| `model_id` | identifier of this fitted model |
+| `provenance.datasets[]` | `id`, `accession`, `url`, `files[]` (`name`, `sha256`) and `sha256` (digest of the file list: SHA-256 of sorted `name:sha256` lines) |
+| `provenance.split` | `name` (`FIT` or `HELDOUT`) and `manifest_sha256` of `experiments/v7/split/SPLIT_MANIFEST.json` |
+| `provenance.fitting` | `method`, `version`, `commit` (40 hex), `dirty` (bool), `seed`, `timestamp_utc`, `software` (versions). Required for `data_source: LABORATORY`; refused for any other data source |
+| `parameters` | per fitted parameter, keyed by its dotted path in `stages`: `value` (must equal the value in `stages`), `ci95` (`[low, high]`, or `{lo, hi}` with the shape of a vector value; bootstrap over references) and `basis` (`measured`, `estimated`, `inferred`, `assumed`, `synthetic`) |
+| `fit_report` | optional: `adequacy` (`ADEQUATE`, `INADEQUATE`, `UNVALIDATED`), `failed_metrics`, `metrics`, `misfit`, `measured_statistics`, `validation`, `notes` |
+
+Opt-in effects in `stages.sequencing` (all default off):
+
+| field | meaning | simulator |
+|---|---|---|
+| `insertion.run_length` `{distribution: single \| geometric, mean}` | bases inserted at one gap (geometric: Geometric(1/mean), capped at 64) | **honoured** |
+| `context` `{k: 3, substitution, insertion, deletion}` | 64 rate multipliers each (or null), indexed by the reference 3-mer centred on the site (`16*previous + 4*base + next`, A=0 C=1 G=2 T=3; an edge uses the base itself as the missing neighbour) | **honoured** |
+| `read_heterogeneity` `{distribution: gamma, shape}` | per-read rate heterogeneity: every read draws one multiplier m ~ Gamma(shape, 1/shape) (mean 1) that scales its per-site sequencing substitution, insertion and deletion probabilities (each site's total clipped at 0.95); own random stream (`TAG_HETEROGENEITY`); present in the canonical document only when set (V7 protocol 5.5) | **honoured** |
+| `correlation` `{lag, p_event_given_event, p_event_given_no_event}` | error correlation | **refused** |
+| `asymmetry` `{orientation, backward_substitution_matrix}` | forward/backward difference | **refused** |
+
+A model that sets `correlation` or `asymmetry` is valid as a document but `engine.Simulator`, `simulate_file`, the SDK and the CLI
+refuse to simulate it (`CONFIGURATION_ERROR`, exit 7): the effect is never silently ignored. Measured statistics that
+the simulator cannot represent are reported in `fit_report.misfit` / `measured_statistics`, not as model fields.
+
+Parser limits (all schemas, `read_file`): at most 16 MiB, 24 levels of nesting, 4,000,000 JSON values, strings of at most
+1 MiB, no duplicate object keys, no `NaN`/`Infinity`; position profiles at most 100,000 entries, at most 1,024 `parameters`.
+Violations raise `CONFIGURATION_ERROR` (never an untyped error; `tests/simulation/test_sim_model2.py` includes a mutation fuzz).
 
 ### Shipped models
 

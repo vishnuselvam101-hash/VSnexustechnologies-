@@ -92,6 +92,10 @@ class Parsed:
     symbol: np.ndarray
     payload: np.ndarray   # (N, P)
     errata: np.ndarray    # symbols corrected by the inner code
+    # V7 diagnostics (additive, observability only; ``ok`` is unchanged): inner RS decoded (or the frame was clean),
+    # and the CRC-32 of the (corrected) frame verified. ``ok = rs_ok & crc_ok & valid version/kind``.
+    rs_ok: np.ndarray | None = None
+    crc_ok: np.ndarray | None = None
 
 
 def decode_frames(layout: Layout, frames: np.ndarray, erasures: np.ndarray | None = None, *,
@@ -134,10 +138,11 @@ def decode_frames(layout: Layout, frames: np.ndarray, erasures: np.ndarray | Non
     ks = keystreams(span)
     plain = fixed[:, 1:1 + span] ^ ks[fixed[:, 0]]
     crc = crc32_bytes_be(crc32_rows(plain[:, : 9 + p]))
-    good = ok & (crc == plain[:, 9 + p:]).all(axis=1) & ((plain[:, 0] >> 4) == FRAME_VERSION) & ((plain[:, 0] & 15) <= KIND_SUPER)
+    crc_ok = (crc == plain[:, 9 + p:]).all(axis=1)
+    good = ok & crc_ok & ((plain[:, 0] >> 4) == FRAME_VERSION) & ((plain[:, 0] & 15) <= KIND_SUPER)
     return Parsed(good, plain[:, 0] & 15, (plain[:, 1].astype(np.int64) << 8) | plain[:, 2],
                   plain[:, 3:7].copy().view(">u4").reshape(n).astype(np.int64),
-                  plain[:, 7:9].copy().view(">u2").reshape(n).astype(np.int64), plain[:, 9:9 + p], errata)
+                  plain[:, 7:9].copy().view(">u2").reshape(n).astype(np.int64), plain[:, 9:9 + p], errata, ok, crc_ok)
 
 
 def tentative_address(layout: Layout, frames: np.ndarray) -> np.ndarray:

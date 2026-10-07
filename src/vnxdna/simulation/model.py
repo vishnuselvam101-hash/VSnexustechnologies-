@@ -34,6 +34,7 @@ from typing import Any
 from vnxdna.core.errors import VNXConfigurationError, VNXUnsupportedVersionError
 
 SCHEMA_V1 = "vnx.channel-model/1"
+SCHEMA_V2 = "vnx.channel-model/2"
 SCHEMA_V0 = "vnx.channel-model/0"
 CONFIG_SCHEMA_V0 = "vnx.channel-config/0"
 CONFIG_SCHEMA_V1 = "vnx.channel-config/1"
@@ -172,7 +173,7 @@ class ChannelModel:
 
     def describe(self) -> dict:
         d = self.doc
-        return {"name": d["name"], "version": d["version"], "schema": SCHEMA_V1, "read_as": self.read_as,
+        return {"name": d["name"], "version": d["version"], "schema": d["schema"], "read_as": self.read_as,
                 "sha256": self.sha256, "description": d["description"], "data_source": d["data_source"],
                 "evidence_class": d["evidence_class"], "source": self.source}
 
@@ -182,17 +183,33 @@ class ChannelModel:
         if not changes:
             return self
         doc = copy.deepcopy(self.doc)
+        v2 = doc["schema"] == SCHEMA_V2
         for path, value in changes.items():
-            set_path(doc["stages"], path, value)
+            set_path(doc["stages"], path, value, v2=v2)
+            if v2:    # a changed parameter no longer has its fitted value, interval and basis: drop the record
+                doc["parameters"] = {k: v for k, v in doc["parameters"].items()
+                                     if not (k == path or k.startswith(path + ".") or path.startswith(k + "."))}
         derived = list(doc["provenance"].get("derived") or [])
         derived.append({"from": self.ref, "from_sha256": self.sha256, "label": label,
                         "changes": {k: changes[k] for k in sorted(changes)}})
         doc["provenance"]["derived"] = derived
-        return ChannelModel(normalize_v1(doc), self.read_as, self.source)
+        return ChannelModel(normalize_doc(doc), self.read_as, self.source)
+
+    def to_v1(self) -> dict:
+        """The ``/1`` document. A ``/2`` model is converted only if none of its /2 effects is active (never silently dropped)."""
+        if self.doc["schema"] == SCHEMA_V1:
+            return copy.deepcopy(self.doc)
+        from vnxdna.simulation.model2 import to_v1_doc
+        return to_v1_doc(self.doc)
+
+    def unsupported_effects(self) -> list[str]:
+        """/2 effects set in this model that the simulator cannot honour (``correlation``, ``asymmetry``)."""
+        from vnxdna.simulation.model2 import unsupported_effects
+        return unsupported_effects(self.doc["stages"])
 
     def to_v0(self) -> dict:
         """The equivalent ``/0`` document. Raises if the model uses anything /0 cannot express."""
-        return v1_to_v0(self.doc)
+        return v1_to_v0(self.to_v1())
 
 
 def get_path(stages: dict, path: str) -> Any:
@@ -204,18 +221,22 @@ def get_path(stages: dict, path: str) -> Any:
     return node
 
 
-def set_path(stages: dict, path: str, value: Any) -> None:
+def set_path(stages: dict, path: str, value: Any, *, v2: bool = False) -> None:
     """Set one dotted-path parameter in a stages dict (validated later by :func:`normalize_stages`)."""
+    if v2:
+        from vnxdna.simulation.model2 import DEFAULTS_V2 as defaults
+    else:
+        defaults = DEFAULTS
     parts = path.split(".")
     if len(parts) < 2 or parts[0] not in STAGES:
         raise _err(f"unknown parameter {path!r}: it must start with a stage {list(STAGES)}")
     node: dict = stages
-    tmpl: Any = DEFAULTS
+    tmpl: Any = defaults
     for part in parts[:-1]:
         if tmpl is not None:
             if not isinstance(tmpl, dict) or part not in tmpl:
                 raise _err(f"unknown parameter {path!r}")
-            tmpl = None if part == "position_profile" else tmpl[part]
+            tmpl = None if part in ("position_profile", "context", "read_heterogeneity", "correlation", "asymmetry") else tmpl[part]
         if node.get(part) is None:
             node[part] = {}
         node = node[part]
@@ -246,7 +267,7 @@ def _int(v: Any, where: str, lo: int, hi: int) -> int:
 def _keys(obj: Any, allowed, where: str) -> dict:
     if not isinstance(obj, dict):
         raise _err(f"{where} must be a JSON object")
-    unknown = sorted(set(obj) - set(allowed))
+    unknown = sorted(set(obj) - set(allowed), key=str)
     if unknown:
         raise _err(f"{where}: unknown keys {unknown}")
     return obj
@@ -423,6 +444,14 @@ def _normalize_provenance(p: Any) -> dict:
     if not all(isinstance(r, str) for r in out["references"]):
         raise _err("provenance.references must be strings (DOI, URL or citation)")
     return out
+
+
+def normalize_doc(doc: Any) -> dict:
+    """Validate a ``/1`` or ``/2`` document (by its ``schema``) and return its canonical form."""
+    if isinstance(doc, dict) and doc.get("schema") == SCHEMA_V2:
+        from vnxdna.simulation.model2 import normalize_v2
+        return normalize_v2(doc)
+    return normalize_v1(doc)
 
 
 def normalize_v1(doc: Any) -> dict:
@@ -621,18 +650,22 @@ def detect_schema(doc: Any) -> str:
         raise VNXUnsupportedVersionError(f"unknown schema {sid!r} (expected {SCHEMA_V1})", code="SCHEMA_UNSUPPORTED",
                                          stage="configuration")
     family, major = m.group(1), int(m.group(2))
-    known = {"vnx.channel-model": (0, 1), "vnx.channel-config": (0, 1)}[family]
+    known = {"vnx.channel-model": (0, 1, 2), "vnx.channel-config": (0, 1)}[family]
     if major not in known:
-        raise VNXUnsupportedVersionError(f"unsupported schema {sid!r}: this software reads {family}/0 and /1",
+        raise VNXUnsupportedVersionError(f"unsupported schema {sid!r}: this software reads {family}/0 and /1"
+                                         + (" and /2" if family == "vnx.channel-model" else ""),
                                          code="SCHEMA_UNSUPPORTED", stage="configuration")
     return sid
 
 
 def from_doc(doc: Any, *, source: dict | None = None) -> tuple[ChannelModel, int | None]:
     """(model, seed from the document or None). Accepts every readable schema (see :func:`detect_schema`)."""
+    check_limits(doc)
     sid = detect_schema(doc)
     if sid == SCHEMA_V1:
         return ChannelModel(normalize_v1(doc), SCHEMA_V1, source), None
+    if sid == SCHEMA_V2:
+        return ChannelModel(normalize_doc(doc), SCHEMA_V2, source), None
     if sid == SCHEMA_V0:
         return ChannelModel(v0_to_v1(doc, source=source), SCHEMA_V0, source), None
     from vnxdna.simulation.channel import ChannelConfig
@@ -643,21 +676,89 @@ def from_doc(doc: Any, *, source: dict | None = None) -> tuple[ChannelModel, int
     return ChannelModel(model.doc, sid, src), cfg.seed
 
 
+#: parser limits (V7): a model file is at most 16 MiB, nested at most 24 levels, with at most 4 million JSON values, no
+#: duplicate object keys, no NaN/Infinity and no string longer than 1 MiB
+MAX_FILE_BYTES = 16 * 1024 * 1024
+MAX_DEPTH = 24
+MAX_NODES = 4_000_000
+MAX_STRING = 1 << 20
+
+
+def _depth_of(raw: bytes) -> int:
+    """Maximum bracket nesting of JSON text (strings blanked), computed without recursion."""
+    import numpy as np
+    text = re.sub(rb'"(?:[^"\\]|\\.)*"', b'""', raw)
+    a = np.frombuffer(text, dtype=np.uint8)
+    step = (a == 0x5B).astype(np.int32) + (a == 0x7B) - (a == 0x5D) - (a == 0x7D)
+    return int(np.cumsum(step).max()) if step.size else 0
+
+
+def check_limits(doc: Any) -> None:
+    """Refuse an in-memory document that is too deep, too large or has an over-long string (iterative walk)."""
+    stack = [(doc, 1)]
+    nodes = 0
+    while stack:
+        node, depth = stack.pop()
+        nodes += 1
+        if nodes > MAX_NODES:
+            raise _err(f"document has more than {MAX_NODES} values")
+        if isinstance(node, dict):
+            if depth > MAX_DEPTH:
+                raise _err(f"document is nested deeper than {MAX_DEPTH} levels")
+            for k, v in node.items():
+                if isinstance(k, str) and len(k) > MAX_STRING:
+                    raise _err("document has an over-long key")
+                stack.append((v, depth + 1))
+        elif isinstance(node, list):
+            if depth > MAX_DEPTH:
+                raise _err(f"document is nested deeper than {MAX_DEPTH} levels")
+            stack.extend((v, depth + 1) for v in node)
+        elif isinstance(node, str) and len(node) > MAX_STRING:
+            raise _err(f"document has a string longer than {MAX_STRING} characters")
+
+
+def _no_duplicates(pairs: list) -> dict:
+    out: dict = {}
+    for k, v in pairs:
+        if k in out:
+            raise ValueError(f"duplicate key {k!r}")
+        out[k] = v
+    return out
+
+
+def _refuse_constant(name: str):
+    raise ValueError(f"{name} is not allowed")
+
+
+def loads_limited(raw: bytes, where: str = "model") -> Any:
+    """Parse model JSON under the size/depth/duplicate/constant limits; every failure is a configuration error."""
+    if len(raw) > MAX_FILE_BYTES:
+        raise _err(f"{where}: larger than {MAX_FILE_BYTES} bytes")
+    if _depth_of(raw) > MAX_DEPTH + 1:
+        raise _err(f"{where}: nested deeper than {MAX_DEPTH} levels")
+    try:
+        doc = json.loads(raw, object_pairs_hook=_no_duplicates, parse_constant=_refuse_constant)
+    except (ValueError, RecursionError, UnicodeDecodeError) as error:
+        raise _err(f"{where}: invalid JSON: {error}") from None
+    check_limits(doc)
+    return doc
+
+
 def read_file(path: str | os.PathLike) -> tuple[ChannelModel, int | None]:
     p = Path(path)
     try:
+        size = p.stat().st_size
+        if size > MAX_FILE_BYTES:
+            raise _err(f"{p}: larger than {MAX_FILE_BYTES} bytes")
         raw = p.read_bytes()
     except OSError as error:
         raise _err(f"cannot read {p}: {error.strerror or error}") from None
-    try:
-        doc = json.loads(raw)
-    except ValueError as error:
-        raise _err(f"{p}: invalid JSON: {error}") from None
+    doc = loads_limited(raw, str(p))
     return from_doc(doc, source={"file": p.name, "sha256": sha256_bytes(raw), "schema": None if not isinstance(doc, dict)
                                  else (doc.get("schema") or detect_schema(doc))})
 
 
-__all__ = ["SCHEMA_V1", "SCHEMA_V0", "CONFIG_SCHEMA_V0", "CONFIG_SCHEMA_V1", "DATA_SOURCES", "EVIDENCE_CLASSES", "STAGES",
+__all__ = ["SCHEMA_V1", "SCHEMA_V2", "normalize_doc", "check_limits", "loads_limited", "SCHEMA_V0", "CONFIG_SCHEMA_V0", "CONFIG_SCHEMA_V1", "DATA_SOURCES", "EVIDENCE_CLASSES", "STAGES",
            "COVERAGE_MODELS", "DEFAULTS", "ChannelModel", "normalize_v1", "normalize_stages", "v0_to_v1", "v1_to_v0",
            "v0_expressible", "channel_config_to_model", "V0_PATHS", "override_paths", "detect_schema", "from_doc", "read_file", "get_path", "set_path",
            "canonical_json"]

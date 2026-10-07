@@ -1,0 +1,203 @@
+{
+ "indel": {
+  "outer_ecc_failed_rows": [
+   {
+    "from_consensus": 11,
+    "group": 0,
+    "have": 55,
+    "k": 64,
+    "symbols": 80,
+    "verified_pass1": 44
+   },
+   {
+    "from_consensus": 14,
+    "group": 1,
+    "have": 59,
+    "k": 64,
+    "symbols": 80,
+    "verified_pass1": 45
+   },
+   {
+    "from_consensus": 4,
+    "group": 2,
+    "have": 58,
+    "k": 64,
+    "symbols": 80,
+    "verified_pass1": 54
+   },
+   {
+    "from_consensus": 5,
+    "group": 3,
+    "have": 41,
+    "k": 43,
+    "symbols": 59,
+    "verified_pass1": 36
+   }
+  ],
+  "schema": "vnx.stage-counters/1",
+  "stages": {
+   "address": {
+    "pass2_pending_records": 1091,
+    "pass2_placed_direct": 146,
+    "pass2_placed_snapped": 72,
+    "pass2_unplaced": 873,
+    "pending_dropped_header_unreadable": 316,
+    "pending_header_erased": 758,
+    "pending_kept": 1091,
+    "pending_projected_reading": 959,
+    "pending_raw_prefix_reading": 132
+   },
+   "alignment": {
+    "aligned": 1722,
+    "aligned_with_marker_mismatch": 1059,
+    "exact_length": 146,
+    "fail_drift_beyond_band": 82,
+    "marker_mismatches": 2433,
+    "net_drift_beyond_band": 82,
+    "net_drift_within_band": 1722
+   },
+   "archive": {},
+   "clustering": {
+    "applicable": 0
+   },
+   "consensus": {
+    "ambiguous_columns": 1749,
+    "attempted": 95,
+    "empty_columns": 3545,
+    "fail_erasures_exceed_parity": 43,
+    "recovered": 34,
+    "several_reads": 64,
+    "single_read": 31
+   },
+   "coverage": {
+    "missing_addresses": 120,
+    "missing_no_placed_read": 25,
+    "missing_one_placed_read": 31,
+    "missing_several_placed_reads": 64
+   },
+   "crc": {
+    "fail_mismatch": 52,
+    "pass2_fail_mismatch": 2
+   },
+   "indel_placement": {
+    "aligned_erasures_exceed_parity": 1191,
+    "aligned_erasures_within_parity": 531,
+    "erased_bytes": 35851,
+    "fail_erasures_exceed_parity": 1101
+   },
+   "inner_ecc": {
+    "fail_decode": 254,
+    "pass2_fail_decode": 16,
+    "verified_after_rs_errata": 313,
+    "verified_fast": 28,
+    "verified_sync": 287
+   },
+   "orientation": {
+    "accepted_reverse_complement": 168,
+    "prepass_flipped": 435,
+    "rc_retry_adopted": 567,
+    "rc_retry_attempted": 1504
+   },
+   "outer_ecc": {
+    "rows_attempted": 4,
+    "rows_below_k_symbols": 4,
+    "rows_failed": 4,
+    "symbols_from_consensus": 34,
+    "symbols_verified_pass1": 179
+   },
+   "read_parsing": {
+    "reads": 1804,
+    "reads_with_n": 466
+   },
+   "superblock": {
+    "candidates": 1,
+    "consensus_address_pass2_pending_records": 17,
+    "consensus_attempted": 5,
+    "consensus_empty_columns": 448,
+    "consensus_fail_erasures_exceed_parity": 4,
+    "consensus_inner_ecc_pass2_fail_decode": 1,
+    "consensus_single_read": 5,
+    "pending_records": 17,
+    "pending_records_other_group": 35,
+    "symbols_best_tag": 7,
+    "symbols_from_consensus": 0,
+    "symbols_needed": 3,
+    "symbols_total": 12,
+    "symbols_verified_pass1": 7,
+    "tags_seen": 1,
+    "verified_reads_pass1": 12
+   }
+  },
+  "taxonomy": "V7_PROTOCOL section 8.1",
+  "terminal_stage": "outer_ecc"
+ },
+ "nanopore": {
+  "outer_ecc_failed_rows": [],
+  "schema": "vnx.stage-counters/1",
+  "stages": {
+   "address": {
+    "pending_dropped_header_unreadable": 511,
+    "pending_header_erased": 802,
+    "pending_kept": 606,
+    "pending_projected_reading": 471,
+    "pending_raw_prefix_reading": 135
+   },
+   "alignment": {
+    "aligned": 1117,
+    "aligned_with_marker_mismatch": 1090,
+    "exact_length": 43,
+    "fail_drift_beyond_band": 2061,
+    "marker_mismatches": 6003,
+    "net_drift_beyond_band": 2061,
+    "net_drift_within_band": 1117
+   },
+   "archive": {},
+   "clustering": {
+    "applicable": 0
+   },
+   "consensus": {},
+   "coverage": {},
+   "crc": {
+    "fail_mismatch": 13
+   },
+   "indel_placement": {
+    "aligned_erasures_exceed_parity": 1075,
+    "aligned_erasures_within_parity": 42,
+    "erased_bytes": 36474,
+    "fail_erasures_exceed_parity": 1075
+   },
+   "inner_ecc": {
+    "fail_decode": 29
+   },
+   "orientation": {
+    "prepass_flipped": 483,
+    "rc_retry_adopted": 456,
+    "rc_retry_attempted": 3177
+   },
+   "outer_ecc": {},
+   "read_parsing": {
+    "reads": 3178,
+    "reads_with_n": 882
+   },
+   "superblock": {
+    "candidates": 0,
+    "consensus_address_pass2_pending_records": 2,
+    "consensus_attempted": 2,
+    "consensus_empty_columns": 280,
+    "consensus_fail_erasures_exceed_parity": 2,
+    "consensus_single_read": 2,
+    "pending_records": 2,
+    "pending_records_other_group": 52,
+    "symbols_best_tag": 0,
+    "symbols_from_consensus": 0,
+    "symbols_needed": 3,
+    "symbols_total": 12,
+    "symbols_verified_pass1": 0,
+    "tags_seen": 0,
+    "verified_reads_pass1": 0
+   }
+  },
+  "taxonomy": "V7_PROTOCOL section 8.1",
+  "terminal_stage": "superblock"
+ }
+}

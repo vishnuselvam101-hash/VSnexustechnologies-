@@ -1,0 +1,98 @@
+{
+ "experiment": "A-LOSS",
+ "classification": "EXPERIMENTAL / DIAGNOSTIC / SIMULATED",
+ "purpose": "Founder directive 2026-10-06 phase 1: per-original-strand loss funnel of the V7 read-clustering decode (A1 reference, ClusterConfig defaults) on the unfitted nanopore-like channel at coverage 3/5/10, with the ORACLE address test (true strand identity only). Descriptive; locates the first large irreversible loss before any decoder change.",
+ "evidence": "EXPERIMENTAL: exploration seeds 82046-82055 (protocol section 7 range 82000-82099); no PREREG, no confirmatory claim",
+ "profile": "v4-balanced",
+ "size": 20000,
+ "data_seed": 6201,
+ "channels": {
+  "nanopore-like": {
+   "substitution_rate": 0.02,
+   "insertion_rate": 0.01,
+   "deletion_rate": 0.03,
+   "dropout_rate": 0.0,
+   "coverage_model": "negative-binomial",
+   "coverage_dispersion": 4.0,
+   "duplication_rate": 0.0,
+   "homopolymer_min_run": 3,
+   "homopolymer_indel_multiplier": 3.0,
+   "homopolymer_substitution_multiplier": 1.5,
+   "burst_rate": 0.005,
+   "burst_max_len": 6,
+   "n_rate": 0.001,
+   "reverse_complement_rate": 0.5,
+   "quality_correct": 15,
+   "quality_error": 7,
+   "quality_informative": 0.5
+  }
+ },
+ "arms": {
+  "a1-default": {
+   "decoder": {
+    "read_clustering": "fallback",
+    "cluster_config": {}
+   },
+   "oracle": true
+  }
+ },
+ "cells": [
+  {
+   "id": "nanopore-like/cov3",
+   "channel": "nanopore-like",
+   "channel_overrides": {
+    "coverage": 3.0
+   },
+   "seeds": [
+    82046,
+    82047,
+    82048,
+    82049,
+    82050,
+    82051,
+    82052,
+    82053,
+    82054,
+    82055
+   ]
+  },
+  {
+   "id": "nanopore-like/cov5",
+   "channel": "nanopore-like",
+   "channel_overrides": {
+    "coverage": 5.0
+   },
+   "seeds": [
+    82046,
+    82047,
+    82048,
+    82049,
+    82050,
+    82051,
+    82052,
+    82053,
+    82054,
+    82055
+   ]
+  },
+  {
+   "id": "nanopore-like/cov10",
+   "channel": "nanopore-like",
+   "channel_overrides": {
+    "coverage": 10.0
+   },
+   "seeds": [
+    82046,
+    82047,
+    82048,
+    82049,
+    82050,
+    82051,
+    82052,
+    82053,
+    82054,
+    82055
+   ]
+  }
+ ]
+}

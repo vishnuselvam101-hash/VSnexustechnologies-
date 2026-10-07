@@ -1,0 +1,287 @@
+{
+ "all_reproduced": true,
+ "cells": {
+  "cov10-old": {
+   "failed": 40,
+   "failing_row_share_by_category": {
+    "addressing": 0.0,
+    "alignment": 0.0,
+    "clustering": 0.0299,
+    "consensus_indel": 0.5681,
+    "consensus_payload": 0.2951,
+    "dropout": 0.0258,
+    "frame": 0.0,
+    "insufficient_reads": 0.0812
+   },
+   "false_frames": 0,
+   "lost_share_by_category": {
+    "addressing": 0.0,
+    "alignment": 0.0,
+    "clustering": 0.0302,
+    "consensus_indel": 0.5667,
+    "consensus_payload": 0.2965,
+    "dropout": 0.0257,
+    "frame": 0.0,
+    "insufficient_reads": 0.0808
+   },
+   "mean_deficit": 31.7,
+   "mean_failing_rows": 6.38,
+   "mean_lost_strands": 167.1,
+   "oracle_archive_exact": 0,
+   "superblock_missing_trials": 0,
+   "trials_rescued_by_restoring_only": {
+    "addressing": 0,
+    "alignment": 0,
+    "clustering": 0,
+    "consensus_indel": 36,
+    "consensus_payload": 2,
+    "dropout": 0,
+    "frame": 0,
+    "insufficient_reads": 0
+   },
+   "trials_where_structural_losses_alone_exceed_parity": 0
+  },
+  "cov3-lowcov": {
+   "failed": 40,
+   "failing_row_share_by_category": {
+    "addressing": 0.0,
+    "alignment": 0.0,
+    "clustering": 0.0591,
+    "consensus_indel": 0.3393,
+    "consensus_payload": 0.093,
+    "dropout": 0.1875,
+    "frame": 0.0,
+    "insufficient_reads": 0.321
+   },
+   "false_frames": 0,
+   "lost_share_by_category": {
+    "addressing": 0.0,
+    "alignment": 0.0,
+    "clustering": 0.0595,
+    "consensus_indel": 0.3392,
+    "consensus_payload": 0.0933,
+    "dropout": 0.1879,
+    "frame": 0.0,
+    "insufficient_reads": 0.3201
+   },
+   "mean_deficit": 124.6,
+   "mean_failing_rows": 8.05,
+   "mean_lost_strands": 548.7,
+   "oracle_archive_exact": 0,
+   "superblock_missing_trials": 2,
+   "trials_rescued_by_restoring_only": {
+    "addressing": 0,
+    "alignment": 0,
+    "clustering": 0,
+    "consensus_indel": 13,
+    "consensus_payload": 0,
+    "dropout": 0,
+    "frame": 0,
+    "insufficient_reads": 9
+   },
+   "trials_where_structural_losses_alone_exceed_parity": 0
+  },
+  "cov3-old": {
+   "failed": 40,
+   "failing_row_share_by_category": {
+    "addressing": 0.0,
+    "alignment": 0.0,
+    "clustering": 0.0432,
+    "consensus_indel": 0.2844,
+    "consensus_payload": 0.3206,
+    "dropout": 0.131,
+    "frame": 0.0,
+    "insufficient_reads": 0.2208
+   },
+   "false_frames": 0,
+   "lost_share_by_category": {
+    "addressing": 0.0,
+    "alignment": 0.0,
+    "clustering": 0.0432,
+    "consensus_indel": 0.2844,
+    "consensus_payload": 0.3206,
+    "dropout": 0.131,
+    "frame": 0.0,
+    "insufficient_reads": 0.2208
+   },
+   "mean_deficit": 411.9,
+   "mean_failing_rows": 9.0,
+   "mean_lost_strands": 555.9,
+   "oracle_archive_exact": 0,
+   "superblock_missing_trials": 22,
+   "trials_rescued_by_restoring_only": {
+    "addressing": 0,
+    "alignment": 0,
+    "clustering": 0,
+    "consensus_indel": 0,
+    "consensus_payload": 0,
+    "dropout": 0,
+    "frame": 0,
+    "insufficient_reads": 0
+   },
+   "trials_where_structural_losses_alone_exceed_parity": 40
+  },
+  "cov3-phase1": {
+   "failed": 40,
+   "failing_row_share_by_category": {
+    "addressing": 0.0,
+    "alignment": 0.0,
+    "clustering": 0.0622,
+    "consensus_indel": 0.3419,
+    "consensus_payload": 0.0885,
+    "dropout": 0.189,
+    "frame": 0.0,
+    "insufficient_reads": 0.3184
+   },
+   "false_frames": 0,
+   "lost_share_by_category": {
+    "addressing": 0.0,
+    "alignment": 0.0,
+    "clustering": 0.0623,
+    "consensus_indel": 0.3419,
+    "consensus_payload": 0.0886,
+    "dropout": 0.1889,
+    "frame": 0.0,
+    "insufficient_reads": 0.3183
+   },
+   "mean_deficit": 241.6,
+   "mean_failing_rows": 8.95,
+   "mean_lost_strands": 385.6,
+   "oracle_archive_exact": 0,
+   "superblock_missing_trials": 4,
+   "trials_rescued_by_restoring_only": {
+    "addressing": 0,
+    "alignment": 0,
+    "clustering": 0,
+    "consensus_indel": 0,
+    "consensus_payload": 0,
+    "dropout": 0,
+    "frame": 0,
+    "insufficient_reads": 0
+   },
+   "trials_where_structural_losses_alone_exceed_parity": 40
+  },
+  "cov5-lowcov": {
+   "failed": 1,
+   "failing_row_share_by_category": {
+    "addressing": 0.0,
+    "alignment": 0.0,
+    "clustering": 0.0612,
+    "consensus_indel": 0.4898,
+    "consensus_payload": 0.102,
+    "dropout": 0.0816,
+    "frame": 0.0,
+    "insufficient_reads": 0.2653
+   },
+   "false_frames": 0,
+   "lost_share_by_category": {
+    "addressing": 0.0,
+    "alignment": 0.0,
+    "clustering": 0.0949,
+    "consensus_indel": 0.4209,
+    "consensus_payload": 0.1456,
+    "dropout": 0.1013,
+    "frame": 0.0,
+    "insufficient_reads": 0.2373
+   },
+   "mean_deficit": 1.0,
+   "mean_failing_rows": 1.0,
+   "mean_lost_strands": 316.0,
+   "oracle_archive_exact": 1,
+   "superblock_missing_trials": 0,
+   "trials_rescued_by_restoring_only": {
+    "addressing": 0,
+    "alignment": 0,
+    "clustering": 1,
+    "consensus_indel": 1,
+    "consensus_payload": 1,
+    "dropout": 1,
+    "frame": 0,
+    "insufficient_reads": 1
+   },
+   "trials_where_structural_losses_alone_exceed_parity": 0
+  },
+  "cov5-old": {
+   "failed": 40,
+   "failing_row_share_by_category": {
+    "addressing": 0.0,
+    "alignment": 0.0,
+    "clustering": 0.0363,
+    "consensus_indel": 0.414,
+    "consensus_payload": 0.3435,
+    "dropout": 0.0653,
+    "frame": 0.0,
+    "insufficient_reads": 0.141
+   },
+   "false_frames": 0,
+   "lost_share_by_category": {
+    "addressing": 0.0,
+    "alignment": 0.0,
+    "clustering": 0.0362,
+    "consensus_indel": 0.414,
+    "consensus_payload": 0.3436,
+    "dropout": 0.0652,
+    "frame": 0.0,
+    "insufficient_reads": 0.141
+   },
+   "mean_deficit": 257.1,
+   "mean_failing_rows": 8.97,
+   "mean_lost_strands": 401.0,
+   "oracle_archive_exact": 0,
+   "superblock_missing_trials": 2,
+   "trials_rescued_by_restoring_only": {
+    "addressing": 0,
+    "alignment": 0,
+    "clustering": 0,
+    "consensus_indel": 0,
+    "consensus_payload": 0,
+    "dropout": 0,
+    "frame": 0,
+    "insufficient_reads": 0
+   },
+   "trials_where_structural_losses_alone_exceed_parity": 5
+  },
+  "cov5-phase1": {
+   "failed": 40,
+   "failing_row_share_by_category": {
+    "addressing": 0.0,
+    "alignment": 0.0,
+    "clustering": 0.066,
+    "consensus_indel": 0.4317,
+    "consensus_payload": 0.1234,
+    "dropout": 0.1206,
+    "frame": 0.0,
+    "insufficient_reads": 0.2583
+   },
+   "false_frames": 0,
+   "lost_share_by_category": {
+    "addressing": 0.0,
+    "alignment": 0.0,
+    "clustering": 0.0665,
+    "consensus_indel": 0.4321,
+    "consensus_payload": 0.1225,
+    "dropout": 0.1198,
+    "frame": 0.0,
+    "insufficient_reads": 0.2592
+   },
+   "mean_deficit": 77.4,
+   "mean_failing_rows": 8.03,
+   "mean_lost_strands": 218.2,
+   "oracle_archive_exact": 0,
+   "superblock_missing_trials": 0,
+   "trials_rescued_by_restoring_only": {
+    "addressing": 0,
+    "alignment": 0,
+    "clustering": 0,
+    "consensus_indel": 2,
+    "consensus_payload": 0,
+    "dropout": 0,
+    "frame": 0,
+    "insufficient_reads": 0
+   },
+   "trials_where_structural_losses_alone_exceed_parity": 5
+  }
+ },
+ "failed_decodes": 241,
+ "label": "DIAGNOSTIC / SIMULATED (oracle values are ORACLE / DIAGNOSTIC)"
+}

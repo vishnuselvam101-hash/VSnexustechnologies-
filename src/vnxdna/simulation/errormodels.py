@@ -25,6 +25,7 @@ from typing import Any, ClassVar, Sequence
 import numpy as np
 
 PAD = 255                                    # code of padding positions in a SequencePool (never written)
+MAX_INSERTION_RUN = 64                       # /2 insertion runs are capped at this many bases
 _RC = np.array([3, 2, 1, 0, 4], dtype=np.uint8)
 
 
@@ -237,15 +238,28 @@ class InsertionModel(ErrorModel):
     rate: float = 0.0
     base_weights: tuple | None = None            # P(inserted base = A, C, G, T); None = uniform
     profile: PositionProfile | None = None
+    run_distribution: str = "single"             # /2: single | geometric | empirical (bases inserted at one gap)
+    run_mean: float = 1.0                        # /2: mean inserted run length (>= 1)
+    run_pmf: tuple | None = None                 # /2 empirical: P(run = 1..K), last bin = "K or more"
+    run_tail_mean: float = 0.0                   # /2 empirical: mean run length given run >= K
     kind: ClassVar[str] = "insertion"
 
     @classmethod
     def from_json(cls, doc: dict, profile: PositionProfile | None = None) -> "InsertionModel":
         w = doc.get("base_weights")
-        return cls(doc["rate"], None if w is None else tuple(w), profile)
+        rl = doc.get("run_length") or {"distribution": "single", "mean": 1.0}
+        return cls(doc["rate"], None if w is None else tuple(w), profile, rl["distribution"], rl["mean"], *_empirical(rl))
 
     def parameters(self) -> dict:
-        return {"rate": self.rate, "base_weights": None if self.base_weights is None else list(self.base_weights)}
+        out: dict[str, Any] = {"rate": self.rate,
+                               "base_weights": None if self.base_weights is None else list(self.base_weights)}
+        if self.clustered:
+            out["run_length"] = _run_json(self)
+        return out
+
+    @property
+    def clustered(self) -> bool:
+        return _clustered(self)
 
     @property
     def active(self) -> bool:
@@ -258,18 +272,20 @@ class InsertionModel(ErrorModel):
 @dataclass(frozen=True)
 class DeletionModel(ErrorModel):
     rate: float = 0.0                            # per-base rate of deletion events (run starts)
-    run_distribution: str = "single"             # single | geometric
-    run_mean: float = 1.0                        # mean run length (geometric, >= 1)
+    run_distribution: str = "single"             # single | geometric | empirical (/2)
+    run_mean: float = 1.0                        # mean run length (>= 1)
     profile: PositionProfile | None = None
+    run_pmf: tuple | None = None                 # /2 empirical: P(run = 1..K), last bin = "K or more"
+    run_tail_mean: float = 0.0                   # /2 empirical: mean run length given run >= K
     kind: ClassVar[str] = "deletion"
 
     @classmethod
     def from_json(cls, doc: dict, profile: PositionProfile | None = None) -> "DeletionModel":
         rl = doc["run_length"]
-        return cls(doc["rate"], rl["distribution"], rl["mean"], profile)
+        return cls(doc["rate"], rl["distribution"], rl["mean"], profile, *_empirical(rl))
 
     def parameters(self) -> dict:
-        return {"rate": self.rate, "run_length": {"distribution": self.run_distribution, "mean": self.run_mean}}
+        return {"rate": self.rate, "run_length": _run_json(self)}
 
     @property
     def active(self) -> bool:
@@ -277,10 +293,44 @@ class DeletionModel(ErrorModel):
 
     @property
     def clustered(self) -> bool:
-        return self.run_distribution == "geometric" and self.run_mean > 1.0
+        return _clustered(self)
 
     def apply(self, pool: SequencePool, rng: np.random.Generator) -> SequencePool:
         return CompositeModel((self,)).apply(pool, rng)
+
+
+def _empirical(rl: dict) -> tuple:
+    if rl["distribution"] != "empirical":
+        return None, 0.0
+    return tuple(rl["pmf"]), rl["tail_mean"]
+
+
+def _run_json(m: "InsertionModel | DeletionModel") -> dict:
+    out: dict[str, Any] = {"distribution": m.run_distribution, "mean": m.run_mean}
+    if m.run_distribution == "empirical":
+        out.update(pmf=list(m.run_pmf or ()), tail_mean=m.run_tail_mean)
+    return out
+
+
+def _clustered(m: "InsertionModel | DeletionModel") -> bool:
+    if m.run_distribution == "empirical":
+        return m.run_pmf is not None and m.run_pmf[0] < 1.0
+    return m.run_distribution == "geometric" and m.run_mean > 1.0
+
+
+def draw_runs(m: "InsertionModel | DeletionModel", n: int, aux: np.random.Generator) -> np.ndarray:
+    """``n`` run lengths (>= 1) of a clustered insertion or deletion model. Geometric: one ``aux.geometric`` call (the
+    V6 draws). Empirical (/2): one ``aux.choice`` over the K bins, then, for runs in the last bin ("K or more") when its
+    mean exceeds K, K - 1 + Geometric(1 / (tail_mean - K + 1)) from one more ``aux.geometric`` call."""
+    if m.run_distribution != "empirical":
+        return aux.geometric(1.0 / m.run_mean, n)
+    p = np.asarray(m.run_pmf, dtype=np.float64)
+    k = p.size
+    runs = aux.choice(k, size=n, p=p / p.sum()).astype(np.int64) + 1
+    tail = np.flatnonzero(runs == k)
+    if tail.size and m.run_tail_mean > k:
+        runs[tail] += aux.geometric(1.0 / (m.run_tail_mean - k + 1), tail.size) - 1
+    return runs
 
 
 @dataclass(frozen=True)
@@ -431,10 +481,24 @@ class CompositeModel(ErrorModel):
 
 
 # ================================================================================================================ kernel
+def context_index(base: np.ndarray) -> np.ndarray:
+    """(m, W) index 0..63 of the 3-mer centred on each site: 16 * previous + 4 * base + next (A=0 C=1 G=2 T=3). At an edge
+    (first site, last site of a row, padding) the missing neighbour is the base itself; N counts as A."""
+    cur = np.where(base > 3, 0, base).astype(np.int64)
+    prev = np.concatenate([cur[:, :1], cur[:, :-1]], axis=1)
+    nxt_raw = np.concatenate([base[:, 1:], np.full((base.shape[0], 1), PAD, dtype=base.dtype)], axis=1)
+    nxt = np.where(nxt_raw > 3, cur, nxt_raw).astype(np.int64)
+    return prev * 16 + cur * 4 + nxt
+
+
 def rate_arrays(base: np.ndarray, lengths: np.ndarray | None, sub: SubstitutionModel | None, ins: InsertionModel | None,
                 dele: DeletionModel | None, profile: PositionProfile | None = None, hp: np.ndarray | None = None,
-                hp_indel: float = 1.0, hp_sub: float = 1.0) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Per-site (m, W) substitution, insertion and deletion probabilities, in the V4 order of float operations."""
+                hp_indel: float = 1.0, hp_sub: float = 1.0,
+                context: dict | None = None, indel_site: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Per-site (m, W) substitution, insertion and deletion probabilities, in the V4 order of float operations.
+
+    ``context`` (/2): ``{"substitution": array(64) | None, "insertion": ..., "deletion": ...}`` multipliers by the centred 3-mer.
+    ``indel_site`` (/2 ``homopolymer.indel_by_length``): (m, W) insertion and deletion multiplier of each site."""
     m, w = base.shape
     sub_r = np.full((m, w), sub.rate if sub else 0.0)
     ins_r = np.full((m, w), ins.rate if ins else 0.0)
@@ -443,6 +507,9 @@ def rate_arrays(base: np.ndarray, lengths: np.ndarray | None, sub: SubstitutionM
         ins_r = np.where(hp, ins_r * hp_indel, ins_r)
         del_r = np.where(hp, del_r * hp_indel, del_r)
         sub_r = np.where(hp, sub_r * hp_sub, sub_r)
+    if indel_site is not None:
+        ins_r = ins_r * indel_site
+        del_r = del_r * indel_site
     if profile is not None:
         for kind, arr in (("substitution", "s"), ("insertion", "i"), ("deletion", "d")):
             mult = profile.multipliers(kind, w, lengths)
@@ -454,6 +521,14 @@ def rate_arrays(base: np.ndarray, lengths: np.ndarray | None, sub: SubstitutionM
                 ins_r = ins_r * mult
             else:
                 del_r = del_r * mult
+    if context is not None:
+        idx = context_index(base)
+        if context.get("substitution") is not None:
+            sub_r = sub_r * np.asarray(context["substitution"], dtype=np.float64)[idx]
+        if context.get("insertion") is not None:
+            ins_r = ins_r * np.asarray(context["insertion"], dtype=np.float64)[idx]
+        if context.get("deletion") is not None:
+            del_r = del_r * np.asarray(context["deletion"], dtype=np.float64)[idx]
     if sub is not None:
         sub_r = sub.site_rates(base, sub_r)
     return sub_r, ins_r, del_r
@@ -496,7 +571,7 @@ def per_base_errors(base: np.ndarray, lengths: np.ndarray | None, rates: tuple, 
     if events is not None and events.any():
         assert aux is not None and dele is not None, "clustered deletions need the auxiliary generator"
         rows, cols = np.nonzero(events)
-        runs = aux.geometric(1.0 / dele.run_mean, rows.size)
+        runs = draw_runs(dele, rows.size, aux)
         starts = np.concatenate([[0], np.cumsum(runs)[:-1]])
         rr = np.repeat(rows, runs)
         cc = np.repeat(cols, runs) + (np.arange(int(runs.sum())) - np.repeat(starts, runs))
@@ -514,13 +589,79 @@ def per_base_errors(base: np.ndarray, lengths: np.ndarray | None, rates: tuple, 
         assert aux is not None, "insertion base weights need the auxiliary generator"
         idx = np.nonzero(is_ins)
         ins_base[idx] = aux.choice(4, size=idx[0].size, p=np.asarray(ins.base_weights, dtype=np.float64)).astype(np.uint8)
-    slots = np.stack([ins_base, subbed], axis=2).reshape(m, 2 * w)
     keep_base = ~is_del if valid is None else (~is_del & valid)
+    if ins is not None and ins.clustered and is_ins.any():
+        # /2 insertion runs: geometric or empirical run of bases inserted before the site (the V4 draw gives the first base)
+        assert aux is not None, "insertion runs need the auxiliary generator"
+        rows, cols = np.nonzero(is_ins)
+        run = np.minimum(draw_runs(ins, rows.size, aux), MAX_INSERTION_RUN)
+        kmax = int(run.max())
+        runlen = np.zeros((m, w), dtype=np.int64)
+        runlen[rows, cols] = run
+        long_ = run > 1
+        lrows, lcols = rows[long_], cols[long_]
+        extra = _extra_insertion_bases(m, w, kmax, lrows, lcols, ins.base_weights, aux)
+        c_codes: list[np.ndarray] = []
+        c_lengths: list[np.ndarray] = []
+        c_err: list[np.ndarray] = []
+        step = _chunk_rows(w, kmax + 1)
+        for a in range(0, m, step):
+            b = min(a + step, m)
+            n = b - a
+            ext = np.zeros((n, w, kmax - 1), np.uint8)
+            i0, i1 = np.searchsorted(lrows, [a, b])
+            ext[lrows[i0:i1] - a, lcols[i0:i1]] = extra[i0:i1]
+            ibases = np.concatenate([ins_base[a:b, :, None], ext], axis=2)                  # (n, w, kmax)
+            slots = np.concatenate([ibases, subbed[a:b, :, None]], axis=2).reshape(n, (kmax + 1) * w)
+            ikeep = np.arange(kmax)[None, None, :] < runlen[a:b, :, None]
+            keep = np.concatenate([ikeep, keep_base[a:b, :, None]], axis=2).reshape(n, (kmax + 1) * w)
+            e = np.concatenate([ikeep, is_sub[a:b, :, None]], axis=2).reshape(n, (kmax + 1) * w)
+            c_codes.append(slots[keep])
+            c_lengths.append(keep.sum(axis=1).astype(np.int64))
+            c_err.append(e[keep])
+        return {"codes": np.concatenate(c_codes), "lengths": np.concatenate(c_lengths), "err": np.concatenate(c_err),
+                "substitutions": int(is_sub.sum()), "insertions": int(runlen.sum()), "deletions": int(is_del.sum()),
+                "bursts": bursts}
+    slots = np.stack([ins_base, subbed], axis=2).reshape(m, 2 * w)
     keep = np.stack([is_ins, keep_base], axis=2).reshape(m, 2 * w)
     err = np.stack([is_ins, is_sub], axis=2).reshape(m, 2 * w)
     return {"codes": slots[keep], "lengths": keep.sum(axis=1).astype(np.int64), "err": err[keep],
             "substitutions": int(is_sub.sum()), "insertions": int(is_ins.sum()), "deletions": int(is_del.sum()),
             "bursts": bursts}
+
+
+#: elements (rows x width x slots) per row chunk of the insertion-run step; a bound on its working memory, not on the result
+CHUNK_ELEMENTS = 1 << 21
+
+
+def _chunk_rows(w: int, depth: int) -> int:
+    return max(1, CHUNK_ELEMENTS // max(1, w * depth))
+
+
+def _extra_insertion_bases(m: int, w: int, kmax: int, lrows: np.ndarray, lcols: np.ndarray, base_weights,
+                           aux: np.random.Generator) -> np.ndarray:
+    """(len(lrows), kmax - 1) uint8: the 2nd..kmax-th inserted base at the sites (lrows, lcols) (row-major order, runs > 1).
+
+    The draws are those of one dense ``aux.integers(0, 4, (m, w, kmax - 1))`` followed, with base weights, by one dense
+    ``aux.choice(4, (m, w, kmax - 1), p)`` (the integers are then discarded, as before), made in row chunks so that only
+    the chunk is in memory. A Generator fills an array in C order with no state carried between elements other than the
+    bit stream, so consecutive row chunks consume the stream exactly as the dense call does (tests/simulation/
+    test_sim_insertion_chunks.py checks the values and the final generator state)."""
+    out = np.zeros((lrows.size, max(kmax - 1, 0)), np.uint8)
+    if kmax <= 1:
+        return out
+    step = _chunk_rows(w, kmax - 1)
+    p = np.asarray(base_weights, dtype=np.float64) if base_weights is not None else None
+    for weighted in ((False, True) if p is not None else (False,)):
+        for a in range(0, m, step):
+            b = min(a + step, m)
+            if weighted:
+                block = aux.choice(4, size=(b - a, w, kmax - 1), p=p)
+            else:
+                block = aux.integers(0, 4, (b - a, w, kmax - 1))
+            i0, i1 = np.searchsorted(lrows, [a, b])
+            out[i0:i1] = block[lrows[i0:i1] - a, lcols[i0:i1]].astype(np.uint8)
+    return out
 
 
 def apply_per_base(pool: SequencePool, rng: np.random.Generator, sub: SubstitutionModel | None,

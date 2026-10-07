@@ -1,5 +1,5 @@
-"""Install test: a normal ``pip install`` builds and uses all three native kernels; without a compiler it still installs
-and every kernel reports the reference backend. ``pip wheel`` packages the three extensions.
+"""Install test: a normal ``pip install`` builds and uses all four native kernels; without a compiler it still installs
+and every kernel reports the reference backend. ``pip wheel`` packages the four extensions.
 
 Opt-in (fresh virtual environments, dependency downloads or the pip cache, a few minutes): ``VNXDNA_INSTALL_TEST=1``.
 CI runs it in its own job. Each install builds from a clean copy of the packaging inputs, so local in-place libraries
@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[3]
-KERNELS = {"align", "reads", "rs"}
+KERNELS = {"align", "reads", "rs", "cluster"}
 
 pytestmark = [pytest.mark.slow,
               pytest.mark.skipif(os.environ.get("VNXDNA_INSTALL_TEST") != "1",
@@ -84,13 +84,13 @@ def test_pip_install_without_compiler_falls_back_to_reference(tmp_path):
     assert rc.returncode == 1
 
 
-def test_pip_wheel_contains_the_three_extensions(tmp_path):
+def test_pip_wheel_contains_the_four_extensions(tmp_path):
     src = _source_copy(tmp_path / "src-copy")
     py = _venv(tmp_path / "venv")
     subprocess.run([str(py), "-m", "pip", "wheel", "-q", "--no-deps", "-w", str(tmp_path / "wheels"), str(src)], env=_env(),
                    check=True)
     (whl,) = (tmp_path / "wheels").glob("vnx_dna-*.whl")
     names = zipfile.ZipFile(whl).namelist()
-    for prefix in ("vnxdna/v5/_vnx_align", "vnxdna/v6/_vnx_reads", "vnxdna/v6/_vnx_rs"):
+    for prefix in ("vnxdna/v5/_vnx_align", "vnxdna/v6/_vnx_reads", "vnxdna/v6/_vnx_rs", "vnxdna/_vnx_cluster"):
         assert sum(n.startswith(prefix) and n.endswith(".so") for n in names) == 1, (prefix, names)
     assert not any(n.endswith(".so") and "/native/" in n for n in names)     # no in-place development libraries

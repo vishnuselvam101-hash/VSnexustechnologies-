@@ -101,4 +101,8 @@ PROFILES = {
     # row code 160 + 48 (about 1.0 bit/nt at 19 kB). Existing format options only; selected by the pre-registered
     # b0-dropout comparison (benchmarks/competitors/lab/results/b0-dropout, SIMULATED). Not a default.
     "v6-high-dropout": (Layout(46, 4, 0, 0), 160, 48),
+    # 7.0 (opt-in, EXPERIMENTAL): the v4-balanced strand layout with row code 64 + 48 (outer redundancy 0.75 vs 0.25) for
+    # low-coverage nanopore-like reads; sized from the measured per-strand loss with the full-template consensus
+    # (experiments/v7/a-par, SIMULATED). Existing format options only. Not a default.
+    "v7-lowcov": (Layout(40, 16, 24, 3), 64, 48),
 }

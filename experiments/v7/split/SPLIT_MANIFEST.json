@@ -1,0 +1,334 @@
+{
+ "dataset_manifest": {
+  "path": "experiments/v7/datasets/MANIFEST.json",
+  "sha256": "6577c2127aeba991193e0943e3be49352ffa2a02d4f477a57069a8c64b095989"
+ },
+ "datasets": {
+  "cnr": {
+   "dataset_id": "D04",
+   "disjoint_runs": null,
+   "heldout_run": null,
+   "inputs": [
+    {
+     "path": "cnr/Centers.txt",
+     "sha256": "b70e723ef0d83a88f7b3e483b932b0279628a0eae39cb4e41d99b9e367c5341e",
+     "verified": true
+    }
+   ],
+   "lists": {
+    "DEV": {
+     "refs": {
+      "count": 1971,
+      "path": "lists/cnr/DEV.refs.txt",
+      "sha256": "29983db41f935bdb572fe77867de631659b36fc46dbb77f5168cd4c33127a74e"
+     },
+     "runs": {
+      "count": 1,
+      "path": "lists/cnr/DEV.runs.txt",
+      "sha256": "8eaa79931d1ee65d655bd8213d882ea493b5278426c7b2d49c9ce5111d13ba8b"
+     }
+    },
+    "FIT": {
+     "refs": {
+      "count": 6017,
+      "path": "lists/cnr/FIT.refs.txt",
+      "sha256": "e7faff798671f583757cb5318b059fbd084becee1e7fa18370145b2c3cde6934"
+     },
+     "runs": {
+      "count": 1,
+      "path": "lists/cnr/FIT.runs.txt",
+      "sha256": "8eaa79931d1ee65d655bd8213d882ea493b5278426c7b2d49c9ce5111d13ba8b"
+     }
+    },
+    "HELDOUT": {
+     "refs": {
+      "count": 2012,
+      "path": "lists/cnr/HELDOUT.refs.txt",
+      "sha256": "a8806a1e4fc7f0d631a09c2e5a5f0914bf44fd988486bf020a1065aaacd2a4e3"
+     },
+     "runs": {
+      "count": 1,
+      "path": "lists/cnr/HELDOUT.runs.txt",
+      "sha256": "8eaa79931d1ee65d655bd8213d882ea493b5278426c7b2d49c9ce5111d13ba8b"
+     }
+    }
+   },
+   "manifest_key": "cnr",
+   "references_per_split": {
+    "DEV": 1971,
+    "FIT": 6017,
+    "HELDOUT": 2012
+   },
+   "references_total": 10000,
+   "run_note": "single run: split by reference only",
+   "runs": [
+    "cnr"
+   ],
+   "split_strength": "reference buckets only (weaker kind, protocol 4.3)",
+   "splits_below_2000_references": [
+    "DEV"
+   ]
+  },
+  "d03-nanopore": {
+   "dataset_id": "D03",
+   "disjoint_runs": true,
+   "groups": {
+    "file-0_acc-false_passQ-true/backward": {
+     "file": 0,
+     "refs": 30589
+    },
+    "file-0_acc-false_passQ-true/forward": {
+     "file": 0,
+     "refs": 30589
+    },
+    "file-0_acc-true_passQ-true/backward": {
+     "file": 0,
+     "refs": 30589
+    },
+    "file-0_acc-true_passQ-true/forward": {
+     "file": 0,
+     "refs": 30589
+    },
+    "file-1_acc-false_passQ-true/backward": {
+     "file": 1,
+     "refs": 30589
+    },
+    "file-1_acc-false_passQ-true/forward": {
+     "file": 1,
+     "refs": 30589
+    },
+    "file-1_acc-true_passQ-true/backward": {
+     "file": 1,
+     "refs": 30589
+    },
+    "file-1_acc-true_passQ-true/forward": {
+     "file": 1,
+     "refs": 30589
+    },
+    "file-2_acc-false_passQ-true/backward": {
+     "file": 2,
+     "refs": 30588
+    },
+    "file-2_acc-false_passQ-true/forward": {
+     "file": 2,
+     "refs": 30588
+    },
+    "file-2_acc-true_passQ-true/backward": {
+     "file": 2,
+     "refs": 30588
+    },
+    "file-2_acc-true_passQ-true/forward": {
+     "file": 2,
+     "refs": 30588
+    }
+   },
+   "heldout_run": "file-1",
+   "inputs": [
+    {
+     "path": "d03/oligos.fasta",
+     "sha256": "fe3d211f9aa78eb45090b1e35e47dd4f086b5b9326972402308ab3db0b8c6b00",
+     "verified": true
+    },
+    {
+     "path": "d03/ex/file-0_acc-false_passQ-true/backward/TX__file=0_accBaCa=false_passQ=true_filter=true_backward_.txt",
+     "sha256": "5d128abc1a00645ec54f14c0b9abfdb30c4c370915cd402ef68fd632ca90c1b0",
+     "verified": true
+    },
+    {
+     "path": "d03/ex/file-0_acc-false_passQ-true/forward/TX__file=0_accBaCa=false_passQ=true_filter=true_forward_.txt",
+     "sha256": "0fb28d96c4f5cd8b608cb2f0f10d3414469ae2d62d69c3576e80d1d115f659e6",
+     "verified": true
+    },
+    {
+     "path": "d03/ex/file-0_acc-true_passQ-true/backward/TX__file=0_accBaCa=true_passQ=true_filter=true_backward_.txt",
+     "sha256": "5d128abc1a00645ec54f14c0b9abfdb30c4c370915cd402ef68fd632ca90c1b0",
+     "verified": true
+    },
+    {
+     "path": "d03/ex/file-0_acc-true_passQ-true/forward/TX__file=0_accBaCa=true_passQ=true_filter=true_forward_.txt",
+     "sha256": "0fb28d96c4f5cd8b608cb2f0f10d3414469ae2d62d69c3576e80d1d115f659e6",
+     "verified": true
+    },
+    {
+     "path": "d03/ex/file-1_acc-false_passQ-true/backward/TX__file=1_accBaCa=false_passQ=true_filter=true_backward_.txt",
+     "sha256": "242331b5472a8afd7b0ade7e65ccbe18cfc2fba4c6276070a1c2c67b8c095202",
+     "verified": true
+    },
+    {
+     "path": "d03/ex/file-1_acc-false_passQ-true/forward/TX__file=1_accBaCa=false_passQ=true_filter=true_forward_.txt",
+     "sha256": "813b32879de9394d300c75e2c47f4cca7331002c6f9a93179c28a22fb573f590",
+     "verified": true
+    },
+    {
+     "path": "d03/ex/file-1_acc-true_passQ-true/backward/TX__file=1_accBaCa=true_passQ=true_filter=true_backward_.txt",
+     "sha256": "242331b5472a8afd7b0ade7e65ccbe18cfc2fba4c6276070a1c2c67b8c095202",
+     "verified": true
+    },
+    {
+     "path": "d03/ex/file-1_acc-true_passQ-true/forward/TX__file=1_accBaCa=true_passQ=true_filter=true_forward_.txt",
+     "sha256": "813b32879de9394d300c75e2c47f4cca7331002c6f9a93179c28a22fb573f590",
+     "verified": true
+    },
+    {
+     "path": "d03/ex/file-2_acc-false_passQ-true/backward/TX__file=2_accBaCa=false_passQ=true_filter=true_backward_.txt",
+     "sha256": "c7974166a140c73f8f0751526a4eddab534c1fc694e6e52b75360b814c805edd",
+     "verified": true
+    },
+    {
+     "path": "d03/ex/file-2_acc-false_passQ-true/forward/TX__file=2_accBaCa=false_passQ=true_filter=true_forward_.txt",
+     "sha256": "ab354e30af93d17433284018128d348f4fbaec61423bc58a2925251cd0b145a0",
+     "verified": true
+    },
+    {
+     "path": "d03/ex/file-2_acc-true_passQ-true/backward/TX__file=2_accBaCa=true_passQ=true_filter=true_backward_.txt",
+     "sha256": "c7974166a140c73f8f0751526a4eddab534c1fc694e6e52b75360b814c805edd",
+     "verified": true
+    },
+    {
+     "path": "d03/ex/file-2_acc-true_passQ-true/forward/TX__file=2_accBaCa=true_passQ=true_filter=true_forward_.txt",
+     "sha256": "ab354e30af93d17433284018128d348f4fbaec61423bc58a2925251cd0b145a0",
+     "verified": true
+    }
+   ],
+   "lists": {
+    "DEV": {
+     "refs": {
+      "count": 12167,
+      "path": "lists/d03/DEV.refs.txt",
+      "sha256": "07429357c64f8356f9c8d52e3f84f84e5c49861037815560636028f015123852"
+     },
+     "runs": {
+      "count": 8,
+      "path": "lists/d03/DEV.runs.txt",
+      "sha256": "d99fe815ea6632d2c0704c41b811cf9f5141ece0dcd316c9ac26f73b5d4d48aa"
+     }
+    },
+    "FIT": {
+     "refs": {
+      "count": 36883,
+      "path": "lists/d03/FIT.refs.txt",
+      "sha256": "2f4c2d8aad1ddd9c4b564f418403395dd69d6a972d7d77eb2daf13a1cf5fe735"
+     },
+     "runs": {
+      "count": 8,
+      "path": "lists/d03/FIT.runs.txt",
+      "sha256": "d99fe815ea6632d2c0704c41b811cf9f5141ece0dcd316c9ac26f73b5d4d48aa"
+     }
+    },
+    "HELDOUT": {
+     "refs": {
+      "count": 42716,
+      "path": "lists/d03/HELDOUT.refs.txt",
+      "sha256": "92ec6e44e78e9419ad1e053d03d14f37a7bdef78abf7deaa5e1c03b5c93de88e"
+     },
+     "runs": {
+      "count": 12,
+      "path": "lists/d03/HELDOUT.runs.txt",
+      "sha256": "6217c5fc6145f911c32f8102ac3b1cec51b9462cedcb0ca5b4a7b94bcbcc0874"
+     }
+    }
+   },
+   "manifest_key": "d03-nanopore",
+   "references_per_split": {
+    "DEV": 12167,
+    "FIT": 36883,
+    "HELDOUT": 42716
+   },
+   "references_total": 91766,
+   "run_note": "files have pairwise disjoint reference sets; held-out run = file-1 (all its groups)",
+   "runs": [
+    "file-0",
+    "file-1",
+    "file-2"
+   ],
+   "split_strength": "held-out run plus reference buckets",
+   "splits_below_2000_references": []
+  },
+  "dt4dds-twist": {
+   "dataset_id": "D02",
+   "disjoint_runs": false,
+   "heldout_run": null,
+   "inputs": [
+    {
+     "committable": false,
+     "path": "dt4dds/design_files_Twist_GCfix_0a.fasta",
+     "sha256": "ce0baf4f1ff35967c1c3cf52e3e96d51e6202319c8b413356d51904e474d188b",
+     "verified": true
+    }
+   ],
+   "lists": {
+    "DEV": {
+     "refs": {
+      "count": 2348,
+      "path": "lists/d02/DEV.refs.txt",
+      "sha256": "e30828865a2415dc676cba0568f190d09d13323cd2719e7192b3e123bcd85457"
+     },
+     "runs": {
+      "count": 2,
+      "path": "lists/d02/DEV.runs.txt",
+      "sha256": "62ecfe0137a6903c5a26c03d75e6a20ade3f6f504d64eb90173bc6fb64ca242d"
+     }
+    },
+    "FIT": {
+     "refs": {
+      "count": 7236,
+      "path": "lists/d02/FIT.refs.txt",
+      "sha256": "2e417b7f0d2e416663ff1ac2b546188c397b9c23300a8d0879ba27835f57efa2"
+     },
+     "runs": {
+      "count": 3,
+      "path": "lists/d02/FIT.runs.txt",
+      "sha256": "72401a55c6e07d7831bb6c3e766b3308b2cc4ec887d78865a4ba4a37ca281476"
+     }
+    },
+    "HELDOUT": {
+     "refs": {
+      "count": 2416,
+      "path": "lists/d02/HELDOUT.refs.txt",
+      "sha256": "7a9e08a19a5b3250554b26fc100937dc37e75ef83034b956795e9c4da8672d44"
+     },
+     "runs": {
+      "count": 2,
+      "path": "lists/d02/HELDOUT.runs.txt",
+      "sha256": "62ecfe0137a6903c5a26c03d75e6a20ade3f6f504d64eb90173bc6fb64ca242d"
+     }
+    }
+   },
+   "manifest_key": "dt4dds-twist",
+   "references_per_split": {
+    "DEV": 2348,
+    "FIT": 7236,
+    "HELDOUT": 2416
+   },
+   "references_total": 12000,
+   "run_note": "runs ERR12033806 / ERR12033810 share one 12,000-design pool (Amendment 1): split by reference only",
+   "runs": [
+    "ERR12033806",
+    "ERR12033810",
+    "ERR12033850"
+   ],
+   "split_strength": "reference buckets only (weaker kind, protocol 4.3)",
+   "splits_below_2000_references": []
+  }
+ },
+ "evidence_class": "PUBLIC-DATA-DERIVED",
+ "protocol": {
+  "path": "docs/V7_PROTOCOL.md",
+  "sha256": "64a8f7a8af349fcbc4e362cdddc2f215ccd04c8e9b41be66536bb197abc6083d"
+ },
+ "read_files_opened": false,
+ "rule": {
+  "DEV": "buckets 6-7 of non-held-out runs",
+  "FIT": "buckets 0-5 of non-held-out runs",
+  "HELDOUT": "buckets 8-9 of every run plus the held-out run (disjoint-reference datasets only)",
+  "bucket": "int(SHA-256(canonical sequence), 16) mod 10; canonical = min(seq, reverse complement), upper case",
+  "heldout_run": "runs sorted by name, index int(SHA-256('VNX-V7-HELDOUT/' + dataset_id), 16) mod n_runs"
+ },
+ "schema": "vnx.split-manifest/1",
+ "script": {
+  "path": "experiments/v7/split/split.py",
+  "refsplit_sha256": "0076af38851abd6585faba08b79714a3e2b1f6527e0bb8207a1b3863224df4e2",
+  "sha256": "f66b521d653337bdd16e9e0d9a3e5f93c88797219ccdb813dbd8e2c91789dd64"
+ },
+ "statement": "Partition of other groups' reference designs by the V7 protocol section 4.1 (Amendment 1). No read file was opened to compute it; no sequence is stored here."
+}

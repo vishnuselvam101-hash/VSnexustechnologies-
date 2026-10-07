@@ -396,6 +396,7 @@ def store_file(input_path: str | os.PathLike, output_path: str | os.PathLike, *,
     stripe_bytes = options.data_shards * options.payload_bytes
 
     writer = ContainerWriter(output_path, overwrite=overwrite, resumable=True)
+    assert writer.partial is not None  # a resumable writer names its partial file up front
     ckpt_path = writer.partial.with_name(writer.partial.name + ".ckpt")
     sidecar_path = writer.partial.with_name(writer.partial.name + ".idx")
     # the resumable work files have fixed names; an input that is one of them would be deleted as a stale partial
@@ -444,9 +445,9 @@ def store_file(input_path: str | os.PathLike, output_path: str | os.PathLike, *,
             epoch = max(int(state.get("epoch", 0)), _max_sidecar_epoch(sidecar_path)) + 1
             if epoch > crypto.MAX_EPOCH:
                 raise InvalidInputError(f"cannot resume: this archive was resumed {crypto.MAX_EPOCH} times; run without --resume")
-        with sidecar_path.open("r+b") as handle:
-            handle.truncate(done * SIDECAR_ENTRY)
-            side = handle.read()
+        with sidecar_path.open("r+b") as side_handle:
+            side_handle.truncate(done * SIDECAR_ENTRY)
+            side = side_handle.read()
         entries = np.frombuffer(side, dtype=np.uint8).reshape(done, SIDECAR_ENTRY) if done else np.zeros((0, SIDECAR_ENTRY), np.uint8)
         index_part = entries[:, :mf.INDEX_DTYPE.itemsize].copy().view(mf.INDEX_DTYPE).reshape(done)
         plain_part = entries[:, mf.INDEX_DTYPE.itemsize:].copy().view(mf.PLAIN_DTYPE).reshape(done)
@@ -662,6 +663,7 @@ def extract_range(path: str | os.PathLike, output_path: str | os.PathLike, *, of
     started = time.perf_counter()
     cf, loaded = open_container(path, key)
     try:
+        assert loaded.content is not None  # open_container requires the key, so the content record is open
         size = loaded.content.size
         end = size if length is None else offset + length
         if isinstance(offset, bool) or not isinstance(offset, int) or offset < 0 or not offset <= end <= size:
@@ -759,6 +761,7 @@ def verify_container(path: str | os.PathLike, *, key: bytes | None = None, again
             check("plaintext-chunks", plain_ok == m.chunk_count,
                   f"{plain_ok}/{m.chunk_count} chunks authenticated, decompressed and SHA-256 verified")
             if plain_ok == m.chunk_count:
+                assert loaded.content is not None  # opened together with loaded.plain
                 recomputed = digest.hexdigest()
                 match = recomputed == loaded.content.sha256 and size == loaded.content.size
                 check("object-sha256", match, f"recomputed {recomputed}")
@@ -799,6 +802,7 @@ def compare_file(loaded: LoadedV2, path: str | os.PathLike) -> dict[str, Any]:
     p = Path(path)
     if not p.is_file():
         raise InvalidInputError(f"file to compare not found: {p}")
+    assert loaded.plain is not None and loaded.content is not None  # callers compare only with an opened plaintext index
     cs = loaded.manifest.chunk_size
     mismatched = []
     h = hashlib.sha256()

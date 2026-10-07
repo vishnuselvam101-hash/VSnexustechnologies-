@@ -78,7 +78,10 @@ def _colliding_superblocks(values: dict, ks: int, ms: int, lay: Layout, tag: int
     return found
 
 
-def _decode_superblock(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter) -> tuple[Superblock, dict]:
+def _decode_superblock(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter,
+                       cluster=None) -> tuple[Superblock, dict]:
+    """``cluster`` (V7 read clustering, opt-in): a stage whose verified superblock symbols are added at the symbols the
+    6.0 path left unresolved — used only for the retry after the 6.0 symbols alone raised NO_SUPERBLOCK (FC-9)."""
     acc, pend = spill.load(0)
     acc_sb = acc[acc["kind"] == KIND_SUPER]
     # superblock symbols are group 0; a pending kind-1 record of another group has a corrupted header that can never
@@ -86,9 +89,23 @@ def _decode_superblock(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
     pend_sb = pend[(pend["kind"] == KIND_SUPER) & (pend["group"] == 0)]
     symbols, conflicts = resolve_duplicates(acc_sb)
     ks, ms = Superblock.symbols(lay.payload_bytes)
+    sc = stats.get("_stage")              # V7 stage counters (opt-in; observability only)
+    if sc is not None:
+        sc.add("superblock", "symbols_needed", ks)
+        sc.add("superblock", "symbols_total", ks + ms)
+        sc.add("superblock", "verified_reads_pass1", len(acc_sb))
+        sc.add("superblock", "symbols_verified_pass1", len(symbols))
+        sc.add("superblock", "pending_records", len(pend_sb))
+        sc.add("superblock", "pending_records_other_group", int(((pend["kind"] == KIND_SUPER) & (pend["group"] != 0)).sum()))
+        n0 = len(symbols)
     # consensus rescue for superblock symbols that no single read delivered
     if pend_sb.size:
         symbols.update(_consensus_symbols(pend_sb, symbols, lay, opt, stats))
+    if sc is not None:
+        sc.add("superblock", "symbols_from_consensus", len(symbols) - n0)
+        per_tag = Counter(k[1] for k in symbols if k[0] == KIND_SUPER and k[2] == 0 and k[3] < ks + ms)
+        sc.add("superblock", "symbols_best_tag", max(per_tag.values(), default=0))
+        sc.add("superblock", "tags_seen", len(per_tag))
     # every distinct verified value of each superblock symbol, per tag (a tag with several values for one symbol may be
     # two archives sharing a tag: spec §3.10 step 7)
     values: dict = {}
@@ -96,6 +113,8 @@ def _decode_superblock(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
         vs = values.setdefault(int(rec["tag"]), {}).setdefault(int(rec["symbol"]), [])
         if not any(np.array_equal(v, rec["payload"]) for v in vs):
             vs.append(np.array(rec["payload"]))
+    if cluster is not None:
+        cluster.fill_superblock(symbols, values, ks + ms)
     tags = sorted({k[1] for k in symbols} | set(values))
     candidates = {}
     unsupported = None
@@ -127,6 +146,8 @@ def _decode_superblock(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
             continue
         if int.from_bytes(sb.archive_id[:2], "big") == tag and sb.layout == lay:
             candidates[tag] = sb
+    if sc is not None:
+        sc.add("superblock", "candidates", len(candidates))
     if not candidates:
         if unsupported is not None:
             raise unsupported

@@ -1,0 +1,9 @@
+{
+ "experiment": "G-MEM (side observation)",
+ "classification": "SIMULATED channel; disk usage MEASURED on this host",
+ "method": "Not produced by run.py: the decoder's spill directory (vnx4-decode-*, under TMPDIR) was polled with `du -sb` while one decode ran (every 5 s for illumina-like 64 MiB, every 1 s for nanopore-like 4 MiB) and the largest value kept. Polling can miss a short final peak. Both decodes ran with --workers 1 at commit 1cb7f08 (illumina-like, the G-MEM run in size-64MiB-illumina-like.json) and 36adade (nanopore-like 4 MiB: payload seed 7004, simulate seed 71004, the G-MEM seeds, run separately with TMPDIR set to an empty directory; the payload file was named p.bin rather than payload.bin, and the archive records the file name, so these reads are not byte-identical to size-4MiB.json's: 1,227,976,796 against 1,228,257,992 bytes).",
+ "observations": [
+  {"model": "illumina-like", "size_mib": 64, "reads_bytes": 13418630188, "spill_peak_bytes": 1095413173, "spill_to_reads": 0.0816},
+  {"model": "nanopore-like", "size_mib": 4, "reads_bytes": 1227976796, "spill_peak_bytes": 114189009, "spill_to_reads": 0.0930}
+ ]
+}

@@ -1,6 +1,6 @@
 """vnxdna.native_status(): which backend each native kernel uses, and that it is recorded in reports and events.
 
-Also the packaging contract: setup.py builds all three kernels as optional extensions with the explicit builds' flags
+Also the packaging contract: setup.py builds all four kernels as optional extensions with the explicit builds' flags
 (minus -Werror), under the names the loaders look for; and the RS level-restriction hook stays test-only.
 """
 from __future__ import annotations
@@ -18,14 +18,15 @@ from typer.testing import CliRunner
 import vnxdna
 from vnxdna import _native_build as nb
 from vnxdna import native
+from vnxdna.native import cluster as ncl
 from vnxdna.v5 import native_alignment as na
 from vnxdna.v6 import native_reads as nr
 from vnxdna.v6 import native_rs as nrs
 
 ROOT = Path(__file__).resolve().parents[3]
 MODULES = {"align": (na, "VNXDNA_NATIVE_LIB", "libvnx_align.so"), "reads": (nr, "VNXDNA_READS_LIB", "libvnx_reads.so"),
-           "rs": (nrs, "VNXDNA_RS_LIB", "libvnx_rs.so")}
-BACKEND_ENV = ("VNXDNA_ALIGN_BACKEND", "VNXDNA_READS_BACKEND", "VNXDNA_RS_BACKEND")
+           "rs": (nrs, "VNXDNA_RS_LIB", "libvnx_rs.so"), "cluster": (ncl, "VNXDNA_CLUSTER_LIB", "libvnx_cluster.so")}
+BACKEND_ENV = ("VNXDNA_ALIGN_BACKEND", "VNXDNA_READS_BACKEND", "VNXDNA_RS_BACKEND", "VNXDNA_CLUSTER_BACKEND")
 
 
 def _reset() -> None:
@@ -65,7 +66,7 @@ def _clean_backend_env(monkeypatch):
 # ---------------------------------------------------------------------------------------------------- status function
 def test_all_kernels_native_when_libraries_load():
     st = vnxdna.native_status()
-    assert st["all_native"] is True and set(st["kernels"]) == {"align", "reads", "rs"}
+    assert st["all_native"] is True and set(st["kernels"]) == {"align", "reads", "rs", "cluster"}
     for kernel, (m, _, _) in MODULES.items():
         k = st["kernels"][kernel]
         assert k["backend"] == "native" and k["library"] and Path(k["library"]).is_file(), k
@@ -75,6 +76,8 @@ def test_all_kernels_native_when_libraries_load():
     assert rs["simd_level"] == nrs.active_backend() and rs["simd_level"] in rs["supported_levels"]
     assert rs["levels_restricted"] is False
     assert st["kernels"]["align"]["simd_lanes"] >= 1
+    assert st["kernels"]["cluster"]["simd_level"] in ("scalar", "avx2")
+    assert st["kernels"]["cluster"]["reference"] == "vnxdna.recovery.cluster"
     assert json.loads(json.dumps(st)) == st        # JSON-serialisable as is
 
 
@@ -190,7 +193,8 @@ def test_setup_builds_all_kernels_as_optional_extensions(monkeypatch):
     monkeypatch.chdir(ROOT)
     runpy.run_path(str(ROOT / "setup.py"), run_name="__main__")
     exts = {e.name: e for e in captured["ext_modules"]}
-    assert set(exts) == {"vnxdna.v5._vnx_align", "vnxdna.v6._vnx_reads", "vnxdna.v6._vnx_rs"} == set(nb.KERNELS)
+    assert set(exts) == {"vnxdna.v5._vnx_align", "vnxdna.v6._vnx_reads", "vnxdna.v6._vnx_rs",
+                         "vnxdna._vnx_cluster"} == set(nb.KERNELS)
     for name, ext in exts.items():
         assert ext.optional is True and ext.sources == [nb.KERNELS[name]] and (ROOT / ext.sources[0]).is_file()
         flags = ext.extra_compile_args
@@ -207,7 +211,8 @@ def test_loaders_find_the_packaged_extension_name(kernel, monkeypatch, tmp_path)
     """setup.py's module name ``vnxdna.vX._vnx_<k>`` lands at ``vnxdna/vX/_vnx_<k><EXT_SUFFIX>``: the loader must try it,
     after an explicit *_LIB path and before the in-place library."""
     m, env, _ = MODULES[kernel]
-    ext_name = {"align": "vnxdna.v5._vnx_align", "reads": "vnxdna.v6._vnx_reads", "rs": "vnxdna.v6._vnx_rs"}[kernel]
+    ext_name = {"align": "vnxdna.v5._vnx_align", "reads": "vnxdna.v6._vnx_reads", "rs": "vnxdna.v6._vnx_rs",
+                "cluster": "vnxdna._vnx_cluster"}[kernel]
     assert ext_name in nb.KERNELS
     # the loader searches the directory setup.py builds the extension into (since V6 Phase 2 the loader module itself
     # lives in vnxdna.native, while the C source, library and extension stay in vnxdna/v5 and vnxdna/v6)

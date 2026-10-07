@@ -47,8 +47,11 @@ from .rs_batch import decode_batch
 class OuterCode(Protocol):
     """Systematic erasure code over groups of equal-length shards."""
 
-    data_shards: int
-    parity_shards: int
+    @property
+    def data_shards(self) -> int: ...  # read-only members: implementations may be frozen dataclasses
+
+    @property
+    def parity_shards(self) -> int: ...
 
     def encode(self, data: np.ndarray) -> np.ndarray:
         """(S, K, L) data shards → (S, M, L) parity shards."""

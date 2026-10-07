@@ -1,0 +1,56 @@
+{
+ "clustering": {
+  "clusters": 474,
+  "impure_clusters": 0,
+  "read_purity": 1.0,
+  "unassigned_reads": 172
+ },
+ "container_sha256": "9bee1a74decf37dece6a2f64d7cf5eb097d92cd0df871cbeb89647948314627f",
+ "frames": {
+  "data_recovered": 134,
+  "data_total": 679,
+  "false_frames": 0,
+  "superblock_needed": 3,
+  "superblock_recovered": 2
+ },
+ "funnel_data": {
+  "candidate": 463,
+  "clustered": 464,
+  "observed": 604,
+  "oriented": 463,
+  "rs_recoverable": 134,
+  "stored": 481,
+  "total": 679,
+  "two_reads": 481,
+  "valid_frame": 134
+ },
+ "id": "nanopore-cov3-s82044",
+ "loss_reasons": {
+  "clustered: unassigned": 17,
+  "observed: no read in the pool": 77,
+  "oriented: cluster orientation chosen wrong": 1,
+  "rs_recoverable: errors/erasures": 170,
+  "rs_recoverable: shifted segment (indel placed wrong)": 166,
+  "two_reads: one read only (consensus needs 2)": 124
+ },
+ "oracle": {
+  "archive_outcome": "EXPLICIT_FAILURE",
+  "classes_failed_strands": {
+   "ADDRESS-CAUSED": 0,
+   "BOUNDARY-CAUSED": 170,
+   "CLUSTERING-CAUSED": 0,
+   "PAYLOAD-CAUSED": 184,
+   "STRUCTURAL": 201
+  },
+  "false_frames": 0,
+  "frames_data_recovered": 132,
+  "rows_decodable": 0
+ },
+ "outcome": "EXPLICIT_FAILURE",
+ "reads_sha256": "8097d8996bc773c79cda4451dfde8265fe867f97ac5acc377d440d96ea78a317",
+ "rows": {
+  "decodable_from_cluster_frames": 0,
+  "total": 9
+ },
+ "schema": "vnx.nanopore-funnel/1"
+}

@@ -1,6 +1,6 @@
 # CPU-only image with the vnx-dna CLI. Example (run as your own user so the mounted directory is writable):
 #   docker build -t vnx-dna . && docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" -w /work vnx-dna store input.bin -o input.vxdna
-# Native kernels (aligner, read parser, RS decoder) are compiled in the build stage; the runtime image has no compiler.
+# Native kernels (aligner, read parser, RS decoder, read clustering) are compiled in the build stage; the runtime image has no compiler.
 # Check: docker run --rm --entrypoint python vnx-dna -m vnxdna.native
 FROM python:3.12-slim AS build
 RUN apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev && rm -rf /var/lib/apt/lists/*

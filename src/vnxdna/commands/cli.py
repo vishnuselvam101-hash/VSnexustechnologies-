@@ -211,7 +211,7 @@ def locate(container: Path, name: str, key_file: Optional[Path] = KEY_OPT, passp
            allow_unencrypted: bool = UNENC_OPT) -> None:
     """Locate a file: chunk indices, container byte ranges and (with --dna-profile) strand groups and strand records.
 
-    The strand mapping exists for the V4/V5 layout only; V6 outer-code options (superblock version 2) are refused."""
+    Give the same DNA options as `vnx encode` (V4/V5 layout or V6 outer code): the records are those of that strand file."""
     def go():
         key, pw = sdk.load_keys(key_file, passphrase_env)
         explicit = {k: v for k, v in (("data_symbols", data_symbols), ("parity_symbols", parity_symbols),
@@ -245,7 +245,7 @@ def extract(container: Path, output_dir: Path, names: Optional[List[str]] = type
 @app.command()
 def encode(source: Path = typer.Argument(..., help="A .vnx container, or a file/directory (archived first)."),
            output: Path = typer.Argument(..., help="Strand file (.fasta or .fastq)."),
-           profile: Optional[str] = typer.Option(None, help="v4-balanced (default), v4-dense, v4-indel, v4-archival, v6-high-dropout."),
+           profile: Optional[str] = typer.Option(None, help="v4-balanced (default), v4-dense, v4-indel, v4-archival, v6-high-dropout, v7-lowcov (experimental)."),
            outer_code: Optional[str] = typer.Option(None, help="cauchy-rs (default)."),
            data_symbols: Optional[int] = typer.Option(None, "-K"), parity_symbols: Optional[int] = typer.Option(None, "-M"),
            workers: int = typer.Option(0, "--workers", "-w", help="0 = from the performance profile."),
@@ -395,6 +395,10 @@ def decode(reads: Path, output: Optional[Path] = typer.Option(None, "--output", 
            consensus_weighting: Optional[str] = typer.Option(
                None, "--consensus-weighting",
                help="count (V4 vote, default) or quality: pass-2 consensus weighted by Phred quality (opt-in)."),
+           read_clustering: Optional[str] = typer.Option(
+               None, "--read-clustering",
+               help="off (default) or fallback: V7 header-independent read clustering + per-cluster consensus whose "
+                    "verified frames only fill what the default path left unresolved (opt-in)."),
            max_recovery_reads: Optional[int] = typer.Option(None, "--max-recovery-reads",
                                                             help="V6 budget: reads examined by smart/soft recovery (all rounds)."),
            max_round_b_reads: Optional[int] = typer.Option(None, "--max-round-b-reads",
@@ -425,7 +429,7 @@ def decode(reads: Path, output: Optional[Path] = typer.Option(None, "--output", 
                                   profile=profile, band=band, retry_band=retry_band, min_quality=min_quality, indel_recovery=indel_recovery,
                                   soft_decoding=soft_decoding, recovery_schedule=recovery_schedule,
                                   consensus_weighting=consensus_weighting, max_container_bytes=max_container_bytes, expect_archive_id=expect_archive_id,
-                                  expect_sha256=expect_sha256)
+                                  expect_sha256=expect_sha256, read_clustering=read_clustering)
         return _decode(reads, output, extract_dir, partial_dir, select, opts, force, key_file, passphrase_env, report, events,
                        task_id, allow_unencrypted, not no_input_hash)
     _run(go)

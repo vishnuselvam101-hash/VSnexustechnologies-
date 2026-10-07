@@ -1,0 +1,24 @@
+{
+ "experiment": "A-DIAG",
+ "classification": "EXPERIMENTAL / SIMULATED",
+ "purpose": "V7 protocol section 8.1: run the 6.0 default decoder with the opt-in stage counters on the unfitted V6 nanopore-like model (coverage 3/5/10/15) and two controls (deletion-heavy and illumina-like, coverage 10); report the per-stage funnel and the first failing stage of every non-EXACT decode (ground truth from the simulator). Descriptive; no algorithm or default changes. Must reproduce the V6 baseline 0/20 at nanopore-like coverage 3/5/10.",
+ "evidence": "EXPERIMENTAL: exploration seeds 82000-82099 (protocol section 7); no PREREG, no confirmatory claim",
+ "profile": "v4-balanced",
+ "size": 20000,
+ "data_seed": 6201,
+ "base_seed": 82000,
+ "seeds": 20,
+ "decoder": {"options": "DecodeOptions() 6.0 defaults + stage_counters=True (observability only)", "workers": 1,
+             "determinism_rerun": {"workers": 4, "batch_reads": 512}},
+ "baseline_reproduction": {"cells": ["nanopore-like/cov3", "nanopore-like/cov5", "nanopore-like/cov10"],
+                           "expected_exact": 0,
+                           "source": "experiments/v6/align-band/README.md: default arm 0/20 at nanopore-like coverage 3, 5, 10 (seeds 80000-80019); V7_ARCHITECTURE section 1"},
+ "cells": [
+  {"id": "nanopore-like/cov3", "model": {"base": "nanopore-like", "name": "nanopore-like-cov3", "channel": {"coverage": 3.0}}},
+  {"id": "nanopore-like/cov5", "model": {"base": "nanopore-like", "name": "nanopore-like-cov5", "channel": {"coverage": 5.0}}},
+  {"id": "nanopore-like/cov10", "model": {"base": "nanopore-like", "name": "nanopore-like-cov10", "channel": {"coverage": 10.0}}},
+  {"id": "nanopore-like/cov15", "model": {"base": "nanopore-like", "name": "nanopore-like-cov15", "channel": {"coverage": 15.0}}},
+  {"id": "deletion-heavy/cov10", "model": {"base": "deletion-heavy", "name": "deletion-heavy-cov10", "channel": {"coverage": 10.0}}},
+  {"id": "illumina-like/cov10", "model": {"base": "illumina-like", "name": "illumina-like-cov10", "channel": {"coverage": 10.0}}}
+ ]
+}

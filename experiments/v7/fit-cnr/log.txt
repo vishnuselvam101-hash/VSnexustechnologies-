@@ -1,0 +1,84 @@
+$ python experiments/v7/fit/run.py smoke --workers 8 --bootstrap 200  # 2026-10-05T16:42:34Z
+edlib+leftmost (main) {'substitution': 1.681, 'insertion_bases': 1.896, 'deletion_bases': 2.189} {'substitution': False, 'insertion': False, 'deletion': False} {'substitution.rate': np.float64(0.0), 'insertion.rate': np.float64(0.0), 'deletion.rate': np.float64(0.0), 'homopolymer.indel_multiplier': np.float64(0.0), 'homopolymer.substitution_multiplier': np.float64(0.0)}
+edlib+rightmost {'substitution': 1.681, 'insertion_bases': 1.896, 'deletion_bases': 2.189} {'substitution': False, 'insertion': False, 'deletion': False} {'substitution.rate': np.float64(0.6), 'insertion.rate': np.float64(5.8), 'deletion.rate': np.float64(8.0), 'homopolymer.indel_multiplier': np.float64(26.9), 'homopolymer.substitution_multiplier': np.float64(-1.6)}
+dp-diag (P4-EXP-03 tie-break) {'substitution': 2.152, 'insertion_bases': 1.661, 'deletion_bases': 1.954} {'substitution': True, 'insertion': True, 'deletion': True} {'substitution.rate': np.float64(22.1), 'insertion.rate': np.float64(-12.9), 'deletion.rate': np.float64(-10.8), 'homopolymer.indel_multiplier': np.float64(9.2), 'homopolymer.substitution_multiplier': np.float64(-3.5)}
+$ python experiments/v7/fit/run.py fit cnr --workers 8 --bootstrap 200  # 2026-10-05T16:44:28Z
+{
+ "job": "cnr",
+ "comparison": {
+  "substitution": {
+   "fitted_observed": 0.016810806244170962,
+   "ci95": [
+    0.016737685598354802,
+    0.01690504227691395
+   ],
+   "published": 0.0216,
+   "published_inside_ci": false
+  },
+  "insertion": {
+   "fitted_observed": 0.018959838415457692,
+   "ci95": [
+    0.018878436060743416,
+    0.019031183878012982
+   ],
+   "published": 0.0166,
+   "published_inside_ci": false
+  },
+  "deletion": {
+   "fitted_observed": 0.02188905847212789,
+   "ci95": [
+    0.021760299393351324,
+    0.02201374567553702
+   ],
+   "published": 0.0195,
+   "published_inside_ci": false
+  }
+ },
+ "seconds": {
+  "tally": 1.8,
+  "fit_bootstrap_calibration": 32.6
+ },
+ "rss_mb": 967.3
+}
+$ python experiments/v7/fit/run.py validate cnr --workers 8  # 2026-10-05T16:45:03Z
+cnr INADEQUATE ['M2', 'M3'] {'M1': True, 'M10': True, 'M2': False, 'M3': False, 'M4': True, 'M5': True, 'M6': True, 'M7': True, 'M8': True, 'M9': None}
+$ python experiments/v7/fit/run.py fit cnr-p4tie --workers 8 --bootstrap 200  # 2026-10-05T16:45:38Z
+{
+ "job": "cnr-p4tie",
+ "comparison": {
+  "substitution": {
+   "fitted_observed": 0.021516722599492437,
+   "ci95": [
+    0.02142875255456723,
+    0.021622067782943285
+   ],
+   "published": 0.0216,
+   "published_inside_ci": true
+  },
+  "insertion": {
+   "fitted_observed": 0.016606880237796953,
+   "ci95": [
+    0.016534231845823064,
+    0.01667931069983387
+   ],
+   "published": 0.0166,
+   "published_inside_ci": true
+  },
+  "deletion": {
+   "fitted_observed": 0.019536100294467153,
+   "ci95": [
+    0.01940789935478316,
+    0.019653087332583478
+   ],
+   "published": 0.0195,
+   "published_inside_ci": true
+  }
+ },
+ "seconds": {
+  "tally": 10.4,
+  "fit_bootstrap_calibration": 52.4
+ },
+ "rss_mb": 940.8
+}
+$ python experiments/v7/fit/run.py validate cnr-p4tie --workers 8  # 2026-10-05T16:46:41Z
+cnr-p4tie INADEQUATE ['M2', 'M3'] {'M1': True, 'M10': True, 'M2': False, 'M3': False, 'M4': True, 'M5': True, 'M6': True, 'M7': True, 'M8': True, 'M9': None}

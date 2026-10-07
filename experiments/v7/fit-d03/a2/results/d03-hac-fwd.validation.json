@@ -1,0 +1,448 @@
+{
+ "adequacy": "INADEQUATE",
+ "environment": {
+  "cpu_count": 8,
+  "git": {
+   "commit": "df46fa4ec02bf47de8462a6b9d6e23fd90184d82",
+   "dirty": false
+  },
+  "implementation": "CPython",
+  "libraries": {
+   "cryptography": "46.0.7",
+   "numpy": "2.5.3",
+   "reedsolo": "unknown",
+   "zstandard": "0.25.0"
+  },
+  "machine": "x86_64",
+  "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+  "processor": "x86_64",
+  "python": "3.12.3",
+  "software": {
+   "edlib": "1.3.9.post1",
+   "numpy": "2.5.3",
+   "python": "3.12.3",
+   "vnxdna": "6.0.0.dev0"
+  },
+  "vnxdna_version": "6.0.0.dev0"
+ },
+ "evidence_class": "SIMULATED reads vs PUBLIC-DATA-DERIVED DEV reads",
+ "failed_metrics": [
+  "M3"
+ ],
+ "job": "d03-hac-fwd",
+ "metrics": {
+  "M1": {
+   "pass": true,
+   "rates": {
+    "deletion": {
+     "pass": true,
+     "real": 0.015144023208929538,
+     "real_se": 6.031908526371078e-05,
+     "sim": 0.014920386191567688,
+     "tolerance": 0.000757201160446477
+    },
+    "insertion": {
+     "pass": true,
+     "real": 0.010171903427250823,
+     "real_se": 3.696585341554566e-05,
+     "sim": 0.009944849621448914,
+     "tolerance": 0.0005085951713625412
+    },
+    "substitution": {
+     "pass": true,
+     "real": 0.016559718739243744,
+     "real_se": 5.5448486379735907e-05,
+     "sim": 0.016449538098214905,
+     "tolerance": 0.0008279859369621872
+    }
+   }
+  },
+  "M10": {
+   "parameters": {
+    "sequencing.context.substitution": {
+     "n": 64,
+     "pass": false,
+     "worst_ratio": 1.048108543713659
+    },
+    "sequencing.deletion.rate": {
+     "n": 1,
+     "pass": true,
+     "worst_ratio": 0.1807359996660232
+    },
+    "sequencing.deletion.run_length.mean": {
+     "n": 1,
+     "pass": true,
+     "worst_ratio": 0.058350716843615806
+    },
+    "sequencing.homopolymer.indel_multiplier": {
+     "n": 1,
+     "pass": true,
+     "worst_ratio": 0.12449791459128401
+    },
+    "sequencing.homopolymer.min_run": {
+     "n": 1,
+     "pass": true,
+     "worst_ratio": 0.0
+    },
+    "sequencing.homopolymer.substitution_multiplier": {
+     "n": 1,
+     "pass": true,
+     "worst_ratio": 0.6941984810355357
+    },
+    "sequencing.insertion.base_weights": {
+     "n": 4,
+     "pass": true,
+     "worst_ratio": 0.3604027677516322
+    },
+    "sequencing.insertion.rate": {
+     "n": 1,
+     "pass": true,
+     "worst_ratio": 0.2141242865308936
+    },
+    "sequencing.insertion.run_length.mean": {
+     "n": 1,
+     "pass": true,
+     "worst_ratio": 0.004168097689236595
+    },
+    "sequencing.position_profile.deletion": {
+     "n": 30,
+     "pass": true,
+     "worst_ratio": 0.3416186713861018
+    },
+    "sequencing.position_profile.insertion": {
+     "n": 30,
+     "pass": true,
+     "worst_ratio": 0.4582467908353395
+    },
+    "sequencing.position_profile.substitution": {
+     "n": 30,
+     "pass": true,
+     "worst_ratio": 0.3864820984422516
+    },
+    "sequencing.read_heterogeneity.shape": {
+     "n": 1,
+     "pass": true,
+     "worst_ratio": 0.428288387833748
+    },
+    "sequencing.substitution.from_multipliers": {
+     "n": 4,
+     "pass": true,
+     "worst_ratio": 0.0
+    },
+    "sequencing.substitution.matrix": {
+     "n": 16,
+     "pass": true,
+     "worst_ratio": 0.6264647189933813
+    },
+    "sequencing.substitution.rate": {
+     "n": 1,
+     "pass": true,
+     "worst_ratio": 0.810181385488854
+    }
+   },
+   "pass": false,
+   "rule": "|refit - target| <= 5 SE + 0.08 * |target| + 0.02"
+  },
+  "M2": {
+   "ks_D": 0.013831011064447729,
+   "p90_p99_rel_diff": {
+    "p90": 0.0,
+    "p99": 0.0
+   },
+   "pass": true,
+   "real": {
+    "mean": 6.28163975778317,
+    "p90": 13,
+    "p99": 22
+   },
+   "sim": {
+    "mean": 6.197547842901914,
+    "p90": 13,
+    "p99": 22
+   },
+   "thresholds": {
+    "ks_D": 0.03,
+    "quantile_rel": 0.1,
+    "tv": 0.05
+   },
+   "tv": 0.01689317667734235
+  },
+  "M3": {
+   "bands": {
+    "abs_drift_le_0": {
+     "diff_pp": -2.850156047440866,
+     "pass": false,
+     "real": 0.2932711810651935,
+     "sim": 0.26476962059078485
+    },
+    "abs_drift_le_3": {
+     "diff_pp": 0.1411565297646855,
+     "pass": true,
+     "real": 0.8497503337488291,
+     "sim": 0.851161899046476
+    },
+    "abs_drift_le_6": {
+     "diff_pp": 1.0048630257935343,
+     "pass": false,
+     "real": 0.962037453625508,
+     "sim": 0.9720860838834433
+    }
+   },
+   "pass": false,
+   "threshold_pp": 1.0
+  },
+  "M3_unselected": {
+   "bands": {
+    "abs_drift_le_0": {
+     "diff_pp": -2.8554514398526853,
+     "pass": false,
+     "real": 0.2932711810651935,
+     "sim": 0.26471666666666666
+    },
+    "abs_drift_le_3": {
+     "diff_pp": 0.12413329178375676,
+     "pass": true,
+     "real": 0.8497503337488291,
+     "sim": 0.8509916666666667
+    },
+    "abs_drift_le_6": {
+     "diff_pp": 0.9854213041158744,
+     "pass": true,
+     "real": 0.962037453625508,
+     "sim": 0.9718916666666667
+    }
+   },
+   "gating": false,
+   "note": "simulated reads without the dataset's read selection (protocol 5.5, A2.2); not gating",
+   "pass": false,
+   "threshold_pp": 1.0
+  },
+  "M4": {
+   "kinds": {
+    "deletion": {
+     "bins_tested": 11,
+     "chi2": 482.34321275735084,
+     "pass": false,
+     "ratio_sim_over_real": [
+      1.1438,
+      0.938,
+      1.007,
+      0.9932,
+      0.9932,
+      0.9683,
+      0.9804,
+      0.9844,
+      0.9901,
+      1.0618,
+      1.002
+     ]
+    },
+    "insertion": {
+     "bins_tested": 11,
+     "chi2": 190.74008602792833,
+     "pass": true,
+     "ratio_sim_over_real": [
+      0.929,
+      1.0285,
+      1.0256,
+      1.0057,
+      0.9929,
+      0.9591,
+      1.0266,
+      1.0167,
+      1.0293,
+      1.0019,
+      1.0581
+     ]
+    },
+    "substitution": {
+     "bins_tested": 11,
+     "chi2": 299.17745148818597,
+     "pass": true,
+     "ratio_sim_over_real": [
+      1.0264,
+      0.9663,
+      1.0156,
+      0.9907,
+      0.9825,
+      0.9728,
+      1.0129,
+      0.9927,
+      0.9819,
+      0.9295,
+      1.0304
+     ]
+    }
+   },
+   "pass": false,
+   "threshold": "each 11-bin ratio within +-10% (bins with >= 100 real events)"
+  },
+  "M5": {
+   "pass": false,
+   "real": [
+    0.8122931057371539,
+    0.12845965749230234,
+    0.033724032494978864,
+    0.012560328547018796,
+    0.004577903585667608,
+    0.0020298655749358707,
+    0.0009721086192203431,
+    0.005382997948722341
+   ],
+   "sim": [
+    0.7685227101252452,
+    0.17452552363985066,
+    0.04310810613472744,
+    0.010241582577627204,
+    0.002740499520534276,
+    0.0006766064535599722,
+    0.0001216918081942396,
+    6.32797402610046e-05
+   ],
+   "threshold": 0.05,
+   "tv": 0.0554499397872969
+  },
+  "M6": {
+   "indel_rate_out_in_real": [
+    0.018684474637489488,
+    0.020799779303237374
+   ],
+   "indel_rate_out_in_sim": [
+    0.018818689171806895,
+    0.020676233424979602
+   ],
+   "min_run": 2,
+   "pass": true,
+   "rel_diff": [
+    0.007183211565826525,
+    0.005939768708918081
+   ],
+   "threshold": 0.1
+  },
+  "M7": {
+   "ks_D": 0.010056618311827081,
+   "p10_p90": {
+    "10": {
+     "real": 3.0,
+     "sim": 3.0
+    },
+    "90": {
+     "real": 21.0,
+     "sim": 21.0
+    }
+   },
+   "pass": true,
+   "thresholds": {
+    "ks_D": 0.05,
+    "quantile_rel": 0.1,
+    "zero_fraction": "simulated inside real bootstrap 95% CI"
+   },
+   "zero_fraction": {
+    "real": 0.013150324648639763,
+    "real_ci95": [
+     0.011259965480397798,
+     0.015305745048080879
+    ],
+    "sim": 0.012335
+   }
+  },
+  "M8": {
+   "consensus": "one-pass center-star (median-length pivot, edlib global alignment, majority vote); not the VNX decoder",
+   "curve": {
+    "1": {
+     "clusters": 1500,
+     "pass": true,
+     "real": 0.04012888888888889,
+     "real_wilson95": [
+      0.03932574864688552,
+      0.04094773233709426
+     ],
+     "sim": 0.04027555555555555,
+     "sim_wilson95": [
+      0.03947099434986573,
+      0.04109581495922474
+     ]
+    },
+    "10": {
+     "clusters": 1500,
+     "pass": true,
+     "real": 0.009964444444444444,
+     "real_wilson95": [
+      0.009562320406303972,
+      0.010383301713242985
+     ],
+     "sim": 0.009288888888888888,
+     "sim_wilson95": [
+      0.008900794150367786,
+      0.009693739926245063
+     ]
+    },
+    "2": {
+     "clusters": 1500,
+     "pass": true,
+     "real": 0.03703555555555556,
+     "real_wilson95": [
+      0.03626309468476504,
+      0.03782382526051646
+     ],
+     "sim": 0.03556444444444444,
+     "sim_wilson95": [
+      0.03480707868994032,
+      0.036337669267109664
+     ]
+    },
+    "20": {
+     "clusters": 372,
+     "pass": true,
+     "real": 0.009121863799283154,
+     "real_wilson95": [
+      0.008366116498431947,
+      0.009945196319859762
+     ],
+     "sim": 0.008709677419354838,
+     "sim_wilson95": [
+      0.007971808190734741,
+      0.009515188618459843
+     ]
+    },
+    "5": {
+     "clusters": 1500,
+     "pass": true,
+     "real": 0.012817777777777777,
+     "real_wilson95": [
+      0.012361221237141394,
+      0.01329097011637726
+     ],
+     "sim": 0.011702222222222223,
+     "sim_wilson95": [
+      0.011266116643058578,
+      0.012155001692193886
+     ]
+    }
+   },
+   "exact_length_vote": {
+    "note": "real: all reads of the cluster; simulated: 10 reads per cluster",
+    "real": {
+     "clusters_with_exact_length_read": 1289,
+     "exact_share": 0.46547711404189296,
+     "per_base_error": 0.057067494181536074
+    },
+    "sim": {
+     "clusters_with_exact_length_read": 1436,
+     "exact_share": 0.3969359331476323,
+     "per_base_error": 0.0874744661095636
+    }
+   },
+   "pass": true,
+   "threshold": "each k: within 2 percentage points or inside each other's Wilson 95% CI"
+  },
+  "M9": {
+   "note": "no qualities in this dataset (nanopore quality is assumed)",
+   "pass": null
+  }
+ },
+ "model_sha256": "8f9097d4e1ac17f741f4ac6cf3556da360c656a144ff4677b31e457ab52448fd",
+ "peak_rss_mb_self_plus_children": 1368.6,
+ "seconds": 46.1,
+ "workers": 8
+}

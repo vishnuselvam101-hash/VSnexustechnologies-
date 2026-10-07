@@ -1,0 +1,34 @@
+{
+ "schema": "vnx.conformance-vector/1",
+ "id": "frame4.parse.v7-lowcov.errors",
+ "stage": "D5",
+ "formats": {
+  "frame": 4,
+  "superblock": null,
+  "container": null
+ },
+ "kind": "positive",
+ "operation": "frame4.parse",
+ "params": {
+  "profile": "v7-lowcov"
+ },
+ "inputs": {
+  "strand": {
+   "path": "strand.dat",
+   "sha256": "fb5574a0a1b1007ade933e740892a86b0230d73dda9155836a883e0828dcc92d"
+  }
+ },
+ "expected": {
+  "outputs": {
+   "accepted": true,
+   "kind": 0,
+   "tag": 4660,
+   "group": 5,
+   "symbol": 9,
+   "payload_sha256": "a959c33f34bef79c46ff6a0bddf0c6b9ea775a1d39b0323bee6ee2608ac89373",
+   "errata": 8
+  }
+ },
+ "since_spec": "6.0",
+ "evidence": "SYNTHETIC SOFTWARE TEST"
+}

@@ -1,9 +1,9 @@
 """Build hook for the optional native kernels (all other metadata is in pyproject.toml).
 
-Three plain C shared libraries loaded with ctypes (no Python C API): the V5 marker aligner, the V6 read parser and the
-V6 inner Reed-Solomon decoder (runtime SIMD dispatch, no -march). Each extension is ``optional``: if no C compiler is
-available (or one kernel fails to compile), installation still succeeds and VNX-DNA uses the bit-identical NumPy
-reference for that kernel. ``python -m vnxdna.native`` reports which backend every kernel uses.
+Four plain C shared libraries loaded with ctypes (no Python C API): the V5 marker aligner, the V6 read parser, the
+V6 inner Reed-Solomon decoder (runtime SIMD dispatch, no -march) and the V7 read-clustering kernels. Each extension
+is ``optional``: if no C compiler is available (or one kernel fails to compile), installation still succeeds and
+VNX-DNA uses the bit-identical NumPy reference for that kernel. ``python -m vnxdna.native`` reports which backend every kernel uses.
 Flags and sources come from src/vnxdna/_native_build.py, shared with the explicit ``python -m … build`` commands.
 """
 import importlib.util

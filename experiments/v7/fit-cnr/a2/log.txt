@@ -1,0 +1,84 @@
+$ python experiments/v7/fit/run.py fit cnr --workers 8 --bootstrap 200  # 2026-10-05T17:33:21Z
+{
+ "job": "cnr",
+ "comparison": {
+  "substitution": {
+   "fitted_observed": 0.016810806244170962,
+   "ci95": [
+    0.016737685598354802,
+    0.01690504227691395
+   ],
+   "published": 0.0216,
+   "published_inside_ci": false
+  },
+  "insertion": {
+   "fitted_observed": 0.018959838415457692,
+   "ci95": [
+    0.018878436060743416,
+    0.019031183878012982
+   ],
+   "published": 0.0166,
+   "published_inside_ci": false
+  },
+  "deletion": {
+   "fitted_observed": 0.02188905847212789,
+   "ci95": [
+    0.021760299393351324,
+    0.02201374567553702
+   ],
+   "published": 0.0195,
+   "published_inside_ci": false
+  }
+ },
+ "seconds": {
+  "tally": 1.9,
+  "fit_bootstrap_calibration": 34.0
+ },
+ "rss_mb": 969.6
+}
+exit 0
+$ python experiments/v7/fit/run.py validate cnr --workers 8  # 2026-10-05T17:33:57Z
+cnr INADEQUATE ['M2'] {'M1': True, 'M10': True, 'M2': False, 'M3': True, 'M3_unselected': False, 'M4': True, 'M5': True, 'M6': True, 'M7': True, 'M8': True, 'M9': None}
+exit 0
+$ python experiments/v7/fit/run.py fit cnr-p4tie --workers 8 --bootstrap 200  # 2026-10-05T17:34:32Z
+{
+ "job": "cnr-p4tie",
+ "comparison": {
+  "substitution": {
+   "fitted_observed": 0.021516722599492437,
+   "ci95": [
+    0.02142875255456723,
+    0.021622067782943285
+   ],
+   "published": 0.0216,
+   "published_inside_ci": true
+  },
+  "insertion": {
+   "fitted_observed": 0.016606880237796953,
+   "ci95": [
+    0.016534231845823064,
+    0.01667931069983387
+   ],
+   "published": 0.0166,
+   "published_inside_ci": true
+  },
+  "deletion": {
+   "fitted_observed": 0.019536100294467153,
+   "ci95": [
+    0.01940789935478316,
+    0.019653087332583478
+   ],
+   "published": 0.0195,
+   "published_inside_ci": true
+  }
+ },
+ "seconds": {
+  "tally": 9.7,
+  "fit_bootstrap_calibration": 50.8
+ },
+ "rss_mb": 994.3
+}
+exit 0
+$ python experiments/v7/fit/run.py validate cnr-p4tie --workers 8  # 2026-10-05T17:35:33Z
+cnr-p4tie INADEQUATE ['M2', 'M3'] {'M1': True, 'M10': False, 'M2': False, 'M3': False, 'M3_unselected': False, 'M4': True, 'M5': True, 'M6': True, 'M7': True, 'M8': True, 'M9': None}
+exit 0

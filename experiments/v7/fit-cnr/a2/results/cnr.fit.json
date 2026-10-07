@@ -1,0 +1,164 @@
+{
+ "assigned_reads": 163562,
+ "bootstrap": 200,
+ "calibration": {
+  "coverage": 10,
+  "factors_scalar": {
+   "sequencing.deletion.rate": 1.125178120762511,
+   "sequencing.deletion.run_length.mean": 1.072914055803015,
+   "sequencing.homopolymer.indel_multiplier": 1.141332551646327,
+   "sequencing.homopolymer.min_run": 1.0,
+   "sequencing.homopolymer.substitution_multiplier": 0.9187429943849461,
+   "sequencing.insertion.rate": 0.9951287068052145,
+   "sequencing.insertion.run_length.mean": 1.0412102117124002,
+   "sequencing.read_heterogeneity.shape": 0.5704968594770914,
+   "sequencing.substitution.rate": 1.0067087392933693
+  },
+  "final_residual_ratios": {
+   "ed_var": 0.9921177103620988,
+   "hp_indel": 0.9974911344825793,
+   "hp_sub": 1.0036907408145048,
+   "ins": 0.9973518557789997,
+   "start": 1.0024057621819842,
+   "sub": 1.0044461912376013
+  },
+  "iterations": 5,
+  "refs": 4000,
+  "trace": [
+   {
+    "iteration": 0,
+    "ratios": {
+     "del_mean": 1.0512992817379492,
+     "ed_var": 1.3056219448187523,
+     "hp_indel": 1.1108841001534528,
+     "hp_sub": 0.9087614170553237,
+     "ins": 1.0316707158572571,
+     "ins_mean": 1.1652132436407465,
+     "start": 1.1117969943259753,
+     "sub": 0.9925638560277165
+    }
+   },
+   {
+    "iteration": 1,
+    "ratios": {
+     "del_mean": 1.0254205499323943,
+     "ed_var": 1.0416825226885502,
+     "hp_indel": 1.0643619577824415,
+     "hp_sub": 0.9963340537560176,
+     "ins": 0.9888661192898169,
+     "ins_mean": 1.055449690305497,
+     "start": 1.0429080628911427,
+     "sub": 1.0090969804736232
+    }
+   },
+   {
+    "iteration": 2,
+    "ratios": {
+     "del_mean": 1.012349180838667,
+     "ed_var": 0.9562397973511556,
+     "hp_indel": 1.0144548633518322,
+     "hp_sub": 0.9863637605006187,
+     "ins": 0.9900259176928037,
+     "ins_mean": 1.0161029010117009,
+     "start": 1.0160286377585257,
+     "sub": 1.0047691553107736
+    }
+   },
+   {
+    "iteration": 3,
+    "ratios": {
+     "del_mean": 1.0069260363085137,
+     "ed_var": 0.984089174733245,
+     "hp_indel": 0.997303755148713,
+     "hp_sub": 1.001083483393764,
+     "ins": 0.9825618710273925,
+     "ins_mean": 1.0091565495907477,
+     "start": 1.0081049202741494,
+     "sub": 1.005199131615386
+    }
+   },
+   {
+    "iteration": 4,
+    "ratios": {
+     "del_mean": 1.0062546535629364,
+     "ed_var": 0.9757830608341158,
+     "hp_indel": 1.0097158106320094,
+     "hp_sub": 0.9909638221007581,
+     "ins": 1.0006571254585734,
+     "ins_mean": 0.9930959339684207,
+     "start": 0.9965292509473547,
+     "sub": 0.9980184702008893
+    }
+   }
+  ]
+ },
+ "comparison_with_published": {
+  "deletion": {
+   "ci95": [
+    0.021760299393351324,
+    0.02201374567553702
+   ],
+   "fitted_observed": 0.02188905847212789,
+   "published": 0.0195,
+   "published_inside_ci": false
+  },
+  "insertion": {
+   "ci95": [
+    0.018878436060743416,
+    0.019031183878012982
+   ],
+   "fitted_observed": 0.018959838415457692,
+   "published": 0.0166,
+   "published_inside_ci": false
+  },
+  "substitution": {
+   "ci95": [
+    0.016737685598354802,
+    0.01690504227691395
+   ],
+   "fitted_observed": 0.016810806244170962,
+   "published": 0.0216,
+   "published_inside_ci": false
+  }
+ },
+ "environment": {
+  "cpu_count": 8,
+  "git": {
+   "commit": "df46fa4ec02bf47de8462a6b9d6e23fd90184d82",
+   "dirty": false
+  },
+  "implementation": "CPython",
+  "libraries": {
+   "cryptography": "46.0.7",
+   "numpy": "2.5.3",
+   "reedsolo": "unknown",
+   "zstandard": "0.25.0"
+  },
+  "machine": "x86_64",
+  "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+  "processor": "x86_64",
+  "python": "3.12.3",
+  "software": {
+   "edlib": "1.3.9.post1",
+   "numpy": "2.5.3",
+   "python": "3.12.3",
+   "vnxdna": "6.0.0.dev0"
+  },
+  "vnxdna_version": "6.0.0.dev0"
+ },
+ "evidence_class": "PUBLIC-DATA-DERIVED",
+ "job": "cnr",
+ "model_file": "fit-cnr/a2/models/cnr-ont-fit.json",
+ "model_sha256": "9aedc4381db6a77353ff90864349d4326778e44c9604f16342875fda874c1fc4",
+ "peak_rss_mb_self_plus_children": 969.6,
+ "published_source": "P4-EXP-03 (this repository, all 10,000 clusters) and Srinivasavaradhan et al. 2021 (clusters 1-2000)",
+ "references": 6017,
+ "seconds": {
+  "fit_bootstrap_calibration": 34.0,
+  "tally": 1.9
+ },
+ "seed": 20261005,
+ "split": "FIT",
+ "title": "CNR (D04), ONT, basecaller not stated",
+ "workers": 8
+}

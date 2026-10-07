@@ -1,0 +1,243 @@
+{
+ "cells": {
+  "nanopore-like/cov10|a1-default": {
+   "cluster_read_purity_mean": 1.0,
+   "decode_seconds_median": 2.7035,
+   "false_frames_total": 0,
+   "false_success": 0,
+   "first_large_drop": {
+    "rs_recoverable": 10
+   },
+   "frames_data_recovered_mean": 513.9,
+   "funnel_data_mean": {
+    "candidate": 657.9,
+    "clustered": 657.9,
+    "observed": 675.5,
+    "oriented": 657.9,
+    "rs_recoverable": 513.9,
+    "stored": 661.5,
+    "total": 679.0,
+    "two_reads": 661.5,
+    "valid_frame": 513.9
+   },
+   "impure_clusters_mean": 0.3,
+   "loss_reasons_mean_per_trial": {
+    "clustered: unassigned": 3.9,
+    "observed: no read in the pool": 3.6,
+    "rs_recoverable: errors/erasures": 53.7,
+    "rs_recoverable: shifted segment (indel placed wrong)": 93.1,
+    "two_reads: one read only (consensus needs 2)": 14.4
+   },
+   "lost_candidates_mean": {
+    "mean_e": 4.08,
+    "mean_f": 28.59,
+    "mean_reads": 4.4,
+    "mean_shifted_nt": 12.53,
+    "mean_wrong_nt": 13.8,
+    "n": 146.8
+   },
+   "oracle": {
+    "archive_sha_match": 0,
+    "classes_failed_strands_mean": {
+     "ADDRESS-CAUSED": 0.0,
+     "BOUNDARY-CAUSED": 95.2,
+     "CLUSTERING-CAUSED": 1.6,
+     "PAYLOAD-CAUSED": 53.9,
+     "STRUCTURAL": 18.0
+    },
+    "failed_reads_by_class_mean": {
+     "ADDRESS-CAUSED": 0.0,
+     "BOUNDARY-CAUSED": 479.9,
+     "CLUSTERING-CAUSED": 9.6,
+     "PAYLOAD-CAUSED": 174.5,
+     "STRUCTURAL": 14.4
+    },
+    "false_frames_total": 0,
+    "frames_data_recovered_mean": 515.4,
+    "label": "ORACLE / DIAGNOSTIC / SIMULATED (true strand identity supplied)",
+    "rows_decodable_mean": 2.9
+   },
+   "outcomes": {
+    "EXPLICIT_FAILURE": 10
+   },
+   "rows_decodable_mean": 2.6,
+   "seeds": [
+    82046,
+    82047,
+    82048,
+    82049,
+    82050,
+    82051,
+    82052,
+    82053,
+    82054,
+    82055
+   ],
+   "trials": 10
+  },
+  "nanopore-like/cov3|a1-default": {
+   "cluster_read_purity_mean": 1.0,
+   "decode_seconds_median": 0.994,
+   "false_frames_total": 0,
+   "false_success": 0,
+   "first_large_drop": {
+    "rs_recoverable": 10
+   },
+   "frames_data_recovered_mean": 121.3,
+   "funnel_data_mean": {
+    "candidate": 452.5,
+    "clustered": 452.5,
+    "observed": 604.2,
+    "oriented": 452.5,
+    "rs_recoverable": 121.3,
+    "stored": 475.9,
+    "total": 679.0,
+    "two_reads": 475.9,
+    "valid_frame": 121.3
+   },
+   "impure_clusters_mean": 0.0,
+   "loss_reasons_mean_per_trial": {
+    "clustered: unassigned": 23.7,
+    "observed: no read in the pool": 75.9,
+    "rs_recoverable: errors/erasures": 175.2,
+    "rs_recoverable: shifted segment (indel placed wrong)": 161.9,
+    "two_reads: one read only (consensus needs 2)": 131.1
+   },
+   "lost_candidates_mean": {
+    "mean_e": 2.39,
+    "mean_f": 41.65,
+    "mean_reads": 3.15,
+    "mean_shifted_nt": 7.9,
+    "mean_wrong_nt": 8.85,
+    "n": 337.1
+   },
+   "oracle": {
+    "archive_sha_match": 0,
+    "classes_failed_strands_mean": {
+     "ADDRESS-CAUSED": 0.0,
+     "BOUNDARY-CAUSED": 170.2,
+     "CLUSTERING-CAUSED": 2.1,
+     "PAYLOAD-CAUSED": 188.5,
+     "STRUCTURAL": 207.0
+    },
+    "failed_reads_by_class_mean": {
+     "ADDRESS-CAUSED": 0.0,
+     "BOUNDARY-CAUSED": 630.0,
+     "CLUSTERING-CAUSED": 9.9,
+     "PAYLOAD-CAUSED": 493.0,
+     "STRUCTURAL": 131.1
+    },
+    "false_frames_total": 0,
+    "frames_data_recovered_mean": 123.1,
+    "label": "ORACLE / DIAGNOSTIC / SIMULATED (true strand identity supplied)",
+    "rows_decodable_mean": 0.0
+   },
+   "outcomes": {
+    "EXPLICIT_FAILURE": 10
+   },
+   "rows_decodable_mean": 0.0,
+   "seeds": [
+    82046,
+    82047,
+    82048,
+    82049,
+    82050,
+    82051,
+    82052,
+    82053,
+    82054,
+    82055
+   ],
+   "trials": 10
+  },
+  "nanopore-like/cov5|a1-default": {
+   "cluster_read_purity_mean": 1.0,
+   "decode_seconds_median": 1.6135,
+   "false_frames_total": 0,
+   "false_success": 0,
+   "first_large_drop": {
+    "rs_recoverable": 10
+   },
+   "frames_data_recovered_mean": 274.5,
+   "funnel_data_mean": {
+    "candidate": 576.5,
+    "clustered": 576.5,
+    "observed": 650.7,
+    "oriented": 576.5,
+    "rs_recoverable": 274.5,
+    "stored": 590.1,
+    "total": 679.0,
+    "two_reads": 590.1,
+    "valid_frame": 274.5
+   },
+   "impure_clusters_mean": 0.1,
+   "loss_reasons_mean_per_trial": {
+    "clustered: merged": 0.1,
+    "clustered: unassigned": 13.9,
+    "observed: no read in the pool": 29.0,
+    "rs_recoverable: errors/erasures": 139.4,
+    "rs_recoverable: shifted segment (indel placed wrong)": 167.6,
+    "two_reads: one read only (consensus needs 2)": 61.5
+   },
+   "lost_candidates_mean": {
+    "mean_e": 3.08,
+    "mean_f": 35.71,
+    "mean_reads": 3.62,
+    "mean_shifted_nt": 9.8,
+    "mean_wrong_nt": 10.81,
+    "n": 307.0
+   },
+   "oracle": {
+    "archive_sha_match": 0,
+    "classes_failed_strands_mean": {
+     "ADDRESS-CAUSED": 0.0,
+     "BOUNDARY-CAUSED": 173.6,
+     "CLUSTERING-CAUSED": 1.8,
+     "PAYLOAD-CAUSED": 145.6,
+     "STRUCTURAL": 90.5
+    },
+    "failed_reads_by_class_mean": {
+     "ADDRESS-CAUSED": 0.0,
+     "BOUNDARY-CAUSED": 737.1,
+     "CLUSTERING-CAUSED": 9.3,
+     "PAYLOAD-CAUSED": 412.8,
+     "STRUCTURAL": 61.5
+    },
+    "false_frames_total": 0,
+    "frames_data_recovered_mean": 275.9,
+    "label": "ORACLE / DIAGNOSTIC / SIMULATED (true strand identity supplied)",
+    "rows_decodable_mean": 0.0
+   },
+   "outcomes": {
+    "EXPLICIT_FAILURE": 10
+   },
+   "rows_decodable_mean": 0.0,
+   "seeds": [
+    82046,
+    82047,
+    82048,
+    82049,
+    82050,
+    82051,
+    82052,
+    82053,
+    82054,
+    82055
+   ],
+   "trials": 10
+  }
+ },
+ "classification": "EXPERIMENTAL / DIAGNOSTIC / SIMULATED",
+ "config_sha256": "2ead0f1465388e4e2ec51115987c1dd277d909d4f9cd07f7f1ec3c11dde59fc7",
+ "experiment": "A-LOSS",
+ "false_frames_total": 0,
+ "false_success_total": 0,
+ "git": {
+  "commit": "7f680eb3bcae26df4a33d7f288f550244c9d03ab",
+  "dirty": true,
+  "dirty_tracked": false
+ },
+ "record": "summary",
+ "statement": "EXPERIMENTAL (protocol \u00a77 exploration seeds 82000-82099), SIMULATED: software strands and the unfitted V6 nanopore-like channel. No DNA was synthesised, stored or sequenced; no public data and no fitted model is used. Descriptive loss taxonomy with ground truth; ORACLE rows supply the true strand identity and are not decoding results.",
+ "trials": 30
+}

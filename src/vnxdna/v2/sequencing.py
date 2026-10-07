@@ -304,8 +304,10 @@ def simulate_batch(codes: np.ndarray, lengths: np.ndarray, config: SequencingCon
     flat, read_lengths, _ = _edit(flat, read_lengths, config.synthesis_substitution_rate, config.synthesis_insertion_rate,
                                   config.synthesis_deletion_rate, rng, counts, "synthesis_", None)
     flags = np.zeros(flat.size, dtype=bool)
-    flat, read_lengths, flags = _edit(flat, read_lengths, config.substitution_rate, config.insertion_rate, config.deletion_rate,
-                                      rng, counts, "sequencing_", flags)
+    flat, read_lengths, edited_flags = _edit(flat, read_lengths, config.substitution_rate, config.insertion_rate,
+                                             config.deletion_rate, rng, counts, "sequencing_", flags)
+    assert edited_flags is not None  # _edit returns flags whenever it is given flags
+    flags = edited_flags
     reads = source.size
     if config.burst_rate and reads:
         flat, read_lengths, flags = _bursts(flat, read_lengths, config, rng, counts, flags)
@@ -388,6 +390,7 @@ def simulate_batch(codes: np.ndarray, lengths: np.ndarray, config: SequencingCon
 
 
 def _write_bucket_record(handle, batch: ReadBatch) -> None:
+    assert batch.quals is not None  # simulated reads always carry qualities
     header = np.stack([batch.lengths.astype(np.int64)], axis=1).astype("<i8").tobytes()
     handle.write(len(batch.lengths).to_bytes(8, "little") + header + batch.codes.tobytes() + batch.quals.tobytes())
 
@@ -470,6 +473,7 @@ def sequence_file(strands_path: str | os.PathLike, output_path: str | os.PathLik
                 for b in np.unique(target).tolist():
                     _write_bucket_record(handles[b], _take(reads, np.flatnonzero(target == b)))
             else:
+                assert writer is not None  # opened on the first batch
                 writer.write_batch(reads)
         if writer is None:
             raise InvalidInputError(f"{src} contains no strands")

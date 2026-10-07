@@ -1,0 +1,157 @@
+{
+ "assigned_reads": 399880,
+ "bootstrap": 200,
+ "calibration": {
+  "coverage": 10,
+  "factors_scalar": {
+   "sequencing.deletion.rate": 0.9901803924010822,
+   "sequencing.deletion.run_length.mean": 1.023495723024958,
+   "sequencing.homopolymer.indel_multiplier": 1.0183246843204794,
+   "sequencing.homopolymer.min_run": 1.0,
+   "sequencing.homopolymer.substitution_multiplier": 1.0275607286569928,
+   "sequencing.insertion.rate": 1.0082046268273233,
+   "sequencing.insertion.run_length.mean": 1.0154181737309422,
+   "sequencing.substitution.rate": 1.0338396198627855
+  },
+  "final_residual_ratios": {
+   "hp_indel": 1.0078391366638821,
+   "hp_sub": 1.0150669862920023,
+   "ins": 0.9996303999272959,
+   "start": 1.0074172969406683,
+   "sub": 1.0031329111839824
+  },
+  "iterations": 5,
+  "refs": 4000,
+  "trace": [
+   {
+    "iteration": 0,
+    "ratios": {
+     "del_mean": 1.0211927342361808,
+     "hp_indel": 1.0426319975336906,
+     "hp_sub": 0.9661062800690216,
+     "ins": 1.0178648447690553,
+     "ins_mean": 1.11355463898902,
+     "start": 0.999568230200849,
+     "sub": 1.001819211443533
+    }
+   },
+   {
+    "iteration": 1,
+    "ratios": {
+     "del_mean": 1.0086366450668403,
+     "hp_indel": 0.9862434218275077,
+     "hp_sub": 1.0396997078693535,
+     "ins": 0.9981288007180127,
+     "ins_mean": 1.0174245331688527,
+     "start": 0.9938395742712686,
+     "sub": 1.0236559482148442
+    }
+   },
+   {
+    "iteration": 2,
+    "ratios": {
+     "del_mean": 1.0000946311222807,
+     "hp_indel": 1.0091358599742741,
+     "hp_sub": 1.045806618738212,
+     "ins": 0.9952175425392602,
+     "ins_mean": 1.012644171101643,
+     "start": 1.0028318555287692,
+     "sub": 1.00828735315036
+    }
+   },
+   {
+    "iteration": 3,
+    "ratios": {
+     "del_mean": 1.0026151780789838,
+     "hp_indel": 0.991703226390681,
+     "hp_sub": 1.0179458536723167,
+     "ins": 1.0106131510241778,
+     "ins_mean": 1.0106507490888588,
+     "start": 0.9987005972647418,
+     "sub": 1.0107644874992607
+    }
+   },
+   {
+    "iteration": 4,
+    "ratios": {
+     "del_mean": 1.000900227450001,
+     "hp_indel": 0.9972856452311308,
+     "hp_sub": 0.9722074917204163,
+     "ins": 0.9901246699905327,
+     "ins_mean": 0.9766035328341014,
+     "start": 0.9910268976713102,
+     "sub": 1.0033898954419225
+    }
+   }
+  ]
+ },
+ "comparison_with_published": {
+  "deletion": {
+   "ci95": [
+    0.01590173857215129,
+    0.016025849624367806
+   ],
+   "fitted_observed": 0.015966259624834635,
+   "published": 0.014,
+   "published_inside_ci": false
+  },
+  "insertion": {
+   "ci95": [
+    0.01055425124971962,
+    0.010641992175136708
+   ],
+   "fitted_observed": 0.010600492984926197,
+   "published": 0.009,
+   "published_inside_ci": false
+  },
+  "substitution": {
+   "ci95": [
+    0.016268847982414205,
+    0.01638140817358157
+   ],
+   "fitted_observed": 0.01631963495441515,
+   "published": 0.02,
+   "published_inside_ci": false
+  }
+ },
+ "environment": {
+  "cpu_count": 8,
+  "git": {
+   "commit": "1c0b889c2847c57c98d6c155ecc7086f8f1250e4",
+   "dirty": false
+  },
+  "implementation": "CPython",
+  "libraries": {
+   "cryptography": "46.0.7",
+   "numpy": "2.5.3",
+   "reedsolo": "unknown",
+   "zstandard": "0.25.0"
+  },
+  "machine": "x86_64",
+  "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+  "processor": "x86_64",
+  "python": "3.12.3",
+  "software": {
+   "edlib": "1.3.9.post1",
+   "numpy": "2.5.3",
+   "python": "3.12.3",
+   "vnxdna": "6.0.0.dev0"
+  },
+  "vnxdna_version": "6.0.0.dev0"
+ },
+ "evidence_class": "PUBLIC-DATA-DERIVED",
+ "job": "d03-hac-bwd",
+ "model_file": "fit-d03/models/ont-guppy-hac-pass-bwd-fit.json",
+ "model_sha256": "2d246651de5604b8f83145fe3bba5b97570809500df40537927214c0f7289d8e",
+ "peak_rss_mb_self_plus_children": 2646.8,
+ "published_source": "Welter et al. Table II, file 3, accurate basecaller, pass (arXiv:2406.12955)",
+ "references": 36883,
+ "seconds": {
+  "fit_bootstrap_calibration": 33.9,
+  "tally": 9.5
+ },
+ "seed": 20261005,
+ "split": "FIT",
+ "title": "D03 guppy accurate (HAC), pass, backward (reverse-complemented to the reference frame)",
+ "workers": 8
+}

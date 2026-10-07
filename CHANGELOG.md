@@ -1,8 +1,75 @@
 # Changelog
 
-## 6.0.0 (unreleased)
+## Unreleased
 
-Consolidated entry for all V6 phases (development tree `6.0.0.dev0`; version and date to be set at release). The
+### Added (V7 Phase D, in development)
+
+- **`vnx.channel-model/2`** extends `/1` (every `/1` model loads unchanged): provenance of fitted models (datasets with
+  SHA-256, split, fitting commit and seed), per-parameter `ci95` and `basis`, and opt-in effects: insertion runs, 3-mer
+  context and per-read rate heterogeneity (`read_heterogeneity`, gamma; honoured by the simulator, present only when set)
+  are honoured; `correlation` and `asymmetry` are refused by every simulation path (docs/CHANNEL_MODEL.md).
+- **Channel-model fitter** `vnxdna.simulation.fit` (V7 fitting plan 3.3/3.4): edlib alignment with leftmost indel
+  normalisation, count estimators, bootstrap over references, simulation calibration, fit-quality metrics M1-M10, and a
+  matched read-length window for length-selected datasets. Data split with a held-out access guard (`experiments/v7/split`).
+- **Fitted models F** for CNR, D03 (guppy HAC and fast, forward and backward) and D02 (Twist, with a PhiX stage split),
+  PUBLIC-DATA-DERIVED; validation reads SIMULATED. Two rounds; round 2 follows protocol amendment 2
+  (docs/V7_PROTOCOL.md 5.5). Verdicts on DEV: every CNR and D03 model is INADEQUATE (D03 on M3, CNR on M2); D02 is
+  ADEQUATE (marginal: M3 passes by 0.09 pp, about 1 Monte Carlo SE; DEV already looked at twice), with non-gating
+  misfits, and must not be used for quality-dependent decoder decisions while M9 fails (Q11 bin: real 12.8 vs simulated
+  3.0). Held-out validation not run (no PREREG yet). FIT/DEV requests are recorded in an access ledger. The D03
+  forward models' substitution rate (min_run 2, confounded with the 3-mer context) is relabelled `estimated` without a
+  refit; future fits fix the homopolymer substitution multiplier at 1 in that case. Register:
+  docs/V7_CHANNEL_MODELS.md; details: experiments/v7/fit/README.md.
+- The `/2` insertion-run step of the simulator works in row chunks: same reads and generator stream; peak memory stays
+  close to that of the same model without insertion runs instead of about doubling (regression test
+  `tests/simulation/test_sim_insertion_chunks.py`).
+
+### Added
+
+- **V7 item A reference (opt-in, EXPERIMENTAL): header-independent read clustering with fill-only merge.**
+  `DecodeOptions(read_clustering="fallback")` / `vnx decode --read-clustering fallback`; the default `off` is the 6.0
+  decode path byte for byte. Pass 1 keeps every unverified read in an unplaced-read store (budget 4,000,000 reads);
+  a lazy stage D7c clusters them by k-mer sketches and banded edit distance, builds a per-cluster consensus with
+  forward-backward certain calls (indels erase only the positions their placement affects), and accepts frames only
+  after inner RS + CRC-32. Cluster frames fill only superblock symbols and data addresses the 6.0 path left
+  unresolved (FC-9); the container SHA-256 still decides SUCCESS. Python/NumPy reference (native kernels: step A2);
+  design `docs/V7_ARCHITECTURE.md` §5, deviations in the module docstrings; smoke run
+  `experiments/v7/a1-smoke/README.md` (EXPERIMENTAL, SIMULATED, no efficacy claim). Formats unchanged.
+- **V7 A2: native kernels for read clustering.** `src/vnxdna/native/c/cluster.c` (binding `vnxdna.native.cluster`,
+  fourth optional extension `vnxdna._vnx_cluster` built by `pip install`, listed by `native_status()`) runs the
+  sketch, candidate pairs, banded edit distance (Myers bit-vector), verification and forward-backward certain calls
+  (run-time AVX2) bit-exactly as the NumPy reference, which stays the specification and the fallback
+  (`VNXDNA_CLUSTER_BACKEND=auto|native|reference`). Evidence: golden hashes, >= 100,000 reads per kernel of randomized
+  equivalence, hypothesis at the ctypes boundary, a whole-decode identity test (`tests/v7/test_native_cluster.py`);
+  gcc/clang ASan+UBSan and clang UBSan-trap runs (`benchmarks/v7/native_cluster/sanitizers.sh`, in the CI sanitizers
+  job). A1-SMOKE decode with clustering on, same 10 trials, identical outcomes: median 54.6 s -> 2.8 s
+  (nanopore-like/cov10, EXPLICIT FAILURE 5/5 on both) and 35.8 s -> 2.6 s, 13.8x (deletion-heavy/cov10, EXACT 5/5) on
+  the development host (MEASURED,
+  `benchmarks/v7/native_cluster/results/a1smoke_bench.json`).
+
+### Fixed
+
+- **Random access with failed groups outside the selection (job #66).** On a V6 stripe archive the column pass decodes
+  the whole stripe of an index group, and any unrecovered row of that stripe made `--select` refuse with "the archive
+  index could not be decoded" although the index had decoded. Random access now refuses only when an index group or a
+  group of the selected files is unrecovered; the error details list the other failed groups separately. Every
+  selected file is still verified (chunk SHA-256, chunk ID, file SHA-256) before it is written
+  (`tests/v6/test_random_access_partial.py`).
+- `vnx locate` / `dna_location` with V6 outer-code options (stripes, column parity, interleaved order, adaptive plan)
+  report the strand-file records the encoder writes for those options instead of refusing them; V4/V5 output is
+  unchanged (job #62).
+- **V2 consensus crash and mypy coverage (job #58).** A cluster that counts verified reads, none of which verifies again,
+  made `consensus_file` raise AttributeError when the verified-read fallback was on; its consensus is now written as
+  `invalid`, as without the fallback (`tests/v2/test_channel_cluster_consensus.py`). mypy now gates `vnxdna.v2`,
+  `vnxdna.v4` and `vnxdna.ecc` (164 errors fixed, no new ignores).
+
+## 6.0.0 (2026-10-05)
+
+Tagged `v6.0.0` at 16b5811 (merge of PR #8). The tagged tree still reports the package version `6.0.0.dev0`: the
+release did not set `_version.py` to `6.0.0`, so archives written by it name `6.0.0.dev0` as their writer. The tag is
+not moved.
+
+Consolidated entry for all V6 phases (development tree `6.0.0.dev0`). The
 per-phase entries below it are kept as written during development. Formats are unchanged from 5.0.0 (VNX4 container,
 frame 4, superblocks 1 and 2); defaults are unchanged except where stated. Every channel result is SIMULATED; time and
 memory figures are MEASURED on a shared development host; the CNR statistics are PUBLIC-DATA-DERIVED. No DNA was

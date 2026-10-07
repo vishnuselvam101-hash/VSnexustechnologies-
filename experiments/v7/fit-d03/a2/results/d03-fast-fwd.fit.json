@@ -1,0 +1,164 @@
+{
+ "assigned_reads": 488587,
+ "bootstrap": 200,
+ "calibration": {
+  "coverage": 10,
+  "factors_scalar": {
+   "sequencing.deletion.rate": 0.9792613136962462,
+   "sequencing.deletion.run_length.mean": 1.016400962690547,
+   "sequencing.homopolymer.indel_multiplier": 1.123398891944364,
+   "sequencing.homopolymer.min_run": 1.0,
+   "sequencing.homopolymer.substitution_multiplier": 0.8993121710992835,
+   "sequencing.insertion.rate": 1.0259760857554219,
+   "sequencing.insertion.run_length.mean": 1.0137889009476218,
+   "sequencing.read_heterogeneity.shape": 0.5673247626305455,
+   "sequencing.substitution.rate": 1.2858358518977417
+  },
+  "final_residual_ratios": {
+   "ed_var": 0.9908913148605657,
+   "hp_indel": 1.0069718429307566,
+   "hp_sub": 0.9824381391281938,
+   "ins": 0.9952181689739785,
+   "start": 0.9959142649771078,
+   "sub": 1.011686654777696
+  },
+  "iterations": 5,
+  "refs": 4000,
+  "trace": [
+   {
+    "iteration": 0,
+    "ratios": {
+     "del_mean": 1.0181435149344864,
+     "ed_var": 1.3753811831021132,
+     "hp_indel": 1.0970532054662716,
+     "hp_sub": 0.9198477550153928,
+     "ins": 1.0649417502701506,
+     "ins_mean": 1.1429557684724658,
+     "start": 1.01969745021906,
+     "sub": 1.024498648138249
+    }
+   },
+   {
+    "iteration": 1,
+    "ratios": {
+     "del_mean": 1.002062926536498,
+     "ed_var": 1.1866757970635302,
+     "hp_indel": 1.0257254623353675,
+     "hp_sub": 0.9826115103449826,
+     "ins": 1.0090457304648388,
+     "ins_mean": 0.9910549861608267,
+     "start": 0.9927109185628267,
+     "sub": 1.2194329316165824
+    }
+   },
+   {
+    "iteration": 2,
+    "ratios": {
+     "del_mean": 1.001743989806485,
+     "ed_var": 0.999781845532061,
+     "hp_indel": 1.0299080401330416,
+     "hp_sub": 0.9773212918397585,
+     "ins": 0.9889410223758609,
+     "ins_mean": 1.0229277901065361,
+     "start": 0.9879277433608835,
+     "sub": 1.0796965572131867
+    }
+   },
+   {
+    "iteration": 3,
+    "ratios": {
+     "del_mean": 1.0007175515841926,
+     "ed_var": 0.9892375432308613,
+     "hp_indel": 1.0138651749191978,
+     "hp_sub": 0.9889001923533893,
+     "ins": 0.983670364048365,
+     "ins_mean": 1.026300676033488,
+     "start": 0.9868134027198051,
+     "sub": 1.0375356727764324
+    }
+   },
+   {
+    "iteration": 4,
+    "ratios": {
+     "del_mean": 1.0007387056320909,
+     "ed_var": 0.9769273405547213,
+     "hp_indel": 1.0049719365691727,
+     "hp_sub": 0.9837170397077654,
+     "ins": 0.9923243717065177,
+     "ins_mean": 0.9956644201214627,
+     "start": 0.9834304333893695,
+     "sub": 1.0233054011207414
+    }
+   }
+  ]
+ },
+ "comparison_with_published": {
+  "deletion": {
+   "ci95": [
+    0.03993555106182897,
+    0.040125256040268314
+   ],
+   "fitted_observed": 0.04003120678280175,
+   "published": 0.038,
+   "published_inside_ci": false
+  },
+  "insertion": {
+   "ci95": [
+    0.018250575841803448,
+    0.01834067215271335
+   ],
+   "fitted_observed": 0.018292905744463253,
+   "published": 0.014,
+   "published_inside_ci": false
+  },
+  "substitution": {
+   "ci95": [
+    0.03620266853546973,
+    0.03636526670888218
+   ],
+   "fitted_observed": 0.03628722520940406,
+   "published": 0.043,
+   "published_inside_ci": false
+  }
+ },
+ "environment": {
+  "cpu_count": 8,
+  "git": {
+   "commit": "df46fa4ec02bf47de8462a6b9d6e23fd90184d82",
+   "dirty": false
+  },
+  "implementation": "CPython",
+  "libraries": {
+   "cryptography": "46.0.7",
+   "numpy": "2.5.3",
+   "reedsolo": "unknown",
+   "zstandard": "0.25.0"
+  },
+  "machine": "x86_64",
+  "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+  "processor": "x86_64",
+  "python": "3.12.3",
+  "software": {
+   "edlib": "1.3.9.post1",
+   "numpy": "2.5.3",
+   "python": "3.12.3",
+   "vnxdna": "6.0.0.dev0"
+  },
+  "vnxdna_version": "6.0.0.dev0"
+ },
+ "evidence_class": "PUBLIC-DATA-DERIVED",
+ "job": "d03-fast-fwd",
+ "model_file": "fit-d03/a2/models/ont-guppy-fast-pass-fwd-fit.json",
+ "model_sha256": "3231078ea0f0a356af99f04283fb86d7a1f69008d044762843958d60b5b1f20b",
+ "peak_rss_mb_self_plus_children": 2437.7,
+ "published_source": "Welter et al. Table II, file 3, fast basecaller, pass",
+ "references": 36883,
+ "seconds": {
+  "fit_bootstrap_calibration": 35.0,
+  "tally": 11.1
+ },
+ "seed": 20261005,
+ "split": "FIT",
+ "title": "D03 guppy fast, pass, forward",
+ "workers": 8
+}

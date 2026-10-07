@@ -38,7 +38,7 @@ from vnxdna.core.errors import VNXOutputError
 from vnxdna.core.util import atomic_output
 from vnxdna.dnaenc.strandio import iter_batches
 from vnxdna.simulation import errormodels as em
-from vnxdna.simulation.channel import BATCH, _homopolymer_mask, _records, _serialize, _stack
+from vnxdna.simulation.channel import BATCH, _homopolymer_mask, _records, _run_lengths, _serialize, _stack
 from vnxdna.simulation.loss import LossConfig, loss_mask
 from vnxdna.simulation.model import SCHEMA_V1, ChannelModel
 
@@ -50,6 +50,8 @@ STATEMENT = ("SIMULATED: software strands through a software channel model. No D
              "sequenced; not biological validation.")
 #: auxiliary generator tags (stage streams); the V4 mechanisms use default_rng([seed, batch])
 TAG_SYNTHESIS, TAG_STORAGE, TAG_AMPLIFICATION, TAG_SEQUENCING = 0x53594E, 0x53544F, 0x414D50, 0x534551
+TAG_HETEROGENEITY = 0x484554                          # /2 read_heterogeneity: its own stream, so models without it are unchanged
+HETEROGENEITY_SITE_CAP = 0.95                         # a scaled site's total event probability never exceeds this
 SHUFFLE_KEY = 0x5F5F          # V4: default_rng([seed, 0x5F5F]) permutes shuffle windows
 LOSS_KEY = 0x56360001         # V6 loss: default_rng([seed, 0x56360001])
 
@@ -64,6 +66,8 @@ class Simulator:
     """A compiled channel model: the stage error models built once from the /1 stages."""
 
     def __init__(self, stages: dict):
+        from vnxdna.simulation.model2 import refuse_unsupported
+        refuse_unsupported(stages)                    # /2 effects the simulator cannot honour are refused, never ignored
         self.stages = stages
         syn, sto, amp, seq = (stages[k] for k in ("synthesis", "storage", "amplification", "sequencing"))
         P = em.PositionProfile.from_json
@@ -94,6 +98,8 @@ class Simulator:
         self.seq_del = em.DeletionModel.from_json(seq["deletion"], qp)
         hp = seq["homopolymer"]
         self.hp_min, self.hp_indel, self.hp_sub = hp["min_run"], hp["indel_multiplier"], hp["substitution_multiplier"]
+        by_length = hp.get("indel_by_length")        # /2 (V7 7.4): indel multiplier per run length 1..5, 6+
+        self.hp_by_length = None if by_length is None else np.asarray([1.0] + list(by_length), dtype=np.float64)
         self.burst_rate, self.burst_max = seq["bursts"]["rate"], seq["bursts"]["max_length"]
         self.n_rate = seq["n_rate"]
         self.rc_rate = seq["reverse_complement_rate"]
@@ -104,7 +110,11 @@ class Simulator:
         self.shuffle_window = seq["shuffle_window"]
         self.syn_per_base = self.syn_sub.active or self.syn_ins.active or self.syn_del.active
         self.molecular = self.syn_per_base or self.truncation["rate"] > 0 or self.damage.active or self.breakage > 0
-        self.seq_aux = (self.seq_sub.matrix is not None or self.seq_ins.base_weights is not None or self.seq_del.clustered)
+        self.seq_aux = (self.seq_sub.matrix is not None or self.seq_ins.base_weights is not None or self.seq_del.clustered
+                        or self.seq_ins.clustered)
+        self.seq_context = seq.get("context")         # /2: 3-mer multipliers (None for /1 models)
+        het = seq.get("read_heterogeneity")           # /2: per-read gamma rate multiplier (None for /1 models)
+        self.het_shape = None if het is None else float(het["shape"])
 
     @property
     def pool_loss(self) -> bool:
@@ -209,13 +219,14 @@ class Simulator:
         if m == 0:
             flat, lengths, q = np.zeros(0, dtype=np.uint8), np.zeros(0, dtype=np.int64), np.zeros(0, dtype=np.uint8)
         else:
-            flat, lengths, q = self._sequence(codes, mol, src, vidx, rng, a_amp, a_seq, stats)
+            flat, lengths, q = self._sequence(codes, mol, src, vidx, rng, a_amp, a_seq, stats,
+                                              a_het=aux(TAG_HETEROGENEITY))
         flat, lengths, q = self._post(flat, lengths, q, L, a_seq, a_sto, stats)
         stats["reads"] = int(lengths.size)
         stats["bases"] = int(flat.size)
         return {"codes": flat, "lengths": lengths, "quals": q, "stats": stats}
 
-    def _sequence(self, codes, mol, src, vidx, rng, a_amp, a_seq, stats):
+    def _sequence(self, codes, mol, src, vidx, rng, a_amp, a_seq, stats, a_het=None):
         m = src.size
         if mol is not None:
             base, lens = mol[0][vidx], mol[1][vidx]
@@ -233,8 +244,14 @@ class Simulator:
         hp = None
         if self.hp_indel != 1.0 or self.hp_sub != 1.0:
             hp = _homopolymer_mask(hp_codes, self.hp_min)[hp_index]
+        indel_site = None
+        if self.hp_by_length is not None:
+            runs = np.minimum(_run_lengths(hp_codes), self.hp_by_length.size - 1)[hp_index]
+            indel_site = self.hp_by_length[runs]
         rates = em.rate_arrays(base, lens, self.seq_sub, self.seq_ins, self.seq_del, self.seq_profile, hp, self.hp_indel,
-                               self.hp_sub)
+                               self.hp_sub, self.seq_context, indel_site)
+        if self.het_shape is not None:
+            rates = read_heterogeneity(rates, self.het_shape, a_het())
         res = em.per_base_errors(base, lens, rates, rng, a_seq() if self.seq_aux else None, sub=self.seq_sub,
                                  ins=self.seq_ins, dele=self.seq_del, burst_rate=self.burst_rate,
                                  burst_max_len=self.burst_max)
@@ -294,6 +311,16 @@ class Simulator:
                 lengths = np.concatenate([lengths, np.full(k, L, dtype=np.int64)])
                 stats["contaminant_reads"] = k
         return flat, lengths, q
+
+
+def read_heterogeneity(rates: tuple, shape: float, rng: np.random.Generator) -> tuple:
+    """Scale each read's (row's) per-site sub/ins/del probabilities by one multiplier m ~ Gamma(shape, 1/shape) (mean 1);
+    where a site's scaled total would exceed ``HETEROGENEITY_SITE_CAP`` the three are scaled down together to the cap."""
+    sub_r, ins_r, del_r = rates
+    m = rng.gamma(shape, 1.0 / shape, size=sub_r.shape[0])[:, None]
+    total = (sub_r + ins_r + del_r) * m
+    scale = np.where(total > HETEROGENEITY_SITE_CAP, m * HETEROGENEITY_SITE_CAP / np.maximum(total, 1e-300), m)
+    return sub_r * scale, ins_r * scale, del_r * scale
 
 
 # ================================================================================================================ files
@@ -434,7 +461,7 @@ def metadata(model: ChannelModel, seed: int, strands, output, fmt: str, stats: d
         "evidence_class": "SIMULATED",
         "statement": STATEMENT,
         "seed": seed,
-        "model": {"name": model.name, "version": model.version, "schema": SCHEMA_V1, "read_as": model.read_as,
+        "model": {"name": model.name, "version": model.version, "schema": model.doc["schema"], "read_as": model.read_as,
                   "sha256": model.sha256, "source": model.source, "data_source": model.doc["data_source"],
                   "evidence_class": model.doc["evidence_class"], "provenance": model.doc["provenance"]},
         "parameters": model.parameters(),
