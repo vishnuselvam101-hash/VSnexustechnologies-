@@ -26,6 +26,7 @@ READ_CLUSTERING_MODES = ("off", "fallback")
 
 
 CONSENSUS_TEMPLATES = ("wildcard", "full")
+FILL_MODES = ("none", "template")
 
 
 @dataclass(frozen=True)
@@ -64,12 +65,17 @@ class ClusterConfig:
     # aligns to decided bases and leaves undecided frame positions as cost-0 wildcards; "full" fills every frame position
     # that has certain calls with its plurality base, so indels are placed against base values, not wildcards
     consensus_template: str = "wildcard"
+    # V9 candidate E (EXPERIMENTAL, opt-in; needs consensus_template "full" and a layout with markers): after the
+    # erasure decode and the GMD ladder fail, "template" decodes the polished template's bases at undecided positions
+    # (instead of erasing them) and erases the lowest-confidence bytes, 0 ... inner parity, in ``fill_trials`` steps
+    fill: str = "none"
+    fill_trials: int = 5
 
     def validate(self) -> ClusterConfig:
         ints = {"max_unplaced_reads": 0, "k": 4, "sketch_size": 1, "bucket_cap": 2, "min_shared_slots": 1, "max_candidate_pairs": 0,
                 "band_slack": 0, "max_cluster_reads": 2, "max_refine_pairs": 0, "consensus_band": 1, "c_sub": 1,
                 "c_indel": 1, "slack": 0, "min_votes": 1, "rounds": 0, "max_peels": 1, "max_trials": 1, "gmd_step": 1,
-                "gmd_steps": 0, "medoid_members": 1}
+                "gmd_steps": 0, "medoid_members": 1, "fill_trials": 1}
         for name, lo in ints.items():
             v = getattr(self, name)
             if not isinstance(v, int) or isinstance(v, bool) or v < lo:
@@ -88,6 +94,8 @@ class ClusterConfig:
             raise VNXConfigurationError("cluster config vote_share must be in [0.5, 1]")
         if self.consensus_template not in CONSENSUS_TEMPLATES:
             raise VNXConfigurationError("cluster config consensus_template must be 'wildcard' or 'full'")
+        if self.fill not in FILL_MODES:
+            raise VNXConfigurationError("cluster config fill must be 'none' or 'template'")
         return self
 
     def to_dict(self) -> dict:

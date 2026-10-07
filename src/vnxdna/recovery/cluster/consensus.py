@@ -404,6 +404,8 @@ def _run_units(lay, units, tpl0, fpos, has_markers, cfg, marker_mismatch, counts
         fields[todo[hit]] = np.stack([P2.kind, P2.tag, P2.group, P2.symbol], axis=1)[hit]
         payload[todo[hit]] = P2.payload[hit]
         gmd[todo[hit]] = step
+    if cfg.fill == "template" and cfg.consensus_template == "full" and has_markers:
+        _fill_ladder(lay, state, fpos, cfg, frames, er, ok, fields, payload, gmd, trials, counts)
     counts["cluster_rs_crc_trials"] += int(trials.sum())
     if trace is not None:
         for k, (u, rs, band, _) in enumerate(cands):
@@ -428,6 +430,50 @@ def _run_units(lay, units, tpl0, fpos, has_markers, cfg, marker_mismatch, counts
                        "payload": np.array(payload[k], dtype=np.uint8), "gmd_step": int(gmd[k])}, rs, strand)
     return results
 
+
+
+def _fill_ladder(lay, state, fpos, cfg, frames, er, ok, fields, payload, gmd, trials, counts) -> None:
+    """V9 candidate E (``fill="template"``): for every candidate still failing, decode the polished template's base at
+    each undecided position (the decided bases unchanged) and erase the ``f`` lowest-confidence bytes, f stepping from 0
+    to the inner parity in ``fill_trials`` trials (each an inner RS + CRC-32 trial, counted). Confidence of a base: its
+    vote margin when decided; when undecided, below every decided base, ordered by the margin of the template base
+    (positive if it is the plurality base, negative otherwise). A byte's confidence is its weakest base. Successful
+    frames are marked ``gmd_step`` = -1 (fill) in the trace. Only the frame's own RS + CRC-32 accept a result."""
+    todo = np.flatnonzero(~ok)
+    if not todo.size:
+        return
+    P = lay.inner_parity
+    levels = sorted({int(round(P * j / max(1, cfg.fill_trials - 1))) for j in range(cfg.fill_trials)})
+    fr, ers, keys = [], [], []
+    for k in todo.tolist():
+        s = state[k]
+        tb = np.minimum(s["tpl"][fpos], 3).astype(np.uint8)
+        base = np.where(s["dec"], s["best"], tb)
+        conf = np.where(s["dec"], s["margin"].astype(np.int64),
+                        -(1 << 20) + np.where(tb == s["best"], s["margin"], -s["margin"]).astype(np.int64))
+        bconf = conf.reshape(-1, 4).min(axis=1)
+        order = np.lexsort((np.arange(bconf.size), bconf))
+        fbytes = nt_to_bytes(base[None, :])[0]
+        for f in levels:
+            e = np.zeros(bconf.size, dtype=bool)
+            e[order[:f]] = True
+            fr.append(fbytes)
+            ers.append(e)
+            keys.append(k)
+    Pd = decode_frames(lay, np.stack(fr), np.stack(ers), errors_only_retry=False)
+    counts["cluster_fill_trials"] += len(keys)
+    seen: set = set()
+    for t, k in enumerate(keys):
+        trials[k] += 1
+        if k in seen or not Pd.ok[t]:
+            continue
+        seen.add(k)
+        ok[k] = True
+        fields[k] = (Pd.kind[t], Pd.tag[t], Pd.group[t], Pd.symbol[t])
+        payload[k] = Pd.payload[t]
+        frames[k] = fr[t]
+        gmd[k] = -1
+        counts["cluster_frames_filled"] += 1
 
 
 def _polish(cands, state, tpl0, fpos, cfg, marker_mismatch, counts) -> None:
