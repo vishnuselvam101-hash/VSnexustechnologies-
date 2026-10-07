@@ -10,7 +10,7 @@ from vnxdna.core.errors import VNXConfigurationError
 from vnxdna.simulation import engine, model as cm
 from vnxdna.simulation.fit import simulate as S
 
-from test_fit_heterogeneity import fitted, refs_of  # noqa: E402
+from simulation.test_fit_heterogeneity import fitted, refs_of
 
 TWO = {"distribution": "latent-states", "states": [{"weight": 0.8, "sub": 0.5, "ins": 0.5, "del": 0.5},
                                                    {"weight": 0.2, "sub": 3.0, "ins": 1.0, "del": 3.0}]}
@@ -62,3 +62,27 @@ def test_site_cap():
     r = tuple(np.full((2, 5), 0.1) for _ in range(3))
     s, i, d = engine.latent_states(r, w, m, np.random.default_rng(1))
     assert np.allclose(s + i + d, engine.HETEROGENEITY_SITE_CAP)
+
+
+def test_fuzz_latent_states_schema():
+    """Property: any read_heterogeneity value is either refused with VNXConfigurationError or accepted, simulates, and
+    round-trips through the canonical document."""
+    hyp = pytest.importorskip("hypothesis")
+    st = hyp.strategies
+    num = st.one_of(st.floats(allow_nan=True, allow_infinity=True), st.integers(-5, 100), st.booleans(), st.none(), st.text(max_size=3))
+    state = st.dictionaries(st.sampled_from(["weight", "sub", "ins", "del", "x"]), num, max_size=5)
+    het = st.one_of(st.none(), st.fixed_dictionaries({"distribution": st.sampled_from(["latent-states", "gamma", "beta"])},
+                                                    optional={"states": st.lists(state, max_size=6), "shape": num}))
+
+    @hyp.settings(max_examples=400, deadline=None)
+    @hyp.given(het)
+    def run(h):
+        try:
+            m, _ = cm.from_doc(fitted(copy.deepcopy(h)))
+        except VNXConfigurationError:
+            return
+        again, _ = cm.from_doc(__import__("json").loads(m.dumps()))
+        assert again.sha256 == m.sha256
+        S.simulate_clusters(m, refs_of(4, 30), 1, 3)
+
+    run()
