@@ -1,10 +1,10 @@
 # VNX-Secure — Benchmarks (SIMULATED)
 
-All numbers come from `experiments/vnx-secure/results/simulation.json` and `fuzz-campaign.json`, at commit 8c3bd94.
+All numbers come from `experiments/vnx-secure/results/simulation.json` and `fuzz-campaign.json`, at commit 55ce2e9.
 Reproduce them with `vnx security simulate -o simulation.json`.
 
 **These are synthetic attacks against a local, in-memory control plane on one host. They are not real-world security
-guarantees.** The host is 4 cores / 8 threads, Python 3.12, load1 3.28. The V9 decoder evaluation was running on 3
+guarantees.** The host is 4 cores / 8 threads, Python 3.12, load1 3.67. The V9 decoder evaluation was running on 3
 workers at the same time, so wall-clock times include that contention.
 
 ## Method
@@ -36,16 +36,16 @@ Each scenario checks six things:
 
 | # | Scenario | First detector | Events to detect | Sim. s | Detect + contain (ms) | Recovery (ms) | Pass |
 |---|---|---|---|---|---|---|---|
-| 1 | Credential brute force | auth_failures | 5 | 4 | 6.7 | 10.9 | ✓ |
-| 2 | Unauthorized archive access | authz_failures | 5 | 4 | 4.5 | 15.3 | ✓ |
-| 3 | Privilege escalation | privilege_escalation | 1 | 0 | 4.0 | 10.8 | ✓ |
-| 4 | Malformed input | malformed_input | 1 | 0 | 4.3 | 25.7 | ✓ |
-| 5 | Replay | replay | 1 | 0 | 4.3 | 11.6 | ✓ |
-| 6 | Token misuse (other session) | token_misuse | 1 | 0 | 4.1 | 9.8 | ✓ |
-| 7 | Integrity tampering (component) | integrity_monitor | 1 | 0 | 6.1 | 11.4 | ✓ |
-| 8 | Abnormal request rate | request_rate | 121 | 24 | 8.4 | 52.0 | ✓ |
-| 9 | Malicious archive metadata | malformed_input | 1 | 0 | 4.0 | 18.9 | ✓ |
-| 10 | Compromised session (deception hit) | deception | 1 | 0 | 6.0 | 12.9 | ✓ |
+| 1 | Credential brute force | auth_failures | 5 | 4 | 6.3 | 10.6 | ✓ |
+| 2 | Unauthorized archive access | authz_failures | 5 | 4 | 4.2 | 14.3 | ✓ |
+| 3 | Privilege escalation | privilege_escalation | 1 | 0 | 3.7 | 10.2 | ✓ |
+| 4 | Malformed input | malformed_input | 1 | 0 | 3.9 | 17.0 | ✓ |
+| 5 | Replay | replay | 1 | 0 | 4.2 | 11.1 | ✓ |
+| 6 | Token misuse (other session) | token_misuse | 1 | 0 | 4.0 | 9.7 | ✓ |
+| 7 | Integrity tampering (component) | integrity_monitor | 1 | 0 | 6.1 | 11.6 | ✓ |
+| 8 | Abnormal request rate | request_rate | 121 | 24 | 6.2 | 58.7 | ✓ |
+| 9 | Malicious archive metadata | malformed_input | 1 | 0 | 4.0 | 18.5 | ✓ |
+| 10 | Compromised session (deception hit) | deception | 1 | 0 | 5.6 | 12.6 | ✓ |
 
 Summary:
 
@@ -53,8 +53,8 @@ Summary:
 |---|---|
 | Scenarios passing | 10 / 10 |
 | Missed-attack rate on these scenarios | 0 / 10 |
-| Median detect = contain latency | 4.4 ms (synchronous) |
-| Median recovery time | 12.2 ms |
+| Median detect = contain latency | 4.2 ms (synchronous) |
+| Median recovery time | 12.1 ms |
 
 Credential revocation is part of the same call: a revoked token is refused on its next use. Scenarios 7 and 8 do not
 revoke credentials, by design: an integrity failure isolates the system, and a rate anomaly rate-limits the session.
@@ -81,19 +81,19 @@ measured rate on real traffic.
 
 | Operation | Direct (ms) | Through the gate (ms) | Overhead (ms) |
 |---|---|---|---|
-| `read_file` (table.csv) | 3.70 | 4.68 | 0.98 |
-| `read_chunk` (with Merkle proof) | 2.10 | 3.13 | 1.03 |
+| `read_file` (table.csv) | 3.56 | 4.38 | 0.81 |
+| `read_chunk` (with Merkle proof) | 1.99 | 2.91 | 0.92 |
 
 Other costs:
 
 - **Audit storage:** about 419 bytes per request, in an in-memory chain. The disk cost is the same per line.
-- **Memory:** peak Python heap over the whole simulation was 2.7 MB (tracemalloc).
-- **Throughput:** the gate serialises decisions (one lock), so its decision rate is bounded by about 1 / 1.0 ms per
+- **Memory:** peak Python heap over the whole simulation was 2.4 MB (tracemalloc).
+- **Throughput:** the gate serialises decisions (one lock), so its decision rate is bounded by about 1 / 0.9 ms per
   process on this host for small requests. This is not measured under contention.
 
 ## Fuzzing
 
-`fuzz-campaign.json` (hypothesis, `VNX_SECURE_FUZZ_EXAMPLES=5000`, 90 s, statistics enabled):
+`fuzz-campaign.json` (hypothesis, `VNX_SECURE_FUZZ_EXAMPLES=5000`, 91 s, statistics enabled):
 
 | Target | Passing examples |
 |---|---|
