@@ -40,6 +40,10 @@ Stages, in the order of protocol §8.1 (``STAGES``):
 * ``superblock``      symbols needed and present, pending superblock records, consensus results, decoded or not.
 * ``archive``         container SHA-256 checked / matched.
 
+``outer_ecc_margins`` (V9): the smallest (symbols - k) over every attempted outer row, at three confidence levels
+(pass-1 reads only; plus pass-2 consensus; plus cluster consensus). It is computed from the decoder's own verified
+symbols only, and is the signal of the V9 adaptive computational coverage rule (docs/V9_PREREGISTRATION.md §6).
+
 ``terminal_stage`` is where the decoder stopped (its own view): ``None`` on SUCCESS, ``outer_ecc`` for unrecovered
 groups, ``superblock`` for NO_SUPERBLOCK, ``archive`` for a SHA-256 mismatch, ``read_parsing`` for input errors.
 Counters add up over read batches in any order, so they do not depend on the worker count.
@@ -62,6 +66,7 @@ class StageCounters:
     def __init__(self) -> None:
         self.c: Counter = Counter()
         self.failed_rows: dict[int, dict] = {}
+        self.rows: dict[int, tuple] = {}         # V9: group -> (k, pass-1 symbols, consensus symbols, cluster symbols)
 
     def add(self, stage: str, name: str, n: int = 1) -> None:
         if stage not in STAGES:
@@ -78,6 +83,20 @@ class StageCounters:
         if group not in self.failed_rows and len(self.failed_rows) < MAX_FAILED_ROWS:
             self.failed_rows[int(group)] = {k: int(v) for k, v in info.items()}
 
+    def row(self, group: int, info: dict) -> None:
+        """V9 (adaptive coverage, observability only): the symbol counts of every attempted outer row."""
+        self.rows[int(group)] = (int(info["k"]), int(info["verified_pass1"]), int(info["from_consensus"]),
+                                 int(info.get("from_cluster", 0)))
+
+    def margins(self) -> dict | None:
+        """Smallest row margin (symbols - k) over all attempted rows, counting pass-1 symbols only, plus pass-2
+        consensus, plus cluster consensus: the recoverability signal of the V9 adaptive-coverage rule."""
+        if not self.rows:
+            return None
+        r = np.array(list(self.rows.values()), dtype=np.int64)
+        return {"rows": int(r.shape[0]), "pass1": int((r[:, 1] - r[:, 0]).min()),
+                "consensus": int((r[:, 1] + r[:, 2] - r[:, 0]).min()), "all": int((r[:, 1:].sum(axis=1) - r[:, 0]).min())}
+
     def block(self, *, status: str | None = None, report: dict | None = None, error: BaseException | None = None) -> dict:
         stages: dict = {s: {} for s in STAGES}
         for k in sorted(self.c):
@@ -88,7 +107,7 @@ class StageCounters:
         failed = sorted((report or {}).get("failed_groups") or [])
         rows = [dict(group=g, **self.failed_rows[g]) for g in failed if g in self.failed_rows]
         return {"schema": SCHEMA, "taxonomy": "V7_PROTOCOL section 8.1", "stages": stages,
-                "outer_ecc_failed_rows": rows, "terminal_stage": terminal_stage(status, report, error)}
+                "outer_ecc_failed_rows": rows, "outer_ecc_margins": self.margins(), "terminal_stage": terminal_stage(status, report, error)}
 
 
 def terminal_stage(status: str | None, report: dict | None, error: BaseException | None) -> str | None:

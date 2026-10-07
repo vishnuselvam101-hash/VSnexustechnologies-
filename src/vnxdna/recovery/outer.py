@@ -158,6 +158,7 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
                         sc.add("outer_ecc", "symbols_verified_pass1", row["verified_pass1"])
                         sc.add("outer_ecc", "symbols_from_consensus", row["from_consensus"])
                         sc.add("outer_ecc", "rows_below_k_symbols", int(len(syms) < k))
+                        sc.row(g, row)
                     try:
                         if hasattr(codec, "decode_block"):
                             data = codec.decode_block(syms, k, P, g)

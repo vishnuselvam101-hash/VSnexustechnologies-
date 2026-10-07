@@ -34,6 +34,12 @@
     "verified_pass1": 36
    }
   ],
+  "outer_ecc_margins": {
+   "all": -9,
+   "consensus": -9,
+   "pass1": -20,
+   "rows": 4
+  },
   "schema": "vnx.stage-counters/1",
   "stages": {
    "address": {
@@ -133,6 +139,7 @@
  },
  "nanopore": {
   "outer_ecc_failed_rows": [],
+  "outer_ecc_margins": null,
   "schema": "vnx.stage-counters/1",
   "stages": {
    "address": {
