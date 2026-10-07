@@ -1,0 +1,16 @@
+{
+ "commit": "8c3bd94",
+ "failing": 0,
+ "found_during_development": "token parser let binascii.Error escape for impossible base64 lengths (fixed in 3549f76)",
+ "label": "hypothesis campaign, VNX_SECURE_FUZZ_EXAMPLES=5000",
+ "seconds": 90,
+ "tests": {
+  "archive_mutations_via_gate": 100,
+  "audit_line_parser": 5000,
+  "event_processing": 5000,
+  "policy_parser": 5000,
+  "token_bitflips": 5000,
+  "token_parser": 5000
+ },
+ "total_passing_examples": 25100
+}
