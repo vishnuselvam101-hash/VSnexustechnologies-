@@ -21,7 +21,7 @@ mkdir -p "$W"
 PY=${PY:-/root/vnx-dna-lab/.venv/bin/python}
 export PYTHONPATH=${PYTHONPATH:-src}
 SRC=src/vnxdna/native/c/cluster.c
-TESTS=${TESTS:-tests/v7/test_native_cluster.py}
+TESTS=${TESTS:-tests/v7/test_native_cluster.py tests/v9/test_native_polish.py}
 fail=0
 echo "kernel source sha256: $(sha256sum $SRC | cut -d' ' -f1)"
 echo "gcc:   $(gcc --version | head -1)"

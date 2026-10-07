@@ -159,6 +159,13 @@ def fb_case(rng: np.random.Generator, n: int | None = None, T: int | None = None
             "slack": int(rng.choice([0, 0, 1, 3, 10]))}
 
 
+def polish_case(rng: np.random.Generator, n: int | None = None, T: int | None = None) -> dict:
+    """V9: the forward-backward case plus a substitution cost, for the polish kernel (polish.edit_costs)."""
+    c = fb_case(rng, n, T)
+    c["c_sub"] = int(rng.choice([0, 1, 3, int(rng.integers(0, 1025))]))
+    return c
+
+
 # ------------------------------------------------------------------------------------------------ digests
 def digest(*arrays) -> str:
     h = hashlib.sha256()
@@ -225,10 +232,15 @@ def run_kernel(kind: str, case, name: str):
         if kind == "fb":
             return consensus.fb_calls(case["tpl"], case["mc"], case["reads"], case["band"], case["c_indel"],
                                       case["slack"])
+        if kind == "polish":
+            from vnxdna.recovery.cluster import polish
+            return polish.edit_costs(case["tpl"], case["mc"], case["reads"], case["band"], case["c_indel"],
+                                     case["c_sub"])
     raise ValueError(kind)
 
 
-CASES = {"sketch": sketch_case, "candidates": candidates_case, "banded": pairs_case, "pool": pool_case, "fb": fb_case}
+CASES = {"sketch": sketch_case, "candidates": candidates_case, "banded": pairs_case, "pool": pool_case, "fb": fb_case,
+         "polish": polish_case}
 
 
 def case_for(kind: str, seed: int):

@@ -366,7 +366,7 @@ def test_library_with_another_abi_is_skipped(tmp_path, monkeypatch):
         monkeypatch.setattr(nc, "_candidates", lambda: [lib])
         nc._reset_for_tests()
         st_ = nc.status()
-        assert not nc.available() and st_["active_backend"] == "reference" and "ABI 99 != 1" in st_["load_error"]
+        assert not nc.available() and st_["active_backend"] == "reference" and f"ABI 99 != {nc.ABI_VERSION}" in st_["load_error"]
     finally:
         monkeypatch.undo()
         nc._reset_for_tests()

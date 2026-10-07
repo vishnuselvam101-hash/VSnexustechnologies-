@@ -8,6 +8,7 @@ The kernel (``native/c/cluster.c``) reproduces the reference functions bit for b
     banded          editdist.banded_distance_reference   banded unit-cost edit distance (Myers bit-vector + exact band)
     verify          the verification loop of graph.cluster_reads_reference (chunked, union-find with parity)
     fb              consensus.fb_calls_reference         forward-backward certain calls (scalar or AVX2 lanes)
+    edit_costs      polish.edit_costs_reference          full-template polish: exact cost of every single edit (V9)
 
 It is a plain C shared library loaded with :mod:`ctypes` (no Python headers); ctypes releases the GIL during each call,
 so :func:`fb` can split a chunk over threads (``VNXDNA_CLUSTER_THREADS``, default 1). Every read's result depends only
@@ -42,7 +43,7 @@ import numpy as np
 
 from vnxdna import _native_build as _nb
 
-ABI_VERSION = 1
+ABI_VERSION = 2
 BACKENDS = ("auto", "native", "reference")
 INF = 1 << 28
 MAX_COST = 1024
@@ -109,6 +110,8 @@ def _bind(lib) -> None:
     lib.vnx_cl_verify.argtypes = [i64, p, i64, p, p, i64, p, p, p, p, dbl, i64, i64, p, p, p, p]
     lib.vnx_cl_fb.restype = ctypes.c_int
     lib.vnx_cl_fb.argtypes = [i64, i64, i64, p, p, p, i64, p, p, p, i32, i32, p, p, i32, i32]
+    lib.vnx_cl_edit_costs.restype = ctypes.c_int
+    lib.vnx_cl_edit_costs.argtypes = [i64, i64, i64, p, p, p, i64, p, p, p, i32, i32, p, p, p, p]
 
 
 def _load():
@@ -401,6 +404,46 @@ def fb(tpl: np.ndarray, mc: np.ndarray, buf: np.ndarray, off: np.ndarray, lens: 
     for rc in rcs:
         _check(rc, "forward-backward")
     return calls, opt
+
+
+def edit_costs_in_domain(T: int, B: int, mc: np.ndarray, c_indel: int, c_sub: int, lens: np.ndarray) -> bool:
+    return fb_in_domain(T, B, mc, c_indel, 0, lens) and 0 <= c_sub <= MAX_COST
+
+
+def edit_costs(tpl: np.ndarray, mc: np.ndarray, buf: np.ndarray, off: np.ndarray, lens: np.ndarray, band: np.ndarray,
+               B: int, c_indel: int, c_sub: int,
+               nthreads: int | None = None) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Polish edit costs of one batch with shared band ``B`` (as polish.edit_costs_reference): (opt (n,), sub (n, T, 4),
+    dele (n, T), ins (n, T, 4)), int64. Every read's result depends only on that read, so threads do not change it."""
+    lib = _lib_or_raise()
+    n, T = tpl.shape
+    tpl = np.ascontiguousarray(tpl, dtype=np.int16)
+    mc = np.ascontiguousarray(mc, dtype=np.int32)
+    band = np.ascontiguousarray(band, dtype=np.int64)
+    buf, off, lens = _seqs(buf, off, lens)
+    if mc.shape != (n, T) or off.shape != (n,) or band.shape != (n,):
+        raise ValueError("tpl and mc must be (n, T); off, lens and band (n,)")
+    opt = np.empty(n, dtype=np.int64)
+    sub = np.empty((n, T, 4), dtype=np.int64)
+    dele = np.empty((n, T), dtype=np.int64)
+    ins = np.empty((n, T, 4), dtype=np.int64)
+    nt = threads() if nthreads is None else max(1, int(nthreads))
+    parts = max(1, min(nt, n))
+    bounds = [n * k // parts for k in range(parts)] + [n]
+
+    def run(k: int) -> int:
+        r0, r1 = bounds[k], bounds[k + 1]
+        if r1 <= r0:
+            return 0
+        return lib.vnx_cl_edit_costs(r1 - r0, T, int(B), tpl[r0:].ctypes.data, mc[r0:].ctypes.data, _ptr(buf),
+                                     buf.size, off[r0:].ctypes.data, lens[r0:].ctypes.data, band[r0:].ctypes.data,
+                                     int(c_indel), int(c_sub), opt[r0:].ctypes.data, sub[r0:].ctypes.data,
+                                     dele[r0:].ctypes.data, ins[r0:].ctypes.data)
+
+    rcs = [run(0)] if parts == 1 else list(_get_pool(nt).map(run, range(parts)))
+    for rc in rcs:
+        _check(rc, "polish edit costs")
+    return opt, sub, dele, ins
 
 
 def main(argv: list[str] | None = None) -> int:

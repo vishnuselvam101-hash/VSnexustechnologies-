@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Added (V9, in development; docs/V9_PREREGISTRATION.md)
+
+- **Native polish kernel** (`vnx_cl_edit_costs` in `native/c/cluster.c`, cluster ABI 2): the full-template consensus
+  polish (`recovery/cluster/polish.edit_costs`) runs natively under `VNXDNA_CLUSTER_BACKEND=auto|native`, bit-identical
+  to the NumPy reference `polish.edit_costs_reference` (golden hashes, randomized and hypothesis equivalence, sanitizers).
+  It evaluates each read's own band plus one edge cell, which is exact (see the kernel comment). SIMULATED decodes:
+  timings in `experiments/v9/consensus/results/`.
+
 ### Added (V7 Phase D, in development)
 
 - **`vnx.channel-model/2`** extends `/1` (every `/1` model loads unchanged): provenance of fitted models (datasets with

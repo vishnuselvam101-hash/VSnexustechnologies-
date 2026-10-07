@@ -21,6 +21,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from vnxdna.native import cluster as _nc
+
 INF = np.int32(1 << 28)
 PAIRS_PER_SIDE = 3          # deletions × insertions paired per hot segment (exactly scored)
 
@@ -84,7 +86,23 @@ def fg(tpl: np.ndarray, mc: np.ndarray, reads: list, band: np.ndarray, c_indel: 
 
 
 def edit_costs(tpl: np.ndarray, mc: np.ndarray, reads: list, band: np.ndarray, c_indel: int, c_sub: int):
+    """Per read, the exact optimal cost after one template edit: the native kernel (V9; ``VNXDNA_CLUSTER_BACKEND``) or
+    :func:`edit_costs_reference`, with identical results. Inputs outside the native domain use the reference."""
+    if _nc.resolve_backend() == "native":
+        n, T = tpl.shape
+        band = np.asarray(band, dtype=np.int64)
+        if n and band.size == n and int(band.min()) >= 0:
+            buf, off, lens = _nc.pack(list(reads[:n]))
+            B = int(band.max(initial=0))
+            mc32 = np.asarray(mc).astype(np.int32)
+            if _nc.codes_in_domain(buf) and _nc.edit_costs_in_domain(T, B, mc32, c_indel, c_sub, lens):
+                return _nc.edit_costs(np.asarray(tpl).astype(np.int16), mc32, buf, off, lens, band, B, c_indel, c_sub)
+    return edit_costs_reference(tpl, mc, reads, band, c_indel, c_sub)
+
+
+def edit_costs_reference(tpl: np.ndarray, mc: np.ndarray, reads: list, band: np.ndarray, c_indel: int, c_sub: int):
     """Per read, the exact optimal cost after one template edit (reads that do not fit their band: INF everywhere).
+    The NumPy specification of the native kernel.
 
     Returns (opt (n,), sub (n, T, 4): base b at position i, dele (n, T): position i removed, ins (n, T, 4): base b
     inserted before position i). An inserted base costs ``c_sub`` on mismatch; a substituted base keeps ``mc``."""
