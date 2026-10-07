@@ -1,0 +1,1782 @@
+{
+ "code": {
+  "commit": "09df53f4d78bb8952cdb50a41c6cf8b8a05cc36e",
+  "dirty_tracked": false
+ },
+ "d_verdict": "INADEQUATE",
+ "dev_references": 42263,
+ "dev_segments": 894901,
+ "dev_tables_sha256": "55aa0b4617499eb3cbe3b5a379df4ecaaf24789933acb8f95ab55df5beb4e8b0",
+ "evidence_class": "SIMULATED reads (each model) vs PUBLIC-DATA-DERIVED D13 DEV segments",
+ "experiment": "V8.6 model comparison on D13 DEV",
+ "models": {
+  "A": {
+   "evidence_class": "SIMULATED",
+   "failed_7b_metrics_excluding_M10": [
+    "M1a",
+    "M1",
+    "M1c",
+    "M2",
+    "M2b",
+    "M3",
+    "M5",
+    "M5i",
+    "M6r",
+    "M8",
+    "RL"
+   ],
+   "m1_by_run_not_gating": {
+    "run15": {
+     "deletion": {
+      "model": 0.03194338888888889,
+      "real": 0.0371249550471659,
+      "rel_error": 0.1395709746097744,
+      "within_5pct": false
+     },
+     "insertion": {
+      "model": 0.010273666666666667,
+      "real": 0.02808503693048217,
+      "rel_error": 0.6341942974083785,
+      "within_5pct": false
+     },
+     "substitution": {
+      "model": 0.02004438888888889,
+      "real": 0.024183813291285144,
+      "rel_error": 0.17116508271621222,
+      "within_5pct": false
+     }
+    },
+    "run16": {
+     "deletion": {
+      "model": 0.03194338888888889,
+      "real": 0.04389271180676805,
+      "rel_error": 0.2722393405648869,
+      "within_5pct": false
+     },
+     "insertion": {
+      "model": 0.010273666666666667,
+      "real": 0.037492165871271514,
+      "rel_error": 0.7259783096569811,
+      "within_5pct": false
+     },
+     "substitution": {
+      "model": 0.02004438888888889,
+      "real": 0.030988093037268315,
+      "rel_error": 0.3531583610265339,
+      "within_5pct": false
+     }
+    },
+    "run18": {
+     "deletion": {
+      "model": 0.03194338888888889,
+      "real": 0.03998835302591452,
+      "rel_error": 0.2011826826629263,
+      "within_5pct": false
+     },
+     "insertion": {
+      "model": 0.010273666666666667,
+      "real": 0.02444936302873869,
+      "rel_error": 0.5797981871924182,
+      "within_5pct": false
+     },
+     "substitution": {
+      "model": 0.02004438888888889,
+      "real": 0.023638913153418234,
+      "rel_error": 0.15205962478903431,
+      "within_5pct": false
+     }
+    },
+    "run20": {
+     "deletion": {
+      "model": 0.03194338888888889,
+      "real": 0.04664405497618128,
+      "rel_error": 0.3151669831192692,
+      "within_5pct": false
+     },
+     "insertion": {
+      "model": 0.010273666666666667,
+      "real": 0.03757781318398352,
+      "rel_error": 0.7266028596085116,
+      "within_5pct": false
+     },
+     "substitution": {
+      "model": 0.02004438888888889,
+      "real": 0.03147128878588902,
+      "rel_error": 0.3630896711838405,
+      "within_5pct": false
+     }
+    }
+   },
+   "metric_table": [
+    {
+     "abs_error": 0.005739133534261826,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M1",
+     "model": 0.02004438888888889,
+     "n": null,
+     "note": "tolerance 0.00129",
+     "observed": 0.025783522423150716,
+     "pass": false,
+     "rel_error": 0.22258919631201077,
+     "stratum": "substitution",
+     "uncertainty": 5.536112721345795e-05
+    },
+    {
+     "abs_error": 0.018988311287691784,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M1",
+     "model": 0.010273666666666667,
+     "n": null,
+     "note": "tolerance 0.00146",
+     "observed": 0.02926197795435845,
+     "pass": false,
+     "rel_error": 0.6489073061742073,
+     "stratum": "insertion",
+     "uncertainty": 8.188022582958747e-05
+    },
+    {
+     "abs_error": 0.008141678248891344,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M1",
+     "model": 0.03194338888888889,
+     "n": null,
+     "note": "tolerance 0.002",
+     "observed": 0.040085067137780234,
+     "pass": false,
+     "rel_error": 0.20311000654949138,
+     "stratum": "deletion",
+     "uncertainty": 6.746003592217719e-05
+    },
+    {
+     "abs_error": 0.03286912307084495,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M1a",
+     "model": 0.062261444444444446,
+     "n": null,
+     "note": "",
+     "observed": 0.0951305675152894,
+     "pass": false,
+     "rel_error": 0.34551589388513027,
+     "stratum": "total",
+     "uncertainty": 0.00016315863737541525
+    },
+    {
+     "abs_error": 0.2667676190328674,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M1c",
+     "model": 0.2667676190328674,
+     "n": null,
+     "note": "threshold 0.05",
+     "observed": 0.0,
+     "pass": false,
+     "rel_error": null,
+     "stratum": "total variation",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.353440493470104,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M5",
+     "model": 0.353440493470104,
+     "n": null,
+     "note": "threshold 0.05",
+     "observed": 0.0,
+     "pass": false,
+     "rel_error": null,
+     "stratum": "total variation",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.353440493470104,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M5",
+     "model": 0.0423717402854502,
+     "n": null,
+     "note": "threshold 3.0 pp",
+     "observed": 0.3958122337555542,
+     "pass": false,
+     "rel_error": 0.8929498972696782,
+     "stratum": "share of runs >= 2",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.34534105811051674,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M5i",
+     "model": 0.34534105811051674,
+     "n": null,
+     "note": "threshold 0.05",
+     "observed": 0.0,
+     "pass": false,
+     "rel_error": null,
+     "stratum": "total variation",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.3453410581105167,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M5i",
+     "model": 0.004721517405501736,
+     "n": null,
+     "note": "threshold 3.0 pp",
+     "observed": 0.35006257551601844,
+     "pass": false,
+     "rel_error": 0.9865123616869301,
+     "stratum": "share of runs >= 2",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 4.9303684606267435,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M2",
+     "model": 9.339216666666667,
+     "n": null,
+     "note": "KS D 0.3305",
+     "observed": 14.26958512729341,
+     "pass": false,
+     "rel_error": 0.34551589388513027,
+     "stratum": "mean",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.029405834603995297,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M2b",
+     "model": 0.06166205,
+     "n": null,
+     "note": "KS D 0.3286",
+     "observed": 0.0910678846039953,
+     "pass": false,
+     "rel_error": 0.32290016103772784,
+     "stratum": "mean",
+     "uncertainty": null
+    },
+    {
+     "abs_error": null,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "RL",
+     "model": null,
+     "n": null,
+     "note": "KS D 0.2923",
+     "observed": null,
+     "pass": false,
+     "rel_error": null,
+     "stratum": "mean",
+     "uncertainty": null
+    },
+    {
+     "abs_error": null,
+     "gating": false,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M7",
+     "model": null,
+     "n": null,
+     "note": "KS D 0.1289",
+     "observed": null,
+     "pass": false,
+     "rel_error": null,
+     "stratum": "mean",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.02465063739825224,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M3",
+     "model": 0.07244166666666667,
+     "n": null,
+     "note": "threshold 1 pp",
+     "observed": 0.09709230406491891,
+     "pass": false,
+     "rel_error": 0.2538886849545775,
+     "stratum": "abs_drift_le_0",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.027375988144684893,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M3",
+     "model": 0.5491666666666667,
+     "n": null,
+     "note": "threshold 1 pp",
+     "observed": 0.5217906785219818,
+     "pass": false,
+     "rel_error": 0.05246546033024162,
+     "stratum": "abs_drift_le_3",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.14656160778305827,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M3",
+     "model": 0.8993666666666666,
+     "n": null,
+     "note": "threshold 1 pp",
+     "observed": 0.7528050588836084,
+     "pass": false,
+     "rel_error": 0.19468733114042241,
+     "stratum": "abs_drift_le_6",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.004805327698969325,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M6r",
+     "model": 0.03854080506638721,
+     "n": 112658124,
+     "note": "",
+     "observed": 0.04334613276535654,
+     "pass": false,
+     "rel_error": 0.11085943295061099,
+     "stratum": "run length 1",
+     "uncertainty": 8.748291345600867e-05
+    },
+    {
+     "abs_error": 0.0037125489176853474,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M6r",
+     "model": 0.037472188848840834,
+     "n": 15972446,
+     "note": "",
+     "observed": 0.04118473776652618,
+     "pass": true,
+     "rel_error": 0.09014380372485471,
+     "stratum": "run length 2",
+     "uncertainty": 0.00010459056909108392
+    },
+    {
+     "abs_error": 0.07043679934424478,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M6r",
+     "model": 0.09697007847580678,
+     "n": 5158503,
+     "note": "",
+     "observed": 0.026533279131562004,
+     "pass": false,
+     "rel_error": 2.654658664501759,
+     "stratum": "run length 3",
+     "uncertainty": 0.00022198784745099055
+    },
+    {
+     "abs_error": 0.031685359784829836,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M6r",
+     "model": 0.11666666666666667,
+     "n": 317764,
+     "note": "",
+     "observed": 0.08498130688183683,
+     "pass": false,
+     "rel_error": 0.37285093566385236,
+     "stratum": "run length 4",
+     "uncertainty": 0.0008283206369969826
+    },
+    {
+     "abs_error": 0.13882658359293873,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M6r",
+     "model": 0.0,
+     "n": 96300,
+     "note": "",
+     "observed": 0.13882658359293873,
+     "pass": false,
+     "rel_error": 1.0,
+     "stratum": "run length 5",
+     "uncertainty": 0.001394598448092357
+    },
+    {
+     "abs_error": 0.10851841439415237,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M6r",
+     "model": 0.0,
+     "n": 32013,
+     "note": "",
+     "observed": 0.10851841439415237,
+     "pass": false,
+     "rel_error": 1.0,
+     "stratum": "run length 6+",
+     "uncertainty": 0.0014873162676797206
+    },
+    {
+     "abs_error": null,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M8",
+     "model": null,
+     "n": null,
+     "note": "each k: within 2 percentage points or inside each other's Wilson 95% CI",
+     "observed": null,
+     "pass": false,
+     "rel_error": null,
+     "stratum": "consensus curve",
+     "uncertainty": null
+    },
+    {
+     "abs_error": null,
+     "gating": false,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M9",
+     "model": null,
+     "n": null,
+     "note": "",
+     "observed": null,
+     "pass": false,
+     "rel_error": null,
+     "stratum": "quality",
+     "uncertainty": null
+    }
+   ],
+   "model_sha256": "67513377bf2e53f7e3c87542df233ee23af2094bc87da536dc1e4197fc83d660",
+   "name": "V6 shipped nanopore-like",
+   "passed": [],
+   "schema": "vnx.channel-model/1",
+   "seconds": 29.4
+  },
+  "B": {
+   "evidence_class": "PUBLIC-DATA-DERIVED",
+   "failed_7b_metrics_excluding_M10": [
+    "M1a",
+    "M1",
+    "M1c",
+    "M2",
+    "M2b",
+    "M3",
+    "M5",
+    "M5i",
+    "M6r",
+    "M8",
+    "RL"
+   ],
+   "m1_by_run_not_gating": {
+    "run15": {
+     "deletion": {
+      "model": 0.014889955715579559,
+      "real": 0.0371249550471659,
+      "rel_error": 0.5989232661248367,
+      "within_5pct": false
+     },
+     "insertion": {
+      "model": 0.009243608763536753,
+      "real": 0.02808503693048217,
+      "rel_error": 0.6708706922331237,
+      "within_5pct": false
+     },
+     "substitution": {
+      "model": 0.01628149778022259,
+      "real": 0.024183813291285144,
+      "rel_error": 0.32676052431773545,
+      "within_5pct": false
+     }
+    },
+    "run16": {
+     "deletion": {
+      "model": 0.014889955715579559,
+      "real": 0.04389271180676805,
+      "rel_error": 0.6607647351311842,
+      "within_5pct": false
+     },
+     "insertion": {
+      "model": 0.009243608763536753,
+      "real": 0.037492165871271514,
+      "rel_error": 0.7534522599928083,
+      "within_5pct": false
+     },
+     "substitution": {
+      "model": 0.01628149778022259,
+      "real": 0.030988093037268315,
+      "rel_error": 0.4745885859887734,
+      "within_5pct": false
+     }
+    },
+    "run18": {
+     "deletion": {
+      "model": 0.014889955715579559,
+      "real": 0.03998835302591452,
+      "rel_error": 0.627642686210905,
+      "within_5pct": false
+     },
+     "insertion": {
+      "model": 0.009243608763536753,
+      "real": 0.02444936302873869,
+      "rel_error": 0.6219284423618123,
+      "within_5pct": false
+     },
+     "substitution": {
+      "model": 0.01628149778022259,
+      "real": 0.023638913153418234,
+      "rel_error": 0.3112416939579875,
+      "within_5pct": false
+     }
+    },
+    "run20": {
+     "deletion": {
+      "model": 0.014889955715579559,
+      "real": 0.04664405497618128,
+      "rel_error": 0.6807748442286355,
+      "within_5pct": false
+     },
+     "insertion": {
+      "model": 0.009243608763536753,
+      "real": 0.03757781318398352,
+      "rel_error": 0.754014191345318,
+      "within_5pct": false
+     },
+     "substitution": {
+      "model": 0.01628149778022259,
+      "real": 0.03147128878588902,
+      "rel_error": 0.4826555121084578,
+      "within_5pct": false
+     }
+    }
+   },
+   "metric_table": [
+    {
+     "abs_error": 0.009502024642928125,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M1",
+     "model": 0.01628149778022259,
+     "n": null,
+     "note": "tolerance 0.00129",
+     "observed": 0.025783522423150716,
+     "pass": false,
+     "rel_error": 0.36853089686443974,
+     "stratum": "substitution",
+     "uncertainty": 5.536112721345795e-05
+    },
+    {
+     "abs_error": 0.0200183691908217,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M1",
+     "model": 0.009243608763536753,
+     "n": null,
+     "note": "tolerance 0.00146",
+     "observed": 0.02926197795435845,
+     "pass": false,
+     "rel_error": 0.6841085459788628,
+     "stratum": "insertion",
+     "uncertainty": 8.188022582958747e-05
+    },
+    {
+     "abs_error": 0.025195111422200676,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M1",
+     "model": 0.014889955715579559,
+     "n": null,
+     "note": "tolerance 0.002",
+     "observed": 0.040085067137780234,
+     "pass": false,
+     "rel_error": 0.6285410807870208,
+     "stratum": "deletion",
+     "uncertainty": 6.746003592217719e-05
+    },
+    {
+     "abs_error": 0.054715505255950495,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M1a",
+     "model": 0.0404150622593389,
+     "n": null,
+     "note": "",
+     "observed": 0.0951305675152894,
+     "pass": false,
+     "rel_error": 0.5751621869296282,
+     "stratum": "total",
+     "uncertainty": 0.00016315863737541525
+    },
+    {
+     "abs_error": 0.3152433014555052,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M1c",
+     "model": 0.3152433014555052,
+     "n": null,
+     "note": "threshold 0.05",
+     "observed": 0.0,
+     "pass": false,
+     "rel_error": null,
+     "stratum": "total variation",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.20705138957648228,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M5",
+     "model": 0.20705138957648228,
+     "n": null,
+     "note": "threshold 0.05",
+     "observed": 0.0,
+     "pass": false,
+     "rel_error": null,
+     "stratum": "total variation",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.20558247712288039,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M5",
+     "model": 0.1902297566326738,
+     "n": null,
+     "note": "threshold 3.0 pp",
+     "observed": 0.3958122337555542,
+     "pass": false,
+     "rel_error": 0.5193939438714874,
+     "stratum": "share of runs >= 2",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.21378540738950125,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M5i",
+     "model": 0.21378540738950125,
+     "n": null,
+     "note": "threshold 0.05",
+     "observed": 0.0,
+     "pass": false,
+     "rel_error": null,
+     "stratum": "total variation",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.2137854073895012,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M5i",
+     "model": 0.13627716812651725,
+     "n": null,
+     "note": "threshold 3.0 pp",
+     "observed": 0.35006257551601844,
+     "pass": false,
+     "rel_error": 0.6107062632284114,
+     "stratum": "share of runs >= 2",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 8.207325788392575,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M2",
+     "model": 6.0622593389008355,
+     "n": null,
+     "note": "KS D 0.3773",
+     "observed": 14.26958512729341,
+     "pass": false,
+     "rel_error": 0.5751621869296282,
+     "stratum": "mean",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.0511072405073808,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M2b",
+     "model": 0.0399606440966145,
+     "n": null,
+     "note": "KS D 0.3773",
+     "observed": 0.0910678846039953,
+     "pass": false,
+     "rel_error": 0.5611993814242902,
+     "stratum": "mean",
+     "uncertainty": null
+    },
+    {
+     "abs_error": null,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "RL",
+     "model": null,
+     "n": null,
+     "note": "KS D 0.2150",
+     "observed": null,
+     "pass": false,
+     "rel_error": null,
+     "stratum": "mean",
+     "uncertainty": null
+    },
+    {
+     "abs_error": null,
+     "gating": false,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M7",
+     "model": null,
+     "n": null,
+     "note": "KS D 0.3368",
+     "observed": null,
+     "pass": false,
+     "rel_error": null,
+     "stratum": "mean",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.17447343079531014,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M3",
+     "model": 0.27156573486022906,
+     "n": null,
+     "note": "threshold 1 pp",
+     "observed": 0.09709230406491891,
+     "pass": false,
+     "rel_error": 1.7969851727759165,
+     "stratum": "abs_drift_le_0",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.33540456743157787,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M3",
+     "model": 0.8571952459535597,
+     "n": null,
+     "note": "threshold 1 pp",
+     "observed": 0.5217906785219818,
+     "pass": false,
+     "rel_error": 0.6427952457518807,
+     "stratum": "abs_drift_le_3",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.20857248108071957,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M3",
+     "model": 0.961377539964328,
+     "n": null,
+     "note": "threshold 1 pp",
+     "observed": 0.7528050588836084,
+     "pass": false,
+     "rel_error": 0.27706041374114504,
+     "stratum": "abs_drift_le_6",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.024414335695085006,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M6r",
+     "model": 0.018931797070271532,
+     "n": 112658124,
+     "note": "",
+     "observed": 0.04334613276535654,
+     "pass": false,
+     "rel_error": 0.5632413813533473,
+     "stratum": "run length 1",
+     "uncertainty": 8.748291345600867e-05
+    },
+    {
+     "abs_error": 0.025261574829895064,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M6r",
+     "model": 0.015923162936631118,
+     "n": 15972446,
+     "note": "",
+     "observed": 0.04118473776652618,
+     "pass": false,
+     "rel_error": 0.6133722393256799,
+     "stratum": "run length 2",
+     "uncertainty": 0.00010459056909108392
+    },
+    {
+     "abs_error": 0.004390244107316171,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M6r",
+     "model": 0.022143035024245833,
+     "n": 5158503,
+     "note": "",
+     "observed": 0.026533279131562004,
+     "pass": false,
+     "rel_error": 0.16546179933311994,
+     "stratum": "run length 3",
+     "uncertainty": 0.00022198784745099055
+    },
+    {
+     "abs_error": 0.06831464021517017,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M6r",
+     "model": 0.016666666666666666,
+     "n": 317764,
+     "note": "",
+     "observed": 0.08498130688183683,
+     "pass": false,
+     "rel_error": 0.8038784377623068,
+     "stratum": "run length 4",
+     "uncertainty": 0.0008283206369969826
+    },
+    {
+     "abs_error": 0.13882658359293873,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M6r",
+     "model": 0.0,
+     "n": 96300,
+     "note": "",
+     "observed": 0.13882658359293873,
+     "pass": false,
+     "rel_error": 1.0,
+     "stratum": "run length 5",
+     "uncertainty": 0.001394598448092357
+    },
+    {
+     "abs_error": 0.10851841439415237,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M6r",
+     "model": 0.0,
+     "n": 32013,
+     "note": "",
+     "observed": 0.10851841439415237,
+     "pass": false,
+     "rel_error": 1.0,
+     "stratum": "run length 6+",
+     "uncertainty": 0.0014873162676797206
+    },
+    {
+     "abs_error": null,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M8",
+     "model": null,
+     "n": null,
+     "note": "each k: within 2 percentage points or inside each other's Wilson 95% CI",
+     "observed": null,
+     "pass": false,
+     "rel_error": null,
+     "stratum": "consensus curve",
+     "uncertainty": null
+    },
+    {
+     "abs_error": null,
+     "gating": false,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M9",
+     "model": null,
+     "n": null,
+     "note": "",
+     "observed": null,
+     "pass": false,
+     "rel_error": null,
+     "stratum": "quality",
+     "uncertainty": null
+    }
+   ],
+   "model_sha256": "37a537d77188ee6a0ba749d4234eae88781d4b096adb0468e589f1cf8e0c5beb",
+   "name": "V7 a7b d03-hac-fwd",
+   "passed": [],
+   "schema": "vnx.channel-model/2",
+   "seconds": 36.1
+  },
+  "C": {
+   "evidence_class": "PUBLIC-DATA-DERIVED",
+   "failed_7b_metrics_excluding_M10": [
+    "M1a",
+    "M1",
+    "M1c",
+    "M2",
+    "M2b",
+    "M3",
+    "M5",
+    "M5i",
+    "M6r",
+    "M8",
+    "RL"
+   ],
+   "m1_by_run_not_gating": {
+    "run15": {
+     "deletion": {
+      "model": 0.01491075695440047,
+      "real": 0.0371249550471659,
+      "rel_error": 0.59836296271721,
+      "within_5pct": false
+     },
+     "insertion": {
+      "model": 0.009247157670123029,
+      "real": 0.02808503693048217,
+      "rel_error": 0.6707443293376409,
+      "within_5pct": false
+     },
+     "substitution": {
+      "model": 0.016250625145867368,
+      "real": 0.024183813291285144,
+      "rel_error": 0.32803710688076526,
+      "within_5pct": false
+     }
+    },
+    "run16": {
+     "deletion": {
+      "model": 0.01491075695440047,
+      "real": 0.04389271180676805,
+      "rel_error": 0.6602908241340125,
+      "within_5pct": false
+     },
+     "insertion": {
+      "model": 0.009247157670123029,
+      "real": 0.037492165871271514,
+      "rel_error": 0.7533576027089784,
+      "within_5pct": false
+     },
+     "substitution": {
+      "model": 0.016250625145867368,
+      "real": 0.030988093037268315,
+      "rel_error": 0.47558486008405554,
+      "within_5pct": false
+     }
+    },
+    "run18": {
+     "deletion": {
+      "model": 0.01491075695440047,
+      "real": 0.03998835302591452,
+      "rel_error": 0.6271225037765988,
+      "within_5pct": false
+     },
+     "insertion": {
+      "model": 0.009247157670123029,
+      "real": 0.02444936302873869,
+      "rel_error": 0.6217832890266476,
+      "within_5pct": false
+     },
+     "substitution": {
+      "model": 0.016250625145867368,
+      "real": 0.023638913153418234,
+      "rel_error": 0.3125477030014176,
+      "within_5pct": false
+     }
+    },
+    "run20": {
+     "deletion": {
+      "model": 0.01491075695440047,
+      "real": 0.04664405497618128,
+      "rel_error": 0.6803288873144792,
+      "within_5pct": false
+     },
+     "insertion": {
+      "model": 0.009247157670123029,
+      "real": 0.03757781318398352,
+      "rel_error": 0.753919749804271,
+      "within_5pct": false
+     },
+     "substitution": {
+      "model": 0.016250625145867368,
+      "real": 0.03147128878588902,
+      "rel_error": 0.4836364898677501,
+      "within_5pct": false
+     }
+    }
+   },
+   "metric_table": [
+    {
+     "abs_error": 0.009532897277283348,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M1",
+     "model": 0.016250625145867368,
+     "n": null,
+     "note": "tolerance 0.00129",
+     "observed": 0.025783522423150716,
+     "pass": false,
+     "rel_error": 0.36972827532377317,
+     "stratum": "substitution",
+     "uncertainty": 5.536112721345795e-05
+    },
+    {
+     "abs_error": 0.020014820284235423,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M1",
+     "model": 0.009247157670123029,
+     "n": null,
+     "note": "tolerance 0.00146",
+     "observed": 0.02926197795435845,
+     "pass": false,
+     "rel_error": 0.6839872655038446,
+     "stratum": "insertion",
+     "uncertainty": 8.188022582958747e-05
+    },
+    {
+     "abs_error": 0.02517431018337976,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M1",
+     "model": 0.01491075695440047,
+     "n": null,
+     "note": "tolerance 0.002",
+     "observed": 0.040085067137780234,
+     "pass": false,
+     "rel_error": 0.6280221534081687,
+     "stratum": "deletion",
+     "uncertainty": 6.746003592217719e-05
+    },
+    {
+     "abs_error": 0.054722027744898524,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M1a",
+     "model": 0.04040853977039087,
+     "n": null,
+     "note": "",
+     "observed": 0.0951305675152894,
+     "pass": false,
+     "rel_error": 0.5752307504746421,
+     "stratum": "total",
+     "uncertainty": 0.00016315863737541525
+    },
+    {
+     "abs_error": 0.3163057960173026,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M1c",
+     "model": 0.3163057960173026,
+     "n": null,
+     "note": "threshold 0.05",
+     "observed": 0.0,
+     "pass": false,
+     "rel_error": null,
+     "stratum": "total variation",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.20873183762421751,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M5",
+     "model": 0.20873183762421751,
+     "n": null,
+     "note": "threshold 0.05",
+     "observed": 0.0,
+     "pass": false,
+     "rel_error": null,
+     "stratum": "total variation",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.20689385590861037,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M5",
+     "model": 0.18891837784694382,
+     "n": null,
+     "note": "threshold 3.0 pp",
+     "observed": 0.3958122337555542,
+     "pass": false,
+     "rel_error": 0.522707077407779,
+     "stratum": "share of runs >= 2",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.21540289262082465,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M5i",
+     "model": 0.21540289262082465,
+     "n": null,
+     "note": "threshold 0.05",
+     "observed": 0.0,
+     "pass": false,
+     "rel_error": null,
+     "stratum": "total variation",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.21540289262082463,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M5i",
+     "model": 0.1346596828951938,
+     "n": null,
+     "note": "threshold 3.0 pp",
+     "observed": 0.35006257551601844,
+     "pass": false,
+     "rel_error": 0.6153268235066391,
+     "stratum": "share of runs >= 2",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 8.20830416173478,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M2",
+     "model": 6.06128096555863,
+     "n": null,
+     "note": "KS D 0.3772",
+     "observed": 14.26958512729341,
+     "pass": false,
+     "rel_error": 0.5752307504746421,
+     "stratum": "mean",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.05111214493140503,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M2b",
+     "model": 0.03995573967259027,
+     "n": null,
+     "note": "KS D 0.3772",
+     "observed": 0.0910678846039953,
+     "pass": false,
+     "rel_error": 0.5612532360190856,
+     "stratum": "mean",
+     "uncertainty": null
+    },
+    {
+     "abs_error": null,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "RL",
+     "model": null,
+     "n": null,
+     "note": "KS D 0.2168",
+     "observed": null,
+     "pass": false,
+     "rel_error": null,
+     "stratum": "mean",
+     "uncertainty": null
+    },
+    {
+     "abs_error": null,
+     "gating": false,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M7",
+     "model": null,
+     "n": null,
+     "note": "KS D 0.3368",
+     "observed": null,
+     "pass": false,
+     "rel_error": null,
+     "stratum": "mean",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.17820526536794873,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M3",
+     "model": 0.27529756943286765,
+     "n": null,
+     "note": "threshold 1 pp",
+     "observed": 0.09709230406491891,
+     "pass": false,
+     "rel_error": 1.8354211189467209,
+     "stratum": "abs_drift_le_0",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.33646791514987495,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M3",
+     "model": 0.8582585936718568,
+     "n": null,
+     "note": "threshold 1 pp",
+     "observed": 0.5217906785219818,
+     "pass": false,
+     "rel_error": 0.6448331275348768,
+     "stratum": "abs_drift_le_3",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.2086609498517632,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M3",
+     "model": 0.9614660087353716,
+     "n": null,
+     "note": "threshold 1 pp",
+     "observed": 0.7528050588836084,
+     "pass": false,
+     "rel_error": 0.27717793257287926,
+     "stratum": "abs_drift_le_6",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.024472546718131174,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M6r",
+     "model": 0.018873586047225364,
+     "n": 112658124,
+     "note": "",
+     "observed": 0.04334613276535654,
+     "pass": false,
+     "rel_error": 0.5645843159897838,
+     "stratum": "run length 1",
+     "uncertainty": 8.748291345600867e-05
+    },
+    {
+     "abs_error": 0.026272924592857495,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M6r",
+     "model": 0.014911813173668685,
+     "n": 15972446,
+     "note": "",
+     "observed": 0.04118473776652618,
+     "pass": false,
+     "rel_error": 0.6379286604129213,
+     "stratum": "run length 2",
+     "uncertainty": 0.00010459056909108392
+    },
+    {
+     "abs_error": 0.0010555275651748935,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M6r",
+     "model": 0.02547775156638711,
+     "n": 5158503,
+     "note": "",
+     "observed": 0.026533279131562004,
+     "pass": true,
+     "rel_error": 0.03978127090666743,
+     "stratum": "run length 3",
+     "uncertainty": 0.00022198784745099055
+    },
+    {
+     "abs_error": 0.0516479735485035,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M6r",
+     "model": 0.03333333333333333,
+     "n": 317764,
+     "note": "",
+     "observed": 0.08498130688183683,
+     "pass": false,
+     "rel_error": 0.6077568755246137,
+     "stratum": "run length 4",
+     "uncertainty": 0.0008283206369969826
+    },
+    {
+     "abs_error": 0.13882658359293873,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M6r",
+     "model": 0.0,
+     "n": 96300,
+     "note": "",
+     "observed": 0.13882658359293873,
+     "pass": false,
+     "rel_error": 1.0,
+     "stratum": "run length 5",
+     "uncertainty": 0.001394598448092357
+    },
+    {
+     "abs_error": 0.10851841439415237,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M6r",
+     "model": 0.0,
+     "n": 32013,
+     "note": "",
+     "observed": 0.10851841439415237,
+     "pass": false,
+     "rel_error": 1.0,
+     "stratum": "run length 6+",
+     "uncertainty": 0.0014873162676797206
+    },
+    {
+     "abs_error": null,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M8",
+     "model": null,
+     "n": null,
+     "note": "each k: within 2 percentage points or inside each other's Wilson 95% CI",
+     "observed": null,
+     "pass": false,
+     "rel_error": null,
+     "stratum": "consensus curve",
+     "uncertainty": null
+    },
+    {
+     "abs_error": null,
+     "gating": false,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M9",
+     "model": null,
+     "n": null,
+     "note": "",
+     "observed": null,
+     "pass": false,
+     "rel_error": null,
+     "stratum": "quality",
+     "uncertainty": null
+    }
+   ],
+   "model_sha256": "d6f40cda48b86a61d422c8345f4384a594a4a3792e0f3bf507ea1d06e4c29802",
+   "name": "V7 a7c d03-hac-fwd",
+   "passed": [],
+   "schema": "vnx.channel-model/2",
+   "seconds": 35.9
+  },
+  "D": {
+   "evidence_class": "PUBLIC-DATA-DERIVED",
+   "failed_7b_metrics_excluding_M10": [
+    "M1c",
+    "M2",
+    "M2b",
+    "M3",
+    "M6r",
+    "M8"
+   ],
+   "m1_by_run_not_gating": {
+    "run15": {
+     "deletion": {
+      "model": 0.039777585136484446,
+      "real": 0.0371249550471659,
+      "rel_error": 0.07145140205418375,
+      "within_5pct": false
+     },
+     "insertion": {
+      "model": 0.029106592623745806,
+      "real": 0.02808503693048217,
+      "rel_error": 0.036373663876328614,
+      "within_5pct": true
+     },
+     "substitution": {
+      "model": 0.025852938399608612,
+      "real": 0.024183813291285144,
+      "rel_error": 0.06901827632472474,
+      "within_5pct": false
+     }
+    },
+    "run16": {
+     "deletion": {
+      "model": 0.039777585136484446,
+      "real": 0.04389271180676805,
+      "rel_error": 0.09375421341930097,
+      "within_5pct": false
+     },
+     "insertion": {
+      "model": 0.029106592623745806,
+      "real": 0.037492165871271514,
+      "rel_error": 0.22366201185381981,
+      "within_5pct": false
+     },
+     "substitution": {
+      "model": 0.025852938399608612,
+      "real": 0.030988093037268315,
+      "rel_error": 0.16571379953854626,
+      "within_5pct": false
+     }
+    },
+    "run18": {
+     "deletion": {
+      "model": 0.039777585136484446,
+      "real": 0.03998835302591452,
+      "rel_error": 0.0052707319377090465,
+      "within_5pct": true
+     },
+     "insertion": {
+      "model": 0.029106592623745806,
+      "real": 0.02444936302873869,
+      "rel_error": 0.19048470054343888,
+      "within_5pct": false
+     },
+     "substitution": {
+      "model": 0.025852938399608612,
+      "real": 0.023638913153418234,
+      "rel_error": 0.09366019629672467,
+      "within_5pct": false
+     }
+    },
+    "run20": {
+     "deletion": {
+      "model": 0.039777585136484446,
+      "real": 0.04664405497618128,
+      "rel_error": 0.14720996798419833,
+      "within_5pct": false
+     },
+     "insertion": {
+      "model": 0.029106592623745806,
+      "real": 0.03757781318398352,
+      "rel_error": 0.22543144058868042,
+      "within_5pct": false
+     },
+     "substitution": {
+      "model": 0.025852938399608612,
+      "real": 0.03147128878588902,
+      "rel_error": 0.17852304761028862,
+      "within_5pct": false
+     }
+    }
+   },
+   "metric_table": [
+    {
+     "abs_error": 6.941597645789693e-05,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M1",
+     "model": 0.025852938399608612,
+     "n": null,
+     "note": "tolerance 0.00129",
+     "observed": 0.025783522423150716,
+     "pass": true,
+     "rel_error": 0.0026922611782309916,
+     "stratum": "substitution",
+     "uncertainty": 5.536112721345795e-05
+    },
+    {
+     "abs_error": 0.00015538533061264584,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M1",
+     "model": 0.029106592623745806,
+     "n": null,
+     "note": "tolerance 0.00146",
+     "observed": 0.02926197795435845,
+     "pass": true,
+     "rel_error": 0.005310144476733906,
+     "stratum": "insertion",
+     "uncertainty": 8.188022582958747e-05
+    },
+    {
+     "abs_error": 0.0003074820012957877,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M1",
+     "model": 0.039777585136484446,
+     "n": null,
+     "note": "tolerance 0.002",
+     "observed": 0.040085067137780234,
+     "pass": true,
+     "rel_error": 0.007670736841699972,
+     "stratum": "deletion",
+     "uncertainty": 6.746003592217719e-05
+    },
+    {
+     "abs_error": 0.00039345135545051924,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M1a",
+     "model": 0.09473711615983887,
+     "n": null,
+     "note": "",
+     "observed": 0.0951305675152894,
+     "pass": true,
+     "rel_error": 0.004135908843256756,
+     "stratum": "total",
+     "uncertainty": 0.00016315863737541525
+    },
+    {
+     "abs_error": 0.05537937919364795,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M1c",
+     "model": 0.05537937919364795,
+     "n": null,
+     "note": "threshold 0.05",
+     "observed": 0.0,
+     "pass": false,
+     "rel_error": null,
+     "stratum": "total variation",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.005379250542239101,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M5",
+     "model": 0.005379250542239101,
+     "n": null,
+     "note": "threshold 0.05",
+     "observed": 0.0,
+     "pass": true,
+     "rel_error": null,
+     "stratum": "total variation",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.004839538711767621,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M5",
+     "model": 0.39097269504378657,
+     "n": null,
+     "note": "threshold 3.0 pp",
+     "observed": 0.3958122337555542,
+     "pass": true,
+     "rel_error": 0.012226854803978658,
+     "stratum": "share of runs >= 2",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.002888786238707599,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M5i",
+     "model": 0.002888786238707599,
+     "n": null,
+     "note": "threshold 0.05",
+     "observed": 0.0,
+     "pass": true,
+     "rel_error": null,
+     "stratum": "total variation",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.002779535208145556,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M5i",
+     "model": 0.3472830403078729,
+     "n": null,
+     "note": "threshold 3.0 pp",
+     "observed": 0.35006257551601844,
+     "pass": true,
+     "rel_error": 0.007940109576261652,
+     "stratum": "share of runs >= 2",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.05901770331757916,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M2",
+     "model": 14.210567423975832,
+     "n": null,
+     "note": "KS D 0.0544",
+     "observed": 14.26958512729341,
+     "pass": false,
+     "rel_error": 0.004135908843256844,
+     "stratum": "mean",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.00025686571275083947,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M2b",
+     "model": 0.09081101889124446,
+     "n": null,
+     "note": "KS D 0.0547",
+     "observed": 0.0910678846039953,
+     "pass": false,
+     "rel_error": 0.0028205960187590693,
+     "stratum": "mean",
+     "uncertainty": null
+    },
+    {
+     "abs_error": null,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "RL",
+     "model": null,
+     "n": null,
+     "note": "KS D 0.0452",
+     "observed": null,
+     "pass": true,
+     "rel_error": null,
+     "stratum": "mean",
+     "uncertainty": null
+    },
+    {
+     "abs_error": null,
+     "gating": false,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M7",
+     "model": null,
+     "n": null,
+     "note": "KS D 0.0644",
+     "observed": null,
+     "pass": false,
+     "rel_error": null,
+     "stratum": "mean",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.04263080745436286,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M3",
+     "model": 0.13972311151928177,
+     "n": null,
+     "note": "threshold 1 pp",
+     "observed": 0.09709230406491891,
+     "pass": false,
+     "rel_error": 0.4390750416825888,
+     "stratum": "abs_drift_le_0",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.045495968861482106,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M3",
+     "model": 0.5672866473834639,
+     "n": null,
+     "note": "threshold 1 pp",
+     "observed": 0.5217906785219818,
+     "pass": false,
+     "rel_error": 0.08719199237202446,
+     "stratum": "abs_drift_le_3",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.03126312469019277,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M3",
+     "model": 0.7840681835738011,
+     "n": null,
+     "note": "threshold 1 pp",
+     "observed": 0.7528050588836084,
+     "pass": false,
+     "rel_error": 0.04152884511237906,
+     "stratum": "abs_drift_le_6",
+     "uncertainty": null
+    },
+    {
+     "abs_error": 0.0003530951157046519,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M6r",
+     "model": 0.04369922788106119,
+     "n": 112658124,
+     "note": "",
+     "observed": 0.04334613276535654,
+     "pass": true,
+     "rel_error": 0.008145942744559109,
+     "stratum": "run length 1",
+     "uncertainty": 8.748291345600867e-05
+    },
+    {
+     "abs_error": 0.0011885877368493294,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M6r",
+     "model": 0.03999615002967685,
+     "n": 15972446,
+     "note": "",
+     "observed": 0.04118473776652618,
+     "pass": true,
+     "rel_error": 0.028859907851965995,
+     "stratum": "run length 2",
+     "uncertainty": 0.00010459056909108392
+    },
+    {
+     "abs_error": 0.0012915594097395872,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M6r",
+     "model": 0.025241719721822417,
+     "n": 5158503,
+     "note": "",
+     "observed": 0.026533279131562004,
+     "pass": true,
+     "rel_error": 0.048676961612454626,
+     "stratum": "run length 3",
+     "uncertainty": 0.00022198784745099055
+    },
+    {
+     "abs_error": 0.015018693118163173,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M6r",
+     "model": 0.1,
+     "n": 317764,
+     "note": "",
+     "observed": 0.08498130688183683,
+     "pass": false,
+     "rel_error": 0.1767293734261592,
+     "stratum": "run length 4",
+     "uncertainty": 0.0008283206369969826
+    },
+    {
+     "abs_error": 0.13882658359293873,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M6r",
+     "model": 0.0,
+     "n": 96300,
+     "note": "",
+     "observed": 0.13882658359293873,
+     "pass": false,
+     "rel_error": 1.0,
+     "stratum": "run length 5",
+     "uncertainty": 0.001394598448092357
+    },
+    {
+     "abs_error": 0.10851841439415237,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M6r",
+     "model": 0.0,
+     "n": 32013,
+     "note": "",
+     "observed": 0.10851841439415237,
+     "pass": false,
+     "rel_error": 1.0,
+     "stratum": "run length 6+",
+     "uncertainty": 0.0014873162676797206
+    },
+    {
+     "abs_error": null,
+     "gating": true,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M8",
+     "model": null,
+     "n": null,
+     "note": "each k: within 2 percentage points or inside each other's Wilson 95% CI",
+     "observed": null,
+     "pass": false,
+     "rel_error": null,
+     "stratum": "consensus curve",
+     "uncertainty": null
+    },
+    {
+     "abs_error": null,
+     "gating": false,
+     "identifiability": "IDENTIFIABLE",
+     "metric": "M9",
+     "model": null,
+     "n": null,
+     "note": "",
+     "observed": null,
+     "pass": false,
+     "rel_error": null,
+     "stratum": "quality",
+     "uncertainty": null
+    }
+   ],
+   "model_sha256": "5e81ec793e51fbcf7353207f05906fe9197877436f8dc8cc032676800271e11e",
+   "name": "V8 F1 (D13 FIT)",
+   "passed": [
+    "M1a",
+    "M1",
+    "M5",
+    "M5i",
+    "RL"
+   ],
+   "schema": "vnx.channel-model/2",
+   "seconds": 46.3
+  }
+ },
+ "note": "M10 (round trip) is a property of the model alone and is not part of this DEV comparison; see the V7 and V8 pre-check records. No model was selected or tuned on these numbers.",
+ "seconds": 153.6,
+ "seed": 20261011
+}

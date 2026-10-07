@@ -1,0 +1,186 @@
+{
+ "by_stage": {
+  "archive": 0.0006,
+  "clustering": 0.1435,
+  "consensus": 0.8235,
+  "other": 0.0034,
+  "outer_rs": 0.0021,
+  "parsing": 0.0002,
+  "pass1": 0.0057,
+  "simulation": 0.021
+ },
+ "case": [
+  "d13-f1",
+  10,
+  "v7-lowcov",
+  83000
+ ],
+ "label": "SIMULATED decode under the D13-F1 stress channel",
+ "py_spy_returncode": 0,
+ "run_output": " Wrote raw flamegraph data to '/tmp/vnx-v8p-1_k9kmqs/stacks.txt'. Samples: 4754 Errors: 1\npy-spy> You can use the flamegraph.pl script from https://github.com/brendangregg/flamegraph to generate a SVG",
+ "samples": 4754,
+ "top_inclusive": [
+  {
+   "frame": "<module> (<string>:1)",
+   "share": 0.9996
+  },
+  {
+   "frame": "decode_claim (vnxdna/benchmark/outcome.py:121)",
+   "share": 0.9752
+  },
+  {
+   "frame": "decode_reads (vnxdna/pipeline/decode.py:66)",
+   "share": 0.9752
+  },
+  {
+   "frame": "<lambda> (nanofunnel.py:175)",
+   "share": 0.9752
+  },
+  {
+   "frame": "run_one (run.py:82)",
+   "share": 0.9752
+  },
+  {
+   "frame": "run_decode (nanofunnel.py:175)",
+   "share": 0.9752
+  },
+  {
+   "frame": "_decode_reads (vnxdna/pipeline/decode.py:220)",
+   "share": 0.9716
+  },
+  {
+   "frame": "_pass2 (vnxdna/recovery/outer.py:203)",
+   "share": 0.9716
+  },
+  {
+   "frame": "run (vnxdna/recovery/outer.py:140)",
+   "share": 0.9699
+  },
+  {
+   "frame": "ensure_run (vnxdna/recovery/cluster/stage.py:121)",
+   "share": 0.9699
+  },
+  {
+   "frame": "fill_rows (vnxdna/recovery/cluster/stage.py:222)",
+   "share": 0.9699
+  },
+  {
+   "frame": "_run (vnxdna/recovery/cluster/stage.py:142)",
+   "share": 0.9689
+  },
+  {
+   "frame": "frames (nanofunnel.py:147)",
+   "share": 0.9687
+  },
+  {
+   "frame": "ccons (nanofunnel.py:156)",
+   "share": 0.959
+  },
+  {
+   "frame": "cluster_frames (vnxdna/recovery/cluster/stage.py:67)",
+   "share": 0.959
+  },
+  {
+   "frame": "cluster_consensus (vnxdna/recovery/cluster/consensus.py:242)",
+   "share": 0.9581
+  },
+  {
+   "frame": "_run_units (vnxdna/recovery/cluster/consensus.py:365)",
+   "share": 0.9302
+  },
+  {
+   "frame": "_polish (vnxdna/recovery/cluster/consensus.py:461)",
+   "share": 0.7286
+  },
+  {
+   "frame": "edit_costs (vnxdna/recovery/cluster/polish.py:91)",
+   "share": 0.2293
+  },
+  {
+   "frame": "edit_costs (vnxdna/recovery/cluster/polish.py:115)",
+   "share": 0.2253
+  },
+  {
+   "frame": "edit_costs (vnxdna/recovery/cluster/polish.py:116)",
+   "share": 0.1977
+  },
+  {
+   "frame": "fb_calls (vnxdna/recovery/cluster/consensus.py:59)",
+   "share": 0.1424
+  },
+  {
+   "frame": "_polish (vnxdna/recovery/cluster/consensus.py:505)",
+   "share": 0.134
+  },
+  {
+   "frame": "_fb_calls_native (vnxdna/recovery/cluster/consensus.py:84)",
+   "share": 0.1279
+  },
+  {
+   "frame": "fb (vnxdna/native/cluster.py:398)",
+   "share": 0.1258
+  }
+ ],
+ "top_self": [
+  {
+   "frame": "edit_costs (vnxdna/recovery/cluster/polish.py:115)",
+   "share": 0.2156
+  },
+  {
+   "frame": "edit_costs (vnxdna/recovery/cluster/polish.py:116)",
+   "share": 0.1881
+  },
+  {
+   "frame": "run (vnxdna/native/cluster.py:395)",
+   "share": 0.1254
+  },
+  {
+   "frame": "sub_at (vnxdna/recovery/cluster/polish.py:53)",
+   "share": 0.0606
+  },
+  {
+   "frame": "fg (vnxdna/recovery/cluster/polish.py:64)",
+   "share": 0.0322
+  },
+  {
+   "frame": "fg (vnxdna/recovery/cluster/polish.py:77)",
+   "share": 0.0316
+  },
+  {
+   "frame": "_amin (numpy/_core/_methods.py:45)",
+   "share": 0.0286
+  },
+  {
+   "frame": "fg (vnxdna/recovery/cluster/polish.py:79)",
+   "share": 0.0242
+  },
+  {
+   "frame": "edit_costs (vnxdna/recovery/cluster/polish.py:114)",
+   "share": 0.0231
+  },
+  {
+   "frame": "fg (vnxdna/recovery/cluster/polish.py:66)",
+   "share": 0.0227
+  },
+  {
+   "frame": "shift (vnxdna/recovery/cluster/polish.py:136)",
+   "share": 0.0202
+  },
+  {
+   "frame": "fg (vnxdna/recovery/cluster/polish.py:73)",
+   "share": 0.0135
+  },
+  {
+   "frame": "sub_at (vnxdna/recovery/cluster/polish.py:50)",
+   "share": 0.0135
+  },
+  {
+   "frame": "fg (vnxdna/recovery/cluster/polish.py:60)",
+   "share": 0.0124
+  },
+  {
+   "frame": "edit_costs (vnxdna/recovery/cluster/polish.py:103)",
+   "share": 0.0118
+  }
+ ]
+}

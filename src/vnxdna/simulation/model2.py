@@ -41,6 +41,8 @@ simulated with the effect silently dropped. A ``/1`` reader refuses ``/2`` docum
 from __future__ import annotations
 
 import copy
+import hashlib
+import json
 import math
 import re
 from typing import Any
@@ -48,7 +50,12 @@ from typing import Any
 from vnxdna.simulation import model as _m
 
 SCHEMA_V2 = _m.SCHEMA_V2
-BASES = ("measured", "estimated", "inferred", "assumed", "synthetic")
+BASES = ("measured", "estimated", "inferred", "assumed", "synthetic") + ("observed", "fitted", "derived")
+#: V8 evidence vocabulary (docs/V8_PLAN.md, V8.3): OBSERVED = counted directly in the data, FITTED = estimated by the fitter
+#: (calibrated), DERIVED = computed from other parameters or bounds, ASSUMED = not from data. The V7 labels stay valid with the
+#: same meaning (measured = observed, estimated = fitted, inferred = derived); ``synthetic`` = a designed, non-fitted value.
+V8_BASIS = {"measured": "observed", "estimated": "fitted", "inferred": "derived", "assumed": "assumed",
+            "observed": "observed", "fitted": "fitted", "derived": "derived", "synthetic": "synthetic"}
 SPLIT_NAMES = ("FIT", "HELDOUT")
 ADEQUACY = ("ADEQUATE", "INADEQUATE", "UNVALIDATED")
 HONOURED = ("context", "insertion.run_length", "deletion.run_length", "read_heterogeneity", "homopolymer.indel_by_length")
@@ -57,6 +64,8 @@ TOP_KEYS_V2 = _m.TOP_KEYS + ("model_id", "parameters", "fit_report")
 PROVENANCE_KEYS_V2 = _m.PROVENANCE_KEYS + ("split", "fitting")
 FIT_REPORT_KEYS = ("adequacy", "failed_metrics", "metrics", "misfit", "measured_statistics", "notes", "validation")
 FITTING_KEYS = ("method", "version", "commit", "dirty", "seed", "timestamp_utc", "software")
+#: optional model identity (V8.3): SHA-256 of the fit configuration and of the canonical stages (``parameter_sha256``, checked)
+FITTING_OPTIONAL = ("configuration_sha256", "parameter_sha256")
 MAX_PARAMETERS = 1024
 _MODEL_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._+:@-]{0,127}$")
 _HEX64 = re.compile(r"^[0-9a-f]{64}$")
@@ -295,7 +304,10 @@ def _normalize_provenance_v2(p: Any, data_source: str) -> dict:
         if split.get("name") not in SPLIT_NAMES or not _HEX64.match(str(split.get("manifest_sha256", ""))):
             raise _err(f"provenance.split needs name in {list(SPLIT_NAMES)} and the 64-hex manifest_sha256")
     if fitting is not None:
-        fitting = _m._keys(fitting, FITTING_KEYS, "provenance.fitting")
+        fitting = _m._keys(fitting, FITTING_KEYS + FITTING_OPTIONAL, "provenance.fitting")
+        for k in FITTING_OPTIONAL:
+            if k in fitting and not _HEX64.match(str(fitting[k])):
+                raise _err(f"provenance.fitting.{k} must be a 64-hex SHA-256")
         if data_source != "LABORATORY":
             raise _err("provenance.fitting is only valid for data_source LABORATORY (a fitted model is fitted to data)")
         miss = [k for k in FITTING_KEYS if k not in fitting]
@@ -441,10 +453,18 @@ def normalize_v2(doc: Any) -> dict:
         if not isinstance(doc.get(key, ""), str):
             raise _err(f"{key} must be a string")
     stages = normalize_stages_v2(doc.get("stages"))
+    want = (prov.get("fitting") or {}).get("parameter_sha256")
+    if want is not None and want != parameter_sha256(stages):
+        raise _err("provenance.fitting.parameter_sha256 does not match the stages (parameters altered after fitting?)")
     return {"schema": SCHEMA_V2, "name": name, "version": version, "model_id": mid, "description": doc.get("description", ""),
             "note": doc.get("note", ""), "data_source": ds, "evidence_class": ec, "provenance": prov, "stages": stages,
             "parameters": _normalize_parameters(doc.get("parameters"), stages),
             "fit_report": _normalize_fit_report(doc.get("fit_report"))}
+
+
+def parameter_sha256(stages: dict) -> str:
+    """SHA-256 of the canonical (sorted-key, compact) JSON of normalised ``stages``: the model's parameter identity."""
+    return hashlib.sha256(json.dumps(stages, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
 def to_v1_doc(doc: dict) -> dict:

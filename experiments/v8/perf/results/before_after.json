@@ -1,0 +1,57 @@
+{
+ "all_identical": true,
+ "experiment": "V8.14 before/after: vectorised polish.edit_costs",
+ "label": "SIMULATED decodes (D13-F1 stress channel)",
+ "load_average": [
+  1.0849609375,
+  1.21044921875,
+  2.1005859375
+ ],
+ "rows": [
+  {
+   "case": [
+    "d13-f1",
+    10,
+    "v7-lowcov",
+    83000
+   ],
+   "decode_s_after": 102.884,
+   "decode_s_before": 88.095,
+   "identical_result": true,
+   "outcome": "EXACT",
+   "peak_rss_mib_after": 300.7,
+   "peak_rss_mib_before": 300.7,
+   "speedup": 0.86
+  },
+  {
+   "case": [
+    "d13-f1",
+    5,
+    "v7-lowcov",
+    83001
+   ],
+   "decode_s_after": 47.093,
+   "decode_s_before": 38.867,
+   "identical_result": true,
+   "outcome": "EXPLICIT_FAILURE",
+   "peak_rss_mib_after": 271.2,
+   "peak_rss_mib_before": 275.4,
+   "speedup": 0.83
+  },
+  {
+   "case": [
+    "d13-f1",
+    10,
+    "v4-balanced",
+    83002
+   ],
+   "decode_s_after": 73.885,
+   "decode_s_before": 62.341,
+   "identical_result": true,
+   "outcome": "EXACT",
+   "peak_rss_mib_after": 263.1,
+   "peak_rss_mib_before": 263.0,
+   "speedup": 0.84
+  }
+ ]
+}

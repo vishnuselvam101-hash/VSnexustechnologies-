@@ -1,0 +1,81 @@
+{
+ "archive": {
+  "bytes": 13073,
+  "container_sha256": "47143f28022227b66440fcbd1e1f0f3edcf2316e1fa96d791be18a9d04f8ef1a",
+  "dedup_report": {
+   "unique_chunks": 3
+  },
+  "files": 4
+ },
+ "experiment": "V8.12 archive / random access / integrity",
+ "false_success": 0,
+ "label": "SIMULATED channels",
+ "negative": {
+  "tampered_extract": {
+   "code": "INTEGRITY_ERROR",
+   "error": "VNXIntegrityError",
+   "refused": true
+  },
+  "tampered_verify": {
+   "code": "INTEGRITY_ERROR",
+   "error": "VNXIntegrityError",
+   "refused": true
+  },
+  "too_few_reads_decode": {
+   "output_written": false,
+   "refused": true,
+   "status": "FAILURE"
+  },
+  "wrong_key_extract": {
+   "code": "WRONG_KEY",
+   "error": "VNXKeyError",
+   "refused": true
+  },
+  "wrong_key_verify": {
+   "code": "WRONG_KEY",
+   "error": "VNXKeyError",
+   "refused": true
+  }
+ },
+ "runs": {
+  "clean": {
+   "container_identical": true,
+   "coverage": 5,
+   "decode_status": "SUCCESS",
+   "extract_all_identical": true,
+   "extract_one": {
+    "files": 1,
+    "identical": true
+   },
+   "locate": {
+    "chunks": [
+     1
+    ]
+   },
+   "model_sha256": "21e14726f189cd5951839f757493f77c9e5834aa3832d6b1948ffd982e0e16d2",
+   "reads_sha256": "5b65657ca54d8653ccf948dfd44b85ddb04dc7ced44ced31b40616abc730db03",
+   "verify": "VERIFIED"
+  },
+  "nanopore-like": {
+   "container_identical": true,
+   "coverage": 10,
+   "decode_status": "SUCCESS",
+   "extract_all_identical": true,
+   "extract_one": {
+    "files": 1,
+    "identical": true
+   },
+   "locate": {
+    "chunks": [
+     1
+    ]
+   },
+   "model_sha256": "67513377bf2e53f7e3c87542df233ee23af2094bc87da536dc1e4197fc83d660",
+   "reads_sha256": "35e5334cb13b8e49ea3cdf72383915ffc856a4e937ded5ee4ea5bf98e9c69f04",
+   "verify": "VERIFIED"
+  }
+ },
+ "seconds": 28.8,
+ "seed": 83100,
+ "verify_original": "VERIFIED"
+}

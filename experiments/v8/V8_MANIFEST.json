@@ -1,0 +1,229 @@
+{
+ "benchmark": {
+  "consensus_template": "full",
+  "coverages": [
+   3,
+   5,
+   10
+  ],
+  "profiles": [
+   "v4-balanced",
+   "v7-lowcov"
+  ],
+  "scale_sizes_bytes": [
+   4096,
+   1048576,
+   10485760,
+   104857600,
+   1073741824
+  ],
+  "workers_max": 4
+ },
+ "compiler": "cc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+ "configurations": [
+  {
+   "path": "docs/V8_PREREGISTRATION-A1.md",
+   "sha256": "3e40bd6a9a2941b6a743779972a638f930f4e2de578bd42ab4d71c26e403a9c0"
+  },
+  {
+   "path": "docs/V8_PREREGISTRATION.md",
+   "sha256": "adb9731844f0bd3b134d2ce396b91e73ce565115d23eaba2b3964e02bab6c6ac"
+  }
+ ],
+ "datasets": {
+  "d13-lopez-nanopore": {
+   "files": [
+    {
+     "bytes": 218,
+     "path": "d13/read_me_data-ncomms19-nanopore.txt",
+     "sha256": "9ec3ce831b72b222a8086b103eacedeca6c89a1958d14974d24c916df5466d7f"
+    },
+    {
+     "bytes": 320594,
+     "path": "d13/seqs_365-dishes.txt",
+     "sha256": "1d5cfad9f2ef73dd7b5616e323afe35d01e545a857db1cd11ce5c5484b9a1cd1"
+    },
+    {
+     "bytes": 1358050,
+     "path": "d13/seqs_Vitruvian.txt",
+     "sha256": "1e53b4f08e02da68879ba62c8b028ba22f9b6c5daa7a10dd92738c997b0ccee5"
+    },
+    {
+     "bytes": 16027188,
+     "path": "d13/seqs_apollo.txt",
+     "sha256": "0f9461ad1fde66295a554bcb1ded100afa08268edc4eb8c51a4384ea53e5d975"
+    },
+    {
+     "bytes": 1157561,
+     "path": "d13/seqs_space_shuttle.txt",
+     "sha256": "d1ccbcc250b251e7c5701c6e210538cf40248534538706ae611b29d9ac6d8154"
+    },
+    {
+     "bytes": 575880507,
+     "path": "d13/nanopore_run13.fastq.gz",
+     "sha256": "8117677cbbb5a97060438cf024ac7de8ec7935f100a344098c557cd7415975a8"
+    },
+    {
+     "bytes": 846735934,
+     "path": "d13/nanopore_run15.fastq.gz",
+     "sha256": "44200cf19f687e479a51a38f4a70e2ee5e5328ec8c04e75dd9e5b341aba3db9a"
+    },
+    {
+     "bytes": 427414855,
+     "path": "d13/nanopore_run16.fastq.gz",
+     "sha256": "88a7e272a1d6baf7e2d6af1d3ab31913639b8882ebbee41afd90ae90baa619ad"
+    },
+    {
+     "bytes": 369091288,
+     "path": "d13/nanopore_run18.fastq.gz",
+     "sha256": "100543c9fe4684b7ce049ac97de2f6d9e911a79dcd5e5d8a0a32d39226fbd4de"
+    },
+    {
+     "bytes": 456507499,
+     "path": "d13/nanopore_run20.fastq.gz",
+     "sha256": "d138bebb557f7da5d271fd514ad5fad59d595ad5e4cb90a711224f80bf1ab3b8"
+    }
+   ],
+   "publication": "Lopez R, Chen YJ, Dumas Ang S, Yekhanin S, Makarychev K, Racz MZ, Seelig G, Strauss K, Ceze L. DNA assembly for nanopore data storage readout. Nat Commun 10:2933 (2019), doi:10.1038/s41467-019-10978-4 (PMC6610119)",
+   "source": "GitHub: uwmisl/data-ncomms19-nanopore (FASTQ via Git LFS)",
+   "version": {
+    "date": "2019-05-20T04:33:08Z",
+    "metadata": {
+     "bytes": 5879,
+     "download_utc": "2026-10-06T00:12:44Z",
+     "path": "meta/github-data-ncomms19-nanopore-head-commit.json",
+     "sha256": "1e6817555f6d9d55cc3d9f195b74c5877117cf5f9f132621b61026354eb79c5d"
+    },
+    "sha": "4bf31ff40e0d280322d1009bad0971c25fc4ee90",
+    "tree": "443d6c2ce44c70e31ca15e0d4bc988c2a063c017"
+   }
+  }
+ },
+ "evidence_class": "provenance only (no result)",
+ "git": {
+  "branch": "build/v8-public-channel",
+  "commit": "6c4e3422d715caf042fa02cd22e968a3d7d3e86c",
+  "dirty_tracked": true,
+  "v7_parent": "0fd7c54d1b35178abb38520913797873d1cb22bc",
+  "v7_parent_is_ancestor": true
+ },
+ "hardware": {
+  "cpu": "Intel(R) Xeon(R) Gold 6240 CPU @ 2.60GHz",
+  "logical_cpus": 8,
+  "machine": "x86_64",
+  "memory_gib": 31.3,
+  "os": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39"
+ },
+ "models": {
+  "baselines": [
+   {
+    "canonical_sha256": "67513377bf2e53f7e3c87542df233ee23af2094bc87da536dc1e4197fc83d660",
+    "file_sha256": "5f9df32e63acd42e3914a89a6c26639a8e177eec7c806f479bbb7479f5a3db8b",
+    "name": "nanopore-like",
+    "path": "src/vnxdna/simulation/models/nanopore-like.json",
+    "schema": "vnx.channel-model/1",
+    "version": "1.0.0"
+   },
+   {
+    "canonical_sha256": "21e14726f189cd5951839f757493f77c9e5834aa3832d6b1948ffd982e0e16d2",
+    "file_sha256": "ec926ff28764641c3fd33505343cb15d631d1931adb7518e4d77e37dc93edde2",
+    "name": "clean",
+    "path": "src/vnxdna/simulation/models/clean.json",
+    "schema": "vnx.channel-model/1",
+    "version": "1.0.0"
+   },
+   {
+    "canonical_sha256": "09b3fe2f9771fd86b960fbfe212404b37d922fea7842e3821cfc438d21191056",
+    "file_sha256": "48652c6b5d6d360edb99d14c8901c749a70a926fb0b0a6c022ed5ffcb4491497",
+    "name": "substitution-heavy",
+    "path": "src/vnxdna/simulation/models/substitution-heavy.json",
+    "schema": "vnx.channel-model/1",
+    "version": "1.0.0"
+   },
+   {
+    "canonical_sha256": "2eccda9010acf7edf16de06c38017e5f3c2f93901796b518140f0aa19b8bcd53",
+    "file_sha256": "17211add05b7ac987f54e86497cf66a0b7b2d32af40f4474008b78592390752b",
+    "name": "insertion-heavy",
+    "path": "src/vnxdna/simulation/models/insertion-heavy.json",
+    "schema": "vnx.channel-model/1",
+    "version": "1.0.0"
+   },
+   {
+    "canonical_sha256": "21f542d5179858966e0b1ac8beb693cc088509bdf6cabcfaf5256e2ea0cc20ad",
+    "file_sha256": "0a0f6e10221166999cc794d72f0b21bc140bfcf8b1b2ee6607eef4506bae4a2e",
+    "name": "deletion-heavy",
+    "path": "src/vnxdna/simulation/models/deletion-heavy.json",
+    "schema": "vnx.channel-model/1",
+    "version": "1.0.0"
+   },
+   {
+    "canonical_sha256": "8737cafae4d5bfb68a801351e708ab2c3cf1eb533baae0abbe6d8dff0780128f",
+    "file_sha256": "06acab0e4289f2467207ade4365644a26bf695c196326f568780ffb40e133e76",
+    "name": "mixed-harsh",
+    "path": "src/vnxdna/simulation/models/mixed-harsh.json",
+    "schema": "vnx.channel-model/1",
+    "version": "1.0.0"
+   },
+   {
+    "canonical_sha256": "37a537d77188ee6a0ba749d4234eae88781d4b096adb0468e589f1cf8e0c5beb",
+    "file_sha256": "75abfd8c7c5c9b2ec36dadfff3fa3571061c00fcbda7ec9e671451487ec1609f",
+    "name": "ont-guppy-hac-pass-fwd-fit",
+    "path": "experiments/v7/fit-nano/d03/models/ont-guppy-hac-pass-fwd-fit.json",
+    "schema": "vnx.channel-model/2",
+    "version": "3.0.0"
+   },
+   {
+    "canonical_sha256": "d6f40cda48b86a61d422c8345f4384a594a4a3792e0f3bf507ea1d06e4c29802",
+    "file_sha256": "001581169585bece2b2a525b24873203317a6a9ff7b14026c6aa8bdb8ed1f002",
+    "name": "ont-guppy-hac-pass-fwd-fit",
+    "path": "experiments/v7/fit-nano/d03-a7c/models/ont-guppy-hac-pass-fwd-fit.json",
+    "schema": "vnx.channel-model/2",
+    "version": "3.1.0"
+   }
+  ],
+  "produced": [
+   {
+    "canonical_sha256": "5e81ec793e51fbcf7353207f05906fe9197877436f8dc8cc032676800271e11e",
+    "file_sha256": "9fbec10662bfb44f671cfbb2f57b6bf53257a3f6bd0185fecb8dec043cb19901",
+    "name": "d13-nanopore-f1",
+    "path": "experiments/v8/d13/models/d13-nanopore-f1.json",
+    "schema": "vnx.channel-model/2",
+    "version": "8.0.0"
+   }
+  ]
+ },
+ "schema": "vnx.v8-manifest/1",
+ "seeds": {
+  "d13_fit": 20261010,
+  "d13_validation": 20261011,
+  "decoder_matrix": [
+   83000,
+   83001,
+   83002,
+   83003,
+   83004,
+   83005,
+   83006,
+   83007,
+   83008,
+   83009
+  ],
+  "precheck": 20261012
+ },
+ "software": {
+  "dependencies": {
+   "cryptography": "46.0.7",
+   "edlib": "1.3.9.post1",
+   "hypothesis": "6.168.3",
+   "mypy": "2.4.0",
+   "numpy": "2.5.3",
+   "pytest": "8.4.2",
+   "reedsolo": "1.7.0",
+   "ruff": "0.16.10",
+   "zstandard": "0.25.0"
+  },
+  "implementation": "CPython",
+  "python": "3.12.3",
+  "vnxdna_source_version": "6.0.0.dev0"
+ }
+}

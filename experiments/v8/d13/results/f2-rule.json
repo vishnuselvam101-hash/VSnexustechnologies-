@@ -1,0 +1,43 @@
+{
+ "code": {
+  "commit": "0566505833c2b5732910c9c52b8da8d71cf860a6",
+  "dirty_tracked": false
+ },
+ "evidence_class": "PUBLIC-DATA-DERIVED FIT segments vs SIMULATED (F1); in sample",
+ "fit_reads": {
+  "corr_I_D": 0.10030620576035905,
+  "insertions_with_deletion_within_2": 0.09184497052173587,
+  "mean_D": 5.975128987428717,
+  "mean_I": 4.378687922304043,
+  "mean_S": 3.849256425410923,
+  "p_balanced_indels": 0.07247256521252975,
+  "p_drift0": 0.09921249780361964,
+  "p_no_indel": 0.026739932591089883,
+  "reads": 62603,
+  "var_over_mean_D": 5.314962735579027,
+  "var_over_mean_I": 5.616047940587621
+ },
+ "m3_fails": true,
+ "model_sha256": "5e81ec793e51fbcf7353207f05906fe9197877436f8dc8cc032676800271e11e",
+ "pair_ratio": 1.4381310521991417,
+ "pair_share_fit": 0.09184497052173587,
+ "pair_share_sim": 0.06386411751647364,
+ "references": 3000,
+ "rule": "F2 iff F1 pre-check fails M3 and pair ratio (FIT / F1-simulated) > 1.5",
+ "seed": 20261014,
+ "sim_coverage": 21,
+ "sim_reads": {
+  "corr_I_D": 0.26449818603214376,
+  "insertions_with_deletion_within_2": 0.06386411751647364,
+  "mean_D": 5.947419270321609,
+  "mean_I": 4.387191327700268,
+  "mean_S": 3.8753520665487655,
+  "p_balanced_indels": 0.06828453527215562,
+  "p_drift0": 0.1420711338180389,
+  "p_no_indel": 0.07378659854588328,
+  "reads": 61068,
+  "var_over_mean_D": 5.618482981073639,
+  "var_over_mean_I": 4.453251794609999
+ },
+ "triggers": false
+}

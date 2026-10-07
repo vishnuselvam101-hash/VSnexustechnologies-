@@ -1,0 +1,115 @@
+{
+ "code": {
+  "commit": "f6f9f24731f9c76a5bd772c7fd563b96dce66621",
+  "dirty_tracked": false
+ },
+ "content_sha256_note": "content_sha256 added after the run from the same files (file SHA-256 verified first); stage code then gained the field",
+ "environment": {
+  "cpus": 8,
+  "load_average": [
+   2.38525390625,
+   2.16650390625,
+   2.341796875
+  ],
+  "numpy": "2.5.3",
+  "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+  "python": "3.12.3"
+ },
+ "evidence_class": "PUBLIC-DATA-DERIVED (aggregate counts only)",
+ "layout": {
+  "L": 150,
+  "cycles": 150,
+  "max_run": 32,
+  "minruns": [
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "quality": true,
+  "read_rate": true,
+  "size": 4244
+ },
+ "seconds": 50.4,
+ "splits": {
+  "DEV": {
+   "content_sha256": "58cce4261ec4d3157d24123e804c5c5ff70a6b41884ad07afb7c4da000ce8a64",
+   "inputs": {
+    "run15": "14e084fc39c1c3eebc5d5b7795bccd7c8abd6f2de966fe1b24da389048b3807c",
+    "run16": "0c70a4f96b8253207b32e2a80cfbdc31dbb964758b27b79177da63d22b081517",
+    "run18": "52bf13b95bc265378b62016d1619be23b39ee3ab56116b8c95c15c23998cfdfe",
+    "run20": "627c8e192493d5e5f6480b1460b45f6cdbec1c7669262c3e9738b4415b14c6dc"
+   },
+   "path": "/root/vnx-dna-lab/data/derived/v8/d13/tables.DEV.npz",
+   "per_run": {
+    "run15": {
+     "excluded": 0,
+     "reads_tallied": 361490,
+     "references": 20079
+    },
+    "run16": {
+     "excluded": 0,
+     "reads_tallied": 146049,
+     "references": 419
+    },
+    "run18": {
+     "excluded": 0,
+     "reads_tallied": 304514,
+     "references": 20078
+    },
+    "run20": {
+     "excluded": 0,
+     "reads_tallied": 82848,
+     "references": 1687
+    }
+   },
+   "reads_tallied": 894901,
+   "references": 42263,
+   "sha256": "55aa0b4617499eb3cbe3b5a379df4ecaaf24789933acb8f95ab55df5beb4e8b0"
+  },
+  "FIT": {
+   "content_sha256": "b6f32e447baa0750c7b4b29a9c33c05a643b0098cc2017c54a33d6fc6a45fc6f",
+   "inputs": {
+    "run15": "ba73b57a136a9570e23da8eb7bd9d772c21346f69c063087e91a717c699b072b",
+    "run16": "560fd08830a86ce4053d9d5c8c54062212e8e9e343060d5dbc91e520a987d131",
+    "run18": "16a16b67e1cd813f3fb8593ac10ba9d1e1fc8c7632742155bdbfd832a82b2e51",
+    "run20": "e9eac6961b1c6654e94757e20d66b7577f82c40b9b29ebcc69b0a98fef3f5469"
+   },
+   "path": "/root/vnx-dna-lab/data/derived/v8/d13/tables.FIT.npz",
+   "per_run": {
+    "run15": {
+     "excluded": 0,
+     "reads_tallied": 1076103,
+     "references": 60154
+    },
+    "run16": {
+     "excluded": 0,
+     "reads_tallied": 428869,
+     "references": 1226
+    },
+    "run18": {
+     "excluded": 0,
+     "reads_tallied": 907298,
+     "references": 60140
+    },
+    "run20": {
+     "excluded": 0,
+     "reads_tallied": 261601,
+     "references": 5188
+    }
+   },
+   "reads_tallied": 2673871,
+   "references": 126708,
+   "sha256": "81994182b672e5ecbbab5f6e131ec7f6b508b47e49e59f2a582175e49d873aac"
+  }
+ },
+ "stage": "V8.1 stage 4 (normalised observations \u2192 model-fit tables)",
+ "tally_options": {
+  "aligner": "edlib",
+  "length_window": null,
+  "mode": "NW",
+  "shift": "left"
+ },
+ "workers": 4
+}
