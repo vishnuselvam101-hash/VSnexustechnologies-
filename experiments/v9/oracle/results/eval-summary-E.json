@@ -1,0 +1,104 @@
+{
+ "candidate": "E",
+ "cells": [
+  {
+   "ORE": null,
+   "ORE_SI": null,
+   "ORE_wilson95": null,
+   "P_not_O": 0,
+   "channel": "d13-f1",
+   "coverage": 3,
+   "false_success": 0,
+   "n": 100,
+   "oracle_consensus_2reads": 0,
+   "production": 0,
+   "profile": "v4-balanced"
+  },
+  {
+   "ORE": 0.0,
+   "ORE_SI": null,
+   "ORE_wilson95": [
+    0.0,
+    0.037
+   ],
+   "P_not_O": 0,
+   "channel": "d13-f1",
+   "coverage": 3,
+   "false_success": 0,
+   "n": 100,
+   "oracle_consensus_2reads": 100,
+   "production": 0,
+   "profile": "v7-lowcov"
+  },
+  {
+   "ORE": 0.0,
+   "ORE_SI": null,
+   "ORE_wilson95": [
+    0.0,
+    0.0401
+   ],
+   "P_not_O": 0,
+   "channel": "d13-f1",
+   "coverage": 5,
+   "false_success": 0,
+   "n": 100,
+   "oracle_consensus_2reads": 92,
+   "production": 0,
+   "profile": "v4-balanced"
+  },
+  {
+   "ORE": 0.89,
+   "ORE_SI": null,
+   "ORE_wilson95": [
+    0.8137,
+    0.9375
+   ],
+   "P_not_O": 0,
+   "channel": "d13-f1",
+   "coverage": 5,
+   "false_success": 0,
+   "n": 100,
+   "oracle_consensus_2reads": 100,
+   "production": 89,
+   "profile": "v7-lowcov"
+  },
+  {
+   "ORE": 0.94,
+   "ORE_SI": null,
+   "ORE_wilson95": [
+    0.8752,
+    0.9722
+   ],
+   "P_not_O": 0,
+   "channel": "d13-f1",
+   "coverage": 10,
+   "false_success": 0,
+   "n": 100,
+   "oracle_consensus_2reads": 100,
+   "production": 94,
+   "profile": "v4-balanced"
+  },
+  {
+   "ORE": 1.0,
+   "ORE_SI": null,
+   "ORE_wilson95": [
+    0.963,
+    1.0
+   ],
+   "P_not_O": 0,
+   "channel": "d13-f1",
+   "coverage": 10,
+   "false_success": 0,
+   "n": 100,
+   "oracle_consensus_2reads": 100,
+   "production": 100,
+   "profile": "v7-lowcov"
+  }
+ ],
+ "label": "SIMULATED; oracle levels are UPPER-BOUND / ORACLE results, not achievable production performance",
+ "pooled_ORE": 0.5752,
+ "pooled_ORE_wilson95": [
+  0.5311,
+  0.6181
+ ]
+}
