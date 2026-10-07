@@ -182,7 +182,7 @@ def main(argv=None) -> int:
     if a.tune:
         dev = [r for r in rows if r["mode"] == "trajectory" and 90000 <= r["seed"] <= 90099]
         res = tune(dev)
-        FREEZE.write_text(json.dumps({**res, "dev_file": str(out.relative_to(ROOT)), "commit": _commit()}, indent=1, sort_keys=True) + "\n")
+        FREEZE.write_text(json.dumps({**res, "dev_file": str(out.resolve().relative_to(ROOT)), "commit": _commit()}, indent=1, sort_keys=True) + "\n")
         print(json.dumps(res["chosen"]))
         return 0 if res["chosen"] else 1
     params = None
