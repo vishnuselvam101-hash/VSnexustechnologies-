@@ -10,3 +10,4 @@ a0256800d3e54a3dc373af756ad81c0cbe04c8c7:tests/conformance/stage/aead.seal.domai
 a0256800d3e54a3dc373af756ad81c0cbe04c8c7:tests/conformance/stage/aead.seal.domain0/vector.json:generic-api-key:31
 a0256800d3e54a3dc373af756ad81c0cbe04c8c7:tests/conformance/stage/aead.seal.domain1/vector.json:generic-api-key:31
 551ddabf186aa08ef98ce66070209c365a71e78c:src/vnxdna/conformance/operations.py:generic-api-key:470
+# V7 (2026-10-07): a-loss trials.jsonl "code_key" is a result-cache key (commit SHA + hash), not a secret.
