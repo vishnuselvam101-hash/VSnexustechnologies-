@@ -10,6 +10,25 @@
   It evaluates each read's own band plus one edge cell, which is exact (see the kernel comment). SIMULATED decodes:
   timings in `experiments/v9/consensus/results/`.
 
+### Added (VNX-Secure, merged into V9)
+
+- **VNX-Secure** (`vnxdna.secure`, `vnx security …`): a defensive security control plane. It provides:
+  - scrypt principals and HMAC session tokens with revocation and replay protection;
+  - a deny-by-default policy;
+  - 16 deterministic detectors with an explainable additive risk score;
+  - idempotent containment (session containment, token revocation, login lock, rate limit, input quarantine, resource
+    lock, workload-isolation interface, evidence bundles);
+  - an HMAC-chained audit log with an anchor;
+  - an authenticated integrity snapshot;
+  - a recovery state machine that returns to VERIFIED only after verification;
+  - a secure archive gate over the existing random access (Merkle-proof check, fail-closed, optional resource-limited
+    process sandbox);
+  - a crypto-agility registry (PQC PLANNED);
+  - VNX-RAM and VNX-Q interfaces (ARCHITECTURAL);
+  - a safe local attack simulator (10 synthetic scenarios, SIMULATED).
+
+  See docs/VNX_SECURE_*.md. The codec and archive formats are unchanged. VNX-Secure is not claimed to be unhackable.
+
 ### Added (V7 Phase D, in development)
 
 - **`vnx.channel-model/2`** extends `/1` (every `/1` model loads unchanged): provenance of fitted models (datasets with
