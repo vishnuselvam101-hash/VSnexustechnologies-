@@ -29,6 +29,8 @@ A ``/2`` document has the ``/1`` top-level keys and ``stages`` (every ``/1`` sta
                               the reference 3-mer centred on the site (previous, base, next; A=0 C=1 G=2 T=3; an edge uses the
                               base itself as the missing neighbour). HONOURED.
     ``read_heterogeneity``    ``{"distribution": "gamma", "shape": k}``: every read draws one multiplier m ~ Gamma(k, 1/k)
+                              (or V9 ``{"distribution": "latent-states", "states": [{weight, sub, ins, del}, ...]}``:
+                              every read draws one class and scales its sub/ins/del rates by that class's multipliers)
                               (mean 1) that scales its per-site sub/ins/del probabilities (protocol 5.5, A2.1). HONOURED.
                               Present in the canonical form only when set, so models without it keep their SHA-256.
     ``correlation``           P(event at i+1 | event at i): NOT HONOURED by the simulator.
@@ -72,8 +74,10 @@ _HEX64 = re.compile(r"^[0-9a-f]{64}$")
 _SHA40 = re.compile(r"^[0-9a-f]{40}$")
 _TS = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
 CONTEXT_LEN = 64
-HETEROGENEITY_DISTRIBUTIONS = ("gamma",)
+HETEROGENEITY_DISTRIBUTIONS = ("gamma", "latent-states")
 HETEROGENEITY_SHAPE = (0.05, 1e6)
+LATENT_STATES_MAX = 4               # V9 G1: K in {1, 2, 3, 4} read classes
+LATENT_MULTIPLIER = (0.0, 50.0)
 RUN_DISTRIBUTIONS_V2 = _m.RUN_DISTRIBUTIONS + ("empirical",)
 RUN_LENGTH_BINS = 8
 PMF_TOLERANCE = 1e-9
@@ -125,9 +129,25 @@ def _check_context(c: Any, seq: dict) -> dict | None:
 def _check_heterogeneity(h: Any) -> dict | None:
     if h is None:
         return None
-    h = _m._keys(h, ("distribution", "shape"), "stages.sequencing.read_heterogeneity")
+    w = "stages.sequencing.read_heterogeneity"
+    h = _m._keys(h, ("distribution", "shape", "states"), w)
     if h.get("distribution") not in HETEROGENEITY_DISTRIBUTIONS:
-        raise _err(f"stages.sequencing.read_heterogeneity.distribution must be one of {list(HETEROGENEITY_DISTRIBUTIONS)}")
+        raise _err(f"{w}.distribution must be one of {list(HETEROGENEITY_DISTRIBUTIONS)}")
+    if h["distribution"] == "latent-states":
+        # V9 G1: every read draws one class k with probability weight_k; its sub/ins/del rates are multiplied by the
+        # class's multipliers (the substitution spectrum and context stay global)
+        if "shape" in h or not isinstance(h.get("states"), list) or not 1 <= len(h["states"]) <= LATENT_STATES_MAX:
+            raise _err(f"{w}: latent-states needs 'states', a list of 1..{LATENT_STATES_MAX} classes (and no 'shape')")
+        states = []
+        for i, st in enumerate(h["states"]):
+            st = _m._keys(st, ("weight", "sub", "ins", "del"), f"{w}.states[{i}]")
+            states.append({"weight": _m._prob(st.get("weight"), f"{w}.states[{i}].weight"),
+                           **{k: _m._num(st.get(k), f"{w}.states[{i}].{k}", *LATENT_MULTIPLIER) for k in ("sub", "ins", "del")}})
+        if abs(sum(x["weight"] for x in states) - 1.0) > PMF_TOLERANCE:
+            raise _err(f"{w}.states weights must sum to 1")
+        return {"distribution": "latent-states", "states": states}
+    if "states" in h:
+        raise _err(f"{w}: 'states' is only for latent-states")
     lo, hi = HETEROGENEITY_SHAPE
     return {"distribution": h["distribution"], "shape": _m._num(h.get("shape"), "stages.sequencing.read_heterogeneity.shape", lo, hi)}
 
