@@ -1,0 +1,66 @@
+{
+ "version": "V9",
+ "base_commit": "893521757145a260ed94810229f379057646f45f",
+ "preregistration": "docs/V9_PREREGISTRATION.md",
+ "evidence_classes": {
+  "REAL EXPERIMENTAL": "none"
+ },
+ "seeds": {
+  "channel_fit": 20261020,
+  "channel_precheck": 20261021,
+  "channel_round_trip": [
+   20261022,
+   20261023
+  ],
+  "channel_comparison": 20261024,
+  "decoder_dev": [
+   90000,
+   90099
+  ],
+  "decoder_eval": [
+   91000,
+   91199
+  ],
+  "decoder_eval_primary": [
+   91000,
+   91099
+  ],
+  "coverage_envelope": [
+   92000,
+   92099
+  ],
+  "archive_scaling": [
+   93000,
+   93029
+  ],
+  "benchmarks": [
+   94000,
+   94009
+  ],
+  "fuzz_adversarial": [
+   95000,
+   95009
+  ]
+ },
+ "splits": {
+  "d13": {
+   "FIT": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "DEV": [
+    6,
+    7
+   ],
+   "HELDOUT": [
+    8,
+    9
+   ],
+   "heldout_run": 13
+  }
+ }
+}
