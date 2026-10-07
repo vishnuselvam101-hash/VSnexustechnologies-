@@ -55,7 +55,8 @@ def _decode(reads: Path, work: Path, profile: str, mode: str) -> dict:
         out.unlink()
     return {"status": None if res is None else res.status, "error": None if err is None else type(err).__name__,
             "error_code": getattr(err, "code", None), "output_sha256": sha,
-            "stage_counters": rep.get("stage_counters"), "seconds": round(secs, 3)}
+            "stage_counters": rep.get("stage_counters"), "seconds": round(secs, 3),
+            "peak_rss_bytes": rep.get("peak_rss_bytes")}
 
 
 def run_one(job: tuple) -> dict:
@@ -71,11 +72,12 @@ def run_one(job: tuple) -> dict:
         v8 = _decode(work / "reads.fastq", work, profile, "v8")
         v9 = _decode(work / "reads.fastq", work, profile, "v9")
     same = all(v8[k] == v9[k] for k in ("status", "error", "error_code", "output_sha256", "stage_counters"))
+    load1 = os.getloadavg()[0]
     return {"channel": channel, "coverage": cov, "profile": profile, "seed": seed, "label": LABEL,
             "container_sha256": arc["container_sha256"], "reads_sha256": truth["reads_sha256"],
             "exact": v9["output_sha256"] == arc["container_sha256"],
             "identical": same, "v8": v8, "v9": v9, "speedup": round(v8["seconds"] / max(v9["seconds"], 1e-9), 3),
-            "load1": round(os.getloadavg()[0], 2), "commit": _commit()}
+            "load1": round(load1, 2), "commit": _commit()}
 
 
 def _commit() -> str:
