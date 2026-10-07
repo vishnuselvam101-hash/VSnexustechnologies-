@@ -1,0 +1,30 @@
+{
+ "candidate": "G1",
+ "decision": "DEV_LOOK_BLOCKED \u2014 FIT PRE-CHECK INADEQUATE",
+ "dev_looks_spent": 0,
+ "evidence_class": "SIMULATED vs PUBLIC-DATA-DERIVED FIT (in sample)",
+ "failed_gating_metrics": [
+  "M6r",
+  "M8",
+  "M10"
+ ],
+ "g2_rule": "G2 is fitted only if G1 fails M3 or M2b on the FIT pre-check (prereg \u00a74.1); G1 passes both, so G2 is not fitted",
+ "heldout": "closed; carried to V10 unopened (prereg \u00a74.4)",
+ "model_sha256": "6ebd8c04ee96df7f4cefd84b435f15390f86399e0d11da69c0ec68fca7235117",
+ "source": "experiments/v9/d13/results/precheck-g1.json",
+ "stability": {
+  "M1": "PASS",
+  "M10": "FAIL_NOISE_PLAUSIBLE",
+  "M1a": "PASS",
+  "M1c": "PASS",
+  "M2": "PASS",
+  "M2b": "PASS",
+  "M3": "PASS",
+  "M5": "PASS",
+  "M5i": "PASS",
+  "M6r": "FAIL_STABLE",
+  "M8": "FAIL_STABLE",
+  "RL": "PASS"
+ },
+ "verdict": "INADEQUATE"
+}
