@@ -17,6 +17,7 @@ from ..archive import merkle
 from ..archive import operations as ops
 from ..core.errors import VNXConfigurationError, VNXFormatError, VNXIntegrityError, VNXKeyError, VNXResourceError, VNXUnsupportedVersionError
 from .control import AccessDenied, ControlPlane, SecurityFailure
+from .sandbox import SandboxError, run_limited
 
 _CODES = ((VNXKeyError, "key_mismatch"), (VNXIntegrityError, "integrity"), (VNXUnsupportedVersionError, "malformed"),
           (VNXFormatError, "malformed"), (VNXResourceError, "malformed"), (VNXConfigurationError, "malformed"))
@@ -33,9 +34,12 @@ def file_sha256(path: str | os.PathLike) -> str:
 class SecureArchive:
     """One archive behind the control plane. ``resource`` defaults to ``archive:<file name>``."""
 
-    def __init__(self, cp: ControlPlane, path: str | os.PathLike, *, key: bytes | None = None, resource: str | None = None):
+    def __init__(self, cp: ControlPlane, path: str | os.PathLike, *, key: bytes | None = None, resource: str | None = None,
+                 sandbox: bool = False, mem_bytes: int = 1 << 30, cpu_seconds: int = 30):
         self.cp, self.path, self.key = cp, Path(path), key
         self.resource = resource or f"archive:{self.path.name}"
+        # sandbox=True: list/verify/locate parse the archive in a resource-limited child process (sandbox.py)
+        self.sandbox, self.limits = sandbox, {"mem_bytes": mem_bytes, "cpu_seconds": cpu_seconds}
 
     def _call(self, req: dict, operation: str, fn):
         claims = self.cp.authorize(req["token"], req["session"], req["nonce"], req["ts"], self.resource, operation)
@@ -52,6 +56,8 @@ class SecureArchive:
             return fn()
         except Exception as e:
             code = next((c for t, c in _CODES if isinstance(e, t)), None)
+            if isinstance(e, SandboxError):
+                code = "malformed"
             if code is None:
                 if isinstance(e, (ValueError, KeyError, IndexError, OverflowError, MemoryError, EOFError)):
                     code = "malformed"
@@ -64,14 +70,19 @@ class SecureArchive:
     def _open(self, require_key: bool = False):
         return ct.open_container(self.path, key=self.key, require_key=require_key, allow_unencrypted=self.key is None)
 
+    def _run(self, fn, *args, **kw):
+        if self.sandbox:
+            return run_limited(fn, *args, **self.limits, **kw)
+        return fn(*args, **kw)
+
     def list(self, req: dict) -> list:
-        return self._call(req, "list", lambda: ops.list_container(self.path, key=self.key, allow_unencrypted=self.key is None))
+        return self._call(req, "list", lambda: self._run(ops.list_container, self.path, key=self.key, allow_unencrypted=self.key is None))
 
     def verify(self, req: dict) -> dict:
-        return self._call(req, "verify", lambda: ops.verify_container(self.path, key=self.key, allow_unencrypted=self.key is None))
+        return self._call(req, "verify", lambda: self._run(ops.verify_container, self.path, key=self.key, allow_unencrypted=self.key is None))
 
     def locate(self, req: dict, name: str) -> dict:
-        return self._call(req, "locate", lambda: ops.locate(self.path, name, key=self.key, allow_unencrypted=self.key is None))
+        return self._call(req, "locate", lambda: self._run(ops.locate, self.path, name, key=self.key, allow_unencrypted=self.key is None))
 
     def read_file(self, req: dict, name: str) -> bytes:
         def go():
