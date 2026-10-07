@@ -33,6 +33,7 @@ def test_rule_and_tuning():
     t = {(x["level"], x["m"]): x for x in res["table"]}
     assert t[("all", 0)]["false_terminations"] == 1           # row 1 stops at batch 2 (not EXACT) although the pool is
     assert t[("all", 1)]["false_terminations"] == 0
-    # (all,1), (consensus,0) and (consensus,1) all stop both rows at batch 3; ties go to the larger m, then to the more
-    # conservative level (table order pass1 < consensus < all)
-    assert res["chosen"] == {"level": "consensus", "m": 1, "false_terminations": 0, "mean_reads": 300.0}
+    # (consensus,0) and (all,1) both stop both rows at batch 3 with no false termination; the tie goes to the larger m
+    assert [(x["level"], x["m"]) for x in res["table"] if x["mean_reads"] == 300 and not x["false_terminations"]] == \
+        [("consensus", 0), ("all", 1)]
+    assert res["chosen"] == {"level": "all", "m": 1, "false_terminations": 0, "mean_reads": 300.0}
