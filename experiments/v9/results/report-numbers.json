@@ -1,0 +1,117 @@
+{
+ "H1": {
+  "bootstrap95": [
+   2.414,
+   2.508
+  ],
+  "byte_identical": 60,
+  "decodes": 60,
+  "load1_range": [
+   0.87,
+   7.39
+  ],
+  "max": 2.978,
+  "median_speedup": 2.462,
+  "min": 1.062,
+  "source": "experiments/v9/consensus/results/benchmark-d13f1.jsonl"
+ },
+ "H4": {
+  "profiles": {
+   "v4-balanced": {
+    "coverage_at_stop_range": [
+     7.511,
+     10.515
+    ],
+    "exact_at_stop": 100,
+    "false_success": 0,
+    "false_termination_wilson95": [
+     0.0,
+     0.037
+    ],
+    "false_terminations": 0,
+    "fixed_exact": {
+     "10": 99,
+     "15": 100,
+     "3": 0,
+     "5": 0,
+     "7": 0
+    },
+    "mean_coverage_at_stop": 8.698,
+    "mean_reads_at_stop": 6010.0,
+    "mean_reads_reference": 10302.9,
+    "n": 100,
+    "reads_avoided_fraction": 0.4167,
+    "reference_fixed_coverage": "15"
+   },
+   "v7-lowcov": {
+    "coverage_at_stop_range": [
+     4.004,
+     5.506
+    ],
+    "exact_at_stop": 100,
+    "false_success": 0,
+    "false_termination_wilson95": [
+     0.0,
+     0.037
+    ],
+    "false_terminations": 0,
+    "fixed_exact": {
+     "10": 100,
+     "15": 100,
+     "3": 0,
+     "5": 96,
+     "7": 100
+    },
+    "mean_coverage_at_stop": 4.82,
+    "mean_reads_at_stop": 4718.7,
+    "mean_reads_reference": 6860,
+    "n": 100,
+    "reads_avoided_fraction": 0.3121,
+    "reference_fixed_coverage": "7"
+   }
+  },
+  "source": "experiments/v9/coverage/results/eval.jsonl"
+ },
+ "label": "SIMULATED: derived from committed V9 results; no DNA was synthesised, stored or sequenced",
+ "noisy": {
+  "sizes": {
+   "1048576": {
+    "exact": 2,
+    "exact_wilson95": [
+     0.0185,
+     0.2132
+    ],
+    "false_success": 0,
+    "load1_range": [
+     1.01,
+     4.25
+    ],
+    "median_decode_seconds": 1058.71,
+    "median_per_row_success": 0.995134,
+    "median_per_strand_success": 0.888408,
+    "n": 30,
+    "rows": 411,
+    "strands": 32837
+   },
+   "20000": {
+    "exact": 28,
+    "exact_wilson95": [
+     0.7868,
+     0.9815
+    ],
+    "false_success": 0,
+    "load1_range": [
+     1.01,
+     2.26
+    ],
+    "median_decode_seconds": 22.75,
+    "median_per_row_success": 1.0,
+    "median_per_strand_success": 0.880707,
+    "n": 30,
+    "rows": 9,
+    "strands": 691
+   }
+  },
+  "source": "experiments/v9/scale/results/noisy.jsonl"
+ }
+}

@@ -131,8 +131,11 @@ def main(argv=None) -> int:
     ap.add_argument("--sizes", default="20000,1048576")
     ap.add_argument("--seeds", default="93000-93029")
     ap.add_argument("--candidate", default="v8")
+    ap.add_argument("--out", type=Path, default=OUT, help="rows file (default: the committed results file)")
+    ap.add_argument("--projection", type=Path, default=PROJ, help="projection file (default: the committed one)")
     a = ap.parse_args(argv)
-    rows = [json.loads(x) for x in OUT.read_text().splitlines()] if OUT.exists() else []
+    out, proj = a.out, a.projection
+    rows = [json.loads(x) for x in out.read_text().splitlines()] if out.exists() else []
     if a.cmd == "run":
         sizes = [int(x) for x in a.sizes.split(",")]
         if any(s not in SIZES for s in sizes):
@@ -143,8 +146,8 @@ def main(argv=None) -> int:
             if bad:
                 raise SystemExit(f"projected single-decode time above 2 h for {bad}: analytic extrapolation only")
         done = {(r["size"], r["seed"], r["candidate"]) for r in rows}
-        OUT.parent.mkdir(parents=True, exist_ok=True)
-        with OUT.open("a") as fh:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        with out.open("a") as fh:
             for s in sizes:
                 for seed in _seeds(a.seeds):
                     if (s, seed, a.candidate) in done:
@@ -160,7 +163,7 @@ def main(argv=None) -> int:
     left = [s for s in SIZES if s not in decoded]
     pj["extrapolation"] = extrapolate(rows, left) if left else None
     pj["commit"] = _commit()
-    PROJ.write_text(json.dumps(pj, indent=1, sort_keys=True) + "\n")
+    proj.write_text(json.dumps(pj, indent=1, sort_keys=True) + "\n")
     print(json.dumps({k: v for k, v in pj.items() if k != "extrapolation"}, indent=1))
     return 0
 

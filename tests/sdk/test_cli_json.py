@@ -144,11 +144,32 @@ def test_channel_model_commands(ws, tmp_path):
     assert e["code"] == "CONFIGURATION_ERROR" and not (tmp_path / "z.fastq").exists()
 
 
+def test_security_commands_print_json(tmp_path):
+    """vnx security <cmd> prints one JSON object on stdout (VNX-Secure keeps its own shapes, not the vnx.result/1 envelope),
+    and a missing home is a JSON error on stderr with exit 3. Attack scenarios are SIMULATED."""
+    h = tmp_path / "h"
+    keys = {"init": {"state", "integrity", "epoch"}, "status": {"state", "integrity", "epoch"},
+            "integrity": {"status", "snapshot"}, "sessions": {"containment", "revoked"}, "policy": {"version", "rules"},
+            "recover": {"result", "state", "steps"}}
+    for name, want in keys.items():
+        doc = json.loads(cli("security", name, "--home", h).stdout)
+        assert want <= doc.keys(), (name, sorted(doc))
+    assert json.loads(cli("security", "integrity", "--home", h).stdout)["status"] == "VERIFIED"
+    assert json.loads(cli("security", "recover", "--home", h).stdout)["result"] == "VERIFIED"
+    assert json.loads(cli("security", "crypto").stdout)["items"]
+    doc = json.loads(cli("security", "simulate", "--quick", "-o", tmp_path / "sim.json").stdout)
+    assert doc["summary"]["passed"] == doc["summary"]["scenarios"] > 0
+    assert json.loads((tmp_path / "sim.json").read_text())["summary"] == doc["summary"]
+    e = json.loads(cli("security", "status", "--home", tmp_path / "none", code=3).stderr)
+    assert e["error"] == "FileNotFoundError" and e["message"]
+
+
 def test_every_command_is_covered():
     """A new command must get a JSON-validation case here (sweep, codec-compare and benchmark --human print tables)."""
     covered = {"version", "native", "keygen", "archive", "inspect", "list", "verify", "locate", "extract", "encode", "decode",
                "validate", "simulate", "benchmark", "sweep", "run", "reproduce", "generate", "profiles", "conformance",
-               "codec-compare", "models", "show", "convert"}
+               "codec-compare", "models", "show", "convert",
+               "init", "status", "integrity", "sessions", "policy", "recover", "crypto"}  # vnx security (own JSON shapes)
     names = set()
     for group in [app] + [g.typer_instance for g in app.registered_groups]:
         for c in group.registered_commands:

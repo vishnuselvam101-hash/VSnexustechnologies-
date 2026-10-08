@@ -1,0 +1,49 @@
+{
+ "commit": "adba34e6bf1b78a54ec32bdaa5d03f02794d9be4",
+ "extrapolation": {
+  "M": 16,
+  "label": "ANALYTIC EXTRAPOLATION (SIMULATED)",
+  "p_row": 0.9935937355260855,
+  "q": 0.11135419999999996,
+  "q_measured_at_size": 1048576,
+  "row_strands": 80,
+  "sizes": {
+   "10485760": {
+    "p_archive": 3.375604887961411e-12,
+    "rows": 4110
+   },
+   "104857600": {
+    "p_archive": 1.9209500441301056e-115,
+    "rows": 41100
+   },
+   "1073741824": {
+    "p_archive": 0.0,
+    "rows": 420864
+   }
+  }
+ },
+ "limit_seconds": 7200.0,
+ "seconds_per_strand": 0.03483357452966715,
+ "sizes": {
+  "1048576": {
+   "decode": true,
+   "projected_seconds": 1262.0
+  },
+  "10485760": {
+   "decode": false,
+   "projected_seconds": 12619.6
+  },
+  "104857600": {
+   "decode": false,
+   "projected_seconds": 126196.1
+  },
+  "1073741824": {
+   "decode": false,
+   "projected_seconds": 1292248.3
+  },
+  "20000": {
+   "decode": true,
+   "projected_seconds": 24.1
+  }
+ }
+}
