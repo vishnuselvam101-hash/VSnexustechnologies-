@@ -42,3 +42,12 @@ c4e6195a6e4c45a6c606321f31fbed9486ee1e20:experiments/v7/a-loss/trials.jsonl:gene
 c4e6195a6e4c45a6c606321f31fbed9486ee1e20:experiments/v7/a-loss/trials.jsonl:generic-api-key:29
 c4e6195a6e4c45a6c606321f31fbed9486ee1e20:experiments/v7/a-loss/trials.jsonl:generic-api-key:30
 c4e6195a6e4c45a6c606321f31fbed9486ee1e20:experiments/v7/a-loss/trials.jsonl:generic-api-key:31
+# V9 (2026-10-08): VNX-Secure gate.py / control.py pass "key=self.key" / "key=key" keyword arguments, not secret values.
+3549f760604ea3b50caa73d0e06e8fe67a194f30:src/vnxdna/secure/gate.py:generic-api-key:65
+3549f760604ea3b50caa73d0e06e8fe67a194f30:src/vnxdna/secure/gate.py:generic-api-key:68
+3549f760604ea3b50caa73d0e06e8fe67a194f30:src/vnxdna/secure/gate.py:generic-api-key:71
+3549f760604ea3b50caa73d0e06e8fe67a194f30:src/vnxdna/secure/gate.py:generic-api-key:74
+3549f760604ea3b50caa73d0e06e8fe67a194f30:src/vnxdna/secure/control.py:generic-api-key:480
+8c3bd94db8ded6dd5adef7ac201e9044949b300e:src/vnxdna/secure/gate.py:generic-api-key:79
+8c3bd94db8ded6dd5adef7ac201e9044949b300e:src/vnxdna/secure/gate.py:generic-api-key:82
+8c3bd94db8ded6dd5adef7ac201e9044949b300e:src/vnxdna/secure/gate.py:generic-api-key:85
