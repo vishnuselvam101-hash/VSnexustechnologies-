@@ -2,6 +2,49 @@
 
 ## Unreleased
 
+### Added (V9, in development; docs/V9_PREREGISTRATION.md)
+
+- **Native polish kernel** (`vnx_cl_edit_costs` in `native/c/cluster.c`, cluster ABI 2): the full-template consensus
+  polish (`recovery/cluster/polish.edit_costs`) runs natively under `VNXDNA_CLUSTER_BACKEND=auto|native`, bit-identical
+  to the NumPy reference `polish.edit_costs_reference` (golden hashes, randomized and hypothesis equivalence, sanitizers).
+  It evaluates each read's own band plus one edge cell, which is exact (see the kernel comment). SIMULATED decodes:
+  timings in `experiments/v9/consensus/results/`.
+- **Consensus candidate E** (opt-in, EXPERIMENTAL): `ClusterConfig(consensus_template="full", c_indel=4,
+  fill="template")`. After the erasure decode and the GMD ladder fail, E decodes the polished template's bases at
+  undecided positions and erases the lowest-confidence bytes in `fill_trials` steps. Only the frame's own RS and CRC-32
+  accept a result.
+  - E is the winner of the pre-registered V9 selection: pooled ORE 0.575 vs 0.488 for V8, Holm-adjusted McNemar
+    p = 5.2e-12, 0 false success, 0 false frames (SIMULATED; `experiments/v9/consensus/results/selection.json`).
+  - The default `ClusterConfig` is unchanged.
+- **Outer-row margins** (`stagecount.outer_ecc_margins`): the smallest verified-symbol margin over every attempted outer
+  row, at three confidence levels. This signal drives the V9 adaptive computational coverage rule
+  (`experiments/v9/coverage/`), which decides when a read pool already in hand is enough to decode. It does not control
+  sequencing.
+- **V9 reproduction** (`experiments/v9/reproduce.sh`, `verify_repro.py`, `docs/V9_REPRODUCTION.md`): a spot mode and a
+  full mode, compared on deterministic fields only.
+- **libFuzzer harness for the polish kernel** (`benchmarks/v7/native_cluster/edit_costs_fuzz.c`).
+- **V9 completion report** (`docs/V9_COMPLETION_REPORT.md`) and **VNX-Secure completion report**
+  (`docs/VNX_SECURE_COMPLETION_REPORT.md`).
+
+### Added (VNX-Secure, merged into V9)
+
+- **VNX-Secure** (`vnxdna.secure`, `vnx security …`): a defensive security control plane. It provides:
+  - scrypt principals and HMAC session tokens with revocation and replay protection;
+  - a deny-by-default policy;
+  - 16 deterministic detectors with an explainable additive risk score;
+  - idempotent containment (session containment, token revocation, login lock, rate limit, input quarantine, resource
+    lock, workload-isolation interface, evidence bundles);
+  - an HMAC-chained audit log with an anchor;
+  - an authenticated integrity snapshot;
+  - a recovery state machine that returns to VERIFIED only after verification;
+  - a secure archive gate over the existing random access (Merkle-proof check, fail-closed, optional resource-limited
+    process sandbox);
+  - a crypto-agility registry (PQC PLANNED);
+  - VNX-RAM and VNX-Q interfaces (ARCHITECTURAL);
+  - a safe local attack simulator (10 synthetic scenarios, SIMULATED).
+
+  See docs/VNX_SECURE_*.md. The codec and archive formats are unchanged. VNX-Secure is not claimed to be unhackable.
+
 ### Added (V7 Phase D, in development)
 
 - **`vnx.channel-model/2`** extends `/1` (every `/1` model loads unchanged): provenance of fitted models (datasets with

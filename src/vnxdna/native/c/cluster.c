@@ -35,7 +35,7 @@
 #endif
 
 #ifndef VNX_CL_ABI /* overridable only so that the tests can build a mismatching library */
-#define VNX_CL_ABI 1
+#define VNX_CL_ABI 2
 #endif
 #define CL_INF (1 << 28)
 
@@ -840,5 +840,157 @@ done:
     free(g.tc);
     free(g.mc);
     free(g.calls);
+    return rc;
+}
+
+/* ------------------------------------------------------------------------------------------------ polish edit costs */
+/* V9: the full-template polish of recovery/cluster/polish.py (fg + edit_costs_reference), per read. The reference evaluates
+ * the shared band B of its batch with per-read band masks; this kernel takes the same B and evaluates the same cells in
+ * the same int32 arithmetic (F, G) and int64 sums, so every output equals the reference's, including cells that reach
+ * CL_INF and are clipped at the end. Values stay below 2^30 in the Python-checked domain (T <= 8192, B <= 512, costs <=
+ * 1024), so nothing overflows. */
+static inline int32_t imin32(int32_t a, int32_t b) { return a < b ? a : b; }
+static inline int64_t imin64(int64_t a, int64_t b) { return a < b ? a : b; }
+
+/* Cells outside the read's own band (|d| > bk) are CL_INF after every row in the reference. Only the band and one cell
+ * on each side can produce a value below CL_INF: the cell below the band takes part in the forward insertion closure,
+ * the cell above it in the backward one. Every other cell holds a value >= CL_INF, and every sum built from such a
+ * value is >= CL_INF and is clipped to CL_INF in the outputs. So the kernel evaluates columns [lo - 1, hi + 1] and
+ * stores CL_INF at the two edge columns, which leaves every output identical to the reference. */
+static void ec_one(int64_t T, int64_t B, const int16_t *tp, const int32_t *mcr, const uint8_t *rd, int64_t L,
+                   int64_t bk, int32_t ci, int32_t cs, int32_t *F, int32_t *G, int32_t *tmp, int16_t *Rp,
+                   int64_t *opt, int64_t *sub, int64_t *dele, int64_t *ins) {
+    const int64_t W = 2 * B + 1, width = T + B + 2, rplen = width + 2 * B + 1;
+    const int64_t lo = B - bk, hi = B + bk;
+    const int64_t a = lo > 0 ? lo - 1 : 0, b = hi < W - 1 ? hi + 1 : W - 1;
+    for (int64_t x = 0; x < rplen; x++) Rp[x] = 5;
+    const int64_t nb = L < width ? L : width;
+    for (int64_t j = 0; j < nb; j++) Rp[B + j] = (int16_t)rd[j];
+#define EC_OK(w, j) ((w) >= lo && (w) <= hi && (j) >= 0 && (j) <= L)
+    for (int64_t w = a; w <= b; w++) {
+        const int64_t d = w - B;
+        F[w] = (EC_OK(w, d) && d >= 0) ? (int32_t)(d * ci) : CL_INF;
+    }
+    for (int64_t i = 1; i <= T; i++) {
+        const int32_t *prev = F + (i - 1) * W;
+        int32_t *cur = F + i * W;
+        const int64_t t = i - 1;
+        const int32_t tc = tp[t], m = mcr[t];
+        for (int64_t w = a; w <= b; w++) {
+            const int64_t jd = t + w - B;
+            const int16_t rb = Rp[t + w];
+            const int32_t s = (tc < 0 || rb == tc) ? 0 : m;
+            const int32_t diag = (jd >= 0 && jd < L) ? prev[w] + s : CL_INF;
+            const int32_t del = w < b ? prev[w + 1] + ci : CL_INF;
+            tmp[w] = imin32(diag, del);
+        }
+        int32_t run = 0;
+        for (int64_t w = a; w <= b; w++) {
+            const int32_t v = tmp[w] - (int32_t)(w * ci);
+            run = w == a ? v : imin32(run, v);
+            tmp[w] = run + (int32_t)(w * ci);
+        }
+        for (int64_t w = a; w <= b; w++) cur[w] = EC_OK(w, i + w - B) ? tmp[w] : CL_INF;
+    }
+    for (int64_t w = a; w <= b; w++) {
+        const int64_t j = T + w - B;
+        G[T * W + w] = EC_OK(w, j) ? (int32_t)((L - j) * ci) : CL_INF;
+    }
+    for (int64_t i = T - 1; i >= 0; i--) {
+        const int32_t *nxt = G + (i + 1) * W;
+        int32_t *cur = G + i * W;
+        const int32_t tc = tp[i], m = mcr[i];
+        for (int64_t w = a; w <= b; w++) {
+            const int64_t jd = i + w - B;
+            const int16_t rb = Rp[i + w];
+            const int32_t s = (tc < 0 || rb == tc) ? 0 : m;
+            const int32_t diag = (jd >= 0 && jd < L) ? s + nxt[w] : CL_INF;
+            const int32_t del = w > a ? nxt[w - 1] + ci : CL_INF;
+            tmp[w] = imin32(diag, del);
+        }
+        int32_t run = 0;
+        for (int64_t w = b; w >= a; w--) {
+            const int32_t v = tmp[w] + (int32_t)(w * ci);
+            run = w == b ? v : imin32(run, v);
+            tmp[w] = run - (int32_t)(w * ci);
+        }
+        for (int64_t w = a; w <= b; w++) cur[w] = EC_OK(w, i + w - B) ? tmp[w] : CL_INF;
+    }
+#undef EC_OK
+    const int64_t dl = L - T;
+    int64_t we = dl + B;
+    if (we < 0) we = 0;
+    if (we > W - 1) we = W - 1;
+    int64_t o = ((dl < 0 ? -dl : dl) <= bk) ? (int64_t)F[T * W + we] : (int64_t)CL_INF;
+    o = imin64(o, CL_INF);
+    *opt = o;
+    const int dead = o >= CL_INF;
+    for (int64_t i = 0; i < T; i++) {
+        if (dead) {
+            dele[i] = CL_INF;
+            for (int k = 0; k < 4; k++) sub[i * 4 + k] = ins[i * 4 + k] = CL_INF;
+            continue;
+        }
+        const int32_t *A = F + i * W, *Gn = G + (i + 1) * W, *Gi = G + i * W;
+        const int64_t m = mcr[i];
+        int64_t skip = CL_INF, pid = CL_INF, s1[4], i1[4];
+        for (int k = 0; k < 4; k++) s1[k] = i1[k] = CL_INF;
+        for (int64_t w = lo; w <= hi; w++) {    /* A[w] = CL_INF outside the band: those terms are clipped anyway */
+            const int64_t av = A[w];
+            skip = imin64(skip, av + (int64_t)Gn[w - 1 >= a ? w - 1 : w] + (w - 1 >= a ? 0 : CL_INF));
+            pid = imin64(pid, av + (int64_t)Gi[w]);
+            const int64_t jd = i + w - B;
+            if (jd < 0 || jd >= L) continue;
+            const int16_t rb = Rp[i + w];
+            const int64_t gup = w + 1 <= b ? (int64_t)Gi[w + 1] : (int64_t)CL_INF;
+            const int64_t gn = Gn[w];
+            for (int k = 0; k < 4; k++) {
+                const int mis = rb != k;
+                s1[k] = imin64(s1[k], av + mis * m + gn);
+                i1[k] = imin64(i1[k], av + mis * (int64_t)cs + gup);
+            }
+        }
+        dele[i] = imin64(skip, CL_INF);
+        for (int k = 0; k < 4; k++) {
+            sub[i * 4 + k] = imin64(imin64(s1[k], skip + ci), CL_INF);
+            ins[i * 4 + k] = imin64(imin64(i1[k], pid + ci), CL_INF);
+        }
+    }
+}
+
+int vnx_cl_edit_costs(int64_t n, int64_t T, int64_t B, const int16_t *tpl, const int32_t *mc, const uint8_t *buf,
+                      int64_t nbuf, const int64_t *off, const int64_t *len, const int64_t *band, int32_t c_indel,
+                      int32_t c_sub, int64_t *opt, int64_t *sub, int64_t *dele, int64_t *ins) {
+    if (n < 0 || T < 0 || T > 8192 || B < 0 || B > 512 || c_indel < 0 || c_indel > 1024 || c_sub < 0 || c_sub > 1024)
+        return CL_EARG;
+    if (n > 0 && (!tpl || !mc || !buf || !off || !len || !band || !opt || nbuf < 0)) return CL_EARG;
+    if (n > 0 && T > 0 && (!sub || !dele || !ins)) return CL_EARG;
+    for (int64_t r = 0; r < n; r++) {
+        if (len[r] < 0 || len[r] > (1 << 20) || off[r] < 0 || off[r] > nbuf - len[r] || band[r] < 0 || band[r] > B)
+            return CL_EARG;
+        for (int64_t t = 0; t < T; t++) {
+            const int32_t v = mc[r * T + t];
+            if (v < 0 || v > 1024) return CL_EARG;
+        }
+    }
+    if (n == 0) return CL_OK;
+    const int64_t W = 2 * B + 1, rplen = T + 4 * B + 3;
+    int32_t *F = malloc(sizeof(int32_t) * (size_t)((T + 1) * W));
+    int32_t *G = malloc(sizeof(int32_t) * (size_t)((T + 1) * W));
+    int32_t *tmp = malloc(sizeof(int32_t) * (size_t)W);
+    int16_t *Rp = malloc(sizeof(int16_t) * (size_t)rplen);
+    int rc = CL_OK;
+    if (!F || !G || !tmp || !Rp) {
+        rc = CL_ENOMEM;
+        goto done;
+    }
+    for (int64_t r = 0; r < n; r++)
+        ec_one(T, B, tpl + r * T, mc + r * T, buf + off[r], len[r], band[r], c_indel, c_sub, F, G, tmp, Rp, opt + r,
+               sub + r * T * 4, dele + r * T, ins + r * T * 4);
+done:
+    free(F);
+    free(G);
+    free(tmp);
+    free(Rp);
     return rc;
 }

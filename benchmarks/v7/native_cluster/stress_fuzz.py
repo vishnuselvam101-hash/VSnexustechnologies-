@@ -22,7 +22,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[3]
 sys.path[:0] = [str(ROOT / "src"), str(ROOT / "tests")]
 
-from v7.native_cluster_support import (CASES, fb_case, pairs_case, pool_case, run_kernel, same,  # noqa: E402
+from v7.native_cluster_support import (CASES, fb_case, pairs_case, polish_case, pool_case, run_kernel, same,  # noqa: E402
                                        sketch_case)
 
 from vnxdna.native import cluster as nc  # noqa: E402
@@ -51,6 +51,8 @@ def full_case(kind: str, rng: np.random.Generator):
         return pairs_case(rng, p=1000, lmax=330)
     if kind == "fb":
         return fb_case(rng, n=600, T=313)
+    if kind == "polish":
+        return polish_case(rng, n=200, T=313)
     if kind == "pool":
         return pool_case(rng, strands=40)
     return None

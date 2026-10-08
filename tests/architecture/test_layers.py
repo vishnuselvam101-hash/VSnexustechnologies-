@@ -34,7 +34,7 @@ ALLOWLIST = Path(__file__).with_name("layer_allowlist.json")
 
 LAYERS = {
     "core": 0, "native": 1, "archive": 2, "codec": 2, "dnaenc": 3, "sync": 3, "recovery": 4,
-    "pipeline": 5, "simulation": 5, "physical": 5, "providers": 6, "benchmark": 6, "sdk": 7, "conformance": 7,
+    "pipeline": 5, "simulation": 5, "physical": 5, "providers": 6, "benchmark": 6, "secure": 6, "sdk": 7, "conformance": 7,
     "commands": 8,
 }
 #: R2: packages that must stay free of simulation/application code

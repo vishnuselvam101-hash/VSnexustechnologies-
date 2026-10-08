@@ -1,0 +1,172 @@
+{
+ "benchmark": "V9 Phase 7 scale (V9 pipeline, v4-balanced, clean channel)",
+ "commit": "adba34e6bf1b78a54ec32bdaa5d03f02794d9be4",
+ "cpu": 8,
+ "label": "SIMULATED clean channel",
+ "load_average_end": [
+  1.67041015625,
+  2.6611328125,
+  2.66015625
+ ],
+ "load_average_start": [
+  2.1982421875,
+  2.25732421875,
+  2.42529296875
+ ],
+ "profile": {
+  "name": "v4-balanced",
+  "outer_K": 64,
+  "outer_M": 16,
+  "outer_parity_overhead": 0.25
+ },
+ "python": "3.12.3",
+ "runs": [
+  {
+   "container_bytes": 21381,
+   "decode": {
+    "cpu_s": 0.09751199999999993,
+    "cpu_utilisation": 1.23,
+    "peak_rss_children_mib": 30.5,
+    "peak_rss_mib": 46.18359375,
+    "status": "SUCCESS",
+    "wall_s": 0.07928753702435642
+   },
+   "encode": {
+    "cpu_s": 0.07644899999999988,
+    "cpu_utilisation": 1.2,
+    "peak_rss_children_mib": 30.98046875,
+    "peak_rss_mib": 45.0,
+    "status": "SUCCESS",
+    "wall_s": 0.06387956300750375
+   },
+   "exact_container": true,
+   "nt_per_byte": 10.814,
+   "nucleotides": 216283,
+   "size": 20000,
+   "strands": 691
+  },
+  {
+   "container_bytes": 1049961,
+   "decode": {
+    "cpu_s": 0.7607490000000001,
+    "cpu_utilisation": 1.74,
+    "peak_rss_children_mib": 70.859375,
+    "peak_rss_mib": 87.0234375,
+    "status": "SUCCESS",
+    "wall_s": 0.43750775000080466
+   },
+   "encode": {
+    "cpu_s": 0.548167,
+    "cpu_utilisation": 2.66,
+    "peak_rss_children_mib": 41.44921875,
+    "peak_rss_mib": 54.1875,
+    "status": "SUCCESS",
+    "wall_s": 0.2061195489950478
+   },
+   "exact_container": true,
+   "nt_per_byte": 9.802,
+   "nucleotides": 10278294,
+   "size": 1048576,
+   "strands": 32838
+  },
+  {
+   "container_bytes": 10487943,
+   "decode": {
+    "cpu_s": 4.747888,
+    "cpu_utilisation": 2.31,
+    "peak_rss_children_mib": 75.546875,
+    "peak_rss_mib": 262.625,
+    "status": "SUCCESS",
+    "wall_s": 2.0573930389946327
+   },
+   "decode_worker_scaling": {
+    "1": {
+     "cpu_s": 3.7929519999999997,
+     "cpu_utilisation": 1.09,
+     "peak_rss_children_mib": 0.0,
+     "peak_rss_mib": 256.8046875,
+     "status": "SUCCESS",
+     "wall_s": 3.485232373001054
+    },
+    "2": {
+     "cpu_s": 4.576855,
+     "cpu_utilisation": 1.76,
+     "peak_rss_children_mib": 75.41796875,
+     "peak_rss_mib": 261.2265625,
+     "status": "SUCCESS",
+     "wall_s": 2.6032388019375503
+    },
+    "4": {
+     "cpu_s": 4.80031,
+     "cpu_utilisation": 2.31,
+     "peak_rss_children_mib": 75.41015625,
+     "peak_rss_mib": 261.9609375,
+     "status": "SUCCESS",
+     "wall_s": 2.0792352569987997
+    }
+   },
+   "encode": {
+    "cpu_s": 4.509184,
+    "cpu_utilisation": 3.6,
+    "peak_rss_children_mib": 47.91796875,
+    "peak_rss_mib": 60.671875,
+    "status": "SUCCESS",
+    "wall_s": 1.2521082119783387
+   },
+   "exact_container": true,
+   "nt_per_byte": 9.784,
+   "nucleotides": 102589819,
+   "size": 10485760,
+   "strands": 327763
+  },
+  {
+   "container_bytes": 104867709,
+   "decode": {
+    "cpu_s": 43.950694999999996,
+    "cpu_utilisation": 2.39,
+    "peak_rss_children_mib": 75.49609375,
+    "peak_rss_mib": 286.8125,
+    "status": "SUCCESS",
+    "wall_s": 18.391729962080717
+   },
+   "encode": {
+    "cpu_s": 43.254917999999996,
+    "cpu_utilisation": 3.95,
+    "peak_rss_children_mib": 50.6640625,
+    "peak_rss_mib": 63.7109375,
+    "status": "SUCCESS",
+    "wall_s": 10.942171050002798
+   },
+   "exact_container": true,
+   "nt_per_byte": 9.782,
+   "nucleotides": 1025741377,
+   "size": 104857600,
+   "strands": 3277129
+  },
+  {
+   "container_bytes": 1073833251,
+   "decode": {
+    "cpu_s": 485.49338299999994,
+    "cpu_utilisation": 2.48,
+    "peak_rss_children_mib": 78.23046875,
+    "peak_rss_mib": 322.7890625,
+    "status": "SUCCESS",
+    "wall_s": 195.44529438193422
+   },
+   "encode": {
+    "cpu_s": 429.952608,
+    "cpu_utilisation": 4.06,
+    "peak_rss_children_mib": 51.7265625,
+    "peak_rss_mib": 142.765625,
+    "status": "SUCCESS",
+    "wall_s": 105.78646459907759
+   },
+   "exact_container": true,
+   "nt_per_byte": 9.782,
+   "nucleotides": 10503439908,
+   "size": 1073741824,
+   "strands": 33557316
+  }
+ ],
+ "seed": 93000
+}

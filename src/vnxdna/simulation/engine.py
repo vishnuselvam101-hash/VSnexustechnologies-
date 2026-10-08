@@ -115,7 +115,11 @@ class Simulator:
                         or self.seq_ins.clustered)
         self.seq_context = seq.get("context")         # /2: 3-mer multipliers (None for /1 models)
         het = seq.get("read_heterogeneity")           # /2: per-read gamma rate multiplier (None for /1 models)
-        self.het_shape = None if het is None else float(het["shape"])
+        self.het_shape = None if het is None or het["distribution"] != "gamma" else float(het["shape"])
+        self.het_states = None                        # V9 G1: latent read classes (weights, (K, 3) sub/ins/del multipliers)
+        if het is not None and het["distribution"] == "latent-states":
+            self.het_states = (np.array([x["weight"] for x in het["states"]], dtype=np.float64),
+                               np.array([[x["sub"], x["ins"], x["del"]] for x in het["states"]], dtype=np.float64))
 
     @property
     def pool_loss(self) -> bool:
@@ -264,6 +268,8 @@ class Simulator:
                                self.hp_sub, self.seq_context, indel_site)
         if self.het_shape is not None:
             rates = read_heterogeneity(rates, self.het_shape, a_het())
+        elif self.het_states is not None:
+            rates = latent_states(rates, *self.het_states, a_het())
         res = em.per_base_errors(base, lens, rates, rng, a_seq() if self.seq_aux else None, sub=self.seq_sub,
                                  ins=self.seq_ins, dele=self.seq_del, burst_rate=self.burst_rate,
                                  burst_max_len=self.burst_max)
@@ -342,6 +348,19 @@ def read_heterogeneity(rates: tuple, shape: float, rng: np.random.Generator) -> 
     total = (sub_r + ins_r + del_r) * m
     scale = np.where(total > HETEROGENEITY_SITE_CAP, m * HETEROGENEITY_SITE_CAP / np.maximum(total, 1e-300), m)
     return sub_r * scale, ins_r * scale, del_r * scale
+
+
+def latent_states(rates: tuple, weights: np.ndarray, mult: np.ndarray, rng: np.random.Generator) -> tuple:
+    """V9 G1: each read (row) draws class k ~ weights and scales its sub/ins/del probabilities by ``mult[k]``; a site whose
+    scaled total would exceed ``HETEROGENEITY_SITE_CAP`` is scaled down to the cap (the three types together)."""
+    sub_r, ins_r, del_r = rates
+    k = np.searchsorted(np.cumsum(weights), rng.random(sub_r.shape[0]) * weights.sum(), side="right")
+    k = np.minimum(k, weights.size - 1)
+    m = mult[k]
+    s, i, d = sub_r * m[:, 0:1], ins_r * m[:, 1:2], del_r * m[:, 2:3]
+    total = s + i + d
+    scale = np.where(total > HETEROGENEITY_SITE_CAP, HETEROGENEITY_SITE_CAP / np.maximum(total, 1e-300), 1.0)
+    return s * scale, i * scale, d * scale
 
 
 # ================================================================================================================ files

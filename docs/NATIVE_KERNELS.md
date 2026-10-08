@@ -2,7 +2,7 @@
 
 VNX-DNA has four optional C kernels. Each one is an accelerator for a Python/NumPy reference implementation, which
 remains the specification: the native output is bit-identical (golden hashes and randomized equivalence fuzzing in
-`tests/v5/test_native_alignment*.py`, `tests/v6/native/` and `tests/v7/test_native_cluster.py`). Without a kernel, VNX-DNA runs the reference and gives
+`tests/v5/test_native_alignment*.py`, `tests/v6/native/`, `tests/v7/test_native_cluster.py` and `tests/v9/test_native_polish.py`). Without a kernel, VNX-DNA runs the reference and gives
 the same results more slowly.
 
 | kernel | module | C source | packaged extension | reference |
@@ -10,7 +10,7 @@ the same results more slowly.
 | `align`: V5 marker-template aligner | `vnxdna.v5.native_alignment` | `src/vnxdna/v5/native/align.c` | `vnxdna/v5/_vnx_align*.so` | `vnxdna.v4.sync` (NumPy) |
 | `reads`: V6 FASTQ/FASTA read parser | `vnxdna.v6.native_reads` | `src/vnxdna/v6/native/reads.c` | `vnxdna/v6/_vnx_reads*.so` | `vnxdna.v4.reads` |
 | `rs`: V6 inner Reed-Solomon (GF(256)) decoder | `vnxdna.v6.native_rs` | `src/vnxdna/v6/native/rs.c` | `vnxdna/v6/_vnx_rs*.so` | `vnxdna.v4.rs_fast` (NumPy) |
-| `cluster`: V7 read clustering (sketch, candidate pairs, banded edit distance, verification) and forward-backward consensus calls | `vnxdna.native.cluster` | `src/vnxdna/native/c/cluster.c` | `vnxdna/_vnx_cluster*.so` | `vnxdna.recovery.cluster` (NumPy; the `*_reference` functions) |
+| `cluster`: V7 read clustering (sketch, candidate pairs, banded edit distance, verification), forward-backward consensus calls and (V9, ABI 2) the full-template polish edit costs (`vnx_cl_edit_costs` = `polish.edit_costs_reference`) | `vnxdna.native.cluster` | `src/vnxdna/native/c/cluster.c` | `vnxdna/_vnx_cluster*.so` | `vnxdna.recovery.cluster` (NumPy; the `*_reference` functions) |
 
 ## Installation
 
@@ -60,7 +60,7 @@ detect an in-place library that is older than a changed C source; `native_status
 | `VNXDNA_RS_LIB` | path | RS library to load first |
 | `VNXDNA_CLUSTER_BACKEND` | `auto` (default), `native`, `reference` | read clustering (only used with `--read-clustering fallback`): same rules as the read parser; inputs outside the kernel's domain (e.g. costs above 1024, codes >= 8 where a reverse complement is needed) run the reference, which is part of the contract |
 | `VNXDNA_CLUSTER_LIB` | path | cluster library to load first |
-| `VNXDNA_CLUSTER_THREADS` | 1-64 (default 1) | threads of the forward-backward kernel within one decode process; results do not depend on it. Memory scales with it: up to about 0.5 GB per call at the domain extremes (template 8192, band 512), times this count (`benchmarks/v7/native_cluster/README.md`) |
+| `VNXDNA_CLUSTER_THREADS` | 1-64 (default 1) | threads of the forward-backward and polish kernels within one decode process; results do not depend on it. The polish kernel needs 8 (T + 1)(2B + 1) bytes per thread (about 67 MB at the domain extremes). Memory scales with it: up to about 0.5 GB per call at the domain extremes (template 8192, band 512), times this count (`benchmarks/v7/native_cluster/README.md`) |
 | `VNX_RS_REFERENCE` | `1` | the inner RS decoder (`vnxdna.v4.codecs.InnerRS.decode`) uses the V3 decoder `vnxdna.ecc.rs_batch` and bypasses `vnxdna.v6.native_rs` and `VNXDNA_RS_BACKEND` entirely. Read once when `vnxdna.v4.codecs` is imported. For reference comparisons and debugging; results are identical (tested), only slower. `native_status()` reports the RS backend as `reference` with `requested: "VNX_RS_REFERENCE=1"` |
 | `VNXDNA_NATIVE_STRICT` | `1` | explicit builds add `-Werror` (same as `build --strict`) |
 | `CC` | compiler | compiler for the explicit builds (and for `pip install`, via setuptools) |

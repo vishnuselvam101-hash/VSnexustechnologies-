@@ -1,0 +1,20 @@
+{
+  "label": "V9 release verification (M). SYNTHETIC SOFTWARE TEST data; channel results are SIMULATED.",
+  "host": "4C/8T, one heavy job at a time",
+  "full_suite": {"passed": 3337, "failed": 0, "skipped": 6, "workers": 6, "seconds": 385,
+                 "note": "first run failed 1 test (tests/sdk/test_cli_json.py::test_every_command_is_covered: vnx security commands had no JSON case); fixed by adding test_security_commands_print_json"},
+  "sanitizers": {"commit": "adba34e", "kernels": {"align": "PASS", "reads": "PASS", "rs": "PASS", "cluster": "PASS"},
+                 "native_cluster_tests": {"clang-asan-ubsan": "48 passed", "clang-ubsan-trap": "48 passed"}},
+  "fuzzing": {"commit": "adba34e",
+              "edit_costs_libfuzzer": {"seconds": 600, "runs": 11496918, "crashes": 0},
+              "native_reads_libfuzzer": {"seconds": 600, "runs": 3859900, "corpus": 2725, "new_crashes": 0},
+              "python_hypothesis": {"rounds": 10, "failed_rounds": 0}},
+  "reproduction_spot": {"script": "experiments/v9/reproduce.sh spot", "rows_compared": 29, "differences": 0,
+                        "parts": {"oracle_eval": 24, "coverage_eval": 2, "noisy_20kb": 3},
+                        "excluded_fields": "timings (*_seconds), load, environment",
+                        "result": "REPRODUCED"},
+  "security_scan": {"commit": "adba34e", "critical": 0, "high": 39, "medium": 10, "low": 75, "informational": 9,
+                    "triage": {"high": "all 39 false positives: code_key hashes in experiments/v7 trial rows and key= variables in VNX-Secure gate/control history",
+                               "medium_sast": "align.c:322 Lv uninitialised = false positive (every lane is written before use)",
+                               "medium_dependencies": "cryptography 46.0.7 (fixes in 48.0.1-50.0.0) and pytest 8.4.2 (fix 9.0.3) reported, not bumped in V9"}}
+}

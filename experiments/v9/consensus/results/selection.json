@@ -1,0 +1,334 @@
+{
+ "H3": "ACCEPTED",
+ "candidates": {
+  "A": {
+   "beats_baseline": true,
+   "cells": {
+    "d13-f1/cov10/v4-balanced": {
+     "O": 100,
+     "ORE": 0.94,
+     "ORE_wilson95": [
+      0.8752,
+      0.9722
+     ],
+     "PO": 94,
+     "exact": 94,
+     "exact_wilson95": [
+      0.8752,
+      0.9722
+     ],
+     "n": 100
+    },
+    "d13-f1/cov10/v7-lowcov": {
+     "O": 100,
+     "ORE": 1.0,
+     "ORE_wilson95": [
+      0.963,
+      1.0
+     ],
+     "PO": 100,
+     "exact": 100,
+     "exact_wilson95": [
+      0.963,
+      1.0
+     ],
+     "n": 100
+    },
+    "d13-f1/cov3/v4-balanced": {
+     "O": 0,
+     "ORE": null,
+     "ORE_wilson95": null,
+     "PO": 0,
+     "exact": 0,
+     "exact_wilson95": [
+      0.0,
+      0.037
+     ],
+     "n": 100
+    },
+    "d13-f1/cov3/v7-lowcov": {
+     "O": 100,
+     "ORE": 0.0,
+     "ORE_wilson95": [
+      0.0,
+      0.037
+     ],
+     "PO": 0,
+     "exact": 0,
+     "exact_wilson95": [
+      0.0,
+      0.037
+     ],
+     "n": 100
+    },
+    "d13-f1/cov5/v4-balanced": {
+     "O": 92,
+     "ORE": 0.0,
+     "ORE_wilson95": [
+      0.0,
+      0.0401
+     ],
+     "PO": 0,
+     "exact": 0,
+     "exact_wilson95": [
+      0.0,
+      0.037
+     ],
+     "n": 100
+    },
+    "d13-f1/cov5/v7-lowcov": {
+     "O": 100,
+     "ORE": 0.83,
+     "ORE_wilson95": [
+      0.7445,
+      0.8911
+     ],
+     "PO": 83,
+     "exact": 83,
+     "exact_wilson95": [
+      0.7445,
+      0.8911
+     ],
+     "n": 100
+    }
+   },
+   "deterministic": true,
+   "discordant_baseline_only": 1,
+   "discordant_candidate_only": 38,
+   "eligibility_complete": true,
+   "eligible": true,
+   "exact": 277,
+   "false_frames": 0,
+   "false_success": 0,
+   "mcnemar_p": 1.4551915228366852e-10,
+   "mcnemar_p_holm": 1.4551915228366852e-10,
+   "median_seconds": 12.825,
+   "p95_seconds": 31.046,
+   "pooled_ORE": 0.563,
+   "pooled_ORE_wilson95": [
+    0.5189,
+    0.6062
+   ],
+   "runtime_ratio_vs_baseline": 0.95
+  },
+  "E": {
+   "beats_baseline": true,
+   "cells": {
+    "d13-f1/cov10/v4-balanced": {
+     "O": 100,
+     "ORE": 0.94,
+     "ORE_wilson95": [
+      0.8752,
+      0.9722
+     ],
+     "PO": 94,
+     "exact": 94,
+     "exact_wilson95": [
+      0.8752,
+      0.9722
+     ],
+     "n": 100
+    },
+    "d13-f1/cov10/v7-lowcov": {
+     "O": 100,
+     "ORE": 1.0,
+     "ORE_wilson95": [
+      0.963,
+      1.0
+     ],
+     "PO": 100,
+     "exact": 100,
+     "exact_wilson95": [
+      0.963,
+      1.0
+     ],
+     "n": 100
+    },
+    "d13-f1/cov3/v4-balanced": {
+     "O": 0,
+     "ORE": null,
+     "ORE_wilson95": null,
+     "PO": 0,
+     "exact": 0,
+     "exact_wilson95": [
+      0.0,
+      0.037
+     ],
+     "n": 100
+    },
+    "d13-f1/cov3/v7-lowcov": {
+     "O": 100,
+     "ORE": 0.0,
+     "ORE_wilson95": [
+      0.0,
+      0.037
+     ],
+     "PO": 0,
+     "exact": 0,
+     "exact_wilson95": [
+      0.0,
+      0.037
+     ],
+     "n": 100
+    },
+    "d13-f1/cov5/v4-balanced": {
+     "O": 92,
+     "ORE": 0.0,
+     "ORE_wilson95": [
+      0.0,
+      0.0401
+     ],
+     "PO": 0,
+     "exact": 0,
+     "exact_wilson95": [
+      0.0,
+      0.037
+     ],
+     "n": 100
+    },
+    "d13-f1/cov5/v7-lowcov": {
+     "O": 100,
+     "ORE": 0.89,
+     "ORE_wilson95": [
+      0.8137,
+      0.9375
+     ],
+     "PO": 89,
+     "exact": 89,
+     "exact_wilson95": [
+      0.8137,
+      0.9375
+     ],
+     "n": 100
+    }
+   },
+   "deterministic": true,
+   "discordant_baseline_only": 1,
+   "discordant_candidate_only": 44,
+   "eligibility_complete": true,
+   "eligible": true,
+   "exact": 283,
+   "false_frames": 0,
+   "false_success": 0,
+   "mcnemar_p": 2.6147972675971687e-12,
+   "mcnemar_p_holm": 5.229594535194337e-12,
+   "median_seconds": 12.815,
+   "p95_seconds": 30.953,
+   "pooled_ORE": 0.5752,
+   "pooled_ORE_wilson95": [
+    0.5311,
+    0.6181
+   ],
+   "runtime_ratio_vs_baseline": 0.949
+  },
+  "v8": {
+   "cells": {
+    "d13-f1/cov10/v4-balanced": {
+     "O": 100,
+     "ORE": 0.79,
+     "ORE_wilson95": [
+      0.7002,
+      0.8583
+     ],
+     "PO": 79,
+     "exact": 79,
+     "exact_wilson95": [
+      0.7002,
+      0.8583
+     ],
+     "n": 100
+    },
+    "d13-f1/cov10/v7-lowcov": {
+     "O": 100,
+     "ORE": 1.0,
+     "ORE_wilson95": [
+      0.963,
+      1.0
+     ],
+     "PO": 100,
+     "exact": 100,
+     "exact_wilson95": [
+      0.963,
+      1.0
+     ],
+     "n": 100
+    },
+    "d13-f1/cov3/v4-balanced": {
+     "O": 0,
+     "ORE": null,
+     "ORE_wilson95": null,
+     "PO": 0,
+     "exact": 0,
+     "exact_wilson95": [
+      0.0,
+      0.037
+     ],
+     "n": 100
+    },
+    "d13-f1/cov3/v7-lowcov": {
+     "O": 100,
+     "ORE": 0.0,
+     "ORE_wilson95": [
+      0.0,
+      0.037
+     ],
+     "PO": 0,
+     "exact": 0,
+     "exact_wilson95": [
+      0.0,
+      0.037
+     ],
+     "n": 100
+    },
+    "d13-f1/cov5/v4-balanced": {
+     "O": 92,
+     "ORE": 0.0,
+     "ORE_wilson95": [
+      0.0,
+      0.0401
+     ],
+     "PO": 0,
+     "exact": 0,
+     "exact_wilson95": [
+      0.0,
+      0.037
+     ],
+     "n": 100
+    },
+    "d13-f1/cov5/v7-lowcov": {
+     "O": 100,
+     "ORE": 0.61,
+     "ORE_wilson95": [
+      0.512,
+      0.6998
+     ],
+     "PO": 61,
+     "exact": 61,
+     "exact_wilson95": [
+      0.512,
+      0.6998
+     ],
+     "n": 100
+    }
+   },
+   "deterministic": "NOT MEASURED",
+   "exact": 240,
+   "false_frames": "NOT MEASURED",
+   "false_success": 0,
+   "median_seconds": 13.499,
+   "p95_seconds": 32.011,
+   "pooled_ORE": 0.4878,
+   "pooled_ORE_wilson95": [
+    0.4439,
+    0.5319
+   ],
+   "runtime_ratio_vs_baseline": 1.0
+  }
+ },
+ "cases": 600,
+ "commit": "6d94e402a8b8f4da7339974656d6a515abedc853",
+ "label": "SIMULATED: one EVAL evaluation per frozen candidate (seeds 91000-91099, primary cells)",
+ "source": "experiments/v9/oracle/results/eval.jsonl",
+ "winner": "E",
+ "winner_eligibility_complete": true
+}
