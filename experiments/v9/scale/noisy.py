@@ -28,6 +28,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
+_TMP = os.environ.get("VNX_TMPDIR") or ("/root/vnx-dna-lab/tmp" if os.path.isdir("/root/vnx-dna-lab/tmp") else None)  # large scratch; None = system temp
 for p in ("tests/nanopore", "experiments/v9/consensus"):
     sys.path.insert(0, str(ROOT / p))
 OUT = HERE / "results" / "noisy.jsonl"
@@ -59,7 +60,7 @@ def run_one(size: int, seed: int, candidate: str) -> dict:
     MX = _load("v8_matrix_run", "experiments/v8/matrix/run.py")
     case = {"profile": PROFILE, "decoder": {"read_clustering": "fallback", "cluster_config": cluster_config(candidate)}}
     opts = dataclasses.replace(nf.decoder_options(case), workers=WORKERS)
-    with tempfile.TemporaryDirectory(prefix="vnx-v9noisy-", dir="/root/vnx-dna-lab/tmp") as tmp:
+    with tempfile.TemporaryDirectory(prefix="vnx-v9noisy-", dir=_TMP) as tmp:
         w = Path(tmp)
         t0 = time.perf_counter()
         arc = nf.build_archive(w / "a", size, seed, PROFILE)

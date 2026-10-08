@@ -22,6 +22,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
+_TMP = os.environ.get("VNX_TMPDIR") or ("/root/vnx-dna-lab/tmp" if os.path.isdir("/root/vnx-dna-lab/tmp") else None)  # large scratch; None = system temp
 SEED = 93000                                   # V9 archive-size seeds 93000-93029 (docs/V9_PREREGISTRATION.md §8)
 STAGE = r"""
 import json, sys, time, resource
@@ -86,7 +87,7 @@ def main(argv=None) -> int:
         if size not in sizes:
             out["runs"].append({"size": size, "status": "NOT RUN", "note": "1 GiB not run in this benchmark; no extrapolation reported"})
             continue
-        with tempfile.TemporaryDirectory(prefix="vnx-v9s-", dir="/root/vnx-dna-lab/tmp") as tmp:
+        with tempfile.TemporaryDirectory(prefix="vnx-v9s-", dir=_TMP) as tmp:
             w = Path(tmp)
             src = w / "input.bin"
             with src.open("wb") as fh:
