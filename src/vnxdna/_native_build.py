@@ -25,6 +25,12 @@ KERNELS = {
     "vnxdna._vnx_strand": "src/vnxdna/native/c/strand.c",
 }
 
+#: Rust kernels (built with cargo by setup.py when a Rust toolchain is present, else skipped like a failed C kernel):
+#: extension module name -> crate directory relative to the repository root
+RUST_KERNELS = {
+    "vnxdna._vnx_integrity": "src/vnxdna/native/rust/integrity",
+}
+
 #: compile flags shared by setup.py and the explicit builds (setuptools adds -fPIC/-shared itself)
 COMPILE_FLAGS = ["-O3", "-std=c11", "-Wall", "-Wextra"]
 #: link/shape flags of an explicit build with a bare compiler

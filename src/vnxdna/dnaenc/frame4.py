@@ -29,7 +29,8 @@ from dataclasses import dataclass
 from vnxdna.codec import gf256
 from vnxdna.codec.codecs import InnerRS
 from vnxdna.codec.inner_parity import parity_matrix
-from vnxdna.core.crc import crc32_bytes_be, crc32_rows
+from vnxdna.core.crc import crc32_bytes_be
+from vnxdna.native.integrity import crc32_rows   # Rust kernel or the core.crc NumPy reference (identical)
 from vnxdna.core.errors import VNXConstraintError
 from vnxdna.core.version import FRAME_VERSION
 from vnxdna.dnaenc.constraints import ConstraintConfig, satisfied_batch, to_codes

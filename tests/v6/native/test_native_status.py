@@ -19,6 +19,7 @@ import vnxdna
 from vnxdna import _native_build as nb
 from vnxdna import native
 from vnxdna.native import cluster as ncl
+from vnxdna.native import integrity as nin
 from vnxdna.native import strand as nst
 from vnxdna.v5 import native_alignment as na
 from vnxdna.v6 import native_reads as nr
@@ -27,8 +28,10 @@ from vnxdna.v6 import native_rs as nrs
 ROOT = Path(__file__).resolve().parents[3]
 MODULES = {"align": (na, "VNXDNA_NATIVE_LIB", "libvnx_align.so"), "reads": (nr, "VNXDNA_READS_LIB", "libvnx_reads.so"),
            "rs": (nrs, "VNXDNA_RS_LIB", "libvnx_rs.so"), "cluster": (ncl, "VNXDNA_CLUSTER_LIB", "libvnx_cluster.so"),
-           "strand": (nst, "VNXDNA_STRAND_LIB", "libvnx_strand.so")}
-BACKEND_ENV = ("VNXDNA_ALIGN_BACKEND", "VNXDNA_READS_BACKEND", "VNXDNA_RS_BACKEND", "VNXDNA_CLUSTER_BACKEND", "VNXDNA_STRAND_BACKEND")
+           "strand": (nst, "VNXDNA_STRAND_LIB", "libvnx_strand.so"),
+           "integrity": (nin, "VNXDNA_INTEGRITY_LIB", "libvnx_integrity.so")}
+BACKEND_ENV = ("VNXDNA_ALIGN_BACKEND", "VNXDNA_READS_BACKEND", "VNXDNA_RS_BACKEND", "VNXDNA_CLUSTER_BACKEND", "VNXDNA_STRAND_BACKEND",
+               "VNXDNA_INTEGRITY_BACKEND")
 
 
 def _reset() -> None:
@@ -68,7 +71,8 @@ def _clean_backend_env(monkeypatch):
 # ---------------------------------------------------------------------------------------------------- status function
 def test_all_kernels_native_when_libraries_load():
     st = vnxdna.native_status()
-    assert st["all_native"] is True and set(st["kernels"]) == {"align", "reads", "rs", "cluster", "strand"}
+    assert st["all_native"] is True and set(st["kernels"]) == {"align", "reads", "rs", "cluster", "strand",
+                                                          "integrity"}
     for kernel, (m, _, _) in MODULES.items():
         k = st["kernels"][kernel]
         assert k["backend"] == "native" and k["library"] and Path(k["library"]).is_file(), k
@@ -214,8 +218,9 @@ def test_loaders_find_the_packaged_extension_name(kernel, monkeypatch, tmp_path)
     after an explicit *_LIB path and before the in-place library."""
     m, env, _ = MODULES[kernel]
     ext_name = {"align": "vnxdna.v5._vnx_align", "reads": "vnxdna.v6._vnx_reads", "rs": "vnxdna.v6._vnx_rs",
-                "cluster": "vnxdna._vnx_cluster", "strand": "vnxdna._vnx_strand"}[kernel]
-    assert ext_name in nb.KERNELS
+                "cluster": "vnxdna._vnx_cluster", "strand": "vnxdna._vnx_strand",
+                "integrity": "vnxdna._vnx_integrity"}[kernel]
+    assert ext_name in {**nb.KERNELS, **nb.RUST_KERNELS}
     # the loader searches the directory setup.py builds the extension into (since V6 Phase 2 the loader module itself
     # lives in vnxdna.native, while the C source, library and extension stay in vnxdna/v5 and vnxdna/v6)
     assert Path(*ext_name.split(".")[:-1]) == m._HERE.relative_to(Path(vnxdna.__file__).resolve().parents[1])

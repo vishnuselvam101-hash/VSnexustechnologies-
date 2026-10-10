@@ -168,3 +168,41 @@ def module_contract(kernel: Kernel) -> dict:
             "CFLAGS": _nb.explicit_cflags(strict=False), "STRICT_CFLAGS": _nb.explicit_cflags(strict=True),
             "ENV": kernel.env, "ENV_LIB": kernel.env_lib, "_candidates": kernel.candidates,
             "_reset_for_tests": kernel.reset}
+
+
+class RustKernel(Kernel):
+    """A kernel written in Rust (crate ``native/rust/<name>``, ``crate-type = cdylib``) exposing the same C ABI contract.
+
+    Lookup, ABI check, backend selection and status are those of :class:`Kernel`; only the build differs: Cargo builds
+    the crate offline (no third-party crates) into a temporary target directory and the shared library is copied to
+    the in-place path (or ``output``). ``CARGO`` selects the cargo executable."""
+
+    def __init__(self, *args, crate: str, **kw):
+        super().__init__(*args, **kw)
+        self.crate = _PKG / "native" / "rust" / crate
+        self.source = self.crate / "src" / "lib.rs"
+
+    def build(self, output: str | os.PathLike | None = None, extra_flags: list[str] | None = None,
+              strict: bool | None = None) -> Path:
+        import tempfile
+        cargo = os.environ.get("CARGO") or shutil.which("cargo")
+        if not cargo:
+            raise NativeKernelError("no Rust toolchain found (cargo; set CARGO)")
+        out = Path(output) if output else self.inplace
+        with tempfile.TemporaryDirectory(prefix="vnx-cargo-") as target:
+            cmd = [cargo, "build", "--release", "--offline", "--locked", "--manifest-path", str(self.crate / "Cargo.toml"),
+                   "--target-dir", target, *(extra_flags or [])]
+            env = dict(os.environ)
+            if strict if strict is not None else os.environ.get(_nb.STRICT_ENV) == "1":
+                env["RUSTFLAGS"] = (env.get("RUSTFLAGS", "") + " -D warnings").strip()
+            res = subprocess.run(cmd, capture_output=True, text=True, env=env)
+            if res.returncode != 0:
+                raise NativeKernelError(f"native build failed: {' '.join(cmd)}\n{res.stderr[-4000:]}")
+            built = Path(target) / "release" / f"lib{self.crate_lib}.so"
+            out.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(built, out)
+        return out
+
+    @property
+    def crate_lib(self) -> str:
+        return f"vnx_{self.name}"

@@ -1,0 +1,23 @@
+[package]
+name = "vnx_integrity"
+version = "1.0.0"
+edition = "2021"
+rust-version = "1.73"
+publish = false
+description = "VNX-DNA integrity kernel: batched CRC-32 over frame rows (C ABI, loaded with ctypes)"
+license = "Proprietary"
+
+[lib]
+name = "vnx_integrity"
+crate-type = ["cdylib", "rlib"]
+path = "src/lib.rs"
+
+# No third-party crates: the kernel builds offline with the standard library only.
+[dependencies]
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "unwind"   # panics are caught at the C ABI boundary (catch_unwind) and returned as VNX_RI_EPANIC
+debug = false
