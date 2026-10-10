@@ -18,7 +18,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
-OUT = HERE / "results" / "eval.jsonl"
+OUT = Path(__import__("os").environ.get("VNX_OL_OUT") or HERE / "results" / "eval.jsonl")
 LABEL = "SIMULATED: reads from a software channel model; no DNA was synthesised, stored or sequenced"
 
 
@@ -108,7 +108,7 @@ def summary() -> dict:
            "acceptance": {"no_false_success": sum(r["false_success"] for r in rows) == 0, "F_never_loses": b == 0,
                           "identical_where_both_succeed": None}}
     out["acceptance"]["identical_where_both_succeed"] = out["identical_where_both_succeed"]
-    (HERE / "results" / "summary.json").write_text(json.dumps(out, indent=2) + "\n")
+    OUT.with_name(OUT.stem + "-summary.json").write_text(json.dumps(out, indent=2) + "\n")
     return out
 
 
