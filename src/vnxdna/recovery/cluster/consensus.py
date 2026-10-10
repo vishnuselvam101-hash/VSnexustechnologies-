@@ -281,13 +281,16 @@ class _Job:
 
 
 def cluster_consensus(lay: Layout, clusters: list, cfg: ClusterConfig, marker_mismatch: int = 4,
-                      counts: Counter | None = None, trace: list | None = None) -> list[dict]:
+                      counts: Counter | None = None, trace: list | None = None, rejects: list | None = None) -> list[dict]:
     """``clusters``: list of (cluster ID, [reads oriented relative to the cluster's reference read]), in cluster-ID
     order. Returns the verified frames (dicts: kind, tag, group, symbol, payload, cluster, peel, reads, gmd_step) in
     cluster-ID then peel order. Clusters are independent; the result does not depend on how they are batched.
 
     ``trace`` (observability only, default None): when a list, one dict per consensus candidate is appended (cluster,
-    peel, orientation, consensus bases, decided mask, margins, byte erasures, decode result); nothing else changes."""
+    peel, orientation, consensus bases, decided mask, margins, byte erasures, decode result); nothing else changes.
+
+    ``rejects`` (default None): when a list, every candidate that failed inner RS + CRC-32 appends ``(frame bytes,
+    erased-byte mask)`` (unverified; used only by outer-code list decoding, ``ClusterConfig.outer_list``)."""
     counts = Counter() if counts is None else counts
     T = lay.strand_nt
     tpl0, fpos = lay.template()
@@ -313,7 +316,7 @@ def cluster_consensus(lay: Layout, clusters: list, cfg: ClusterConfig, marker_mi
             units.append((job, usable, band))
         if not units:
             break
-        results = _run_units(lay, units, tpl0, fpos, has_markers, cfg, marker_mismatch, counts, trace)
+        results = _run_units(lay, units, tpl0, fpos, has_markers, cfg, marker_mismatch, counts, trace, rejects)
         # peel distances of every verified unit's members to its re-created strand, in one batch
         xs, ys = [], []
         for res in results:
@@ -362,7 +365,7 @@ def _usable(members: list, T: int, cap: int) -> tuple[list, int, int]:
     return out, beyond, dups
 
 
-def _run_units(lay, units, tpl0, fpos, has_markers, cfg, marker_mismatch, counts, trace=None) -> list:
+def _run_units(lay, units, tpl0, fpos, has_markers, cfg, marker_mismatch, counts, trace=None, rejects=None) -> list:
     """Seed, rounds and decode for every unit (one per active cluster); returns per unit (frame, oriented reads, strand)
     or None."""
     T = lay.strand_nt
@@ -494,6 +497,8 @@ def _run_units(lay, units, tpl0, fpos, has_markers, cfg, marker_mismatch, counts
             continue
         if not ok[k]:
             counts["cluster_decode_failed"] += 1
+            if rejects is not None:
+                rejects.append((frames[k].copy(), er[k].copy()))
             continue
         done_unit.add(u)
         kind, tag, group, symbol = (int(x) for x in fields[k])

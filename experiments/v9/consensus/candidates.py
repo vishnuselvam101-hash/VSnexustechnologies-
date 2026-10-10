@@ -12,6 +12,9 @@ CANDIDATES: dict[str, dict] = {
     "A": {"consensus_template": "full", "c_indel": 4},
     # E: hybrid indel-aware consensus — candidate A's move scoring plus template fill after the V8 GMD ladder fails
     "E": {"consensus_template": "full", "c_indel": 4, "fill": "template"},
+    # F (hybrid architecture, EXPERIMENTAL): candidate E plus outer-code list decoding of rows still short after the
+    # fill (failed consensus frames as unverified candidates; native C++ kernel vnxdna.native.outerlist)
+    "F": {"consensus_template": "full", "c_indel": 4, "fill": "template", "outer_list": "on"},
 }
 # B (POA), C (quality-weighted) and D (homopolymer-aware) were not built in V9; they are not evaluated.
 

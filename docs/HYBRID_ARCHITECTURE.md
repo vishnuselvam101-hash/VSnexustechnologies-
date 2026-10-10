@@ -13,6 +13,7 @@ results are in the final comparison report, never here.
   References (Python/NumPy)       the specification of every native kernel; also the fallback backend
   Native execution layer (C11)    vnxdna.native.{align, reads, rs, cluster, strand} via ctypes
   Native execution layer (Rust)   vnxdna.native.integrity (crate native/rust/integrity, C ABI) via ctypes
+  Native execution layer (C++20)  vnxdna.native.outerlist (native/cpp/outerlist.cpp, C ABI) via ctypes
   Web layer (TypeScript)          web/: typed contract clients, event-log follower, static dashboard (no DNA computation)
   Third-party native code         NumPy, hashlib (SHA-256), cryptography (AES-256-GCM, OpenSSL), zstandard, zlib
 ```
@@ -32,7 +33,7 @@ reference exists to test it against. The language follows from what the componen
 | NumPy (C under the hood) | vectorised table operations: outer Cauchy RS encode/decode, CRC rows, inner RS parity reference, constraint reference | used where a whole-batch array expression already runs at native speed |
 | C11 | stable, flat-array CPU kernels: marker alignment, read parsing, inner RS decoding, read clustering, banded DP, forward-backward, polish/trial costs, strand building | one authoritative native implementation per algorithm, loaded through ctypes, no Python C API |
 | Rust | integrity and validation of untrusted data: batched frame CRC-32 (`native/rust/integrity`) | checked arithmetic before any slice exists, scoped threads with disjoint outputs, panics caught at the ABI boundary; standard library only (builds offline). Not used to duplicate a working C kernel: the fuzzed, sanitized C parsers and DP kernels stay in C. Next Rust candidates: a newly designed untrusted-input parser |
-| C++ | evaluated, not adopted | no component needs a C++ library or feature: the kernels are flat arrays and loops, and no advanced alignment/consensus library is integrated. C++ would add a second native ABI and toolchain for no capability; re-evaluate if such a library (e.g. a POA consensus engine) is adopted |
+| C++20 | outer-code list decoding of short rows (`native/cpp/outerlist.cpp`, recovery on nanopore-like reads) | a combinatorial search with small dense GF(256) linear algebra per subset: std::vector-owned workspaces and exception-safe cleanup are simpler and safer than manual C allocation; every entry point is `noexcept` and maps bad_alloc/any exception to an error code. Not used to rewrite the existing C kernels (flat arrays and loops, already fuzzed and sanitized) |
 | TypeScript | web layer (`web/`): typed clients of the published JSON contracts, decode-event follower, static dashboard | no DNA encoding, alignment or decoding logic; WebAssembly only if browser-side computation becomes a requirement. No network service yet (see §9) |
 | Java | not used | no JVM integration requirement exists; adding a JVM would be a runtime with no consumer |
 | Go, other | not used | no subsystem needs their runtime |
@@ -67,7 +68,7 @@ All kernels follow the same contract (`native/c/*.c`, `v5/native/align.c`, `v6/n
   decode report records them in `native_backends`.
 * **SIMD.** No `-march`. Kernels with SIMD paths (RS decoder: scalar/AVX2/AVX-512BW; cluster forward-backward and polish:
   baseline/AVX2) select the level at run time from cpuid + xgetbv, so one wheel runs on any x86-64 CPU.
-* **New kernels** use `vnxdna.native._loader.Kernel` (C) or `RustKernel` (Rust, built with cargo) — shared lookup
+* **New kernels** use `vnxdna.native._loader.Kernel` (C), `CppKernel` (C++20) or `RustKernel` (Rust, built with cargo) — shared lookup
   order, ABI check, backend selection, status and build; the four older kernels keep their own loaders with the same
   contract.
 
@@ -98,6 +99,7 @@ worker. The scrambler search keeps the reference order (smallest passing variant
 | CRC-32 check | **Rust**, `native/rust/integrity` |
 | frame/address recovery (vectorised address snapping), missing-data detection | NumPy/Python |
 | outer Cauchy RS decoding, pass-2 recovery | NumPy/Python (`codec/cauchy.py`, `codec/outer.py`) |
+| short-row recovery from failed consensus frames (opt-in `outer_list`, decoder preset F) | **C++** column list decoding + header assignment (`native/cpp/outerlist.cpp`); Python orchestration, inner RS + CRC-32 and tail verification (`recovery/outer_list.py`) |
 | container integrity (SHA-256 + Merkle), decryption, decompression, output | Python over native libraries |
 
 Success, partial recovery and failure stay distinct: a decode reports SUCCESS only after the container SHA-256 and

@@ -105,8 +105,44 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
         wanted = _index_groups(sb, P)
     fd = os.open(work, os.O_RDWR)
     try:
+        lister = None
+        if cluster is not None and cluster.cfg.outer_list == "on":
+            from vnxdna.recovery.outer_list import OuterListDecoder
+            lister = OuterListDecoder(lay, cluster.cfg, codec, tag)
+            if not lister.applicable():
+                lister = None
+        short: list = []
+
+        def row_failed(g: int, syms: dict, row, error) -> None:
+            if sc is not None:
+                sc.add("outer_ecc", "rows_failed")
+                sc.failed_row(g, row)
+            done_rows.add(g)
+            if v6 is not None:
+                v6.row_failed(g, syms, str(error))
+            else:
+                failed[g] = str(error)
+
+        def row_decoded(g: int, data: np.ndarray, syms: dict) -> None:
+            nonlocal decoded
+            done_rows.add(g)
+            if sc is not None:
+                sc.add("outer_ecc", "rows_decoded")
+            if v6 is not None:
+                v6.row_decoded(g, data, syms)
+                if g >= sb.group_count:
+                    return
+            raw = data.reshape(-1).tobytes()
+            start = g * K * P
+            raw = raw[: max(0, min(len(raw), sb.container_size - start))]
+            os.pwrite(fd, raw, start)
+            decoded += 1
+
+        done_rows: set[int] = set()
+
         def run(groups_filter: set[int] | None, done: set[int]) -> None:
-            nonlocal decoded, conflicts
+            nonlocal decoded, conflicts, done_rows
+            done_rows = done
             for b in range(spill.B):
                 planner.checkpoint("pass 2")
                 acc, pend = spill.load(b)
@@ -147,6 +183,7 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
                 for g in targets:
                     k = row_k(g)
                     syms = by_group.get(g, {})
+                    row = None
                     if sc is not None:
                         row = {"k": k, "symbols": codec.symbols_for(k), "verified_pass1": n_pass1.get(g, 0),
                                "from_consensus": len(syms) - n_pass1.get(g, 0) - from_cluster.get(g, 0),
@@ -165,27 +202,23 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
                         else:
                             data = codec.decode(syms, k, P)
                     except VNXDecodeError as error:
-                        if sc is not None:
-                            sc.add("outer_ecc", "rows_failed")
-                            sc.failed_row(g, row)
-                        done.add(g)
-                        if v6 is not None:
-                            v6.row_failed(g, syms, str(error))
-                        else:
-                            failed[g] = str(error)
-                        continue
-                    done.add(g)
-                    if sc is not None:
-                        sc.add("outer_ecc", "rows_decoded")
-                    if v6 is not None:
-                        v6.row_decoded(g, data, syms)
-                        if g >= sb.group_count:
+                        if lister is not None:
+                            short.append((g, k, syms, row, error))      # outer list decoding first (opt-in)
                             continue
-                    raw = data.reshape(-1).tobytes()
-                    start = g * K * P
-                    raw = raw[: max(0, min(len(raw), sb.container_size - start))]
-                    os.pwrite(fd, raw, start)
-                    decoded += 1
+                        row_failed(g, syms, row, error)
+                        continue
+                    row_decoded(g, data, syms)
+                if short:
+                    rec = lister.recover({g: (k, syms) for g, k, syms, _, _ in short}, *cluster.reject_arrays())
+                    for g, k, syms, row, error in short:
+                        if g in rec:
+                            if sc is not None:
+                                sc.add("outer_ecc", "rows_list_decoded")
+                            row_decoded(g, rec[g], syms)
+                        else:
+                            row_failed(g, syms, row, error)
+                    short.clear()
+                    cluster.list_counts = {k_: int(v_) for k_, v_ in sorted(lister.counts.items())}
             if v6 is not None:
                 decoded += v6.finish(fd, run, done, failed, admit=planner.admit_stripe,
                                      checkpoint=lambda: planner.checkpoint("outer column pass"))

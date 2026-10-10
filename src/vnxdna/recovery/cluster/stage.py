@@ -46,12 +46,15 @@ _CONSENSUS = cluster_consensus     # the real function; a replaced module attrib
 _INFO: contextvars.ContextVar[dict | None] = contextvars.ContextVar("vnx_cluster_info", default=None)
 
 
-def _consensus_batch(lay: Layout, batch: list, cfg: ClusterConfig, marker_mismatch: int) -> tuple[list[dict], Counter]:
-    """One consensus batch in a worker process, single-threaded kernels; its frames and its consensus counters."""
+def _consensus_batch(lay: Layout, batch: list, cfg: ClusterConfig,
+                     marker_mismatch: int) -> tuple[list[dict], Counter, list]:
+    """One consensus batch in a worker process, single-threaded kernels; its frames, its consensus counters and (outer
+    list decoding on) its failed candidates."""
     cons: Counter = Counter()
+    rejects: list | None = [] if cfg.outer_list == "on" else None
     with _nc.thread_scope(1):
-        frames = cluster_consensus(lay, batch, cfg, marker_mismatch, cons)
-    return frames, cons
+        frames = cluster_consensus(lay, batch, cfg, marker_mismatch, cons, rejects=rejects)
+    return frames, cons, rejects or []
 
 
 def consensus_processes(workers: int, batches: int) -> int:
@@ -66,7 +69,7 @@ def consensus_processes(workers: int, batches: int) -> int:
 
 def cluster_frames(reads: list, lay: Layout, cfg: ClusterConfig, marker_mismatch: int = 4, counts: Counter | None = None,
                    cons: Counter | None = None, checkpoint=None, raw: np.ndarray | None = None,
-                   workers: int | None = None) -> tuple[list[dict], dict | None]:
+                   workers: int | None = None, rejects: list | None = None) -> tuple[list[dict], dict | None]:
     """Reads (any order and orientation) → verified cluster frames, in cluster-ID order, and the work budget that
     stopped the stage (None if none did). Every frame passed inner RS + CRC-32; nothing here trusts a read's header.
     ``raw``: the reads as a zero-padded (n, W) matrix when the caller already has one (the store's memory map).
@@ -103,7 +106,8 @@ def cluster_frames(reads: list, lay: Layout, cfg: ClusterConfig, marker_mismatch
         for batch in batches:
             if checkpoint is not None:
                 checkpoint()
-            frames += cluster_consensus(lay, batch, cfg, marker_mismatch, cons)
+            frames += cluster_consensus(lay, batch, cfg, marker_mismatch, cons,
+                                        **({"rejects": rejects} if rejects is not None else {}))
     else:
         # spawn, not fork: the parent may hold kernel threads. Results are taken in batch order; the checkpoint runs
         # before each batch's result is merged and may raise, which cancels the batches not yet started.
@@ -113,9 +117,11 @@ def cluster_frames(reads: list, lay: Layout, cfg: ClusterConfig, marker_mismatch
                 for fut in futures:
                     if checkpoint is not None:
                         checkpoint()
-                    f, c = fut.result()
+                    f, c, rj = fut.result()
                     frames += f
                     cons.update(c)
+                    if rejects is not None:
+                        rejects += rj
             except BaseException:
                 pool.shutdown(wait=True, cancel_futures=True)
                 raise
@@ -148,6 +154,9 @@ class ClusterStage:
         self.budget: list[dict] = []
         self.seconds = 0.0
         self.frames = 0
+        self.rejects: list = []          # failed consensus frames (outer list decoding; bounded by max_list_candidates)
+        self.rejects_dropped = 0
+        self.list_counts: dict = {}      # outer list decoding counters (set by pass 2)
 
     # ------------------------------------------------------------------------------------------------ pass 1
     def write(self, res: dict) -> None:
@@ -201,8 +210,13 @@ class ClusterStage:
             info: dict = {}
             token = _INFO.set(info)
             try:
+                rejects: list | None = [] if self.cfg.outer_list == "on" else None
                 frames, budget = cluster_frames(reads, self.lay, self.cfg, self.marker_mismatch, self.counts, self.cons,
-                                                check, raw=recs["raw"] if n else None)
+                                                check, raw=recs["raw"] if n else None, rejects=rejects)
+                if rejects:
+                    cap = self.cfg.max_list_candidates
+                    self.rejects = rejects[:cap]
+                    self.rejects_dropped = max(0, len(rejects) - cap)
             finally:
                 _INFO.reset(token)
             self.consensus_processes = info.get("consensus_processes")
@@ -239,6 +253,13 @@ class ClusterStage:
         finally:
             for f in files.values():
                 f.close()
+
+    def reject_arrays(self) -> tuple[np.ndarray | None, np.ndarray | None]:
+        """Failed consensus frames kept for outer list decoding: ((n, frame_bytes) bytes, (n, frame_bytes) erased)."""
+        if not self.rejects:
+            return None, None
+        return (np.stack([f for f, _ in self.rejects]).astype(np.uint8),
+                np.stack([e for _, e in self.rejects]).astype(bool))
 
     def load(self, b: int) -> np.ndarray:
         path = self.dir / f"cacc{b}.bin"
@@ -338,6 +359,9 @@ class ClusterStage:
                "native_threads": self.native_threads, "consensus_processes": self.consensus_processes,
                "frames_verified": self.frames, "fill": {k: int(v) for k, v in sorted(self.fill.items())},
                "budget_exceeded": list(self.budget)}
+        if self.cfg.outer_list == "on":
+            out["outer_list"] = {"candidates_kept": len(self.rejects), "candidates_dropped": self.rejects_dropped,
+                                 **self.list_counts}
         if conflicts:
             out["hint"] = "cluster/V6 conflict: a verified cluster frame disagrees with a 6.0 symbol at the same address"
         return out
