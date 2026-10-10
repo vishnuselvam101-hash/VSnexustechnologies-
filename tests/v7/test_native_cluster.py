@@ -237,6 +237,22 @@ def test_forward_backward_threads_env_does_not_change_results(monkeypatch):
     assert same(one, run_kernel("fb", case, "native"))
 
 
+def test_thread_scope_sets_the_count_unless_the_environment_does(monkeypatch):
+    monkeypatch.delenv("VNXDNA_CLUSTER_THREADS", raising=False)
+    assert nc.threads() == 1
+    with nc.thread_scope(4):
+        assert nc.threads() == 4
+        with nc.thread_scope(None):
+            assert nc.threads() == 4
+        with nc.thread_scope(500):
+            assert nc.threads() == 64
+        assert nc.threads() == 4
+    assert nc.threads() == 1
+    monkeypatch.setenv("VNXDNA_CLUSTER_THREADS", "2")
+    with nc.thread_scope(4):
+        assert nc.threads() == 2
+
+
 def test_forward_backward_concurrent_calls_share_the_pool_safely(monkeypatch):
     from concurrent.futures import ThreadPoolExecutor
     rng = np.random.default_rng(80)
@@ -482,7 +498,7 @@ def test_empty_inputs():
 
 
 # ------------------------------------------------------------------------------------------------ whole decode
-VOLATILE = {"seconds", "stage_seconds", "peak_rss_bytes", "elapsed", "elapsed_seconds", "wall_seconds", "native_backends"}
+VOLATILE = {"seconds", "stage_seconds", "peak_rss_bytes", "elapsed", "elapsed_seconds", "wall_seconds", "native_backends", "native_threads"}
 
 
 def _strip(x):
@@ -493,9 +509,11 @@ def _strip(x):
     return x
 
 
-def test_decode_with_read_clustering_is_identical_on_both_backends(tmp_path):
+def test_decode_with_read_clustering_is_identical_on_both_backends(tmp_path, monkeypatch):
     """A SIMULATED indel-heavy pool that 6.0 leaves undecodable: same outcome, container and report (only the
-    ``native_backends`` provenance differs) with the native kernels and with the reference; 1 and 4 workers."""
+    ``native_backends`` / ``native_threads`` provenance differs) with the native kernels and with the reference; 1 and
+    4 workers."""
+    monkeypatch.delenv("VNXDNA_CLUSTER_THREADS", raising=False)
     from vnxdna.simulation.channel import ChannelConfig, simulate_file
     from vnxdna.v4 import decoder as de
 
@@ -512,6 +530,7 @@ def test_decode_with_read_clustering_is_identical_on_both_backends(tmp_path):
             res = de.decode_reads(tmp_path / "r.fastq", out, de.DecodeOptions(read_clustering="fallback",
                                                                              stage_counters=True, workers=workers))
         assert res.report["native_backends"]["cluster"]["backend"] == name
+        assert res.report["clustering"]["native_threads"] == workers        # V10 W1: workers -> kernel threads
         runs[(name, workers)] = (res.status, out.read_bytes() if out.exists() else None,
                                  json.loads(json.dumps(_strip(res.report), default=str)))
     ref = runs[("reference", 1)]

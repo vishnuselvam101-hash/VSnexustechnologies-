@@ -22,6 +22,7 @@ from pathlib import Path
 import numpy as np
 
 from vnxdna.dnaenc.layout import KIND_DATA, KIND_SUPER, Layout
+from vnxdna.native import cluster as _nc
 from vnxdna.recovery.cluster import ClusterConfig
 from vnxdna.recovery.cluster.consensus import cluster_consensus
 from vnxdna.recovery.cluster.editdist import revcomp
@@ -73,13 +74,15 @@ class ClusterStage:
     """One decode's clustering stage: the unplaced store (pass 1), the lazy run, the cluster frames and the fill."""
 
     def __init__(self, workdir: Path, lay: Layout, cfg: ClusterConfig, buckets: int, acc_dtype: np.dtype,
-                 marker_mismatch: int = 4, stage_counters=None, planner=None):
+                 marker_mismatch: int = 4, stage_counters=None, planner=None, threads: int = 1):
         self.dir = Path(workdir)
         self.lay = lay
         self.cfg = cfg
         self.B = int(buckets)
         self.acc_dtype = acc_dtype
         self.marker_mismatch = int(marker_mismatch)
+        self.threads = max(1, int(threads))     # native kernel threads (V10 W1: the decoder's workers)
+        self.native_threads: int | None = None  # the effective count, set when the stage runs
         self.sc = stage_counters
         self.planner = planner
         self.store = UnplacedStore(self.dir, lay.strand_nt, cfg.max_unplaced_reads)
@@ -139,8 +142,10 @@ class ClusterStage:
         lens = np.asarray(recs["len"], dtype=np.int64) if n else np.zeros(0, dtype=np.int64)
         reads = [np.array(recs["raw"][i, : lens[i]], dtype=np.uint8) for i in range(n)]
         check = (lambda: self.planner.checkpoint("read clustering consensus")) if self.planner is not None else None
-        frames, budget = cluster_frames(reads, self.lay, self.cfg, self.marker_mismatch, self.counts, self.cons, check,
-                                        raw=recs["raw"] if n else None)
+        with _nc.thread_scope(self.threads):
+            self.native_threads = _nc.threads()
+            frames, budget = cluster_frames(reads, self.lay, self.cfg, self.marker_mismatch, self.counts, self.cons,
+                                            check, raw=recs["raw"] if n else None)
         if budget is not None:
             self.budget.append(budget)
             if budget["limit"] == "max_candidate_pairs":
@@ -270,6 +275,7 @@ class ClusterStage:
                                                                   "unplaced_over_budget")},
                "clustering": {k: int(v) for k, v in sorted(self.counts.items()) if not k.startswith("unplaced_")},
                "consensus": {k[len("cluster_"):]: int(v) for k, v in sorted(self.cons.items())},
+               "native_threads": self.native_threads,
                "frames_verified": self.frames, "fill": {k: int(v) for k, v in sorted(self.fill.items())},
                "budget_exceeded": list(self.budget)}
         if conflicts:

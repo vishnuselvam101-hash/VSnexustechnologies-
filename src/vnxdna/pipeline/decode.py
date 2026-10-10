@@ -126,7 +126,7 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
             # V7 item A (opt-in): unplaced-read store in pass 1; the stage itself runs lazily in pass 2 (fill-only)
             from vnxdna.recovery.cluster.stage import ClusterStage
             cluster = ClusterStage(Path(tmp_root), lay, opt.cluster_config, buckets, spill.acc_dtype,
-                                   opt.sync_costs.marker_mismatch, stage_counters, planner)
+                                   opt.sync_costs.marker_mismatch, stage_counters, planner, threads=opt.workers)
             cluster_box["stage"] = cluster
         recovery_args = base_args + (False, False, opt.retry_band)      # the deferred stage: no defer, no qualities
 

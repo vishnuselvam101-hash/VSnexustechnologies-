@@ -11,8 +11,9 @@ The kernel (``native/c/cluster.c``) reproduces the reference functions bit for b
     edit_costs      polish.edit_costs_reference          full-template polish: exact cost of every single edit (V9)
 
 It is a plain C shared library loaded with :mod:`ctypes` (no Python headers); ctypes releases the GIL during each call,
-so :func:`fb` can split a chunk over threads (``VNXDNA_CLUSTER_THREADS``, default 1). Every read's result depends only
-on that read, so the output is identical for any thread count.
+so :func:`fb` and :func:`edit_costs` can split a chunk over threads. The count is ``VNXDNA_CLUSTER_THREADS`` when set,
+else the scope set by :func:`thread_scope` (the decoder sets its ``workers`` there for the clustering stage, V10 W1),
+else 1. Every read's result depends only on that read, so the output is identical for any thread count.
 
 Backend selection::
 
@@ -29,6 +30,8 @@ bands above 512, templates longer than 8192, negative slack) are routed to the r
 """
 from __future__ import annotations
 
+import contextlib
+import contextvars
 import ctypes
 import logging
 import os
@@ -175,12 +178,33 @@ def resolve_backend(explicit: str | None = None) -> str:
     return "reference"
 
 
+_scope_threads: contextvars.ContextVar[int | None] = contextvars.ContextVar("vnx_cluster_threads", default=None)
+
+
 def threads() -> int:
-    """Threads of :func:`fb` (``VNXDNA_CLUSTER_THREADS``, default 1, at most 64). Results do not depend on it."""
+    """Threads of :func:`fb` and :func:`edit_costs`: ``VNXDNA_CLUSTER_THREADS`` if set, else the :func:`thread_scope`
+    value, else 1; at most 64. Results do not depend on it."""
+    env = os.environ.get("VNXDNA_CLUSTER_THREADS")
+    if env:
+        try:
+            return max(1, min(64, int(env)))
+        except ValueError:
+            return 1
+    scoped = _scope_threads.get()
+    return 1 if scoped is None else max(1, min(64, int(scoped)))
+
+
+@contextlib.contextmanager
+def thread_scope(n: int | None):
+    """Use ``n`` kernel threads inside the block when ``VNXDNA_CLUSTER_THREADS`` is unset (``None`` leaves it as is)."""
+    if n is None:
+        yield
+        return
+    token = _scope_threads.set(int(n))
     try:
-        return max(1, min(64, int(os.environ.get("VNXDNA_CLUSTER_THREADS") or 1)))
-    except ValueError:
-        return 1
+        yield
+    finally:
+        _scope_threads.reset(token)
 
 
 def fb_level() -> str | None:
