@@ -293,7 +293,7 @@ static int cand_core(int64_t n, int32_t s, const uint32_t *hashes, const uint8_t
         pent_t *t = realloc(pe, (size_t)kept * sizeof(pent_t));
         if (t) pe = t;
     }
-    qsort(pe, (size_t)kept, sizeof(pent_t), cmp_pent);
+    if (kept) qsort(pe, (size_t)kept, sizeof(pent_t), cmp_pent); /* pe is NULL when nothing was kept */
     stats[3] = kept;
     stats[4] = below;
     res->kept = kept;
