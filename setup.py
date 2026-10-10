@@ -2,7 +2,8 @@
 
 C kernels: plain C shared libraries loaded with ctypes (no Python C API): the V5 marker aligner, the V6 read parser,
 the V6 inner Reed-Solomon decoder (runtime SIMD dispatch, no -march), the V7 read-clustering kernels and the strand
-builder. Rust kernels (``_native_build.RUST_KERNELS``, e.g. the integrity kernel): cdylib crates with the same C ABI
+builder. C++ kernels (``_native_build.CXX_KERNELS``, e.g. outer-code list decoding): the same C ABI contract, compiled
+as C++20 optional extensions. Rust kernels (``_native_build.RUST_KERNELS``, e.g. the integrity kernel): cdylib crates with the same C ABI
 contract, built with cargo (offline, standard library only) when a Rust toolchain is present.
 Every kernel is *optional*: without a compiler (or if one kernel fails to build) installation still succeeds and
 VNX-DNA uses the bit-identical reference for that kernel. ``python -m vnxdna.native`` reports which backend every
@@ -57,5 +58,7 @@ class build_native(build_ext or object):
 
 
 setup(ext_modules=[Extension(name, [source], extra_compile_args=list(_nb.COMPILE_FLAGS), optional=True)
-                   for name, source in _nb.KERNELS.items()],
+                   for name, source in _nb.KERNELS.items()]
+                  + [Extension(name, [source], extra_compile_args=list(_nb.CXX_COMPILE_FLAGS), language="c++",
+                               optional=True) for name, source in getattr(_nb, "CXX_KERNELS", {}).items()],
       cmdclass={"build_ext": build_native} if build_ext else {})

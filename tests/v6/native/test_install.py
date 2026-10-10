@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[3]
-KERNELS = {"align", "reads", "rs", "cluster", "strand", "integrity"}
+KERNELS = {"align", "reads", "rs", "cluster", "strand", "integrity", "outerlist"}
 
 pytestmark = [pytest.mark.slow,
               pytest.mark.skipif(os.environ.get("VNXDNA_INSTALL_TEST") != "1",
@@ -71,7 +71,7 @@ def test_pip_install_uses_all_native_kernels(tmp_path):
 def test_pip_install_without_compiler_falls_back_to_reference(tmp_path):
     src = _source_copy(tmp_path / "src-copy")
     py = _venv(tmp_path / "venv")
-    res = subprocess.run([str(py), "-m", "pip", "install", str(src)], env=_env(CC="/bin/false", CARGO="/bin/false"), capture_output=True,
+    res = subprocess.run([str(py), "-m", "pip", "install", str(src)], env=_env(CC="/bin/false", CXX="/bin/false", CARGO="/bin/false"), capture_output=True,
                          text=True)
     assert res.returncode == 0, res.stdout[-3000:] + res.stderr[-3000:]
     st = _status(py, tmp_path)
@@ -92,6 +92,7 @@ def test_pip_wheel_contains_every_extension(tmp_path):
     (whl,) = (tmp_path / "wheels").glob("vnx_dna-*.whl")
     names = zipfile.ZipFile(whl).namelist()
     for prefix in ("vnxdna/v5/_vnx_align", "vnxdna/v6/_vnx_reads", "vnxdna/v6/_vnx_rs", "vnxdna/_vnx_cluster",
-                   "vnxdna/_vnx_strand", "vnxdna/_vnx_integrity"):
+                   "vnxdna/_vnx_strand", "vnxdna/_vnx_integrity",
+                   "vnxdna/_vnx_outerlist"):
         assert sum(n.startswith(prefix) and n.endswith(".so") for n in names) == 1, (prefix, names)
     assert not any(n.endswith(".so") and "/native/" in n for n in names)     # no in-place development libraries

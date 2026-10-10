@@ -22,6 +22,7 @@ Kernels::
     cluster V7 read clustering + consensus vnxdna.native.cluster                                         reference: vnxdna.recovery.cluster (NumPy)
     strand  encode strand builder          vnxdna.native.strand                                          reference: vnxdna.dnaenc.frame4 (NumPy)
     integrity batched frame CRC-32 (Rust)  vnxdna.native.integrity                                       reference: vnxdna.core.crc (NumPy)
+    outerlist outer-code list decoding (C++) vnxdna.native.outerlist                                     reference: vnxdna.recovery.outer_list
 
 Backend environment variables are documented in docs/NATIVE_KERNELS.md. Nothing here raises: an invalid backend
 variable is reported in ``error`` (the decode itself would raise it).
@@ -34,12 +35,13 @@ from pathlib import Path
 
 from ..core._alias import lazy_module
 
-KERNELS = ("align", "reads", "rs", "cluster", "strand", "integrity")
+KERNELS = ("align", "reads", "rs", "cluster", "strand", "integrity", "outerlist")
 _ENV_LIB = {"align": "VNXDNA_NATIVE_LIB", "reads": "VNXDNA_READS_LIB", "rs": "VNXDNA_RS_LIB", "cluster": "VNXDNA_CLUSTER_LIB",
-            "strand": "VNXDNA_STRAND_LIB", "integrity": "VNXDNA_INTEGRITY_LIB"}
+            "strand": "VNXDNA_STRAND_LIB", "integrity": "VNXDNA_INTEGRITY_LIB",
+            "outerlist": "VNXDNA_OUTERLIST_LIB"}
 _REFERENCE = {"align": "vnxdna.v4.sync", "reads": "vnxdna.v4.reads", "rs": "vnxdna.v4.rs_fast",
               "cluster": "vnxdna.recovery.cluster", "strand": "vnxdna.dnaenc.frame4",
-              "integrity": "vnxdna.core.crc"}   # reported names: the stable (old) paths
+              "integrity": "vnxdna.core.crc", "outerlist": "vnxdna.recovery.outer_list"}   # reported names: the stable (old) paths
 _CODECS = "vnxdna.codec.codecs"      # InnerRS; its VNX_RS_REFERENCE switch (read at import) bypasses the RS kernel
 
 

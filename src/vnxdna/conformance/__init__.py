@@ -19,7 +19,8 @@ from vnxdna.core.version import SPEC_VERSION
 
 VECTORS = Path(__file__).with_name("vectors")
 BACKEND_ENV = ("VNXDNA_RS_BACKEND", "VNXDNA_READS_BACKEND", "VNXDNA_ALIGN_BACKEND", "VNXDNA_CLUSTER_BACKEND",
-               "VNXDNA_STRAND_BACKEND", "VNXDNA_INTEGRITY_BACKEND")
+               "VNXDNA_STRAND_BACKEND", "VNXDNA_INTEGRITY_BACKEND",
+               "VNXDNA_OUTERLIST_BACKEND")
 
 
 @contextmanager

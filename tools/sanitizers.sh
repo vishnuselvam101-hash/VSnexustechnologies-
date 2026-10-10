@@ -10,6 +10,7 @@
 #   rs     benchmarks/v6/native_rs/sanitizers.sh          tests/v6/native/test_native_rs*.py + stress_fuzz.py
 #   cluster benchmarks/v7/native_cluster/sanitizers.sh   tests/v7/test_native_cluster.py + stress_fuzz.py
 #   strand benchmarks/arch/native_strand/sanitizers.sh   tests/arch/test_native_strand.py + libFuzzer (STRAND_FUZZ_SECONDS)
+#   outerlist benchmarks/arch/native_outerlist/sanitizers.sh   tests/arch/test_outer_list.py + libFuzzer (OUTERLIST_FUZZ_SECONDS)
 # The fuzz budgets are CI-sized (override with ALIGN_ROUNDS, READS_CASES, RS_ROUNDS, CLUSTER_ROUNDS); the per-kernel scripts'
 # own defaults are the larger development budgets.
 #
@@ -35,6 +36,7 @@ step reads bash benchmarks/v6/native_reads/sanitizers.sh "$W/reads" "${READS_CAS
 step rs bash benchmarks/v6/native_rs/sanitizers.sh "$W/rs" "${RS_ROUNDS:-200}"
 step cluster bash benchmarks/v7/native_cluster/sanitizers.sh "$W/cluster" "${CLUSTER_ROUNDS:-30}"
 step strand env FUZZ_SECONDS="${STRAND_FUZZ_SECONDS:-30}" bash benchmarks/arch/native_strand/sanitizers.sh "$W/strand"
+step outerlist env FUZZ_SECONDS="${OUTERLIST_FUZZ_SECONDS:-30}" bash benchmarks/arch/native_outerlist/sanitizers.sh "$W/outerlist"
 echo "==================== summary"
 printf '%s' "$summary"
 echo "overall: $([ $fail -eq 0 ] && echo PASS || echo FAIL)"

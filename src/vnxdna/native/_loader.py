@@ -164,8 +164,10 @@ class Kernel:
 
 def module_contract(kernel: Kernel) -> dict:
     """Module globals of a binding built on :class:`Kernel` (the older loaders' names; see the module docstring)."""
+    cxx = isinstance(kernel, CppKernel)
+    flags = _nb.explicit_cxxflags if cxx else _nb.explicit_cflags
     return {"_HERE": _PKG, "_SOURCE": kernel.source, "_INPLACE": _PKG / "native" / "c" / f"libvnx_{kernel.name}.so",
-            "CFLAGS": _nb.explicit_cflags(strict=False), "STRICT_CFLAGS": _nb.explicit_cflags(strict=True),
+            "CFLAGS": flags(strict=False), "STRICT_CFLAGS": flags(strict=True),
             "ENV": kernel.env, "ENV_LIB": kernel.env_lib, "_candidates": kernel.candidates,
             "_reset_for_tests": kernel.reset}
 
@@ -206,3 +208,26 @@ class RustKernel(Kernel):
     @property
     def crate_lib(self) -> str:
         return f"vnx_{self.name}"
+
+
+class CppKernel(Kernel):
+    """A kernel written in C++ (``native/cpp/<name>.cpp``) behind ``extern "C"`` functions (same contract as the C
+    kernels; every entry point catches all exceptions). Built with ``CXX`` (or c++ / g++ / clang++) and
+    ``_native_build.explicit_cxxflags``."""
+
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)
+        self.source = _PKG / "native" / "cpp" / f"{self.name}.cpp"
+
+    def build(self, output: str | os.PathLike | None = None, extra_flags: list[str] | None = None,
+              strict: bool | None = None) -> Path:
+        cxx = os.environ.get("CXX") or shutil.which("c++") or shutil.which("g++") or shutil.which("clang++")
+        if not cxx:
+            raise NativeKernelError("no C++ compiler found (set CXX)")
+        out = Path(output) if output else self.inplace
+        cmd = [cxx, *_nb.explicit_cxxflags(strict), *(extra_flags or []), str(self.source), "-o", str(out)]
+        out.parent.mkdir(parents=True, exist_ok=True)
+        res = subprocess.run(cmd, capture_output=True, text=True)
+        if res.returncode != 0:
+            raise NativeKernelError(f"native build failed: {' '.join(cmd)}\n{res.stderr}")
+        return out

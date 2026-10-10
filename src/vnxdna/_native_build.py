@@ -31,6 +31,13 @@ RUST_KERNELS = {
     "vnxdna._vnx_integrity": "src/vnxdna/native/rust/integrity",
 }
 
+#: C++ kernels (optional extensions compiled as C++; same C ABI contract): extension module name -> source
+CXX_KERNELS = {
+    "vnxdna._vnx_outerlist": "src/vnxdna/native/cpp/outerlist.cpp",
+}
+#: compile flags of the C++ kernels (setup.py and the explicit builds; setuptools adds -fPIC/-shared itself)
+CXX_COMPILE_FLAGS = ["-O3", "-std=c++20", "-Wall", "-Wextra"]
+
 #: compile flags shared by setup.py and the explicit builds (setuptools adds -fPIC/-shared itself)
 COMPILE_FLAGS = ["-O3", "-std=c11", "-Wall", "-Wextra"]
 #: link/shape flags of an explicit build with a bare compiler
@@ -45,3 +52,10 @@ def explicit_cflags(strict: bool | None = None) -> list[str]:
     if strict is None:
         strict = os.environ.get(STRICT_ENV) == "1"
     return ["-O3", "-std=c11", *SHARED_FLAGS, *COMPILE_FLAGS[2:], *(STRICT_FLAGS if strict else [])]
+
+
+def explicit_cxxflags(strict: bool | None = None) -> list[str]:
+    """Flags of the explicit C++ builds: the install flags plus -fPIC/-shared, and -Werror when strict."""
+    if strict is None:
+        strict = os.environ.get(STRICT_ENV) == "1"
+    return [*CXX_COMPILE_FLAGS, *SHARED_FLAGS, *(STRICT_FLAGS if strict else [])]
