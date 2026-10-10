@@ -15,8 +15,11 @@ a confirmation (same payload) or a conflict (different payload). The container S
 """
 from __future__ import annotations
 
+import multiprocessing
+import os
 import time
 from collections import Counter
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
 import numpy as np
@@ -36,11 +39,31 @@ SCHEMA = "vnx.read-clustering/1"
 CONSENSUS_BATCH = 256
 
 
+def _consensus_batch(lay: Layout, batch: list, cfg: ClusterConfig, marker_mismatch: int) -> tuple[list[dict], Counter]:
+    """One consensus batch in a worker process, single-threaded kernels; its frames and its consensus counters."""
+    cons: Counter = Counter()
+    with _nc.thread_scope(1):
+        frames = cluster_consensus(lay, batch, cfg, marker_mismatch, cons)
+    return frames, cons
+
+
+def consensus_processes(workers: int, batches: int) -> int:
+    """Worker processes for the consensus batches (V10 opt): the decoder's workers when there are at least two batches
+    and ``VNXDNA_CLUSTER_THREADS`` (an explicit kernel-thread choice) is unset; otherwise 1 (in-process, as before)."""
+    if workers <= 1 or batches < 2 or os.environ.get("VNXDNA_CLUSTER_THREADS"):
+        return 1
+    return min(int(workers), batches)
+
+
 def cluster_frames(reads: list, lay: Layout, cfg: ClusterConfig, marker_mismatch: int = 4, counts: Counter | None = None,
-                   cons: Counter | None = None, checkpoint=None, raw: np.ndarray | None = None) -> tuple[list[dict], dict | None]:
+                   cons: Counter | None = None, checkpoint=None, raw: np.ndarray | None = None,
+                   workers: int = 1, info: dict | None = None) -> tuple[list[dict], dict | None]:
     """Reads (any order and orientation) → verified cluster frames, in cluster-ID order, and the work budget that
     stopped the stage (None if none did). Every frame passed inner RS + CRC-32; nothing here trusts a read's header.
-    ``raw``: the reads as a zero-padded (n, W) matrix when the caller already has one (the store's memory map)."""
+    ``raw``: the reads as a zero-padded (n, W) matrix when the caller already has one (the store's memory map).
+    ``workers`` > 1: the consensus batches run in that many worker processes (:func:`consensus_processes`). Clusters
+    are independent, so the frames, their order and the counters are the same as in-process. ``info`` (provenance
+    only): when a dict, ``consensus_processes`` is set to the process count used."""
     counts = Counter() if counts is None else counts
     cons = Counter() if cons is None else cons
     n = len(reads)
@@ -62,10 +85,30 @@ def cluster_frames(reads: list, lay: Layout, cfg: ClusterConfig, marker_mismatch
             mem = mem[: cfg.max_cluster_reads]
         clusters.append((cid, [revcomp(reads[i]) if cl.orient[i] else reads[i] for i in mem.tolist()]))
     frames: list[dict] = []
-    for c0 in range(0, len(clusters), CONSENSUS_BATCH):
-        if checkpoint is not None:
-            checkpoint()
-        frames += cluster_consensus(lay, clusters[c0:c0 + CONSENSUS_BATCH], cfg, marker_mismatch, cons)
+    batches = [clusters[c0:c0 + CONSENSUS_BATCH] for c0 in range(0, len(clusters), CONSENSUS_BATCH)]
+    procs = consensus_processes(workers, len(batches))
+    if info is not None:
+        info["consensus_processes"] = procs
+    if procs == 1:
+        for batch in batches:
+            if checkpoint is not None:
+                checkpoint()
+            frames += cluster_consensus(lay, batch, cfg, marker_mismatch, cons)
+    else:
+        # spawn, not fork: the parent may hold kernel threads. Results are taken in batch order; the checkpoint runs
+        # before each batch's result is merged and may raise, which cancels the batches not yet started.
+        with ProcessPoolExecutor(max_workers=procs, mp_context=multiprocessing.get_context("spawn")) as pool:
+            futures = [pool.submit(_consensus_batch, lay, batch, cfg, marker_mismatch) for batch in batches]
+            try:
+                for fut in futures:
+                    if checkpoint is not None:
+                        checkpoint()
+                    f, c = fut.result()
+                    frames += f
+                    cons.update(c)
+            except BaseException:
+                pool.shutdown(wait=True, cancel_futures=True)
+                raise
     counts["clusters_decoded"] = len({f["cluster"] for f in frames})
     return frames, cl.budget
 
@@ -83,6 +126,7 @@ class ClusterStage:
         self.marker_mismatch = int(marker_mismatch)
         self.threads = max(1, int(threads))     # native kernel threads (V10 W1: the decoder's workers)
         self.native_threads: int | None = None  # the effective count, set when the stage runs
+        self.consensus_processes: int | None = None  # consensus worker processes, set when the stage runs (V10 opt)
         self.sc = stage_counters
         self.planner = planner
         self.store = UnplacedStore(self.dir, lay.strand_nt, cfg.max_unplaced_reads)
@@ -144,8 +188,10 @@ class ClusterStage:
         check = (lambda: self.planner.checkpoint("read clustering consensus")) if self.planner is not None else None
         with _nc.thread_scope(self.threads):
             self.native_threads = _nc.threads()
+            info: dict = {}
             frames, budget = cluster_frames(reads, self.lay, self.cfg, self.marker_mismatch, self.counts, self.cons,
-                                            check, raw=recs["raw"] if n else None)
+                                            check, raw=recs["raw"] if n else None, workers=self.threads, info=info)
+            self.consensus_processes = info.get("consensus_processes")
         if budget is not None:
             self.budget.append(budget)
             if budget["limit"] == "max_candidate_pairs":
@@ -275,7 +321,7 @@ class ClusterStage:
                                                                   "unplaced_over_budget")},
                "clustering": {k: int(v) for k, v in sorted(self.counts.items()) if not k.startswith("unplaced_")},
                "consensus": {k[len("cluster_"):]: int(v) for k, v in sorted(self.cons.items())},
-               "native_threads": self.native_threads,
+               "native_threads": self.native_threads, "consensus_processes": self.consensus_processes,
                "frames_verified": self.frames, "fill": {k: int(v) for k, v in sorted(self.fill.items())},
                "budget_exceeded": list(self.budget)}
         if conflicts:
