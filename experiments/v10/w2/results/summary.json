@@ -1,0 +1,86 @@
+{
+ "big_1mib": {
+  "all_same_as_v9": true,
+  "median_decode_seconds": 342.38,
+  "rows": [
+   {
+    "decode_seconds": 332.604,
+    "load1": 2.4,
+    "outcome": "EXPLICIT_FAILURE",
+    "same_as_v9": true,
+    "seed": 93000,
+    "v9_decode_seconds": 1032.85
+   },
+   {
+    "decode_seconds": 342.38,
+    "load1": 1.58,
+    "outcome": "EXPLICIT_FAILURE",
+    "same_as_v9": true,
+    "seed": 93001,
+    "v9_decode_seconds": 1050.27
+   },
+   {
+    "decode_seconds": 389.843,
+    "load1": 2.51,
+    "outcome": "EXPLICIT_FAILURE",
+    "same_as_v9": true,
+    "seed": 93002,
+    "v9_decode_seconds": 1047.06
+   }
+  ],
+  "target_seconds": 300
+ },
+ "commits": [
+  "71e13a878f830dde13e0791c6c895474578473c3",
+  "77ec67c28fd3516341bf58742ad80bbc153ebc1b"
+ ],
+ "false_success": 0,
+ "identical": 10,
+ "label": "SIMULATED: reads from a software channel model; no DNA was synthesised, stored or sequenced",
+ "load1_range": [
+  0.6,
+  2.51
+ ],
+ "load_rule": {
+  "max_load1": 4.0,
+  "observed": [
+   0.6,
+   2.22
+  ],
+  "ok": true,
+  "runs_over": 0
+ },
+ "median_decode_seconds": {
+  "w1": 15.336500000000001,
+  "w2": 8.7635
+ },
+ "of": 10,
+ "outcomes": {
+  "w1": [
+   "EXACT"
+  ],
+  "w2": [
+   "EXACT"
+  ]
+ },
+ "seeds": [
+  94000,
+  94001,
+  94002,
+  94003,
+  94004,
+  94005,
+  94006,
+  94007,
+  94008,
+  94009
+ ],
+ "speedup_w1_over_w2": {
+  "ci95": [
+   1.682,
+   1.766
+  ],
+  "geomean": 1.721,
+  "method": "paired per-seed ratio, geometric mean, percentile bootstrap 10000, rng 10002"
+ }
+}

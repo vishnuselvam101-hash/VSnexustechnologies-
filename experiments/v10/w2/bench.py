@@ -23,7 +23,6 @@ import argparse
 import dataclasses
 import hashlib
 import json
-import math
 import os
 import sys
 import tempfile
@@ -147,9 +146,10 @@ def summarize(rows: list[dict], big: list[dict]) -> dict:
     seeds = sorted(s for s, d in by.items() if set(d) == set(CONFIGS))
     identical = [s for s in seeds if len({(d["outcome"], d["output_sha256"], d["report_sha256"])
                                           for d in by[s].values()}) == 1]
-    logr = np.array([math.log(by[s]["w1"]["decode_seconds"] / by[s]["w2"]["decode_seconds"]) for s in seeds])
-    rng = np.random.default_rng(10_002)
-    boot = np.exp(rng.choice(logr, size=(10_000, len(logr)), replace=True).mean(axis=1)) if len(logr) else np.zeros(0)
+    from vnxdna.benchmark import stats as S
+    ratio = S.paired_ratio([by[s]["w1"]["decode_seconds"] for s in seeds], [by[s]["w2"]["decode_seconds"] for s in seeds],
+                           seed=10_002)
+    load = S.load_ok([r["load1"] for r in rows])
     med = lambda c: float(np.median([by[s][c]["decode_seconds"] for s in seeds])) if seeds else None  # noqa: E731
     v9 = {}
     if V9_NOISY.exists():
@@ -165,11 +165,9 @@ def summarize(rows: list[dict], big: list[dict]) -> dict:
             "outcomes": {c: sorted({by[s][c]["outcome"] for s in seeds}) for c in CONFIGS},
             "false_success": sum(r["false_success"] for r in rows + big),
             "median_decode_seconds": {c: med(c) for c in CONFIGS},
-            "speedup_w1_over_w2": {"geomean": round(float(np.exp(logr.mean())), 3) if len(logr) else None,
-                                   "ci95": [round(float(np.percentile(boot, 2.5)), 3),
-                                            round(float(np.percentile(boot, 97.5)), 3)] if len(boot) else None,
-                                   "method": "paired per-seed ratio, geometric mean, percentile bootstrap 10000, "
-                                             "rng 10002"},
+            "speedup_w1_over_w2": ({k: ratio[k] for k in ("geomean", "ci95", "method")} if load["ok"]
+                                   else {"refused": "host load above the comparison limit", **load}),
+            "load_rule": load,
             "big_1mib": {"rows": big_cmp, "target_seconds": 300,
                          "median_decode_seconds": float(np.median([b["decode_seconds"] for b in big_cmp])) if big_cmp else None,
                          "all_same_as_v9": all(b["same_as_v9"] for b in big_cmp) if big_cmp else None},
