@@ -32,7 +32,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
-OUT = Path(os.environ.get("VNX_OPT_OUT") or HERE / "results" / "opt.jsonl")   # override: smoke runs only
+OUT = Path(os.environ.get("VNX_OPT_OUT") or HERE / "results" / "opt.jsonl")   # override: smoke runs and the V10 final run
 SUMMARY = OUT.with_name(OUT.stem + "-summary.json")
 SIZES = {"20k": 20_000, "1m": 1 << 20}
 
@@ -127,6 +127,9 @@ def _w2():
         sys.path.insert(0, str(ROOT / p))
     W2 = _load("v10_w2_bench", "experiments/v10/w2/bench.py")
     W2.W1.VOLATILE.add("consensus_processes")
+    # V10 fix: candidate-budget configuration keys that the base tree's ClusterConfig does not have (configuration, not
+    # results; outcome, output and every other report value must still match)
+    W2.W1.VOLATILE.update({"max_candidate_pairs_per_read", "max_candidate_pairs_ceiling", "candidate_chunk_pairs"})
     return W2
 
 
@@ -141,10 +144,13 @@ def decode_one(work: Path, label: str, container_sha256: str) -> dict:
     opts = dataclasses.replace(nf.decoder_options(case), workers=W1.WORKERS, stage_counters=True)
     row, rep = W2._decode(work, label, opts, {"container_sha256": container_sha256})
     # the largest single process (self or one waited-for child), not a sum
-    ru = max(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss, resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss)
+    me, kids = resource.getrusage(resource.RUSAGE_SELF), resource.getrusage(resource.RUSAGE_CHILDREN)
+    ru = max(me.ru_maxrss, kids.ru_maxrss)
     cl = rep.get("clustering") or {}
     return {**row, "peak_rss_bytes": rep.get("peak_rss_bytes"), "max_rss_tree_bytes": ru * 1024,
-            "consensus_processes": cl.get("consensus_processes"), "vnxdna_file": __import__("vnxdna").__file__}
+            "consensus_processes": cl.get("consensus_processes"), "vnxdna_file": __import__("vnxdna").__file__,
+            # CPU seconds of this process and its waited-for worker processes (whole decode case incl. setup)
+            "cpu_user_s": round(me.ru_utime + kids.ru_utime, 2), "cpu_sys_s": round(me.ru_stime + kids.ru_stime, 2)}
 
 
 def run(size: int, seeds: list[int], base: Path) -> None:
