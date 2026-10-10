@@ -35,7 +35,11 @@ def _run(reads, workers, monkeypatch, batch):
     monkeypatch.delenv("VNXDNA_CLUSTER_THREADS", raising=False)
     monkeypatch.setattr(st, "CONSENSUS_BATCH", batch)
     counts, cons, info = Counter(), Counter(), {}
-    frames, budget = st.cluster_frames(reads, LAY, ClusterConfig(), counts=counts, cons=cons, workers=workers, info=info)
+    token = st._INFO.set(info)
+    try:
+        frames, budget = st.cluster_frames(reads, LAY, ClusterConfig(), counts=counts, cons=cons, workers=workers)
+    finally:
+        st._INFO.reset(token)
     return _canon(frames), budget, counts, cons, info["consensus_processes"]
 
 
@@ -59,6 +63,40 @@ def test_consensus_processes_rule(monkeypatch):
     assert st.consensus_processes(4, 10) == 4
     monkeypatch.setenv("VNXDNA_CLUSTER_THREADS", "4")       # an explicit kernel-thread choice keeps the in-process path
     assert st.consensus_processes(4, 10) == 1
+
+
+def test_observer_keeps_in_process_path(reads, monkeypatch):
+    """A replaced cluster_consensus (observability wrappers, e.g. the nanopore funnel's trace) must see every batch."""
+    seen = []
+
+    def observer(*a, **k):
+        seen.append(len(a[1]))
+        return st._CONSENSUS(*a, **k)
+    monkeypatch.setattr(st, "cluster_consensus", observer)
+    frames, _, _, _, procs = _run(reads, 3, monkeypatch, 5)
+    assert procs == 1 and len(seen) >= 2          # every batch went through the observer, in-process
+    assert frames == _run_plain(reads, monkeypatch)
+
+
+def _run_plain(reads, monkeypatch):
+    monkeypatch.setattr(st, "cluster_consensus", st._CONSENSUS)
+    return _run(reads, 1, monkeypatch, 5)[0]
+
+
+def test_default_workers_follow_thread_scope(reads, monkeypatch):
+    from vnxdna.native import cluster as nc
+    monkeypatch.delenv("VNXDNA_CLUSTER_THREADS", raising=False)
+    monkeypatch.setattr(st, "CONSENSUS_BATCH", 5)
+    info: dict = {}
+    token = st._INFO.set(info)
+    try:
+        st.cluster_frames(reads, LAY, ClusterConfig())                 # no scope: 1 thread -> in-process
+        assert info["consensus_processes"] == 1
+        with nc.thread_scope(2):
+            st.cluster_frames(reads, LAY, ClusterConfig())
+        assert info["consensus_processes"] == 2
+    finally:
+        st._INFO.reset(token)
 
 
 def test_checkpoint_stop_propagates(reads, monkeypatch):
