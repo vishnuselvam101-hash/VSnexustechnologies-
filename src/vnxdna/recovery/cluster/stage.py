@@ -211,8 +211,11 @@ class ClusterStage:
             token = _INFO.set(info)
             try:
                 rejects: list | None = [] if self.cfg.outer_list == "on" else None
+                # rejects only when list decoding is on: cluster_frames may be replaced (an observer or the nanopore
+                # oracle) by a function that does not take the argument
                 frames, budget = cluster_frames(reads, self.lay, self.cfg, self.marker_mismatch, self.counts, self.cons,
-                                                check, raw=recs["raw"] if n else None, rejects=rejects)
+                                                check, raw=recs["raw"] if n else None,
+                                                **({"rejects": rejects} if rejects is not None else {}))
                 if rejects:
                     cap = self.cfg.max_list_candidates
                     self.rejects = rejects[:cap]
