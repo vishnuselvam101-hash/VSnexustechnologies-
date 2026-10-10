@@ -46,7 +46,7 @@ import numpy as np
 
 from vnxdna import _native_build as _nb
 
-ABI_VERSION = 4
+ABI_VERSION = 5
 BACKENDS = ("auto", "native", "reference")
 INF = 1 << 28
 MAX_COST = 1024
@@ -131,6 +131,9 @@ def _bind(lib) -> None:
     lib.vnx_cl_edit_costs.argtypes = [i64, i64, i64, p, p, p, i64, p, p, p, i32, i32, p, p, p, p]
     lib.vnx_cl_trial_costs.restype = ctypes.c_int
     lib.vnx_cl_trial_costs.argtypes = [i64, i64, i64, i64, p, p, p, i64, p, p, p, p, p, i32, i64, p, p, p, i64, p, p, p]
+    lib.vnx_cl_polish_deltas.restype = ctypes.c_int
+    lib.vnx_cl_polish_deltas.argtypes = [i64, i64, i64, i64, p, p, p, i64, p, p, p, p, p, i32, i32, i64, p, p, p, p,
+                                         ctypes.c_int]
 
 
 def _load():
@@ -488,6 +491,54 @@ def edit_costs(tpl: np.ndarray, mc: np.ndarray, buf: np.ndarray, off: np.ndarray
     for rc in rcs:
         _check(rc, "polish edit costs")
     return opt, sub, dele, ins
+
+
+def polish_deltas(tpls: np.ndarray, mc: np.ndarray, buf: np.ndarray, off: np.ndarray, lens: np.ndarray,
+                  read_start: np.ndarray, band: np.ndarray, dip: np.ndarray, c_indel: int, c_sub: int, pen: int,
+                  nthreads: int | None = None, level: int = 0) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Per-candidate polish deltas (ABI 5): for every candidate k, the sums over its reads with an optimal cost below
+    INF of ``min(cost, pen) - opt`` of the substitution (T, 4), deletion (T,) and insertion (T, 4) edit costs, i.e. the
+    fold that consensus._polish applies to :func:`edit_costs`, computed and reduced in one native pass.
+
+    ``tpls`` (ncand, T) templates; ``mc`` (T,) mismatch costs shared by all reads; reads of candidate k are
+    ``read_start[k]:read_start[k + 1]`` (CSR); ``dip[r]`` is 1 when read r's band is below the shared band of the
+    edit_costs chunk it would be evaluated in (that changes which cells exist, see cluster.c). Candidates are
+    partitioned into contiguous ranges over threads; each range writes only its own rows, so the result does not
+    depend on the thread count. ``level``: 0 best available SIMD, 1 baseline, 2 AVX2."""
+    lib = _lib_or_raise()
+    tpls = np.ascontiguousarray(tpls, dtype=np.int16)
+    ncand, T = tpls.shape
+    mc = np.ascontiguousarray(mc, dtype=np.int32)
+    read_start = np.ascontiguousarray(read_start, dtype=np.int64)
+    band = np.ascontiguousarray(band, dtype=np.int64)
+    dip = np.ascontiguousarray(dip, dtype=np.uint8)
+    buf, off, lens = _seqs(buf, off, lens)
+    n = off.size
+    if (mc.shape != (T,) or read_start.shape != (ncand + 1,) or band.shape != (n,) or dip.shape != (n,)
+            or (ncand and (read_start[0] != 0 or read_start[-1] != n))):
+        raise ValueError("mc must be (T,), read_start (ncand + 1,) from 0 to n, band and dip (n,)")
+    dsub = np.empty((ncand, T, 4), dtype=np.int64)
+    ddel = np.empty((ncand, T), dtype=np.int64)
+    dins = np.empty((ncand, T, 4), dtype=np.int64)
+    live = np.empty(ncand, dtype=np.int64)
+    nt = threads() if nthreads is None else max(1, int(nthreads))
+    parts = max(1, min(nt, ncand))
+    # contiguous candidate ranges of about equal read counts
+    cuts = np.searchsorted(read_start, [n * k / parts for k in range(1, parts)], side="left") if parts > 1 else []
+    bounds = sorted({0, ncand, *[int(c) for c in cuts]})
+
+    def run(k: int) -> int:
+        return lib.vnx_cl_polish_deltas(ncand, bounds[k], bounds[k + 1], T, tpls.ctypes.data, mc.ctypes.data,
+                                        _ptr(buf), buf.size, off.ctypes.data, lens.ctypes.data, read_start.ctypes.data,
+                                        band.ctypes.data, dip.ctypes.data, int(c_indel), int(c_sub), int(pen),
+                                        dsub.ctypes.data, ddel.ctypes.data, dins.ctypes.data, live.ctypes.data,
+                                        int(level))
+
+    ranges = len(bounds) - 1
+    rcs = [run(k) for k in range(ranges)] if ranges <= 1 else list(_get_pool(nt).map(run, range(ranges)))
+    for rc in rcs:
+        _check(rc, "polish deltas")
+    return dsub, ddel, dins
 
 
 def main(argv: list[str] | None = None) -> int:

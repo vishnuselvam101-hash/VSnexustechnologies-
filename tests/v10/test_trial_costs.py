@@ -267,7 +267,7 @@ def test_c_rejects_inconsistent_arguments():
         assert call(**bad) == -1, bad
     with pytest.raises(ValueError):
         nc.trial_costs(base, mc[:2], buf, off, lens, band, rs, dip, 1, 10, tt, ts, tr, tdip)
-    assert ctypes.CDLL(nc.status()["library"]).vnx_cl_abi_version() == nc.ABI_VERSION == 4
+    assert ctypes.CDLL(nc.status()["library"]).vnx_cl_abi_version() == nc.ABI_VERSION == 5
 
 
 def test_decode_with_full_template_polish_is_identical_to_the_v9_scoring(tmp_path, monkeypatch):

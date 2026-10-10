@@ -579,19 +579,24 @@ def _polish(cands, state, tpl0, fpos, cfg, marker_mismatch, counts) -> None:
     for _ in range(max(1, cfg.rounds)):
         counts["cluster_polish_rounds"] += 1
         n = len(reads_all)
-        tt = np.stack([tpls[k] for k in owner.tolist()])
-        mm = np.repeat(mc[None, :], n, axis=0)
-        dsub = np.zeros((len(cands), T, 4), dtype=np.int64)
-        ddel = np.zeros((len(cands), T), dtype=np.int64)
-        dins = np.zeros((len(cands), T, 4), dtype=np.int64)
-        for a in range(0, n, FB_CHUNK):
-            sl = slice(a, a + FB_CHUNK)
-            opt, sub, dele, ins = _pl.edit_costs(tt[sl], mm[sl], reads_all[sl], bands[sl], cfg.c_indel, cfg.c_sub)
-            live = opt < INF
-            own = owner[sl][live]
-            _add_sorted(dsub, own, np.minimum(sub[live], pen) - opt[live][:, None, None])
-            _add_sorted(ddel, own, np.minimum(dele[live], pen) - opt[live][:, None])
-            _add_sorted(dins, own, np.minimum(ins[live], pen) - opt[live][:, None, None])
+        fused = _pl.polish_deltas(tpls, mc, reads_all, [len(rs) for (_, rs, _, _) in cands], bands, cfg.c_indel,
+                                  cfg.c_sub, pen, FB_CHUNK)
+        if fused is not None:      # native: computed and folded per candidate in one pass (identical sums)
+            dsub, ddel, dins = fused
+        else:
+            tt = np.stack([tpls[k] for k in owner.tolist()])
+            mm = np.repeat(mc[None, :], n, axis=0)
+            dsub = np.zeros((len(cands), T, 4), dtype=np.int64)
+            ddel = np.zeros((len(cands), T), dtype=np.int64)
+            dins = np.zeros((len(cands), T, 4), dtype=np.int64)
+            for a in range(0, n, FB_CHUNK):
+                sl = slice(a, a + FB_CHUNK)
+                opt, sub, dele, ins = _pl.edit_costs(tt[sl], mm[sl], reads_all[sl], bands[sl], cfg.c_indel, cfg.c_sub)
+                live = opt < INF
+                own = owner[sl][live]
+                _add_sorted(dsub, own, np.minimum(sub[live], pen) - opt[live][:, None, None])
+                _add_sorted(ddel, own, np.minimum(dele[live], pen) - opt[live][:, None])
+                _add_sorted(dins, own, np.minimum(ins[live], pen) - opt[live][:, None, None])
         # candidate moves per (candidate, hot segment): the improving substitutions together, and shift pairs
         trial_tpl, trial_key = [], []
         for k, t in enumerate(tpls):

@@ -9,6 +9,7 @@
  *   vnx_cl_verify      the verification loop of graph.cluster_reads_reference (chunks, union-find with parity)
  *   vnx_cl_fb          consensus.fb_calls_reference         forward-backward certain calls against templates
  *   vnx_cl_trial_costs consensus.trial_costs_reference      summed optimal costs of polish trial templates (V10 W2)
+ *   vnx_cl_polish_deltas fold of polish.edit_costs_reference per candidate, as consensus._polish folds it (ABI 5)
  *
  * Banded edit distance. The reference computes the global distance restricted to the diagonals
  * [min(0, dL) - slack, max(0, dL) + slack]. A path that leaves this band needs at least 2 * slack + 2 + |dL| indels, so
@@ -36,7 +37,7 @@
 #endif
 
 #ifndef VNX_CL_ABI /* overridable only so that the tests can build a mismatching library */
-#define VNX_CL_ABI 4
+#define VNX_CL_ABI 5
 #endif
 #define CL_INF (1 << 28)
 
@@ -1305,5 +1306,269 @@ done:
     free(M);
     free(lo);
     free(hi);
+    return rc;
+}
+
+/* ---------------------------------------------------------------------------------------------------- polish deltas */
+/* Hybrid architecture (ABI 5): the polish edit costs of vnx_cl_edit_costs, reduced per candidate inside the kernel.
+ *
+ * consensus._polish calls edit_costs on chunks of reads and folds every read's (T, 4) substitution, (T,) deletion and
+ * (T, 4) insertion costs into its candidate: delta += min(cost, pen) - opt for every read with opt < CL_INF. This
+ * function returns those per-candidate sums directly, so the (n, T, 4) int64 intermediates, the repeated template and
+ * mismatch rows and the Python scatter-add disappear. The sums are of integers, so the order does not matter and the
+ * result equals the Python fold of vnx_cl_edit_costs bit for bit.
+ *
+ * Per-read band layout. ec_one evaluates a read with its chunk's shared band B on columns [lo - 1, hi + 1] (lo = B - bk,
+ * hi = B + bk), clipped to the matrix, i.e. diagonals [-bk - 1, bk + 1] when bk < B and [-bk, bk] when bk == B. Here a
+ * read is evaluated with its own half-width Be = bk + dip (dip = bk < chunk band, passed per read), whose full width
+ * W = 2 Be + 1 covers exactly those diagonals with the same edge conditions, so every cell value is the same and less
+ * work is done for reads narrower than their chunk.
+ *
+ * Final pass in int32. Every stored F and G value is >= 0 (initial values and recurrence terms are non-negative) and
+ * every output is min(..., CL_INF). Each operand is first clipped to CL_INF: a sum with a clipped operand is still
+ * >= CL_INF, a sum without one is unchanged, so the clipped outputs are identical, and sums stay below 2^29 + 2^11
+ * (no int32 overflow). The loops are written for the vectoriser; an AVX2 build is selected at run time. */
+static inline int32_t clip32(int32_t v) { return v < CL_INF ? v : CL_INF; }
+
+typedef struct {
+    int32_t *F, *G, *tmp;
+    int64_t cap_rows, cap_w;
+} pd_ws_t;
+
+static inline __attribute__((always_inline)) int64_t pd_one(int64_t T, int64_t bk, int dip, const int16_t *restrict tp,
+                                                            const int32_t *restrict mcr, const uint8_t *restrict rd,
+                                                            int64_t L, int32_t ci, int32_t cs, pd_ws_t *ws, int64_t pen,
+                                                            int64_t *restrict dsub, int64_t *restrict ddel,
+                                                            int64_t *restrict dins) {
+    const int64_t B = bk + (dip ? 1 : 0), W = 2 * B + 1, lo = B - bk, hi = B + bk;
+    int32_t *restrict F = ws->F, *restrict G = ws->G, *restrict tmp = ws->tmp;
+    /* forward, row 0: j = d = w - B */
+    for (int64_t w = 0; w < W; w++) {
+        const int64_t d = w - B;
+        F[w] = (w >= lo && w <= hi && d >= 0 && d <= L) ? (int32_t)(d * ci) : CL_INF;
+    }
+    for (int64_t i = 1; i <= T; i++) {
+        const int32_t *restrict prev = F + (i - 1) * W;
+        int32_t *restrict cur = F + i * W;
+        const int64_t t = i - 1;
+        const int32_t tc = tp[t], m = mcr[t];
+        /* diagonal step valid where jd = t + w - B in [0, L - 1] */
+        int64_t dlo = B - t, dhi = B + L - 1 - t;
+        if (dlo < 0) dlo = 0;
+        if (dhi > W - 1) dhi = W - 1;
+        for (int64_t w = 0; w < W - 1; w++) tmp[w] = prev[w + 1] + ci;
+        tmp[W - 1] = CL_INF;
+        if (dlo <= dhi) {
+            const uint8_t *restrict r = rd + (t - B + dlo); /* r[w - dlo] = rd[jd] */
+            if (tc < 0) {
+                for (int64_t w = dlo; w <= dhi; w++) tmp[w] = imin32(tmp[w], prev[w]);
+            } else {
+                for (int64_t w = dlo; w <= dhi; w++) tmp[w] = imin32(tmp[w], prev[w] + (r[w - dlo] == tc ? 0 : m));
+            }
+        }
+        int32_t run = tmp[0];
+        for (int64_t w = 1; w < W; w++) {
+            const int32_t v = tmp[w] - (int32_t)(w * ci);
+            run = imin32(run, v);
+            tmp[w] = run + (int32_t)(w * ci);
+        }
+        int64_t ol = B - i, oh = B + L - i;
+        if (ol < lo) ol = lo;
+        if (oh > hi) oh = hi;
+        for (int64_t w = 0; w < W; w++) cur[w] = (w >= ol && w <= oh) ? tmp[w] : CL_INF;
+    }
+    /* backward, row T: j = T + w - B */
+    {
+        int32_t *GT = G + T * W;
+        for (int64_t w = 0; w < W; w++) {
+            const int64_t j = T + w - B;
+            GT[w] = (w >= lo && w <= hi && j >= 0 && j <= L) ? (int32_t)((L - j) * ci) : CL_INF;
+        }
+    }
+    for (int64_t i = T - 1; i >= 0; i--) {
+        const int32_t *restrict nxt = G + (i + 1) * W;
+        int32_t *restrict cur = G + i * W;
+        const int32_t tc = tp[i], m = mcr[i];
+        int64_t dlo = B - i, dhi = B + L - 1 - i;
+        if (dlo < 0) dlo = 0;
+        if (dhi > W - 1) dhi = W - 1;
+        tmp[0] = CL_INF;
+        for (int64_t w = 1; w < W; w++) tmp[w] = nxt[w - 1] + ci;
+        if (dlo <= dhi) {
+            const uint8_t *restrict r = rd + (i - B + dlo);
+            if (tc < 0) {
+                for (int64_t w = dlo; w <= dhi; w++) tmp[w] = imin32(tmp[w], nxt[w]);
+            } else {
+                for (int64_t w = dlo; w <= dhi; w++) tmp[w] = imin32(tmp[w], (r[w - dlo] == tc ? 0 : m) + nxt[w]);
+            }
+        }
+        int32_t run = tmp[W - 1] + (int32_t)((W - 1) * ci);
+        tmp[W - 1] = run - (int32_t)((W - 1) * ci);
+        for (int64_t w = W - 2; w >= 0; w--) {
+            const int32_t v = tmp[w] + (int32_t)(w * ci);
+            run = imin32(run, v);
+            tmp[w] = run - (int32_t)(w * ci);
+        }
+        int64_t ol = B - i, oh = B + L - i;
+        if (ol < lo) ol = lo;
+        if (oh > hi) oh = hi;
+        for (int64_t w = 0; w < W; w++) cur[w] = (w >= ol && w <= oh) ? tmp[w] : CL_INF;
+    }
+    const int64_t dl = L - T;
+    int64_t we = dl + B;
+    if (we < 0) we = 0;
+    if (we > W - 1) we = W - 1;
+    int64_t o = ((dl < 0 ? -dl : dl) <= bk) ? (int64_t)F[T * W + we] : (int64_t)CL_INF;
+    if (o >= CL_INF) return 0; /* the read does not fit: it contributes nothing */
+    const int64_t slo = lo > 1 ? lo : 1; /* the deletion term needs column w - 1 */
+    for (int64_t i = 0; i < T; i++) {
+        const int32_t *restrict A = F + i * W, *restrict Gn = G + (i + 1) * W, *restrict Gi = G + i * W;
+        const int32_t m = mcr[i];
+        int32_t skip = CL_INF, pid = CL_INF;
+        for (int64_t w = slo; w <= hi; w++) skip = imin32(skip, clip32(A[w]) + clip32(Gn[w - 1]));
+        for (int64_t w = lo; w <= hi; w++) pid = imin32(pid, clip32(A[w]) + clip32(Gi[w]));
+        int64_t jlo = B - i, jhi = B + L - 1 - i; /* jd = i + w - B in [0, L - 1] */
+        if (jlo < lo) jlo = lo;
+        if (jhi > hi) jhi = hi;
+        int32_t s0 = CL_INF, s1 = CL_INF, s2 = CL_INF, s3 = CL_INF, i0 = CL_INF, i1 = CL_INF, i2 = CL_INF, i3 = CL_INF;
+        if (jlo <= jhi) {
+            const uint8_t *restrict r = rd + (i - B + jlo);
+            /* gup = Gi[w + 1], CL_INF past the last column */
+            const int64_t jhi_in = jhi < W - 1 ? jhi : W - 2;
+            for (int64_t w = jlo; w <= jhi; w++) {
+                const int32_t av = clip32(A[w]), gn = clip32(Gn[w]) + av;
+                const uint8_t rb = r[w - jlo];
+                s0 = imin32(s0, gn + (rb != 0 ? m : 0));
+                s1 = imin32(s1, gn + (rb != 1 ? m : 0));
+                s2 = imin32(s2, gn + (rb != 2 ? m : 0));
+                s3 = imin32(s3, gn + (rb != 3 ? m : 0));
+            }
+            for (int64_t w = jlo; w <= jhi_in; w++) {
+                const int32_t gu = clip32(A[w]) + clip32(Gi[w + 1]);
+                const uint8_t rb = r[w - jlo];
+                i0 = imin32(i0, gu + (rb != 0 ? cs : 0));
+                i1 = imin32(i1, gu + (rb != 1 ? cs : 0));
+                i2 = imin32(i2, gu + (rb != 2 ? cs : 0));
+                i3 = imin32(i3, gu + (rb != 3 ? cs : 0));
+            }
+        }
+        const int32_t sk = clip32(skip), pc = clip32(pid);
+        const int32_t sv[4] = {s0, s1, s2, s3}, iv[4] = {i0, i1, i2, i3};
+        int64_t dv = sk;
+        ddel[i] += (dv < pen ? dv : pen) - o;
+        for (int k = 0; k < 4; k++) {
+            int64_t sb = imin32(clip32(sv[k]), clip32(sk + ci));
+            int64_t ib = imin32(clip32(iv[k]), clip32(pc + ci));
+            dsub[i * 4 + k] += (sb < pen ? sb : pen) - o;
+            dins[i * 4 + k] += (ib < pen ? ib : pen) - o;
+        }
+    }
+    return 1;
+}
+
+static int pd_ws_reserve(pd_ws_t *ws, int64_t T, int64_t W) {
+    if (T + 1 > ws->cap_rows || W > ws->cap_w) {
+        const int64_t rows = T + 1 > ws->cap_rows ? T + 1 : ws->cap_rows, w = W > ws->cap_w ? W : ws->cap_w;
+        int32_t *F = malloc(sizeof(int32_t) * (size_t)(rows * w)), *G = malloc(sizeof(int32_t) * (size_t)(rows * w));
+        int32_t *tmp = malloc(sizeof(int32_t) * (size_t)w);
+        if (!F || !G || !tmp) {
+            free(F);
+            free(G);
+            free(tmp);
+            return CL_ENOMEM;
+        }
+        free(ws->F);
+        free(ws->G);
+        free(ws->tmp);
+        ws->F = F;
+        ws->G = G;
+        ws->tmp = tmp;
+        ws->cap_rows = rows;
+        ws->cap_w = w;
+    }
+    return CL_OK;
+}
+
+#define PD_RANGE_BODY                                                                                                  \
+    for (int64_t k = c0; k < c1; k++) {                                                                                \
+        int64_t *ds = dsub + k * T * 4, *dd = ddel + k * T, *di = dins + k * T * 4;                                    \
+        memset(ds, 0, sizeof(int64_t) * (size_t)(T * 4));                                                             \
+        memset(dd, 0, sizeof(int64_t) * (size_t)T);                                                                    \
+        memset(di, 0, sizeof(int64_t) * (size_t)(T * 4));                                                             \
+        int64_t nl = 0;                                                                                                \
+        for (int64_t r = read_start[k]; r < read_start[k + 1]; r++) {                                                  \
+            const int64_t W = 2 * (band[r] + (dip[r] ? 1 : 0)) + 1;                                                    \
+            if (pd_ws_reserve(ws, T, W) != CL_OK) return CL_ENOMEM;                                                    \
+            nl += pd_one(T, band[r], dip[r] != 0, tpl + k * T, mc, buf + off[r], len[r], c_indel, c_sub, ws, pen, ds,  \
+                         dd, di);                                                                                      \
+        }                                                                                                              \
+        if (live) live[k] = nl;                                                                                        \
+    }                                                                                                                  \
+    return CL_OK;
+
+typedef int (*pd_range_fn)(int64_t, int64_t, int64_t, const int16_t *, const int32_t *, const uint8_t *, const int64_t *,
+                           const int64_t *, const int64_t *, const int64_t *, const uint8_t *, int32_t, int32_t,
+                           int64_t, pd_ws_t *, int64_t *, int64_t *, int64_t *, int64_t *);
+
+static int pd_range_base(int64_t c0, int64_t c1, int64_t T, const int16_t *tpl, const int32_t *mc, const uint8_t *buf,
+                         const int64_t *off, const int64_t *len, const int64_t *read_start, const int64_t *band,
+                         const uint8_t *dip, int32_t c_indel, int32_t c_sub, int64_t pen, pd_ws_t *ws, int64_t *dsub,
+                         int64_t *ddel, int64_t *dins, int64_t *live) {
+    PD_RANGE_BODY
+}
+
+#ifdef VNX_CL_X86
+__attribute__((target("avx2"))) static int pd_range_avx2(int64_t c0, int64_t c1, int64_t T, const int16_t *tpl,
+                                                         const int32_t *mc, const uint8_t *buf, const int64_t *off,
+                                                         const int64_t *len, const int64_t *read_start,
+                                                         const int64_t *band, const uint8_t *dip, int32_t c_indel,
+                                                         int32_t c_sub, int64_t pen, pd_ws_t *ws, int64_t *dsub,
+                                                         int64_t *ddel, int64_t *dins, int64_t *live) {
+    PD_RANGE_BODY
+}
+#endif
+#undef PD_RANGE_BODY
+
+/* Per-candidate polish deltas of candidates [c0, c1) (see above).
+ * tpl: ncand*T int16 templates (negative = wildcard); mc: T int32 mismatch costs shared by all reads; reads at
+ * buf[off[r]] (len[r] bases, codes 0..7, inside nbuf); read_start: ncand + 1 ascending offsets (reads of candidate k are
+ * read_start[k] .. read_start[k + 1] - 1); band: per-read band (0..512); dip: per-read 1 when the read's band is below
+ * its chunk's shared band (see ec_one), else 0; pen: the clip of every cost (0 <= pen < 2^40).
+ * Outputs (only rows c0..c1-1 are written, so disjoint ranges may run concurrently): dsub ncand*T*4, ddel ncand*T,
+ * dins ncand*T*4 (int64), live ncand (reads with opt < CL_INF; may be NULL). level: 0 = best, 1 = baseline, 2 = AVX2
+ * (CL_EARG if unsupported). Domain (checked): T <= 8192, costs 0..1024, read length <= 2^20. */
+int vnx_cl_polish_deltas(int64_t ncand, int64_t c0, int64_t c1, int64_t T, const int16_t *tpl, const int32_t *mc,
+                         const uint8_t *buf, int64_t nbuf, const int64_t *off, const int64_t *len,
+                         const int64_t *read_start, const int64_t *band, const uint8_t *dip, int32_t c_indel,
+                         int32_t c_sub, int64_t pen, int64_t *dsub, int64_t *ddel, int64_t *dins, int64_t *live,
+                         int level) {
+    if (ncand < 0 || c0 < 0 || c1 < c0 || c1 > ncand || T < 0 || T > 8192 || c_indel < 0 || c_indel > 1024 ||
+        c_sub < 0 || c_sub > 1024 || pen < 0 || pen > ((int64_t)1 << 40) || nbuf < 0 || level < 0 || level > 2)
+        return CL_EARG;
+    if (c1 == c0) return CL_OK;
+    if (!tpl || !mc || !buf || !off || !len || !read_start || !band || !dip || !dsub || !ddel || !dins) return CL_EARG;
+    for (int64_t t = 0; t < T; t++)
+        if (mc[t] < 0 || mc[t] > 1024) return CL_EARG;
+    for (int64_t k = c0; k < c1; k++) {
+        if (read_start[k] < 0 || read_start[k + 1] < read_start[k]) return CL_EARG;
+        for (int64_t r = read_start[k]; r < read_start[k + 1]; r++)
+            if (len[r] < 0 || len[r] > (1 << 20) || off[r] < 0 || off[r] > nbuf - len[r] || band[r] < 0 ||
+                band[r] > 512 || dip[r] > 1)
+                return CL_EARG;
+    }
+    pd_range_fn fn = pd_range_base;
+#ifdef VNX_CL_X86
+    const int have = cpu_has_avx2();
+    if (level == 2 && !have) return CL_EARG;
+    if (level != 1 && have) fn = pd_range_avx2;
+#else
+    if (level == 2) return CL_EARG;
+#endif
+    pd_ws_t ws = {0};
+    const int rc = fn(c0, c1, T, tpl, mc, buf, off, len, read_start, band, dip, c_indel, c_sub, pen, &ws, dsub, ddel,
+                      dins, live);
+    free(ws.F);
+    free(ws.G);
+    free(ws.tmp);
     return rc;
 }
