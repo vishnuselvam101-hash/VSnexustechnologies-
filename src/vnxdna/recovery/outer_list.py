@@ -5,8 +5,10 @@ A row (outer-code group) is short when fewer than k of its symbols were verified
 right (measured on the D13-F1 nanopore-like channel, SIMULATED: ~19 of 70 bytes wrong, only ~38 % of them flagged as
 erasures). Each round, for every open short row:
 
-1. **Proposals.** Candidates assigned by header (group and symbol bytes exact, :data:`EXACT_MASK`) or, in earlier
-   rounds, by payload consistency feed a per-column list decoder of the outer code (C++ kernel
+1. **Proposals.** Candidates assigned by header (group and symbol bytes exact, :data:`EXACT_MASK`), by frame-level
+   RANSAC (header-near frames as hypotheses; every f-tuple determines the codeword; the tuple most hypotheses agree with
+   in >= ``list_ransac_tau`` payload columns selects its supporters — :func:`ransac_reference`, C++ ``vnx_ol_ransac``)
+   or, in earlier rounds, by payload consistency feed a per-column list decoder of the outer code (C++ kernel
    :mod:`vnxdna.native.outerlist`; reference :func:`decode_row_reference`): with h verified symbols the codewords form
    an f = k − h dimensional affine space, every candidate byte is a linear equation on it, and the solution agreeing
    with the most candidates is the column's proposal (confirmed when it leads with a margin).

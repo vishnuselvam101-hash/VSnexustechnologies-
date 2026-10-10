@@ -99,7 +99,7 @@ worker. The scrambler search keeps the reference order (smallest passing variant
 | CRC-32 check | **Rust**, `native/rust/integrity` |
 | frame/address recovery (vectorised address snapping), missing-data detection | NumPy/Python |
 | outer Cauchy RS decoding, pass-2 recovery | NumPy/Python (`codec/cauchy.py`, `codec/outer.py`) |
-| short-row recovery from failed consensus frames (opt-in `outer_list`, decoder preset F) | **C++** column list decoding + header assignment (`native/cpp/outerlist.cpp`); Python orchestration, inner RS + CRC-32 and tail verification (`recovery/outer_list.py`) |
+| short-row recovery from failed consensus frames (opt-in `outer_list`, decoder preset F) | **C++** column list decoding, header assignment and frame-level RANSAC (`native/cpp/outerlist.cpp`); Python orchestration, inner RS + CRC-32 and tail verification (`recovery/outer_list.py`) |
 | container integrity (SHA-256 + Merkle), decryption, decompression, output | Python over native libraries |
 
 Success, partial recovery and failure stay distinct: a decode reports SUCCESS only after the container SHA-256 and
