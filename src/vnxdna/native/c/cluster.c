@@ -1089,12 +1089,16 @@ int vnx_cl_trial_costs(int64_t c0, int64_t c1, int64_t ncand, int64_t T, const i
         if (read_start[k + 1] < read_start[k] || trial_start[k + 1] < trial_start[k]) return CL_EARG;
     for (int64_t t = 0; t < T; t++)
         if (mc[t] < 0 || mc[t] > 1024) return CL_EARG;
+    if (read_start[c1] > nreads || trial_start[c1] > ntrial) return CL_EARG;
     int64_t maxb = 0;
     for (int64_t r = read_start[c0]; r < read_start[c1]; r++) {
         if (len[r] < 0 || len[r] > (1 << 20) || off[r] < 0 || off[r] > nbuf - len[r] || band[r] < 0 || band[r] > 512)
             return CL_EARG;
         if (band[r] > maxb) maxb = band[r];
     }
+    for (int64_t k = c0; k < c1; k++)
+        for (int64_t x = trial_start[k]; x < trial_start[k + 1]; x++)
+            if (trial_row[x] < 0 || trial_row[x] > ntrialrows - (read_start[k + 1] - read_start[k])) return CL_EARG;
     const int64_t Wm = 2 * maxb + 1, cells = (T + 1) * Wm;
     int32_t *M = malloc(sizeof(int32_t) * (size_t)(4 * cells + 2 * Wm)); /* F, G for dip 0 and 1; two scratch rows */
     int64_t *lo = malloc(sizeof(int64_t) * (size_t)(ntrial > 0 ? ntrial : 1));
@@ -1116,10 +1120,6 @@ int vnx_cl_trial_costs(int64_t c0, int64_t c1, int64_t ncand, int64_t T, const i
             lo[x] = a;
             hi[x] = e;
             trial_cost[x] = 0;
-            if (trial_row[x] < 0 || trial_row[x] > ntrialrows - nr) {
-                rc = CL_EARG;
-                goto done;
-            }
         }
         for (int64_t q = 0; q < nr; q++) {
             const int64_t r = r0 + q, b = band[r], L = len[r], W = 2 * b + 1;
