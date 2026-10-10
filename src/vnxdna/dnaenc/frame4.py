@@ -26,15 +26,18 @@ from __future__ import annotations
 import numpy as np
 from dataclasses import dataclass
 
+from vnxdna.codec import gf256
 from vnxdna.codec.codecs import InnerRS
+from vnxdna.codec.inner_parity import parity_matrix
 from vnxdna.core.crc import crc32_bytes_be, crc32_rows
 from vnxdna.core.errors import VNXConstraintError
 from vnxdna.core.version import FRAME_VERSION
-from vnxdna.dnaenc.constraints import ConstraintConfig, satisfied_batch
+from vnxdna.dnaenc.constraints import ConstraintConfig, satisfied_batch, to_codes
 from vnxdna.dnaenc.layout import CRC_BYTES, HEADER_BYTES, KIND_SUPER, Layout
 from vnxdna.dnaenc.mapping import bytes_to_nt
 from vnxdna.dnaenc.markers import insert_markers
 from vnxdna.dnaenc.scrambler import VARIANTS, keystreams
+from vnxdna.native import strand as native_strand
 
 
 def plain_rows(tag: int, kind: int | np.ndarray, groups: np.ndarray, symbols: np.ndarray, payloads: np.ndarray) -> np.ndarray:
@@ -57,6 +60,40 @@ def build_strands(layout: Layout, cfg: ConstraintConfig, tag: int, kind: int | n
     plain = plain_rows(tag, kind, groups, symbols, payloads)
     n, span = plain.shape
     ks = keystreams(span)
+    if n and native_strand.resolve_backend() == "native":
+        out, chosen = _build_native(layout, cfg, plain, ks[:max_variants])
+        todo = np.flatnonzero(chosen < 0)
+    else:
+        out, chosen, todo = _build_reference(layout, cfg, plain, ks, max_variants)
+    if todo.size:
+        raise VNXConstraintError(f"{todo.size} strand(s) violate the constraints for all {max_variants} scrambler variants",
+                                 details={"first_groups": np.asarray(groups)[todo[:10]].tolist(),
+                                          "first_symbols": np.asarray(symbols)[todo[:10]].tolist()},
+                                 hint="relax the constraints (GC range, homopolymer limit, motifs) or change the layout")
+    return out, chosen
+
+
+def _build_native(layout: Layout, cfg: ConstraintConfig, plain: np.ndarray,
+                  ks: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """The C strand builder (vnxdna.native.strand), bit-exact with :func:`_build_reference`. The LENGTH rule depends only
+    on the layout, so it is checked here once; INVALID_BASE cannot occur (the kernel emits codes 0..3)."""
+    n, span = plain.shape
+    length = layout.strand_nt
+    if cfg.max_length and length > cfg.max_length or length < cfg.min_length:
+        return np.empty((n, length), dtype=np.uint8), np.full(n, -1, dtype=np.int16)
+    tpl, _ = layout.template()
+    rules = {"gc_min": cfg.gc_min_percent, "gc_max": cfg.gc_max_percent, "win": cfg.gc_window_nt,
+             "wmin": cfg.gc_window_min_percent, "wmax": cfg.gc_window_max_percent, "hmax": cfg.max_homopolymer,
+             "tandem": cfg.max_tandem_repeat_nt}
+    motifs = [to_codes(m) for m in cfg.motifs()]
+    return native_strand.build_rows(plain, ks, parity_matrix(1 + span, layout.inner_parity), gf256.MUL, tpl, rules,
+                                    motifs)
+
+
+def _build_reference(layout: Layout, cfg: ConstraintConfig, plain: np.ndarray, ks: np.ndarray,
+                     max_variants: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """NumPy reference of the strand builder (the specification of native/c/strand.c)."""
+    n, span = plain.shape
     inner = InnerRS(layout.inner_parity)
     out = np.empty((n, layout.strand_nt), dtype=np.uint8)
     chosen = np.full(n, -1, dtype=np.int16)
@@ -74,12 +111,7 @@ def build_strands(layout: Layout, cfg: ConstraintConfig, tag: int, kind: int | n
         out[good] = strands[ok]
         chosen[good] = v
         todo = todo[~ok]
-    if todo.size:
-        raise VNXConstraintError(f"{todo.size} strand(s) violate the constraints for all {max_variants} scrambler variants",
-                                 details={"first_groups": np.asarray(groups)[todo[:10]].tolist(),
-                                          "first_symbols": np.asarray(symbols)[todo[:10]].tolist()},
-                                 hint="relax the constraints (GC range, homopolymer limit, motifs) or change the layout")
-    return out, chosen
+    return out, chosen, todo
 
 
 # ============================================================================ decoding helpers

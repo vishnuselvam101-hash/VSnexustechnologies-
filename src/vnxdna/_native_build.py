@@ -22,6 +22,7 @@ KERNELS = {
     "vnxdna.v6._vnx_reads": "src/vnxdna/v6/native/reads.c",
     "vnxdna.v6._vnx_rs": "src/vnxdna/v6/native/rs.c",
     "vnxdna._vnx_cluster": "src/vnxdna/native/c/cluster.c",
+    "vnxdna._vnx_strand": "src/vnxdna/native/c/strand.c",
 }
 
 #: compile flags shared by setup.py and the explicit builds (setuptools adds -fPIC/-shared itself)
