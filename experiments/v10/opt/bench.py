@@ -73,10 +73,21 @@ def _tree_rss(pid: int) -> int:
     return total
 
 
-def _run_sampled(cmd: list, env: dict) -> tuple[subprocess.CompletedProcess, int]:
-    """Run ``cmd``; sample the summed RSS of its process tree every 0.5 s; (result, peak bytes)."""
+class HarnessError(SystemExit):
+    """The harness could not obtain a decode result (crash, timeout, wrong tree): no row is written, so it can never
+    count as a decoder outcome or as a passing case."""
+
+
+DECODE_TIMEOUT_S = float(os.environ.get("VNX_BENCH_DECODE_TIMEOUT", 4 * 3600))
+
+
+def _run_sampled(cmd: list, env: dict, timeout: float = DECODE_TIMEOUT_S) -> tuple[subprocess.CompletedProcess, int]:
+    """Run ``cmd`` in its own process group; sample the summed RSS of its process tree every 0.5 s; (result, peak
+    bytes). On timeout or any exception here (including Ctrl-C) the whole group is killed before returning."""
+    import signal
     import threading
-    proc = subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    proc = subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                            start_new_session=True)
     peak = [0]
     stop = threading.Event()
 
@@ -85,10 +96,30 @@ def _run_sampled(cmd: list, env: dict) -> tuple[subprocess.CompletedProcess, int
             peak[0] = max(peak[0], _tree_rss(proc.pid))
     t = threading.Thread(target=sample, daemon=True)
     t.start()
-    out, err = proc.communicate()
-    stop.set()
-    t.join()
+    try:
+        out, err = proc.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        raise HarnessError(f"decode exceeded {timeout:.0f} s: process group {proc.pid} killed, no row written")
+    finally:
+        stop.set()
+        t.join()
+        if proc.poll() is None or _group_alive(proc.pid):
+            for sig in (signal.SIGTERM, signal.SIGKILL):
+                try:
+                    os.killpg(proc.pid, sig)
+                except ProcessLookupError:
+                    break
+                time.sleep(2)
+            proc.wait()
     return subprocess.CompletedProcess(cmd, proc.returncode, out, err), peak[0]
+
+
+def _group_alive(pgid: int) -> bool:
+    try:
+        os.killpg(pgid, 0)
+        return True
+    except ProcessLookupError:
+        return False
 
 
 def _w2():
@@ -138,10 +169,11 @@ def run(size: int, seeds: list[int], base: Path) -> None:
                 p, tree_peak = _run_sampled([sys.executable, str(Path(__file__)), "one", "--work", str(w), "--label", c,
                                              "--container", arc["container_sha256"]], env)
                 if p.returncode:
-                    raise SystemExit(f"{c} seed {seed} failed:\n{p.stderr[-3000:]}")
+                    raise HarnessError(f"{c} seed {seed}: decode process exited {p.returncode} (harness error, no "
+                                       f"row written):\n{p.stderr[-3000:]}")
                 row = json.loads(p.stdout.strip().splitlines()[-1])
                 if not row["vnxdna_file"].startswith(str(trees[c])):
-                    raise SystemExit(f"{c} imported {row['vnxdna_file']}, not its tree {trees[c]}")
+                    raise HarnessError(f"{c} imported {row['vnxdna_file']}, not its tree {trees[c]}")
                 rec = {"seed": seed, "size": size, "config": c, "commit": _git(trees[c], "rev-parse", "HEAD"),
                        "reads_sha256": truth["reads_sha256"], "channel": W1.CHANNEL, "coverage": W1.COVERAGE,
                        "profile": W1.PROFILE, "candidate": W1.CANDIDATE, "workers": W1.WORKERS, "label": W1.LABEL,
