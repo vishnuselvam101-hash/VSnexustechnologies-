@@ -36,7 +36,7 @@
 #endif
 
 #ifndef VNX_CL_ABI /* overridable only so that the tests can build a mismatching library */
-#define VNX_CL_ABI 3
+#define VNX_CL_ABI 4
 #endif
 #define CL_INF (1 << 28)
 
@@ -99,7 +99,7 @@ int vnx_cl_sketch(int64_t n, int64_t width, const uint8_t *raw, int64_t raw_len,
 /* ------------------------------------------------------------------------------------------------ candidate pairs */
 typedef struct {
     uint32_t h;
-    int64_t idx;
+    uint32_t idx; /* n <= 2^31 */
 } hent_t;
 
 static int cmp_hent(const void *x, const void *y) {
@@ -114,9 +114,10 @@ static int cmp_u64(const void *x, const void *y) {
 }
 
 typedef struct {
-    int64_t key, shared;
+    int64_t key;
+    int32_t shared;
     uint8_t rel;
-} pent_t;
+} pent_t; /* 16 bytes */
 
 static int cmp_pent(const void *x, const void *y) {
     const pent_t *a = x, *b = y;
@@ -124,34 +125,55 @@ static int cmp_pent(const void *x, const void *y) {
     return (a->key > b->key) - (a->key < b->key);
 }
 
-/* stats (7 entries): [0] buckets_over_cap, [1] slot pairs counted (candidate_pairs_slots), [2] 1 = max_pairs exceeded,
+/* stats: [0] buckets_over_cap, [1] slot pairs counted (candidate_pairs_slots), [2] 1 = max_pairs exceeded,
  *        [3] pairs kept (>= min_shared), [4] pairs below min_shared, [5] slots with >= 2 sketched reads, [6] retained
- *        buckets (size in [2, bucket_cap]); [5] and [6] tell which counters the reference creates.
- * Returns CL_OK (outputs written when stats[3] <= out_cap), 1 when out_cap is too small (nothing written; call again
- * with out_cap >= stats[3]), or a negative error. */
-int vnx_cl_candidates(int64_t n, int32_t s, const uint32_t *hashes, const uint8_t *orient, int64_t bucket_cap,
-                      int64_t max_pairs, int64_t min_shared, int64_t *a_out, int64_t *b_out, uint8_t *rel_out,
-                      int64_t out_cap, int64_t *stats) {
-    if (n < 0 || s < 1 || bucket_cap < 0 || max_pairs < 0 || out_cap < 0 || !stats) return CL_EARG;
-    if (n > ((int64_t)1 << 31)) return CL_EARG; /* key = a * n + b must fit in 63 bits */
+ *        buckets (size in [2, bucket_cap]); [5] and [6] tell which counters the reference creates. The handle API adds
+ *        [7] partitions processed and [8] capacity (entries) of the slot-pair buffer.
+ *
+ * Memory is bounded by the input, not by the pairs: pass 1 walks the slots and retained buckets in the reference order
+ * (so the budget stop and its counters are those of the reference), stores each retained bucket's members once
+ * (uint32: index | orientation << 31) and counts the slot pairs of every first read a. Pass 2 cuts the reads into
+ * ranges of a whose slot pairs fit `chunk_pairs` (a single a may exceed it alone) and, per range, materialises,
+ * sorts and merges only those pairs. Keys a * n + b grow with a, so the ranges' merged pairs come out in global key
+ * order and the final order (more shared slots first, then key) is the single-buffer result, byte for byte. */
+typedef struct {
+    int64_t kept;
+    pent_t *pe;
+} cand_res_t;
+
+static int cand_core(int64_t n, int32_t s, const uint32_t *hashes, const uint8_t *orient, int64_t bucket_cap,
+                     int64_t max_pairs, int64_t min_shared, int64_t chunk_pairs, int64_t *stats, int64_t *extra,
+                     cand_res_t **res_out) {
+    *res_out = NULL;
+    if (n < 0 || s < 1 || bucket_cap < 0 || max_pairs < 0 || chunk_pairs < 1 || !stats) return CL_EARG;
+    if (n > ((int64_t)1 << 31)) return CL_EARG; /* index < 2^31 (uint32 with the orientation bit); key < 2^62 */
     if (n > 0 && (!hashes || !orient)) return CL_EARG;
     for (int i = 0; i < 7; i++) stats[i] = 0;
-    if (n < 2) return CL_OK;
-    hent_t *ent = malloc((size_t)n * sizeof(hent_t));
-    size_t cap = 1024, cnt = 0;
-    uint64_t *pairs = malloc(cap * sizeof(uint64_t)); /* (key << 1) | xor bit */
-    if (!ent || !pairs) {
-        free(ent);
-        free(pairs);
-        return CL_ENOMEM;
+    extra[0] = extra[1] = 0;
+    cand_res_t *res = calloc(1, sizeof(cand_res_t));
+    if (!res) return CL_ENOMEM;
+    if (n < 2) {
+        *res_out = res;
+        return CL_OK;
     }
+    int rc = CL_ENOMEM;
+    hent_t *ent = malloc((size_t)n * sizeof(hent_t));
+    int64_t *cnt = calloc((size_t)n, sizeof(int64_t)); /* slot pairs whose first read is a */
+    /* a read is in at most one bucket per slot: n * s members and n * s / 2 buckets at most, the size of the input */
+    size_t mlen = 0, blen = 0;
+    uint32_t *mem = malloc((size_t)n * (size_t)s * sizeof(uint32_t)); /* retained members, ascending index per bucket */
+    uint32_t *bsz = malloc(((size_t)n * (size_t)s / 2 + 1) * sizeof(uint32_t)); /* their sizes */
+    uint64_t *pairs = NULL;
+    pent_t *pe = NULL;
+    size_t pecap = 0;
+    if (!ent || !cnt || !mem || !bsz) goto out;
     int64_t total = 0;
     for (int i = 0; i < s; i++) {
         int64_t m = 0;
         for (int64_t r = 0; r < n; r++)
             if (orient[r * s + i] < 2) {
                 ent[m].h = hashes[r * s + i];
-                ent[m].idx = r;
+                ent[m].idx = (uint32_t)r;
                 m++;
             }
         if (m < 2) continue;
@@ -169,84 +191,196 @@ int vnx_cl_candidates(int64_t n, int32_t s, const uint32_t *hashes, const uint8_
             const int64_t sz = en - st;
             if (sz >= 2 && sz <= bucket_cap) {
                 stats[6]++;
-                total += sz * (sz - 1) / 2;
+                const int64_t np = sz * (sz - 1) / 2; /* sz <= 2^31: < 2^61 */
+                total = np > INT64_MAX - total ? INT64_MAX : total + np;
                 if (total > max_pairs) {
                     stats[1] = total;
                     stats[2] = 1;
-                    free(ent);
-                    free(pairs);
-                    return CL_OK;
+                    rc = CL_OK;
+                    goto out; /* budget stop: no pairs, as the reference */
                 }
-                if (cnt + (size_t)(sz * (sz - 1) / 2) > cap) {
-                    size_t nc = cap;
-                    while (cnt + (size_t)(sz * (sz - 1) / 2) > nc) nc *= 2;
-                    uint64_t *np_ = realloc(pairs, nc * sizeof(uint64_t));
-                    if (!np_) {
-                        free(ent);
-                        free(pairs);
-                        return CL_ENOMEM;
-                    }
-                    pairs = np_;
-                    cap = nc;
+                for (int64_t p = st; p < en; p++) {
+                    const uint32_t a = ent[p].idx;
+                    mem[mlen++] = a | ((uint32_t)(orient[(int64_t)a * s + i] & 1) << 31);
+                    cnt[a] += en - 1 - p;
                 }
-                for (int64_t p = st; p < en; p++)
-                    for (int64_t q = p + 1; q < en; q++) {
-                        const int64_t a = ent[p].idx, b = ent[q].idx; /* sorted by index within a bucket */
-                        const uint64_t x = (uint64_t)(orient[a * s + i] ^ orient[b * s + i]) & 1;
-                        pairs[cnt++] = ((uint64_t)(a * n + b) << 1) | x;
-                    }
+                bsz[blen++] = (uint32_t)sz;
             }
             st = en;
         }
     }
     free(ent);
+    ent = NULL;
     stats[1] = total;
-    qsort(pairs, cnt, sizeof(uint64_t), cmp_u64);
+    if (total == 0) {
+        rc = CL_OK;
+        goto out;
+    }
+    /* buffer = the largest range's slot pairs */
+    int64_t bufn = 0;
+    for (int64_t lo = 0; lo < n;) {
+        int64_t hi = lo, acc = 0;
+        while (hi < n && (hi == lo || acc + cnt[hi] <= chunk_pairs)) acc += cnt[hi++];
+        if (acc > bufn) bufn = acc;
+        lo = hi;
+    }
+    pairs = malloc((size_t)bufn * sizeof(uint64_t));
+    if (!pairs) goto out;
+    extra[1] = bufn;
     int64_t kept = 0, below = 0;
-    for (size_t p = 0; p < cnt;) {
-        size_t q = p;
-        while (q < cnt && (pairs[q] >> 1) == (pairs[p] >> 1)) q++;
-        if ((int64_t)(q - p) >= min_shared) kept++;
-        else below++;
-        p = q;
-    }
-    stats[3] = kept;
-    stats[4] = below;
-    if (kept > out_cap) {
-        free(pairs);
-        return 1;
-    }
-    if (kept > 0 && (!a_out || !b_out || !rel_out)) {
-        free(pairs);
-        return CL_EARG;
-    }
-    pent_t *pe = malloc((size_t)(kept ? kept : 1) * sizeof(pent_t));
-    if (!pe) {
-        free(pairs);
-        return CL_ENOMEM;
-    }
-    int64_t t = 0;
-    for (size_t p = 0; p < cnt;) {
-        size_t q = p;
-        int64_t xs = 0;
-        while (q < cnt && (pairs[q] >> 1) == (pairs[p] >> 1)) xs += (int64_t)(pairs[q++] & 1);
-        const int64_t sh = (int64_t)(q - p);
-        if (sh >= min_shared) {
-            pe[t].key = (int64_t)(pairs[p] >> 1);
-            pe[t].shared = sh;
-            pe[t].rel = 2 * xs > sh;
-            t++;
+    for (int64_t lo = 0; lo < n;) {
+        int64_t hi = lo, acc = 0;
+        while (hi < n && (hi == lo || acc + cnt[hi] <= chunk_pairs)) acc += cnt[hi++];
+        if (acc > 0) {
+            extra[0]++;
+            size_t c = 0;
+            for (size_t bk = 0, off = 0; bk < blen; off += bsz[bk++]) {
+                const uint32_t *bm = mem + off;
+                const int64_t sz = bsz[bk];
+                for (int64_t p = 0; p < sz; p++) {
+                    const int64_t a = bm[p] & 0x7FFFFFFFu;
+                    if (a < lo) continue;
+                    if (a >= hi) break;
+                    for (int64_t q = p + 1; q < sz; q++) {
+                        const int64_t b = bm[q] & 0x7FFFFFFFu;
+                        const uint64_t x = ((bm[p] ^ bm[q]) >> 31) & 1;
+                        pairs[c++] = ((uint64_t)(a * n + b) << 1) | x;
+                    }
+                }
+            }
+            qsort(pairs, c, sizeof(uint64_t), cmp_u64);
+            int64_t k = 0;
+            for (size_t p = 0; p < c;) {
+                size_t q = p;
+                while (q < c && (pairs[q] >> 1) == (pairs[p] >> 1)) q++;
+                if ((int64_t)(q - p) >= min_shared) k++;
+                else below++;
+                p = q;
+            }
+            if ((size_t)(kept + k) > pecap) {
+                size_t nc = pecap ? pecap : 1024;
+                while ((size_t)(kept + k) > nc) nc *= 2;
+                pent_t *t = realloc(pe, nc * sizeof(pent_t));
+                if (!t) goto out;
+                pe = t;
+                pecap = nc;
+            }
+            for (size_t p = 0; p < c;) {
+                size_t q = p;
+                int64_t xs = 0;
+                while (q < c && (pairs[q] >> 1) == (pairs[p] >> 1)) xs += (int64_t)(pairs[q++] & 1);
+                const int64_t sh = (int64_t)(q - p);
+                if (sh >= min_shared) {
+                    pe[kept].key = (int64_t)(pairs[p] >> 1);
+                    pe[kept].shared = (int32_t)sh; /* <= s <= 256 */
+                    pe[kept].rel = 2 * xs > sh;
+                    kept++;
+                }
+                p = q;
+            }
         }
-        p = q;
+        lo = hi;
     }
     free(pairs);
-    qsort(pe, (size_t)kept, sizeof(pent_t), cmp_pent);
-    for (int64_t i = 0; i < kept; i++) {
-        a_out[i] = pe[i].key / n;
-        b_out[i] = pe[i].key % n;
-        rel_out[i] = pe[i].rel;
+    pairs = NULL;
+    free(mem);
+    mem = NULL;
+    free(bsz);
+    bsz = NULL;
+    free(cnt);
+    cnt = NULL;
+    if (kept && (size_t)kept < pecap) { /* return the doubling slack before the sort */
+        pent_t *t = realloc(pe, (size_t)kept * sizeof(pent_t));
+        if (t) pe = t;
     }
+    qsort(pe, (size_t)kept, sizeof(pent_t), cmp_pent);
+    stats[3] = kept;
+    stats[4] = below;
+    res->kept = kept;
+    res->pe = pe;
+    pe = NULL;
+    rc = CL_OK;
+out:
+    free(ent);
+    free(cnt);
+    free(mem);
+    free(bsz);
+    free(pairs);
     free(pe);
+    if (rc == CL_OK) {
+        *res_out = res;
+    } else {
+        free(res);
+        if (rc == CL_ENOMEM) /* nothing half-written: the stage reports the failure */
+            for (int i = 0; i < 7; i++) stats[i] = 0;
+    }
+    return rc;
+}
+
+static void cand_write(const cand_res_t *res, int64_t n, int64_t *a_out, int64_t *b_out, uint8_t *rel_out) {
+    for (int64_t i = 0; i < res->kept; i++) {
+        a_out[i] = res->pe[i].key / n;
+        b_out[i] = res->pe[i].key % n;
+        rel_out[i] = res->pe[i].rel;
+    }
+}
+
+/* Handle API (ABI 4). run: stats has 9 entries (above); *handle receives the result (kept pairs = stats[3]; 0 after a
+ * budget stop). take: writes the kept pairs into arrays of at least stats[3] entries. free: releases the handle. */
+int vnx_cl_cand_run(int64_t n, int32_t s, const uint32_t *hashes, const uint8_t *orient, int64_t bucket_cap,
+                    int64_t max_pairs, int64_t min_shared, int64_t chunk_pairs, int64_t *stats, void **handle) {
+    if (!handle || !stats) return CL_EARG;
+    *handle = NULL;
+    cand_res_t *res = NULL;
+    const int rc = cand_core(n, s, hashes, orient, bucket_cap, max_pairs, min_shared, chunk_pairs, stats, stats + 7,
+                             &res);
+    if (rc == CL_OK) {
+        res->kept = stats[2] ? 0 : res->kept;
+        *handle = res;
+    }
+    return rc;
+}
+
+int vnx_cl_cand_take(void *handle, int64_t n, int64_t *a_out, int64_t *b_out, uint8_t *rel_out, int64_t out_cap) {
+    const cand_res_t *res = handle;
+    if (!res || n < 1 || out_cap < res->kept) return CL_EARG;
+    if (res->kept > 0 && (!a_out || !b_out || !rel_out)) return CL_EARG;
+    cand_write(res, n, a_out, b_out, rel_out);
+    return CL_OK;
+}
+
+void vnx_cl_cand_free(void *handle) {
+    cand_res_t *res = handle;
+    if (!res) return;
+    free(res->pe);
+    free(res);
+}
+
+/* Single-call form (ABI 3 signature, unchanged results; one buffer for all slot pairs): stats (7 entries) as above.
+ * Returns CL_OK (outputs written when stats[3] <= out_cap), 1 when out_cap is too small (nothing written; call again
+ * with out_cap >= stats[3]), or a negative error. */
+int vnx_cl_candidates(int64_t n, int32_t s, const uint32_t *hashes, const uint8_t *orient, int64_t bucket_cap,
+                      int64_t max_pairs, int64_t min_shared, int64_t *a_out, int64_t *b_out, uint8_t *rel_out,
+                      int64_t out_cap, int64_t *stats) {
+    if (out_cap < 0) return CL_EARG;
+    int64_t extra[2];
+    cand_res_t *res = NULL;
+    int rc = cand_core(n, s, hashes, orient, bucket_cap, max_pairs, min_shared, INT64_MAX, stats, extra, &res);
+    if (rc != CL_OK) return rc;
+    if (stats[2] || res->kept == 0) {
+        vnx_cl_cand_free(res);
+        return CL_OK;
+    }
+    if (res->kept > out_cap) {
+        vnx_cl_cand_free(res);
+        return 1;
+    }
+    if (!a_out || !b_out || !rel_out) {
+        vnx_cl_cand_free(res);
+        return CL_EARG;
+    }
+    cand_write(res, n, a_out, b_out, rel_out);
+    vnx_cl_cand_free(res);
     return CL_OK;
 }
 

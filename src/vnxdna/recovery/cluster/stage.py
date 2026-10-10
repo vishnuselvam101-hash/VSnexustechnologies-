@@ -31,11 +31,14 @@ from vnxdna.recovery.cluster import ClusterConfig
 from vnxdna.recovery.cluster.consensus import cluster_consensus
 from vnxdna.recovery.cluster.editdist import revcomp
 from vnxdna.recovery.cluster.graph import cluster_reads
+
 from vnxdna.recovery.cluster.sketch import sketch_reads
 from vnxdna.recovery.cluster.store import UnplacedStore
 from vnxdna.recovery.consensus import resolve_duplicates
 
 SCHEMA = "vnx.read-clustering/1"
+#: limits that stop the candidate step: no pairs, so no clusters and no frames
+CANDIDATE_STOPS = ("max_candidate_pairs", "candidate_memory")
 #: clusters handed to the consensus step at once (bounds memory; the result does not depend on it)
 CONSENSUS_BATCH = 256
 _CONSENSUS = cluster_consensus     # the real function; a replaced module attribute (an observer) keeps the in-process path
@@ -81,7 +84,7 @@ def cluster_frames(reads: list, lay: Layout, cfg: ClusterConfig, marker_mismatch
     hashes, orient = sketch_reads(raw, lens, cfg.k, cfg.sketch_size)
     cl = cluster_reads(reads, hashes, orient, cfg)
     counts.update(cl.counts)
-    if cl.budget is not None and cl.budget["limit"] == "max_candidate_pairs":
+    if cl.budget is not None and cl.budget["limit"] in CANDIDATE_STOPS:
         return [], cl.budget
     clusters = []
     for cid in np.unique(cl.labels[cl.labels >= 0]).tolist():
@@ -205,7 +208,7 @@ class ClusterStage:
             self.consensus_processes = info.get("consensus_processes")
         if budget is not None:
             self.budget.append(budget)
-            if budget["limit"] == "max_candidate_pairs":
+            if budget["limit"] in CANDIDATE_STOPS:
                 self.status = "budget_exceeded"
                 return
         self._write_frames(frames)

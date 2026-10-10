@@ -213,7 +213,7 @@ def test_unplaced_read_budget_stops_the_stage_and_is_reported(pools, tmp_path):
 
 def test_candidate_pair_budget_stops_the_stage_and_is_reported(pools, tmp_path):
     st, data, rep = _run(pools["reads"]["helped"], tmp_path / "on.vnx", read_clustering="fallback",
-                         cluster_config=ClusterConfig(max_candidate_pairs=10))
+                         cluster_config=ClusterConfig(max_candidate_pairs=10, max_candidate_pairs_per_read=0))
     cl = rep["clustering"]
     assert cl["status"] == "budget_exceeded" and cl["budget_exceeded"][0]["limit"] == "max_candidate_pairs"
     assert cl["frames_verified"] == 0 and data is None and st == "FAILURE"

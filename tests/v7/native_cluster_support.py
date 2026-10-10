@@ -119,7 +119,9 @@ def pool_case(rng: np.random.Generator, strands: int | None = None, per_strand: 
            "bucket_cap": int(rng.choice([4, 64, 256])), "min_shared_slots": int(rng.choice([1, 2, 3])),
            "max_candidate_pairs": int(rng.choice([50, 50_000_000])), "theta": float(rng.choice([0.1, 0.3, 0.5])),
            "band_slack": int(rng.choice([0, 3, 32])), "max_cluster_reads": int(rng.choice([2, 4, 8, 64])),
-           "max_refine_pairs": int(rng.choice([20, 2_000_000])), "medoid_members": int(rng.choice([2, 16]))}
+           "max_refine_pairs": int(rng.choice([20, 2_000_000])), "medoid_members": int(rng.choice([2, 16])),
+           # the frozen cases exercise the absolute budget (V10's per-read allowance would lift the 50-pair stop)
+           "max_candidate_pairs_per_read": 0}
     return reads, cfg
 
 

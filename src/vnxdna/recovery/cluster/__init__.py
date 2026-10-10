@@ -41,6 +41,11 @@ class ClusterConfig:
     bucket_cap: int = 256
     min_shared_slots: int = 2                   # candidate pair = reads sharing at least this many retained buckets
     max_candidate_pairs: int = 50_000_000       # work budget of the candidate step (stop and report)
+    # V10: the budget scales with the unplaced reads, up to a ceiling: budget(n) = max(max_candidate_pairs,
+    # min(max_candidate_pairs_ceiling, max_candidate_pairs_per_read * n)); 0 per read = the absolute budget only
+    max_candidate_pairs_per_read: int = 200
+    max_candidate_pairs_ceiling: int = 1_000_000_000
+    candidate_chunk_pairs: int = 1 << 25        # slot pairs held in memory at once (8 B each); results do not depend on it
     # §5.2 verification: accept an edge iff distance <= theta * max(La, Lb); band |dL| + band_slack
     theta: float = 0.30
     band_slack: int = 32
@@ -73,6 +78,7 @@ class ClusterConfig:
 
     def validate(self) -> ClusterConfig:
         ints = {"max_unplaced_reads": 0, "k": 4, "sketch_size": 1, "bucket_cap": 2, "min_shared_slots": 1, "max_candidate_pairs": 0,
+                "max_candidate_pairs_per_read": 0, "max_candidate_pairs_ceiling": 0, "candidate_chunk_pairs": 1,
                 "band_slack": 0, "max_cluster_reads": 2, "max_refine_pairs": 0, "consensus_band": 1, "c_sub": 1,
                 "c_indel": 1, "slack": 0, "min_votes": 1, "rounds": 0, "max_peels": 1, "max_trials": 1, "gmd_step": 1,
                 "gmd_steps": 0, "medoid_members": 1, "fill_trials": 1}
@@ -97,6 +103,11 @@ class ClusterConfig:
         if self.fill not in FILL_MODES:
             raise VNXConfigurationError("cluster config fill must be 'none' or 'template'")
         return self
+
+    def candidate_budget(self, n_reads: int) -> int:
+        """Slot-pair budget of the candidate step for ``n_reads`` unplaced reads (never below the absolute budget)."""
+        scaled = min(self.max_candidate_pairs_ceiling, self.max_candidate_pairs_per_read * max(0, int(n_reads)))
+        return max(self.max_candidate_pairs, scaled)
 
     def to_dict(self) -> dict:
         return asdict(self)

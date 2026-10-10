@@ -53,10 +53,19 @@ class Clustering:
 
 
 def candidate_pairs(hashes: np.ndarray, orient: np.ndarray, bucket_cap: int, max_pairs: int, counts: Counter,
-                    min_shared: int = 1) -> tuple[np.ndarray, np.ndarray, np.ndarray, dict | None]:
-    """Native or reference :func:`candidate_pairs_reference` (identical results and counters)."""
+                    min_shared: int = 1, chunk_pairs: int = _nc.DEFAULT_CHUNK_PAIRS
+                    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, dict | None]:
+    """Native or reference :func:`candidate_pairs_reference` (identical results and counters). The native step holds
+    at most ``chunk_pairs`` slot pairs at once; if it cannot allocate its working memory the step stops and reports
+    the ``candidate_memory`` limit (no pairs, like an exceeded work budget) instead of failing the decode."""
     if hashes.ndim == 2 and hashes.shape[1] >= 1 and hashes.shape[0] <= (1 << 31) and _nc.resolve_backend() == "native":
-        a, b, rel, st = _nc.candidates(hashes, orient, bucket_cap, max_pairs, min_shared)
+        try:
+            a, b, rel, st = _nc.candidates(hashes, orient, bucket_cap, max_pairs, min_shared, chunk_pairs)
+        except _nc.NativeClusterMemoryError:
+            counts["candidate_memory_exhausted"] += 1
+            return np.zeros(0, np.int64), np.zeros(0, np.int64), np.zeros(0, np.uint8), {
+                "limit": "candidate_memory", "allowed": None, "used": None,
+                "effect": "clustering stage stopped; no cluster frame produced"}
         if st[5]:
             counts["buckets_over_cap"] += int(st[0])
         if st[2]:
@@ -178,8 +187,8 @@ def cluster_reads(reads: list, hashes: np.ndarray, orient_bits: np.ndarray, cfg:
         return Clustering(labels, orient, score, counts)
     lens = np.fromiter((r.size for r in reads), dtype=np.int64, count=n)
     counts["reads_without_sketch"] = int((orient_bits[:, 0] == 2).sum()) if orient_bits.size else n
-    a, b, rel, budget = candidate_pairs(hashes, orient_bits, cfg.bucket_cap, cfg.max_candidate_pairs, counts,
-                                        cfg.min_shared_slots)
+    a, b, rel, budget = candidate_pairs(hashes, orient_bits, cfg.bucket_cap, cfg.candidate_budget(n), counts,
+                                        cfg.min_shared_slots, cfg.candidate_chunk_pairs)
     if budget is not None:
         counts["unassigned"] = n
         return Clustering(labels, orient, score, counts, budget)

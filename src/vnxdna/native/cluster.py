@@ -46,7 +46,7 @@ import numpy as np
 
 from vnxdna import _native_build as _nb
 
-ABI_VERSION = 3
+ABI_VERSION = 4
 BACKENDS = ("auto", "native", "reference")
 INF = 1 << 28
 MAX_COST = 1024
@@ -72,6 +72,14 @@ log = logging.getLogger(__name__)
 
 class NativeClusterError(RuntimeError):
     pass
+
+
+class NativeClusterMemoryError(NativeClusterError, MemoryError):
+    """A kernel could not allocate its working memory (nothing was returned)."""
+
+
+#: slot pairs materialised at once by the candidate step (8 bytes each: 256 MiB); results do not depend on it
+DEFAULT_CHUNK_PAIRS = 1 << 25
 
 
 _lib = None
@@ -107,6 +115,12 @@ def _bind(lib) -> None:
     lib.vnx_cl_sketch.argtypes = [i64, i64, p, i64, p, i32, i32, p, p]
     lib.vnx_cl_candidates.restype = ctypes.c_int
     lib.vnx_cl_candidates.argtypes = [i64, i32, p, p, i64, i64, i64, p, p, p, i64, p]
+    lib.vnx_cl_cand_run.restype = ctypes.c_int
+    lib.vnx_cl_cand_run.argtypes = [i64, i32, p, p, i64, i64, i64, i64, p, ctypes.POINTER(ctypes.c_void_p)]
+    lib.vnx_cl_cand_take.restype = ctypes.c_int
+    lib.vnx_cl_cand_take.argtypes = [p, i64, p, p, p, i64]
+    lib.vnx_cl_cand_free.restype = None
+    lib.vnx_cl_cand_free.argtypes = [p]
     lib.vnx_cl_banded.restype = ctypes.c_int
     lib.vnx_cl_banded.argtypes = [i64, p, i64, p, p, i64, p, p, p, i64, p]
     lib.vnx_cl_verify.restype = ctypes.c_int
@@ -247,6 +261,8 @@ def _ptr(a: np.ndarray | None):
 
 
 def _check(rc: int, what: str) -> None:
+    if rc == -2:
+        raise NativeClusterMemoryError(f"native {what} failed ({rc}: {_ERRORS[rc]})")
     if rc < 0:
         raise NativeClusterError(f"native {what} failed ({rc}: {_ERRORS.get(rc, 'unknown')})")
 
@@ -308,29 +324,31 @@ def sketch(raw: np.ndarray, lengths: np.ndarray, k: int, s: int) -> tuple[np.nda
     return hashes, orient
 
 
-def candidates(hashes: np.ndarray, orient: np.ndarray, bucket_cap: int, max_pairs: int, min_shared: int) -> tuple:
+def candidates(hashes: np.ndarray, orient: np.ndarray, bucket_cap: int, max_pairs: int, min_shared: int,
+               chunk_pairs: int = DEFAULT_CHUNK_PAIRS) -> tuple:
     """(a, b, rel, stats); stats = [buckets_over_cap, slot pairs, budget hit, kept, below min_shared, slots with >= 2
-    sketched reads, retained buckets]."""
+    sketched reads, retained buckets, partitions, slot-pair buffer entries]. At most ``chunk_pairs`` slot pairs (or
+    one read's, if more) are held at once; the result does not depend on it. Raises NativeClusterMemoryError when the
+    working memory cannot be allocated (nothing is returned in that case)."""
     lib = _lib_or_raise()
     hashes = np.ascontiguousarray(hashes, dtype=np.uint32)
     orient = np.ascontiguousarray(orient, dtype=np.uint8)
     if hashes.ndim != 2 or orient.shape != hashes.shape:
         raise ValueError(f"hashes must be 2-D and orient the same shape, got {hashes.shape} and {orient.shape}")
     n, s = hashes.shape
-    stats = np.zeros(8, dtype=np.int64)
-    cap = max(16, 8 * n)
-    while True:
-        a = np.empty(cap, dtype=np.int64)
-        b = np.empty(cap, dtype=np.int64)
-        rel = np.empty(cap, dtype=np.uint8)
-        rc = lib.vnx_cl_candidates(n, s, _ptr(hashes), _ptr(orient), int(bucket_cap), int(max_pairs), int(min_shared),
-                                   _ptr(a), _ptr(b), _ptr(rel), cap, _ptr(stats))
-        _check(rc, "candidates")
-        if rc == 1:
-            cap = int(stats[3])
-            continue
+    stats = np.zeros(9, dtype=np.int64)
+    handle = ctypes.c_void_p()
+    _check(lib.vnx_cl_cand_run(n, s, _ptr(hashes), _ptr(orient), int(bucket_cap), int(max_pairs), int(min_shared),
+                               int(chunk_pairs), _ptr(stats), ctypes.byref(handle)), "candidates")
+    try:
         k = int(stats[3]) if not stats[2] else 0
-        return a[:k].copy(), b[:k].copy(), rel[:k].copy(), stats
+        a = np.empty(k, dtype=np.int64)
+        b = np.empty(k, dtype=np.int64)
+        rel = np.empty(k, dtype=np.uint8)
+        _check(lib.vnx_cl_cand_take(handle, max(n, 1), _ptr(a), _ptr(b), _ptr(rel), k), "candidates")
+    finally:
+        lib.vnx_cl_cand_free(handle)
+    return a, b, rel, stats
 
 
 def banded(buf: np.ndarray, off: np.ndarray, lens: np.ndarray, ia: np.ndarray, ib: np.ndarray,
