@@ -1,0 +1,407 @@
+{
+  "archive_tags_seen": [
+    "ed30"
+  ],
+  "container_sha256": "c6605ecdc8c67557c2febf557a864a2d818cf6c0f604eb93a227e00889fc3a98",
+  "content_verified": true,
+  "duplicate_conflicts": 0,
+  "encrypted": false,
+  "error": null,
+  "failed_groups": [],
+  "files_published": 0,
+  "formats": {
+    "codec": "f4-sb1-cauchy-rs",
+    "container": [
+      4,
+      0
+    ],
+    "frame_version": 4,
+    "superblock_version": 1
+  },
+  "groups_decoded": 9,
+  "groups_failed": 0,
+  "inputs": [
+    {
+      "bytes": 1319391,
+      "path": "/fixture/r.fastq",
+      "role": "reads",
+      "sha256": "6c212bf52ca244624f28694c4c0f43267d17f2df3568bbc49cddd4dbb23e4be0"
+    }
+  ],
+  "kind": "decode",
+  "native_backends": {
+    "align": {
+      "abi_version": 2,
+      "backend": "native",
+      "library_origin": "in-place"
+    },
+    "cluster": {
+      "abi_version": 5,
+      "backend": "native",
+      "library_origin": "in-place"
+    },
+    "integrity": {
+      "abi_version": 1,
+      "backend": "native",
+      "library_origin": "in-place"
+    },
+    "reads": {
+      "abi_version": 1,
+      "backend": "native",
+      "library_origin": "in-place"
+    },
+    "rs": {
+      "abi_version": 1,
+      "backend": "native",
+      "library_origin": "in-place",
+      "simd_level": "avx2"
+    },
+    "strand": {
+      "abi_version": 1,
+      "backend": "native",
+      "library_origin": "in-place"
+    }
+  },
+  "outputs": [
+    {
+      "bytes": 21378,
+      "path": "/fixture/o.vnx",
+      "role": "container",
+      "sha256": "c6605ecdc8c67557c2febf557a864a2d818cf6c0f604eb93a227e00889fc3a98"
+    }
+  ],
+  "peak_rss_bytes": 56401920,
+  "provenance": {
+    "backends": {
+      "align": {
+        "abi": 2,
+        "active": "native",
+        "lib_sha256": "d69de95859f470fda34aca8cc47f6fcd28e8b8aae514ef176c0a0fc81edad5af",
+        "origin": "in-place"
+      },
+      "cluster": {
+        "abi": 5,
+        "active": "native",
+        "lib_sha256": "306be460b0609e2e4a327812f1885c9cd22cf6260ad4684335ebafb07549c54c",
+        "origin": "in-place"
+      },
+      "integrity": {
+        "abi": 1,
+        "active": "native",
+        "lib_sha256": "f5b9175a5ef05ca618c6510e24602b673262465ce869f3ceccdb0670886b47a2",
+        "origin": "in-place"
+      },
+      "reads": {
+        "abi": 1,
+        "active": "native",
+        "lib_sha256": "ba66ab119d502406be9371fc2edfea3c1e5fe630f9fd9d74034bea4308aa7050",
+        "origin": "in-place"
+      },
+      "rs": {
+        "abi": 1,
+        "active": "native",
+        "level": "avx2",
+        "lib_sha256": "40411a2f59d9ad7bde7448cfd744d73df5fa67dde629378b399003c29ca47be2",
+        "origin": "in-place"
+      },
+      "strand": {
+        "abi": 1,
+        "active": "native",
+        "lib_sha256": "c4e652de54117624ef3ffb5a2b7e9c074bf013d2dee10daf529d0b1d26d44fb6",
+        "origin": "in-place"
+      }
+    },
+    "config_sha256": "b6a61bd6e1c4c31a1a3cb35a3c6620ac36b00d8e572f1461bd3273d36b54f768",
+    "git_commit": "8be2949b03477b4d123cf9c98b234542d9afdc49",
+    "git_dirty": false,
+    "platform": "linux-x86_64",
+    "python": "3.12.3",
+    "seeds": {}
+  },
+  "reads": {
+    "fast": 2072,
+    "orphans": 0,
+    "pending": 0,
+    "reads": 2073,
+    "reverse_complement": 0,
+    "sync": 0,
+    "unaligned": 0
+  },
+  "recovery_plan": {
+    "budget": {
+      "max_outer_stripes": null,
+      "max_reads_examined": null,
+      "max_round_b_reads": null,
+      "max_rss_bytes": null,
+      "max_wall_seconds": null
+    },
+    "budget_exhausted": [],
+    "budget_unlimited": true,
+    "checkpoints": 3,
+    "decisions": [
+      {
+        "result": {
+          "reads_verified": 2072
+        },
+        "run": true,
+        "signals": {
+          "reads": 2073
+        },
+        "stage": "FAST",
+        "why": "every read: exact-length frame, inner RS + CRC"
+      },
+      {
+        "result": {
+          "pending_after_confidence_check": 0,
+          "reads_verified": 0,
+          "reverse_complement": 0,
+          "unaligned": 0
+        },
+        "run": true,
+        "signals": {
+          "reads_not_fast": 1
+        },
+        "stage": "SYNC",
+        "why": "reads FAST did not verify: marker-template alignment, indels as erasures"
+      },
+      {
+        "run": false,
+        "signals": {},
+        "stage": "SMART",
+        "why": "indel_recovery is 'segment' (V4 erasure rule only)"
+      },
+      {
+        "run": false,
+        "signals": {},
+        "stage": "SOFT",
+        "why": "soft_decoding is off"
+      },
+      {
+        "result": {
+          "consensus_recovered": 0,
+          "groups_failed": 0,
+          "rows_recovered_by_columns": null
+        },
+        "run": true,
+        "signals": {
+          "groups": 9,
+          "superblock_version": 1,
+          "total_rows": 9
+        },
+        "stage": "OUTER",
+        "why": "row decode of every group"
+      }
+    ],
+    "spent": {
+      "outer_stripes": 0,
+      "reads_examined": 0,
+      "round_b_reads": 0
+    }
+  },
+  "resources": {
+    "peak_rss_bytes": 56401920,
+    "peak_rss_scope": "parent",
+    "workers": 4
+  },
+  "result": {
+    "archive_tags_seen": [
+      "ed30"
+    ],
+    "container_sha256": "c6605ecdc8c67557c2febf557a864a2d818cf6c0f604eb93a227e00889fc3a98",
+    "content_verified": true,
+    "duplicate_conflicts": 0,
+    "encrypted": false,
+    "failed_groups": [],
+    "files_published": 0,
+    "groups_decoded": 9,
+    "groups_failed": 0,
+    "native_backends": {
+      "align": {
+        "abi_version": 2,
+        "backend": "native",
+        "library_origin": "in-place"
+      },
+      "cluster": {
+        "abi_version": 5,
+        "backend": "native",
+        "library_origin": "in-place"
+      },
+      "integrity": {
+        "abi_version": 1,
+        "backend": "native",
+        "library_origin": "in-place"
+      },
+      "reads": {
+        "abi_version": 1,
+        "backend": "native",
+        "library_origin": "in-place"
+      },
+      "rs": {
+        "abi_version": 1,
+        "backend": "native",
+        "library_origin": "in-place",
+        "simd_level": "avx2"
+      },
+      "strand": {
+        "abi_version": 1,
+        "backend": "native",
+        "library_origin": "in-place"
+      }
+    },
+    "peak_rss_bytes": 56401920,
+    "reads": {
+      "fast": 2072,
+      "orphans": 0,
+      "pending": 0,
+      "reads": 2073,
+      "reverse_complement": 0,
+      "sync": 0,
+      "unaligned": 0
+    },
+    "recovery_plan": {
+      "budget": {
+        "max_outer_stripes": null,
+        "max_reads_examined": null,
+        "max_round_b_reads": null,
+        "max_rss_bytes": null,
+        "max_wall_seconds": null
+      },
+      "budget_exhausted": [],
+      "budget_unlimited": true,
+      "checkpoints": 3,
+      "decisions": [
+        {
+          "result": {
+            "reads_verified": 2072
+          },
+          "run": true,
+          "signals": {
+            "reads": 2073
+          },
+          "stage": "FAST",
+          "why": "every read: exact-length frame, inner RS + CRC"
+        },
+        {
+          "result": {
+            "pending_after_confidence_check": 0,
+            "reads_verified": 0,
+            "reverse_complement": 0,
+            "unaligned": 0
+          },
+          "run": true,
+          "signals": {
+            "reads_not_fast": 1
+          },
+          "stage": "SYNC",
+          "why": "reads FAST did not verify: marker-template alignment, indels as erasures"
+        },
+        {
+          "run": false,
+          "signals": {},
+          "stage": "SMART",
+          "why": "indel_recovery is 'segment' (V4 erasure rule only)"
+        },
+        {
+          "run": false,
+          "signals": {},
+          "stage": "SOFT",
+          "why": "soft_decoding is off"
+        },
+        {
+          "result": {
+            "consensus_recovered": 0,
+            "groups_failed": 0,
+            "rows_recovered_by_columns": null
+          },
+          "run": true,
+          "signals": {
+            "groups": 9,
+            "superblock_version": 1,
+            "total_rows": 9
+          },
+          "stage": "OUTER",
+          "why": "row decode of every group"
+        }
+      ],
+      "spent": {
+        "outer_stripes": 0,
+        "reads_examined": 0,
+        "round_b_reads": 0
+      }
+    },
+    "seconds": 0.10657018795609474,
+    "stage_seconds": {
+      "pass1_reads": 0.054267531959339976,
+      "pass1_worker_cpu": 0.016143219,
+      "pass2_decode": 0.004495615023188293,
+      "verify": 0.0008497410453855991
+    },
+    "status": "SUCCESS",
+    "superblock": {
+      "archive_id": "ed30fd2bcaaa772458eb20c2ce3bbbca",
+      "container_size": 21378,
+      "groups": 9,
+      "layout": {
+        "frame_bytes": 70,
+        "inner_parity": 16,
+        "marker_len": 3,
+        "marker_period": 24,
+        "markers": 11,
+        "payload_bytes": 40,
+        "strand_nt": 313
+      },
+      "outer_code": {
+        "data_symbols": 64,
+        "name": "cauchy-rs",
+        "parity_symbols": 16
+      },
+      "version": 1
+    },
+    "superblock_conflicts": 0
+  },
+  "schema": "vnx.decode-report/1",
+  "seconds": 0.10657018795609474,
+  "software": {
+    "name": "vnxdna",
+    "version": "6.0.0.dev0"
+  },
+  "spec": "6.0",
+  "stage_seconds": {
+    "pass1_reads": 0.054267531959339976,
+    "pass1_worker_cpu": 0.016143219,
+    "pass2_decode": 0.004495615023188293,
+    "verify": 0.0008497410453855991
+  },
+  "status": "SUCCESS",
+  "superblock": {
+    "archive_id": "ed30fd2bcaaa772458eb20c2ce3bbbca",
+    "container_size": 21378,
+    "groups": 9,
+    "layout": {
+      "frame_bytes": 70,
+      "inner_parity": 16,
+      "marker_len": 3,
+      "marker_period": 24,
+      "markers": 11,
+      "payload_bytes": 40,
+      "strand_nt": 313
+    },
+    "outer_code": {
+      "data_symbols": 64,
+      "name": "cauchy-rs",
+      "parity_symbols": 16
+    },
+    "version": 1
+  },
+  "superblock_conflicts": 0,
+  "timings": {
+    "seconds": 0.11000835301820189,
+    "stage_seconds": {
+      "pass1_reads": 0.054267531959339976,
+      "pass1_worker_cpu": 0.016143219,
+      "pass2_decode": 0.004495615023188293,
+      "verify": 0.0008497410453855991
+    }
+  },
+  "warnings": []
+}
