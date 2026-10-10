@@ -20,13 +20,93 @@
   "model": "Conservative model of the PREREG: a stripe of D + Mc rows decodes iff at most Mc rows fail row-wise (i.i.d. q).",
   "row_failure_q": 0.005
  },
- "cells": {},
- "commits": [],
+ "cells": {
+  "10000000": {
+   "exact": 0,
+   "exact_wilson95": [
+    0.0,
+    0.6576
+   ],
+   "false_success": 0,
+   "median_decode_seconds": 157.852,
+   "n": 2,
+   "outcomes": [
+    "EXPLICIT_FAILURE"
+   ],
+   "per_row_success": [
+    0.000248,
+    0.000248
+   ],
+   "rows_recovered_by_columns": [
+    0,
+    0
+   ],
+   "strands": [
+    322515
+   ],
+   "v9_same_seeds": null
+  },
+  "1048576": {
+   "exact": 10,
+   "exact_wilson95": [
+    0.7225,
+    1.0
+   ],
+   "false_success": 0,
+   "median_decode_seconds": 361.507,
+   "n": 10,
+   "outcomes": [
+    "EXACT"
+   ],
+   "per_row_success": [
+    0.995316,
+    0.995316,
+    0.997658,
+    0.997658,
+    0.995316,
+    0.990632,
+    0.98829,
+    0.990632,
+    0.997658,
+    0.995316
+   ],
+   "rows_recovered_by_columns": [
+    2,
+    2,
+    1,
+    1,
+    2,
+    4,
+    5,
+    4,
+    1,
+    2
+   ],
+   "strands": [
+    34117
+   ],
+   "v9_same_seeds": {
+    "exact": 0,
+    "n": 10
+   }
+  }
+ },
+ "commits": [
+  "2baa67850893e0a4ea9f0b77f8405318e6a8e9e9"
+ ],
  "geometry": {
   "column_parity": 4,
   "profile": "v4-balanced",
   "stripe_depth": 128
  },
  "label": "SIMULATED: reads from a software channel model; no DNA was synthesised, stored or sequenced",
- "load_rule": null
+ "load_rule": {
+  "max_load1": 4.0,
+  "observed": [
+   1.76,
+   8.99
+  ],
+  "ok": false,
+  "runs_over": 3
+ }
 }
