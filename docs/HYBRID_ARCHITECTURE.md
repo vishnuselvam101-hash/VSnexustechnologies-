@@ -12,6 +12,8 @@ results are in the final comparison report, never here.
   Scientific models (Python)      vnxdna.simulation (SIMULATED channels), vnxdna.simulation.fit, experiments/
   References (Python/NumPy)       the specification of every native kernel; also the fallback backend
   Native execution layer (C11)    vnxdna.native.{align, reads, rs, cluster, strand} via ctypes
+  Native execution layer (Rust)   vnxdna.native.integrity (crate native/rust/integrity, C ABI) via ctypes
+  Web layer (TypeScript)          web/: typed contract clients, event-log follower, static dashboard (no DNA computation)
   Third-party native code         NumPy, hashlib (SHA-256), cryptography (AES-256-GCM, OpenSSL), zstandard, zlib
 ```
 
@@ -29,10 +31,11 @@ reference exists to test it against. The language follows from what the componen
 | Python | SDK, CLI, configuration, pipeline orchestration, error handling and reporting, archive/container format logic, scientific models, experiments, references | default; stays wherever profiles do not show a hot path |
 | NumPy (C under the hood) | vectorised table operations: outer Cauchy RS encode/decode, CRC rows, inner RS parity reference, constraint reference | used where a whole-batch array expression already runs at native speed |
 | C11 | stable, flat-array CPU kernels: marker alignment, read parsing, inner RS decoding, read clustering, banded DP, forward-backward, polish/trial costs, strand building | one authoritative native implementation per algorithm, loaded through ctypes, no Python C API |
-| C++ | evaluated, not adopted | the kernels are flat arrays and loops; C++ would add a second toolchain and ABI without a capability the kernels need. The founder's 2026-10-06 rule is "Python + C11 kernels, no C++ port" |
-| Rust | evaluated, deferred | candidate only for a *newly designed* untrusted-input component (e.g. a new sequencer-format parser). The existing C parser is fuzzed, sanitized and differential-tested against its reference; rewriting it would duplicate a working subsystem |
-| TypeScript/JavaScript | optional web dashboards and management UIs only | no DNA encoding, alignment or decoding logic; WebAssembly only if browser-side computation becomes a requirement |
-| Go, Java, other | not used | no subsystem needs their runtime |
+| Rust | integrity and validation of untrusted data: batched frame CRC-32 (`native/rust/integrity`) | checked arithmetic before any slice exists, scoped threads with disjoint outputs, panics caught at the ABI boundary; standard library only (builds offline). Not used to duplicate a working C kernel: the fuzzed, sanitized C parsers and DP kernels stay in C. Next Rust candidates: a newly designed untrusted-input parser |
+| C++ | evaluated, not adopted | no component needs a C++ library or feature: the kernels are flat arrays and loops, and no advanced alignment/consensus library is integrated. C++ would add a second native ABI and toolchain for no capability; re-evaluate if such a library (e.g. a POA consensus engine) is adopted |
+| TypeScript | web layer (`web/`): typed clients of the published JSON contracts, decode-event follower, static dashboard | no DNA encoding, alignment or decoding logic; WebAssembly only if browser-side computation becomes a requirement. No network service yet (see §9) |
+| Java | not used | no JVM integration requirement exists; adding a JVM would be a runtime with no consumer |
+| Go, other | not used | no subsystem needs their runtime |
 
 Not a language-count target: a component stays in Python when moving it would not change end-to-end time.
 
@@ -40,8 +43,11 @@ Not a language-count target: a component stays in Python when moving it would no
 
 All kernels follow the same contract (`native/c/*.c`, `v5/native/align.c`, `v6/native/{reads,rs}.c`):
 
-* **Binding.** Plain C11 shared libraries with a C ABI, loaded with `ctypes` (one binding mechanism for the whole layer;
-  ctypes releases the GIL during a call, so kernel threads run in parallel). No PyO3/CFFI/C-API modules.
+* **Binding.** C11 and Rust shared libraries with a C ABI, loaded with `ctypes` (one binding mechanism for the whole
+  layer; ctypes releases the GIL during a call, so kernel threads run in parallel). Rust exports `extern "C"` functions
+  instead of a PyO3 module, so it uses the same loader, ABI check, backend selection and sanitizer/test tooling as the
+  C kernels and needs no extra Python build dependency (maturin). Rust kernels catch panics (`catch_unwind`) and return
+  an error code; no panic or exception crosses the boundary.
 * **Versioned ABI.** Every library exports `<prefix>_abi_version()`; a library with a different ABI is skipped and
   named in `load_error`. ABI bumps on any signature or semantic change (cluster ABI 5 added `vnx_cl_polish_deltas`;
   strand ABI 1).
@@ -61,8 +67,9 @@ All kernels follow the same contract (`native/c/*.c`, `v5/native/align.c`, `v6/n
   decode report records them in `native_backends`.
 * **SIMD.** No `-march`. Kernels with SIMD paths (RS decoder: scalar/AVX2/AVX-512BW; cluster forward-backward and polish:
   baseline/AVX2) select the level at run time from cpuid + xgetbv, so one wheel runs on any x86-64 CPU.
-* **New kernels** use `vnxdna.native._loader.Kernel` (shared lookup order, ABI check, backend selection, status and
-  build); the four older kernels keep their own loaders with the same contract.
+* **New kernels** use `vnxdna.native._loader.Kernel` (C) or `RustKernel` (Rust, built with cargo) — shared lookup
+  order, ABI check, backend selection, status and build; the four older kernels keep their own loaders with the same
+  contract.
 
 ## 4. Encoding pipeline
 
@@ -70,7 +77,8 @@ All kernels follow the same contract (`native/c/*.c`, `v5/native/align.c`, `v6/n
 |---|---|
 | input ingestion, chunking, compression (zstd), encryption (AES-256-GCM), integrity metadata (SHA-256, Merkle) | Python orchestration over native libraries (zstandard, cryptography/OpenSSL, hashlib) |
 | framing, payload partitioning, outer Cauchy RS parity | NumPy (`codec/cauchy.py`) |
-| frame header + CRC-32 rows | NumPy (`dnaenc/frame4.plain_rows`) |
+| frame header | NumPy (`dnaenc/frame4.plain_rows`) |
+| frame CRC-32 rows | **Rust**, `native/rust/integrity` (`vnx_ri_crc32_rows`); reference `core.crc.crc32_rows` |
 | scrambler variant search, inner RS parity, 2-bit mapping, sync markers, constraint screen | **C**, `native/c/strand.c` (`vnx_st_build`); reference `frame4._build_reference` |
 | superblocks, strand records, FASTA output, verification | Python |
 
@@ -87,7 +95,8 @@ worker. The scrambler search keeps the reference order (smallest passing variant
 | read clustering: sketches, candidate pairs, banded edit distance, verification | **C**, `native/c/cluster.c` |
 | full-template consensus: forward-backward calls, polish edit costs (fused per candidate, ABI 5), trial costs | **C**, `native/c/cluster.c`; control flow in `recovery/cluster/consensus.py` |
 | inner RS decoding (errors + erasures) | **C**, `v6/native/rs.c` |
-| CRC-32 check, frame/address recovery, missing-data detection | NumPy/Python |
+| CRC-32 check | **Rust**, `native/rust/integrity` |
+| frame/address recovery (vectorised address snapping), missing-data detection | NumPy/Python |
 | outer Cauchy RS decoding, pass-2 recovery | NumPy/Python (`codec/cauchy.py`, `codec/outer.py`) |
 | container integrity (SHA-256 + Merkle), decryption, decompression, output | Python over native libraries |
 
@@ -109,9 +118,12 @@ Merkle validation; no performance profile disables it.
 
 ## 7. Build, packaging, installation
 
-`pip install .` compiles every kernel as an optional extension (`setup.py`, sources and flags in
-`src/vnxdna/_native_build.py`: `-O3 -std=c11 -Wall -Wextra`); without a compiler the install still succeeds and the
-references run. Development builds: `python -m vnxdna.native.<kernel> build [--strict]` (and the older module paths in
+`pip install .` compiles every C kernel as an optional extension (`setup.py`, sources and flags in
+`src/vnxdna/_native_build.py`: `-O3 -std=c11 -Wall -Wextra`) and, when cargo is present, builds the Rust kernels
+(`RUST_KERNELS`, `cargo build --release --offline --locked`, no third-party crates) into `vnxdna/_vnx_<name>*.so`;
+without a toolchain the install still succeeds and the references run (`CARGO=/bin/false` skips Rust explicitly).
+Toolchains: a C11 compiler, optionally Rust >= 1.63 (cargo); for `web/`, Node >= 22.18 and `npm ci` (TypeScript
+5.9.3, dev only). Development builds: `python -m vnxdna.native.<kernel> build [--strict]` (and the older module paths in
 NATIVE_KERNELS.md). `python -m vnxdna.native --require-native` is the post-install check. No manual patching of
 installed files.
 
@@ -129,3 +141,8 @@ affected pipeline tests and the full suite.
   sequenced, and no simulated result is a claim about real nanopore performance.
 * Sanitizers and fuzzing reduce, but do not exclude, memory-safety defects in the C kernels.
 * x86-64 is the only architecture with SIMD paths; other architectures run the portable C paths (not measured here).
+* No performance claim is made for the Rust integrity kernel, the strand builder or the TypeScript layer: they are
+  correctness-tested only; throughput must be measured in a separately authorised benchmarking phase.
+* No HTTP/WebSocket service exists; live progress for web clients comes from following the `--events` log. A network
+  service is a security-relevant addition (VNX-Secure) and is not part of this change.
+* The dashboard is type-checked and built, not exercised in a browser by the automated tests.
