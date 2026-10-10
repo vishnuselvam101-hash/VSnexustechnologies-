@@ -147,7 +147,24 @@ def segments(tpl0: np.ndarray) -> np.ndarray:
 
 
 def shift(tpl: np.ndarray, p: int, q: int, x: int) -> np.ndarray:
-    """Remove position p and insert base x before (original) position q; the length is unchanged."""
+    """Remove position p and insert base x before (original) position q; the length is unchanged. Slice copies (V10
+    W2); equals :func:`shift_reference` for 0 <= p < len, 0 <= q <= len."""
+    out = np.empty_like(tpl)
+    if q > p:
+        out[:p] = tpl[:p]
+        out[p:q - 1] = tpl[p + 1:q]
+        out[q - 1] = x
+        out[q:] = tpl[q:]
+    else:
+        out[:q] = tpl[:q]
+        out[q] = x
+        out[q + 1:p + 1] = tpl[q:p]
+        out[p + 1:] = tpl[p + 1:]
+    return out
+
+
+def shift_reference(tpl: np.ndarray, p: int, q: int, x: int) -> np.ndarray:
+    """The V9 list implementation of :func:`shift` (specification)."""
     out = list(tpl.tolist())
     del out[p]
     out.insert(q - 1 if q > p else q, x)

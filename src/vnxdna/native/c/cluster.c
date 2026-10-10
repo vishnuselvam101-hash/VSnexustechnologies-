@@ -8,6 +8,7 @@
  *   vnx_cl_banded      editdist.banded_distance_reference   banded unit-cost edit distance of read pairs
  *   vnx_cl_verify      the verification loop of graph.cluster_reads_reference (chunks, union-find with parity)
  *   vnx_cl_fb          consensus.fb_calls_reference         forward-backward certain calls against templates
+ *   vnx_cl_trial_costs consensus.trial_costs_reference      summed optimal costs of polish trial templates (V10 W2)
  *
  * Banded edit distance. The reference computes the global distance restricted to the diagonals
  * [min(0, dL) - slack, max(0, dL) + slack]. A path that leaves this band needs at least 2 * slack + 2 + |dL| indels, so
@@ -35,7 +36,7 @@
 #endif
 
 #ifndef VNX_CL_ABI /* overridable only so that the tests can build a mismatching library */
-#define VNX_CL_ABI 2
+#define VNX_CL_ABI 3
 #endif
 #define CL_INF (1 << 28)
 
@@ -992,5 +993,183 @@ done:
     free(G);
     free(tmp);
     free(Rp);
+    return rc;
+}
+
+/* ---------------------------------------------------------------------------------------------------------------- */
+/* V10 W2: polish trial costs by windowed recomputation.
+ *
+ * The reference (consensus._polish) scores every trial template with a full forward-backward pass over every read of
+ * its candidate and keeps only the optimal cost. A trial differs from its candidate's base template in one window of
+ * positions [lo, hi), so its optimal cost is min_x (F'[hi][x] + G[hi][x]): F' is the base forward matrix up to row lo,
+ * recomputed with the trial template through row hi, and G the base suffix matrix (both min-plus over the same path set,
+ * so the join is exact). Only rows lo+1..hi are evaluated per trial.
+ *
+ * Path set. The reference forward pass runs with the chunk's shared band B: for a read whose own band b is below B, the
+ * cell d = -b - 1 (just below the band) is evaluated without a mask, so a deletion into it followed by an insertion back
+ * into the band (cost 2 c_indel) is a valid step; with b == B that cell does not exist. The caller passes this per row
+ * as 'dip' (band < chunk band) for the trial rows and for the base rows, so the costs equal the reference's exactly.
+ * The suffix matrix here is computed for that same path set (it is not the reference's backward matrix).
+ *
+ * Arithmetic is int32 on values below 2^30 (the caller checks (T + len + 2) * max cost < 2^28); joins are int64. */
+static void tc_frow(const int32_t *prev, int32_t *cur, int64_t i, int64_t b, int64_t W, int16_t tci, int32_t mci,
+                    const uint8_t *rd, int64_t L, int32_t c, int dip) {
+    int32_t run = dip ? prev[0] + c : CL_INF;
+    for (int64_t x = 0; x < W; x++) {
+        const int64_t jd = i - 1 + x - b, j = jd + 1;
+        const int okd = jd >= 0 && jd < L;
+        const int32_t cost = (tci < 0 || (okd && rd[jd] == tci)) ? 0 : mci;
+        const int32_t diag = okd ? prev[x] + cost : CL_INF;
+        const int32_t dele = (x + 1 < W ? prev[x + 1] : CL_INF) + c;
+        int32_t v = imin32(diag, dele);
+        v = imin32(v, run + c);
+        run = v;
+        cur[x] = (j >= 0 && j <= L) ? v : CL_INF;
+    }
+}
+
+static void tc_forward(int32_t *F, int64_t T, int64_t b, const int16_t *tp, const int32_t *mc, const uint8_t *rd,
+                       int64_t L, int32_t c, int dip, int64_t from, int64_t to) {
+    const int64_t W = 2 * b + 1;
+    if (from == 0) {
+        for (int64_t x = 0; x < W; x++) {
+            const int64_t d = x - b;
+            F[x] = (d >= 0 && d <= L) ? (int32_t)(d * c) : CL_INF;
+        }
+    }
+    for (int64_t i = (from > 1 ? from : 1); i <= to && i <= T; i++)
+        tc_frow(F + (i - 1) * W, F + i * W, i, b, W, tp[i - 1], mc[i - 1], rd, L, c, dip);
+}
+
+static void tc_backward(int32_t *G, int64_t T, int64_t b, const int16_t *tp, const int32_t *mc, const uint8_t *rd,
+                        int64_t L, int32_t c, int dip) {
+    const int64_t W = 2 * b + 1;
+    int32_t *GT = G + T * W;
+    for (int64_t x = 0; x < W; x++) {
+        const int64_t j = T + x - b;
+        GT[x] = (j >= 0 && j <= L) ? (int32_t)((L - j) * c) : CL_INF;
+    }
+    for (int64_t i = T - 1; i >= 0; i--) {
+        const int32_t *nx = G + (i + 1) * W;
+        int32_t *cur = G + i * W;
+        const int32_t pad = dip ? nx[0] + c : CL_INF; /* cell (i + 1, d = -b - 1): an insertion back into the band */
+        const int16_t tci = tp[i];
+        const int32_t mci = mc[i];
+        int32_t run = CL_INF;
+        for (int64_t x = W - 1; x >= 0; x--) {
+            const int64_t jd = i + x - b;
+            const int okd = jd >= 0 && jd < L;
+            const int32_t cost = (tci < 0 || (okd && rd[jd] == tci)) ? 0 : mci;
+            const int32_t diag = okd ? cost + nx[x] : CL_INF;
+            const int32_t dele = (x > 0 ? nx[x - 1] : pad) + c;
+            int32_t v = imin32(diag, dele);
+            v = imin32(v, run + c);
+            run = v;
+            cur[x] = (jd >= 0 && jd <= L) ? v : CL_INF;
+        }
+    }
+}
+
+static inline int64_t tc_clip(int64_t v) { return v >= CL_INF ? CL_INF : v; }
+
+int vnx_cl_trial_costs(int64_t c0, int64_t c1, int64_t ncand, int64_t T, const int16_t *base_tpl, const int32_t *mc,
+                       const uint8_t *buf, int64_t nbuf, const int64_t *off, const int64_t *len, const int64_t *band,
+                       const int64_t *read_start, const uint8_t *base_dip, int32_t c_indel, int64_t pen,
+                       const int16_t *trial_tpl, const int64_t *trial_start, const int64_t *trial_row,
+                       int64_t ntrialrows, const uint8_t *trial_dip, int64_t *trial_cost, int64_t *base_cost) {
+    if (ncand < 0 || c0 < 0 || c1 < c0 || c1 > ncand || T < 0 || T > 8192 || c_indel < 0 || c_indel > 1024 || pen < 0)
+        return CL_EARG;
+    if (ncand > 0 && (!read_start || !trial_start)) return CL_EARG;
+    if (c1 == c0) return CL_OK;
+    const int64_t nreads = read_start[ncand], ntrial = trial_start[ncand];
+    if (read_start[0] != 0 || trial_start[0] != 0 || nreads < 0 || ntrial < 0) return CL_EARG;
+    if (!base_tpl || !mc || !buf || !off || !len || !band || !base_dip || !base_cost || nbuf < 0) return CL_EARG;
+    if (ntrial > 0 && (!trial_tpl || !trial_row || !trial_dip || !trial_cost)) return CL_EARG;
+    for (int64_t k = 0; k < ncand; k++)
+        if (read_start[k + 1] < read_start[k] || trial_start[k + 1] < trial_start[k]) return CL_EARG;
+    for (int64_t t = 0; t < T; t++)
+        if (mc[t] < 0 || mc[t] > 1024) return CL_EARG;
+    int64_t maxb = 0;
+    for (int64_t r = read_start[c0]; r < read_start[c1]; r++) {
+        if (len[r] < 0 || len[r] > (1 << 20) || off[r] < 0 || off[r] > nbuf - len[r] || band[r] < 0 || band[r] > 512)
+            return CL_EARG;
+        if (band[r] > maxb) maxb = band[r];
+    }
+    const int64_t Wm = 2 * maxb + 1, cells = (T + 1) * Wm;
+    int32_t *M = malloc(sizeof(int32_t) * (size_t)(4 * cells + 2 * Wm)); /* F, G for dip 0 and 1; two scratch rows */
+    int64_t *lo = malloc(sizeof(int64_t) * (size_t)(ntrial > 0 ? ntrial : 1));
+    int64_t *hi = malloc(sizeof(int64_t) * (size_t)(ntrial > 0 ? ntrial : 1));
+    int rc = CL_OK;
+    if (!M || !lo || !hi) {
+        rc = CL_ENOMEM;
+        goto done;
+    }
+    for (int64_t k = c0; k < c1; k++) {
+        const int16_t *bt = base_tpl + k * T;
+        const int64_t r0 = read_start[k], nr = read_start[k + 1] - r0;
+        int64_t bsum = 0;
+        for (int64_t x = trial_start[k]; x < trial_start[k + 1]; x++) {
+            const int16_t *tt = trial_tpl + x * T;
+            int64_t a = 0, e = T;
+            while (a < T && tt[a] == bt[a]) a++;
+            while (e > a && tt[e - 1] == bt[e - 1]) e--;
+            lo[x] = a;
+            hi[x] = e;
+            trial_cost[x] = 0;
+            if (trial_row[x] < 0 || trial_row[x] > ntrialrows - nr) {
+                rc = CL_EARG;
+                goto done;
+            }
+        }
+        for (int64_t q = 0; q < nr; q++) {
+            const int64_t r = r0 + q, b = band[r], L = len[r], W = 2 * b + 1;
+            const uint8_t *rd = buf + off[r];
+            const int64_t dl = L - T;
+            const int fit = (dl < 0 ? -dl : dl) <= b;
+            const int64_t we = dl + b;
+            int have[2] = {0, 0};
+            for (int pass = 0; pass < 2; pass++) { /* pass 0: base row; pass 1: trial rows */
+                const int64_t xa = pass ? trial_start[k] : 0, xe = pass ? trial_start[k + 1] : 1;
+                for (int64_t x = xa; x < xe; x++) {
+                    const int dip = pass ? trial_dip[trial_row[x] + q] != 0 : base_dip[r] != 0;
+                    int32_t *F = M + (int64_t)dip * 2 * cells, *G = F + cells;
+                    if (!fit) {
+                        if (pass) trial_cost[x] += imin64(CL_INF, pen);
+                        else bsum += imin64(CL_INF, pen);
+                        continue;
+                    }
+                    if (!have[dip]) {
+                        tc_forward(F, T, b, bt, mc, rd, L, c_indel, dip, 0, T);
+                        tc_backward(G, T, b, bt, mc, rd, L, c_indel, dip);
+                        have[dip] = 1;
+                    }
+                    int64_t o;
+                    if (!pass || lo[x] >= hi[x]) {
+                        o = tc_clip(F[T * W + we]);
+                    } else {
+                        const int16_t *tt = trial_tpl + x * T;
+                        int32_t *A = M + 4 * cells, *Bv = A + Wm;
+                        const int32_t *prev = F + lo[x] * W;
+                        for (int64_t i = lo[x] + 1; i <= hi[x]; i++) {
+                            int32_t *cur = (i - lo[x]) % 2 ? A : Bv;
+                            tc_frow(prev, cur, i, b, W, tt[i - 1], mc[i - 1], rd, L, c_indel, dip);
+                            prev = cur;
+                        }
+                        const int32_t *Gh = G + hi[x] * W;
+                        int64_t best = CL_INF;
+                        for (int64_t y = 0; y < W; y++) best = imin64(best, (int64_t)prev[y] + Gh[y]);
+                        o = tc_clip(best);
+                    }
+                    if (pass) trial_cost[x] += imin64(o, pen);
+                    else bsum += imin64(o, pen);
+                }
+            }
+        }
+        base_cost[k] = bsum;
+    }
+done:
+    free(M);
+    free(lo);
+    free(hi);
     return rc;
 }

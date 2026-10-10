@@ -46,7 +46,7 @@ import numpy as np
 
 from vnxdna import _native_build as _nb
 
-ABI_VERSION = 2
+ABI_VERSION = 3
 BACKENDS = ("auto", "native", "reference")
 INF = 1 << 28
 MAX_COST = 1024
@@ -115,6 +115,8 @@ def _bind(lib) -> None:
     lib.vnx_cl_fb.argtypes = [i64, i64, i64, p, p, p, i64, p, p, p, i32, i32, p, p, i32, i32]
     lib.vnx_cl_edit_costs.restype = ctypes.c_int
     lib.vnx_cl_edit_costs.argtypes = [i64, i64, i64, p, p, p, i64, p, p, p, i32, i32, p, p, p, p]
+    lib.vnx_cl_trial_costs.restype = ctypes.c_int
+    lib.vnx_cl_trial_costs.argtypes = [i64, i64, i64, i64, p, p, p, i64, p, p, p, p, p, i32, i64, p, p, p, i64, p, p, p]
 
 
 def _load():
@@ -485,3 +487,56 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+def trial_costs_in_domain(T: int, B: int, mc: np.ndarray, c_indel: int, lens: np.ndarray) -> bool:
+    return fb_in_domain(T, B, mc, c_indel, 0, lens)
+
+
+def trial_costs(base_tpl: np.ndarray, mc: np.ndarray, buf: np.ndarray, off: np.ndarray, lens: np.ndarray,
+                band: np.ndarray, read_start: np.ndarray, base_dip: np.ndarray, c_indel: int, pen: int,
+                trial_tpl: np.ndarray, trial_start: np.ndarray, trial_row: np.ndarray, trial_dip: np.ndarray,
+                nthreads: int | None = None) -> tuple[np.ndarray, np.ndarray]:
+    """Polish trial costs (as consensus.trial_costs_reference, V10 W2): (summed clipped cost per trial, per candidate
+    base). Reads and trials are grouped by candidate (``read_start``/``trial_start``, CSR); ``trial_row[x]`` is the
+    offset of trial x's rows in ``trial_dip``. Candidates are independent, so threads do not change the result."""
+    lib = _lib_or_raise()
+    ncand, T = base_tpl.shape
+    base_tpl = np.ascontiguousarray(base_tpl, dtype=np.int16)
+    trial_tpl = np.ascontiguousarray(trial_tpl, dtype=np.int16).reshape(-1, T)
+    mc = np.ascontiguousarray(mc, dtype=np.int32)
+    band = np.ascontiguousarray(band, dtype=np.int64)
+    read_start = np.ascontiguousarray(read_start, dtype=np.int64)
+    trial_start = np.ascontiguousarray(trial_start, dtype=np.int64)
+    trial_row = np.ascontiguousarray(trial_row, dtype=np.int64)
+    base_dip = np.ascontiguousarray(base_dip, dtype=np.uint8)
+    trial_dip = np.ascontiguousarray(trial_dip, dtype=np.uint8)
+    buf, off, lens = _seqs(buf, off, lens)
+    ntrial = trial_tpl.shape[0]
+    if mc.shape != (T,) or read_start.shape != (ncand + 1,) or trial_start.shape != (ncand + 1,) \
+            or trial_row.shape != (ntrial,) or int(trial_start[-1]) != ntrial or band.shape != off.shape \
+            or base_dip.shape != off.shape or int(read_start[-1]) != off.size:
+        raise ValueError("inconsistent trial-cost arrays")
+    cost = np.zeros(ntrial, dtype=np.int64)
+    basec = np.zeros(ncand, dtype=np.int64)
+    nt = threads() if nthreads is None else max(1, int(nthreads))
+    # split candidates by work (reads x (1 + trials)); every candidate's outputs belong to exactly one part
+    work = np.cumsum(np.diff(read_start) * (1 + np.diff(trial_start)))
+    parts = max(1, min(nt, ncand))
+    total = int(work[-1]) if ncand else 0
+    cuts = [0] + [int(np.searchsorted(work, total * k / parts, side="right")) for k in range(1, parts)] + [ncand]
+
+    def run(k: int) -> int:
+        c0, c1 = cuts[k], max(cuts[k], cuts[k + 1])
+        if c1 <= c0:
+            return 0
+        return lib.vnx_cl_trial_costs(c0, c1, ncand, T, base_tpl.ctypes.data, mc.ctypes.data, _ptr(buf), buf.size,
+                                      off.ctypes.data, lens.ctypes.data, band.ctypes.data, read_start.ctypes.data,
+                                      base_dip.ctypes.data, int(c_indel), int(pen), _ptr(trial_tpl),
+                                      trial_start.ctypes.data, _ptr(trial_row), trial_dip.size, _ptr(trial_dip),
+                                      _ptr(cost), basec.ctypes.data)
+
+    rcs = [run(0)] if parts == 1 else list(_get_pool(nt).map(run, range(parts)))
+    for rc in rcs:
+        _check(rc, "polish trial costs")
+    return cost, basec

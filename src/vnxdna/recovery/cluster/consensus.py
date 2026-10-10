@@ -98,6 +98,80 @@ def fb_calls_reference(tpl: np.ndarray, mc: np.ndarray, reads: list, band: np.nd
     return calls, opt
 
 
+def trial_costs(tpls: list, mc: np.ndarray, reads: list, owner: np.ndarray, band: np.ndarray, c_indel: int, pen: int,
+                trial_tpl: list, trial_owner: list) -> tuple[np.ndarray, np.ndarray]:
+    """Polish scoring: (summed min(opt, pen) of every trial template over the reads of its candidate (ntrial,), the same
+    sum for every candidate's base template (ncand,)). ``tpls``: base template per candidate; ``owner``: candidate of
+    every read (ascending); ``band``: band per read; ``mc``: (T,) shared mismatch costs. Native windowed kernel (V10 W2)
+    or :func:`trial_costs_reference` (identical results)."""
+    if _nc.resolve_backend() == "native":
+        out = _trial_costs_native(tpls, mc, reads, owner, band, c_indel, pen, trial_tpl, trial_owner)
+        if out is not None:
+            return out
+    return trial_costs_reference(tpls, mc, reads, owner, band, c_indel, pen, trial_tpl, trial_owner)
+
+
+def trial_costs_reference(tpls, mc, reads, owner, band, c_indel, pen, trial_tpl, trial_owner):
+    """The V9 polish scoring (specification of :func:`trial_costs`): one full :func:`fb_calls` per (trial, read)."""
+    owner = np.asarray(owner)
+    band = np.asarray(band, dtype=np.int64)
+    cost = np.zeros(len(trial_tpl), dtype=np.int64)
+    if len(trial_tpl):
+        rows, towner = [], []
+        for x, k in enumerate(trial_owner):
+            idx = np.flatnonzero(owner == k)
+            rows.append(idx)
+            towner.append(np.full(idx.size, x))
+        rows_a, tow = np.concatenate(rows), np.concatenate(towner)
+        if rows_a.size:
+            _, opt = fb_calls(np.stack([trial_tpl[x] for x in tow.tolist()]), np.repeat(mc[None, :], rows_a.size, axis=0),
+                              [reads[i] for i in rows_a.tolist()], band[rows_a], c_indel, 0)
+            np.add.at(cost, tow, np.minimum(opt, pen))
+    basec = np.zeros(len(tpls), dtype=np.int64)
+    if len(reads):
+        tt = np.stack([tpls[k] for k in owner.tolist()])
+        _, bopt = fb_calls(tt, np.repeat(mc[None, :], len(reads), axis=0), reads, band, c_indel, 0)
+        np.add.at(basec, owner, np.minimum(bopt, pen))
+    return cost, basec
+
+
+def _chunk_dips(band: np.ndarray, chunk: int = FB_CHUNK) -> np.ndarray:
+    """Per row: band below its fb_calls chunk's shared band (the reference's path set depends on it, see cluster.c)."""
+    if band.size == 0:
+        return np.zeros(0, dtype=np.uint8)
+    mx = np.maximum.reduceat(band, np.arange(0, band.size, chunk))
+    return (band < mx[np.arange(band.size) // chunk]).astype(np.uint8)
+
+
+def _trial_costs_native(tpls, mc, reads, owner, band, c_indel, pen, trial_tpl, trial_owner):
+    """:func:`trial_costs_reference` in the native kernel; None outside its domain."""
+    owner = np.asarray(owner, dtype=np.int64)
+    band = np.asarray(band, dtype=np.int64)
+    tow = np.asarray(trial_owner, dtype=np.int64)
+    n, ncand, T = len(reads), len(tpls), int(np.asarray(mc).size)
+    if n == 0 or ncand == 0 or band.size != n or owner.size != n or int(band.min()) < 0:
+        return None
+    if np.any(np.diff(owner) < 0) or np.any(np.diff(tow) < 0) or int(owner.min()) < 0 or int(owner.max()) >= ncand \
+            or (tow.size and (int(tow.min()) < 0 or int(tow.max()) >= ncand)):
+        return None
+    mc32 = np.ascontiguousarray(np.asarray(mc).astype(np.int32))
+    buf, off, lens = _nc.pack(list(reads))
+    if not _nc.trial_costs_in_domain(T, int(band.max()), mc32, c_indel, lens):
+        return None
+    if (T + int(lens.max(initial=0)) + 2) * max(1, int(c_indel), int(mc32.max(initial=0))) >= int(INF):
+        return None
+    read_start = np.searchsorted(owner, np.arange(ncand + 1)).astype(np.int64)
+    trial_start = np.searchsorted(tow, np.arange(ncand + 1)).astype(np.int64)
+    nrows = np.diff(read_start)[tow]
+    trial_row = np.concatenate([[0], np.cumsum(nrows)[:-1]]).astype(np.int64) if tow.size else np.zeros(0, np.int64)
+    rows_a = np.repeat(read_start[tow], nrows) + (np.arange(int(nrows.sum())) - np.repeat(trial_row, nrows))
+    base = np.ascontiguousarray(np.stack([np.asarray(t) for t in tpls]).astype(np.int16))
+    trials = np.ascontiguousarray(np.stack([np.asarray(t) for t in trial_tpl]).astype(np.int16)) if len(trial_tpl) \
+        else np.zeros((0, T), dtype=np.int16)
+    return _nc.trial_costs(base, mc32, buf, off, lens, band, read_start, _chunk_dips(band), c_indel, pen, trials,
+                           trial_start, trial_row, _chunk_dips(band[rows_a]))
+
+
 def _fb(tpl, mc, reads, band, c_indel, slack):
     n, T = tpl.shape
     lens = np.fromiter((r.size for r in reads), dtype=np.int64, count=n)
@@ -476,6 +550,14 @@ def _fill_ladder(lay, state, fpos, cfg, frames, er, ok, fields, payload, gmd, tr
         counts["cluster_frames_filled"] += 1
 
 
+def _add_sorted(acc: np.ndarray, idx: np.ndarray, vals: np.ndarray) -> None:
+    """``np.add.at(acc, idx, vals)`` for ascending ``idx`` and integer values (group sums; exact, V10 W2)."""
+    if idx.size == 0:
+        return
+    starts = np.flatnonzero(np.concatenate([[True], idx[1:] != idx[:-1]]))
+    acc[idx[starts]] += np.add.reduceat(vals, starts, axis=0)
+
+
 def _polish(cands, state, tpl0, fpos, cfg, marker_mismatch, counts) -> None:
     """``consensus_template="full"`` (EXPERIMENTAL): polish a full template per candidate (:mod:`.polish`), then
     replace the candidate's vote by the vote of its reads' certain calls against the polished template."""
@@ -507,9 +589,9 @@ def _polish(cands, state, tpl0, fpos, cfg, marker_mismatch, counts) -> None:
             opt, sub, dele, ins = _pl.edit_costs(tt[sl], mm[sl], reads_all[sl], bands[sl], cfg.c_indel, cfg.c_sub)
             live = opt < INF
             own = owner[sl][live]
-            np.add.at(dsub, own, np.minimum(sub[live], pen) - opt[live][:, None, None])
-            np.add.at(ddel, own, np.minimum(dele[live], pen) - opt[live][:, None])
-            np.add.at(dins, own, np.minimum(ins[live], pen) - opt[live][:, None, None])
+            _add_sorted(dsub, own, np.minimum(sub[live], pen) - opt[live][:, None, None])
+            _add_sorted(ddel, own, np.minimum(dele[live], pen) - opt[live][:, None])
+            _add_sorted(dins, own, np.minimum(ins[live], pen) - opt[live][:, None, None])
         # candidate moves per (candidate, hot segment): the improving substitutions together, and shift pairs
         trial_tpl, trial_key = [], []
         for k, t in enumerate(tpls):
@@ -541,25 +623,13 @@ def _polish(cands, state, tpl0, fpos, cfg, marker_mismatch, counts) -> None:
                         trial_key.append((k, g))
         if not trial_tpl:
             break
-        # exact summed cost of every trial template (all reads of its candidate)
-        rows, towner = [], []
-        for x, (k, _) in enumerate(trial_key):
-            idx = np.flatnonzero(owner == k)
-            rows.append(idx)
-            towner.append(np.full(idx.size, x))
-        rows_a, tow = np.concatenate(rows), np.concatenate(towner)
-        _, opt = fb_calls(np.stack([trial_tpl[x] for x in tow.tolist()]), np.repeat(mc[None, :], rows_a.size, axis=0),
-                          [reads_all[i] for i in rows_a.tolist()], bands[rows_a], cfg.c_indel, 0)
-        cost = np.zeros(len(trial_tpl), dtype=np.int64)
-        np.add.at(cost, tow, np.minimum(opt, pen))
-        basec = np.zeros(len(cands), dtype=np.int64)
+        # exact summed cost of every trial template (all reads of its candidate) and the base cost, same clipping
+        cost, basec = trial_costs(tpls, mc, reads_all, owner, bands, cfg.c_indel, pen, trial_tpl,
+                                  [k for k, _ in trial_key])
         best_move: dict = {}
         for x, key in enumerate(trial_key):
             if key not in best_move or cost[x] < cost[best_move[key]]:
                 best_move[key] = x
-        # the base cost with the same clipping as the trials
-        _, bopt = fb_calls(tt, mm, reads_all, bands, cfg.c_indel, 0)
-        np.add.at(basec, owner, np.minimum(bopt, pen))
         moved = 0
         new = [t.copy() for t in tpls]
         for (k, g), x in sorted(best_move.items()):
