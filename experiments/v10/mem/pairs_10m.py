@@ -52,7 +52,7 @@ def capture(seed: int, npz: Path) -> dict:
     opts = dataclasses.replace(nf.decoder_options(case), workers=R.W1.WORKERS, stage_counters=True)
     seen = {}
 
-    def grab(hashes, orient, bucket_cap, max_pairs, counts, min_shared=1):
+    def grab(hashes, orient, bucket_cap, max_pairs, counts, min_shared=1, chunk_pairs=None):  # graph.candidate_pairs
         np.savez(npz, hashes=hashes, orient=orient, bucket_cap=bucket_cap, max_pairs=max_pairs, min_shared=min_shared)
         seen.update(n=int(hashes.shape[0]), s=int(hashes.shape[1]), bucket_cap=int(bucket_cap),
                     max_pairs=int(max_pairs), min_shared=int(min_shared))
@@ -66,8 +66,10 @@ def capture(seed: int, npz: Path) -> dict:
         sha = hashlib.sha256((w / "r.fastq").read_bytes()).hexdigest()
         if sha != rec["reads_sha256"]:
             raise SystemExit(f"reads differ from the recorded case: {sha} != {rec['reads_sha256']}")
+        # decode_reads directly: the harness's decode_claim would catch _Captured and report a failed decode
+        from vnxdna.pipeline.decode import decode_reads
         try:
-            R.W2._decode(w, "mem", opts, arc)
+            decode_reads(w / "r.fastq", w / "o-mem.vnx", opts)
         except _Captured:
             pass
     if not seen:
@@ -78,6 +80,18 @@ def capture(seed: int, npz: Path) -> dict:
 def _rss_now() -> int:
     with open("/proc/self/statm") as f:
         return int(f.read().split()[1]) * os.sysconf("SC_PAGE_SIZE")
+
+
+def _slot_pairs(hashes, bucket_cap: int) -> int:
+    """Slot pairs the candidate step enumerates: per sketch slot, sum m(m-1)/2 over buckets of 2..bucket_cap reads
+    (the decoder reports this counter only on a budget stop, so the measurement recomputes it from the inputs)."""
+    import numpy as np
+    total = 0
+    for i in range(hashes.shape[1]):
+        _, m = np.unique(hashes[:, i], return_counts=True)
+        m = m[(m >= 2) & (m <= bucket_cap)].astype(np.int64)
+        total += int((m * (m - 1) // 2).sum())
+    return total
 
 
 def measure(npz: Path, label: str, max_pairs: int | None, chunk: int | None) -> dict:
@@ -101,6 +115,8 @@ def measure(npz: Path, label: str, max_pairs: int | None, chunk: int | None) -> 
     a, b, rel, budget = candidate_pairs(hashes, orient, int(d["bucket_cap"]), limit, counts, int(d["min_shared"]),
                                         *extra)
     sec = round(time.perf_counter() - t0, 2)
+    peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024   # before the slot count below allocates
+    slots = _slot_pairs(hashes, int(d["bucket_cap"]))
     tree = Path(vnxdna.__file__).resolve().parents[2]   # the tree whose candidate step ran (PYTHONPATH)
     commit = subprocess.run(["git", "-C", str(tree), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
     dirty = bool(subprocess.run(["git", "-C", str(tree), "status", "--porcelain", "--", "src"], capture_output=True,
@@ -109,9 +125,9 @@ def measure(npz: Path, label: str, max_pairs: int | None, chunk: int | None) -> 
            hashlib.sha256(npz.read_bytes()).hexdigest(), "reads": int(hashes.shape[0]), "sketch_size":
            int(hashes.shape[1]), "bucket_cap": int(d["bucket_cap"]), "min_shared": int(d["min_shared"]),
            "decoder_budget": budget_in, "limit_used": limit, "budget_stop": budget,
-           "slot_pairs": int(counts.get("candidate_pairs_slots", 0)), "kept_pairs": int(a.size),
+           "slot_pairs": slots, "kept_pairs": int(a.size),
            "counters": dict(counts), "seconds": sec, "rss_inputs_bytes": rss_inputs,
-           "peak_rss_bytes": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024,
+           "peak_rss_bytes": peak,
            "pairs_sha256": hashlib.sha256(a.tobytes() + b.tobytes() + rel.tobytes()).hexdigest(),
            "load1_start": load, "load1_end": round(os.getloadavg()[0], 2), "default_max_pairs": cfg.max_candidate_pairs,
            "time": time.time(), "tree": str(tree), "chunk_pairs": chunk}
