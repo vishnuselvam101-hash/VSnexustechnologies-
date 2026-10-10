@@ -13,6 +13,9 @@
 extern "C" int vnx_ol_decode_row(int64_t, int64_t, int64_t, const uint8_t*, const uint8_t*, const uint8_t*,
                                  const uint8_t*, uint8_t*, int64_t, const int32_t*, const uint8_t*, const uint8_t*,
                                  int64_t, int64_t, int64_t, int32_t*, int32_t*);
+extern "C" int vnx_ol_ransac(int64_t, int64_t, int64_t, const uint8_t*, const uint8_t*, const uint8_t*,
+                             const uint8_t*, const uint8_t*, int64_t, const int32_t*, const uint8_t*, int64_t, int64_t,
+                             int32_t*);
 extern "C" int vnx_ol_assign(int64_t, int64_t, const uint8_t*, int64_t, int64_t, const uint8_t*, int64_t,
                              const int16_t*, int64_t, const uint8_t*, int64_t, int64_t, int32_t*, int16_t*, int8_t*,
                              int8_t*);
@@ -90,6 +93,16 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
         if (rc2 != rc || s1 != s2 || b1 != b2 || c1 != c2) abort();
         for (int p = 0; p < n; p++)
             if (known[static_cast<size_t>(p)] && memcmp(&s1[static_cast<size_t>(p * P)], &sym[static_cast<size_t>(p * P)], static_cast<size_t>(P))) abort();
+        // frame-level RANSAC on the same candidates: support in [0, nc], agreements in [0, P], deterministic
+        const int64_t tau = 1 + s.take() % P, tuples = 1 + s.take() % 300;
+        std::vector<int32_t> a1(static_cast<size_t>(nc) + 1), a2(static_cast<size_t>(nc) + 1);
+        const int r1 = vnx_ol_ransac(k, m, P, parity.data(), MUL, INV, known.data(), sym.data(), nc, cpos.data(),
+                                     cval.data(), tau, tuples, a1.data());
+        const int r2 = vnx_ol_ransac(k, m, P, parity.data(), MUL, INV, known.data(), sym.data(), nc, cpos.data(),
+                                     cval.data(), tau, tuples, a2.data());
+        if (r1 < 0 || r1 > nc || r1 != r2 || a1 != a2) abort();
+        for (int c = 0; c < nc; c++)
+            if (a1[static_cast<size_t>(c)] < 0 || a1[static_cast<size_t>(c)] > P) abort();
     } else if (rc >= 0 && f_real < 1) {
         abort();  // a row without unknown dof must be rejected
     }

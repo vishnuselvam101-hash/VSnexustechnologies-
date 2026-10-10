@@ -96,6 +96,10 @@ class ClusterConfig:
     list_min_tail_matches: int = 8              # of the 20 CRC-32 + inner parity bytes (random: ~7e-15 per trial)
     list_min_consistent: int = 12               # payload columns agreeing with a proposal to assign a frame by payload
     list_check_symbols: int = 1                 # verified symbols beyond k that the decoded row must reproduce
+    list_ransac_hypotheses: int = 64            # frame-level RANSAC: hypotheses per row (0 = off)
+    list_ransac_header_distance: int = 4        # header bytes a hypothesis frame may differ in
+    list_ransac_tau: int = 8                    # agreeing payload columns of a supporter (random: ~1e-11 for 40 B)
+    list_ransac_max_tuples: int = 50_000
     list_min_frame_match_percent: int = 50      # or: % of a failed frame's bytes matching a predicted missing frame
 
     def validate(self) -> ClusterConfig:
@@ -107,6 +111,8 @@ class ClusterConfig:
                 "list_max_header_distance": 0, "list_min_extra": 0, "list_margin": 1, "list_max_subsets": 1,
                 "list_max_hypotheses": 0, "list_rounds": 1, "list_repair_bytes": 0, "list_max_repairs": 1,
                 "list_min_tail_matches": 1, "list_min_consistent": 1, "list_check_symbols": 1,
+                "list_ransac_hypotheses": 0, "list_ransac_header_distance": 0, "list_ransac_tau": 1,
+                "list_ransac_max_tuples": 1,
                 "list_min_frame_match_percent": 1}
         for name, lo in ints.items():
             v = getattr(self, name)

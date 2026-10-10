@@ -236,11 +236,75 @@ def decode_row_reference(parity, mul, inv, known, sym, cpos, cval, cok, min_extr
     return sym, accepted, best_out, second_out
 
 
+def ransac_reference(parity, mul, inv, known, sym, hpos, hval, tau: int, max_tuples: int):
+    """Reference of vnx_ol_ransac: (support of the winning tuple, per-hypothesis agreeing columns)."""
+    del mul, inv
+    parity = np.asarray(parity, dtype=np.uint8)
+    known = np.asarray(known, dtype=bool)
+    sym = np.asarray(sym, dtype=np.uint8)
+    P = sym.shape[1]
+    hpos = np.asarray(hpos, dtype=np.int64)
+    hval = np.asarray(hval, dtype=np.uint8).reshape(-1, P)
+    U, Kn, H, T, prow, R, f = _affine(parity, known)
+    if not 1 <= f <= MAX_F:
+        raise ValueError("ransac needs 1 <= k - known <= 8")
+    m = parity.shape[0]
+    uidx = {p: i for i, p in enumerate(U)}
+    hu = [uidx[int(p)] for p in hpos]
+    mul_t = gf256.MUL
+    acol = np.zeros((len(U), P), dtype=np.int64)
+    for col in range(P):
+        rhs = [0] * m
+        for r in range(m):
+            v = 0
+            for p in Kn:
+                v ^= int(mul_t[H[r, p], sym[p, col]])
+            rhs[r] = v
+        for c, r in prow.items():
+            v = 0
+            for j in range(m):
+                v ^= int(mul_t[T[r][j], rhs[j]])
+            acol[c, col] = v
+    best, bestcnt, tried = 0, [0] * len(hu), 0
+    if len(hu) >= f:
+        for S in combinations(range(len(hu)), f):
+            if len({hu[i] for i in S}) < f:
+                continue
+            if tried >= max_tuples:
+                break
+            tried += 1
+            cnt = [0] * len(hu)
+            ok = True
+            for col in range(P):
+                y = [int(hval[h, col]) ^ int(acol[hu[h], col]) for h in S]
+                z = _solve([R[hu[h]] for h in S], y)
+                if z is None:
+                    ok = False
+                    break
+                for h in range(len(hu)):
+                    x = int(acol[hu[h], col])
+                    for j in range(f):
+                        x ^= int(mul_t[R[hu[h]][j], z[j]])
+                    cnt[h] += int(hval[h, col]) == x
+            if not ok:
+                continue
+            support = sum(c >= tau for c in cnt)
+            if support > best:
+                best, bestcnt = support, cnt
+    return best, np.asarray(bestcnt, dtype=np.int64)
+
+
 # --------------------------------------------------------------------------------------------------------- dispatch
 def assign(frames, ks, variants, targets, max_dist, exact_mask=0):
     if _native.resolve_backend() == "native":
         return _native.assign(frames, ks, variants, targets, max_dist, exact_mask)
     return assign_reference(frames, ks, variants, targets, max_dist, exact_mask)
+
+
+def ransac(parity, known, sym, hpos, hval, tau, max_tuples):
+    if _native.resolve_backend() == "native":
+        return _native.ransac(parity, gf256.MUL, INV, known, sym, hpos, hval, tau, max_tuples)
+    return ransac_reference(parity, gf256.MUL, INV, known, sym, hpos, hval, tau, max_tuples)
 
 
 def decode_row(parity, known, sym, cpos, cval, cok, min_extra, margin, max_subsets):
@@ -287,8 +351,9 @@ class OuterListDecoder:
     """Recover short rows of one archive (tag) from the stage's failed consensus frames. ``codec`` is the
     :class:`vnxdna.codec.codecs.CauchyRSCodec` of the archive (other outer codes are not list-decoded)."""
 
-    def __init__(self, lay: Layout, cfg, codec, tag: int):
+    def __init__(self, lay: Layout, cfg, codec, tag: int, n_groups: int = 1 << 32):
         self.lay, self.cfg, self.codec, self.tag = lay, cfg, codec, int(tag)
+        self.n_groups = int(n_groups)    # rows of the archive (a header naming another existing row is not a candidate)
         self.counts: Counter = Counter()
         self._extra: dict = {}           # group -> {(symbol, frame index): variant} found by payload consistency
 
@@ -397,6 +462,8 @@ class OuterListDecoder:
                 for (s, i), v in lst.items():
                     if s not in rows[g][1]:
                         cands.setdefault(g, {})[(s, i)] = v
+        # 1b. frame-level RANSAC: header-near frames as hypotheses, the codeword most of them agree with selects them
+        self._ransac_assign(rows, frames, ks, cands)
         # 2. proposals: per-column outer list decoding of each row from its candidates
         proposal = self._proposals(rows, cands, frames, erased, ks)
         # 3. payload-consistency assignment: frames whose payload agrees with a row's proposal for a missing symbol
@@ -420,6 +487,64 @@ class OuterListDecoder:
                     added += 1
                     self.counts["symbols_tail_verified"] += 1
         return added
+
+    def _ransac_assign(self, rows: dict, frames: np.ndarray, ks: np.ndarray, cands: dict) -> None:
+        """Hypotheses: failed frames within ``list_ransac_header_distance`` header bytes (own variant byte) of a missing
+        address of the row, excluding frames whose header names another row or duplicates a verified symbol of this
+        row (payload agreeing in half the columns); ranked by distance, at most ``list_ransac_hypotheses``. The
+        supporters (>= ``list_ransac_tau`` agreeing columns) of the winning tuple become candidates."""
+        cfg, P, K, M = self.cfg, self.lay.payload_bytes, self.codec.K, self.codec.M
+        if cfg.list_ransac_hypotheses == 0:
+            return
+        v0 = frames[:, 0].astype(np.int64)
+        hdr = frames[:, 1:10] ^ ks[v0][:, :9]
+        lit_g = hdr[:, 3:7].astype(np.int64) @ np.array([1 << 24, 1 << 16, 1 << 8, 1], dtype=np.int64)
+        lit_s = hdr[:, 7].astype(np.int64) * 256 + hdr[:, 8]
+        pay = frames[:, 10:10 + P] ^ ks[v0][:, 9:9 + P]
+        parity_full = np.asarray(CauchyErasureCode(K, M)._parity_matrix, dtype=np.uint8)
+        for g, (k, syms) in sorted(rows.items()):
+            f = k - len(syms)
+            if not 1 <= f <= MAX_F:
+                continue
+            miss = [s for s in range(k + M) if s not in syms]
+            other_row = (lit_g != g) & (lit_g < self.n_groups) & np.isin(lit_g, list(rows), invert=True)
+            dup = np.zeros(len(frames), dtype=bool)
+            same = np.flatnonzero((lit_g == g) & np.isin(lit_s, list(syms)))
+            for i in same.tolist():
+                dup[i] = (pay[i] == syms[int(lit_s[i])]).sum() * 2 >= P
+            keep = np.flatnonzero(~other_row & ~dup)
+            if not keep.size:
+                continue
+            T = np.stack([header_bytes(self.tag, g, s) for s in miss])
+            d = (hdr[keep][:, None, :] != T[None, :, :]).sum(axis=2) + (frames[keep, 0] != v0[keep])[:, None]
+            dmin = d.min(axis=1)
+            hyp = []
+            for r in np.flatnonzero(dmin <= cfg.list_ransac_header_distance).tolist():
+                for t in np.flatnonzero(d[r] == dmin[r])[:2].tolist():
+                    hyp.append((int(dmin[r]), int(keep[r]), miss[t]))
+            hyp.sort()
+            hyp = hyp[: cfg.list_ransac_hypotheses]
+            if len({s for _, _, s in hyp}) < f:
+                continue
+            pos = _pos(k, K)
+            known = np.zeros(K + M, dtype=bool)
+            sym = np.zeros((K + M, P), dtype=np.uint8)
+            known[k:K] = True
+            for s, v in syms.items():
+                known[pos(s)] = True
+                sym[pos(s)] = v
+            hpos = np.array([pos(s) for _, _, s in hyp], dtype=np.int32)
+            hval = np.stack([pay[i] for _, i, _ in hyp])
+            support, agree = ransac(parity_full, known.astype(np.uint8), sym, hpos, hval, cfg.list_ransac_tau,
+                                    cfg.list_ransac_max_tuples)
+            self.counts["ransac_rows"] += 1
+            self.counts["ransac_hypotheses"] += len(hyp)
+            if support <= f:
+                continue
+            for (_, i, s), a in zip(hyp, agree.tolist()):
+                if a >= cfg.list_ransac_tau:
+                    cands.setdefault(g, {})[(s, i)] = int(v0[i])
+                    self.counts["ransac_candidates"] += 1
 
     def _proposals(self, rows, cands, frames, erased, ks) -> dict:
         cfg, P, K, M = self.cfg, self.lay.payload_bytes, self.codec.K, self.codec.M

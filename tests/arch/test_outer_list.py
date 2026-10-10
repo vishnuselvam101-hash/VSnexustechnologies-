@@ -230,3 +230,86 @@ def test_setting_is_opt_in_and_validated():
 
 def test_symbols_are_exported():
     assert isinstance(nol.KERNEL.lib().vnx_ol_decode_row, ctypes._CFuncPtr)
+
+
+# ---------------------------------------------------------------------------------------------------- frame-level RANSAC
+def _ransac_case(seed, K=12, M=6, P=24, f=2, good=5, junk=20, err=0.25):
+    rng = np.random.default_rng(seed)
+    cw, parity = _codeword(rng, K, M, P)
+    n = K + M
+    unknown = rng.choice(n, size=M + f, replace=False)
+    known = np.ones(n, bool)
+    known[unknown] = False
+    sym = np.where(known[:, None], cw, 0).astype(np.uint8)
+    hpos, hval, truth = [], [], []
+    for p in rng.choice(unknown, size=good, replace=False):
+        v = cw[p].copy()
+        bad = rng.random(P) < err
+        v[bad] ^= rng.integers(1, 256, int(bad.sum())).astype(np.uint8)
+        hpos.append(p), hval.append(v), truth.append(True)
+    for _ in range(junk):
+        hpos.append(int(rng.choice(unknown))), hval.append(rng.integers(0, 256, P, dtype=np.uint8)), truth.append(False)
+    order = rng.permutation(len(hpos))
+    return (parity, known, sym, np.array(hpos, np.int32)[order], np.stack(hval)[order], np.array(truth)[order])
+
+
+@pytest.mark.parametrize("seed", range(24))
+def test_ransac_native_equals_reference(seed):
+    f = 1 + seed % 3
+    parity, known, sym, hpos, hval, _ = _ransac_case(seed, f=f, good=f + 2, junk=6 + seed % 5)
+    for tau, cap in ((6, 10_000), (3, 7)):
+        nat = nol.ransac(parity, gf256.MUL, ol.INV, known.astype(np.uint8), sym, hpos, hval, tau, cap)
+        ref = ol.ransac_reference(parity, gf256.MUL, ol.INV, known.astype(np.uint8), sym, hpos, hval, tau, cap)
+        assert nat[0] == ref[0]
+        np.testing.assert_array_equal(nat[1], ref[1])
+
+
+@pytest.mark.parametrize("seed", range(8))
+def test_ransac_separates_true_frames_from_junk(seed):
+    f = 1 + seed % 3
+    parity, known, sym, hpos, hval, truth = _ransac_case(100 + seed, f=f, good=f + 3, junk=30, err=0.15)
+    support, agree = nol.ransac(parity, gf256.MUL, ol.INV, known.astype(np.uint8), sym, hpos, hval, 8, 100_000)
+    assert support >= f + 1
+    chosen = agree >= 8
+    assert not (chosen & ~truth).any()             # no junk frame is selected
+    assert chosen[truth].mean() >= 0.5
+
+
+def test_ransac_rejects_bad_arguments():
+    lib = nol.KERNEL.lib()
+    parity, known, sym, hpos, hval, _ = _ransac_case(1)
+    agree = np.zeros(hpos.size, np.int32)
+    kn = known.astype(np.uint8)
+
+    def call(tau=4, cap=100, hp=hpos, kn_=kn, P=sym.shape[1]):
+        return lib.vnx_ol_ransac(12, 6, P, parity.ctypes.data, gf256.MUL.ctypes.data, ol.INV.ctypes.data,
+                                 kn_.ctypes.data, sym.ctypes.data, hp.size, hp.ctypes.data, hval.ctypes.data, tau, cap,
+                                 agree.ctypes.data)
+    assert call() >= 0
+    bad = hpos.copy()
+    bad[0] = int(np.flatnonzero(known)[0])
+    for kw in (dict(tau=0), dict(tau=sym.shape[1] + 1), dict(cap=0), dict(hp=bad), dict(kn_=np.ones_like(kn)), dict(P=0)):
+        assert call(**kw) == -1, kw
+
+
+@pytest.mark.parametrize("seed", range(6))
+def test_short_row_recovered_when_headers_are_damaged(seed):
+    """Candidates whose group/symbol header bytes are corrupted (so the exact header rule cannot place them) are found
+    by the frame-level RANSAC and the row is recovered exactly."""
+    lay = Layout(20, 8, 0, 0)
+    tag, g, k, M = 0x1234, 7, 16, 6
+    codec, data, cw, frames = _archive_row(300 + seed, lay, tag, g, k, M)
+    rng = np.random.default_rng(400 + seed)
+    missing = rng.choice(k + M, size=M + 2, replace=False)
+    syms = {s: cw[s] for s in range(k + M) if s not in missing}
+    cand = []
+    for s in missing:
+        f_ = _corrupt(rng, frames[s], 6, lay.payload_bytes)
+        f_[8 + int(rng.integers(0, 2))] ^= 0x41                       # one symbol byte of the header wrong
+        cand.append(f_)
+    F = np.concatenate([np.stack(cand), rng.integers(0, 256, (40, lay.frame_bytes), dtype=np.uint8)])
+    dec = ol.OuterListDecoder(lay, ClusterConfig(outer_list="on").validate(), codec, tag, n_groups=20)
+    out = dec.recover({g: (k, syms)}, F, np.zeros(F.shape, bool))
+    assert g in out, dict(dec.counts)
+    np.testing.assert_array_equal(out[g], data)
+    assert dec.counts["ransac_candidates"] > 0

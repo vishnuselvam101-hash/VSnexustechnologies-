@@ -81,6 +81,95 @@ bool next_comb(std::vector<int>& s, int q) {
     return true;
 }
 
+// Solution space of a short row: unknown positions U, x_U = a(col) + R z (z = values at the f free unknowns).
+struct Space {
+    int n = 0, K = 0, M = 0, f = 0, u = 0, h = 0;
+    std::vector<int> U, Kn, prow, uidx;
+    std::vector<uint8_t> R, T;  // R: u x f, T: m x m row operations
+    const uint8_t* parity = nullptr;
+    uint8_t H(int r, int p) const {
+        return p < K ? parity[static_cast<size_t>(r * K + p)] : static_cast<uint8_t>(p - K == r);
+    }
+    // a for one column (sym: n x P)
+    void offsets(const GF& gf, const uint8_t* sym, int64_t P, int64_t col, std::vector<uint8_t>& a,
+                 std::vector<uint8_t>& rhs) const {
+        for (int r = 0; r < M; r++) {
+            uint8_t s = 0;
+            for (int i = 0; i < h; i++)
+                s ^= gf.m(H(r, Kn[static_cast<size_t>(i)]), sym[static_cast<int64_t>(Kn[static_cast<size_t>(i)]) * P + col]);
+            rhs[static_cast<size_t>(r)] = s;
+        }
+        for (int c = 0; c < u; c++) {
+            const int r = prow[static_cast<size_t>(c)];
+            uint8_t s = 0;
+            if (r >= 0)
+                for (int j = 0; j < M; j++) s ^= gf.m(T[static_cast<size_t>(r * M + j)], rhs[static_cast<size_t>(j)]);
+            a[static_cast<size_t>(c)] = s;
+        }
+    }
+};
+
+// Build the space; returns 0, OL_EARG (f out of range) or OL_EINTERNAL.
+int build_space(const GF& gf, int64_t k, int64_t m, const uint8_t* parity, const uint8_t* known, Space& sp) {
+    sp.K = static_cast<int>(k);
+    sp.M = static_cast<int>(m);
+    sp.n = sp.K + sp.M;
+    sp.parity = parity;
+    for (int p = 0; p < sp.n; p++) (known[p] ? sp.Kn : sp.U).push_back(p);
+    sp.h = static_cast<int>(sp.Kn.size());
+    sp.u = static_cast<int>(sp.U.size());
+    sp.f = sp.K - sp.h;
+    if (sp.f < 1 || sp.f > MAX_F) return OL_EARG;
+    sp.uidx.assign(static_cast<size_t>(sp.n), -1);
+    for (int i = 0; i < sp.u; i++) sp.uidx[static_cast<size_t>(sp.U[static_cast<size_t>(i)])] = i;
+    const int M = sp.M, u = sp.u, f = sp.f;
+    std::vector<uint8_t> A(static_cast<size_t>(M * u));
+    sp.T.assign(static_cast<size_t>(M * M), 0);
+    for (int r = 0; r < M; r++) {
+        for (int i = 0; i < u; i++) A[static_cast<size_t>(r * u + i)] = sp.H(r, sp.U[static_cast<size_t>(i)]);
+        sp.T[static_cast<size_t>(r * M + r)] = 1;
+    }
+    std::vector<int> pivcol;
+    int row = 0;
+    for (int c = 0; c < u && row < M; c++) {
+        int p = -1;
+        for (int r = row; r < M; r++)
+            if (A[static_cast<size_t>(r * u + c)]) { p = r; break; }
+        if (p < 0) continue;
+        if (p != row) {
+            for (int j = 0; j < u; j++) std::swap(A[static_cast<size_t>(p * u + j)], A[static_cast<size_t>(row * u + j)]);
+            for (int j = 0; j < M; j++) std::swap(sp.T[static_cast<size_t>(p * M + j)], sp.T[static_cast<size_t>(row * M + j)]);
+        }
+        const uint8_t iv = gf.inv[A[static_cast<size_t>(row * u + c)]];
+        for (int j = 0; j < u; j++) A[static_cast<size_t>(row * u + j)] = gf.m(A[static_cast<size_t>(row * u + j)], iv);
+        for (int j = 0; j < M; j++) sp.T[static_cast<size_t>(row * M + j)] = gf.m(sp.T[static_cast<size_t>(row * M + j)], iv);
+        for (int r = 0; r < M; r++) {
+            const uint8_t q = A[static_cast<size_t>(r * u + c)];
+            if (r == row || !q) continue;
+            for (int j = 0; j < u; j++) A[static_cast<size_t>(r * u + j)] ^= gf.m(q, A[static_cast<size_t>(row * u + j)]);
+            for (int j = 0; j < M; j++) sp.T[static_cast<size_t>(r * M + j)] ^= gf.m(q, sp.T[static_cast<size_t>(row * M + j)]);
+        }
+        pivcol.push_back(c);
+        row++;
+    }
+    if (row != M || u - row != f) return OL_EINTERNAL;
+    std::vector<int> freec, fidx(static_cast<size_t>(u), -1);
+    sp.prow.assign(static_cast<size_t>(u), -1);
+    for (int r = 0; r < M; r++) sp.prow[static_cast<size_t>(pivcol[static_cast<size_t>(r)])] = r;
+    for (int c = 0; c < u; c++)
+        if (sp.prow[static_cast<size_t>(c)] < 0) { fidx[static_cast<size_t>(c)] = static_cast<int>(freec.size()); freec.push_back(c); }
+    sp.R.assign(static_cast<size_t>(u * f), 0);
+    for (int c = 0; c < u; c++) {
+        if (fidx[static_cast<size_t>(c)] >= 0) {
+            sp.R[static_cast<size_t>(c * f + fidx[static_cast<size_t>(c)])] = 1;
+        } else {
+            const int r = sp.prow[static_cast<size_t>(c)];
+            for (int j = 0; j < f; j++) sp.R[static_cast<size_t>(c * f + j)] = A[static_cast<size_t>(r * u + freec[static_cast<size_t>(j)])];
+        }
+    }
+    return 0;
+}
+
 }  // namespace
 
 extern "C" {
@@ -327,6 +416,91 @@ int vnx_ol_decode_row(int64_t k, int64_t m, int64_t P, const uint8_t* parity, co
             if (best >= f + min_extra && best - std::max(second, 0) >= margin) accepted++;
         }
         return accepted;
+    } catch (const std::bad_alloc&) {
+        return OL_ENOMEM;
+    } catch (...) {
+        return OL_EINTERNAL;
+    }
+}
+
+// Frame-level hypothesis selection for one short row (same inputs as vnx_ol_decode_row for the code and the known
+// symbols). nh hypotheses: position hpos (unknown), payload hval (nh x P). Every f-tuple of hypotheses at distinct
+// positions (lexicographic over the given order, at most max_tuples) determines a codeword per column; each hypothesis
+// scores the number of columns where it agrees with that codeword. The tuple supported by the most hypotheses with at
+// least tau agreeing columns wins (first in order on ties). Outputs: agree (nh) = the winning codeword's agreement per
+// hypothesis (0 if no tuple). Returns the winning support count (0 if none) or an error code.
+int vnx_ol_ransac(int64_t k, int64_t m, int64_t P, const uint8_t* parity, const uint8_t* mul, const uint8_t* inv,
+                  const uint8_t* known, const uint8_t* sym, int64_t nh, const int32_t* hpos, const uint8_t* hval,
+                  int64_t tau, int64_t max_tuples, int32_t* agree) noexcept {
+    try {
+        if (k < 1 || m < 1 || k + m > MAX_N || P < 1 || P > MAX_P || nh < 0 || nh > 4096 || tau < 1 || tau > P ||
+            max_tuples < 1 || max_tuples > (int64_t{1} << 32))
+            return OL_EARG;
+        if (!parity || !mul || !inv || !known || !sym || !agree || (nh && (!hpos || !hval))) return OL_EARG;
+        const GF gf{mul, inv};
+        Space sp;
+        const int rc = build_space(gf, k, m, parity, known, sp);
+        if (rc) return rc;
+        for (int64_t i = 0; i < nh; i++) {
+            if (hpos[i] < 0 || hpos[i] >= sp.n || known[hpos[i]]) return OL_EARG;
+            agree[i] = 0;
+        }
+        const int f = sp.f, u = sp.u, H = static_cast<int>(nh);
+        if (H < f) return 0;
+        // per column offsets a (u x P)
+        std::vector<uint8_t> acol(static_cast<size_t>(u) * static_cast<size_t>(P)), a(static_cast<size_t>(u)),
+            rhs(static_cast<size_t>(sp.M));
+        for (int64_t col = 0; col < P; col++) {
+            sp.offsets(gf, sym, P, col, a, rhs);
+            for (int c = 0; c < u; c++) acol[static_cast<size_t>(c) * static_cast<size_t>(P) + static_cast<size_t>(col)] = a[static_cast<size_t>(c)];
+        }
+        std::vector<int> hu(static_cast<size_t>(H));
+        for (int i = 0; i < H; i++) hu[static_cast<size_t>(i)] = sp.uidx[static_cast<size_t>(hpos[i])];
+        std::vector<int> S(static_cast<size_t>(f)), bestS;
+        for (int i = 0; i < f; i++) S[static_cast<size_t>(i)] = i;
+        std::vector<uint8_t> sub(static_cast<size_t>(f * f)), y(static_cast<size_t>(f)), z(static_cast<size_t>(f));
+        std::vector<int32_t> cnt(static_cast<size_t>(H)), bestcnt(static_cast<size_t>(H), 0);
+        int best = 0;
+        int64_t tried = 0;
+        do {
+            bool distinct = true;
+            for (int i = 0; i < f && distinct; i++)
+                for (int j = 0; j < i && distinct; j++)
+                    distinct = hu[static_cast<size_t>(S[static_cast<size_t>(i)])] != hu[static_cast<size_t>(S[static_cast<size_t>(j)])];
+            if (!distinct) continue;
+            if (tried++ >= max_tuples) break;
+            for (int i = 0; i < f; i++)
+                for (int j = 0; j < f; j++)
+                    sub[static_cast<size_t>(i * f + j)] = sp.R[static_cast<size_t>(hu[static_cast<size_t>(S[static_cast<size_t>(i)])] * f + j)];
+            if (!invert(gf, sub, f)) continue;
+            std::fill(cnt.begin(), cnt.end(), 0);
+            for (int64_t col = 0; col < P; col++) {
+                for (int i = 0; i < f; i++) {
+                    const int h = S[static_cast<size_t>(i)];
+                    y[static_cast<size_t>(i)] = static_cast<uint8_t>(hval[static_cast<int64_t>(h) * P + col] ^
+                                                acol[static_cast<size_t>(hu[static_cast<size_t>(h)]) * static_cast<size_t>(P) + static_cast<size_t>(col)]);
+                }
+                for (int i = 0; i < f; i++) {
+                    uint8_t sacc = 0;
+                    for (int j = 0; j < f; j++) sacc ^= gf.m(sub[static_cast<size_t>(i * f + j)], y[static_cast<size_t>(j)]);
+                    z[static_cast<size_t>(i)] = sacc;
+                }
+                for (int h = 0; h < H; h++) {
+                    const int c = hu[static_cast<size_t>(h)];
+                    uint8_t x = acol[static_cast<size_t>(c) * static_cast<size_t>(P) + static_cast<size_t>(col)];
+                    for (int j = 0; j < f; j++) x ^= gf.m(sp.R[static_cast<size_t>(c * f + j)], z[static_cast<size_t>(j)]);
+                    cnt[static_cast<size_t>(h)] += hval[static_cast<int64_t>(h) * P + col] == x;
+                }
+            }
+            int support = 0;
+            for (int h = 0; h < H; h++) support += cnt[static_cast<size_t>(h)] >= tau;
+            if (support > best) {
+                best = support;
+                bestcnt = cnt;
+            }
+        } while (next_comb(S, H));
+        for (int h = 0; h < H; h++) agree[h] = bestcnt[static_cast<size_t>(h)];
+        return best;
     } catch (const std::bad_alloc&) {
         return OL_ENOMEM;
     } catch (...) {

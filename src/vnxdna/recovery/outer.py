@@ -108,7 +108,7 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
         lister = None
         if cluster is not None and cluster.cfg.outer_list == "on":
             from vnxdna.recovery.outer_list import OuterListDecoder
-            lister = OuterListDecoder(lay, cluster.cfg, codec, tag)
+            lister = OuterListDecoder(lay, cluster.cfg, codec, tag, total)
             if not lister.applicable():
                 lister = None
         short: list = []

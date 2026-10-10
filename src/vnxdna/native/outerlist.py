@@ -30,6 +30,8 @@ def _bind(lib) -> None:
     lib.vnx_ol_assign.argtypes = [i64, i64, p, i64, i64, p, i64, p, i64, p, i64, i64, p, p, p, p]
     lib.vnx_ol_decode_row.restype = ctypes.c_int
     lib.vnx_ol_decode_row.argtypes = [i64, i64, i64, p, p, p, p, p, i64, p, p, p, i64, i64, i64, p, p]
+    lib.vnx_ol_ransac.restype = ctypes.c_int
+    lib.vnx_ol_ransac.argtypes = [i64, i64, i64, p, p, p, p, p, i64, p, p, i64, i64, p]
 
 
 KERNEL = CppKernel("outerlist", "VNXDNA_OUTERLIST", ABI_VERSION, "vnx_ol_abi_version", _bind,
@@ -103,6 +105,28 @@ def decode_row(parity: np.ndarray, mul: np.ndarray, inv: np.ndarray, known: np.n
                                        cval.ctypes.data if nc else None, cok.ctypes.data if nc else None, min_extra,
                                        margin, max_subsets, best.ctypes.data, second.ctypes.data), "decode_row")
     return sym, acc, best.astype(np.int64), second.astype(np.int64)
+
+
+def ransac(parity: np.ndarray, mul: np.ndarray, inv: np.ndarray, known: np.ndarray, sym: np.ndarray,
+           hpos: np.ndarray, hval: np.ndarray, tau: int, max_tuples: int):
+    """See vnxdna.recovery.outer_list.ransac_reference. Returns (support, per-hypothesis agreeing columns)."""
+    lib = KERNEL.lib()
+    parity = np.ascontiguousarray(parity, dtype=np.uint8)
+    m, k = parity.shape
+    sym = np.ascontiguousarray(sym, dtype=np.uint8)
+    P = sym.shape[1]
+    known = np.ascontiguousarray(known, dtype=np.uint8)
+    hpos = np.ascontiguousarray(hpos, dtype=np.int32)
+    hval = np.ascontiguousarray(hval, dtype=np.uint8).reshape(-1, P)
+    mul = np.ascontiguousarray(mul, dtype=np.uint8)
+    inv = np.ascontiguousarray(inv, dtype=np.uint8)
+    agree = np.zeros(hpos.size, np.int32)
+    nh = hpos.size
+    best = _check(lib.vnx_ol_ransac(k, m, P, parity.ctypes.data, mul.ctypes.data, inv.ctypes.data, known.ctypes.data,
+                                    sym.ctypes.data, nh, hpos.ctypes.data if nh else None,
+                                    hval.ctypes.data if nh else None, tau, max_tuples,
+                                    agree.ctypes.data if nh else None), "ransac")
+    return best, agree.astype(np.int64)
 
 
 def main(argv=None) -> int:
