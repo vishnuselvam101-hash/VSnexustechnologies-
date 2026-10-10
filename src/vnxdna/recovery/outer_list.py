@@ -381,7 +381,11 @@ class OuterListDecoder:
             open_rows = {g: v for g, v in rows.items() if g not in out}
             if not open_rows:
                 break
+            found = sum(len(v) for v in self._extra.values())
             added = self._round(open_rows, frames, erased, ks)
+            # progress = new verified symbols or new candidates (payload-consistency candidates found in this round are
+            # only used by the next round's proposals; a single short row would otherwise stop one round too early)
+            added += sum(len(v) for v in self._extra.values()) - found
             for g, (k, syms) in open_rows.items():
                 data = self._consistent(k, syms)
                 if data is None and len(syms) >= k:

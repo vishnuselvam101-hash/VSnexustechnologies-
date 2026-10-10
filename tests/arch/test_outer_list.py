@@ -313,3 +313,28 @@ def test_short_row_recovered_when_headers_are_damaged(seed):
     assert g in out, dict(dec.counts)
     np.testing.assert_array_equal(out[g], data)
     assert dec.counts["ransac_candidates"] > 0
+
+
+def test_rounds_continue_when_a_round_only_finds_candidates(monkeypatch):
+    """Regression (seeds 93022/93027/93028, SIMULATED): a single short row whose first round finds payload-consistency
+    candidates but no new symbol must get another round (it used to stop, so the candidates were never used)."""
+    lay = Layout(20, 8, 0, 0)
+    codec, data, cw, _ = _archive_row(5, lay, 0x1234, 7, 16, 6)
+    syms = {s: cw[s] for s in range(16)}                              # k symbols: needs one check symbol
+    syms.pop(0)                                                       # one short
+    calls = []
+
+    def fake_round(self, rows, frames, erased, ks):
+        calls.append(len(calls))
+        if len(calls) == 1:                                           # round 1: a new candidate only
+            self._extra.setdefault(7, {})[(0, 0)] = 0
+            return 0
+        k_, s_ = rows[7]
+        s_[0], s_[16] = cw[0], cw[16]                                 # round 2: symbols verified
+        return 2
+
+    monkeypatch.setattr(ol.OuterListDecoder, "_round", fake_round)
+    dec = ol.OuterListDecoder(lay, ClusterConfig(outer_list="on").validate(), codec, 0x1234)
+    out = dec.recover({7: (16, syms)}, np.zeros((1, lay.frame_bytes), np.uint8), np.zeros((1, lay.frame_bytes), bool))
+    assert len(calls) == 2 and 7 in out
+    np.testing.assert_array_equal(out[7], data)
