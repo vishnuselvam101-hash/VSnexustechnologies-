@@ -97,7 +97,11 @@ def run_seed(seed: int) -> list[dict]:
             oc = classify_outcome(claim, {"container": arc["container_sha256"]})
             rep = res.report if res is not None else dict(getattr(err, "details", {}) or {})
             data = out.read_bytes() if out.exists() else b""
-            rows.append({"seed": seed, "config": name, "env_threads": env,
+            nb = rep.get("native_backends") or {}
+            backends = {k: (v.get("backend") if isinstance(v, dict) else v) for k, v in sorted(nb.items())}
+            if not backends or any(v in (None, "reference") for v in backends.values()):
+                raise SystemExit(f"a native kernel is not active ({backends}); run tools/vnx-lab native first")
+            rows.append({"seed": seed, "config": name, "env_threads": env, "backends": backends,
                          "native_threads": (rep.get("clustering") or {}).get("native_threads"),
                          "outcome": oc["outcome"], "false_success": oc["outcome"] == "FALSE_SUCCESS",
                          "output_sha256": hashlib.sha256(data).hexdigest() if data else None,
