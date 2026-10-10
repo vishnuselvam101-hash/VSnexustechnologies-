@@ -1,0 +1,32 @@
+{
+ "analytic": {
+  "archive_success": {
+   "10m": {
+    "groups": 3907,
+    "with": 0.982445,
+    "without": 0.0
+   },
+   "1m": {
+    "groups": 410,
+    "with": 0.997717,
+    "without": 0.128075
+   },
+   "20k": {
+    "groups": 8,
+    "with": 0.999429,
+    "without": 0.960693
+   }
+  },
+  "model": "Conservative model of the PREREG: a stripe of D + Mc rows decodes iff at most Mc rows fail row-wise (i.i.d. q).",
+  "row_failure_q": 0.005
+ },
+ "cells": {},
+ "commits": [],
+ "geometry": {
+  "column_parity": 4,
+  "profile": "v4-balanced",
+  "stripe_depth": 128
+ },
+ "label": "SIMULATED: reads from a software channel model; no DNA was synthesised, stored or sequenced",
+ "load_rule": null
+}
