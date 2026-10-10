@@ -39,3 +39,21 @@ identical output where both succeed. F still fails 5 seeds, each by one row: 930
 93044 (184), 93046 (164). The development seeds of the RANSAC step (93022, 93027, 93028) are not part of this result.
 
 Label: SIMULATED (D13-F1 nanopore-like software channel); no DNA was synthesised, stored or sequenced.
+
+## Evaluation 3: F at 87b532f (RANSAC + round fix) (pre-registration [PREREG3.md](PREREG3.md), eb6a5a0)
+
+Run 2026-10-11 00:2x–02:3x IST, `vnx-job ol-eval3`. Results: `results/eval3.jsonl`, `results/eval3-summary.json`.
+Seeds 93050–93069 (held out).
+
+| | E | F |
+|---|---|---|
+| exact SUCCESS | **2 / 20** | **15 / 20** |
+| false success | 0 | 0 |
+| seeds only this preset recovers | 0 | 13 |
+| median decode seconds | 139.9 | 151.6 |
+
+McNemar exact p = 0.0002. Acceptance (all met). F still fails 93054 (row 401), 93057 (231, 282), 93059 (306),
+93062 (91), 93069 (350). Development seeds 93022, 93027, 93028 (the three failures of evaluation 1) now decode SUCCESS
+end to end with the original container SHA-256 (development data, not evidence).
+
+Over the three held-out evaluations (50 seeds, three code versions): E 5/50, F 37/50 exact, 0 false success.
