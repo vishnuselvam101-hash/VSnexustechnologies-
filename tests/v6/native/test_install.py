@@ -1,4 +1,4 @@
-"""Install test: a normal ``pip install`` builds and uses all four native kernels; without a compiler it still installs
+"""Install test: a normal ``pip install`` builds and uses every native kernel; without a compiler it still installs
 and every kernel reports the reference backend. ``pip wheel`` packages every native extension.
 
 Opt-in (fresh virtual environments, dependency downloads or the pip cache, a few minutes): ``VNXDNA_INSTALL_TEST=1``.

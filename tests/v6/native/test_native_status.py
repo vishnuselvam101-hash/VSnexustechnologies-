@@ -1,6 +1,6 @@
 """vnxdna.native_status(): which backend each native kernel uses, and that it is recorded in reports and events.
 
-Also the packaging contract: setup.py builds all four kernels as optional extensions with the explicit builds' flags
+Also the packaging contract: setup.py builds every kernel as optional extensions with the explicit builds' flags
 (minus -Werror), under the names the loaders look for; and the RS level-restriction hook stays test-only.
 """
 from __future__ import annotations
