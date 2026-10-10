@@ -2,7 +2,7 @@
 name = "vnx_integrity"
 version = "1.0.0"
 edition = "2021"
-rust-version = "1.73"
+rust-version = "1.63"   # std::thread::scope
 publish = false
 description = "VNX-DNA integrity kernel: batched CRC-32 over frame rows (C ABI, loaded with ctypes)"
 license = "Proprietary"

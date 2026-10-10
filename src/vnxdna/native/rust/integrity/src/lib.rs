@@ -117,7 +117,7 @@ pub fn crc32_rows(rows: Rows, data: &[u8], out: &mut [u32], threads: usize) {
         one(0, out);
         return;
     }
-    let size = rows.n.div_ceil(parts);
+    let size = (rows.n + parts - 1) / parts;
     std::thread::scope(|scope| {
         for (i, part) in out.chunks_mut(size).enumerate() {
             let one = &one;
