@@ -20,7 +20,6 @@ import argparse
 import dataclasses
 import hashlib
 import json
-import math
 import os
 import subprocess
 import sys
@@ -123,20 +122,19 @@ def summarize(rows: list[dict]) -> dict:
     seeds = sorted(s for s, d in by.items() if set(d) == set(CONFIGS))
     identical = [s for s in seeds if len({(d["outcome"], d["output_sha256"], d["report_sha256"])
                                           for d in by[s].values()}) == 1]
-    logr = np.array([math.log(by[s]["v9"]["decode_seconds"] / by[s]["w1"]["decode_seconds"]) for s in seeds])
-    rng = np.random.default_rng(10_001)
-    boot = np.exp(rng.choice(logr, size=(10_000, len(logr)), replace=True).mean(axis=1)) if len(logr) else np.zeros(0)
+    from vnxdna.benchmark import stats as S
+    ratio = S.paired_ratio([by[s]["v9"]["decode_seconds"] for s in seeds], [by[s]["w1"]["decode_seconds"] for s in seeds],
+                           seed=10_001)
+    load = S.load_ok([r["load1"] for r in rows])
     med = lambda c: float(np.median([by[s][c]["decode_seconds"] for s in seeds])) if seeds else None  # noqa: E731
     return {"label": LABEL, "seeds": seeds, "identical_all_configs": len(identical), "of": len(seeds),
             "outcomes": {c: sorted({by[s][c]["outcome"] for s in seeds}) for c in CONFIGS},
             "false_success": sum(r["false_success"] for r in rows),
             "native_threads": {c: sorted({by[s][c]["native_threads"] for s in seeds}) for c in CONFIGS},
             "median_decode_seconds": {c: med(c) for c in CONFIGS},
-            "speedup_v9_over_w1": {"geomean": round(float(np.exp(logr.mean())), 3) if len(logr) else None,
-                                   "ci95": [round(float(np.percentile(boot, 2.5)), 3),
-                                            round(float(np.percentile(boot, 97.5)), 3)] if len(boot) else None,
-                                   "method": "paired per-seed ratio, geometric mean, percentile bootstrap 10000, "
-                                             "rng 10001"},
+            "speedup_v9_over_w1": ({k: ratio[k] for k in ("geomean", "ci95", "method")} if load["ok"]
+                                   else {"refused": "host load above the comparison limit", **load}),
+            "load_rule": load,
             "load1_range": [min(r["load1"] for r in rows), max(r["load1"] for r in rows)] if rows else None,
             "commits": sorted({r["commit"] for r in rows})}
 

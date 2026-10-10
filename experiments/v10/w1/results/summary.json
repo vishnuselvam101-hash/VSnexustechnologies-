@@ -9,6 +9,15 @@
   1.2,
   2.08
  ],
+ "load_rule": {
+  "max_load1": 4.0,
+  "observed": [
+   1.2,
+   2.08
+  ],
+  "ok": true,
+  "runs_over": 0
+ },
  "median_decode_seconds": {
   "t2": 15.8665,
   "v9": 21.8545,
