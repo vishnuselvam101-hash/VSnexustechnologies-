@@ -194,6 +194,7 @@ def test_setup_builds_all_kernels_as_optional_extensions(monkeypatch):
             self.name, self.sources = name, sources
             self.extra_compile_args, self.optional = kw.pop("extra_compile_args", []), kw.pop("optional", False)
             self.language = kw.pop("language", "c")
+            self.depends = kw.pop("depends", [])
             assert not kw, kw
     captured = {}
     fake = types.ModuleType("setuptools")
@@ -215,6 +216,8 @@ def test_setup_builds_all_kernels_as_optional_extensions(monkeypatch):
         assert flags == (nb.CXX_COMPILE_FLAGS if cxx else nb.COMPILE_FLAGS) and "-Werror" not in flags
         assert ext.language == ("c++" if cxx else "c")
         assert not any(f.startswith(("-march", "-mavx", "-mtune", "-mcpu")) for f in flags)
+        assert all((ROOT / d).is_file() for d in ext.depends)    # included sources trigger a rebuild
+    assert "src/vnxdna/v5/native/align_dp.inc" in exts["vnxdna.v5._vnx_align"].depends
     # the explicit builds use the same flags (+ -fPIC -shared, which setuptools adds itself)
     for kernel, (m, _, _) in MODULES.items():
         base = nb.CXX_COMPILE_FLAGS if kernel == "outerlist" else nb.COMPILE_FLAGS
