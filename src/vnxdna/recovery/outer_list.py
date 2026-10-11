@@ -5,18 +5,23 @@ A row (outer-code group) is short when fewer than k of its symbols were verified
 right (measured on the D13-F1 nanopore-like channel, SIMULATED: ~19 of 70 bytes wrong, only ~38 % of them flagged as
 erasures). Each round, for every open short row:
 
-1. **Proposals.** Candidates assigned by header (group and symbol bytes exact, :data:`EXACT_MASK`), by frame-level
-   RANSAC (header-near frames as hypotheses; every f-tuple determines the codeword; the tuple most hypotheses agree with
-   in >= ``list_ransac_tau`` payload columns selects its supporters — :func:`ransac_reference`, C++ ``vnx_ol_ransac``)
-   or, in earlier rounds, by payload consistency feed a per-column list decoder of the outer code (C++ kernel
+1. **Proposals.** Candidates assigned by header (group and symbol bytes exact under some scrambler variant,
+   :data:`EXACT_MASK`), by frame-level RANSAC (hypotheses: the header-assigned candidates first, then header-near frames
+   ranked by how many existing rows explain their group bytes as well as this one — see
+   :meth:`OuterListDecoder._ransac_assign`; every f-tuple, best-ranked hypotheses first, determines the codeword; the
+   tuple most hypotheses agree with in >= ``list_ransac_tau`` payload columns selects its supporters —
+   :func:`ransac_reference`, C++ ``vnx_ol_ransac``) or, in earlier rounds, by payload consistency feed a per-column
+   list decoder of the outer code (C++ kernel
    :mod:`vnxdna.native.outerlist`; reference :func:`decode_row_reference`): with h verified symbols the codewords form
    an f = k − h dimensional affine space, every candidate byte is a linear equation on it, and the solution agreeing
    with the most candidates is the column's proposal (confirmed when it leads with a margin).
 2. **Payload-consistency assignment.** Failed frames whose payload agrees with a row's proposal for a missing symbol in
    ``list_min_consistent`` columns (uniquely) become candidates of that symbol, whatever their header says.
 3. **Inner decoding.** Every failed frame is tried at each missing address within ``list_max_header_distance`` header
-   bytes: header forced, confirmed proposal columns written, disagreeing unconfirmed columns erased, then inner RS
-   (errors + erasures) and CRC-32; a symbol is added only when the frame verifies *at that address*.
+   bytes, and every candidate at its address with its assigned variant: header forced, confirmed proposal columns
+   written, then inner RS (errors + erasures) and CRC-32 with the consensus's erasure flags plus the disagreeing
+   unconfirmed columns erased, with the disagreements alone, and errors only; a symbol is added only when the frame
+   verifies *at that address*.
 4. **Tail-verified repair.** Payload variants between a candidate and the proposal (≤ ``list_repair_bytes`` columns, or
    any single byte) are re-encoded; the CRC-32 + inner parity tail (never used above) must match the candidate's in
    ``list_min_tail_matches`` of 20 bytes, with a lead of 2 over every other variant.
@@ -50,6 +55,14 @@ MAX_PER_POS = _native.MAX_PER_POS
 #: missing one; the variant, version/kind and tag bytes (0..3) may differ.
 EXACT_MASK = sum(1 << b for b in range(4, 10))
 MAX_F = _native.MAX_F
+#: RANSAC hypotheses per frame whose symbol bytes are both corrupted (all missing symbols of the row tie)
+MAX_TIED = 32
+#: RANSAC hypotheses from such frames per row, in addition to list_ransac_hypotheses
+TIED_BUDGET = 192
+#: rows up to which the group table for :meth:`OuterListDecoder._group_ambiguity` is built (4 bytes per row)
+MAX_AMBIGUITY_GROUPS = 1 << 20
+#: most frequent variant bytes of the failed frames tried by the payload-consistency assignment
+CONSISTENCY_VARIANTS = 8
 INV = np.array([0] + [gf256.inv(a) for a in range(1, 256)], dtype=np.uint8)
 
 
@@ -238,8 +251,17 @@ def decode_row_reference(parity, mul, inv, known, sym, cpos, cval, cok, min_extr
     return sym, accepted, best_out, second_out
 
 
+def _tuples(n: int, f: int):
+    """f-subsets of range(n) in the RANSAC order: by largest element, then lexicographic, so that every tuple within
+    the first m hypotheses precedes any tuple using hypothesis m + 1 (the cap is spent on the best-ranked ones)."""
+    for m in range(f - 1, n):
+        for head in combinations(range(m), f - 1):
+            yield head + (m,)
+
+
 def ransac_reference(parity, mul, inv, known, sym, hpos, hval, tau: int, max_tuples: int):
-    """Reference of vnx_ol_ransac: (support of the winning tuple, per-hypothesis agreeing columns)."""
+    """Reference of vnx_ol_ransac: (support of the winning tuple, per-hypothesis agreeing columns). Tuples are tried
+    in :func:`_tuples` order, at most ``max_tuples`` of them with distinct positions."""
     del mul, inv
     parity = np.asarray(parity, dtype=np.uint8)
     known = np.asarray(known, dtype=bool)
@@ -269,7 +291,7 @@ def ransac_reference(parity, mul, inv, known, sym, hpos, hval, tau: int, max_tup
             acol[c, col] = v
     best, bestcnt, tried = 0, [0] * len(hu), 0
     if len(hu) >= f:
-        for S in combinations(range(len(hu)), f):
+        for S in _tuples(len(hu), f):
             if len({hu[i] for i in S}) < f:
                 continue
             if tried >= max_tuples:
@@ -358,6 +380,7 @@ class OuterListDecoder:
         self.n_groups = int(n_groups)    # rows of the archive (a header naming another existing row is not a candidate)
         self.counts: Counter = Counter()
         self._extra: dict = {}           # group -> {(symbol, frame index): variant} found by payload consistency
+        self._groups: np.ndarray | None = None
 
     def applicable(self) -> bool:
         return getattr(self.codec, "name", None) == "cauchy-rs" and self.cfg.outer_list == "on"
@@ -476,7 +499,7 @@ class OuterListDecoder:
         self._consistency_assign(rows, proposal, frames, ks, owner)
         added = 0
         # 4. inner RS + CRC-32 on hypotheses (header forced, payload repaired from confirmed proposal columns)
-        added += self._rs_hypotheses(rows, proposal, frames, erased, ks, T, owner)
+        added += self._rs_hypotheses(rows, proposal, frames, erased, ks, T, owner, cands)
         # 5. tail-verified repair of every candidate of rows with proposals
         for g, lst in cands.items():
             k, syms = rows[g]
@@ -494,11 +517,46 @@ class OuterListDecoder:
                     self.counts["symbols_tail_verified"] += 1
         return added
 
+    def _group_table(self) -> np.ndarray | None:
+        """Group bytes (n_groups, 4) of every row of the archive, or None when the row count is unknown or too large
+        for the table (:data:`MAX_AMBIGUITY_GROUPS`)."""
+        if self._groups is None and self.n_groups <= MAX_AMBIGUITY_GROUPS:
+            g = np.arange(self.n_groups, dtype=np.int64)
+            self._groups = np.stack([(g >> 24) & 255, (g >> 16) & 255, (g >> 8) & 255, g & 255], axis=1).astype(np.uint8)
+        return self._groups
+
+    def _group_ambiguity(self, gb: np.ndarray, g: int) -> np.ndarray:
+        """For frame group bytes ``gb`` (n, 4): the number of existing rows whose group bytes are at most as far (in
+        bytes) from the frame's as row ``g``'s, including g — 1 when only this row explains the header that well.
+        Without a group table every inexact header counts as fully ambiguous (``n_groups``)."""
+        gb = np.asarray(gb, dtype=np.uint8).reshape(-1, 4)
+        tg = header_bytes(0, g, 0)[3:7]
+        dg = (gb != tg[None, :]).sum(axis=1)
+        tbl = self._group_table()
+        if tbl is None:
+            return np.where(dg == 0, 1, self.n_groups).astype(np.int64)
+        out = np.empty(len(gb), np.int64)
+        step = max(1, (1 << 22) // max(1, len(tbl)))
+        for a in range(0, len(gb), step):
+            dd = (gb[a:a + step, None, :] != tbl[None, :, :]).sum(axis=2)
+            out[a:a + step] = (dd <= dg[a:a + step, None]).sum(axis=1)
+        return out
+
     def _ransac_assign(self, rows: dict, frames: np.ndarray, ks: np.ndarray, cands: dict) -> None:
-        """Hypotheses: failed frames within ``list_ransac_header_distance`` header bytes (own variant byte) of a missing
-        address of the row, excluding frames whose header names another row or duplicates a verified symbol of this
-        row (payload agreeing in half the columns); ranked by distance, at most ``list_ransac_hypotheses``. The
-        supporters (>= ``list_ransac_tau`` agreeing columns) of the winning tuple become candidates."""
+        """Frame-level RANSAC per row. Hypotheses, best first:
+
+        1. the row's header-assigned candidates (``cands``: group and symbol bytes exact under their assigned
+           scrambler variant, whose payload is descrambled with that variant);
+        2. failed frames within ``list_ransac_header_distance`` header bytes (own variant byte) of a missing address,
+           excluding frames whose header names another existing row or whose payload duplicates a verified symbol of
+           this row (half the columns). A frame whose group bytes only this row explains that well
+           (:meth:`_group_ambiguity`) and whose nearest missing symbol is unique becomes a candidate outright (counted
+           as ``unique_candidates``) and an anchor; the other such frames come first, then the rest by the number of
+           rows that explain them as well, then by distance — at most ``list_ransac_hypotheses``;
+        3. frames with this row's group bytes but both symbol bytes damaged (every missing symbol ties): placed at every
+           tied symbol, those whose literal symbol is a verified one last — at most :data:`TIED_BUDGET`.
+
+        The supporters (>= ``list_ransac_tau`` agreeing columns) of the winning tuple become candidates."""
         cfg, P, K, M = self.cfg, self.lay.payload_bytes, self.codec.K, self.codec.M
         if cfg.list_ransac_hypotheses == 0:
             return
@@ -513,24 +571,56 @@ class OuterListDecoder:
             if not 1 <= f <= MAX_F:
                 continue
             miss = [s for s in range(k + M) if s not in syms]
+            anchors = sorted((s, i, v) for (s, i), v in cands.get(g, {}).items() if s not in syms)
+            anchored = {(s, i) for s, i, _ in anchors}
             other_row = (lit_g != g) & (lit_g < self.n_groups) & np.isin(lit_g, list(rows), invert=True)
             dup = np.zeros(len(frames), dtype=bool)
             same = np.flatnonzero((lit_g == g) & np.isin(lit_s, list(syms)))
             for i in same.tolist():
                 dup[i] = (pay[i] == syms[int(lit_s[i])]).sum() * 2 >= P
+            # a frame of this row whose symbol bytes are corrupted can still be a copy of a verified symbol: compare its
+            # payload with every verified symbol, not only the one its header names
+            if syms:
+                ver = np.stack(list(syms.values()))
+                for i in np.flatnonzero((lit_g == g) & ~dup).tolist():
+                    dup[i] = bool(((ver == pay[i]).sum(axis=1) * 2 >= P).any())
             keep = np.flatnonzero(~other_row & ~dup)
-            if not keep.size:
-                continue
-            T = np.stack([header_bytes(self.tag, g, s) for s in miss])
-            d = (hdr[keep][:, None, :] != T[None, :, :]).sum(axis=2) + (frames[keep, 0] != v0[keep])[:, None]
-            dmin = d.min(axis=1)
-            hyp = []
-            for r in np.flatnonzero(dmin <= cfg.list_ransac_header_distance).tolist():
-                for t in np.flatnonzero(d[r] == dmin[r])[:2].tolist():
-                    hyp.append((int(dmin[r]), int(keep[r]), miss[t]))
-            hyp.sort()
-            hyp = hyp[: cfg.list_ransac_hypotheses]
-            if len({s for _, _, s in hyp}) < f:
+            placed: list = []
+            tied: list = []
+            if keep.size:
+                T = np.stack([header_bytes(self.tag, g, s) for s in miss])
+                d = (hdr[keep][:, None, :] != T[None, :, :]).sum(axis=2)
+                dmin = d.min(axis=1)
+                near = np.flatnonzero(dmin <= cfg.list_ransac_header_distance)
+                amb = self._group_ambiguity(hdr[keep[near], 3:7], g)
+                for r, a in zip(near.tolist(), amb.tolist()):
+                    i = int(keep[r])
+                    ties = np.flatnonzero(d[r] == dmin[r])
+                    if ties.size > 2 and lit_g[i] == g:
+                        # Both symbol bytes corrupted: every missing symbol ties and the header cannot place the
+                        # frame. Its group bytes are this row's, so try it at every tied symbol (separate budget,
+                        # after the placed hypotheses); only the true symbol agrees with the codeword.
+                        tied += [(int(lit_s[i]) in syms, int(dmin[r]), i, miss[t])
+                                 for t in ties[:MAX_TIED].tolist() if (miss[t], i) not in anchored]
+                    elif a == 1 and ties.size == 1:
+                        # only this row explains the group bytes that well and one missing symbol is nearest: a
+                        # candidate on the strength of its header, like one with a damaged tag byte
+                        s = miss[int(ties[0])]
+                        if (s, i) not in anchored:
+                            cands.setdefault(g, {})[(s, i)] = int(v0[i])
+                            anchors.append((s, i, int(v0[i])))
+                            anchored.add((s, i))
+                            self.counts["unique_candidates"] += 1
+                    else:
+                        key = (0, int(dmin[r]), 1) if a == 1 else (1, a, int(dmin[r]))
+                        placed += [(*key, i, miss[t]) for t in ties[:2].tolist() if (miss[t], i) not in anchored]
+            placed.sort()
+            tied.sort()
+            anchors.sort()
+            hyp = [(s, i, int(v)) for s, i, v in anchors[: cfg.list_ransac_hypotheses]] + \
+                  [(s, i, int(v0[i])) for *_, i, s in placed[: cfg.list_ransac_hypotheses]] + \
+                  [(s, i, int(v0[i])) for *_, i, s in tied[:TIED_BUDGET]]
+            if len({s for s, _, _ in hyp}) < f:
                 continue
             pos = _pos(k, K)
             known = np.zeros(K + M, dtype=bool)
@@ -539,17 +629,17 @@ class OuterListDecoder:
             for s, v in syms.items():
                 known[pos(s)] = True
                 sym[pos(s)] = v
-            hpos = np.array([pos(s) for _, _, s in hyp], dtype=np.int32)
-            hval = np.stack([pay[i] for _, i, _ in hyp])
+            hpos = np.array([pos(s) for s, _, _ in hyp], dtype=np.int32)
+            hval = np.stack([frames[i, 10:10 + P] ^ ks[v][9:9 + P] for _, i, v in hyp])
             support, agree = ransac(parity_full, known.astype(np.uint8), sym, hpos, hval, cfg.list_ransac_tau,
                                     cfg.list_ransac_max_tuples)
             self.counts["ransac_rows"] += 1
             self.counts["ransac_hypotheses"] += len(hyp)
             if support <= f:
                 continue
-            for (_, i, s), a in zip(hyp, agree.tolist()):
-                if a >= cfg.list_ransac_tau:
-                    cands.setdefault(g, {})[(s, i)] = int(v0[i])
+            for (s, i, v), a in zip(hyp, agree.tolist()):
+                if a >= cfg.list_ransac_tau and (s, i) not in anchored:
+                    cands.setdefault(g, {})[(s, i)] = v
                     self.counts["ransac_candidates"] += 1
 
     def _proposals(self, rows, cands, frames, erased, ks) -> dict:
@@ -582,7 +672,9 @@ class OuterListDecoder:
 
     def _consistency_assign(self, rows, proposal, frames, ks, owner) -> None:
         """Assign failed frames (any header) to the missing symbol whose proposed payload they agree with in at least
-        ``list_min_consistent`` columns, uniquely (by 3 columns over the runner-up); random agreement is ~1/256."""
+        ``list_min_consistent`` columns, uniquely (by 3 columns over the runner-up); random agreement is ~1/256. The
+        payload is descrambled with each of the :data:`CONSISTENCY_VARIANTS` most frequent variant bytes of the failed
+        frames (a damaged variant byte would otherwise hide the frame); the best one is the frame's variant."""
         cfg, P = self.cfg, self.lay.payload_bytes
         tg = [(g, s) for g, s in owner if g in proposal]
         if not tg:
@@ -590,10 +682,19 @@ class OuterListDecoder:
         pred = np.stack([proposal[g][0][proposal[g][3](s)] for g, s in tg])          # (t, P)
         has = np.stack([proposal[g][2] for g, s in tg])
         v0 = frames[:, 0].astype(np.int64)
-        pay = frames[:, 10:10 + P] ^ ks[v0][:, 9:9 + P]
+        values, counts = np.unique(v0, return_counts=True)
+        order_v = np.lexsort((values, -counts))
+        variants = values[order_v[:CONSISTENCY_VARIANTS]].tolist()
         used = {i for lst in self._extra.values() for (_, i) in lst}
         for a in range(0, len(frames), 2048):
-            m = ((pay[a:a + 2048, None, :] == pred[None, :, :]) & has[None, :, :]).sum(axis=2)     # (n, t)
+            m = np.zeros((min(2048, len(frames) - a), len(tg)), dtype=np.int64)
+            mv = np.zeros(m.shape, dtype=np.int64)
+            for v in variants:
+                pay = frames[a:a + 2048, 10:10 + P] ^ ks[v][9:9 + P]
+                mvv = ((pay[:, None, :] == pred[None, :, :]) & has[None, :, :]).sum(axis=2)        # (n, t)
+                better = mvv > m
+                m[better] = mvv[better]
+                mv[better] = v
             order = np.argsort(-m, axis=1)
             top = np.take_along_axis(m, order[:, :2], axis=1) if m.shape[1] > 1 else np.c_[m, np.zeros_like(m)]
             for r in np.flatnonzero(top[:, 0] >= cfg.list_min_consistent).tolist():
@@ -603,11 +704,15 @@ class OuterListDecoder:
                 g, s = tg[int(order[r, 0])]
                 if s in rows[g][1]:
                     continue
-                self._extra.setdefault(g, {})[(s, i)] = int(v0[i])
+                self._extra.setdefault(g, {})[(s, i)] = int(mv[r, order[r, 0]])
                 used.add(i)
                 self.counts["candidates_by_consistency"] += 1
 
-    def _rs_hypotheses(self, rows, proposal, frames, erased, ks, T, owner) -> int:
+    def _rs_hypotheses(self, rows, proposal, frames, erased, ks, T, owner, cands) -> int:
+        """Inner RS + CRC-32 trials: every failed frame at each missing address within ``list_max_header_distance``
+        header bytes (own variant byte), plus every candidate of a row at its candidate address with its assigned
+        scrambler variant (candidates found by payload consistency or RANSAC may have headers further away, or a
+        damaged variant byte)."""
         lay, cfg, P = self.lay, self.cfg, self.lay.payload_bytes
         v0 = frames[:, 0].astype(np.int64)
         hdr = frames[:, 1:10] ^ ks[v0][:, :9]
@@ -619,25 +724,43 @@ class OuterListDecoder:
             pairs_t.append(ti + t0)
         ci = np.concatenate(pairs_c)[: cfg.list_max_hypotheses]
         ti = np.concatenate(pairs_t)[: cfg.list_max_hypotheses]
+        vi = v0[ci]
+        index = {gs: t for t, gs in enumerate(owner)}
+        extra = [(i, index[(g, s)], v) for g, lst in sorted(cands.items()) for (s, i), v in sorted(lst.items())
+                 if (g, s) in index]
+        if extra:
+            e = np.array(extra, dtype=np.int64)
+            e = e[~np.isin(e[:, 0] * len(T) + e[:, 1], ci * len(T) + ti) | (e[:, 2] != v0[e[:, 0]])]
+            e = e[: max(0, cfg.list_max_hypotheses - ci.size)]
+            ci, ti, vi = np.concatenate([ci, e[:, 0]]), np.concatenate([ti, e[:, 1]]), np.concatenate([vi, e[:, 2]])
         self.counts["hypotheses"] += int(ci.size)
         if not ci.size:
             return 0
         trial = frames[ci].copy()
         er = erased[ci].copy()
-        for j in range(ci.size):
-            g, s = owner[int(ti[j])]
-            v = int(trial[j, 0])
-            trial[j, 1:10] = header_bytes(self.tag, g, s) ^ ks[v][:9]
-            er[j, :10] = False
+        trial[:, 0] = vi
+        ksv = ks[vi]
+        trial[:, 1:10] = T[ti] ^ ksv[:, :9]                             # header forced to the trial address
+        er[:, :10] = False
+        dis = np.zeros(er.shape, dtype=bool)                            # disagreements with an unconfirmed proposal
+        with_prop = np.zeros(ci.size, dtype=bool)
+        for t in np.unique(ti).tolist():                                # proposal of the trial address, if any
+            g, s = owner[t]
             prop = proposal.get(g)
             if prop is None:
                 continue
             res, ok, has, pos = prop
-            x = res[pos(s)] ^ ks[v][9:9 + P]                            # proposed payload, scrambled as transmitted
-            cur = trial[j, 10:10 + P]
-            er[j, 10:10 + P] |= has & ~ok & (cur != x)                  # disagreement with an unconfirmed proposal
-            trial[j, 10:10 + P] = np.where(ok, x, cur)
-            er[j, 10:10 + P] &= ~ok
+            sel = np.flatnonzero(ti == t)
+            with_prop[sel] = True
+            x = res[pos(s)][None, :] ^ ksv[sel, 9:9 + P]                # proposed payload, scrambled as transmitted
+            cur = trial[sel, 10:10 + P]
+            dis[sel, 10:10 + P] = has[None, :] & ~ok[None, :] & (cur != x)
+            er[sel, 10:10 + P] = (er[sel, 10:10 + P] | dis[sel, 10:10 + P]) & ~ok[None, :]
+            trial[sel, 10:10 + P] = np.where(ok[None, :], x, cur)
+        # every trial with the consensus's erasure flags plus the disagreements (then errors only, inside
+        # decode_frames); trials with a proposal also with the disagreements alone: the flags mark many right bytes
+        sel = np.flatnonzero(with_prop)
+        trial, er, ti = np.concatenate([trial, trial[sel]]), np.concatenate([er, dis[sel]]), np.concatenate([ti, ti[sel]])
         er[er.sum(axis=1) > lay.inner_parity] = False                   # errors-only for those
         parsed = decode_frames(lay, trial, er)
         added = 0
