@@ -10,7 +10,8 @@ or a memory-safety bug; MEDIUM defence-in-depth or a reachable dependency CVE; L
 
 ## 1. Findings
 
-Each fixed finding has a regression test that was written first and failed before the fix. No on-disk or in-DNA
+Each fixed finding has a regression test that was written first and failed before the fix (the pre-fix pytest
+results are listed in `v11-redteam/pre-fix-measurements.txt`). No on-disk or in-DNA
 format changed and no native ABI version changed.
 
 | ID | Severity | Finding | Status | Test |
@@ -36,14 +37,14 @@ No CRITICAL finding.
 | Check | Evidence |
 |---|---|
 | Wrong key (two keys), a passphrase on a key archive, no key: refused; no SUCCESS | `test_redteam_tamper_never_success.py`; sweep in `v11-redteam/pre-fix-measurements.txt` |
-| Single-bit flips in the header, body, chunk table (Merkle leaves), file table, refs, manifest and trailer (MAC, sizes, magic): never wrong data | 1834 flips: 1802 refused, 32 identical output (the whole-file digest), 0 wrong; regression test samples every section |
+| Single-bit flips in the header, body, chunk table (Merkle leaves), file table, refs, manifest and trailer (MAC, sizes, magic): never wrong data | 1834 flips: 1802 refused, 32 identical output (the whole-file digest), 0 wrong (`v11-redteam/byte_flip_sweep.py`); regression test samples every section |
 | Truncation at every 97th offset (sweep) and every 251st offset (test): never extracted | same |
 | Container major/minor version change and header flags: refused (UNSUPPORTED); an unencrypted forgery given to a key holder is refused (KEY_FOR_UNENCRYPTED) | `test_header_version_change_is_refused`, `test_downgrade_to_an_unencrypted_forgery_is_refused_with_a_key` |
 | Container and V2 decompression is bounded by the recorded plaintext size (stream reader; plaintext ≤ chunk size) | `archive/compression.py`, `container/reader.py`, `v2/archive.py`; atheris `py-bomb` 63,927 runs, `py-container` 252,625 runs, 0 crashes |
 | Superblock fields are fully validated (V6-SEC-01 size cap, group-count consistency); forged candidates are moved past | existing `tests/v6/test_security_*`, plus V11-RT-01 |
 | VNX-Secure gate on SDK encode/decode/extract/inspect/list/verify/locate, the V1/V2 legacy APIs, and the CLI (via SDK) | existing `tests/v11/test_secure_gate.py` and V11-RT-03 |
-| No key or passphrase in error messages or CLI error JSON; Typer shows no locals (0.27.2 default `pretty_exceptions_show_locals=False`) | `test_redteam_secret_hygiene.py` |
-| Native libraries load only from the package directory (absolute `_HERE`) or an explicit absolute override; no RPATH/RUNPATH in any of the 7 built libraries; ABI checked before any other symbol is bound; fall back to the reference (`auto`) or raise (`native`) | `readelf -d` output (NEEDED only), `test_redteam_native_loader.py`, existing loader tests |
+| No key or passphrase in error messages or CLI error JSON; Typer shows no locals (0.27.2 default `pretty_exceptions_show_locals=False`) | `test_redteam_secret_hygiene.py`; `v11-redteam/environment-checks.txt` |
+| Native libraries load only from the package directory (absolute `_HERE`) or an explicit absolute override; no RPATH/RUNPATH in any of the 7 built libraries; ABI checked before any other symbol is bound; fall back to the reference (`auto`) or raise (`native`) | `v11-redteam/environment-checks.txt` (`readelf -d`: NEEDED only), `test_redteam_native_loader.py`, existing loader tests |
 | Native buffer sizes: RS (`_prepare` shape checks), strand (shape checks), cluster (capacities passed and checked in C), outer-list `assign` (all sizes from the arrays), reads (streaming state with explicit sizes) | wrapper review; existing C argument-check tests in `tests/v6/native`, `tests/v7`, `tests/arch`, `tests/v9` |
 | Dependencies: pip-audit finds 5 distinct advisories in 2 packages, exactly the SECURITY.md triage (cryptography PYSEC-2026-3552/3553/3554 and GHSA-537c-gmf6-5ccf; pytest PYSEC-2026-1845). V11 adds no PKCS#7, X.509 or RSA use: `secure/` uses `hashlib.scrypt`, HMAC and SHA-256 | `v11-redteam/pip-audit.json` |
 

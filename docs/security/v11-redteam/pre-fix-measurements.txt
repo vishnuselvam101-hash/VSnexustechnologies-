@@ -9,3 +9,12 @@ V11-RT-05 the pre-fix run of tests/v11/test_redteam_conformance_paths.py wrote "
   /tmp/escaped.txt (removed after checking their content), and archived /tmp (root = "..").
 Byte-flip sweep (encrypted container, 32511 bytes, 1834 single-bit flips + every 97th truncation): 1802 refused,
   32 identical output (all 32 in the final whole-file SHA-256 of the trailer), 0 wrong data; truncations extracted: 0.
+Regression tests run before their fixes (pytest, this session; the fix commit follows each line):
+  V11-RT-01 test_redteam_superblock_evidence.py: FAILED test_huge_group_count_under_the_size_cap_is_refused_in_bounded_memory[None] (-x)  -> ccd6ccb
+  V11-RT-02 test_redteam_extract_paths.py: 1 failed (sibling-prefix symlink race), 5 passed                          -> fa1674f
+  V11-RT-03 test_redteam_secure_gate_archive.py: 1 failed (sdk.archive had no gate / `secure` argument), 1 passed     -> 0d83fda
+  V11-RT-04 test_redteam_legacy_decompress_bound.py: 4 failed                                                         -> 4e61f0f
+  V11-RT-05/06 test_redteam_conformance_paths.py: 6 failed, 1 passed                                                  -> 9f1df61
+  V11-RT-07 test_redteam_secret_hygiene.py: failed (passphrase and key bytes in repr(ArchiveOptions))                 -> 12de934
+  V11-RT-08 test_redteam_native_loader.py: 10 failed (CDLL received relative names), 5 passed                         -> 4ae2122
+  V11-RT-09 test_redteam_outerlist_buffers.py: 9 failed, 3 passed                                                     -> c48921e
