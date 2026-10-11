@@ -227,6 +227,28 @@ def test_native_status_reports_level():
     assert backend_summary()["align"]["simd_level"] == k["simd_level"]
 
 
+@pytest.mark.parametrize("explicit", ["native", "auto", "scalar"])
+def test_explicit_native_aligner_ignores_reference_environment(explicit, monkeypatch):
+    """An aligner constructed with an explicit native backend runs the kernel even if VNXDNA_ALIGN_BACKEND=reference
+    (as before ABI 3): the environment never silently turns a native comparison into reference-vs-reference."""
+    monkeypatch.setenv("VNXDNA_ALIGN_BACKEND", "reference")
+    calls = []
+    real = na.align_usable
+
+    def spy(*a, **k):
+        out = real(*a, **k)
+        calls.append(out is not None)
+        return out
+    monkeypatch.setattr(na, "align_usable", spy)
+    layout = LAYOUTS["default-313nt"]
+    al = TemplateAligner(layout, 6, backend=explicit, retry_band=12)
+    assert al.backend == "native" and al.retry.backend == "native"
+    reads = _edited(layout, np.random.default_rng(9), 6)
+    ref = TemplateAligner(layout, 6, backend="reference", retry_band=12).project(reads)
+    assert_identical(ref, al.project(reads), explicit)
+    assert calls and all(calls)
+
+
 def test_reference_request_returns_none_from_align_usable():
     al = TemplateAligner(LAYOUTS["default-313nt"], 6, backend="reference")
     assert na.align_usable(al, [strand(al.layout, np.random.default_rng(0))], None, 0, backend="reference") is None

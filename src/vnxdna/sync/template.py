@@ -68,14 +68,16 @@ class TemplateAligner:
         # ``band`` never see it, so their projection is unchanged bit for bit.
         from vnxdna.native import align as _na
         self.backend = _na.resolve_backend(backend)
-        self.level_request = backend if backend in _na.LEVELS else None   # None: the level follows the environment
+        # the level align_usable runs: an explicit backend pins it ("native"/"auto": the auto policy, a level name: that
+        # level), so an explicit native aligner never follows VNXDNA_ALIGN_BACKEND=reference; None follows the environment
+        self.level_request = backend if backend in (*_na.LEVELS, "native", "auto") else None
         self.layout = layout
         self.band = band
         self.costs = costs or SyncCosts()
         if retry_band and retry_band <= band:
             raise ValueError("retry_band must be 0 (off) or larger than band")
         self.retry_band = int(retry_band)
-        self.retry = TemplateAligner(layout, retry_band, self.costs, self.level_request or self.backend) if retry_band else None
+        self.retry = TemplateAligner(layout, retry_band, self.costs, backend) if retry_band else None
         tpl, frame_pos = layout.template()
         self.tpl = tpl.astype(np.int16)
         self.frame_pos = frame_pos
