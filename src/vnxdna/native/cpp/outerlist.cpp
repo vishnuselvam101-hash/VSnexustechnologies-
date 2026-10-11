@@ -464,12 +464,12 @@ int vnx_ol_ransac(int64_t k, int64_t m, int64_t P, const uint8_t* parity, const 
         int best = 0;
         int64_t tried = 0;
         bool capped = false;
-        // tuple = (f - 1)-combination "head" of {0..m-1} followed by m, for m = f-1 .. H-1 (best-first order)
-        for (int m = f - 1; m < H && !capped; m++) {
+        // tuple = (f - 1)-combination "head" of {0..top-1} followed by top, for top = f-1 .. H-1 (best-first order)
+        for (int top = f - 1; top < H && !capped; top++) {
           for (int i = 0; i < f - 1; i++) head[static_cast<size_t>(i)] = i;
           do {
             for (int i = 0; i < f - 1; i++) S[static_cast<size_t>(i)] = head[static_cast<size_t>(i)];
-            S[static_cast<size_t>(f - 1)] = m;
+            S[static_cast<size_t>(f - 1)] = top;
             bool distinct = true;
             for (int i = 0; i < f && distinct; i++)
                 for (int j = 0; j < i && distinct; j++)
@@ -505,7 +505,7 @@ int vnx_ol_ransac(int64_t k, int64_t m, int64_t P, const uint8_t* parity, const 
                 best = support;
                 bestcnt = cnt;
             }
-          } while (next_comb(head, m));
+          } while (next_comb(head, top));
         }
         for (int h = 0; h < H; h++) agree[h] = bestcnt[static_cast<size_t>(h)];
         return best;
