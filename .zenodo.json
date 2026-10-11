@@ -1,0 +1,9 @@
+{
+  "title": "VNX-DNA",
+  "description": "Open-source DNA data-storage codec: streaming archives, AES-256-GCM, erasure coding, DNA encoding, sequencing simulation and recovery. Reported results are simulated.",
+  "upload_type": "software",
+  "license": "MIT",
+  "creators": [{"name": "S., Vishnu", "affiliation": "VSNexus Technologies"}],
+  "keywords": ["dna data storage", "bioinformatics", "error correction"],
+  "related_identifiers": [{"relation": "isSupplementTo", "identifier": "https://github.com/vishnuselvam101-hash/VSnexustechnologies-", "scheme": "url"}]
+}
