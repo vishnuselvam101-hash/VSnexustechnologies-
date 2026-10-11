@@ -1,0 +1,37 @@
+{
+ "description": "v10 competitor benchmark, lane N (new): nanopore-like channel = VNX-DNA's software simulator with the D13-F1 model (fitted to public ONT R9.4 reads, adequacy UNVALIDATED), negative-binomial coverage mean 10, applied identically to every codec's strands. VNX-DNA with the default decoder and with the opt-in decoder preset F. HEDGES chunk: seeds 1-3 and a 1800 s step limit, because one HEDGES decode of these reads did not finish in 600 s during the smoke test.",
+ "input": "random/19kB",
+ "step_timeout_s": 1800,
+ "channel": {
+  "workflow": "VNXSim",
+  "model": "d13-f1",
+  "error_rates": [
+   "d13-f1"
+  ],
+  "coverages": [
+   10
+  ],
+  "dropouts": [
+   0.0
+  ],
+  "seeds": [
+   1,
+   2,
+   3
+  ]
+ },
+ "participants": [
+  {
+   "id": "hedges-medium",
+   "codec": "HEDGESCpp",
+   "factory": "medium_coderate",
+   "clustering": "BasicSet"
+  },
+  {
+   "id": "hedges-low",
+   "codec": "HEDGESCpp",
+   "factory": "low_coderate",
+   "clustering": "BasicSet"
+  }
+ ]
+}

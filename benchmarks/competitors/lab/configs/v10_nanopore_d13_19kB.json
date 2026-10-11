@@ -64,18 +64,6 @@
    "clustering": "BasicSet"
   },
   {
-   "id": "hedges-medium",
-   "codec": "HEDGESCpp",
-   "factory": "medium_coderate",
-   "clustering": "BasicSet"
-  },
-  {
-   "id": "hedges-low",
-   "codec": "HEDGESCpp",
-   "factory": "low_coderate",
-   "clustering": "BasicSet"
-  },
-  {
    "id": "yyc-default",
    "codec": "YinYang",
    "factory": "default",
