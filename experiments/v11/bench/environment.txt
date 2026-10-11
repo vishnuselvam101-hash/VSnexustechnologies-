@@ -1,0 +1,9 @@
+# Environment for experiments/v11/bench (recorded 2026-10-11 by the operator; host state at run time is in e2e.jsonl load1_start)
+numpy: 2.5.3
+python: Python 3.12.3
+gcc: gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+mem_total_kib: 32866104
+cpu_flags: avx2 avx512bw avx512f 
+v11_align_active_level: avx512
+v11_align_supported_levels: ['scalar', 'avx2', 'avx512']
+operator note (not machine-recorded): at benchmark start another session ran a pytest job pinned to CPUs 6-7 at nice 19; the benchmark started after that session's libFuzzer campaign ended.

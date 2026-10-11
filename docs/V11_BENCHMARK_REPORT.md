@@ -41,8 +41,9 @@ Raw data: `experiments/v11/bench/e2e.jsonl` (85 measured rows), `warmup.jsonl` (
 
 | item | value |
 |---|---|
+| source | `experiments/v11/bench/environment.txt` (CPU model also in `e2e-summary.json` `host`) |
 | CPU | Intel Xeon Gold 6240 @ 2.60 GHz, 8 logical CPUs (avx2, avx512f, avx512bw) |
-| RAM | 31 GB |
+| RAM | 31 GiB (MemTotal 32866104 KiB) |
 | OS / kernel | Linux 6.8.0-146-generic |
 | Python / NumPy / gcc | 3.12.3 / 2.5.3 / 13.3.0 |
 | V11 auto aligner level | avx512 (V11 WP1 auto policy) |
@@ -50,7 +51,7 @@ Raw data: `experiments/v11/bench/e2e.jsonl` (85 measured rows), `warmup.jsonl` (
 | 1-min load at run start | 1.61–3.60 across all rows (per-scenario ranges below) |
 
 **Host-load disclosure.** This is a shared production host, not a quiet one.
-- Other sessions were active during the run. A release-preparation session ran a pytest job pinned to CPUs 6–7 at nice 19 when the benchmark started.
+- Operator-recorded (in `environment.txt`, not machine-recorded): other sessions were active during the run. A release-preparation session ran a pytest job pinned to CPUs 6–7 at nice 19 when the benchmark started.
 - The benchmark waited until that session's libFuzzer campaign ended before starting.
 - Pairing and alternating order spread this background load over both trees. It is not removed.
 
@@ -64,7 +65,7 @@ Raw data: `experiments/v11/bench/e2e.jsonl` (85 measured rows), `warmup.jsonl` (
 | decode clean 4 MiB w4 | 1.450 | 1.440 | 0.981 [0.966, 1.038] | 410.1 → 377.7 | 0.923 | yes | 2.08–2.92 |
 | decode substitution 4 MiB w4 | 2.468 | 2.443 | 0.999 [0.938, 1.066] | 407.0 → 406.3 | 0.998 | yes | 2.06–3.01 |
 | encode 1 MiB w1 | 0.346 | 0.329 | 1.025 [0.972, 1.063] | 51.4 → 51.7 | 1.005 | yes | 2.22–2.33 |
-| encode 1 MiB w4 | 0.160 | 0.163 | 0.995 [0.955, 1.020] | not measured (runs < 0.5 s sampler period) | — | yes | 2.22–2.85 |
+| encode 1 MiB w4 | 0.160 | 0.163 | 0.995 [0.955, 1.020] | not measured (the 0.5 s sampler returned 0 in 9 of 10 rows) | — | yes | 2.22–2.85 |
 | encode 4 MiB w1 | 1.332 | 1.285 | 0.999 [0.992, 1.059] | 52.6 → 53.1 | 0.994 | yes | 2.86–3.60 |
 | encode 4 MiB w4 | 0.421 | 0.432 | 1.003 [0.942, 1.041] | 187.9 → 190.0 | 1.011 | yes | 3.43–3.51 |
 
@@ -85,7 +86,7 @@ choice end to end on this host, so the auto policy (avx512 > avx2 > scalar) stan
   - This is expected. WP1 changed only the banded aligner, and the aligner is the dominant cost only when indels force re-alignment.
 - **RSS.** Tree peak RSS is within −8 % to +1.1 % of V10 in every measured scenario.
   - Peaks are sampled every 0.5 s, so short spikes can be missed.
-  - Both 1 MiB w4 encode runs finish in about 0.16 s, so their RSS is not measured.
+  - In all 10 encode 1 MiB w4 runs (about 0.16 s each) the sampler returned 0 in 9 rows (one V10 row recorded 50.6 MiB), so their RSS is reported as not measured.
 - **Statistics.** n = 5 per scenario. The bootstrap CI of a 5-sample median is the min–max of the five ratios.
 - **Host.** One shared host under moderate background load (section 2). The run was not repeated on a quiet or second machine.
 - **`report_peak_rss_bytes`.** The decoder's own report gives 146.8–146.9 MiB for every configuration. It is the parent process's peak and does not reflect the worker processes, so the tree peak above is used.
@@ -98,7 +99,7 @@ choice end to end on this host, so the auto policy (avx512 > avx2 > scalar) stan
 | same, **w1** (V10 14.16 s in baseline) | 1.283x [1.244, 1.321] | **MET** (median ≥ 1.25, CI excludes 1.0; the lower CI bound is 1.244) |
 | output SHA-256 identical to V10 on all seeds | 10/10 indel seeds, and every other scenario | MET |
 | peak RSS ≤ V10 + 10 % | ratio 0.969–0.994 on indel | MET |
-| native vs reference equivalence suites unchanged and green | full suite on `5f70316`: 3981 passed, 7 skipped, 0 failed | MET |
+| native vs reference equivalence suites unchanged and green | full suite on `5f70316`: 3981 passed, 7 skipped, 0 failed (uncommitted lab log `results/v11-integrate-20261011-223701.log`; baseline expectation ≥ 3634) | MET |
 | ASan/UBSan clean for touched C | `experiments/v11/wp1/sanitizers-run.log`: gcc and clang ASan+UBSan, clang UBSan-trap, overall PASS; its recorded kernel source SHA-256 (`c5a81b7a…`) equals the merged `align.c`, and no native source changed after it | MET |
 | cProfile before/after committed under `experiments/v11/` | not committed | **NOT MET** |
 
@@ -116,9 +117,11 @@ yields a smaller end-to-end gain. A w4 profile (the missing cProfile artefact) i
 V9→V10 comes from `experiments/arch/results/compare-summary.json`:
 - V9 = `e76e24b`; V10 = pre-release commit `4700165`.
 - Geomean of paired ratios: n = 5 at w4, n = 3 at w1.
-- Different session and load (1.17–2.0).
+- Different session and load (1-min load 1.17–3.45 across the four scenarios below).
 
 V10→V11 is this report. The two steps were measured in different sessions, so the product is **not** a paired measurement.
+
+Ratio columns are per-seed paired ratios (V9→V10 geomean, V10→V11 median), not ratios of the median seconds shown.
 
 | scenario | V9 s | V10 s (arch run) | V10 s (this run) | V11 s | V9→V10 | V10→V11 |
 |---|---|---|---|---|---|---|
