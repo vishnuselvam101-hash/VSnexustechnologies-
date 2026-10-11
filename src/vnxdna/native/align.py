@@ -186,9 +186,16 @@ def _resolve(explicit: str | None = None) -> tuple[str, str | None]:
             raise NativeAlignmentError(f"native alignment requested but every level is quarantined ({','.join(bad)})")
         return "reference", f"every native level quarantined ({','.join(bad)})"
     if want in supported:
-        return want, None
+        return want, None      # an explicitly forced level that the CPU supports runs even if auto quarantined it
+    # downgrade: the widest supported level below the request, skipping levels quarantined by the self-check
+    bad = quarantined_levels()
     lower = [n for n, lanes in sorted(LEVELS.items(), key=lambda kv: -kv[1]) if lanes < LEVELS[want] and n in supported]
-    return lower[0], f"{want} requested but not supported by this CPU/OS; using {lower[0]}"
+    usable = [n for n in lower if n not in bad]
+    if usable:
+        skipped = [n for n in lower if n in bad and LEVELS[n] > LEVELS[usable[0]]]
+        note = f" (quarantined skipped: {','.join(skipped)})" if skipped else ""
+        return usable[0], f"{want} requested but not supported by this CPU/OS; using {usable[0]}{note}"
+    return lower[0], f"{want} requested but not supported by this CPU/OS; using {lower[0]} although it is quarantined"
 
 
 def _warn_once(msg: str) -> None:

@@ -224,9 +224,11 @@ static int align_batch(int64_t n, const uint8_t *codes, const int64_t *offsets, 
         default: return VNX_E_UNSUPPORTED;
         }
         /* scratch grows with LANES (16.9 MB at LANES 16, T 8192): on allocation failure retry one level narrower; the
-         * result is identical at every level */
+         * result is identical at every level. The narrower level is checked like any request (never run a level this
+         * CPU/OS lacks). Callers report the level they requested; only this out-of-memory retry runs a narrower one. */
         if (rc != VNX_E_NOMEM || lanes == 4) return rc;
         lanes /= 2;
+        if (!(vnx_align_levels() & (1 << lanes))) return rc;
     }
 }
 

@@ -205,6 +205,55 @@ def test_forced_level_downgrades_and_records(want, monkeypatch):
         assert "not supported" in st_["fallback_reason"]
 
 
+def test_forced_downgrade_skips_quarantined_levels(monkeypatch):
+    monkeypatch.setattr(na, "supported_levels", lambda: ["scalar", "avx2"])
+    na.quarantine_level("avx2")
+    level, reason = na._resolve("avx512")
+    assert level == "scalar" and "quarantined skipped: avx2" in reason
+    na.quarantine_level("scalar")
+    level, reason = na._resolve("avx512")
+    assert level == "avx2" and "although it is quarantined" in reason
+    assert na._resolve("avx2") == ("avx2", None)               # a supported forced level runs despite the quarantine
+
+
+_NOMEM_CHILD = r"""
+import ctypes, resource, sys
+import numpy as np
+from vnxdna.native import align as na
+lib = ctypes.CDLL(sys.argv[1]); na._bind(lib)
+T, B = 8192, 64
+tpl = np.full(T, -1, np.int16); z = np.zeros(T, np.int32); fp = np.arange(T, dtype=np.int32)
+codes = np.zeros(T, np.uint8); offs = np.array([0, T], np.int64)
+outs = [np.zeros(T, np.uint8), np.zeros(T, np.uint8), np.zeros(1, np.uint8)] + [np.zeros(1, np.int64) for _ in range(4)]
+p = na._ptr
+args = (1, p(codes), p(offs), T, None, None, T, p(tpl), p(z), p(z), p(z), 1, T, p(fp), p(z), B, 4, 6, 6, 1, 0, 0, *(p(o) for o in outs))
+vm = int(next(l for l in open("/proc/self/status") if l.startswith("VmSize")).split()[1]) * 1024
+resource.setrlimit(resource.RLIMIT_AS, (vm + 12 * 2**20, resource.RLIM_INFINITY))   # 16.9 MB scratch fails, 8.5 MB fits
+print(lib.vnx_align_batch_lv(*args, 16), lib.vnx_align_batch_lv(*args, 4), int(outs[2][0]))
+"""
+
+
+def test_out_of_memory_retry_never_runs_a_missing_level(tmp_path):
+    """LANES 16 scratch (16.9 MB at T 8192, band 64) fails under an address-space limit; the retry one level narrower
+    must not run LANES 8 when the library reports it missing (masked test build: levels 4 and 16 only)."""
+    import os
+    import sys
+    try:
+        lib_path = na.build(tmp_path / "lib416.so", extra_flags=["-DVNX_ALIGN_LEVEL_MASK=0x10010"], strict=True)
+    except na.NativeAlignmentError as error:
+        pytest.skip(f"no C compiler: {error}")
+    if "avx512" not in na.supported_levels():
+        pytest.skip("needs a CPU/OS with AVX-512 (the masked build keeps level 16 only if the CPU has it)")
+    env = {**os.environ, "PYTHONPATH": os.pathsep.join(sys.path)}
+    env.pop("LD_PRELOAD", None)                                 # sanitizer runtimes reserve far more address space
+    res = subprocess.run([sys.executable, "-c", _NOMEM_CHILD, str(lib_path)], capture_output=True, text=True, env=env,
+                         timeout=120)
+    assert res.returncode == 0, res.stderr[-2000:]
+    rc16, rc4, ok4 = (int(x) for x in res.stdout.split())
+    assert rc16 == -4                                           # VNX_E_NOMEM, not a silent run at the refused level 8
+    assert rc4 == 0 and ok4 == 1                                # 4.2 MB scratch still fits
+
+
 def test_quarantine_steps_down_in_auto(monkeypatch):
     sup = na.supported_levels()
     order = [n for n in na.AUTO_ORDER if n in sup]
@@ -227,7 +276,7 @@ def test_native_status_reports_level():
     assert backend_summary()["align"]["simd_level"] == k["simd_level"]
 
 
-@pytest.mark.parametrize("explicit", ["native", "auto", "scalar"])
+@pytest.mark.parametrize("explicit", ["native", "auto", "scalar", "Native", " AVX2 "])
 def test_explicit_native_aligner_ignores_reference_environment(explicit, monkeypatch):
     """An aligner constructed with an explicit native backend runs the kernel even if VNXDNA_ALIGN_BACKEND=reference
     (as before ABI 3): the environment never silently turns a native comparison into reference-vs-reference."""
@@ -243,6 +292,7 @@ def test_explicit_native_aligner_ignores_reference_environment(explicit, monkeyp
     layout = LAYOUTS["default-313nt"]
     al = TemplateAligner(layout, 6, backend=explicit, retry_band=12)
     assert al.backend == "native" and al.retry.backend == "native"
+    assert al.level_request == na.requested_backend(explicit)
     reads = _edited(layout, np.random.default_rng(9), 6)
     ref = TemplateAligner(layout, 6, backend="reference", retry_band=12).project(reads)
     assert_identical(ref, al.project(reads), explicit)

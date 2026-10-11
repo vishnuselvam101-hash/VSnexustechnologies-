@@ -70,7 +70,8 @@ class TemplateAligner:
         self.backend = _na.resolve_backend(backend)
         # the level align_usable runs: an explicit backend pins it ("native"/"auto": the auto policy, a level name: that
         # level), so an explicit native aligner never follows VNXDNA_ALIGN_BACKEND=reference; None follows the environment
-        self.level_request = backend if backend in (*_na.LEVELS, "native", "auto") else None
+        req = None if backend is None else _na.requested_backend(backend)     # normalised: "Native" == "native"
+        self.level_request = req if req in (*_na.LEVELS, "native", "auto") else None
         self.layout = layout
         self.band = band
         self.costs = costs or SyncCosts()
