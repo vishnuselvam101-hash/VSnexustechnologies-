@@ -112,6 +112,7 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
         raise VNXFormatError(f"cannot read {reads_path}: {error.strerror or error}") from None
     buckets = _bucket_count(est_reads)
     tmp_root = tempfile.mkdtemp(prefix="vnx4-decode-", dir=workdir)
+    spill = cluster = None
     try:
         smart = opt.indel_recovery == "smart"
         softm = opt.soft_decoding != "off"
@@ -126,7 +127,6 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
                      opt.soft_config if softm else None)
         clustering = opt.read_clustering != "off"
         initargs = base_args + (deferred, qw, opt.retry_band, stage_counters is not None) + ((True,) if clustering else ())
-        cluster = None
         if clustering:
             # V7 item A (opt-in): unplaced-read store in pass 1; the stage itself runs lazily in pass 2 (fill-only)
             from vnxdna.recovery.cluster.stage import ClusterStage
@@ -227,4 +227,10 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
                         **({"cluster": cluster} if cluster is not None else {}))
         return result
     finally:
+        # a stop in pass 1 leaves the spill files open; close them before removing the directory, or the removed files
+        # keep their disk blocks for as long as the caller holds the exception (its traceback keeps this frame alive)
+        if spill is not None:
+            spill.close()
+        if cluster is not None:
+            cluster.store.close()
         shutil.rmtree(tmp_root, ignore_errors=True)
