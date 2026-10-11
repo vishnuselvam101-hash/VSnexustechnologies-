@@ -1,0 +1,47 @@
+{
+  "label": "SIMULATED: reads from a software channel model; no DNA was synthesised, stored or sequenced",
+  "seeds": [
+    93090,
+    93091,
+    93092,
+    93093,
+    93094,
+    93095,
+    93096,
+    93097,
+    93098,
+    93099,
+    93100,
+    93101,
+    93102,
+    93103,
+    93104,
+    93105,
+    93106,
+    93107,
+    93108,
+    93109
+  ],
+  "n": 20,
+  "success_exact": {
+    "E": 2,
+    "F": 19
+  },
+  "false_success": 0,
+  "E_only": 0,
+  "F_only": 17,
+  "mcnemar_exact_p": 1.53e-05,
+  "identical_where_both_succeed": true,
+  "seconds_median": {
+    "E": 140.76,
+    "F": 146.85
+  },
+  "commit": [
+    "12ef9a985b7f766b8a3d03cba05a9679ec1e1e90"
+  ],
+  "acceptance": {
+    "no_false_success": true,
+    "F_never_loses": true,
+    "identical_where_both_succeed": true
+  }
+}
