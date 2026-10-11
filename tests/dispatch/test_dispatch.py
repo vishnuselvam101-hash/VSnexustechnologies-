@@ -45,7 +45,8 @@ def test_reference_request_selected(monkeypatch):
     assert e == {"path": "reference", "reason": "requested"}
 
 
-@pytest.mark.parametrize("bad", [{"input_bytes": -1}, {"workers": 1.5}, {"reads": True, "x_reads": "3"}])
+@pytest.mark.parametrize("bad", [{"input_bytes": -1}, {"workers": 1.5}, {"x_reads": "3"}, {"n_reads": True},
+                                 {"reads": True}, {"reads": -2}])
 def test_invalid_workload_rejected(bad):
     with pytest.raises(dispatch.DispatchError):
         dispatch.select_path(bad)
@@ -63,7 +64,7 @@ def test_backend_missing_falls_back(monkeypatch):
     e = dispatch.select_path()["kernels"]["integrity"]
     assert e["path"] == "reference"
     rows = np.arange(60, dtype=np.uint8).reshape(6, 10)
-    assert integrity.crc32_rows(rows).tobytes() == dispatch.__dict__["np"].asarray(integrity.crc32_rows_reference(rows)).tobytes()
+    assert integrity.crc32_rows(rows).tobytes() == np.asarray(integrity.crc32_rows_reference(rows)).tobytes()
 
 
 def test_backend_missing_explicit_native_fails(monkeypatch):
@@ -104,6 +105,24 @@ class TestFaultInjection:
         monkeypatch.setenv(dispatch.DIFFERENTIAL_ENV, "1")
         assert dispatch.path_report()["kernels"]["integrity"]["path"] == "reference"
 
+    def test_env_opt_in_explicit_native_raises(self, monkeypatch):
+        # path_report used to swallow DispatchError: an explicit native request that fails must never be "success"
+        self._bad_output(monkeypatch)
+        monkeypatch.setenv(dispatch.DIFFERENTIAL_ENV, "1")
+        monkeypatch.setenv("VNXDNA_INTEGRITY_BACKEND", "native")
+        with pytest.raises(dispatch.DispatchError, match="differential"):
+            dispatch.path_report()
+
+    def test_quarantine_visible_in_spawned_workers(self, monkeypatch):
+        import multiprocessing as mp
+        from concurrent.futures import ProcessPoolExecutor
+        self._bad_output(monkeypatch)
+        assert dispatch.select_path(differential=True)["kernels"]["integrity"]["path"] == "reference"
+        with ProcessPoolExecutor(max_workers=2, mp_context=mp.get_context("spawn")) as pool:
+            got = {f.result() for f in [pool.submit(integrity.resolve_backend) for _ in range(4)]}
+        assert got == {"reference"}
+        assert dispatch.select_path()["kernels"]["integrity"]["reason"] == "differential-fail-fallback"
+
     def test_default_has_no_check(self, monkeypatch):
         self._bad_output(monkeypatch)
         assert "differential" not in dispatch.select_path()["kernels"]["integrity"]
@@ -142,3 +161,65 @@ def test_decode_report_records_path_and_data_roundtrips(tmp_path):
     assert res.status == "SUCCESS"
     assert res.report["path_selection"]["schema"] == dispatch.SCHEMA
     assert (tmp_path / "o.vnx").read_bytes() == c.read_bytes()
+
+
+def _reference_env(monkeypatch):
+    for k in ("INTEGRITY", "STRAND", "OUTERLIST", "ALIGN", "READS", "RS", "CLUSTER"):
+        monkeypatch.setenv(f"VNXDNA_{k}_BACKEND", "reference")
+
+
+def _flip_native_crc(monkeypatch):
+    real = integrity.crc32_rows_native
+    monkeypatch.setattr(integrity, "crc32_rows_native", lambda rows, threads=1: real(rows, threads) ^ np.uint32(1))
+
+
+@pytest.mark.skipif(not _native_integrity(), reason="integrity kernel not built")
+@pytest.mark.parametrize("workers", [1, 2])
+def test_failing_selfcheck_protects_real_encode(tmp_path, monkeypatch, workers):
+    """Regression: the self-check ran after the work, so a wrong native kernel produced the output while the report
+    said 'reference'. Now the selection happens first and the reference really runs (in every worker)."""
+    from vnxdna.pipeline.encode import DNAOptions, encode_container
+    c = _container(tmp_path)
+    with monkeypatch.context() as m:
+        _reference_env(m)
+        encode_container(c, tmp_path / "ref.fa")
+    _flip_native_crc(monkeypatch)
+    monkeypatch.setenv(dispatch.DIFFERENTIAL_ENV, "1")
+    rep = encode_container(c, tmp_path / "out.fa", DNAOptions(workers=workers))
+    e = rep["path_selection"]["kernels"]["integrity"]
+    assert e["path"] == "reference" and e["reason"] == "differential-fail-fallback" and e["differential"] == "fail"
+    assert (tmp_path / "out.fa").read_bytes() == (tmp_path / "ref.fa").read_bytes()
+
+
+@pytest.mark.skipif(not _native_integrity(), reason="integrity kernel not built")
+def test_failing_selfcheck_protects_real_decode(tmp_path, monkeypatch):
+    from vnxdna.v4 import channel as ch
+    from vnxdna.v4 import decoder as de
+    from vnxdna.v4 import encoder as en
+    c = _container(tmp_path)
+    en.encode_container(c, tmp_path / "s.fa")
+    ch.simulate_file(tmp_path / "s.fa", tmp_path / "r.fq", ch.ChannelConfig(coverage=5, seed=3))
+    _flip_native_crc(monkeypatch)
+    monkeypatch.setenv(dispatch.DIFFERENTIAL_ENV, "1")
+    res = de.decode_reads(tmp_path / "r.fq", tmp_path / "o.vnx", de.DecodeOptions())
+    assert res.status == "SUCCESS"
+    e = res.report["path_selection"]["kernels"]["integrity"]
+    assert e["path"] == "reference" and e["reason"] == "differential-fail-fallback"
+    assert (tmp_path / "o.vnx").read_bytes() == c.read_bytes()
+
+
+@pytest.mark.skipif(not _native_integrity(), reason="integrity kernel not built")
+def test_failing_selfcheck_explicit_native_encode_and_decode_raise(tmp_path, monkeypatch):
+    from vnxdna.pipeline.encode import encode_container
+    from vnxdna.v4 import decoder as de
+    c = _container(tmp_path)
+    encode_container(c, tmp_path / "s.fa")
+    _flip_native_crc(monkeypatch)
+    monkeypatch.setenv(dispatch.DIFFERENTIAL_ENV, "1")
+    monkeypatch.setenv("VNXDNA_INTEGRITY_BACKEND", "native")
+    with pytest.raises(dispatch.DispatchError, match="differential"):
+        encode_container(c, tmp_path / "bad.fa")
+    assert not (tmp_path / "bad.fa").exists()
+    with pytest.raises(dispatch.DispatchError, match="differential"):
+        de.decode_reads(tmp_path / "s.fa", tmp_path / "o.vnx", de.DecodeOptions())
+    assert not (tmp_path / "o.vnx").exists()

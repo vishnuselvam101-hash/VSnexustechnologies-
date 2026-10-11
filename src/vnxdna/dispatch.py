@@ -10,10 +10,17 @@ with their reference implementations, and this module only decides, records and 
   workload through the native kernel and the reference and compares the bytes. A mismatch or exception in
   ``auto`` mode quarantines the kernel (reference from then on); with ``VNXDNA_<K>_BACKEND=native`` it raises
   :class:`DispatchError` - a wrong or missing backend is never reported as success.
-* :func:`path_report` - the record placed under ``path_selection`` in every encode and decode report.
+* :func:`path_report` - the selection placed under ``path_selection`` in every encode and decode report. The
+  pipelines call it *before* any kernel runs, so the self-check protects the run and the report states the path that
+  actually ran. It raises :class:`DispatchError` when an explicitly requested native kernel is unusable or fails.
 
-Quarantine acts on kernels built on ``native._loader.Kernel`` (strand, integrity, outerlist). The align, reads, rs
-and cluster loaders keep their own static selection; their path is still probed and recorded.
+Quarantine acts on kernels built on ``native._loader.Kernel`` (strand, integrity, outerlist). It is stored in the
+environment (``VNXDNA_<K>_QUARANTINED``) so worker processes inherit it. The align, reads, rs and cluster loaders
+keep their own static selection; their path is still probed and recorded.
+
+Known gap: only ``integrity`` has a differential self-test (:data:`SELFTESTS`). For every other kernel
+``VNXDNA_DIFFERENTIAL=1`` records ``"differential": "not-available"``: the kernel is NOT verified at run time and
+correctness rests on the bit-exactness test suites (tests/native, tests/backend_equivalence) only.
 """
 from __future__ import annotations
 
@@ -41,7 +48,8 @@ def _selftest_integrity() -> bool:
     return got.dtype == want.dtype and got.shape == want.shape and got.tobytes() == want.tobytes()
 
 
-# kernel -> callable returning True when native == reference on a fixed workload (extend per kernel)
+# kernel -> callable returning True when native == reference on a fixed workload. Only integrity is covered; the
+# other kernels report "not-available" under the differential check (see the module docstring, "Known gap").
 SELFTESTS: dict[str, Callable[[], bool]] = {"integrity": _selftest_integrity}
 
 
@@ -55,7 +63,7 @@ def validate_workload(workload: dict | None) -> dict:
     """Reject nonsensical workload descriptors (negative or non-integer sizes) before any path is chosen."""
     wl = dict(workload or {})
     for key, val in wl.items():
-        if key.endswith(("_bytes", "_reads", "_strands", "workers")):
+        if key.endswith(("bytes", "reads", "strands", "workers")):      # "reads" and "n_reads" alike
             if isinstance(val, bool) or not isinstance(val, int) or val < 0:
                 raise DispatchError(f"invalid workload field {key}={val!r}: expected a non-negative integer")
     return wl
@@ -99,6 +107,12 @@ def select_path(workload: dict | None = None, *, differential: bool | None = Non
     for k, cap in caps.items():
         requested = cap["requested"] or "auto"
         backend = cap["backend"]
+        quarantined = getattr(_kernel_obj(k), "quarantine_reason", None)
+        if backend == "reference" and quarantined and requested != "reference":
+            out[k] = {"path": "reference", "reason": "differential-fail-fallback", "detail": quarantined}
+            if check:
+                out[k]["differential"] = "fail"
+            continue
         if backend == "reference":
             reason = "requested" if requested == "reference" else ("native-unavailable" if cap["load_error"] else "reference")
         elif backend == "native":
@@ -128,8 +142,9 @@ def select_path(workload: dict | None = None, *, differential: bool | None = Non
 
 
 def path_report() -> dict:
-    """The ``path_selection`` block of encode/decode reports (honours ``VNXDNA_DIFFERENTIAL``); never raises."""
-    try:
-        return select_path()
-    except DispatchError as error:
-        return {"schema": SCHEMA, "error": str(error), "kernels": {}}
+    """The ``path_selection`` block of encode/decode reports (honours ``VNXDNA_DIFFERENTIAL``).
+
+    Must be called before any kernel runs: a failing self-check then quarantines the kernel for the whole run
+    (workers included) and the returned record is the path that actually ran. Raises :class:`DispatchError` when an
+    explicitly requested native kernel is unusable or fails the check - a wrong backend is never reported as success."""
+    return select_path()

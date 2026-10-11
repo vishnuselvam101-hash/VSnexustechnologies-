@@ -9,6 +9,8 @@ A :class:`Kernel` is one plain C11 shared library loaded with :mod:`ctypes`:
 * a library whose ABI version differs from the binding's is ignored (recorded in ``load_error``);
 * backend selection ``<PREFIX>_BACKEND`` = ``auto`` (native if it loads, else the NumPy reference; logged once),
   ``native`` (raise if unavailable) or ``reference``;
+* a quarantine set by :mod:`vnxdna.dispatch` (``<PREFIX>_QUARANTINED``, inherited by worker processes) forces the
+  reference in ``auto`` mode and makes ``native`` raise;
 * :meth:`Kernel.status` never raises and reports which implementation actually runs.
 
 The binding module keeps the module-level contract of the older loaders (``_HERE``, ``_SOURCE``, ``_INPLACE``,
@@ -46,10 +48,25 @@ class Kernel:
         self.module = module
         self.source = _PKG / "native" / "c" / f"{name}.c"
         self.env, self.env_lib = f"{prefix}_BACKEND", f"{prefix}_LIB"
+        self.env_quarantine = f"{prefix}_QUARANTINED"
         self._lock = threading.Lock()
         self.reset()
 
-    quarantine_reason: str | None = None
+    @property
+    def quarantine_reason(self) -> str | None:
+        """Why the native path is bypassed after a failed differential self-check (None when not quarantined).
+
+        Kept in the process environment (``<PREFIX>_QUARANTINED``) rather than on the object, so worker processes
+        (fork, spawn or forkserver) inherit it and pick the same path as the parent: results never depend on the
+        worker count."""
+        return os.environ.get(self.env_quarantine) or None
+
+    @quarantine_reason.setter
+    def quarantine_reason(self, reason: str | None) -> None:
+        if reason:
+            os.environ[self.env_quarantine] = str(reason)
+        else:
+            os.environ.pop(self.env_quarantine, None)
 
     def reset(self) -> None:
         self._lib = self._load_error = self._path = None
