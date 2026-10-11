@@ -19,30 +19,27 @@
 - **Correctness check.** Every decode output's SHA-256 is compared with the archive kept at preparation (`exact`).
 - **Guards.**
   - `RLIMIT_AS` and a process-tree RSS kill at 12 GiB, plus `ulimit -v` 12 GiB on the job. Every run is under `tools/vnx-job` with a timeout.
-  - The heaviest size (64 MiB) is refused while load1 ≥ 3.
-- **Host.** 4C/8T, 31 GB, shared production VPS. Recorded load1 for these rows: **6.06–8.31**, because another work package was building concurrently. Wall times are therefore indicative only. RSS is the measured quantity.
+  - The heaviest size (64 MiB) is refused if load1 ≥ 3 when it starts. It started at load1 1.85, 1.83 and 2.76, and that run's own preparation and decodes raised the per-stage load to 2.78–3.92. The first 64 MiB attempt refused its indel scenario on its own load; those two `NOT RUN` rows are kept in `rss.jsonl`, and the gate is now checked once per size.
+- **Host.** 4C/8T, 31 GB, shared production VPS, with another work package building concurrently. Recorded per-stage load1 ranges from 2.78 to 8.31 (1–16 MiB rows: 6.06–8.31). Wall times are therefore indicative only. RSS is the measured quantity.
 
 ## Results (`results/rss.jsonl`, slopes in `results/summary.json`)
 
-Values are the stage process's `ru_maxrss` in MiB. The process-tree peak is in brackets. All 12 decodes are `exact`, with 0 false SUCCESS.
+Values are the stage process's `ru_maxrss` in MiB. The process-tree peak is in brackets. The 64 MiB indel point is the mean of 2 runs per tree (V10 112 and 118; V11 124 and 115). All 18 decodes are `exact`, with 0 false SUCCESS, and no run came near the 12 GiB guard (largest tree peak 293 MiB).
 
-| stage / scenario | tree | 1 MiB | 4 MiB | 16 MiB | slope maxrss (tree) MiB per input MiB |
-|---|---|---|---|---|---|
-| encode / clean | V10 | 51 (119) | 53 (131) | 55 (129) | 0.21 (0.39) |
-| encode / clean | V11 | 52 (123) | 54 (128) | 54 (130) | 0.12 (0.41) |
-| decode / clean | V10 | 105 (268) | 134 (271) | 124 (290) | 0.67 (1.47) |
-| decode / clean | V11 | 106 (268) | 135 (272) | 124 (275) | 0.61 (0.41) |
-| decode / indel | V10 | 110 (269) | 111 (273) | 119 (277) | 0.65 (0.48) |
-| decode / indel | V11 | 110 (272) | 119 (276) | 115 (272) | 0.17 (−0.06) |
+| stage / scenario | tree | 1 MiB | 4 MiB | 16 MiB | 64 MiB | slope maxrss (tree), MiB per input MiB |
+|---|---|---|---|---|---|---|
+| encode / clean | V10 | 52 (120) | 54 (131) | 55 (129) | 54 (132) | 0.011 (0.111) |
+| encode / clean | V11 | 52 (123) | 55 (129) | 55 (131) | 55 (132) | 0.017 (0.091) |
+| decode / clean | V10 | 106 (269) | 134 (271) | 125 (290) | 137 (293) | 0.281 (0.347) |
+| decode / clean | V11 | 107 (269) | 135 (273) | 125 (276) | 132 (280) | 0.193 (0.142) |
+| decode / indel | V10 | 110 (270) | 111 (274) | 120 (278) | 116 (284) | 0.066 (0.197) |
+| decode / indel | V11 | 111 (272) | 119 (276) | 116 (273) | 120 (281) | 0.087 (0.118) |
 
 **Reading.**
 
-- Peak RSS is flat in input size for both trees: below 1.5 MiB of RSS per MiB of input on every series. The `copies` factor falls from about 10 (encode) and about 65 (decode) at 1 MiB to 0.8 and 5 at 16 MiB. The peak is a fixed working set, not a multiple of the input.
-- V11 ≤ V10 on every slope except encode tree-peak: 0.41 vs 0.39, a difference of 0.02 MiB per MiB, within sampling noise (the per-point differences are ≤ 4 MiB).
-- No regression. WP3 made no change aimed at peak RSS.
+- Peak RSS does not scale with input size in either tree. Every slope is below 0.35 MiB of RSS per MiB of input. From 1 MiB to 64 MiB, the `copies` factor falls from about 10 to 0.2 (encode) and from about 65 to 1.1–1.5 (decode). The peak is a fixed working set, not a multiple of the input.
+- **V11 vs V10.** The tree-peak slope is lower for V11 on all three series. The maxrss slope is lower for decode / clean and higher by 0.006 (encode) and 0.021 (decode / indel) MiB per MiB, which is less than 2 MiB across 64 MiB. That is smaller than the run-to-run scatter: the two 64 MiB indel runs differ by 6 MiB (V10) and 9 MiB (V11), and the order between trees reversed on the repeat. No regression is detected, and none is claimed to be absent below that noise level. WP3 made no change aimed at peak RSS.
 - Decode memory is bounded by one spill bucket (about 200 000 reads; `recovery/spill.py`): about 6 MiB of input at coverage 1, about 2 MiB at coverage 3. Below that, a single bucket holds the whole archive, which explains the 1 → 4 MiB step on decode / clean. The new slow test (`tests/v2/test_streaming_scale_v2.py::test_dna_pipeline_peak_memory_does_not_grow_with_input_size`) pins the plateau at test scale with 20 000-read buckets. The test fails if pass-2 memory follows the input instead of the bucket.
-
-**64 MiB.** This size runs only at load1 < 3. Its rows are appended to `results/rss.jsonl` when the host allows. If the load never fell, there are no 64 MiB rows and the size is reported as NOT RUN.
 
 ## Bounded queues and cleanup audit (V11 WP3)
 
@@ -52,13 +49,13 @@ Values are the stage process's `ru_maxrss` in MiB. The process-tree peak is in b
 - Deferred recovery's untimed `pool.map` is bounded by one round's records, which come from one bucket or one orphan slice.
 - Cluster consensus submits all batches, but its inputs are already resident and capped by `max_unplaced_reads`.
 
-**Defects fixed (adfa4f6, tests `tests/v11/test_spill_cleanup.py`):**
+**Defects fixed (adfa4f6; tests in `tests/v11/test_spill_cleanup.py`):**
 
 - A pass-1 stop (recovery budget or cancel) left every spill file and the unplaced-read store open after the directory was removed. Their disk blocks stayed allocated while the caller held the exception.
 - A stop in deferred recovery kept the orphan memory map.
 - `Spill.__init__` leaked the handles already opened when an open failed part-way.
 
-**Residual (not fixed):** a stop inside read clustering, which is opt-in (`read_clustering="fallback"`), can keep the unplaced-read memory map until the caller drops the exception, because the clustering frames hold views of it.
+**Also fixed (4536787):** a stop inside read clustering, which is opt-in (`read_clustering="fallback"`), kept the unplaced-read memory map through the clustering frames that held views of it. The stage now clears those finished frames on an exception.
 
 ## Out of scope here
 

@@ -11,7 +11,7 @@ Recorded per stage: status, output SHA-256, wall seconds, the stage process's
 ``ru_maxrss`` (read before the output is hashed), the RSS right after imports (baseline), the summed RSS of the stage's whole process tree sampled from
 /proc every 0.2 s, ``copies`` = (peak - baseline) / input bytes, the host load before the stage. Guards: every stage
 runs with ``RLIMIT_AS`` = 12 GiB and is killed if its process tree's RSS passes 12 GiB (row status ``GUARD_KILLED``,
-never a decoder outcome); the heaviest size (64 MiB) is refused while the 1-minute load is >= 3 (status ``NOT RUN: load``).
+never a decoder outcome); the heaviest size (64 MiB) is refused if the 1-minute load is >= 3 when that size starts (status ``NOT RUN: load``).
 
     V10_TREE=/root/vnx-dna-lab/v10-rel PYTHONPATH=src python experiments/v11/mem/rss.py run --sizes 1m,4m
     PYTHONPATH=src python experiments/v11/mem/rss.py summary
@@ -160,12 +160,13 @@ def run(sizes: list[str], scenarios: list[str], v10: Path, workers: int, timeout
     commits = {k: _git(t, "rev-parse", "HEAD") for k, t in trees.items()}
     for name in sizes:
         size, idx = SIZES[name], list(SIZES).index(name)
+        load0 = os.getloadavg()[0]          # once per size: this run's own load must not refuse its later scenarios
         for scenario in scenarios:
             base = {"label": LABEL, "size": size, "scenario": scenario, "workers": workers, "commits": commits,
                     "seed": SEED, "cpu_count": os.cpu_count(), "python": sys.version.split()[0]}
-            if size >= HEAVY and os.getloadavg()[0] >= 3:
+            if size >= HEAVY and load0 >= 3:
                 for k in trees:
-                    _append({**base, "tree": k, "stage": "decode", "status": f"NOT RUN: load {os.getloadavg()[0]:.1f} >= 3"})
+                    _append({**base, "tree": k, "stage": "decode", "status": f"NOT RUN: load {load0:.1f} >= 3"})
                 continue
             src, reads, prov = prepare(work, size, idx, scenario)
             order = list(trees) if idx % 2 == 0 else list(trees)[::-1]
@@ -201,9 +202,14 @@ def summarize(rows: list[dict]) -> dict:
             continue
         key = f"{r['tree']}/{r['stage']}/{r['scenario']}"
         s = out["series"].setdefault(key, {"points": {}})
-        s["points"][str(r["size"] // mib)] = {"maxrss_mib": round(max(r["maxrss"], r.get("maxrss_children", 0)) / mib, 1),
-                                              "tree_peak_mib": round(r["tree_peak_rss"] / mib, 1), "copies": r["copies"],
-                                              "wall_s": round(r["wall_s"], 1), "exact": r.get("exact")}
+        p = s["points"].setdefault(str(r["size"] // mib), {"runs": []})
+        p["runs"].append({"maxrss_mib": round(max(r["maxrss"], r.get("maxrss_children", 0)) / mib, 1),
+                          "tree_peak_mib": round(r["tree_peak_rss"] / mib, 1), "copies": r["copies"],
+                          "wall_s": round(r["wall_s"], 1), "exact": r.get("exact"), "load1_before": r["load1_before"]})
+    for s in out["series"].values():          # repeated points: mean, with every run kept
+        for p in s["points"].values():
+            for f in ("maxrss_mib", "tree_peak_mib"):
+                p[f] = round(sum(x[f] for x in p["runs"]) / len(p["runs"]), 1)
     for s in out["series"].values():
         for field, name in (("maxrss_mib", "slope_maxrss"), ("tree_peak_mib", "slope_tree_peak")):
             pts = [(int(k), v[field]) for k, v in s["points"].items()]
