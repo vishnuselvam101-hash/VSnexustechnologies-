@@ -127,11 +127,13 @@ def probe_reads(reads_path: str | os.PathLike, band: int = 6) -> Probe:
         return p
     p.heads = frame_heads(sample)
     for name, (lay, _, _) in PROFILES.items():
-        near = sum(v for length, v in counts.items() if abs(length - lay.strand_nt) <= band)
+        nt = lay.strand_nt    # hoisted: Layout.strand_nt is a computed property (pure function of the frozen fields)
+        near = sum(v for length, v in counts.items() if abs(length - nt) <= band)
         if near >= max(1, p.n // 10) and lay not in [c[1] for c in p.candidates]:
             p.candidates.append((name, lay))
     for name, lay in p.candidates:
-        exact = [r for r in sample if r.size == lay.strand_nt][:4000]
+        nt = lay.strand_nt
+        exact = [r for r in sample if r.size == nt][:4000]
         score = 0
         if exact:
             mat = np.stack(exact)
@@ -143,7 +145,8 @@ def probe_reads(reads_path: str | os.PathLike, band: int = 6) -> Probe:
         # no exact-length read verifies (heavy indels): the same vote through the sync path of pass 1 (marker-template
         # alignment, indels → erasures) on up to SYNC_VOTE_READS reads near each candidate's length, both orientations
         for name, lay in p.candidates:
-            close = [r for r in sample if abs(r.size - lay.strand_nt) <= band][:SYNC_VOTE_READS]
+            nt = lay.strand_nt
+            close = [r for r in sample if abs(r.size - nt) <= band][:SYNC_VOTE_READS]
             if not close:
                 continue
             al = TemplateAligner(lay, band)
@@ -224,7 +227,8 @@ def choose_layout(p: Probe, band: int = 6) -> tuple[Layout, bool]:
         # frame version 4 is evident but no sampled frame verifies (very noisy reads, tiny samples): use the candidate
         # most reads fit; a supported pool is never refused here, and the decoder verifies every frame as always
         def fit(c):
-            return sum(v for length, v in p.counts.items() if abs(length - c[1].strand_nt) <= band)
+            nt = c[1].strand_nt
+            return sum(v for length, v in p.counts.items() if abs(length - nt) <= band)
         return max(p.candidates, key=fit)[1], False
     if not p.candidates:
         raise VNXFormatError(f"cannot detect the strand layout (modal read length {p.counts.most_common(1)[0][0]}); pass --profile",
