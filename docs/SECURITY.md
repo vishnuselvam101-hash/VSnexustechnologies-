@@ -66,12 +66,30 @@ Each finding appears in two commits (bc0c3de, 137383f) or one (76337d8), which m
 
 **Rules for test keys:** name them `TEST_ONLY_*` or `test_only_*`; derive them from an obviously fake text; never reuse a test key anywhere outside `tests/`; record every new one in this table and in `.gitleaksignore`, with its review date.
 
+## Other `generic-api-key` findings: identifiers and code, not secrets (reviewed 2026-10-11, job #83)
+
+The full-history scan without the ignore list (`vnx-security-scan`, a bare clone) reports 48 findings: the 5 test keys
+above and 43 more, all `generic-api-key`. Each was checked at its line; none is a credential. Their fingerprints are in
+`.gitleaksignore` (commits f3956eb, b61b9fc, f24e87b), so they appear as INFORMATIONAL, never dropped.
+
+| File (history entries) | What matches | Why it is safe |
+|---|---|---|
+| `experiments/v7/a-loss/trials.jsonl` (31) | `"code_key": "<git sha>+<hex>"` | A cache key of the experiment runner (`aloss.py: code_key()`): the commit SHA plus a SHA-256 prefix of the code diff (`e3b0c442…` = SHA-256 of empty input). Public provenance, protects nothing. |
+| `tests/conformance/stage/aead.seal.domain{0,1,2}/vector.json` (3) | `"key_check_hex"` | The public key-check value of the conformance test key (`conformance/operations.py`), written into every test vector by design; it is not the key. |
+| `src/vnxdna/secure/gate.py` (7), `src/vnxdna/secure/control.py` (1) | `key=self.key, …` / `key=key, …` | Python keyword arguments passing a variable; no literal value. |
+| `src/vnxdna/conformance/operations.py` (1) | `"scrambler.keystream": op_keystream` | A dispatch-table entry naming a function. |
+
+Re-checked 2026-10-11 at the V11 release branch: 48 findings, 48 fingerprinted, 0 new; the branch diff since `v10.0.0`
+has none (docs/V11_RELEASE_GATES.md).
+
 ## MEDIUM scan findings (triaged 2026-10-04)
 
 `vnx-security-scan` (2026-10-04, at 71b9bc0) reported 10 MEDIUM findings: 9 dependency advisories (pip-audit, 5 distinct
 IDs; the scan output lists 4 of them twice for the same installed version) and 1 cppcheck warning. None is reachable from VNX-DNA.
 The pins `cryptography>=44,<47` and `pytest<9` stay until the founder decides to lift them; until then these findings
-are expected in every scan.
+are expected in every scan. Re-run 2026-10-11 (V11 release gate): the same 5 IDs and nothing new, in the lab
+environment and in a clean install of the 11.0.0 wheel. A clean venv also lists advisories for its own bundled `pip`
+(24.0); `pip` is the installer of that venv, not a VNX-DNA dependency, and is not shipped in the wheel.
 
 | Finding | What it is | Why VNX-DNA is not affected |
 |---|---|---|
