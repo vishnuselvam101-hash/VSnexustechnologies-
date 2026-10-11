@@ -6,16 +6,20 @@
 #      ASan runtime are installed)
 #   3. clang UBSan in trap mode with all integer, bounds and nullability checks (needs no sanitizer runtime)
 # For each build: the V5 test suite (TESTS, default tests/v5/) and the differential stress fuzz (400 rounds x 250
-# reads by default, every Projection field compared with the NumPy reference). Finally a canary that misuses the C
+# reads by default, every Projection field compared with the NumPy reference), the fuzz once per SIMD level the CPU
+# supports (V11 WP1: scalar, avx2, avx512; the V5 suite itself runs every level). Finally a canary that misuses the C
 # ABI on purpose (offsets one entry short); ASan must report it, which proves the instrumentation is live.
 #
 # usage: benchmarks/v5/native_alignment/sanitizers.sh [workdir] [fuzz-rounds]     (run from the repository root)
+# PY: the Python with the test dependencies; pass an absolute path in a git worktree (the default is relative).
 set -u
 W=${1:-$(mktemp -d)}
 ROUNDS=${2:-400}
 TESTS=${TESTS:-tests/v5/}
 mkdir -p "$W"
 PY=${PY:-.venv/bin/python}
+[ -x "$PY" ] || { echo "PY=$PY is not an executable Python (pass PY=/abs/path/to/python)"; exit 2; }
+export PYTHONPATH="$PWD/src${PYTHONPATH:+:$PYTHONPATH}"   # this tree's code, not an editable install elsewhere
 SRC=src/vnxdna/v5/native/align.c
 fail=0
 echo "kernel source sha256: $(sha256sum $SRC | cut -d' ' -f1)"
@@ -49,8 +53,13 @@ run() {  # label lib preload
     local rc=$?
     echo "$label: $TESTS exit=$rc ($(grep -E "[0-9]+ (passed|failed)" "$W/$label-pytest.log" | tail -1))"
     [ $rc -eq 0 ] || { fail=1; grep -m5 -E "ERROR|runtime error|FAILED" "$W/$label-pytest.log"; }
-    VNXDNA_NATIVE_LIB=$lib LD_PRELOAD=$pre $PY benchmarks/v5/native_alignment/stress_fuzz.py --rounds "$ROUNDS" 2>&1 | tail -1
-    [ "${PIPESTATUS[0]}" -eq 0 ] || fail=1
+    levels=$(VNXDNA_NATIVE_LIB=$lib LD_PRELOAD=$pre $PY -c "from vnxdna.native import align as a; print(' '.join(a.supported_levels()))" 2>&1 | tail -1)
+    case " $levels " in *" scalar "*) ;; *) echo "$label: cannot list SIMD levels ($levels)"; fail=1; return;; esac
+    for level in $levels; do
+        echo -n "$label stress_fuzz $level: "
+        VNXDNA_NATIVE_LIB=$lib LD_PRELOAD=$pre $PY benchmarks/v5/native_alignment/stress_fuzz.py --rounds "$ROUNDS" --backend "$level" 2>&1 | tail -1
+        [ "${PIPESTATUS[0]}" -eq 0 ] || fail=1
+    done
 }
 run gcc-asan-ubsan "$W/gcc_asan_ubsan.so" "$ASAN_PRE"
 if [ -n "$CLANG_PRE" ]; then run clang-asan-ubsan "$W/clang_asan_ubsan.so" "$CLANG_PRE"; else echo "clang-asan-ubsan: NOT RUN"; fi
