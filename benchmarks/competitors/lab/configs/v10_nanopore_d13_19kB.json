@@ -1,0 +1,85 @@
+{
+ "description": "v10 competitor benchmark, lane N (new): nanopore-like channel = VNX-DNA's software simulator with the D13-F1 model (fitted to public ONT R9.4 reads, adequacy UNVALIDATED), negative-binomial coverage mean 10, applied identically to every codec's strands. VNX-DNA with the default decoder and with the opt-in decoder preset F.",
+ "input": "random/19kB",
+ "step_timeout_s": 900,
+ "channel": {
+  "workflow": "VNXSim",
+  "model": "d13-f1",
+  "error_rates": [
+   "d13-f1"
+  ],
+  "coverages": [
+   10
+  ],
+  "dropouts": [
+   0.0
+  ],
+  "seeds": [
+   1,
+   2,
+   3,
+   4,
+   5
+  ]
+ },
+ "participants": [
+  {
+   "id": "vnx-default313",
+   "codec": "VNX",
+   "profile": "default313",
+   "clustering": "NoClustering"
+  },
+  {
+   "id": "vnx-default313-F",
+   "codec": "VNX",
+   "profile": "default313",
+   "clustering": "NoClustering",
+   "decoder": "F"
+  },
+  {
+   "id": "vnx-s184",
+   "codec": "VNX",
+   "profile": "s184",
+   "clustering": "NoClustering"
+  },
+  {
+   "id": "vnx-s184-F",
+   "codec": "VNX",
+   "profile": "s184",
+   "clustering": "NoClustering",
+   "decoder": "F"
+  },
+  {
+   "id": "dna-rs-medium",
+   "codec": "DNARS",
+   "factory": "medium_coderate",
+   "needs_file_size": true,
+   "clustering": "BasicSet"
+  },
+  {
+   "id": "dna-fountain-medium",
+   "codec": "DNAFountain",
+   "factory": "medium_coderate",
+   "needs_file_size": true,
+   "clustering": "BasicSet"
+  },
+  {
+   "id": "hedges-medium",
+   "codec": "HEDGESCpp",
+   "factory": "medium_coderate",
+   "clustering": "BasicSet"
+  },
+  {
+   "id": "hedges-low",
+   "codec": "HEDGESCpp",
+   "factory": "low_coderate",
+   "clustering": "BasicSet"
+  },
+  {
+   "id": "yyc-default",
+   "codec": "YinYang",
+   "factory": "default",
+   "clustering": "BasicSet"
+  }
+ ]
+}

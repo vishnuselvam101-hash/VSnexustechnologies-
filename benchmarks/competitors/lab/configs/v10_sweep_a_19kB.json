@@ -1,0 +1,113 @@
+{
+ "description": "v10 competitor benchmark, lane A: same grid, input and seeds as B0 sweep A (19 kB, harness ErrorGenerator 53/45/2, no dropout), VNX-DNA at v10.0.0 plus HEDGES (C++ adapter) and YYC.",
+ "input": "random/19kB",
+ "step_timeout_s": 900,
+ "channel": {
+  "ratio": [
+   53,
+   45,
+   2
+  ],
+  "error_rates": [
+   0.002,
+   0.005,
+   0.01
+  ],
+  "coverages": [
+   5,
+   10
+  ],
+  "dropouts": [
+   0.0
+  ],
+  "seeds": [
+   1,
+   2,
+   3
+  ]
+ },
+ "participants": [
+  {
+   "id": "vnx-s148",
+   "codec": "VNX",
+   "profile": "s148",
+   "clustering": "NoClustering"
+  },
+  {
+   "id": "vnx-s184",
+   "codec": "VNX",
+   "profile": "s184",
+   "clustering": "NoClustering"
+  },
+  {
+   "id": "vnx-s280",
+   "codec": "VNX",
+   "profile": "s280",
+   "clustering": "NoClustering"
+  },
+  {
+   "id": "vnx-s456",
+   "codec": "VNX",
+   "profile": "s456",
+   "clustering": "NoClustering"
+  },
+  {
+   "id": "vnx-default313",
+   "codec": "VNX",
+   "profile": "default313",
+   "clustering": "NoClustering"
+  },
+  {
+   "id": "vnx-s184-basicset",
+   "codec": "VNX",
+   "profile": "s184",
+   "clustering": "BasicSet"
+  },
+  {
+   "id": "dna-rs-medium",
+   "codec": "DNARS",
+   "factory": "medium_coderate",
+   "needs_file_size": true,
+   "clustering": "BasicSet"
+  },
+  {
+   "id": "dna-rs-high",
+   "codec": "DNARS",
+   "factory": "high_coderate",
+   "needs_file_size": true,
+   "clustering": "BasicSet"
+  },
+  {
+   "id": "dna-fountain-medium",
+   "codec": "DNAFountain",
+   "factory": "medium_coderate",
+   "needs_file_size": true,
+   "clustering": "BasicSet"
+  },
+  {
+   "id": "dna-fountain-high",
+   "codec": "DNAFountain",
+   "factory": "high_coderate",
+   "needs_file_size": true,
+   "clustering": "BasicSet"
+  },
+  {
+   "id": "hedges-medium",
+   "codec": "HEDGESCpp",
+   "factory": "medium_coderate",
+   "clustering": "BasicSet"
+  },
+  {
+   "id": "hedges-low",
+   "codec": "HEDGESCpp",
+   "factory": "low_coderate",
+   "clustering": "BasicSet"
+  },
+  {
+   "id": "yyc-default",
+   "codec": "YinYang",
+   "factory": "default",
+   "clustering": "BasicSet"
+  }
+ ]
+}
