@@ -39,8 +39,8 @@ class ArchiveOptions:
     workers: int = 1
     preserve_metadata: bool = False    # store mode and mtime (off by default for determinism)
     dedup: bool = True
-    key: bytes | None = None
-    passphrase: str | None = None
+    key: bytes | None = field(default=None, repr=False)          # V11-RT-07: never in a repr or traceback
+    passphrase: str | None = field(default=None, repr=False)
     scrypt: dict = field(default_factory=lambda: dict(crypto.SCRYPT_DEFAULT))
     follow_symlinks: bool = False
     # V6 (spec §2.3.1): write the informational ``extensions.vnx`` block (spec version, software version, archive-ID
