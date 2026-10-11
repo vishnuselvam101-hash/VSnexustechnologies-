@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import gzip
 import hashlib
+import io
 import json
 import tempfile
 from pathlib import Path
@@ -30,6 +31,25 @@ def read_input(vdir: Path, ref: dict) -> bytes:
     if "sha256" in ref and _sha(data) != ref["sha256"]:
         raise ValueError(f"input {ref['path']} does not match its recorded SHA-256")
     return data
+
+
+#: V11-RT-06: gzip-stored reads of a vector are decompressed up to this size (the packaged fixtures are far smaller).
+MAX_VECTOR_READS_BYTES = 256 << 20
+
+
+def _vector_path(base: Path, rel) -> Path:
+    """V11-RT-05: a path a vector names for a file this runner *writes* is an archive path (relative POSIX, no ``.``/``..``,
+    no absolute path) and stays under ``base``; vectors may come from another implementation's suite."""
+    from vnxdna.archive.container import validate_archive_path
+    from vnxdna.core.errors import VNXFormatError
+    try:
+        validate_archive_path(rel if isinstance(rel, str) else "")
+    except VNXFormatError:
+        raise ValueError(f"unsafe vector path {rel!r}") from None
+    target = base.joinpath(*rel.split("/"))
+    if not target.resolve().is_relative_to(base.resolve()):
+        raise ValueError(f"vector path {rel!r} leaves its directory")
+    return target
 
 
 def _inp(vec: dict, vdir: Path, name: str) -> bytes:
@@ -320,9 +340,9 @@ def op_container_build(vec, vdir):
     opts = ArchiveOptions(chunk_size=p["chunk_size"], compression=p.get("compression", "none"), level=p.get("level", 3),
                           key=bytes.fromhex(p["key_hex"]) if p.get("key_hex") else None, writer_provenance=True)
     with tempfile.TemporaryDirectory() as d:
-        root = Path(d) / p.get("root", "data")
+        root = _vector_path(Path(d), p.get("root", "data"))
         for f in p["files"]:
-            target = root / f["path"]
+            target = _vector_path(root, f["path"])
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(read_input(vdir, vec["inputs"][f["input"]]))
         out = Path(d) / "out.vnx"
@@ -426,7 +446,11 @@ def _plain_reads(vec, vdir, tmp: Path) -> Path:
     data = read_input(vdir, ref)
     name = Path(ref["path"]).name
     if name.endswith(".gz"):
-        data, name = gzip.decompress(data), name[:-3]
+        with gzip.GzipFile(fileobj=io.BytesIO(data)) as gz:
+            data = gz.read(MAX_VECTOR_READS_BYTES + 1)
+        if len(data) > MAX_VECTOR_READS_BYTES:
+            raise ValueError(f"gzip reads input {ref['path']} is larger than {MAX_VECTOR_READS_BYTES} bytes")
+        name = name[:-3]
     path = tmp / name
     path.write_bytes(data)
     return path
