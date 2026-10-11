@@ -48,7 +48,9 @@ BACKENDS = ("auto", "native", "avx512", "avx2", "scalar", "reference")
 LEVELS = {"scalar": 4, "avx2": 8, "avx512": 16}     # level name -> lanes (the C level argument)
 QUARANTINE_ENV = "VNXDNA_ALIGN_QUARANTINED_LEVELS"   # comma-separated level names auto must skip (set by dispatch)
 AUTO_ORDER = ("avx512", "avx2", "scalar")
-AUTO_POLICY = "avx512 > avx2 > scalar > reference (provisional, before measurement)"
+# auto order set by the WP1 micro-benchmark (experiments/v11/wp1/micro_levels.json, SIMULATED, one shared host): C call
+# vs scalar avx512 2.07-2.18x, avx2 1.21-1.25x in 12/12 layout x error-point cases; end-to-end decode still to measure
+AUTO_POLICY = "avx512 > avx2 > scalar > reference (micro-benchmark 2026-10-11; end-to-end pending)"
 _log = logging.getLogger(__name__)
 _warned: set[str] = set()
 
