@@ -49,7 +49,7 @@ run() {  # label lib preload
     local label=$1 lib=$2 pre=$3
     loaded=$(VNXDNA_NATIVE_LIB=$lib LD_PRELOAD=$pre $PY -c "from vnxdna.v5 import native_alignment as n; print(n.status()['library'])" 2>&1 | tail -1)
     if [ "$loaded" != "$lib" ]; then echo "$label: sanitized library NOT loaded ($loaded)"; fail=1; return; fi
-    VNXDNA_NATIVE_LIB=$lib LD_PRELOAD=$pre $PY -m pytest -q -p no:cacheprovider $TESTS > "$W/$label-pytest.log" 2>&1
+    VNXDNA_NATIVE_LIB=$lib LD_PRELOAD=$pre $PY -m pytest -p no:cacheprovider $TESTS > "$W/$label-pytest.log" 2>&1
     local rc=$?
     echo "$label: $TESTS exit=$rc ($(grep -E "[0-9]+ (passed|failed)" "$W/$label-pytest.log" | tail -1))"
     [ $rc -eq 0 ] || { fail=1; grep -m5 -E "ERROR|runtime error|FAILED" "$W/$label-pytest.log"; }
