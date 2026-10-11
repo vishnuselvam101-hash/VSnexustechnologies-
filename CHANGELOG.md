@@ -42,6 +42,19 @@ are unchanged from v10.0.0 (no new format version). Benchmarks: see docs/V11_BEN
 - `vnxdna.__version__` and `python -m vnxdna.native` reported `6.0.0.dev0`; now `11.0.0` (a test keeps the version equal
   to the CHANGELOG head). Stale "Unreleased" sections are folded under the releases they shipped in; no entry was removed.
 
+### Security (local red-team review, job #90; docs/security/V11_SECURITY_REVIEW.md)
+Nine findings fixed, each with a regression test that failed before the fix; no CRITICAL finding.
+- HIGH V11-RT-05: `vnx conformance --vectors` could write vector files outside its temporary directory (absolute or
+  `..` paths); both paths must now be relative archive paths that resolve inside it.
+- MEDIUM V11-RT-01: a forged, CRC-valid superblock claiming ~10^8 groups exhausted memory in pass 2; refused up front
+  (RESOURCE_LIMIT) when the reads cannot support the claim. MEDIUM V11-RT-04: the legacy v0.1 reader's zstd bound
+  allocated the size the frame declared; now a stream bounded by the manifest size.
+- LOW V11-RT-02 (extract containment is path-aware and re-checked before the rename; the V6-SEC-10 TOCTOU window is
+  narrower, not closed), RT-03 (`sdk.archive` passes the VNX-Secure gate), RT-06 (conformance gzip reads capped at
+  256 MiB), RT-07 (keys/passphrases kept out of reprs; warning on group/other-readable key files), RT-08 (relative
+  `VNXDNA_*_LIB` overrides refused, so `dlopen` never searches), RT-09 (C++ outer-list wrappers check every buffer
+  length before the call; no ABI change).
+
 ## 10.0.0 (tag `v10.0.0`; hybrid native architecture; docs/V10_COMPLETION_REPORT.md)
 
 All channel results are SIMULATED; no DNA was synthesised, stored or sequenced. Formats are unchanged: v9.0.0 and

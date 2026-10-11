@@ -17,4 +17,8 @@ outside the repository; only these summaries are committed.
 | Fuzz smoke, `rs` harness | clean, time-boxed | 420 s: 61 404 execs (145 exec/s), 0 crashes. Below 1M execs; the RS decoder is not a parser, so the ≥ 1M rule (baseline §9 WP4) does not cover it. |
 | ruff | PASS | `ruff check src tests research`: All checks passed |
 | mypy | PASS | `mypy` (pyproject package set, 148 files): no issues, after typing one list in `core/guard.py` (54fc778, annotation only) |
-| Full test suite | PENDING | run on the final release commit; counts go to docs/TESTING.md and docs/V11_COMPLETION_REPORT.md |
+| Full test suite | PASS | `pytest -n 6 tests` at `d4c0f47` (after the WP1/WP3/red-team/release merges, 7 native kernels built): 4047 passed, 7 skipped, 0 failed, 359.98 s |
+
+**Re-run on the merged code (2026-10-12, `d4c0f47`):** wheel build + clean install PASS (both CLIs 11.0.0; all 7 packaged
+native libraries load, align ABI 3 at avx512; 200 000-byte `vnx-dna pipeline` round trip byte-identical); `align` fuzz
+smoke 300 s, 143 786 runs, 0 crashes (ABI 3, time-boxed); ruff and mypy clean (one mypy narrowing fixed in `d4c0f47`).

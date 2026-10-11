@@ -11,8 +11,9 @@ ruff check src tests research # lint (pyflakes rules), also run in CI
 
 ## V11.0.0 release suite
 
-Counts at the release commit: **COUNTS-PENDING (filled from the final full-suite run: N passed, N skipped, 0 failed,
-6 workers, wall time, SHA)**. Baseline v10.0.0: 3634 passed, 3 skipped, 0 failed (docs/V11_BASELINE.md §1).
+Counts at the release commit: **4047 passed, 7 skipped, 0 failed** (`pytest -n 6 tests`, 6 workers, 359.98 s, all
+seven native kernels built; run 2026-10-12 at `d4c0f47`, after both V11 merges; later commits change docs only).
+Baseline v10.0.0: 3634 passed, 3 skipped, 0 failed (docs/V11_BASELINE.md §1).
 
 Build the native kernels into the checkout first; without them the native-vs-reference conformance and dispatch tests
 run against the reference only and some fail by design:

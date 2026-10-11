@@ -1,7 +1,10 @@
 # VNX-DNA
 
 **Current release: v11.0.0 (production-oriented release: SIMD aligner levels, adaptive dispatcher, memory fixes,
-VNX-Secure gate; tag `v11.0.0`).** Released versions are the git tags `v4.0.0` … `v11.0.0`. The package version is
+VNX-Secure gate, red-team security fixes; tag `v11.0.0`).** Status: 4047 tests pass (0 failed); 4 MiB indel decode
+1.17x (4 workers) and 1.28x (1 worker) faster than v10.0.0, other paths unchanged (SIMULATED, one host,
+[docs/V11_BENCHMARK_REPORT.md](docs/V11_BENCHMARK_REPORT.md)); the 10 MB nanopore-like case is still an explicit
+failure (deferred). Released versions are the git tags `v4.0.0` … `v11.0.0`. The package version is
 `11.0.0` (`vnx-dna --version`). Archive manifests carry a separate, frozen format stamp (`6.0.0.dev0`), so archive byte
 identity across V6–V11 is unchanged and pinned by the compatibility tests.
 Release notes per version: [CHANGELOG.md](CHANGELOG.md) and `docs/V<N>_COMPLETION_REPORT.md`.
