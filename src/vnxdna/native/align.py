@@ -233,7 +233,7 @@ def status() -> dict:
     native = active == "native"
     return {"requested_backend": want, "active_backend": active, "native_available": available(), "library": _lib_path,
             "load_error": _load_error, "abi_version": ABI_VERSION, "error": err,
-            "simd_level": level if native else None, "simd_lanes": LEVELS[level] if native else None,
+            "simd_level": level if native else None, "simd_lanes": LEVELS[level] if native and level else None,
             "fallback_reason": reason, "supported_levels": supported_levels(), "quarantined_levels": quarantined_levels(),
             "auto_policy": AUTO_POLICY,
             "domain": {"max_band": MAX_BAND, "max_template_nt": MAX_TEMPLATE, "max_cost": MAX_COST, "max_guard": MAX_GUARD,
