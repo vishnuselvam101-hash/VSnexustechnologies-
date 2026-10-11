@@ -18,6 +18,7 @@ ROUNDS=${2:-400}
 TESTS=${TESTS:-tests/v5/}
 mkdir -p "$W"
 PY=${PY:-.venv/bin/python}
+case $PY in */*) ;; *) PY=$(command -v "$PY" || echo "$PY") ;; esac   # a bare name (CI: PY=python) comes from PATH
 [ -x "$PY" ] || { echo "PY=$PY is not an executable Python (pass PY=/abs/path/to/python)"; exit 2; }
 export PYTHONPATH="$PWD/src${PYTHONPATH:+:$PYTHONPATH}"   # this tree's code, not an editable install elsewhere
 SRC=src/vnxdna/v5/native/align.c
