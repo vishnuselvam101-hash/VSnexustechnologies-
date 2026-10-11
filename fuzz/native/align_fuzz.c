@@ -16,6 +16,8 @@
  *     same row as inside the batch);
  *   - vnx_align_batch_path and vnx_align_batch_profiled give the same outputs as vnx_align_batch, readpos entries are
  *     -1 or in [0, T + band + 2), and all -1 for a failed read.
+ *   - (V11) vnx_align_batch_lv at 8 and 16 lanes equals the 4-lane path when the CPU has the level, else returns
+ *     VNX_E_UNSUPPORTED.
  * Output buffers have exactly the sizes the Python wrapper allocates (n * frame_nt, n, n * T), so ASan sees overruns. */
 #include "vnxdna/v5/native/align.c"
 
@@ -218,6 +220,20 @@ int LLVMFuzzerTestOneInput(const uint8_t *in, size_t size) {
                 if (r < -1 || r >= T + band + 2) fail("readpos out of range (or unwritten)");
                 if (!d.ok[k] && r != -1) fail("readpos set for a failed read");
             }
+        }
+        /* V11: every SIMD level (ABI 3, *_lv) the CPU supports equals the 4-lane path; an unsupported level is refused */
+        for (int32_t lanes = 8; lanes <= 16; lanes *= 2) {
+            out_t v;
+            out_alloc(&v, n, F, T);
+            const int rv = vnx_align_batch_lv(ARGS(v), lanes);
+            if (vnx_align_levels() & (1 << lanes)) {
+                if (rv != VNX_OK) fail("supported SIMD level refused");
+                for (int64_t k = 0; k < n; k++)
+                    if (!same_row(&a, k, &v, k, F)) fail("SIMD level differs from the 4-lane path");
+            } else if (rv != VNX_E_UNSUPPORTED) {
+                fail("unsupported SIMD level not refused");
+            }
+            out_free(&v);
         }
         /* batch independence: read k alone */
         for (int64_t k = 0; k < n; k++) {
