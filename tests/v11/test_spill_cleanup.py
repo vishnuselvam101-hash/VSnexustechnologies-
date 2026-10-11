@@ -93,3 +93,33 @@ def test_stop_in_deferred_recovery_releases_the_spill(reads, tmp_path, monkeypat
     assert info.value.__traceback__ is not None
     assert _open_under(wd) == [] and _mapped_under(wd) == []
     assert list(wd.iterdir()) == []
+
+
+@pytest.mark.skipif(not Path("/proc/self/maps").is_file(), reason="needs /proc")
+def test_stop_in_read_clustering_releases_the_unplaced_read_map(tmp_path, monkeypatch):
+    """A stop raised inside the read-clustering stage (a budget checkpoint, here a cancel) must not leave the removed
+    unplaced-read store mapped through the frames that held views of it."""
+    from vnxdna.recovery.cluster import stage as cs
+    from vnxdna.simulation.channel import ChannelConfig, simulate_file
+    from tests.v7.cluster_support import make_strands
+
+    make_strands(tmp_path, 1200)
+    simulate_file(tmp_path / "s.fasta", tmp_path / "r.fastq",
+                  ChannelConfig(substitution_rate=0.01, insertion_rate=0.005, deletion_rate=0.015, coverage=10.0, seed=1,
+                                coverage_model="negative-binomial", coverage_dispersion=4.0, reverse_complement_rate=0.5,
+                                n_rate=0.001))
+    seen = {}
+
+    def stopped(reads, lay, cfg, *args, raw=None, **kw):
+        seen["raw"] = raw is not None and len(raw) > 0
+        raise _Cancel("cancelled in read clustering")
+
+    monkeypatch.setattr(cs, "cluster_frames", stopped)
+    wd = tmp_path / "wd"
+    wd.mkdir()
+    with pytest.raises(_Cancel) as info:
+        de.decode_reads(tmp_path / "r.fastq", tmp_path / "out.vnx", de.DecodeOptions(read_clustering="fallback"),
+                        workdir=wd)
+    assert seen["raw"] and info.value.__traceback__ is not None
+    assert _open_under(wd) == [] and _mapped_under(wd) == []
+    assert list(wd.iterdir()) == []
