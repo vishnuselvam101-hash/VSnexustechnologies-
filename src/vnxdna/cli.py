@@ -172,6 +172,8 @@ experiment_app = typer.Typer(help="Reproducible experiments and Monte Carlo tria
 benchmark_app = typer.Typer(help="Test-data generation and measured benchmarks.", no_args_is_help=True)
 app.add_typer(experiment_app, name="experiment")
 app.add_typer(benchmark_app, name="benchmark")
+from .cloud_cli import cloud_app  # noqa: E402 - registered after the core command groups
+app.add_typer(cloud_app, name="cloud")
 
 KeyFile = typer.Option(None, "--key-file", "-k", help="File with a 32-byte key (from `vnx-dna keygen`); default: $VNXDNA_KEY.",
                        dir_okay=False)

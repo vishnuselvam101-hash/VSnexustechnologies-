@@ -146,3 +146,21 @@ Opt-in decoder options (defaults unchanged; effects are SIMULATED results docume
 
 Exit code 9 (PARTIAL) and 10 (PROVIDER_ERROR) are `vnx` only. Provider operations (`prepare`, `write`, `retrieve`, `read`)
 are SDK/Python calls on `vnxdna.providers`, not CLI commands ([INTEROPERABILITY.md](INTEROPERABILITY.md)).
+
+## `vnx-dna cloud`: the hosted Cloud API
+
+Runs jobs on the VNX-DNA Cloud API (`https://api.vsnexustechnologies.com`) instead of this machine. Every channel result is
+SIMULATED. Trial keys (7 days, free): vishnu@vsnexustechnologies.com.
+
+| Command | What it does |
+|---|---|
+| `cloud login` | Saves your API key to `~/.config/vnxdna/cloud.json` (mode 600) after checking it; or set `VNXDNA_CLOUD_KEY` |
+| `cloud me` | Plan, limits, usage, trial end date |
+| `cloud roundtrip FILE...` | Encode → simulated sequencing → decode, then checks each recovered file is byte-identical (exit 1 if not) |
+| `cloud encode` / `simulate` / `decode` | One step at a time (`--from-job` chains them; `--no-wait` returns the job id at once) |
+| `cloud jobs` / `job ID` / `download ID NAME` / `delete ID` | Inspect jobs and fetch result files |
+| `cloud options` | Profiles, channel models and decoders on offer |
+| `cloud feedback` | Trial feedback (earns a pilot discount) |
+
+Exit codes follow the table above: 4 bad or expired key, 3 invalid request, 7 service unreachable or rate limited
+(`CLOUD_UNAVAILABLE`), 1 a job failed or a round trip did not verify. `VNXDNA_CLOUD_URL` overrides the service address.
