@@ -28,7 +28,9 @@ import numpy as np
 from vnxdna.archive import crypto, merkle
 from vnxdna.core.errors import VNXFormatError, VNXIntegrityError, VNXKeyError, VNXResourceError, VNXUnsupportedVersionError
 from vnxdna.core.util import canonical_json, parse_canonical_json
-from vnxdna.core.version import FORMAT_VERSION, SPEC_VERSION, __version__
+from vnxdna.core.version import FORMAT_VERSION, SPEC_VERSION
+from vnxdna.core.version import __version__  # noqa: F401 (public name) - the package (software) version; NOT what manifests record
+from vnxdna.core.version import MANIFEST_ENCODER_VERSION  # frozen format stamp written into manifests (see core.version)
 
 MAGIC = b"\x89VNX4\r\n\x1a"
 HEADER_BYTES = 16
@@ -190,16 +192,16 @@ class ContainerWriter:
 
 def writer_provenance(archive_id_derivation: str) -> dict:
     """The ``extensions.vnx`` block (spec §2.3.1): informational; readers never reject an archive for it.
-    ``software`` equals ``encoder.version`` (both read this module's ``__version__``)."""
+    ``software`` equals ``encoder.version`` (both read this module's frozen ``MANIFEST_ENCODER_VERSION`` format stamp)."""
     if archive_id_derivation not in ("options-v1", "content-v1", "random"):
         raise ValueError(f"unknown archive-ID derivation {archive_id_derivation!r}")
-    return {"spec": SPEC_VERSION, "software": __version__, "archive_id_derivation": archive_id_derivation}
+    return {"spec": SPEC_VERSION, "software": MANIFEST_ENCODER_VERSION, "archive_id_derivation": archive_id_derivation}
 
 
 def base_manifest(*, archive_id: bytes, chunk_size: int, compression: dict, encryption: dict, counts: dict,
                   features: set[str], extensions: dict | None = None) -> dict:
     return {"format": "VNX4", "format_version": list(FORMAT_VERSION), "archive_id": archive_id.hex(), "created_at": None,
-            "encoder": {"name": "vnxdna", "version": __version__}, "required_features": sorted(features),
+            "encoder": {"name": "vnxdna", "version": MANIFEST_ENCODER_VERSION}, "required_features": sorted(features),
             "chunking": {"algorithm": "fixed", "chunk_size": chunk_size}, "compression": compression, "encryption": encryption,
             "counts": counts, "extensions": extensions or {}}
 

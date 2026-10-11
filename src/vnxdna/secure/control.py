@@ -482,7 +482,8 @@ class ControlPlane:
                 res = f"FAILED: {type(e).__name__}"
             steps.append({"step": "archive", "path": str(a), "result": res})
             if res == "VERIFIED":
-                self.cont.locked_resources.discard(f"archive:{Path(a).name}")
+                from ..core.guard import resource_of   # the codec gate keys on the archive id (V11 WP4)
+                self.cont.locked_resources.difference_update({f"archive:{Path(a).name}", resource_of(a)})
         # 5. integrity snapshot (components, policy, audit) must verify
         rep = self.check_integrity()
         steps.append({"step": "integrity", "result": rep["status"], "reason": rep["snapshot"]["reason"]})

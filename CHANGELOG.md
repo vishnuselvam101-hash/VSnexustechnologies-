@@ -1,5 +1,29 @@
 # Changelog
 
+## 11.0.0.dev0 (unreleased; V11 development)
+
+### Added
+- **Opt-in VNX-Secure gate** (`vnxdna.core.guard`): `encode`, `decode` and `extract` in `vnxdna.sdk.api` accept
+  `secure=SecureContext(...)`, and the metadata reads `inspect`, `verify`, `list_entries` and `locate` are gated as
+  `list`/`verify`/`locate`. Every plaintext path is gated: the legacy `api`/`v2.api` restore, recover and extract,
+  `v2.archive.restore_file` and `v2.archive.extract_range` (plus encode and decode), by
+  `VNX_SECURE_HOME`/`VNX_SECURE_TOKEN`/`VNX_SECURE_SESSION` (env, so the CLIs are covered). `VNX_SECURE_REQUIRE=1` makes a
+  missing context a denial, and a token or session without the full set is denied (`partial_context`). The resource is
+  `archive:<archive_id>` (rename/copy cannot dodge a lock); read files are re-checked under the recovered archive id
+  before any plaintext exists. Lock and revocation state written by another process is re-read before each decision. The
+  gate uses the existing `ControlPlane.authorize`, fails closed (any error is `AccessDenied`), runs before any work and
+  never puts a token in an error. Default behaviour is unchanged.
+
+### Changed
+- The manifest `encoder.version` / `extensions.vnx.software` value is now a frozen **format stamp**
+  (`MANIFEST_ENCODER_VERSION = "6.0.0.dev0"`, spec §4.2), kept byte-identical so archive ids and golden fixtures do not
+  move; it is not the software version. `vnxdna.v4.container.__version__` is the package version again (it had been an
+  alias of the stamp); the stamp is `vnxdna.v4.container.MANIFEST_ENCODER_VERSION`.
+
+### Fixed
+- `vnxdna.__version__` and `python -m vnxdna.native` reported `6.0.0.dev0`; now `11.0.0.dev0` (a test keeps the version equal
+  to the CHANGELOG head). Stale "Unreleased" sections are folded under the releases they shipped in; no entry was removed.
+
 ## 10.0.0 (tag `v10.0.0`; hybrid native architecture; docs/V10_COMPLETION_REPORT.md)
 
 All channel results are SIMULATED; no DNA was synthesised, stored or sequenced. Formats are unchanged: v9.0.0 and
@@ -36,7 +60,7 @@ v10.0.0 write byte-identical FASTA and recover byte-identical containers (docs/A
 - Conformance strand backend; oracle crash when list decoding was off; list-decoding rounds stopped early when a
   round only found candidates; UBSan finding in the candidate step (qsort on NULL).
 
-## Unreleased
+## 7.0.0 – 9.0.0 (formerly "Unreleased"; shipped in v7.0.0, v8.0.0 and v9.0.0)
 
 ### Added (V9, in development; docs/V9_PREREGISTRATION.md)
 
@@ -233,7 +257,7 @@ synthesised, stored or sequenced. Deferred work and the reason for each item: do
   `vnx locate` on V6 striped pools (job #62), `--select` when some failed groups lie outside the index (job #66).
 - No physical validation of any kind.
 
-## Unreleased (6.0.0.dev0) — job #79: opt-in redundancy profile for heavy dropout (PERF-DROP)
+## 6.0.0 development notes (formerly "Unreleased"; shipped in 6.0.0) — job #79: opt-in redundancy profile for heavy dropout (PERF-DROP)
 
 Formats unchanged; default unchanged. Channel results are SIMULATED (benchmarks/competitors/lab/results/b0-dropout).
 
@@ -251,7 +275,7 @@ Formats unchanged; default unchanged. Channel results are SIMULATED (benchmarks/
 - `benchmarks/competitors/lab/dropout_report.py` writes the per-cell Wilson tables and applies the pre-registered rule.
   `seen_barocdes.json`, a runtime artefact of a third-party codec committed by mistake, is no longer tracked.
 
-## Unreleased (6.0.0.dev0) — job #80: opt-in retry band (ALIGN-BAND)
+## 6.0.0 development notes (formerly "Unreleased"; shipped in 6.0.0) — job #80: opt-in retry band (ALIGN-BAND)
 
 Formats unchanged; default unchanged. Channel results are SIMULATED (experiments/v6/align-band).
 
@@ -265,7 +289,7 @@ Formats unchanged; default unchanged. Channel results are SIMULATED (experiments
   The ground-truth funnel (AB-DIAG) puts the next nanopore-like bottlenecks at header-address recovery and
   whole-segment erasure. Native = reference on 102,400 fuzzed reads (AB-FUZZ).
 
-## Unreleased (6.0.0.dev0) — V6 Phase 3 (channel-model framework)
+## 6.0.0 development notes (formerly "Unreleased"; shipped in 6.0.0) — V6 Phase 3 (channel-model framework)
 
 Plan: docs/V6_ARCHITECTURE.md §8 Phase 3; docs/CHANNEL_MODEL.md. Formats unchanged. Every channel result is SIMULATED.
 
@@ -283,7 +307,7 @@ Plan: docs/V6_ARCHITECTURE.md §8 Phase 3; docs/CHANNEL_MODEL.md. Formats unchan
   give byte-identical reads to the current simulator, as /0 and as /1. Old `ChannelConfig` JSON gives byte-identical
   output (tests/simulation/test_sim_compat.py).
 
-## Unreleased (6.0.0.dev0) — V6 Phase 2 (codec/API refactor, version fixes, P1 bugs)
+## 6.0.0 development notes (formerly "Unreleased"; shipped in 6.0.0) — V6 Phase 2 (codec/API refactor, version fixes, P1 bugs)
 
 Plan: docs/V6_ARCHITECTURE.md §7–§8; formats unchanged (goldens v4_0, v5_0, v6_0 decode bit-exactly). Channel results
 are SIMULATED.
@@ -314,7 +338,7 @@ are SIMULATED.
   (`--consensus-weighting quality`; default `count` unchanged). Failure taxonomy, pre-registered comparison (efficacy
   REJECT, no default change), CNR IDS statistics (PUBLIC-DATA-DERIVED): experiments/v6/phase4.
 
-## Unreleased — V6 Phase 1 (outer-code resilience)
+## 6.0.0 development notes (formerly "Unreleased"; shipped in 6.0.0) — V6 Phase 1 (outer-code resilience)
 
 Opt-in; without the new options encoding is byte-identical to 5.0.0. All results are SIMULATED. Details:
 docs/V6_PHASE1_REPORT.md, format: docs/V6_OUTER_CODE.md.

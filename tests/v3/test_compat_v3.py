@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from vnxdna import __version__
+from vnxdna.core.version import MANIFEST_ENCODER_VERSION as __version__  # pinned manifest stamp
 from vnxdna.v2 import api
 from vnxdna.v2 import archive as arc
 from vnxdna.v2.encoder import encode_file

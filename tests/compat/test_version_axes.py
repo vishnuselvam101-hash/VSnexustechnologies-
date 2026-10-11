@@ -7,7 +7,7 @@ import re
 
 import pytest
 
-from vnxdna import __version__
+from vnxdna.core.version import MANIFEST_ENCODER_VERSION as __version__  # pinned manifest stamp
 from vnxdna.v4 import archive as ar
 from vnxdna.v4 import container as ct
 from vnxdna.v4 import datagen
