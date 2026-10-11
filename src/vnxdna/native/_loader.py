@@ -49,6 +49,8 @@ class Kernel:
         self._lock = threading.Lock()
         self.reset()
 
+    quarantine_reason: str | None = None
+
     def reset(self) -> None:
         self._lib = self._load_error = self._path = None
         self._fallback_logged = False
@@ -116,6 +118,10 @@ class Kernel:
         """'native' or 'reference': the implementation that will actually run."""
         want = self.requested()
         if want == "reference":
+            return "reference"
+        if self.quarantine_reason:      # set by vnxdna.dispatch after a failed differential self-check
+            if want == "native":
+                raise NativeKernelError(f"native {self.name} kernel requested but quarantined: {self.quarantine_reason}")
             return "reference"
         if self.available():
             return "native"

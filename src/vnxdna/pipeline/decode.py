@@ -80,6 +80,8 @@ def decode_reads(reads_path: str | os.PathLike, output: str | os.PathLike | None
     if sc is not None:
         rep_["stage_counters"] = sc.block(status=res.status, report=rep_)
     rep_["native_backends"] = backends
+    from vnxdna.dispatch import path_report
+    rep_["path_selection"] = path_report()
     ev.emit("decode_end", "output", status=res.status, seconds=round(rep_.get("seconds", 0.0), 4),
             groups_decoded=rep_.get("groups_decoded"), groups_failed=rep_.get("groups_failed"),
             peak_rss_bytes=rep_.get("peak_rss_bytes"))
