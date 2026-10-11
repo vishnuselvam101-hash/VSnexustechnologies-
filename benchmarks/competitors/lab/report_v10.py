@@ -189,6 +189,14 @@ def main(argv: list[str]) -> int:
         md += ["", f"### Lane {lane} (SIMULATED), pooled over coverages and seeds", "", md_pool(lane, d["pooled"])]
         if d["v6_vs_v10"]:
             md += ["", f"#### Lane {lane}: v6 (B0, c76009d) vs v10 on the same grid and seeds", "", md_v6(d["v6_vs_v10"])]
+    claims = HERE.parent / "company_claims_2026-10-11.json"
+    if claims.exists():
+        cd = json.loads(claims.read_text())
+        md += ["", f"### Company and group claims (accessed {cd['accessed']}; company claim / their published result, not reproduced)", "",
+               "| organisation | claim (their wording where quoted) | source | label |", "|---|---|---|---|"]
+        for c in cd["claims"]:
+            md.append(f"| {c['organisation']} | {c['claim']} | [{c['source_type']}]({c['url']}) | {c['label']} |")
+        md += ["", "No official source found (not tabulated):", ""] + [f"- {x}" for x in cd["no_official_source_found"]]
     (res / "tables.md").write_text("\n".join(md) + "\n")
     print(json.dumps(fam, indent=1))
     return 0
