@@ -1,0 +1,114 @@
+{
+ "false_success": 0,
+ "label": "SIMULATED: reads from a software channel model; no DNA was synthesised, stored or sequenced",
+ "sizes": {
+  "1048576": {
+   "commits": [
+    "47001652303b7c81fab8b7a46284fa37036b3364",
+    "e76e24b3aca967339b3743eb6a46549f4a78bbb8"
+   ],
+   "consensus_processes": [
+    4,
+    4,
+    4
+   ],
+   "decode_seconds": {
+    "base": [
+     1017.028,
+     1034.256,
+     1011.782
+    ],
+    "opt": [
+     140.994,
+     140.415,
+     140.349
+    ]
+   },
+   "identical": 0,
+   "load1": [
+    1.21,
+    3.47,
+    3.49,
+    1.08,
+    1.16,
+    3.76
+   ],
+   "load_rule": {
+    "max_load1": 4.0,
+    "observed": [
+     1.08,
+     3.76
+    ],
+    "ok": true,
+    "runs_over": 0
+   },
+   "max_rss_single_process_mib": {
+    "base": [
+     1141.5,
+     1143.2,
+     1124.4
+    ],
+    "opt": [
+     1056.1,
+     1059.6,
+     1054.3
+    ]
+   },
+   "median_decode_seconds": {
+    "base": 1017.028,
+    "opt": 140.415
+   },
+   "of": 3,
+   "outcomes": {
+    "base": [
+     "EXPLICIT_FAILURE",
+     "EXPLICIT_FAILURE",
+     "EXPLICIT_FAILURE"
+    ],
+    "opt": [
+     "EXPLICIT_FAILURE",
+     "EXPLICIT_FAILURE",
+     "EXPLICIT_FAILURE"
+    ]
+   },
+   "peak_rss_mib": {
+    "base": [
+     1141.5,
+     1143.2,
+     1124.4
+    ],
+    "opt": [
+     1056.1,
+     1059.6,
+     1054.3
+    ]
+   },
+   "seeds": [
+    93000,
+    93001,
+    93002
+   ],
+   "speedup_base_over_opt": {
+    "ci95": [
+     7.209,
+     7.366
+    ],
+    "geomean": 7.262,
+    "method": "paired per-seed ratio, geometric mean, percentile bootstrap 10000, rng 10005",
+    "pairs": 3
+   },
+   "tree_rss_peak_mib": {
+    "base": [
+     1142.3,
+     1102.5,
+     1072.3
+    ],
+    "opt": [
+     928.6,
+     1012.7,
+     927.0
+    ]
+   }
+  }
+ }
+}
