@@ -21,9 +21,18 @@ class Spill:
         if raw_nt:     # V5 smart indel recovery keeps the raw read for consensus realignment
             pend += [("raw", "u1", (raw_nt,)), ("rawq", "u1", (raw_nt,)), ("rawlen", ">u2"), ("hasq", "u1")]
         self.pend_dtype = np.dtype(pend)
-        self.acc_files = [open(workdir / f"acc{b}.bin", "wb") for b in range(buckets)]
-        self.pend_files = [open(workdir / f"pend{b}.bin", "wb") for b in range(buckets)]
-        self.orph_file = open(workdir / "orph.bin", "wb") if raw_nt else None
+        self.acc_files: list = []
+        self.pend_files: list = []
+        self.orph_file = None
+        try:
+            for b in range(buckets):
+                self.acc_files.append(open(workdir / f"acc{b}.bin", "wb"))
+            for b in range(buckets):
+                self.pend_files.append(open(workdir / f"pend{b}.bin", "wb"))
+            self.orph_file = open(workdir / "orph.bin", "wb") if raw_nt else None
+        except BaseException:
+            self.close()            # e.g. EMFILE part-way: do not leak the handles already open
+            raise
 
     def write(self, res: dict) -> None:
         if self.orph_file is not None and "orph_raw" in res and len(res["orph_raw"]):
@@ -50,6 +59,7 @@ class Spill:
                 files[int(k)].write(rec[b == k].tobytes())
 
     def close(self) -> None:
+        """Idempotent."""
         for f in self.acc_files + self.pend_files + ([self.orph_file] if self.orph_file is not None else []):
             f.close()
 
