@@ -1,9 +1,21 @@
 # Changelog
 
-## 11.0.0.dev0 (unreleased; V11 development)
+## 11.0.0 (tag `v11.0.0`; production-oriented release; docs/V11_COMPLETION_REPORT.md)
+
+All channel results are SIMULATED; no DNA was synthesised, stored or sequenced. Archive, container and strand formats
+are unchanged from v10.0.0 (no new format version). Benchmarks: see docs/V11_BENCHMARK_REPORT.md.
 
 ### Added
-- **Opt-in VNX-Secure gate** (`vnxdna.core.guard`): `encode`, `decode` and `extract` in `vnxdna.sdk.api` accept
+- **SIMD levels in the native aligner (WP1, native ABI 3).** `align.c` runs its DP/traceback loop at 4 lanes
+  (portable), 8 lanes (AVX2) or 16 lanes (AVX-512F/BW), chosen at run time; a level the CPU/OS cannot run is refused
+  before any of its code executes. `VNXDNA_ALIGN_BACKEND` accepts `avx512|avx2|scalar`; `status()` reports
+  `simd_level`. Output is byte-identical at every level (equivalence and V4/V5/V6 golden-read tests run per level). The
+  loader accepts only ABI-3 libraries, so a stale prebuilt library falls back to the reference instead of loading.
+- **Adaptive execution dispatcher (WP2, `vnxdna.native.dispatch`).** One capability probe, deterministic path choice,
+  safe fallback to the reference implementation, and the selected path recorded in every encode and decode report
+  (additive `path_selection` field). Opt-in `VNXDNA_DIFFERENTIAL` self-check compares native and reference output on a
+  sample, quarantines a mismatching native kernel (reference fallback), or raises when native was requested explicitly.
+- **Opt-in VNX-Secure gate (WP4)** (`vnxdna.core.guard`): `encode`, `decode` and `extract` in `vnxdna.sdk.api` accept
   `secure=SecureContext(...)`, and the metadata reads `inspect`, `verify`, `list_entries` and `locate` are gated as
   `list`/`verify`/`locate`. Every plaintext path is gated: the legacy `api`/`v2.api` restore, recover and extract,
   `v2.archive.restore_file` and `v2.archive.extract_range` (plus encode and decode), by
@@ -20,8 +32,14 @@
   move; it is not the software version. `vnxdna.v4.container.__version__` is the package version again (it had been an
   alias of the stamp); the stamp is `vnxdna.v4.container.MANIFEST_ENCODER_VERSION`.
 
+- `vnx-dna --version` and `vnx --version` print the package version (tests keep both equal to `vnxdna._version`).
+
 ### Fixed
-- `vnxdna.__version__` and `python -m vnxdna.native` reported `6.0.0.dev0`; now `11.0.0.dev0` (a test keeps the version equal
+- **Memory and cleanup (WP3).** A stopped or interrupted decode releases its spill files and orphan map before the spill
+  directory is removed; a stop inside read clustering no longer keeps the removed unplaced-read store memory-mapped. A
+  memory regression test asserts that DNA-pipeline peak RSS does not grow with input size past the spill-bucket bound;
+  measurements are in `experiments/v11/mem/` (SIMULATED). The 10 MB nanopore-like run is deferred (not part of V11).
+- `vnxdna.__version__` and `python -m vnxdna.native` reported `6.0.0.dev0`; now `11.0.0` (a test keeps the version equal
   to the CHANGELOG head). Stale "Unreleased" sections are folded under the releases they shipped in; no entry was removed.
 
 ## 10.0.0 (tag `v10.0.0`; hybrid native architecture; docs/V10_COMPLETION_REPORT.md)

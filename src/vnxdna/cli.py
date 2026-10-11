@@ -166,6 +166,20 @@ Exit codes: 0 ok, 1 verification failed, 2 usage, 3 invalid input, 4 authenticat
 
 app = typer.Typer(help=HELP, no_args_is_help=True, add_completion=False, pretty_exceptions_enable=False,
                   context_settings={"help_option_names": ["-h", "--help"]})
+
+
+def _print_version(value: bool) -> None:
+    if value:
+        typer.echo(f"vnx-dna {__version__}")
+        raise typer.Exit()
+
+
+@app.callback()
+def _main_options(show_version: bool = typer.Option(False, "--version", callback=_print_version, is_eager=True,
+                                                    help="Print the software version and exit.")) -> None:
+    pass
+
+
 app.add_typer(legacy_app, name="legacy")
 app.add_typer(v1_app, name="v1")  # the V1 (1.0.0) CLI, unchanged, with its own help text
 experiment_app = typer.Typer(help="Reproducible experiments and Monte Carlo trials.", no_args_is_help=True)
