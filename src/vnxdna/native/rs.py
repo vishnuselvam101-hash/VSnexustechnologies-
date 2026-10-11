@@ -112,7 +112,8 @@ def _load():
             errors.append(f"{path}: not found")
             continue
         try:
-            lib = ctypes.CDLL(str(path))
+            from vnxdna.native._loader import open_library
+            lib = open_library(path)
             lib.vnx_rs_abi_version.restype = ctypes.c_int
             lib.vnx_rs_abi_version.argtypes = []
             abi = lib.vnx_rs_abi_version()
