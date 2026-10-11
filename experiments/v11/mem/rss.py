@@ -192,7 +192,8 @@ def _append(row: dict) -> None:
 
 
 def summarize(rows: list[dict]) -> dict:
-    """Per tree/stage/scenario: peak RSS (MiB) per size and the least-squares slope in MiB of RSS per MiB of input."""
+    """Per tree/stage/scenario: peak RSS (MiB) per size and least-squares slopes, MiB of RSS per MiB of input, of the
+    stage process's ``ru_maxrss`` and of the sampled process-tree peak."""
     mib = 2**20
     out: dict = {"label": LABEL, "series": {}}
     for r in rows:
@@ -204,11 +205,12 @@ def summarize(rows: list[dict]) -> dict:
                                               "tree_peak_mib": round(r["tree_peak_rss"] / mib, 1), "copies": r["copies"],
                                               "wall_s": round(r["wall_s"], 1), "exact": r.get("exact")}
     for s in out["series"].values():
-        pts = [(int(k), v["tree_peak_mib"]) for k, v in s["points"].items()]
-        if len(pts) >= 2:
-            mx, my = sum(x for x, _ in pts) / len(pts), sum(y for _, y in pts) / len(pts)
-            den = sum((x - mx) ** 2 for x, _ in pts)
-            s["slope_mib_per_input_mib"] = round(sum((x - mx) * (y - my) for x, y in pts) / den, 3) if den else None
+        for field, name in (("maxrss_mib", "slope_maxrss"), ("tree_peak_mib", "slope_tree_peak")):
+            pts = [(int(k), v[field]) for k, v in s["points"].items()]
+            if len(pts) >= 2:
+                mx, my = sum(x for x, _ in pts) / len(pts), sum(y for _, y in pts) / len(pts)
+                den = sum((x - mx) ** 2 for x, _ in pts)
+                s[name] = round(sum((x - mx) * (y - my) for x, y in pts) / den, 3) if den else None
     return out
 
 
@@ -225,7 +227,7 @@ def main(argv=None) -> int:
         rows = [json.loads(line) for line in OUT.open()]
         s = summarize(rows)
         OUT.with_name("summary.json").write_text(json.dumps(s, indent=1, sort_keys=True) + "\n")
-        print(json.dumps({k: v.get("slope_mib_per_input_mib") for k, v in s["series"].items()}))
+        print(json.dumps({k: [v.get("slope_maxrss"), v.get("slope_tree_peak")] for k, v in s["series"].items()}))
         return 0
     v10 = Path(os.environ["V10_TREE"])
     work = a.work or Path(tempfile.mkdtemp(prefix="v11mem-", dir="/root/vnx-dna-lab/tmp"))

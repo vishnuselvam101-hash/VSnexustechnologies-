@@ -25,7 +25,8 @@
      "wall_s": 1.9
     }
    },
-   "slope_mib_per_input_mib": 1.474
+   "slope_maxrss": 0.667,
+   "slope_tree_peak": 1.474
   },
   "v10/decode/indel": {
    "points": {
@@ -51,7 +52,8 @@
      "wall_s": 11.7
     }
    },
-   "slope_mib_per_input_mib": 0.476
+   "slope_maxrss": 0.65,
+   "slope_tree_peak": 0.476
   },
   "v10/encode/clean": {
    "points": {
@@ -77,7 +79,8 @@
      "wall_s": 0.8
     }
    },
-   "slope_mib_per_input_mib": 0.386
+   "slope_maxrss": 0.212,
+   "slope_tree_peak": 0.386
   },
   "v11/decode/clean": {
    "points": {
@@ -103,7 +106,8 @@
      "wall_s": 2.0
     }
    },
-   "slope_mib_per_input_mib": 0.407
+   "slope_maxrss": 0.614,
+   "slope_tree_peak": 0.407
   },
   "v11/decode/indel": {
    "points": {
@@ -129,7 +133,8 @@
      "wall_s": 11.8
     }
    },
-   "slope_mib_per_input_mib": -0.06
+   "slope_maxrss": 0.167,
+   "slope_tree_peak": -0.06
   },
   "v11/encode/clean": {
    "points": {
@@ -155,7 +160,8 @@
      "wall_s": 0.8
     }
    },
-   "slope_mib_per_input_mib": 0.405
+   "slope_maxrss": 0.121,
+   "slope_tree_peak": 0.405
   }
  }
 }
