@@ -72,7 +72,7 @@ and settings as evaluations 2–3. Results: `results/eval4.jsonl`, `results/eval
 | seeds only this preset recovers | 0 | 17 |
 | median decode seconds | 141.26 | 147.18 |
 
-McNemar exact p = 1.5e-5 (17 discordant seeds, all favouring F; `eval4-summary.json` rounds it to 0.0). Acceptance (all met): no false success (True); no seed
+McNemar exact p = 1.53e-5 (17 discordant seeds, all favouring F). Acceptance (all met): no false success (True); no seed
 where E succeeds and F does not (none); identical output where both succeed
 (True). H1 (F recovers more seeds exactly than E): met
 (F 19/20 vs E 2/20); the pre-registered expectation of F above the 15/20 of evaluations 2–3:

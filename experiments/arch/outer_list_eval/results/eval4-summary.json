@@ -30,7 +30,7 @@
   "false_success": 0,
   "E_only": 0,
   "F_only": 17,
-  "mcnemar_exact_p": 0.0,
+  "mcnemar_exact_p": 1.53e-05,
   "identical_where_both_succeed": true,
   "seconds_median": {
     "E": 141.26,
