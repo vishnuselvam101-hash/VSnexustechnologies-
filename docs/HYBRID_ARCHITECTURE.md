@@ -148,3 +148,27 @@ affected pipeline tests and the full suite.
 * No HTTP/WebSocket service exists; live progress for web clients comes from following the `--events` log. A network
   service is a security-relevant addition (VNX-Secure) and is not part of this change.
 * The dashboard is type-checked and built, not exercised in a browser by the automated tests.
+
+## 10. V11 hardening
+
+The V11 security review ([security/V11_SECURITY_REVIEW.md](security/V11_SECURITY_REVIEW.md), job #90) tightened the
+boundary contract of §3:
+
+* **Loader.** A library comes only from the package directory (`_HERE`, an absolute path), the in-place build, or an
+  explicit `VNXDNA_<KERNEL>_LIB` override, and that override must be an absolute path. `native/_loader.open_library`
+  refuses relative paths in all five loaders (`Kernel` and the align, reads, rs and cluster loaders), so `dlopen`
+  never searches the library path or the current directory for a bare name. The built libraries carry no RPATH or
+  RUNPATH. The ABI is checked before any other symbol is bound, and a refused library is named in `load_error`. In
+  `auto` mode the reference runs; in `native` mode the call raises.
+* **Buffer sizes.** Every wrapper derives each length it passes from the arrays it passes, or checks the array
+  against the length. The C++ outer-list entry points take k, m and P from `parity` and `sym`, so their wrappers now
+  check `known` (n), `sym` (n × P), `mul` (256 × 256), `inv` (256) and the candidate rows before the call; a wrong
+  size is a `ValueError`, not a read past the buffer.
+* **Fuzzing.** `fuzz/native/align_fuzz.c` also checks the ABI-3 SIMD entry points: `vnx_align_batch_lv` at 8 and 16
+  lanes must equal the 4-lane path, and a level the CPU lacks must be refused. `fuzz/native/rs_fuzz.c` already
+  compared the scalar, AVX2 and AVX-512 paths. Run a campaign with `fuzz/run.sh <align|rs|reads> <seconds>`.
+* **Sanitizers.** Always pass `PY` explicitly, as an absolute path to a Python with the test dependencies. The
+  defaults differ: `python` from `PATH` (`tools/sanitizers.sh`, strand, outer-list), a relative `.venv/bin/python`
+  that does not exist in a git worktree (align, reads), or the lab venv (rs, cluster). `tools/sanitizers.sh` exports
+  `PY` to every kernel script. For example:
+  `PY=/root/vnx-dna-lab/.venv/bin/python bash benchmarks/v6/native_rs/sanitizers.sh /tmp/san-rs 50`.

@@ -58,11 +58,16 @@ def load_key_file(path: str | os.PathLike) -> bytes:
         with open(p, "rb") as handle:
             if not _stat.S_ISREG(os.fstat(handle.fileno()).st_mode):
                 raise VNXKeyError(f"key file {p} is not a regular file")
+            mode = _stat.S_IMODE(os.fstat(handle.fileno()).st_mode)
             raw = handle.read(1025)          # bounded: never read /dev/zero or a huge file into memory
     except OSError as error:
         raise VNXKeyError(f"cannot read key file {p}: {error.strerror or error}") from None
     if len(raw) > 1024:
         raise VNXKeyError(f"key file {p} is too large to be a 32-byte key")
+    if mode & 0o077:
+        # V11-RT-07: accepted (as V3 `vnx-dna` does), but the owner is told; the key itself is never logged
+        import logging
+        logging.getLogger(__name__).warning("key file %s is accessible by group or others (mode %o); use chmod 600", p, mode)
     text = raw.strip()
     if len(text) == 64:
         try:

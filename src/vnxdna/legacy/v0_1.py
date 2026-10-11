@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import io
 import itertools
 import json
 import zlib
@@ -83,21 +84,30 @@ def _fernet_decrypt(data: bytes, key: bytes | None) -> bytes:
         raise AuthenticationError("legacy Fernet authentication failed (wrong key or tampered ciphertext)") from error
 
 
-def _decompress(data: bytes, algorithm: str) -> bytes:
+def _decompress(data: bytes, algorithm: str, expected_size: int) -> bytes:
+    """Decompress to exactly the manifest's declared plaintext size (V11-RT-04). ``decompress(max_output_size=...)`` is
+    no bound: zstandard allocates the size a frame header declares. The stream readers never produce more than
+    ``expected_size + 1`` bytes."""
+    if not isinstance(expected_size, int) or not 0 <= expected_size <= MAX_LEGACY_DECOMPRESSED:
+        raise MetadataError("legacy manifest: declared size out of range")
     try:
         if algorithm == "none":
-            return data
+            return data              # the callers compare size and SHA-256 and report the details
         if algorithm == "zlib":
             engine = zlib.decompressobj()
-            out = engine.decompress(data, MAX_LEGACY_DECOMPRESSED)
-            if not engine.eof:
-                raise IntegrityError("legacy zlib stream truncated")
-            return out
-        if algorithm == "zstandard":
-            return zstandard.ZstdDecompressor().decompress(data, max_output_size=MAX_LEGACY_DECOMPRESSED)
+            out = engine.decompress(data, expected_size + 1)
+            if not engine.eof or engine.unconsumed_tail:
+                raise IntegrityError("legacy zlib stream truncated or longer than its declared size")
+        elif algorithm == "zstandard":
+            with zstandard.ZstdDecompressor().stream_reader(io.BytesIO(data), read_across_frames=False) as reader:
+                out = reader.read(expected_size + 1)
+        else:
+            raise MetadataError(f"legacy manifest: unknown compression {algorithm!r}")
     except (zlib.error, zstandard.ZstdError) as error:
         raise IntegrityError(f"legacy {algorithm} stream corrupt: {error}") from error
-    raise MetadataError(f"legacy manifest: unknown compression {algorithm!r}")
+    if len(out) != expected_size:
+        raise IntegrityError(f"legacy {algorithm} stream: {len(out)} bytes, the manifest declares {expected_size}")
+    return out
 
 
 def _two_bit_decode(sequence: str) -> bytes:
@@ -295,7 +305,7 @@ def decode_v01_dataset(directory: str | Path, key: bytes | None = None) -> tuple
         transformed = b"".join(out)[: m["transformed_size"]]
     if cfg["encryption"]:
         transformed = _fernet_decrypt(transformed, key)
-    original = _decompress(transformed, cfg["compression"])
+    original = _decompress(transformed, cfg["compression"], m["original_size"])
     recomputed = hashlib.sha256(original).hexdigest()
     if recomputed != m["original_sha256"] or len(original) != m["original_size"]:
         raise IntegrityError("legacy dataset: recovered SHA-256 does not match the manifest",
@@ -363,7 +373,7 @@ def decode_rd1_archive(path: str | Path, key: bytes | None = None, file_id: str 
         data = _fernet_decrypt(data, key)
     comp = m.get("compression") or {}
     if comp.get("enabled"):
-        data = _decompress(data, comp.get("algorithm", "none"))
+        data = _decompress(data, comp.get("algorithm", "none"), fm["original_size"])
     recomputed = hashlib.sha256(data).hexdigest()
     if recomputed != fm["sha256"] or len(data) != fm["original_size"]:
         raise IntegrityError("RD-1 archive: recovered SHA-256 mismatch", details={"expected_sha256": fm["sha256"], "recovered_sha256": recomputed})

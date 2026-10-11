@@ -79,8 +79,9 @@ def keygen(output: PathLike) -> Result:
 
 # ================================================================================================================= archive
 def archive(inputs: Sequence[PathLike], output: PathLike, *, options: ArchiveOptions | None = None, overwrite: bool = False,
-            progress=None, archive_id: bytes | None = None, salt: bytes | None = None) -> ArchiveResult:
-    """E0–E6: files and directories → a VNX4 container."""
+            progress=None, archive_id: bytes | None = None, salt: bytes | None = None, secure=None) -> ArchiveResult:
+    """E0–E6: files and directories → a VNX4 container. Gated like :func:`encode` (V11-RT-03)."""
+    _guard.enforce("encode", output, secure)
     t0 = time.perf_counter()
     opts = options or ArchiveOptions()
     rep = _ar.build_archive([Path(p) for p in inputs], output, opts, overwrite=overwrite, progress=progress,

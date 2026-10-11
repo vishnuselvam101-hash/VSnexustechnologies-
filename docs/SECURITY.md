@@ -40,6 +40,7 @@ padding.
 | decompression bombs | a chunk expanding far beyond its declared size | decompression bounded by the table's plaintext size (≤ 64 MiB) through a bounded stream reader. **Finding fixed:** `zstd.decompress(max_output_size=…)` is not a bound when the frame declares a content size | `test_decompression_bomb_bounded` |
 | malicious metadata | counts, sizes and references inconsistent with the data | file sizes, chunk counts, reference ranges, contiguity, tiling and unreferenced chunks all validated; mismatches are format errors | `test_fuzz_counts_and_root_mutations` |
 | malformed DNA / reads | binary data, gzip/BAM, huge lines, truncated FASTQ | bounded block reader (≤ 100,000 nt per read, line-length cap), explicit format errors, non-ACGTN → N | `test_fuzz_hostile_read_files`, `test_fuzz_read_file_parser` |
+| forged superblock geometry | a CRC-valid superblock under `max_container_bytes` claiming ~10⁸ groups (K = 1) | V11-RT-01 (audit D10, job #61): refused in the superblock stage (RESOURCE_LIMIT) when the reads cannot fully decode the claim and its addresses exceed 8 × records + 2²⁰, before pass 2 builds any per-address state | `tests/v11/test_redteam_superblock_evidence.py` |
 | forged strands | valid-CRC frames carrying wrong content | duplicate majority, outer decoding, then the container SHA-256 from the superblock; nothing is published unless it matches | `test_fuzz_corrupted_ecc_and_forged_frames` |
 | resource exhaustion | unbounded memory or time | bounded batches and in-flight windows, disk spill in the decoder, read-count limit (`max_reads`), sweep size limit (points × trials ≤ 100,000), file count ≤ 10⁷ | code review; EXP-0012 memory measurements |
 | unsafe deserialisation | pickle / eval | none: JSON (validated) and fixed binary layouts only. Worker processes receive plain arguments | code review |
@@ -128,6 +129,32 @@ The V6 threat model is [security/V6_SECURITY_MODEL.md](security/V6_SECURITY_MODE
 - V6-SEC-22: deeply nested manifest JSON;
 - V6-SEC-23: unbounded RS table caches;
 - V6-SEC-14: this page's AAD sentence.
+
+---
+
+## V11 red-team review (2026-10-11, job #90)
+
+Report: [security/V11_SECURITY_REVIEW.md](security/V11_SECURITY_REVIEW.md); evidence in
+[security/v11-redteam/](security/v11-redteam/). No CRITICAL finding. Fixed on `work/v11-redteam`, each with a test that
+failed before the fix, and with no format or ABI change:
+
+| ID | Severity | Finding |
+|---|---|---|
+| V11-RT-05 | HIGH | Conformance vectors could write files outside the runner's temporary directory (absolute or `..` paths). |
+| V11-RT-01 | MEDIUM | A forged superblock under the size cap could claim ~10⁸ groups and exhaust memory (audit D10, job #61). |
+| V11-RT-04 | MEDIUM | Legacy v0.1/RD-1 zstd decompression allocated the frame's declared size. |
+| V11-RT-02 | LOW | String-prefix extract containment (`/out2` vs `/out`); V6-SEC-10 narrowed, still open. |
+| V11-RT-03 | LOW | `sdk.archive` / `vnx archive` bypassed the opt-in VNX-Secure gate. |
+| V11-RT-06 | LOW | Unbounded gzip decompression of conformance reads. |
+| V11-RT-07 | LOW | Keys and passphrases in dataclass reprs; no warning for group/other-accessible `vnx` key files. |
+| V11-RT-08 | LOW | Relative native library overrides reached `dlopen`'s search path. |
+| V11-RT-09 | LOW | Outer-list C++ wrappers did not check buffer sizes (part of V6-SEC-09 for that kernel). |
+
+**Deferred or accepted (INFO):** V11-RT-10 (scrypt costs below current OWASP guidance, N = 2¹⁵ for archives and N = 2¹⁴
+for VNX-Secure principals; this is a format decision and joins V6-SEC-07), V11-RT-11 (conformance inputs may be read
+from outside the vector directory, by design), V11-RT-12 (extract relies on the MAC chain, not the whole-file digest),
+V11-RT-13 (library internals below the SDK are not gated). The pip-audit result (2026-10-11) matches the
+MEDIUM-finding triage above: there is no new advisory.
 
 ---
 

@@ -116,7 +116,8 @@ def _load():
         if not path.is_file():
             continue
         try:
-            lib = ctypes.CDLL(str(path))
+            from vnxdna.native._loader import open_library
+            lib = open_library(path)
             lib.vnx_align_abi_version.restype = ctypes.c_int
             lib.vnx_align_abi_version.argtypes = []
             abi = lib.vnx_align_abi_version()

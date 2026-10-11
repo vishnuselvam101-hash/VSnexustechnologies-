@@ -1,0 +1,43 @@
+{
+ "tool": "pip-audit",
+ "target": "/root/vnx-dna-lab/.venv site-packages",
+ "date": "2026-10-11",
+ "packages_scanned": 56,
+ "findings": [
+  {
+   "package": "cryptography",
+   "version": "46.0.7",
+   "id": "GHSA-537c-gmf6-5ccf",
+   "aliases": "",
+   "fix": "48.0.1"
+  },
+  {
+   "package": "cryptography",
+   "version": "46.0.7",
+   "id": "PYSEC-2026-3552",
+   "aliases": "CVE-2026-69247,GHSA-g6cj-pr64-35w5",
+   "fix": "50.0.0"
+  },
+  {
+   "package": "cryptography",
+   "version": "46.0.7",
+   "id": "PYSEC-2026-3553",
+   "aliases": "CVE-2026-69249,GHSA-jwv3-5hgf-82ww",
+   "fix": "49.0.0"
+  },
+  {
+   "package": "cryptography",
+   "version": "46.0.7",
+   "id": "PYSEC-2026-3554",
+   "aliases": "CVE-2026-69248,GHSA-m2h6-j472-rp4c",
+   "fix": "49.0.0"
+  },
+  {
+   "package": "pytest",
+   "version": "8.4.2",
+   "id": "PYSEC-2026-1845",
+   "aliases": "CVE-2025-71176,GHSA-6w46-j5rx-g56g",
+   "fix": "9.0.3"
+  }
+ ]
+}

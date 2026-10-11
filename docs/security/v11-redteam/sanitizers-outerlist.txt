@@ -1,0 +1,12 @@
+# run 2026-10-11 on work/v11-redteam at a7772da (clean tree), PY=/root/vnx-dna-lab/.venv/bin/python, nice 19, CPUs 6-7
+kernel source sha256: f7ca10c26cf2a697f5f5c6c252f8cbfe9f7a23378077df132812e7f4fa8e9234
+== warnings (reported, not gating)
+g++: exit=0 warnings=0
+clang++: exit=0 warnings=0
+== sanitizer builds
+gcc-asan-ubsan: native outer-list tests exit=0 (103 passed in 6.26s)
+clang-asan-ubsan: native outer-list tests exit=0 (103 passed in 5.80s)
+clang-ubsan-trap: native outer-list tests exit=0 (103 passed in 4.61s)
+libFuzzer: exit=0 (Done 248797 runs in 31 second(s))
+overall: PASS
+rc=0

@@ -38,6 +38,15 @@ _PKG = Path(__file__).resolve().parents[1]          # vnxdna/
 log = logging.getLogger(__name__)
 
 
+def open_library(path: Path):
+    """``dlopen`` exactly the file that was checked (V11-RT-08). A relative path is refused: ``dlopen`` resolves a name
+    without a slash through the library search path, not the file ``is_file()`` saw, and a relative override would
+    otherwise depend on the current directory. Raises OSError, which every loader records in ``load_error``."""
+    if not Path(path).is_absolute():
+        raise OSError("not an absolute path (a native library override must be absolute)")
+    return ctypes.CDLL(str(path))
+
+
 class NativeKernelError(RuntimeError):
     pass
 
@@ -100,7 +109,7 @@ class Kernel:
                         errors.append(f"{path}: not found")
                     continue
                 try:
-                    lib = ctypes.CDLL(str(path))
+                    lib = open_library(path)
                     getattr(lib, self.abi_symbol).restype = ctypes.c_int
                     abi = getattr(lib, self.abi_symbol)()
                     if abi != self.abi:

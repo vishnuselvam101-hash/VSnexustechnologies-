@@ -18,6 +18,22 @@ from vnxdna.dnaenc.superblock import SB_BYTES, Superblock
 
 
 COLLISION_TRIALS = 256
+#: V11-RT-01 (audit D10, job #61): pass 2 keeps one missing address per claimed symbol, so its memory follows the
+#: superblock's claim. Below ``max_container_bytes`` a forged claim still chooses ~10^8 groups (K = 1). A claim is
+#: refused when the reads cannot fully decode it (fewer records than data symbols) and it names more addresses than
+#: ``EVIDENCE_FACTOR`` per record plus ``EVIDENCE_FLOOR``; such a pool recovers at most a small fraction of its rows.
+EVIDENCE_FACTOR = 8
+EVIDENCE_FLOOR = 1 << 20
+
+
+def evidence_refusal(sb: Superblock, records: int) -> dict | None:
+    """The refusal details when ``sb`` claims far more than ``records`` pass-1 records can support, else None."""
+    claimed = sb.total_groups * (sb.K + sb.M)
+    data_symbols = -(-sb.container_size // sb.layout.payload_bytes)
+    limit = EVIDENCE_FACTOR * records + EVIDENCE_FLOOR
+    if data_symbols <= records or claimed <= limit:
+        return None
+    return {"claimed_addresses": claimed, "data_symbols": data_symbols, "records_seen": records, "evidence_limit": limit}
 
 
 def _try_superblock(got: dict, ks: int, ms: int, lay: Layout, tag: int):
@@ -186,4 +202,11 @@ def _decode_superblock(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
                                details={"container_size": sb.container_size, "groups": sb.group_count,
                                         "max_container_bytes": opt.max_container_bytes, "archive_tag": f"{tag:04x}"},
                                hint="if this archive is genuine, raise the limit with --max-container-bytes")
-    return sb, {"archive_tags_seen": [f"{t:04x}" for t in tags], "superblock_conflicts": conflicts}
+    refusal = evidence_refusal(sb, spill.records())
+    if refusal is not None:
+        raise VNXResourceError(f"the superblock claims {refusal['claimed_addresses']:,} strand addresses, but only "
+                               f"{refusal['records_seen']:,} reads were addressed: the claim cannot be decoded and is "
+                               f"not walked; nothing decoded", stage="superblock",
+                               details={**refusal, "groups": sb.group_count, "archive_tag": f"{tag:04x}"},
+                               hint="check that the read file is complete and belongs to this archive")
+    return sb,{"archive_tags_seen": [f"{t:04x}" for t in tags], "superblock_conflicts": conflicts}

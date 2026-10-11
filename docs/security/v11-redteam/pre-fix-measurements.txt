@@ -1,0 +1,20 @@
+# V11 red team: measurements of the defects before their fixes (2026-10-11, base 7a9d0b7, nice 19, CPUs 6-7)
+V11-RT-01 forged superblock, K=1, container_size = 4 GiB (= default max_container_bytes), P=40 -> group_count 107374183,
+  51 reads; decode_reads under ulimit -v 6000000:
+    index_offset = 0:              MemoryError after 37.0 s, maxrss 5208 MB
+    index_offset = container_size: MemoryError after 25.7 s, maxrss 5207 MB (recovery/outer.py:169, missing-address set)
+V11-RT-04 zstd frame declaring 8 GiB (262170-byte file) through ZstdDecompressor().decompress(max_output_size=...),
+  ulimit -v 4000000: MemoryError for max_output_size = 2^34 and for max_output_size = 2^20 (the declared size is allocated).
+V11-RT-05 the pre-fix run of tests/v11/test_redteam_conformance_paths.py wrote "attacker bytes" to /escaped.txt and
+  /tmp/escaped.txt (removed after checking their content), and archived /tmp (root = "..").
+Byte-flip sweep (encrypted container, 32511 bytes, 1834 single-bit flips + every 97th truncation): 1802 refused,
+  32 identical output (all 32 in the final whole-file SHA-256 of the trailer), 0 wrong data; truncations extracted: 0.
+Regression tests run before their fixes (pytest, this session; the fix commit follows each line):
+  V11-RT-01 test_redteam_superblock_evidence.py: FAILED test_huge_group_count_under_the_size_cap_is_refused_in_bounded_memory[None] (-x)  -> ccd6ccb
+  V11-RT-02 test_redteam_extract_paths.py: 1 failed (sibling-prefix symlink race), 5 passed                          -> fa1674f
+  V11-RT-03 test_redteam_secure_gate_archive.py: 1 failed (sdk.archive had no gate / `secure` argument), 1 passed     -> 0d83fda
+  V11-RT-04 test_redteam_legacy_decompress_bound.py: 4 failed                                                         -> 4e61f0f
+  V11-RT-05/06 test_redteam_conformance_paths.py: 6 failed, 1 passed                                                  -> 9f1df61
+  V11-RT-07 test_redteam_secret_hygiene.py: failed (passphrase and key bytes in repr(ArchiveOptions))                 -> 12de934
+  V11-RT-08 test_redteam_native_loader.py: 10 failed (CDLL received relative names), 5 passed                         -> 4ae2122
+  V11-RT-09 test_redteam_outerlist_buffers.py: 9 failed, 3 passed                                                     -> c48921e
