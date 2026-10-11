@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "rewriteRelativeImportExtensions": true,
+    "allowImportingTsExtensions": true,
+    "outDir": "dashboard/dist",
+    "rootDir": "src",
+    "types": []
+  },
+  "include": ["src/contracts.ts", "src/parse.ts", "src/progress.ts", "src/dashboard.ts"]
+}

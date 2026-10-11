@@ -20,6 +20,9 @@ jobs:
           python -m vnxdna.v5.native_alignment build --strict
           python -m vnxdna.v6.native_reads build --strict
           python -m vnxdna.v6.native_rs build --strict
+          python -m vnxdna.native.cluster build --strict
+          python -m vnxdna.native.strand build --strict
+          python -m vnxdna.native.integrity build --strict
       - run: ruff check src tests research
       - run: python -m pytest
       - run: python -m compileall -q src
@@ -91,8 +94,32 @@ jobs:
       - run: python -m pip install -e '.[dev]' 'mypy==2.4.0'
       - run: mypy
 
+  rust:
+    # the Rust integrity kernel (src/vnxdna/native/rust/integrity): unit tests, warnings as errors, offline (no crates)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: cargo --version
+      - run: cargo test --release --offline --locked --manifest-path src/vnxdna/native/rust/integrity/Cargo.toml
+        env: {RUSTFLAGS: -D warnings}
+  web:
+    # TypeScript web layer (web/): strict type check, dashboard build, node:test (contracts against the JSON schemas,
+    # real decode fixtures, the event follower, and the client against this repository's CLI)
+    runs-on: ubuntu-latest
+    defaults: {run: {working-directory: web}}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with: {python-version: '3.12'}
+      - uses: actions/setup-node@v5
+        with: {node-version: '24'}
+      - run: python -m pip install -e '..'
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm run build
+      - run: VNX_TEST_PYTHON=python npm test
   sanitizers:
-    # ASan+UBSan builds (gcc; clang ASan+UBSan and UBSan trap mode) of all four native kernels (align, reads, rs, cluster),
+    # ASan+UBSan builds (gcc; clang ASan+UBSan and UBSan trap mode) of the C kernels (align, reads, rs, cluster, strand),
     # each running its native equivalence tests, a differential stress fuzz against the reference and an ASan canary
     runs-on: ubuntu-latest
     steps:

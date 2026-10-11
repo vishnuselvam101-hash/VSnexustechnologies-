@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'">
+<title>VNX-DNA decode dashboard</title>
+<style>
+  :root { --bg: #fff; --fg: #1d1d1f; --muted: #6b6b70; --ok: #1a7f37; --warn: #9a6700; --bad: #cf222e; --line: #d8d8dc; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #161618; --fg: #ececf0; --muted: #a0a0a8; --ok: #3fb950; --warn: #d29922; --bad: #f85149; --line: #34343a; } }
+  body { background: var(--bg); color: var(--fg); font: 15px/1.5 system-ui, sans-serif; margin: 0 auto; max-width: 960px; padding: 16px; }
+  h1 { font-size: 20px; } h2 { font-size: 16px; margin-top: 28px; } p.note { color: var(--muted); }
+  table { border-collapse: collapse; width: 100%; } th, td { border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
+  th { width: 30%; color: var(--muted); font-weight: 500; } td { overflow-wrap: anywhere; }
+  .status { font-weight: 600; } .status-success, .status-verified { color: var(--ok); } .status-partial, .status-running { color: var(--warn); }
+  .status-failure, .status-error { color: var(--bad); }
+</style>
+</head>
+<body>
+<h1>VNX-DNA decode dashboard</h1>
+<p class="note">Open a decode report (<code>vnx decode --report</code>) and/or an event log (<code>--events</code>). Files are read in this browser only. Results of simulated channels are SIMULATED.</p>
+<label>Report (JSON) <input id="report-file" type="file" accept=".json,application/json"></label>
+<label>Events (JSON lines) <input id="events-file" type="file" accept=".jsonl,.json,.txt"></label>
+<h2>Report</h2><div id="report"><p class="note">No report loaded.</p></div>
+<h2>Events</h2><div id="events"><p class="note">No event log loaded.</p></div>
+<script type="module" src="dist/dashboard.js"></script>
+</body>
+</html>

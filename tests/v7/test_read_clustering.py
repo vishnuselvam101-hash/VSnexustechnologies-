@@ -183,11 +183,15 @@ def test_regression_golden(pools, tmp_path):
     assert got == want
 
 
-def test_worker_count_and_batch_size_do_not_change_anything(pools, tmp_path):
+def test_worker_count_and_batch_size_do_not_change_anything(pools, tmp_path, monkeypatch):
+    monkeypatch.delenv("VNXDNA_CLUSTER_THREADS", raising=False)
     p = pools["reads"]["helped"]
     one = _run(p, tmp_path / "w1.vnx", read_clustering="fallback", stage_counters=True, workers=1, batch_reads=128)
     four = _run(p, tmp_path / "w4.vnx", read_clustering="fallback", stage_counters=True, workers=4, batch_reads=128)
     big = _run(p, tmp_path / "wb.vnx", read_clustering="fallback", stage_counters=True, workers=1)
+    # V10 W1: the decoder's workers become the native kernel threads; only that report field may differ
+    assert (one[2]["clustering"].pop("native_threads"), four[2]["clustering"].pop("native_threads")) == (1, 4)
+    big[2]["clustering"].pop("native_threads")
     assert one == four
     assert one[0] == big[0] and one[1] == big[1] and one[2]["clustering"] == big[2]["clustering"]
 
@@ -209,7 +213,7 @@ def test_unplaced_read_budget_stops_the_stage_and_is_reported(pools, tmp_path):
 
 def test_candidate_pair_budget_stops_the_stage_and_is_reported(pools, tmp_path):
     st, data, rep = _run(pools["reads"]["helped"], tmp_path / "on.vnx", read_clustering="fallback",
-                         cluster_config=ClusterConfig(max_candidate_pairs=10))
+                         cluster_config=ClusterConfig(max_candidate_pairs=10, max_candidate_pairs_per_read=0))
     cl = rep["clustering"]
     assert cl["status"] == "budget_exceeded" and cl["budget_exceeded"][0]["limit"] == "max_candidate_pairs"
     assert cl["frames_verified"] == 0 and data is None and st == "FAILURE"

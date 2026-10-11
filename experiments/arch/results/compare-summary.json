@@ -1,0 +1,740 @@
+{
+  "host": {
+    "cpu": "Intel(R) Xeon(R) Gold 6240 CPU @ 2.60GHz",
+    "logical_cpus": 8,
+    "available_cpus": 8,
+    "python": "3.12.3",
+    "kernel": "6.8.0-146-generic"
+  },
+  "scenarios": {
+    "encode-w1": {
+      "kind": "encode",
+      "workers": 1,
+      "channel": null,
+      "input_mib": 16.0,
+      "n": 5,
+      "commits": {
+        "v9": "e76e24b3aca967339b3743eb6a46549f4a78bbb8",
+        "arch": "47001652303b7c81fab8b7a46284fa37036b3364",
+        "arch-strand-ref": "47001652303b7c81fab8b7a46284fa37036b3364"
+      },
+      "env": {
+        "v9": {},
+        "arch": {},
+        "arch-strand-ref": {
+          "VNXDNA_STRAND_BACKEND": "reference"
+        }
+      },
+      "identical_outcome_and_output": true,
+      "outcomes": {
+        "v9": [
+          "ENCODED"
+        ],
+        "arch": [
+          "ENCODED"
+        ],
+        "arch-strand-ref": [
+          "ENCODED"
+        ]
+      },
+      "false_success": 0,
+      "seconds_median": {
+        "v9": 6.302,
+        "arch": 5.265,
+        "arch-strand-ref": 6.21
+      },
+      "seconds_range": {
+        "v9": [
+          6.11,
+          6.434
+        ],
+        "arch": [
+          5.114,
+          6.421
+        ],
+        "arch-strand-ref": [
+          6.073,
+          6.321
+        ]
+      },
+      "mib_per_s_median": {
+        "v9": 2.539,
+        "arch": 3.039,
+        "arch-strand-ref": 2.576
+      },
+      "tree_rss_peak_mib_median": {
+        "v9": 58.7,
+        "arch": 55.5,
+        "arch-strand-ref": 58.5
+      },
+      "load1_range": [
+        1.86,
+        2.09
+      ],
+      "native": {
+        "v9": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native"
+        },
+        "arch": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "native",
+          "integrity": "native",
+          "outerlist": "native"
+        },
+        "arch-strand-ref": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "reference",
+          "integrity": "native",
+          "outerlist": "native"
+        }
+      },
+      "stale_libraries": {
+        "v9": [],
+        "arch": [],
+        "arch-strand-ref": []
+      },
+      "speedup_vs_v9_geomean": {
+        "arch": 1.151,
+        "arch-strand-ref": 1.012
+      },
+      "speedup_vs_v9_range": {
+        "arch": [
+          1.002,
+          1.206
+        ],
+        "arch-strand-ref": [
+          0.988,
+          1.039
+        ]
+      }
+    },
+    "encode-w4": {
+      "kind": "encode",
+      "workers": 4,
+      "channel": null,
+      "input_mib": 16.0,
+      "n": 5,
+      "commits": {
+        "v9": "e76e24b3aca967339b3743eb6a46549f4a78bbb8",
+        "arch": "47001652303b7c81fab8b7a46284fa37036b3364",
+        "arch-strand-ref": "47001652303b7c81fab8b7a46284fa37036b3364"
+      },
+      "env": {
+        "v9": {},
+        "arch": {},
+        "arch-strand-ref": {
+          "VNXDNA_STRAND_BACKEND": "reference"
+        }
+      },
+      "identical_outcome_and_output": true,
+      "outcomes": {
+        "v9": [
+          "ENCODED"
+        ],
+        "arch": [
+          "ENCODED"
+        ],
+        "arch-strand-ref": [
+          "ENCODED"
+        ]
+      },
+      "false_success": 0,
+      "seconds_median": {
+        "v9": 1.856,
+        "arch": 1.483,
+        "arch-strand-ref": 1.833
+      },
+      "seconds_range": {
+        "v9": [
+          1.706,
+          1.911
+        ],
+        "arch": [
+          1.474,
+          1.498
+        ],
+        "arch-strand-ref": [
+          1.768,
+          1.859
+        ]
+      },
+      "mib_per_s_median": {
+        "v9": 8.621,
+        "arch": 10.786,
+        "arch-strand-ref": 8.731
+      },
+      "tree_rss_peak_mib_median": {
+        "v9": 213.3,
+        "arch": 194.4,
+        "arch-strand-ref": 212.4
+      },
+      "load1_range": [
+        2.07,
+        3.46
+      ],
+      "native": {
+        "v9": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native"
+        },
+        "arch": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "native",
+          "integrity": "native",
+          "outerlist": "native"
+        },
+        "arch-strand-ref": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "reference",
+          "integrity": "native",
+          "outerlist": "native"
+        }
+      },
+      "stale_libraries": {
+        "v9": [],
+        "arch": [],
+        "arch-strand-ref": []
+      },
+      "speedup_vs_v9_geomean": {
+        "arch": 1.227,
+        "arch-strand-ref": 1.001
+      },
+      "speedup_vs_v9_range": {
+        "arch": [
+          1.15,
+          1.294
+        ],
+        "arch-strand-ref": [
+          0.93,
+          1.05
+        ]
+      }
+    },
+    "clean": {
+      "kind": "decode",
+      "workers": 4,
+      "channel": {
+        "coverage": 3
+      },
+      "input_mib": 4.0,
+      "n": 5,
+      "commits": {
+        "v9": "e76e24b3aca967339b3743eb6a46549f4a78bbb8",
+        "arch": "47001652303b7c81fab8b7a46284fa37036b3364"
+      },
+      "env": {
+        "v9": {},
+        "arch": {}
+      },
+      "identical_outcome_and_output": true,
+      "outcomes": {
+        "v9": [
+          "SUCCESS"
+        ],
+        "arch": [
+          "SUCCESS"
+        ]
+      },
+      "false_success": 0,
+      "seconds_median": {
+        "v9": 1.613,
+        "arch": 1.594
+      },
+      "seconds_range": {
+        "v9": [
+          1.57,
+          1.682
+        ],
+        "arch": [
+          1.572,
+          1.664
+        ]
+      },
+      "mib_per_s_median": {
+        "v9": 2.48,
+        "arch": 2.509
+      },
+      "tree_rss_peak_mib_median": {
+        "v9": 389.5,
+        "arch": 378.2
+      },
+      "load1_range": [
+        2.81,
+        3.45
+      ],
+      "native": {
+        "v9": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native"
+        },
+        "arch": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "native",
+          "integrity": "native",
+          "outerlist": "native"
+        }
+      },
+      "stale_libraries": {
+        "v9": [],
+        "arch": []
+      },
+      "speedup_vs_v9_geomean": {
+        "arch": 1.016
+      },
+      "speedup_vs_v9_range": {
+        "arch": [
+          0.997,
+          1.063
+        ]
+      }
+    },
+    "substitution": {
+      "kind": "decode",
+      "workers": 4,
+      "channel": {
+        "substitution_rate": 0.02,
+        "coverage": 5
+      },
+      "input_mib": 4.0,
+      "n": 5,
+      "commits": {
+        "v9": "e76e24b3aca967339b3743eb6a46549f4a78bbb8",
+        "arch": "47001652303b7c81fab8b7a46284fa37036b3364"
+      },
+      "env": {
+        "v9": {},
+        "arch": {}
+      },
+      "identical_outcome_and_output": true,
+      "outcomes": {
+        "v9": [
+          "SUCCESS"
+        ],
+        "arch": [
+          "SUCCESS"
+        ]
+      },
+      "false_success": 0,
+      "seconds_median": {
+        "v9": 2.783,
+        "arch": 2.615
+      },
+      "seconds_range": {
+        "v9": [
+          2.72,
+          2.82
+        ],
+        "arch": [
+          2.49,
+          2.709
+        ]
+      },
+      "mib_per_s_median": {
+        "v9": 1.437,
+        "arch": 1.53
+      },
+      "tree_rss_peak_mib_median": {
+        "v9": 403.9,
+        "arch": 405.3
+      },
+      "load1_range": [
+        1.78,
+        2.25
+      ],
+      "native": {
+        "v9": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native"
+        },
+        "arch": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "native",
+          "integrity": "native",
+          "outerlist": "native"
+        }
+      },
+      "stale_libraries": {
+        "v9": [],
+        "arch": []
+      },
+      "speedup_vs_v9_geomean": {
+        "arch": 1.066
+      },
+      "speedup_vs_v9_range": {
+        "arch": [
+          1.031,
+          1.095
+        ]
+      }
+    },
+    "indel": {
+      "kind": "decode",
+      "workers": 4,
+      "channel": {
+        "substitution_rate": 0.01,
+        "insertion_rate": 0.002,
+        "deletion_rate": 0.002,
+        "coverage": 5
+      },
+      "input_mib": 4.0,
+      "n": 5,
+      "commits": {
+        "v9": "e76e24b3aca967339b3743eb6a46549f4a78bbb8",
+        "arch": "47001652303b7c81fab8b7a46284fa37036b3364"
+      },
+      "env": {
+        "v9": {},
+        "arch": {}
+      },
+      "identical_outcome_and_output": true,
+      "outcomes": {
+        "v9": [
+          "SUCCESS"
+        ],
+        "arch": [
+          "SUCCESS"
+        ]
+      },
+      "false_success": 0,
+      "seconds_median": {
+        "v9": 5.347,
+        "arch": 4.674
+      },
+      "seconds_range": {
+        "v9": [
+          5.252,
+          5.46
+        ],
+        "arch": [
+          4.632,
+          4.748
+        ]
+      },
+      "mib_per_s_median": {
+        "v9": 0.748,
+        "arch": 0.856
+      },
+      "tree_rss_peak_mib_median": {
+        "v9": 409.6,
+        "arch": 411.1
+      },
+      "load1_range": [
+        1.57,
+        2.0
+      ],
+      "native": {
+        "v9": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native"
+        },
+        "arch": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "native",
+          "integrity": "native",
+          "outerlist": "native"
+        }
+      },
+      "stale_libraries": {
+        "v9": [],
+        "arch": []
+      },
+      "speedup_vs_v9_geomean": {
+        "arch": 1.144
+      },
+      "speedup_vs_v9_range": {
+        "arch": [
+          1.124,
+          1.157
+        ]
+      }
+    },
+    "low-coverage": {
+      "kind": "decode",
+      "workers": 4,
+      "channel": {
+        "substitution_rate": 0.005,
+        "coverage": 2
+      },
+      "input_mib": 4.0,
+      "n": 5,
+      "commits": {
+        "v9": "e76e24b3aca967339b3743eb6a46549f4a78bbb8",
+        "arch": "47001652303b7c81fab8b7a46284fa37036b3364"
+      },
+      "env": {
+        "v9": {},
+        "arch": {}
+      },
+      "identical_outcome_and_output": true,
+      "outcomes": {
+        "v9": [
+          "SUCCESS"
+        ],
+        "arch": [
+          "SUCCESS"
+        ]
+      },
+      "false_success": 0,
+      "seconds_median": {
+        "v9": 1.41,
+        "arch": 1.355
+      },
+      "seconds_range": {
+        "v9": [
+          1.378,
+          1.424
+        ],
+        "arch": [
+          1.318,
+          1.374
+        ]
+      },
+      "mib_per_s_median": {
+        "v9": 2.837,
+        "arch": 2.952
+      },
+      "tree_rss_peak_mib_median": {
+        "v9": 374.3,
+        "arch": 372.3
+      },
+      "load1_range": [
+        1.46,
+        2.06
+      ],
+      "native": {
+        "v9": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native"
+        },
+        "arch": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "native",
+          "integrity": "native",
+          "outerlist": "native"
+        }
+      },
+      "stale_libraries": {
+        "v9": [],
+        "arch": []
+      },
+      "speedup_vs_v9_geomean": {
+        "arch": 1.04
+      },
+      "speedup_vs_v9_range": {
+        "arch": [
+          1.003,
+          1.063
+        ]
+      }
+    },
+    "indel-w1": {
+      "kind": "decode",
+      "workers": 1,
+      "channel": {
+        "substitution_rate": 0.01,
+        "insertion_rate": 0.002,
+        "deletion_rate": 0.002,
+        "coverage": 5
+      },
+      "input_mib": 4.0,
+      "n": 3,
+      "commits": {
+        "v9": "e76e24b3aca967339b3743eb6a46549f4a78bbb8",
+        "arch": "47001652303b7c81fab8b7a46284fa37036b3364"
+      },
+      "env": {
+        "v9": {},
+        "arch": {}
+      },
+      "identical_outcome_and_output": true,
+      "outcomes": {
+        "v9": [
+          "SUCCESS"
+        ],
+        "arch": [
+          "SUCCESS"
+        ]
+      },
+      "false_success": 0,
+      "seconds_median": {
+        "v9": 15.192,
+        "arch": 14.16
+      },
+      "seconds_range": {
+        "v9": [
+          15.162,
+          15.264
+        ],
+        "arch": [
+          13.977,
+          14.382
+        ]
+      },
+      "mib_per_s_median": {
+        "v9": 0.263,
+        "arch": 0.282
+      },
+      "tree_rss_peak_mib_median": {
+        "v9": 116.8,
+        "arch": 104.8
+      },
+      "load1_range": [
+        1.17,
+        1.6
+      ],
+      "native": {
+        "v9": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native"
+        },
+        "arch": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "native",
+          "integrity": "native",
+          "outerlist": "native"
+        }
+      },
+      "stale_libraries": {
+        "v9": [],
+        "arch": []
+      },
+      "speedup_vs_v9_geomean": {
+        "arch": 1.073
+      },
+      "speedup_vs_v9_range": {
+        "arch": [
+          1.061,
+          1.085
+        ]
+      }
+    },
+    "indel-w2": {
+      "kind": "decode",
+      "workers": 2,
+      "channel": {
+        "substitution_rate": 0.01,
+        "insertion_rate": 0.002,
+        "deletion_rate": 0.002,
+        "coverage": 5
+      },
+      "input_mib": 4.0,
+      "n": 3,
+      "commits": {
+        "v9": "e76e24b3aca967339b3743eb6a46549f4a78bbb8",
+        "arch": "47001652303b7c81fab8b7a46284fa37036b3364"
+      },
+      "env": {
+        "v9": {},
+        "arch": {}
+      },
+      "identical_outcome_and_output": true,
+      "outcomes": {
+        "v9": [
+          "SUCCESS"
+        ],
+        "arch": [
+          "SUCCESS"
+        ]
+      },
+      "false_success": 0,
+      "seconds_median": {
+        "v9": 8.681,
+        "arch": 7.813
+      },
+      "seconds_range": {
+        "v9": [
+          8.501,
+          8.699
+        ],
+        "arch": [
+          7.659,
+          8.025
+        ]
+      },
+      "mib_per_s_median": {
+        "v9": 0.461,
+        "arch": 0.512
+      },
+      "tree_rss_peak_mib_median": {
+        "v9": 246.1,
+        "arch": 247.4
+      },
+      "load1_range": [
+        1.17,
+        1.55
+      ],
+      "native": {
+        "v9": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native"
+        },
+        "arch": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "native",
+          "integrity": "native",
+          "outerlist": "native"
+        }
+      },
+      "stale_libraries": {
+        "v9": [],
+        "arch": []
+      },
+      "speedup_vs_v9_geomean": {
+        "arch": 1.102
+      },
+      "speedup_vs_v9_range": {
+        "arch": [
+          1.082,
+          1.136
+        ]
+      }
+    }
+  }
+}

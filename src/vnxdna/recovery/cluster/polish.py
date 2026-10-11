@@ -100,6 +100,31 @@ def edit_costs(tpl: np.ndarray, mc: np.ndarray, reads: list, band: np.ndarray, c
     return edit_costs_reference(tpl, mc, reads, band, c_indel, c_sub)
 
 
+def polish_deltas(tpls: list, mc: np.ndarray, reads: list, counts: list, band: np.ndarray, c_indel: int, c_sub: int,
+                  pen: int, chunk: int):
+    """The per-candidate fold of :func:`edit_costs` that consensus._polish applies (sums of ``min(cost, pen) - opt``
+    over each candidate's reads with ``opt < INF``), computed by the fused native kernel (ABI 5), or None when the
+    native backend is not active or an input is outside its domain (the caller then folds :func:`edit_costs` chunk by
+    chunk, with identical results). ``counts[k]`` reads of candidate k, in order; ``chunk``: the caller's edit_costs
+    chunk size, whose shared band decides per read whether the cell just outside its band exists (``dip``)."""
+    if _nc.resolve_backend() != "native" or not tpls:
+        return None
+    band = np.asarray(band, dtype=np.int64)
+    n = band.size
+    T = int(np.asarray(tpls[0]).size)
+    if n == 0 or n != sum(counts) or int(band.min()) < 0:
+        return None
+    buf, off, lens = _nc.pack(list(reads[:n]))
+    mc32 = np.asarray(mc).astype(np.int32)
+    if not (_nc.codes_in_domain(buf) and _nc.edit_costs_in_domain(T, int(band.max()), mc32, c_indel, c_sub, lens)):
+        return None
+    starts = np.arange(0, n, chunk)
+    chunk_band = np.repeat(np.maximum.reduceat(band, starts), np.diff(np.append(starts, n)))
+    read_start = np.concatenate([[0], np.cumsum(counts)]).astype(np.int64)
+    return _nc.polish_deltas(np.stack([np.asarray(t) for t in tpls]).astype(np.int16), mc32, buf, off, lens, read_start,
+                             band, band < chunk_band, c_indel, c_sub, pen)
+
+
 def edit_costs_reference(tpl: np.ndarray, mc: np.ndarray, reads: list, band: np.ndarray, c_indel: int, c_sub: int):
     """Per read, the exact optimal cost after one template edit (reads that do not fit their band: INF everywhere).
     The NumPy specification of the native kernel.
@@ -147,7 +172,24 @@ def segments(tpl0: np.ndarray) -> np.ndarray:
 
 
 def shift(tpl: np.ndarray, p: int, q: int, x: int) -> np.ndarray:
-    """Remove position p and insert base x before (original) position q; the length is unchanged."""
+    """Remove position p and insert base x before (original) position q; the length is unchanged. Slice copies (V10
+    W2); equals :func:`shift_reference` for 0 <= p < len, 0 <= q <= len."""
+    out = np.empty_like(tpl)
+    if q > p:
+        out[:p] = tpl[:p]
+        out[p:q - 1] = tpl[p + 1:q]
+        out[q - 1] = x
+        out[q:] = tpl[q:]
+    else:
+        out[:q] = tpl[:q]
+        out[q] = x
+        out[q + 1:p + 1] = tpl[q:p]
+        out[p + 1:] = tpl[p + 1:]
+    return out
+
+
+def shift_reference(tpl: np.ndarray, p: int, q: int, x: int) -> np.ndarray:
+    """The V9 list implementation of :func:`shift` (specification)."""
     out = list(tpl.tolist())
     del out[p]
     out.insert(q - 1 if q > p else q, x)

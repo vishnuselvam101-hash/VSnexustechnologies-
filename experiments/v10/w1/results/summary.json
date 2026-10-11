@@ -1,0 +1,69 @@
+{
+ "commits": [
+  "f4b7b90c84d62dd78ed3b23f30661f78aeaf4a26"
+ ],
+ "false_success": 0,
+ "identical_all_configs": 10,
+ "label": "SIMULATED: reads from a software channel model; no DNA was synthesised, stored or sequenced",
+ "load1_range": [
+  1.2,
+  2.08
+ ],
+ "load_rule": {
+  "max_load1": 4.0,
+  "observed": [
+   1.2,
+   2.08
+  ],
+  "ok": true,
+  "runs_over": 0
+ },
+ "median_decode_seconds": {
+  "t2": 15.8665,
+  "v9": 21.8545,
+  "w1": 12.5715
+ },
+ "native_threads": {
+  "t2": [
+   2
+  ],
+  "v9": [
+   1
+  ],
+  "w1": [
+   4
+  ]
+ },
+ "of": 10,
+ "outcomes": {
+  "t2": [
+   "EXACT"
+  ],
+  "v9": [
+   "EXACT"
+  ],
+  "w1": [
+   "EXACT"
+  ]
+ },
+ "seeds": [
+  94000,
+  94001,
+  94002,
+  94003,
+  94004,
+  94005,
+  94006,
+  94007,
+  94008,
+  94009
+ ],
+ "speedup_v9_over_w1": {
+  "ci95": [
+   1.733,
+   1.766
+  ],
+  "geomean": 1.751,
+  "method": "paired per-seed ratio, geometric mean, percentile bootstrap 10000, rng 10001"
+ }
+}

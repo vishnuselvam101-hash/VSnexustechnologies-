@@ -5,7 +5,8 @@ Kernel bindings: :mod:`vnxdna.native.align` (marker aligner), :mod:`vnxdna.nativ
 by module name (``vnxdna.core._alias.lazy_module``), so this package imports nothing above ``vnxdna.core``.
 The C sources and the libraries stay in ``vnxdna/v5/native`` and ``vnxdna/v6/native`` (extension names
 ``vnxdna.v5._vnx_align``, ``vnxdna.v6._vnx_reads``, ``vnxdna.v6._vnx_rs``), so installed layouts are unchanged. The V7 cluster kernel's source
-is ``vnxdna/native/c/cluster.c`` (extension ``vnxdna._vnx_cluster``).
+is ``vnxdna/native/c/cluster.c`` (extension ``vnxdna._vnx_cluster``); the hybrid-architecture strand builder's is
+``vnxdna/native/c/strand.c`` (extension ``vnxdna._vnx_strand``, loader :mod:`vnxdna.native._loader`).
 
 :func:`native_status` returns, for each kernel, the backend that actually runs (``native`` or ``reference``), the SIMD
 level (RS decoder; forward-backward level of the cluster kernel), the library path and where it came from, the ABI version and why the native library is not used
@@ -19,6 +20,9 @@ Kernels::
     reads   V6 FASTQ/FASTA read parser     vnxdna.native.reads   (old path vnxdna.v6.native_reads)       reference: the Python parser
     rs      V6 inner RS (GF(256)) decoder  vnxdna.native.rs      (old path vnxdna.v6.native_rs)          reference: rs_fast (NumPy)
     cluster V7 read clustering + consensus vnxdna.native.cluster                                         reference: vnxdna.recovery.cluster (NumPy)
+    strand  encode strand builder          vnxdna.native.strand                                          reference: vnxdna.dnaenc.frame4 (NumPy)
+    integrity batched frame CRC-32 (Rust)  vnxdna.native.integrity                                       reference: vnxdna.core.crc (NumPy)
+    outerlist outer-code list decoding (C++) vnxdna.native.outerlist                                     reference: vnxdna.recovery.outer_list
 
 Backend environment variables are documented in docs/NATIVE_KERNELS.md. Nothing here raises: an invalid backend
 variable is reported in ``error`` (the decode itself would raise it).
@@ -31,10 +35,13 @@ from pathlib import Path
 
 from ..core._alias import lazy_module
 
-KERNELS = ("align", "reads", "rs", "cluster")
-_ENV_LIB = {"align": "VNXDNA_NATIVE_LIB", "reads": "VNXDNA_READS_LIB", "rs": "VNXDNA_RS_LIB", "cluster": "VNXDNA_CLUSTER_LIB"}
+KERNELS = ("align", "reads", "rs", "cluster", "strand", "integrity", "outerlist")
+_ENV_LIB = {"align": "VNXDNA_NATIVE_LIB", "reads": "VNXDNA_READS_LIB", "rs": "VNXDNA_RS_LIB", "cluster": "VNXDNA_CLUSTER_LIB",
+            "strand": "VNXDNA_STRAND_LIB", "integrity": "VNXDNA_INTEGRITY_LIB",
+            "outerlist": "VNXDNA_OUTERLIST_LIB"}
 _REFERENCE = {"align": "vnxdna.v4.sync", "reads": "vnxdna.v4.reads", "rs": "vnxdna.v4.rs_fast",
-              "cluster": "vnxdna.recovery.cluster"}   # reported names: the stable (old) paths
+              "cluster": "vnxdna.recovery.cluster", "strand": "vnxdna.dnaenc.frame4",
+              "integrity": "vnxdna.core.crc", "outerlist": "vnxdna.recovery.outer_list"}   # reported names: the stable (old) paths
 _CODECS = "vnxdna.codec.codecs"      # InnerRS; its VNX_RS_REFERENCE switch (read at import) bypasses the RS kernel
 
 

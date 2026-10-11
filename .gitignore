@@ -48,3 +48,5 @@ fuzz/out/
 
 # runtime artefact written by a third-party benchmark codec
 seen_barocdes.json
+src/vnxdna/native/rust/*/target/
+src/vnxdna/*.so

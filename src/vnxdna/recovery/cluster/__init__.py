@@ -27,6 +27,7 @@ READ_CLUSTERING_MODES = ("off", "fallback")
 
 CONSENSUS_TEMPLATES = ("wildcard", "full")
 FILL_MODES = ("none", "template")
+OUTER_LIST_MODES = ("off", "on")
 
 
 @dataclass(frozen=True)
@@ -41,6 +42,11 @@ class ClusterConfig:
     bucket_cap: int = 256
     min_shared_slots: int = 2                   # candidate pair = reads sharing at least this many retained buckets
     max_candidate_pairs: int = 50_000_000       # work budget of the candidate step (stop and report)
+    # V10: the budget scales with the unplaced reads, up to a ceiling: budget(n) = max(max_candidate_pairs,
+    # min(max_candidate_pairs_ceiling, max_candidate_pairs_per_read * n)); 0 per read = the absolute budget only
+    max_candidate_pairs_per_read: int = 200
+    max_candidate_pairs_ceiling: int = 1_000_000_000
+    candidate_chunk_pairs: int = 1 << 25        # slot pairs held in memory at once (8 B each); results do not depend on it
     # §5.2 verification: accept an edge iff distance <= theta * max(La, Lb); band |dL| + band_slack
     theta: float = 0.30
     band_slack: int = 32
@@ -70,12 +76,44 @@ class ClusterConfig:
     # (instead of erasing them) and erases the lowest-confidence bytes, 0 ... inner parity, in ``fill_trials`` steps
     fill: str = "none"
     fill_trials: int = 5
+    # Hybrid architecture (EXPERIMENTAL, opt-in): outer-assisted inner decoding of rows that stay short after the fill.
+    # Failed consensus frames are tried at every missing address within ``list_max_header_distance`` header bytes,
+    # with the header forced to that address and payload bytes repaired/erased from the outer code's column proposals
+    # (C++ kernel vnxdna.native.outerlist); a symbol is added only when the repaired frame passes inner RS + CRC-32 at
+    # that address, exactly as every other frame. Rows that reach k symbols then decode as usual; ``list_rounds``
+    # iterations. The container SHA-256 still decides SUCCESS.
+    outer_list: str = "off"
+    max_list_candidates: int = 1_000_000        # failed frames kept (bounded memory)
+    list_variants: int = 64                     # scrambler variants tried when assigning proposal candidates
+    list_max_header_distance: int = 5           # bytes 0..9 (variant + header) a hypothesis may differ in
+    list_min_extra: int = 1
+    list_margin: int = 1
+    list_max_subsets: int = 20_000              # f-subsets of candidate positions per column (deterministic)
+    list_max_hypotheses: int = 2_000_000        # (frame, address) trials per round
+    list_rounds: int = 4
+    list_repair_bytes: int = 3                  # payload columns a tail-verified repair may change
+    list_max_repairs: int = 4096                # repair variants per candidate
+    list_min_tail_matches: int = 8              # of the 20 CRC-32 + inner parity bytes (random: ~7e-15 per trial)
+    list_min_consistent: int = 12               # payload columns agreeing with a proposal to assign a frame by payload
+    list_check_symbols: int = 1                 # verified symbols beyond k that the decoded row must reproduce
+    list_ransac_hypotheses: int = 64            # frame-level RANSAC: hypotheses per row (0 = off)
+    list_ransac_header_distance: int = 4        # header bytes a hypothesis frame may differ in
+    list_ransac_tau: int = 8                    # agreeing payload columns of a supporter (random: ~1e-11 for 40 B)
+    list_ransac_max_tuples: int = 50_000
+    list_min_frame_match_percent: int = 50      # or: % of a failed frame's bytes matching a predicted missing frame
 
     def validate(self) -> ClusterConfig:
         ints = {"max_unplaced_reads": 0, "k": 4, "sketch_size": 1, "bucket_cap": 2, "min_shared_slots": 1, "max_candidate_pairs": 0,
+                "max_candidate_pairs_per_read": 0, "max_candidate_pairs_ceiling": 0, "candidate_chunk_pairs": 1,
                 "band_slack": 0, "max_cluster_reads": 2, "max_refine_pairs": 0, "consensus_band": 1, "c_sub": 1,
                 "c_indel": 1, "slack": 0, "min_votes": 1, "rounds": 0, "max_peels": 1, "max_trials": 1, "gmd_step": 1,
-                "gmd_steps": 0, "medoid_members": 1, "fill_trials": 1}
+                "gmd_steps": 0, "medoid_members": 1, "fill_trials": 1, "max_list_candidates": 0, "list_variants": 1,
+                "list_max_header_distance": 0, "list_min_extra": 0, "list_margin": 1, "list_max_subsets": 1,
+                "list_max_hypotheses": 0, "list_rounds": 1, "list_repair_bytes": 0, "list_max_repairs": 1,
+                "list_min_tail_matches": 1, "list_min_consistent": 1, "list_check_symbols": 1,
+                "list_ransac_hypotheses": 0, "list_ransac_header_distance": 0, "list_ransac_tau": 1,
+                "list_ransac_max_tuples": 1,
+                "list_min_frame_match_percent": 1}
         for name, lo in ints.items():
             v = getattr(self, name)
             if not isinstance(v, int) or isinstance(v, bool) or v < lo:
@@ -96,7 +134,19 @@ class ClusterConfig:
             raise VNXConfigurationError("cluster config consensus_template must be 'wildcard' or 'full'")
         if self.fill not in FILL_MODES:
             raise VNXConfigurationError("cluster config fill must be 'none' or 'template'")
+        if self.outer_list not in OUTER_LIST_MODES:
+            raise VNXConfigurationError("cluster config outer_list must be 'off' or 'on'")
+        if self.list_min_frame_match_percent > 100:
+            raise VNXConfigurationError("cluster config list_min_frame_match_percent must be at most 100")
+        if self.list_variants > 256 or self.list_max_header_distance > 10 or self.list_max_subsets > 1 << 32:
+            raise VNXConfigurationError("cluster config list_variants <= 256, list_max_header_distance <= 10, "
+                                        "list_max_subsets <= 2^32")
         return self
+
+    def candidate_budget(self, n_reads: int) -> int:
+        """Slot-pair budget of the candidate step for ``n_reads`` unplaced reads (never below the absolute budget)."""
+        scaled = min(self.max_candidate_pairs_ceiling, self.max_candidate_pairs_per_read * max(0, int(n_reads)))
+        return max(self.max_candidate_pairs, scaled)
 
     def to_dict(self) -> dict:
         return asdict(self)

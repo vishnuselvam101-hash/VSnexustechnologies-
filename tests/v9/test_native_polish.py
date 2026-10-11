@@ -194,7 +194,7 @@ def test_c_rejects_inconsistent_arguments():
         assert call(**bad) == -1, bad
     with pytest.raises(ValueError):
         nc.edit_costs(tpl, mc[:, :2], buf, off, lens, band, B, 1, 1)
-    assert ctypes.CDLL(nc.status()["library"]).vnx_cl_abi_version() == nc.ABI_VERSION == 2
+    assert ctypes.CDLL(nc.status()["library"]).vnx_cl_abi_version() == nc.ABI_VERSION == 5
 
 
 def test_decode_with_full_template_polish_is_identical_on_both_backends(tmp_path):

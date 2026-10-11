@@ -11,8 +11,9 @@ The kernel (``native/c/cluster.c``) reproduces the reference functions bit for b
     edit_costs      polish.edit_costs_reference          full-template polish: exact cost of every single edit (V9)
 
 It is a plain C shared library loaded with :mod:`ctypes` (no Python headers); ctypes releases the GIL during each call,
-so :func:`fb` can split a chunk over threads (``VNXDNA_CLUSTER_THREADS``, default 1). Every read's result depends only
-on that read, so the output is identical for any thread count.
+so :func:`fb` and :func:`edit_costs` can split a chunk over threads. The count is ``VNXDNA_CLUSTER_THREADS`` when set,
+else the scope set by :func:`thread_scope` (the decoder sets its ``workers`` there for the clustering stage, V10 W1),
+else 1. Every read's result depends only on that read, so the output is identical for any thread count.
 
 Backend selection::
 
@@ -29,6 +30,8 @@ bands above 512, templates longer than 8192, negative slack) are routed to the r
 """
 from __future__ import annotations
 
+import contextlib
+import contextvars
 import ctypes
 import logging
 import os
@@ -43,7 +46,7 @@ import numpy as np
 
 from vnxdna import _native_build as _nb
 
-ABI_VERSION = 2
+ABI_VERSION = 5
 BACKENDS = ("auto", "native", "reference")
 INF = 1 << 28
 MAX_COST = 1024
@@ -69,6 +72,14 @@ log = logging.getLogger(__name__)
 
 class NativeClusterError(RuntimeError):
     pass
+
+
+class NativeClusterMemoryError(NativeClusterError, MemoryError):
+    """A kernel could not allocate its working memory (nothing was returned)."""
+
+
+#: slot pairs materialised at once by the candidate step (8 bytes each: 256 MiB); results do not depend on it
+DEFAULT_CHUNK_PAIRS = 1 << 25
 
 
 _lib = None
@@ -104,6 +115,12 @@ def _bind(lib) -> None:
     lib.vnx_cl_sketch.argtypes = [i64, i64, p, i64, p, i32, i32, p, p]
     lib.vnx_cl_candidates.restype = ctypes.c_int
     lib.vnx_cl_candidates.argtypes = [i64, i32, p, p, i64, i64, i64, p, p, p, i64, p]
+    lib.vnx_cl_cand_run.restype = ctypes.c_int
+    lib.vnx_cl_cand_run.argtypes = [i64, i32, p, p, i64, i64, i64, i64, p, ctypes.POINTER(ctypes.c_void_p)]
+    lib.vnx_cl_cand_take.restype = ctypes.c_int
+    lib.vnx_cl_cand_take.argtypes = [p, i64, p, p, p, i64]
+    lib.vnx_cl_cand_free.restype = None
+    lib.vnx_cl_cand_free.argtypes = [p]
     lib.vnx_cl_banded.restype = ctypes.c_int
     lib.vnx_cl_banded.argtypes = [i64, p, i64, p, p, i64, p, p, p, i64, p]
     lib.vnx_cl_verify.restype = ctypes.c_int
@@ -112,6 +129,11 @@ def _bind(lib) -> None:
     lib.vnx_cl_fb.argtypes = [i64, i64, i64, p, p, p, i64, p, p, p, i32, i32, p, p, i32, i32]
     lib.vnx_cl_edit_costs.restype = ctypes.c_int
     lib.vnx_cl_edit_costs.argtypes = [i64, i64, i64, p, p, p, i64, p, p, p, i32, i32, p, p, p, p]
+    lib.vnx_cl_trial_costs.restype = ctypes.c_int
+    lib.vnx_cl_trial_costs.argtypes = [i64, i64, i64, i64, p, p, p, i64, p, p, p, p, p, i32, i64, p, p, p, i64, p, p, p]
+    lib.vnx_cl_polish_deltas.restype = ctypes.c_int
+    lib.vnx_cl_polish_deltas.argtypes = [i64, i64, i64, i64, p, p, p, i64, p, p, p, p, p, i32, i32, i64, p, p, p, p,
+                                         ctypes.c_int]
 
 
 def _load():
@@ -175,12 +197,33 @@ def resolve_backend(explicit: str | None = None) -> str:
     return "reference"
 
 
+_scope_threads: contextvars.ContextVar[int | None] = contextvars.ContextVar("vnx_cluster_threads", default=None)
+
+
 def threads() -> int:
-    """Threads of :func:`fb` (``VNXDNA_CLUSTER_THREADS``, default 1, at most 64). Results do not depend on it."""
+    """Threads of :func:`fb` and :func:`edit_costs`: ``VNXDNA_CLUSTER_THREADS`` if set, else the :func:`thread_scope`
+    value, else 1; at most 64. Results do not depend on it."""
+    env = os.environ.get("VNXDNA_CLUSTER_THREADS")
+    if env:
+        try:
+            return max(1, min(64, int(env)))
+        except ValueError:
+            return 1
+    scoped = _scope_threads.get()
+    return 1 if scoped is None else max(1, min(64, int(scoped)))
+
+
+@contextlib.contextmanager
+def thread_scope(n: int | None):
+    """Use ``n`` kernel threads inside the block when ``VNXDNA_CLUSTER_THREADS`` is unset (``None`` leaves it as is)."""
+    if n is None:
+        yield
+        return
+    token = _scope_threads.set(int(n))
     try:
-        return max(1, min(64, int(os.environ.get("VNXDNA_CLUSTER_THREADS") or 1)))
-    except ValueError:
-        return 1
+        yield
+    finally:
+        _scope_threads.reset(token)
 
 
 def fb_level() -> str | None:
@@ -221,6 +264,8 @@ def _ptr(a: np.ndarray | None):
 
 
 def _check(rc: int, what: str) -> None:
+    if rc == -2:
+        raise NativeClusterMemoryError(f"native {what} failed ({rc}: {_ERRORS[rc]})")
     if rc < 0:
         raise NativeClusterError(f"native {what} failed ({rc}: {_ERRORS.get(rc, 'unknown')})")
 
@@ -282,29 +327,31 @@ def sketch(raw: np.ndarray, lengths: np.ndarray, k: int, s: int) -> tuple[np.nda
     return hashes, orient
 
 
-def candidates(hashes: np.ndarray, orient: np.ndarray, bucket_cap: int, max_pairs: int, min_shared: int) -> tuple:
+def candidates(hashes: np.ndarray, orient: np.ndarray, bucket_cap: int, max_pairs: int, min_shared: int,
+               chunk_pairs: int = DEFAULT_CHUNK_PAIRS) -> tuple:
     """(a, b, rel, stats); stats = [buckets_over_cap, slot pairs, budget hit, kept, below min_shared, slots with >= 2
-    sketched reads, retained buckets]."""
+    sketched reads, retained buckets, partitions, slot-pair buffer entries]. At most ``chunk_pairs`` slot pairs (or
+    one read's, if more) are held at once; the result does not depend on it. Raises NativeClusterMemoryError when the
+    working memory cannot be allocated (nothing is returned in that case)."""
     lib = _lib_or_raise()
     hashes = np.ascontiguousarray(hashes, dtype=np.uint32)
     orient = np.ascontiguousarray(orient, dtype=np.uint8)
     if hashes.ndim != 2 or orient.shape != hashes.shape:
         raise ValueError(f"hashes must be 2-D and orient the same shape, got {hashes.shape} and {orient.shape}")
     n, s = hashes.shape
-    stats = np.zeros(8, dtype=np.int64)
-    cap = max(16, 8 * n)
-    while True:
-        a = np.empty(cap, dtype=np.int64)
-        b = np.empty(cap, dtype=np.int64)
-        rel = np.empty(cap, dtype=np.uint8)
-        rc = lib.vnx_cl_candidates(n, s, _ptr(hashes), _ptr(orient), int(bucket_cap), int(max_pairs), int(min_shared),
-                                   _ptr(a), _ptr(b), _ptr(rel), cap, _ptr(stats))
-        _check(rc, "candidates")
-        if rc == 1:
-            cap = int(stats[3])
-            continue
+    stats = np.zeros(9, dtype=np.int64)
+    handle = ctypes.c_void_p()
+    _check(lib.vnx_cl_cand_run(n, s, _ptr(hashes), _ptr(orient), int(bucket_cap), int(max_pairs), int(min_shared),
+                               int(chunk_pairs), _ptr(stats), ctypes.byref(handle)), "candidates")
+    try:
         k = int(stats[3]) if not stats[2] else 0
-        return a[:k].copy(), b[:k].copy(), rel[:k].copy(), stats
+        a = np.empty(k, dtype=np.int64)
+        b = np.empty(k, dtype=np.int64)
+        rel = np.empty(k, dtype=np.uint8)
+        _check(lib.vnx_cl_cand_take(handle, max(n, 1), _ptr(a), _ptr(b), _ptr(rel), k), "candidates")
+    finally:
+        lib.vnx_cl_cand_free(handle)
+    return a, b, rel, stats
 
 
 def banded(buf: np.ndarray, off: np.ndarray, lens: np.ndarray, ia: np.ndarray, ib: np.ndarray,
@@ -446,6 +493,55 @@ def edit_costs(tpl: np.ndarray, mc: np.ndarray, buf: np.ndarray, off: np.ndarray
     return opt, sub, dele, ins
 
 
+def polish_deltas(tpls: np.ndarray, mc: np.ndarray, buf: np.ndarray, off: np.ndarray, lens: np.ndarray,
+                  read_start: np.ndarray, band: np.ndarray, dip: np.ndarray, c_indel: int, c_sub: int, pen: int,
+                  nthreads: int | None = None, level: int = 0) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Per-candidate polish deltas (ABI 5): for every candidate k, the sums over its reads with an optimal cost below
+    INF of ``min(cost, pen) - opt`` of the substitution (T, 4), deletion (T,) and insertion (T, 4) edit costs, i.e. the
+    fold that consensus._polish applies to :func:`edit_costs`, computed and reduced in one native pass.
+
+    ``tpls`` (ncand, T) templates; ``mc`` (T,) mismatch costs shared by all reads; reads of candidate k are
+    ``read_start[k]:read_start[k + 1]`` (CSR); ``dip[r]`` is 1 when read r's band is below the shared band of the
+    edit_costs chunk it would be evaluated in (that changes which cells exist, see cluster.c). Candidates are
+    partitioned into contiguous ranges over threads; each range writes only its own rows, so the result does not
+    depend on the thread count. ``level``: 0 best available SIMD, 1 baseline, 2 AVX2."""
+    lib = _lib_or_raise()
+    tpls = np.ascontiguousarray(tpls, dtype=np.int16)
+    ncand, T = tpls.shape
+    mc = np.ascontiguousarray(mc, dtype=np.int32)
+    read_start = np.ascontiguousarray(read_start, dtype=np.int64)
+    band = np.ascontiguousarray(band, dtype=np.int64)
+    dip = np.ascontiguousarray(dip, dtype=np.uint8)
+    buf, off, lens = _seqs(buf, off, lens)
+    n = off.size
+    if (mc.shape != (T,) or read_start.shape != (ncand + 1,) or band.shape != (n,) or dip.shape != (n,)
+            or (ncand and (read_start[0] != 0 or read_start[-1] != n))):
+        raise ValueError("mc must be (T,), read_start (ncand + 1,) from 0 to n, band and dip (n,)")
+    dsub = np.empty((ncand, T, 4), dtype=np.int64)
+    ddel = np.empty((ncand, T), dtype=np.int64)
+    dins = np.empty((ncand, T, 4), dtype=np.int64)
+    live = np.empty(ncand, dtype=np.int64)
+    nt = threads() if nthreads is None else max(1, int(nthreads))
+    parts = max(1, min(nt, ncand))
+    # contiguous candidate ranges of about equal read counts
+    cuts: list[int] = ([int(c) for c in np.searchsorted(read_start, [n * k / parts for k in range(1, parts)], side="left")]
+                       if parts > 1 else [])
+    bounds = sorted({0, ncand, *cuts})
+
+    def run(k: int) -> int:
+        return lib.vnx_cl_polish_deltas(ncand, bounds[k], bounds[k + 1], T, tpls.ctypes.data, mc.ctypes.data,
+                                        _ptr(buf), buf.size, off.ctypes.data, lens.ctypes.data, read_start.ctypes.data,
+                                        band.ctypes.data, dip.ctypes.data, int(c_indel), int(c_sub), int(pen),
+                                        dsub.ctypes.data, ddel.ctypes.data, dins.ctypes.data, live.ctypes.data,
+                                        int(level))
+
+    ranges = len(bounds) - 1
+    rcs = [run(k) for k in range(ranges)] if ranges <= 1 else list(_get_pool(nt).map(run, range(ranges)))
+    for rc in rcs:
+        _check(rc, "polish deltas")
+    return dsub, ddel, dins
+
+
 def main(argv: list[str] | None = None) -> int:
     """``python -m vnxdna.native.cluster build [--strict]`` compiles the in-place library; else prints :func:`status`."""
     import json
@@ -461,3 +557,56 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+def trial_costs_in_domain(T: int, B: int, mc: np.ndarray, c_indel: int, lens: np.ndarray) -> bool:
+    return fb_in_domain(T, B, mc, c_indel, 0, lens)
+
+
+def trial_costs(base_tpl: np.ndarray, mc: np.ndarray, buf: np.ndarray, off: np.ndarray, lens: np.ndarray,
+                band: np.ndarray, read_start: np.ndarray, base_dip: np.ndarray, c_indel: int, pen: int,
+                trial_tpl: np.ndarray, trial_start: np.ndarray, trial_row: np.ndarray, trial_dip: np.ndarray,
+                nthreads: int | None = None) -> tuple[np.ndarray, np.ndarray]:
+    """Polish trial costs (as consensus.trial_costs_reference, V10 W2): (summed clipped cost per trial, per candidate
+    base). Reads and trials are grouped by candidate (``read_start``/``trial_start``, CSR); ``trial_row[x]`` is the
+    offset of trial x's rows in ``trial_dip``. Candidates are independent, so threads do not change the result."""
+    lib = _lib_or_raise()
+    ncand, T = base_tpl.shape
+    base_tpl = np.ascontiguousarray(base_tpl, dtype=np.int16)
+    trial_tpl = np.ascontiguousarray(trial_tpl, dtype=np.int16).reshape(-1, T)
+    mc = np.ascontiguousarray(mc, dtype=np.int32)
+    band = np.ascontiguousarray(band, dtype=np.int64)
+    read_start = np.ascontiguousarray(read_start, dtype=np.int64)
+    trial_start = np.ascontiguousarray(trial_start, dtype=np.int64)
+    trial_row = np.ascontiguousarray(trial_row, dtype=np.int64)
+    base_dip = np.ascontiguousarray(base_dip, dtype=np.uint8)
+    trial_dip = np.ascontiguousarray(trial_dip, dtype=np.uint8)
+    buf, off, lens = _seqs(buf, off, lens)
+    ntrial = trial_tpl.shape[0]
+    if mc.shape != (T,) or read_start.shape != (ncand + 1,) or trial_start.shape != (ncand + 1,) \
+            or trial_row.shape != (ntrial,) or int(trial_start[-1]) != ntrial or band.shape != off.shape \
+            or base_dip.shape != off.shape or int(read_start[-1]) != off.size:
+        raise ValueError("inconsistent trial-cost arrays")
+    cost = np.zeros(ntrial, dtype=np.int64)
+    basec = np.zeros(ncand, dtype=np.int64)
+    nt = threads() if nthreads is None else max(1, int(nthreads))
+    # split candidates by work (reads x (1 + trials)); every candidate's outputs belong to exactly one part
+    work = np.cumsum(np.diff(read_start) * (1 + np.diff(trial_start)))
+    parts = max(1, min(nt, ncand))
+    total = int(work[-1]) if ncand else 0
+    cuts = [0] + [int(np.searchsorted(work, total * k / parts, side="right")) for k in range(1, parts)] + [ncand]
+
+    def run(k: int) -> int:
+        c0, c1 = cuts[k], max(cuts[k], cuts[k + 1])
+        if c1 <= c0:
+            return 0
+        return lib.vnx_cl_trial_costs(c0, c1, ncand, T, base_tpl.ctypes.data, mc.ctypes.data, _ptr(buf), buf.size,
+                                      off.ctypes.data, lens.ctypes.data, band.ctypes.data, read_start.ctypes.data,
+                                      base_dip.ctypes.data, int(c_indel), int(pen), _ptr(trial_tpl),
+                                      trial_start.ctypes.data, _ptr(trial_row), trial_dip.size, _ptr(trial_dip),
+                                      _ptr(cost), basec.ctypes.data)
+
+    rcs = [run(0)] if parts == 1 else list(_get_pool(nt).map(run, range(parts)))
+    for rc in rcs:
+        _check(rc, "polish trial costs")
+    return cost, basec

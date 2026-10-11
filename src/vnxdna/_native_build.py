@@ -22,7 +22,21 @@ KERNELS = {
     "vnxdna.v6._vnx_reads": "src/vnxdna/v6/native/reads.c",
     "vnxdna.v6._vnx_rs": "src/vnxdna/v6/native/rs.c",
     "vnxdna._vnx_cluster": "src/vnxdna/native/c/cluster.c",
+    "vnxdna._vnx_strand": "src/vnxdna/native/c/strand.c",
 }
+
+#: Rust kernels (built with cargo by setup.py when a Rust toolchain is present, else skipped like a failed C kernel):
+#: extension module name -> crate directory relative to the repository root
+RUST_KERNELS = {
+    "vnxdna._vnx_integrity": "src/vnxdna/native/rust/integrity",
+}
+
+#: C++ kernels (optional extensions compiled as C++; same C ABI contract): extension module name -> source
+CXX_KERNELS = {
+    "vnxdna._vnx_outerlist": "src/vnxdna/native/cpp/outerlist.cpp",
+}
+#: compile flags of the C++ kernels (setup.py and the explicit builds; setuptools adds -fPIC/-shared itself)
+CXX_COMPILE_FLAGS = ["-O3", "-std=c++20", "-Wall", "-Wextra"]
 
 #: compile flags shared by setup.py and the explicit builds (setuptools adds -fPIC/-shared itself)
 COMPILE_FLAGS = ["-O3", "-std=c11", "-Wall", "-Wextra"]
@@ -38,3 +52,10 @@ def explicit_cflags(strict: bool | None = None) -> list[str]:
     if strict is None:
         strict = os.environ.get(STRICT_ENV) == "1"
     return ["-O3", "-std=c11", *SHARED_FLAGS, *COMPILE_FLAGS[2:], *(STRICT_FLAGS if strict else [])]
+
+
+def explicit_cxxflags(strict: bool | None = None) -> list[str]:
+    """Flags of the explicit C++ builds: the install flags plus -fPIC/-shared, and -Werror when strict."""
+    if strict is None:
+        strict = os.environ.get(STRICT_ENV) == "1"
+    return [*CXX_COMPILE_FLAGS, *SHARED_FLAGS, *(STRICT_FLAGS if strict else [])]

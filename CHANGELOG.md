@@ -1,5 +1,41 @@
 # Changelog
 
+## 10.0.0 (tag `v10.0.0`; hybrid native architecture; docs/V10_COMPLETION_REPORT.md)
+
+All channel results are SIMULATED; no DNA was synthesised, stored or sequenced. Formats are unchanged: v9.0.0 and
+v10.0.0 write byte-identical FASTA and recover byte-identical containers (docs/ARCH_COMPARISON_REPORT.md).
+
+### Added
+- **Decoder preset F: outer-assisted recovery of short rows** (opt-in, EXPERIMENTAL; `ClusterConfig(outer_list="on")`,
+  `recovery/outer_list.py`, C++ kernel `native/cpp/outerlist.cpp`, ABI 1). Failed consensus frames become candidates of
+  missing outer symbols (header assignment, frame-level RANSAC, payload consistency); a per-column list decoder of the
+  Cauchy RS outer code proposes the codeword; a symbol is accepted only after inner RS + CRC-32 at its own address, and
+  SUCCESS still requires the container SHA-256. Pre-registered held-out evaluations on the nanopore-like D13-F1 channel
+  (1 MiB, coverage 10): F 7/10, 15/20, 15/20 exact versus E 2/10, 1/20, 2/20; 0 false success in all three
+  (`experiments/arch/outer_list_eval/`).
+- **Native strand builder** (`native/c/strand.c`, strand ABI 1) for the encode path; **fused native polish kernel**
+  (cluster ABI 5); **Rust integrity kernel** (`native/rust/integrity`, batched frame CRC-32, ABI 1, Rust >= 1.63);
+  shared native loader (`native/_loader.py`). Every kernel has a bit-exact Python reference, golden hashes, randomized
+  equivalence tests, ASan/UBSan builds and a libFuzzer harness.
+- **TypeScript web layer** (`web/`): typed contracts and guards for `vnx.result/1`, `vnx.event/1`, `vnx.error/1`,
+  event-log follower, progress reducer, CLI client and a static report dashboard.
+- **CPU budget** (`core/concurrency.py`) that respects CPU affinity and cgroup quotas.
+- V10 work carried into this release: read-clustering consensus batches run in the decoder's worker processes; windowed
+  native polish trial costs; candidate-step memory bounded by the input; decode harness with per-process-group
+  timeouts; shared statistics module for experiment runners.
+
+### Changed
+- Vectorised address snapping (4 MiB indel decode 17.6 -> 15.2 s, single run, SIMULATED).
+- `conformance --backend reference` also forces the reference strand builder.
+
+### Performance versus v9.0.0 (SIMULATED, one host, docs/ARCH_COMPARISON_REPORT.md)
+- Encode 16 MiB: 1.15x (1 worker), 1.23x (4 workers). Decode 4 MiB: 1.02x-1.14x across clean, substitution, indel and
+  low-coverage channels. Nanopore-like 1 MiB decode (preset E): 7.2x (about 1,017 s -> 140 s).
+
+### Fixed
+- Conformance strand backend; oracle crash when list decoding was off; list-decoding rounds stopped early when a
+  round only found candidates; UBSan finding in the candidate step (qsort on NULL).
+
 ## Unreleased
 
 ### Added (V9, in development; docs/V9_PREREGISTRATION.md)

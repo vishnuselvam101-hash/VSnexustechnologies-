@@ -110,7 +110,102 @@ def _addr_bytes(key: tuple) -> bytes:
     return bytes([(4 << 4) | (kind & 15)]) + int(tag).to_bytes(2, "big") + int(group).to_bytes(4, "big") + int(symbol).to_bytes(2, "big")
 
 
+#: reads per vectorised chunk of :func:`snap_addresses` (bounds the candidate-pair arrays)
+SNAP_CHUNK = 1 << 16
+
+
+def _addr_rows(keys: np.ndarray) -> np.ndarray:
+    """(N, 4) int64 (kind, tag, group, symbol) → (N, 9) uint8 address bytes, row-wise equal to :func:`_addr_bytes`."""
+    k = np.asarray(keys, dtype=np.int64)
+    out = np.empty((k.shape[0], 9), dtype=np.uint8)
+    out[:, 0] = (4 << 4) | (k[:, 0] & 15)
+    out[:, 1:3] = k[:, 1].astype(">u2").view(np.uint8).reshape(-1, 2)
+    out[:, 3:7] = k[:, 2].astype(">u4").view(np.uint8).reshape(-1, 4)
+    out[:, 7:9] = k[:, 3].astype(">u2").view(np.uint8).reshape(-1, 2)
+    return out
+
+
+def _drop_keys(rows: np.ndarray) -> np.ndarray:
+    """(N, 9) address bytes → (9, N) uint64: row i without byte ``pos`` (8 bytes) for every pos."""
+    out = np.empty((9, rows.shape[0]), dtype=np.uint64)
+    for pos in range(9):
+        out[pos] = np.ascontiguousarray(np.delete(rows, pos, axis=1)).view(np.uint64).ravel()
+    return out
+
+
 def snap_addresses(keys: np.ndarray, missing: set, alt: np.ndarray | None = None) -> tuple[np.ndarray, int]:
+    """Vectorised :func:`snap_addresses_reference` (same result for every input; tests/arch/test_snap_addresses.py).
+
+    A read's candidates are the missing addresses that equal one of its two readings at 8 of the 9 address bytes: with
+    one byte dropped the remaining 8 bytes are one uint64, so each (position, reading) lookup is a ``searchsorted`` in
+    the sorted missing keys. The candidate pairs are then filtered with the reference's mixed-reading distance."""
+    if not missing or not len(keys):
+        return keys, 0
+    keys = np.asarray(keys)
+    alts = keys if alt is None else np.asarray(alt)
+    if keys.ndim != 2 or keys.shape[1] != 4 or alts.shape != keys.shape:
+        return snap_addresses_reference(keys, missing, alt)
+    mlist = sorted(missing)
+    marr = np.array(mlist, dtype=np.int64).reshape(-1, 4)
+    k64, a64 = keys.astype(np.int64), alts.astype(np.int64)
+    if not all(_in_address_range(x) for x in (marr, k64, a64)):
+        return snap_addresses_reference(keys, missing, alt)        # the reference's own error/edge behaviour
+    # exact membership of the raw (kind, tag, group, symbol) tuples
+    _, inv = np.unique(np.concatenate([marr, k64, a64]), axis=0, return_inverse=True)
+    inv = inv.ravel()
+    is_missing = np.zeros(inv.max() + 1, dtype=bool)
+    is_missing[inv[: len(marr)]] = True
+    n = len(keys)
+    key_in = is_missing[inv[len(marr): len(marr) + n]]
+    alt_in = is_missing[inv[len(marr) + n:]]
+    mrows = _addr_rows(marr)
+    mdrop = _drop_keys(mrows)
+    morder = np.argsort(mdrop, axis=1, kind="stable")
+    msorted = np.take_along_axis(mdrop, morder, axis=1)
+    hit = np.full(n, -1, dtype=np.int64)
+    todo = np.flatnonzero(~key_in & ~alt_in)
+    for c0 in range(0, todo.size, SNAP_CHUNK):
+        idx = todo[c0:c0 + SNAP_CHUNK]
+        b1, b2 = _addr_rows(k64[idx]), _addr_rows(a64[idx])
+        pr, pm = [], []
+        for rows in (b1, b2):
+            drop = _drop_keys(rows)
+            for pos in range(9):
+                lo = np.searchsorted(msorted[pos], drop[pos], side="left")
+                cnt = np.searchsorted(msorted[pos], drop[pos], side="right") - lo
+                tot = int(cnt.sum())
+                if not tot:
+                    continue
+                r = np.repeat(np.arange(idx.size), cnt)
+                off = np.arange(tot) - np.repeat(np.cumsum(cnt) - cnt, cnt)
+                pr.append(r)
+                pm.append(morder[pos][np.repeat(lo, cnt) + off])
+        if not pr:
+            continue
+        pair = np.unique(np.concatenate(pr) * len(mlist) + np.concatenate(pm))
+        r, m = pair // len(mlist), pair % len(mlist)
+        far = ((mrows[m] != b1[r]) & (mrows[m] != b2[r])).sum(axis=1)
+        good = far <= 1
+        r, m = r[good], m[good]
+        cnt = np.bincount(r, minlength=idx.size)
+        one = cnt[r] == 1
+        hit[idx[r[one]]] = m[one]
+    out = keys.copy()
+    snap_alt = ~key_in & alt_in
+    out[snap_alt] = alts[snap_alt]
+    has = hit >= 0
+    out[has] = marr[hit[has]]
+    return out, int(snap_alt.sum() + has.sum())
+
+
+def _in_address_range(a: np.ndarray) -> bool:
+    """Every field fits the header bytes as :func:`_addr_bytes` encodes them (else int.to_bytes would raise)."""
+    return bool(a.size == 0 or ((a[:, 0] >= 0).all() and (a[:, 1] >= 0).all() and (a[:, 1] < 1 << 16).all()
+                                and (a[:, 2] >= 0).all() and (a[:, 2] < 1 << 32).all() and (a[:, 3] >= 0).all()
+                                and (a[:, 3] < 1 << 16).all()))
+
+
+def snap_addresses_reference(keys: np.ndarray, missing: set, alt: np.ndarray | None = None) -> tuple[np.ndarray, int]:
     """Map tentative addresses to the unique missing address within one header byte.
 
     Each read can carry two readings of its header (``keys`` from the indel-corrected projection, ``alt`` from the raw

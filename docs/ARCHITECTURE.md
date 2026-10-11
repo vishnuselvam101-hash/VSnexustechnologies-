@@ -114,10 +114,11 @@ keep decoding: golden archives `v4_0`, `v5_0` and `v6_0` are decoded by the test
 
 ## Native kernels
 
-Four optional C kernels (marker aligner, FASTQ/FASTA read parser, inner Reed-Solomon decoder with run-time AVX2 and
-AVX-512BW selection, V7 read clustering and consensus) accelerate NumPy references that stay normative.
-`pip install .` builds all four; without a compiler the references run, with the same results. Every decode report records the backend that ran
-(`native_backends`). Installation, selection and diagnostics: [NATIVE_KERNELS.md](NATIVE_KERNELS.md).
+Five optional C kernels (marker aligner, FASTQ/FASTA read parser, inner Reed-Solomon decoder with run-time AVX2 and
+AVX-512BW selection, V7 read clustering and consensus, encode strand builder) accelerate NumPy references that stay
+normative. `pip install .` builds all five; without a compiler the references run, with the same results. Every decode report records the backend that ran
+(`native_backends`). Installation, selection and diagnostics: [NATIVE_KERNELS.md](NATIVE_KERNELS.md). Language-selection policy, native-layer
+contract and concurrency policy: [HYBRID_ARCHITECTURE.md](HYBRID_ARCHITECTURE.md).
 
 ## Security model
 

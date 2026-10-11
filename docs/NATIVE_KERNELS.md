@@ -1,8 +1,8 @@
 # Native kernels: installation, backend selection and diagnostics
 
-VNX-DNA has four optional C kernels. Each one is an accelerator for a Python/NumPy reference implementation, which
+VNX-DNA has seven optional native kernels (five in C, one in C++, one in Rust). Each one is an accelerator for a Python/NumPy reference implementation, which
 remains the specification: the native output is bit-identical (golden hashes and randomized equivalence fuzzing in
-`tests/v5/test_native_alignment*.py`, `tests/v6/native/`, `tests/v7/test_native_cluster.py` and `tests/v9/test_native_polish.py`). Without a kernel, VNX-DNA runs the reference and gives
+`tests/v5/test_native_alignment*.py`, `tests/v6/native/`, `tests/v7/test_native_cluster.py`, `tests/v9/test_native_polish.py` and `tests/arch/`). Without a kernel, VNX-DNA runs the reference and gives
 the same results more slowly.
 
 | kernel | module | C source | packaged extension | reference |
@@ -11,10 +11,13 @@ the same results more slowly.
 | `reads`: V6 FASTQ/FASTA read parser | `vnxdna.v6.native_reads` | `src/vnxdna/v6/native/reads.c` | `vnxdna/v6/_vnx_reads*.so` | `vnxdna.v4.reads` |
 | `rs`: V6 inner Reed-Solomon (GF(256)) decoder | `vnxdna.v6.native_rs` | `src/vnxdna/v6/native/rs.c` | `vnxdna/v6/_vnx_rs*.so` | `vnxdna.v4.rs_fast` (NumPy) |
 | `cluster`: V7 read clustering (sketch, candidate pairs, banded edit distance, verification), forward-backward consensus calls and (V9, ABI 2) the full-template polish edit costs (`vnx_cl_edit_costs` = `polish.edit_costs_reference`) | `vnxdna.native.cluster` | `src/vnxdna/native/c/cluster.c` | `vnxdna/_vnx_cluster*.so` | `vnxdna.recovery.cluster` (NumPy; the `*_reference` functions) |
+| `strand`: encode strand builder (scrambler variant search, inner RS parity, 2-bit mapping, sync markers, constraint screen; hybrid architecture, ABI 1) | `vnxdna.native.strand` | `src/vnxdna/native/c/strand.c` | `vnxdna/_vnx_strand*.so` | `vnxdna.dnaenc.frame4` (NumPy) |
+| `integrity`: batched frame CRC-32 (**Rust**, ABI 1) | `vnxdna.native.integrity` | `src/vnxdna/native/rust/integrity/` (crate `vnx_integrity`) | `vnxdna/_vnx_integrity*.so` | `vnxdna.core.crc` (NumPy) |
+| `outerlist`: outer-code list decoding of short rows (**C++20**, ABI 1) | `vnxdna.native.outerlist` | `src/vnxdna/native/cpp/outerlist.cpp` | `vnxdna/_vnx_outerlist*.so` | `vnxdna.recovery.outer_list` (Python) |
 
 ## Installation
 
-`pip install .` (and `pip wheel .`) compiles all four kernels as *optional* extensions (`setup.py`; sources and flags
+`pip install .` (and `pip wheel .`) compiles all five C kernels as *optional* extensions (and builds the Rust kernel with cargo when it is installed) (`setup.py`; sources and flags
 in `src/vnxdna/_native_build.py`). If no C compiler works, or one kernel fails to compile, the installation still
 succeeds and the affected kernels use the reference. Check the result after installing:
 
@@ -41,6 +44,9 @@ python -m vnxdna.v5.native_alignment build [--strict]   # src/vnxdna/v5/native/l
 python -m vnxdna.v6.native_reads build [--strict]       # src/vnxdna/v6/native/libvnx_reads.so
 python -m vnxdna.v6.native_rs build [--strict]          # src/vnxdna/v6/native/libvnx_rs.so
 python -m vnxdna.native.cluster build [--strict]        # src/vnxdna/native/c/libvnx_cluster.so
+python -m vnxdna.native.strand build [--strict]         # src/vnxdna/native/c/libvnx_strand.so
+python -m vnxdna.native.integrity build [--strict]      # cargo; src/vnxdna/native/c/libvnx_integrity.so (Rust)
+python -m vnxdna.native.outerlist build [--strict]      # C++20; src/vnxdna/native/c/libvnx_outerlist.so
 ```
 
 Lookup order of every loader: the explicit `*_LIB` path, then the packaged extension, then the in-place library. A
@@ -61,6 +67,14 @@ detect an in-place library that is older than a changed C source; `native_status
 | `VNXDNA_CLUSTER_BACKEND` | `auto` (default), `native`, `reference` | read clustering (only used with `--read-clustering fallback`): same rules as the read parser; inputs outside the kernel's domain (e.g. costs above 1024, codes >= 8 where a reverse complement is needed) run the reference, which is part of the contract |
 | `VNXDNA_CLUSTER_LIB` | path | cluster library to load first |
 | `VNXDNA_CLUSTER_THREADS` | 1-64 (default 1) | threads of the forward-backward and polish kernels within one decode process; results do not depend on it. The polish kernel needs 8 (T + 1)(2B + 1) bytes per thread (about 67 MB at the domain extremes). Memory scales with it: up to about 0.5 GB per call at the domain extremes (template 8192, band 512), times this count (`benchmarks/v7/native_cluster/README.md`) |
+| `VNXDNA_STRAND_BACKEND` | `auto` (default), `native`, `reference` | encode strand builder, same rules as the read parser |
+| `VNXDNA_STRAND_LIB` | path | strand-builder library to load first |
+| `VNXDNA_INTEGRITY_BACKEND` | `auto` (default), `native`, `reference` | Rust frame CRC-32 kernel, same rules as the read parser |
+| `VNXDNA_INTEGRITY_LIB` | path | integrity library to load first |
+| `VNXDNA_OUTERLIST_BACKEND` | `auto` (default), `native`, `reference` | C++ outer-list kernel (used only with `outer_list` on), same rules |
+| `VNXDNA_OUTERLIST_LIB` | path | outer-list library to load first |
+| `CXX` | compiler | C++ compiler for the explicit C++ builds |
+| `CARGO` | path | cargo for the Rust kernel builds (`/bin/false` skips them) |
 | `VNX_RS_REFERENCE` | `1` | the inner RS decoder (`vnxdna.v4.codecs.InnerRS.decode`) uses the V3 decoder `vnxdna.ecc.rs_batch` and bypasses `vnxdna.v6.native_rs` and `VNXDNA_RS_BACKEND` entirely. Read once when `vnxdna.v4.codecs` is imported. For reference comparisons and debugging; results are identical (tested), only slower. `native_status()` reports the RS backend as `reference` with `requested: "VNX_RS_REFERENCE=1"` |
 | `VNXDNA_NATIVE_STRICT` | `1` | explicit builds add `-Werror` (same as `build --strict`) |
 | `CC` | compiler | compiler for the explicit builds (and for `pip install`, via setuptools) |
@@ -78,13 +92,13 @@ Production code must never call it; `tests/v6/native/test_native_status.py` chec
 
 ## Sanitizers
 
-`tools/sanitizers.sh` (CI job `sanitizers`) runs gcc and clang ASan+UBSan builds of the three kernels through the
+`tools/sanitizers.sh` (CI job `sanitizers`) runs gcc and clang ASan+UBSan builds of every kernel through the
 Python bindings. `tools/msan.sh` (CI job `msan`) runs MemorySanitizer on the kernels compiled into standalone C
 programs, without CPython. Why that route was taken, what it covers and the results are in
 [security/V7_MSAN.md](security/V7_MSAN.md).
 
 ## Docker
 
-The `Dockerfile` builds a wheel with the four kernels in a separate stage (with gcc) and installs it into the slim
+The `Dockerfile` builds a wheel with the native kernels in a separate stage (with gcc) and installs it into the slim
 runtime image, which carries no compiler. The image build runs `python -m vnxdna.native --require-native` and fails if
 a kernel did not compile. `docker run --rm --entrypoint python vnx-dna -m vnxdna.native` shows the backends.

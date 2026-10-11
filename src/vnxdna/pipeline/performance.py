@@ -5,16 +5,15 @@ extraction always checks every chunk ID and file SHA-256.
 """
 from __future__ import annotations
 
-import os
-
+from vnxdna.core.concurrency import available_cpus
 from vnxdna.core.errors import VNXConfigurationError
 
 PERFORMANCE_PROFILES = {
-    # name: workers (None = all logical CPUs), decode batch, encode groups/task, verify-after-encode
+    # name: workers (bounded by core.concurrency.available_cpus), decode batch, encode groups/task, verify-after-encode
     "safe": {"workers": 1, "batch_reads": 4096, "groups_per_task": 32, "verify_after_encode": True},
-    "balanced": {"workers": max(1, min(4, (os.cpu_count() or 1))), "batch_reads": 8192, "groups_per_task": 64,
+    "balanced": {"workers": min(4, available_cpus()), "batch_reads": 8192, "groups_per_task": 64,
                  "verify_after_encode": False},
-    "maximum-throughput": {"workers": os.cpu_count() or 1, "batch_reads": 16384, "groups_per_task": 128,
+    "maximum-throughput": {"workers": available_cpus(), "batch_reads": 16384, "groups_per_task": 128,
                            "verify_after_encode": False},
 }
 
