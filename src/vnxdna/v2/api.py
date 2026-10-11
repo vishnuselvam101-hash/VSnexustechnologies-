@@ -27,7 +27,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from vnxdna.secure import guard as _guard
+from vnxdna.core import guard as _guard
 from .. import __version__
 from .. import api as v1
 from ..errors import (ConfigurationError, IntegrityError, InvalidInputError, OutputError, UnrecoverableCorruptionError,

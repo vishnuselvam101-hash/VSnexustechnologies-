@@ -5,7 +5,7 @@ import pytest
 
 from vnxdna import api as v1api
 from vnxdna.sdk import api as sdk
-from vnxdna.secure import guard
+from vnxdna.core import guard
 from vnxdna.secure.control import AccessDenied, ControlPlane
 from vnxdna.v2 import api as v2api, archive as v2arc
 

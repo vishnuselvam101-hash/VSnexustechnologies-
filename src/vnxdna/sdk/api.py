@@ -13,7 +13,7 @@ from collections.abc import Sequence
 from typing import Any
 from pathlib import Path
 
-from vnxdna.secure import guard as _guard
+from vnxdna.core import guard as _guard
 
 from vnxdna.archive import container as _ct
 from vnxdna.archive import operations as _ar

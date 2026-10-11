@@ -22,7 +22,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from vnxdna.secure import guard as _guard
+from vnxdna.core import guard as _guard
 from . import __version__
 from .channel import ChannelConfig, simulate as _simulate_pool
 from .container import manifest as mf

@@ -1,4 +1,4 @@
-"""Opt-in VNX-Secure gate for encode / decode / restore (V11 WP4).
+"""Opt-in VNX-Secure gate (core layer so legacy and SDK entry points share it; the secure package is loaded lazily) for encode / decode / restore (V11 WP4).
 
 Default behaviour is unchanged: with no :class:`SecureContext` and ``VNX_SECURE_REQUIRE`` unset, :func:`enforce` returns
 immediately. When a context is given (or ``VNX_SECURE_REQUIRE=1``), the request is evaluated by the existing control plane
@@ -15,13 +15,14 @@ import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .control import AccessDenied, ControlPlane
+from importlib import import_module
+from typing import Any
 
-__all__ = ["SecureContext", "enforce", "required", "context_from_env", "AccessDenied"]
+__all__ = ["SecureContext", "enforce", "required", "context_from_env"]
 
 ENV_REQUIRE = "VNX_SECURE_REQUIRE"
 _OPS = {"encode": "write", "decode": "read", "restore": "extract", "extract": "extract"}
-_CACHE: dict[str, ControlPlane] = {}
+_CACHE: dict[str, Any] = {}
 _LOCK = threading.Lock()
 
 
@@ -43,19 +44,24 @@ def context_from_env() -> SecureContext | None:
     return SecureContext(home, tok, ses) if home and tok and ses else None
 
 
-def _plane(home) -> ControlPlane:
+def _control() -> Any:
+    return import_module("vnxdna.secure.control")
+
+
+def _plane(home) -> Any:
     key = str(Path(home).resolve())
     with _LOCK:
         cp = _CACHE.get(key)
         if cp is None:
             if not (Path(key) / "secure.key").exists():
                 raise FileNotFoundError("not a VNX-Secure home")
-            cp = _CACHE[key] = ControlPlane(Path(key))
+            cp = _CACHE[key] = _control().ControlPlane(Path(key))
         return cp
 
 
 def enforce(operation: str, path: str | os.PathLike, ctx: SecureContext | None = None) -> None:
     """Return only if the request is allowed; otherwise raise :class:`AccessDenied` (always, when a gate is active)."""
+    AccessDenied = _control().AccessDenied
     if ctx is None:
         ctx = context_from_env()
         if ctx is None:

@@ -44,8 +44,8 @@ import numpy as np
 import zstandard
 import zlib
 
-from vnxdna.secure import guard as _guard
-from .. import __version__
+from vnxdna.core import guard as _guard
+from ..core.version import MANIFEST_ENCODER_VERSION, __version__  # noqa: F401 (public name)
 from ..container.builder import _safe_name
 from ..container.compression import decompress
 from ..errors import (AuthenticationError, ConfigurationError, IntegrityError, InvalidInputError, KeyRequiredError, MetadataError,
@@ -559,7 +559,7 @@ def store_file(input_path: str | os.PathLike, output_path: str | os.PathLike, *,
                         if cipher is not None else plain_clear)
         raw: dict[str, Any] = {
             "format": mf.FORMAT_MAGIC, "format_version": mf.FORMAT_VERSION,
-            "encoder": {"name": "vnxdna", "version": __version__},
+            "encoder": {"name": "vnxdna", "version": MANIFEST_ENCODER_VERSION},
             "required_features": sorted(mf.required_features(options.mapping, key is not None, final_epoch > 0)),
             "archive_id": archive_id.hex(), "created_at": options.timestamp, "profile": options.profile,
             "chunk_size": cs, "chunk_count": n,
