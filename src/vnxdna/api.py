@@ -219,11 +219,12 @@ def decode(reads_path: str | os.PathLike, output_path: str | os.PathLike, *, opt
     return report
 
 
+@_guard.gated("restore")
 def restore(path: str | os.PathLike, output_path: str | os.PathLike, *, key: bytes | None = None,
             options: DecodeOptions = DecodeOptions(), overwrite: bool = False) -> dict[str, Any]:
     """Container **or** DNA reads → original file, fully verified (SHA-256 recomputed)."""
-    _guard.enforce("restore", path)
     opened = _open(path, key, require_key=True, options=options)
+    _guard.rebind("restore", path, opened.reader.manifest.archive_id)  # read files: re-check under the recovered archive id
     data, stats = opened.reader.read_all()
     vxdna.atomic_write(output_path, data, overwrite=overwrite)
     report = _recovery_report(opened, stats)
@@ -233,6 +234,7 @@ def restore(path: str | os.PathLike, output_path: str | os.PathLike, *, key: byt
     return report
 
 
+@_guard.gated("restore")
 def recover(reads_path: str | os.PathLike, output_path: str | os.PathLike, *, key: bytes | None = None,
             options: DecodeOptions = DecodeOptions(), overwrite: bool = False) -> dict[str, Any]:
     """DNA reads → original file in one step (decode + restore)."""
@@ -244,6 +246,7 @@ def recover(reads_path: str | os.PathLike, output_path: str | os.PathLike, *, ke
     return report
 
 
+@_guard.gated("extract")
 def extract(path: str | os.PathLike, output_path: str | os.PathLike, *, chunk: int | None = None, start: int | None = None,
             end: int | None = None, key: bytes | None = None, options: DecodeOptions = DecodeOptions(),
             overwrite: bool = False) -> dict[str, Any]:
@@ -251,6 +254,7 @@ def extract(path: str | os.PathLike, output_path: str | os.PathLike, *, chunk: i
     if (chunk is None) == (start is None):
         raise InvalidInputError("specify exactly one of --chunk or --start (with optional --end)")
     opened = _open(path, key, require_key=True, options=options)
+    _guard.rebind("extract", path, opened.reader.manifest.archive_id)
     reader = opened.reader
     if chunk is not None:
         readout = reader.read_chunks([chunk])

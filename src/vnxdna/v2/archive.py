@@ -639,13 +639,14 @@ def container_stored_chunks(cf: ContainerFileV2, loaded: LoadedV2, chunks: Itera
         yield c, data
 
 
+@_guard.gated("restore")
 def restore_file(path: str | os.PathLike, output_path: str | os.PathLike, *, key: bytes | None = None, workers: int = 0,
                  overwrite: bool = False) -> dict[str, Any]:
-    _guard.enforce("restore", path)
     started = time.perf_counter()
     workers = workers or default_workers()
     cf, loaded = open_container(path, key)
     try:
+        _guard.rebind("restore", path, loaded.manifest.archive_id)
         stats: dict[str, int] = {}
         chunks = verified_plaintext(loaded, container_stored_chunks(cf, loaded, range(loaded.manifest.chunk_count), stats), workers)
         result = write_verified_plaintext(loaded, chunks, output_path, overwrite=overwrite)
@@ -659,12 +660,14 @@ def restore_file(path: str | os.PathLike, output_path: str | os.PathLike, *, key
             "throughput_mb_s": result["size"] / elapsed / 1e6 if elapsed else None}
 
 
+@_guard.gated("extract")
 def extract_range(path: str | os.PathLike, output_path: str | os.PathLike, *, offset: int, length: int | None,
                   key: bytes | None = None, overwrite: bool = False) -> dict[str, Any]:
     """Random access on a container: read and verify only the chunks that cover [offset, offset+length)."""
     started = time.perf_counter()
     cf, loaded = open_container(path, key)
     try:
+        _guard.rebind("extract", path, loaded.manifest.archive_id)
         assert loaded.content is not None  # open_container requires the key, so the content record is open
         size = loaded.content.size
         end = size if length is None else offset + length

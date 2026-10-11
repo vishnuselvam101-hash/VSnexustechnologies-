@@ -96,9 +96,11 @@ def _archive_formats() -> dict:
 
 
 def inspect(path: PathLike, *, deep: bool = False, key: bytes | None = None, passphrase: str | None = None,
-            allow_unencrypted: bool = False) -> InspectResult:
+            allow_unencrypted: bool = False, secure=None) -> InspectResult:
     """"Can I read this?" for a container or a read/strand file (spec §4.3). A container gives its manifest and structure;
-    a read file gives the ``vnx.probe/1`` answer (frame version, strand profile, superblock with ``deep=True``)."""
+    a read file gives the ``vnx.probe/1`` answer (frame version, strand profile, superblock with ``deep=True``).
+    Metadata only; under a VNX-Secure context it is gated as ``list`` (like ``list_entries``)."""
+    _guard.enforce("list", path, secure)
     t0 = time.perf_counter()
     p = Path(path)
     if is_container(p):
@@ -116,7 +118,8 @@ def inspect(path: PathLike, *, deep: bool = False, key: bytes | None = None, pas
 
 
 def verify(container: PathLike, *, key: bytes | None = None, passphrase: str | None = None, chunk: int | None = None,
-           allow_unencrypted: bool = False) -> VerifyResult:
+           allow_unencrypted: bool = False, secure=None) -> VerifyResult:
+    _guard.enforce("verify", container, secure)
     t0 = time.perf_counter()
     body = _ar.verify_container(container, key=key, passphrase=passphrase, chunk=chunk, allow_unencrypted=allow_unencrypted)
     return VerifyResult("verify", body.get("status", "SUCCESS"), body, inputs=(file_ref("container", container),),
@@ -140,7 +143,8 @@ def extract(container: PathLike, output_dir: PathLike, *, files: Sequence[str] |
 
 
 def list_entries(container: PathLike, *, key: bytes | None = None, passphrase: str | None = None,
-                 allow_unencrypted: bool = False) -> ListResult:
+                 allow_unencrypted: bool = False, secure=None) -> ListResult:
+    _guard.enforce("list", container, secure)
     t0 = time.perf_counter()
     rows = _ar.list_container(container, key=key, passphrase=passphrase, allow_unencrypted=allow_unencrypted)
     return ListResult("list", "SUCCESS", {"entries": rows}, inputs=(file_ref("container", container),),
@@ -148,8 +152,9 @@ def list_entries(container: PathLike, *, key: bytes | None = None, passphrase: s
 
 
 def locate(container: PathLike, name: str, *, dna_profile: str | None = None, dna: DNAOptions | None = None,
-           key: bytes | None = None, passphrase: str | None = None, allow_unencrypted: bool = False) -> Result:
+           key: bytes | None = None, passphrase: str | None = None, allow_unencrypted: bool = False, secure=None) -> Result:
     """Chunk indices and container byte ranges of a file; with a DNA profile also its strand groups and records."""
+    _guard.enforce("locate", container, secure)
     from vnxdna.pipeline.locate import locate as _locate
     t0 = time.perf_counter()
     body = _locate(container, name, profile=dna_profile, dna=dna, key=key, passphrase=passphrase,

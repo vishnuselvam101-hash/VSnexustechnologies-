@@ -215,10 +215,10 @@ def decode(reads_path, output_path, *, options: DecodeOptionsV2 = DecodeOptionsV
     return report
 
 
+@_guard.gated("restore")
 def restore(path, output_path, *, key: bytes | None = None, options: DecodeOptionsV2 = DecodeOptionsV2(), workers: int = 0,
             overwrite: bool = False, temp_dir=None) -> dict[str, Any]:
     """Container (V1/V2) or DNA reads → the original file, verified end to end."""
-    _guard.enforce("restore", path)
     kind = detect(path)
     if kind == "container-v2":
         return arc.restore_file(path, output_path, key=key, workers=workers, overwrite=overwrite)
@@ -233,8 +233,10 @@ def restore(path, output_path, *, key: bytes | None = None, options: DecodeOptio
     raise InvalidInputError(f"{path} is not a VNX-DNA container or DNA read file")
 
 
+@_guard.gated("restore")
 def _recover_v2(path, output_path, *, key, options, workers, overwrite, temp_dir, operation: str = "restore") -> dict[str, Any]:
     with ReadsArchive(path, key, options=options, workers=workers, temp_dir=temp_dir) as ra:
+        _guard.rebind("restore", path, ra.loaded.manifest.archive_id)  # before any plaintext: re-check under the archive id
         result = arc.write_verified_plaintext(ra.loaded, arc.verified_plaintext(ra.loaded, ra.stored_chunks(), ra.workers),
                                               output_path, overwrite=overwrite)
         report = ra.report()
@@ -243,6 +245,7 @@ def _recover_v2(path, output_path, *, key, options, workers, overwrite, temp_dir
     return report
 
 
+@_guard.gated("restore")
 def recover(reads_path, output_path, *, key: bytes | None = None, options: DecodeOptionsV2 = DecodeOptionsV2(), workers: int = 0,
             overwrite: bool = False, temp_dir=None) -> dict[str, Any]:
     kind = detect(reads_path)
@@ -257,6 +260,7 @@ def recover(reads_path, output_path, *, key: bytes | None = None, options: Decod
 
 
 # ======================================================================= extract
+@_guard.gated("extract")
 def extract(path, output_path, *, offset: int | None = None, length: int | None = None, chunk: int | None = None,
             end: int | None = None, key: bytes | None = None, dna_index: str | os.PathLike | None = None,
             options: DecodeOptionsV2 = DecodeOptionsV2(), workers: int = 0, overwrite: bool = False, temp_dir=None) -> dict[str, Any]:
@@ -287,6 +291,7 @@ def extract(path, output_path, *, offset: int | None = None, length: int | None 
                           options=options, workers=workers, overwrite=overwrite, temp_dir=temp_dir)
 
 
+@_guard.gated("extract")
 def _extract_reads(path, output_path, *, offset, length, chunk, key, dna_index, options, workers, overwrite, temp_dir) -> dict[str, Any]:
     started = time.perf_counter()
     p = Path(path)
@@ -312,6 +317,7 @@ def _extract_reads(path, output_path, *, offset, length, chunk, key, dna_index, 
     kwargs: dict[str, Any] = {"wanted_chunks": wanted, "dna_index": index} if index is not None else {}
     with ReadsArchive(p, key, options=options, workers=workers, temp_dir=temp_dir, **kwargs) as ra:
         loaded = ra.loaded
+        _guard.rebind("extract", p, loaded.manifest.archive_id)  # before any plaintext: re-check under the archive id
         assert loaded.plain is not None and loaded.content is not None  # ReadsArchive requires the key here
         wanted = _wanted_chunks(loaded, offset, length, chunk) if wanted is None else wanted
         start = offset if chunk is None else chunk * loaded.manifest.chunk_size

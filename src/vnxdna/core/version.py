@@ -6,7 +6,8 @@ The software version is the package version (``vnxdna._version``, recorded as ``
 from vnxdna._version import __version__
 
 #: Encoder/software stamp written into container manifests. Deliberately NOT the package version: manifest bytes feed archive
-#: ids and the pinned golden fixtures, so it changes only with a container-format compatibility decision (V11 WP4).
+#: ids and the pinned golden fixtures, so it changes only with a container-format compatibility decision (V11 WP4). It is a
+#: frozen *format stamp* (spec §4.2), not a software version: never derive the writing software from it.
 MANIFEST_ENCODER_VERSION = "6.0.0.dev0"
 
 __all__ = ["__version__", "MANIFEST_ENCODER_VERSION", "FORMAT_VERSION", "FRAME_VERSION", "SPEC_VERSION", "CONTAINER_READ", "CONTAINER_WRITE",

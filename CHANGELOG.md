@@ -3,11 +3,22 @@
 ## 11.0.0.dev0 (unreleased; V11 development)
 
 ### Added
-- **Opt-in VNX-Secure gate** (`vnxdna.secure.guard`): `encode`, `decode` and `extract` in `vnxdna.sdk.api` accept
-  `secure=SecureContext(...)`; the legacy `api`/`v2.api` encode, decode and restore (and `v2.archive.restore_file`) are gated
-  by `VNX_SECURE_HOME`/`VNX_SECURE_TOKEN`/`VNX_SECURE_SESSION` (env, so the CLIs are covered). `VNX_SECURE_REQUIRE=1` makes a
-  missing context a denial. The gate uses the existing `ControlPlane.authorize`, fails closed (any error is `AccessDenied`),
-  runs before any work and never puts a token in an error. Default behaviour is unchanged.
+- **Opt-in VNX-Secure gate** (`vnxdna.core.guard`): `encode`, `decode` and `extract` in `vnxdna.sdk.api` accept
+  `secure=SecureContext(...)`, and the metadata reads `inspect`, `verify`, `list_entries` and `locate` are gated as
+  `list`/`verify`/`locate`. Every plaintext path is gated: the legacy `api`/`v2.api` restore, recover and extract,
+  `v2.archive.restore_file` and `v2.archive.extract_range` (plus encode and decode), by
+  `VNX_SECURE_HOME`/`VNX_SECURE_TOKEN`/`VNX_SECURE_SESSION` (env, so the CLIs are covered). `VNX_SECURE_REQUIRE=1` makes a
+  missing context a denial, and a token or session without the full set is denied (`partial_context`). The resource is
+  `archive:<archive_id>` (rename/copy cannot dodge a lock); read files are re-checked under the recovered archive id
+  before any plaintext exists. Lock and revocation state written by another process is re-read before each decision. The
+  gate uses the existing `ControlPlane.authorize`, fails closed (any error is `AccessDenied`), runs before any work and
+  never puts a token in an error. Default behaviour is unchanged.
+
+### Changed
+- The manifest `encoder.version` / `extensions.vnx.software` value is now a frozen **format stamp**
+  (`MANIFEST_ENCODER_VERSION = "6.0.0.dev0"`, spec §4.2), kept byte-identical so archive ids and golden fixtures do not
+  move; it is not the software version. `vnxdna.v4.container.__version__` is the package version again (it had been an
+  alias of the stamp); the stamp is `vnxdna.v4.container.MANIFEST_ENCODER_VERSION`.
 
 ### Fixed
 - `vnxdna.__version__` and `python -m vnxdna.native` reported `6.0.0.dev0`; now `11.0.0.dev0` (a test keeps the version equal
