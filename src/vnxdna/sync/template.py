@@ -279,3 +279,43 @@ def strip_markers_exact(layout: Layout, reads: np.ndarray) -> tuple[np.ndarray, 
 
 def frame_erasures_to_bytes(erased_nt: np.ndarray) -> np.ndarray:
     return erased_nt.reshape(erased_nt.shape[0], -1, 4).any(axis=2)
+
+
+# ============================================================================ native aligner self-test (V11 WP1)
+def _native_selftest_workload():
+    """Fixed seeded reads on the default V4 layout: substitutions, insertions, deletions, N calls, reverse complements,
+    mixed qualities and lengths at both band edges; 21 reads, so every level ends with a ragged SIMD group. Used by
+    vnxdna.native.align.selftest, which compares a SIMD level against TemplateAligner._align (the reference)."""
+    from vnxdna.dnaenc.layout import PROFILES
+    layout = PROFILES["v4-balanced"][0]
+    al = TemplateAligner(layout, 6, backend="reference")
+    rng = np.random.default_rng(20261011)
+    tpl, _ = layout.template()
+    reads, quals = [], []
+    for k in range(21):
+        s = rng.integers(0, 4, tpl.size).astype(np.uint8)
+        s[tpl >= 0] = tpl[tpl >= 0].astype(np.uint8)
+        for _ in range(k % 5):
+            pos = int(rng.integers(0, s.size))
+            op = (k + _) % 3
+            s = (np.insert(s, pos, np.uint8(rng.integers(0, 4))) if op == 0 else np.delete(s, pos) if op == 1
+                 else np.where(np.arange(s.size) == pos, (s + 1) % 4, s).astype(np.uint8))
+        if k == 7:
+            s = s[: tpl.size - 6]
+        elif k == 8:
+            s = np.concatenate([s, np.zeros(6, np.uint8)])[: tpl.size + 6]
+        elif k == 9:
+            s = (3 - s[::-1]).astype(np.uint8)
+        elif k == 10:
+            s[[3, 50]] = 4
+        reads.append(np.ascontiguousarray(s, dtype=np.uint8))
+        quals.append(None if k % 4 == 3 else rng.integers(0, 42, s.size).astype(np.uint8))
+    return al, reads, quals
+
+
+def _register_native_selftest() -> None:
+    from vnxdna.native import align as _na
+    _na.register_selftest_workload(_native_selftest_workload)
+
+
+_register_native_selftest()

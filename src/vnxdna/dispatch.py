@@ -68,7 +68,10 @@ SELFTESTS: dict[str, Callable[[], bool]] = {"integrity": _selftest_integrity, "a
 def _check_align_levels(requested: str, entry: dict) -> None:
     """Differential check of the aligner, level by level (see the module docstring). Updates ``entry`` in place."""
     from .native import align
-    quarantined = []
+    if not align.selftest_available():      # never a fail: no level is quarantined for a missing reference
+        entry.update(differential="not-available", detail=_NO_ALIGN_WORKLOAD)
+        return
+    quarantined: list[str] = []
     while True:
         level = align.active_level()
         if level == "reference":
@@ -106,10 +109,17 @@ def validate_workload(workload: dict | None) -> dict:
     return wl
 
 
+_NO_ALIGN_WORKLOAD = "reference aligner not loaded (vnxdna.sync.template is not imported)"
+
+
 def _run_selftest(kernel: str) -> tuple[str, str | None]:
     fn = SELFTESTS.get(kernel)
     if fn is None:
         return "not-available", None
+    if kernel == "align":
+        from .native import align
+        if not align.selftest_available():
+            return "not-available", _NO_ALIGN_WORKLOAD
     try:
         return ("pass", None) if fn() else ("fail", "native output differs from the reference")
     except Exception as error:  # noqa: BLE001 - any failure of the native path is a failed check
