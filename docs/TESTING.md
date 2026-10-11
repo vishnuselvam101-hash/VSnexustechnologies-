@@ -9,6 +9,26 @@ python -m pytest -m "not slow" # skip the bounded-memory measurement
 ruff check src tests research # lint (pyflakes rules), also run in CI
 ```
 
+## V11.0.0 release suite
+
+Counts at the release commit: **COUNTS-PENDING (filled from the final full-suite run: N passed, N skipped, 0 failed,
+6 workers, wall time, SHA)**. Baseline v10.0.0: 3634 passed, 3 skipped, 0 failed (docs/V11_BASELINE.md §1).
+
+Build the native kernels into the checkout first; without them the native-vs-reference conformance and dispatch tests
+run against the reference only and some fail by design:
+
+```bash
+for m in vnxdna.v5.native_alignment vnxdna.v6.native_reads vnxdna.v6.native_rs vnxdna.native.cluster \
+         vnxdna.native.strand vnxdna.native.integrity vnxdna.native.outerlist; do python -m $m build; done
+python -m pytest -n 6 tests          # whole suite
+ruff check src tests research && mypy  # lint and type gates (CI)
+```
+
+V11 suites: `tests/v11/test_version_changelog.py` (CHANGELOG head == `vnxdna.__version__` == `_version` == 11.0.0;
+`vnx-dna --version`, `vnx --version` and both `version` commands report it), `tests/v11/test_secure_gate.py`
+(VNX-Secure gate per entry point), `tests/dispatch/` (dispatcher fault injection and path reporting). Release gates
+(wheel install, secret scan, pip-audit, fuzz smoke) and their evidence: docs/V11_RELEASE_GATES.md.
+
 Test helpers are imported from `tests/v1_support.py` and `tests/v2_support.py`, never from `conftest` (since V3:
 `from conftest import …` was ambiguous when several suites were collected together, so `pytest tests/v2 tests/unit`
 failed at collection).
