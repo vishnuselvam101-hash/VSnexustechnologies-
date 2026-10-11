@@ -524,8 +524,9 @@ def polish_deltas(tpls: np.ndarray, mc: np.ndarray, buf: np.ndarray, off: np.nda
     nt = threads() if nthreads is None else max(1, int(nthreads))
     parts = max(1, min(nt, ncand))
     # contiguous candidate ranges of about equal read counts
-    cuts = np.searchsorted(read_start, [n * k / parts for k in range(1, parts)], side="left") if parts > 1 else []
-    bounds = sorted({0, ncand, *[int(c) for c in cuts]})
+    cuts: list[int] = ([int(c) for c in np.searchsorted(read_start, [n * k / parts for k in range(1, parts)], side="left")]
+                       if parts > 1 else [])
+    bounds = sorted({0, ncand, *cuts})
 
     def run(k: int) -> int:
         return lib.vnx_cl_polish_deltas(ncand, bounds[k], bounds[k + 1], T, tpls.ctypes.data, mc.ctypes.data,
