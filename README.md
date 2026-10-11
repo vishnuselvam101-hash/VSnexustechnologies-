@@ -1,9 +1,9 @@
 # VNX-DNA
 
-**Current line: V9 (development branch `build/v9-adaptive-recovery`; not released, not tagged).** Released versions are
-the git tags `v4.0.0` … `v8.0.0`. The package version string is still `6.0.0.dev0`: it is written into every archive
-manifest, and archive byte identity across V6–V9 is pinned by the compatibility tests, so it changes only at a release
-the founder approves. Release notes per version: [CHANGELOG.md](CHANGELOG.md) and `docs/V<N>_COMPLETION_REPORT.md`.
+**Current release: v10.0.0 (hybrid native architecture; tag `v10.0.0`).** Released versions are the git tags `v4.0.0` …
+`v10.0.0`. The package version string is still `6.0.0.dev0`: it is written into every archive manifest, and archive
+byte identity across V6–V10 is pinned by the compatibility tests, so it changes only at a release the founder approves.
+Release notes per version: [CHANGELOG.md](CHANGELOG.md) and `docs/V<N>_COMPLETION_REPORT.md`.
 
 VNX-DNA is a CPU-only software stack for the digital side of DNA
 data storage. It packs files and directories into a verifiable archive, encodes the archive as constraint-screened DNA
