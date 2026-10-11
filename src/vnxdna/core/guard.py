@@ -92,7 +92,7 @@ def _control() -> Any:
 
 
 def _signature(home: Path) -> tuple:
-    sig = []
+    sig: list[tuple[int, int, int] | None] = []
     for name in _WATCHED:
         try:
             st = (home / name).stat()
