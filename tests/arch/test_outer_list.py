@@ -436,6 +436,32 @@ def test_ransac_hypotheses_include_header_candidates_with_their_variant():
     assert dec.counts["ransac_candidates"] == 2
 
 
+@pytest.mark.parametrize("scan", [8, 0])
+def test_ransac_scan_places_frames_whose_header_is_unusable(scan):
+    """Three header-assigned frames determine the codeword (f = 2, support 3). Two more true frames have a damaged
+    group byte and both symbol bytes damaged, so no header test places them; the scan of every failed frame against
+    the winning codeword finds them by payload (and only with the scan on). Junk frames stay out."""
+    lay, tag, codec, data, cw, frames, rng, missing, syms = _ransac_setup(33)
+    F = [_corrupt_body(rng, frames[s], 3) for s in missing[:3]]
+    for s in missing[3:5]:
+        x = _corrupt_body(rng, frames[s], 3)
+        x[4] ^= 0x40
+        x[8] ^= 0x21
+        x[9] ^= 0x12
+        F.append(x)
+    F = np.stack(F + [rng.integers(0, 256, (40, lay.frame_bytes), dtype=np.uint8)[i] for i in range(40)])
+    cfg = ClusterConfig(outer_list="on", list_ransac_scan_variants=scan).validate()
+    dec = ol.OuterListDecoder(lay, cfg, codec, tag, n_groups=300)
+    ks = keystreams(9 + lay.payload_bytes + 4)
+    cands = {290: {(s, i): int(F[i, 0]) for i, s in enumerate(missing[:3])}}
+    dec._ransac_assign({290: (16, syms)}, F, ks, cands)
+    found = {(missing[3], 3), (missing[4], 4)} <= set(cands[290])
+    assert found == bool(scan), dict(dec.counts)
+    assert all(i < 5 for _, i in cands[290])
+    assert dec.counts["ransac_scan_candidates"] == (2 if scan else 0)
+    assert dec.counts["ransac_scan_mismatch"] == 0
+
+
 def test_ransac_ranks_unambiguous_headers_before_ambiguous_ones():
     """70 frames of neighbouring rows whose low group byte is damaged (an invalid row number one byte from row 290 and
     from 43 others) used to fill the 64-hypothesis budget before the row's own frames, whose damaged header only row

@@ -641,6 +641,59 @@ class OuterListDecoder:
                 if a >= cfg.list_ransac_tau and (s, i) not in anchored:
                     cands.setdefault(g, {})[(s, i)] = v
                     self.counts["ransac_candidates"] += 1
+            self._ransac_scan(g, k, syms, hyp, hval, agree, frames, ks, cands)
+
+    def _ransac_scan(self, g: int, k: int, syms: dict, hyp: list, hval: np.ndarray, agree: np.ndarray,
+                     frames: np.ndarray, ks: np.ndarray, cands: dict) -> None:
+        """Supporters of the winning RANSAC tuple found by payload, whatever their header says. f hypotheses at distinct
+        missing symbols that agree with the winning codeword in every column determine it (MDS: any k symbols);
+        every failed frame, descrambled with its own variant byte and the ``list_ransac_scan_variants`` − 1 most frequent ones,
+        that agrees with exactly one missing symbol's predicted payload in >= ``list_ransac_tau`` columns (and with no
+        verified symbol as well) becomes a candidate of that symbol. A frame whose symbol bytes are damaged ties with
+        every missing address and is otherwise never placed. Candidates are verified at their address as all others."""
+        cfg, P, M = self.cfg, self.lay.payload_bytes, self.codec.M
+        f = k - len(syms)
+        if cfg.list_ransac_scan_variants <= 0:
+            return
+        pick: dict = {}
+        for (s, _, _), val, a in zip(hyp, hval, agree.tolist()):
+            if a == P and s not in syms and s not in pick:
+                pick[s] = val
+        if len(pick) < f:
+            return
+        pick = dict(sorted(pick.items())[:f])
+        try:
+            cw = self.codec.encode(self.codec.decode({**syms, **pick}, k, P))
+        except Exception:  # noqa: BLE001 - cannot happen with k symbols of an MDS code; no scan
+            return
+        # the codeword must reproduce the agreement counts RANSAC reported for every hypothesis
+        if [int((val == cw[s]).sum()) for (s, _, _), val in zip(hyp, hval)] != [min(int(a), P) for a in agree.tolist()]:
+            self.counts["ransac_scan_mismatch"] += 1
+            return
+        miss = [s for s in range(k + M) if s not in syms]
+        pred = np.stack([cw[s] for s in miss])
+        ver = np.stack([cw[s] for s in sorted(syms)]) if syms else np.zeros((0, P), np.uint8)
+        tau, own = cfg.list_ransac_tau, cands.setdefault(g, {})
+        top = np.bincount(frames[:, 0], minlength=256).argsort(kind="stable")[::-1][: cfg.list_ransac_scan_variants - 1]
+        step = max(1, (1 << 24) // max(1, len(miss) * P))
+        for v in [-1] + top.tolist():                                  # -1: each frame's own variant byte
+            for a0 in range(0, len(frames), step):
+                fr = frames[a0:a0 + step]
+                pay = fr[:, 10:10 + P] ^ (ks[fr[:, 0]][:, 9:9 + P] if v < 0 else ks[v][9:9 + P])
+                ag = (pay[:, None, :] == pred[None]).sum(axis=2)
+                best = ag.max(axis=1)
+                hit = np.flatnonzero(best >= tau)
+                if not hit.size:
+                    continue
+                ag, best = ag[hit], best[hit]
+                lead = (ag >= tau).sum(axis=1) == 1
+                if ver.size:
+                    lead &= (pay[hit][:, None, :] == ver[None]).sum(axis=2).max(axis=1) < best
+                for r in np.flatnonzero(lead).tolist():
+                    s, i = miss[int(ag[r].argmax())], a0 + int(hit[r])
+                    if (s, i) not in own:
+                        own[(s, i)] = int(frames[i, 0]) if v < 0 else v
+                        self.counts["ransac_scan_candidates"] += 1
 
     def _proposals(self, rows, cands, frames, erased, ks) -> dict:
         cfg, P, K, M = self.cfg, self.lay.payload_bytes, self.codec.K, self.codec.M
