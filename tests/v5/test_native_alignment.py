@@ -267,7 +267,7 @@ def test_decode_identical_with_either_backend(tmp_path, monkeypatch, native_read
         # native_backends records which aligner ran: it must name this backend (and is the only field allowed to differ)
         assert res.report["native_backends"]["align"]["backend"] == backend
         rep = {k: v for k, v in res.report.items()
-               if k not in ("stage_seconds", "seconds", "peak_rss_bytes", "output", "native_backends")}
+               if k not in ("stage_seconds", "seconds", "peak_rss_bytes", "output", "native_backends", "path_selection")}
         reports[backend] = (res.status, json.dumps(rep, sort_keys=True, default=str))
     assert reports["reference"] == reports["native"]
     status = reports["native"][0]

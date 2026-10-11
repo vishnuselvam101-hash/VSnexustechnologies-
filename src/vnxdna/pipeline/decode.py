@@ -55,6 +55,10 @@ def decode_reads(reads_path: str | os.PathLike, output: str | os.PathLike | None
     from vnxdna.core.observe import Events
     from vnxdna.recovery.planner import RecoveryPlanner
     from vnxdna.native import backend_summary
+    from vnxdna.dispatch import path_report
+    # path selection (and the opt-in differential self-check / quarantine) BEFORE any kernel runs or worker starts,
+    # so a failing native kernel is bypassed for this whole run and the report states the path that actually ran
+    path_selection = path_report()
     ev = Events(observer, task_id, t0)
     backends = backend_summary()        # provenance: which kernels run natively (never raises; additive report field)
     cluster_box: dict = {}              # V7 read clustering (opt-in): the stage object, for its report block
@@ -80,6 +84,7 @@ def decode_reads(reads_path: str | os.PathLike, output: str | os.PathLike | None
     if sc is not None:
         rep_["stage_counters"] = sc.block(status=res.status, report=rep_)
     rep_["native_backends"] = backends
+    rep_["path_selection"] = path_selection
     ev.emit("decode_end", "output", status=res.status, seconds=round(rep_.get("seconds", 0.0), 4),
             groups_decoded=rep_.get("groups_decoded"), groups_failed=rep_.get("groups_failed"),
             peak_rss_bytes=rep_.get("peak_rss_bytes"))

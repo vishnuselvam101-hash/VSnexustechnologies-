@@ -44,7 +44,7 @@ PURE_FORBIDDEN = ("simulation", "providers", "physical", "benchmark", "sdk", "co
 LEGACY_MAY_USE = ("core", "native", "archive", "codec", "dnaenc", "legacy")
 
 #: top-level modules that belong to a layer without living in its package
-TOP_LEVEL = {"vnxdna._version": "core", "vnxdna._native_build": "native"}
+TOP_LEVEL = {"vnxdna._version": "core", "vnxdna._native_build": "native", "vnxdna.dispatch": "native"}
 
 #: modules not yet moved -> the package they move to (V6_ARCHITECTURE §2 table). Shrinks with every M-step.
 PENDING: dict[str, str] = {}

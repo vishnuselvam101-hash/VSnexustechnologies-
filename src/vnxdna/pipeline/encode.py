@@ -146,13 +146,23 @@ def _encode_task(task: tuple[int, int]) -> tuple[int, bytes, int, int, int]:
 
 
 # ============================================================================ main entry
+def _path_report() -> dict:
+    from vnxdna.dispatch import path_report
+    return path_report()
+
+
 def encode_container(container_path: str | os.PathLike, output: str | os.PathLike, options: DNAOptions | None = None, *,
                      overwrite: bool = False, progress=None) -> dict:
     opt = options or DNAOptions()
     lay, K, M = opt.resolve()
+    # path selection (and the opt-in differential self-check / quarantine) BEFORE any kernel runs or worker starts,
+    # so a failing native kernel is bypassed for this whole run and the report states the path that actually ran
+    path_selection = _path_report()
     if opt.v6:
         from vnxdna.pipeline.encode_v6 import encode_container_v6
-        return encode_container_v6(container_path, output, opt, overwrite=overwrite, progress=progress)
+        rep6 = encode_container_v6(container_path, output, opt, overwrite=overwrite, progress=progress)
+        rep6["path_selection"] = path_selection
+        return rep6
     t0 = time.perf_counter()
     container_path = Path(container_path)
     c = ct.open_container(container_path)        # structural validation (no key needed)
@@ -214,6 +224,7 @@ def encode_container(container_path: str | os.PathLike, output: str | os.PathLik
     seconds = time.perf_counter() - t0
     content = c.manifest["counts"]["content_bytes"]
     return {
+        "path_selection": path_selection,
         "output": str(output), "format": fmt, "strands": strands_total, "bases": bases_total, "strand_nt": lay.strand_nt,
         "container_bytes": size, "content_bytes": content, "archive_id": aid.hex(), "archive_tag": f"{tag:04x}",
         "layout": lay.to_dict(), "outer_code": codec.configuration(), "outer_capabilities": codec.capabilities(),

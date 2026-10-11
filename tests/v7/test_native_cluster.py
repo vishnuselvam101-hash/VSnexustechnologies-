@@ -498,7 +498,7 @@ def test_empty_inputs():
 
 
 # ------------------------------------------------------------------------------------------------ whole decode
-VOLATILE = {"seconds", "stage_seconds", "peak_rss_bytes", "elapsed", "elapsed_seconds", "wall_seconds", "native_backends", "native_threads"}
+VOLATILE = {"seconds", "stage_seconds", "peak_rss_bytes", "elapsed", "elapsed_seconds", "wall_seconds", "native_backends", "path_selection", "native_threads"}
 
 
 def _strip(x):
