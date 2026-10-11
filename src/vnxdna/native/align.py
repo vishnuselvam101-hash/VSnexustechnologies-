@@ -6,9 +6,18 @@ releases the GIL during the call.
 
 Backend selection (contract §10)::
 
-    VNXDNA_ALIGN_BACKEND=auto       native if the library loads, else the reference (default)
-    VNXDNA_ALIGN_BACKEND=native     native; raise if the library is unavailable
+    VNXDNA_ALIGN_BACKEND=auto       native at the auto-policy SIMD level if the library loads, else the reference (default)
+    VNXDNA_ALIGN_BACKEND=native     the same level as auto; raise if the library is unavailable
+    VNXDNA_ALIGN_BACKEND=avx512     force 16 lanes (AVX-512F/BW); if the CPU/OS lacks it, the next lower level, recorded
+    VNXDNA_ALIGN_BACKEND=avx2       force 8 lanes (AVX2); same fallback rule
+    VNXDNA_ALIGN_BACKEND=scalar     force the portable level (4 lanes of 128-bit compiler vectors, no target attribute)
     VNXDNA_ALIGN_BACKEND=reference  always the V4 NumPy implementation
+
+SIMD levels (ABI 3, V11 WP1): the kernel is compiled at 4, 8 and 16 lanes in one library and the level is an explicit
+argument of every call. Every level is bit-exact with the reference (each lane runs the scalar recurrence). A level
+the CPU/OS cannot run is refused by the library itself (cpuid + xgetbv) and never executes; a forced level degrades
+to the best level below it and the reason is recorded by :func:`status` and logged once. Levels quarantined by the
+differential self-check (:mod:`vnxdna.dispatch`, ``VNXDNA_ALIGN_QUARANTINED_LEVELS``) are skipped by auto.
 
 The library is looked up in this order: ``VNXDNA_NATIVE_LIB`` (explicit path), the extension built by
 ``pip install`` (``vnxdna/v5/_vnx_align*.so``), and a library built in place by :func:`build`
@@ -18,6 +27,7 @@ That routing is part of the contract, not an error.
 from __future__ import annotations
 
 import ctypes
+import logging
 import os
 import shutil
 import subprocess
@@ -28,13 +38,19 @@ import numpy as np
 
 from vnxdna import _native_build as _nb
 
-ABI_VERSION = 2
+ABI_VERSION = 3
 MAX_BAND = 64
 MAX_TEMPLATE = 8192
 MAX_COST = 65536
 MAX_GUARD = 1024
 INF = 1 << 28
-BACKENDS = ("auto", "native", "reference")
+BACKENDS = ("auto", "native", "avx512", "avx2", "scalar", "reference")
+LEVELS = {"scalar": 4, "avx2": 8, "avx512": 16}     # level name -> lanes (the C level argument)
+QUARANTINE_ENV = "VNXDNA_ALIGN_QUARANTINED_LEVELS"   # comma-separated level names auto must skip (set by dispatch)
+AUTO_ORDER = ("avx512", "avx2", "scalar")
+AUTO_POLICY = "avx512 > avx2 > scalar > reference (provisional, before measurement)"
+_log = logging.getLogger(__name__)
+_warned: set[str] = set()
 
 # the C source, the in-place library and the pip-built extension (vnxdna.v5._vnx_align) stay in vnxdna/v5
 _HERE = Path(__file__).resolve().parents[1] / "v5"
@@ -44,7 +60,7 @@ CFLAGS = _nb.explicit_cflags(strict=False)        # -O3 -std=c11 -fPIC -shared -
 STRICT_CFLAGS = _nb.explicit_cflags(strict=True)  # + -Werror: CI and sanitizer builds (build --strict)
 
 _ERRORS = {-1: "invalid argument", -2: "outside the native domain", -3: "read outside the band or bad offsets",
-           -4: "out of memory", -5: "traceback left the band"}
+           -4: "out of memory", -5: "traceback left the band", -6: "SIMD level not supported by this CPU/OS"}
 
 
 class NativeAlignmentError(RuntimeError):
@@ -81,6 +97,12 @@ def _bind(lib) -> None:
     lib.vnx_align_batch_path.argtypes = [*args, p]
     lib.vnx_align_lanes.restype = ctypes.c_int
     lib.vnx_align_lanes.argtypes = []
+    lib.vnx_align_levels.restype = ctypes.c_int
+    lib.vnx_align_levels.argtypes = []
+    for name, extra in (("vnx_align_batch_lv", []), ("vnx_align_batch_path_lv", [p]), ("vnx_align_batch_profiled_lv", [p])):
+        fn = getattr(lib, name)
+        fn.restype = ctypes.c_int
+        fn.argtypes = [*args, *extra, i32]
 
 
 def _load():
@@ -93,11 +115,13 @@ def _load():
             continue
         try:
             lib = ctypes.CDLL(str(path))
-            _bind(lib)
+            lib.vnx_align_abi_version.restype = ctypes.c_int
+            lib.vnx_align_abi_version.argtypes = []
             abi = lib.vnx_align_abi_version()
-            if abi != ABI_VERSION:
+            if abi != ABI_VERSION:   # checked before binding anything else: a stale library lacks the level symbols
                 errors.append(f"{path}: ABI {abi} != {ABI_VERSION}")
                 continue
+            _bind(lib)
         except (OSError, AttributeError) as error:
             errors.append(f"{path}: {error}")
             continue
@@ -123,28 +147,85 @@ def requested_backend(explicit: str | None = None) -> str:
     return name
 
 
-def resolve_backend(explicit: str | None = None) -> str:
-    """'native' or 'reference' — the backend that will actually run for in-domain inputs."""
+def supported_levels() -> list[str]:
+    """SIMD levels this library can run on this CPU/OS (lowest first); [] when the library is missing."""
+    lib = _load()
+    mask = 0 if lib is None else int(lib.vnx_align_levels())
+    return [name for name, lanes in LEVELS.items() if mask & (1 << lanes)]
+
+
+def quarantined_levels() -> list[str]:
+    raw = os.environ.get(QUARANTINE_ENV, "")
+    return [x for x in (t.strip().lower() for t in raw.split(",")) if x in LEVELS]
+
+
+def quarantine_level(level: str) -> None:
+    """Exclude ``level`` from auto selection in this process and its workers (environment, inherited)."""
+    cur = quarantined_levels()
+    if level not in cur:
+        os.environ[QUARANTINE_ENV] = ",".join([*cur, level])
+
+
+def _resolve(explicit: str | None = None) -> tuple[str, str | None]:
+    """(active level name or 'reference', reason it differs from the request or None)."""
     want = requested_backend(explicit)
     if want == "reference":
-        return "reference"
-    if available():
-        return "native"
-    if want == "native":
-        raise NativeAlignmentError(f"native alignment requested but unavailable: {_load_error}")
-    return "reference"
+        return "reference", None
+    if _load() is None:
+        if want == "native":
+            raise NativeAlignmentError(f"native alignment requested but unavailable: {_load_error}")
+        return "reference", f"native library unavailable ({_load_error})"
+    supported = supported_levels()
+    if want in ("auto", "native"):
+        bad = quarantined_levels()
+        for i, name in enumerate(AUTO_ORDER):
+            if name in supported and name not in bad:
+                skipped = [n for n in AUTO_ORDER[:i] if n in bad]
+                return name, (f"quarantined level(s) skipped: {','.join(skipped)}" if skipped else None)
+        if want == "native":
+            raise NativeAlignmentError(f"native alignment requested but every level is quarantined ({','.join(bad)})")
+        return "reference", f"every native level quarantined ({','.join(bad)})"
+    if want in supported:
+        return want, None
+    lower = [n for n, lanes in sorted(LEVELS.items(), key=lambda kv: -kv[1]) if lanes < LEVELS[want] and n in supported]
+    return lower[0], f"{want} requested but not supported by this CPU/OS; using {lower[0]}"
+
+
+def _warn_once(msg: str) -> None:
+    if msg not in _warned:
+        _warned.add(msg)
+        _log.warning(msg)
+
+
+def active_level(explicit: str | None = None) -> str:
+    """The SIMD level :func:`align_usable` will use ('avx512', 'avx2', 'scalar') or 'reference'."""
+    name, reason = _resolve(explicit)
+    if reason and requested_backend(explicit) in LEVELS:
+        _warn_once(f"vnxdna align backend: {reason}")
+    return name
+
+
+def resolve_backend(explicit: str | None = None) -> str:
+    """'native' or 'reference' — the backend that will actually run for in-domain inputs."""
+    return "reference" if active_level(explicit) == "reference" else "native"
 
 
 def status() -> dict:
     """Diagnostics for ``vnx native`` and ``vnx version``: never raises."""
     want = os.environ.get("VNXDNA_ALIGN_BACKEND") or "auto"
+    level = reason = None
     try:
-        active = resolve_backend()
+        level, reason = _resolve()
+        active = "reference" if level == "reference" else "native"
         err = None
     except (NativeAlignmentError, ValueError) as error:
         active, err = None, str(error)
+    native = active == "native"
     return {"requested_backend": want, "active_backend": active, "native_available": available(), "library": _lib_path,
             "load_error": _load_error, "abi_version": ABI_VERSION, "error": err,
+            "simd_level": level if native else None, "simd_lanes": LEVELS[level] if native else None,
+            "fallback_reason": reason, "supported_levels": supported_levels(), "quarantined_levels": quarantined_levels(),
+            "auto_policy": AUTO_POLICY,
             "domain": {"max_band": MAX_BAND, "max_template_nt": MAX_TEMPLATE, "max_cost": MAX_COST, "max_guard": MAX_GUARD,
                        "read_dtype": "uint8"}}
 
@@ -195,14 +276,15 @@ def _ptr(a: np.ndarray | None):
 
 # ============================================================================ alignment
 def align_usable(aligner, reads: list, quals: list | None, min_quality: int, timings: dict | None = None,
-                 readpos: bool = False):
+                 readpos: bool = False, backend: str | None = None):
     """Align usable reads (|len − T| ≤ band) natively.
 
     Returns (bases, erased, ok, ins, del, mm, cost), the same arrays as ``TemplateAligner._align``, or None when the
     input is outside the native domain (the caller then runs the reference). With ``timings`` (benchmarks only) the
     profiled entry point adds the seconds spent in pack / dp / traceback / projection / wrapper to that dict. With
     ``readpos`` an eighth array (n, T) int16 is appended: the read index aligned to every template position on the
-    traceback path, −1 where the template base was deleted or the read is not ok (V5 Phase 3)."""
+    traceback path, −1 where the template base was deleted or the read is not ok (V5 Phase 3). ``backend`` overrides
+    ``VNXDNA_ALIGN_BACKEND`` for the SIMD level (tests, benchmarks); a 'reference' request returns None."""
     if readpos and timings is not None:
         raise ValueError("readpos and timings cannot be combined")
     import time
@@ -210,6 +292,10 @@ def align_usable(aligner, reads: list, quals: list | None, min_quality: int, tim
     lib = _load()
     if lib is None or not config_in_domain(aligner, min_quality) or not _reads_in_domain(reads, quals):
         return None
+    level = active_level(backend)
+    if level == "reference":
+        return None
+    lanes = LEVELS[level]
     n = len(reads)
     lay = aligner.layout
     g = geometry(aligner)
@@ -240,13 +326,13 @@ def align_usable(aligner, reads: list, quals: list | None, min_quality: int, tim
     rpos = None
     if readpos:
         rpos = np.empty((n, aligner.T), dtype=np.int16)
-        rc = lib.vnx_align_batch_path(*args, _ptr(rpos))
+        rc = lib.vnx_align_batch_path_lv(*args, _ptr(rpos), lanes)
     elif timings is None:
-        rc = lib.vnx_align_batch(*args)
+        rc = lib.vnx_align_batch_lv(*args, lanes)
     else:
         stages = np.zeros(4, dtype=np.float64)
         t_call = time.perf_counter()
-        rc = lib.vnx_align_batch_profiled(*args, _ptr(stages))
+        rc = lib.vnx_align_batch_profiled_lv(*args, _ptr(stages), lanes)
         t_end = time.perf_counter()
         for key, v in zip(("pack", "dp", "traceback", "projection"), stages.tolist()):
             timings[key] = timings.get(key, 0.0) + v
@@ -258,6 +344,59 @@ def align_usable(aligner, reads: list, quals: list | None, min_quality: int, tim
     if rpos is not None:
         return bases, erased.view(bool), ok.view(bool), ins, dele, mm, cost, rpos
     return bases, erased.view(bool), ok.view(bool), ins, dele, mm, cost
+
+
+# ============================================================================ differential self-test (dispatch)
+def _selftest_workload():
+    """Fixed seeded reads on the default V4 layout: substitutions, insertions, deletions, N calls, reverse complements,
+    mixed qualities and lengths at both band edges; 21 reads, so every level ends with a ragged SIMD group."""
+    from vnxdna.v4.frame import PROFILES
+    from vnxdna.v4.sync import TemplateAligner
+    layout = PROFILES["v4-balanced"][0]
+    al = TemplateAligner(layout, 6, backend="reference")
+    rng = np.random.default_rng(20261011)
+    tpl, _ = layout.template()
+    reads, quals = [], []
+    for k in range(21):
+        s = rng.integers(0, 4, tpl.size).astype(np.uint8)
+        s[tpl >= 0] = tpl[tpl >= 0].astype(np.uint8)
+        for _ in range(k % 5):
+            pos = int(rng.integers(0, s.size))
+            op = (k + _) % 3
+            s = (np.insert(s, pos, np.uint8(rng.integers(0, 4))) if op == 0 else np.delete(s, pos) if op == 1
+                 else np.where(np.arange(s.size) == pos, (s + 1) % 4, s).astype(np.uint8))
+        if k == 7:
+            s = s[: tpl.size - 6]
+        elif k == 8:
+            s = np.concatenate([s, np.zeros(6, np.uint8)])[: tpl.size + 6]
+        elif k == 9:
+            s = (3 - s[::-1]).astype(np.uint8)
+        elif k == 10:
+            s[[3, 50]] = 4
+        reads.append(np.ascontiguousarray(s, dtype=np.uint8))
+        quals.append(None if k % 4 == 3 else rng.integers(0, 42, s.size).astype(np.uint8))
+    return al, reads, quals
+
+
+def selftest(level: str) -> bool:
+    """Run the fixed workload through ``level`` and the reference (TemplateAligner._align): True iff all 7 output
+    arrays are byte-identical. Raises NativeAlignmentError if the level cannot run."""
+    if level not in LEVELS:
+        raise ValueError(f"unknown SIMD level {level!r}")
+    if level not in supported_levels():
+        raise NativeAlignmentError(f"SIMD level {level} is not supported on this CPU/OS")
+    al, reads, quals = _selftest_workload()
+    lengths = np.fromiter((r.size for r in reads), dtype=np.int64, count=len(reads))
+    usable = [i for i in range(len(reads)) if abs(int(lengths[i]) - al.T) <= al.band]
+    r = [reads[i] for i in usable]
+    q = [quals[i] for i in usable]
+    got = align_usable(al, r, q, 20, backend=level)
+    if got is None:
+        raise NativeAlignmentError("self-test workload left the native domain")
+    want = al._align(r, lengths[usable], q, 20)
+    return len(got) == len(want) == 7 and all(
+        np.asarray(a).dtype == np.asarray(b).dtype and np.asarray(a).shape == np.asarray(b).shape
+        and np.asarray(a).tobytes() == np.asarray(b).tobytes() for a, b in zip(got, want))
 
 
 # ============================================================================ in-place build (development / no pip build)

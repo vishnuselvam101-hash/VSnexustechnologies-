@@ -12,6 +12,9 @@ from vnxdna.v4.frame import PROFILES, Layout
 from vnxdna.v4.sync import SyncCosts, TemplateAligner
 
 FIELDS = ("bases", "erased", "ok", "insertions", "deletions", "marker_mismatches", "cost")
+# the native backend project_both runs: "native" (auto level) or a forced SIMD level (V11 WP1, set by the level fixture
+# of test_native_alignment_equivalence)
+NATIVE = {"backend": "native"}
 
 LAYOUTS = {
     "default-313nt": PROFILES["v4-balanced"][0],
@@ -36,7 +39,7 @@ def strand(layout: Layout, rng: np.random.Generator) -> np.ndarray:
 
 def project_both(layout: Layout, reads, quals=None, min_quality: int = 0, band: int = 6, costs: SyncCosts | None = None):
     ref = TemplateAligner(layout, band, costs, backend="reference").project(reads, quals, min_quality)
-    nat_al = TemplateAligner(layout, band, costs, backend="native")
+    nat_al = TemplateAligner(layout, band, costs, backend=NATIVE["backend"])
     assert nat_al.backend == "native"
     nat = nat_al.project(reads, quals, min_quality)
     return ref, nat
