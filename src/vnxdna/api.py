@@ -22,6 +22,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
+from vnxdna.secure import guard as _guard
 from . import __version__
 from .channel import ChannelConfig, simulate as _simulate_pool
 from .container import manifest as mf
@@ -162,6 +163,7 @@ def encode(container_path: str | os.PathLike, output_path: str | os.PathLike, *,
     The stored chunks are checked against their manifest SHA-256 before
     encoding, so a corrupted container is never written to DNA. No key is needed.
     """
+    _guard.enforce("encode", output_path)
     p = Path(container_path)
     kind = detect_input(p)
     _reject_legacy(kind, p)
@@ -202,6 +204,7 @@ def decode(reads_path: str | os.PathLike, output_path: str | os.PathLike, *, opt
     Every stored chunk is verified against its manifest SHA-256 before the
     container is written. The result is byte-identical to the original container.
     """
+    _guard.enforce("decode", reads_path)
     p = Path(reads_path)
     if detect_input(p) != "reads":
         _reject_legacy(detect_input(p), p)
@@ -219,6 +222,7 @@ def decode(reads_path: str | os.PathLike, output_path: str | os.PathLike, *, opt
 def restore(path: str | os.PathLike, output_path: str | os.PathLike, *, key: bytes | None = None,
             options: DecodeOptions = DecodeOptions(), overwrite: bool = False) -> dict[str, Any]:
     """Container **or** DNA reads → original file, fully verified (SHA-256 recomputed)."""
+    _guard.enforce("restore", path)
     opened = _open(path, key, require_key=True, options=options)
     data, stats = opened.reader.read_all()
     vxdna.atomic_write(output_path, data, overwrite=overwrite)

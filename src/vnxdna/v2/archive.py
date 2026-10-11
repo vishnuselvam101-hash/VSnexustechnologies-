@@ -44,6 +44,7 @@ import numpy as np
 import zstandard
 import zlib
 
+from vnxdna.secure import guard as _guard
 from .. import __version__
 from ..container.builder import _safe_name
 from ..container.compression import decompress
@@ -640,6 +641,7 @@ def container_stored_chunks(cf: ContainerFileV2, loaded: LoadedV2, chunks: Itera
 
 def restore_file(path: str | os.PathLike, output_path: str | os.PathLike, *, key: bytes | None = None, workers: int = 0,
                  overwrite: bool = False) -> dict[str, Any]:
+    _guard.enforce("restore", path)
     started = time.perf_counter()
     workers = workers or default_workers()
     cf, loaded = open_container(path, key)

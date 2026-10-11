@@ -27,6 +27,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
+from vnxdna.secure import guard as _guard
 from .. import __version__
 from .. import api as v1
 from ..errors import (ConfigurationError, IntegrityError, InvalidInputError, OutputError, UnrecoverableCorruptionError,
@@ -94,6 +95,7 @@ def store(input_path, output_path, *, options: StoreOptionsV2 = StoreOptionsV2()
 
 def encode(container_path, output_path, *, fmt: str | None = None, workers: int = 0, overwrite: bool = False,
            write_index: bool = True) -> dict[str, Any]:
+    _guard.enforce("encode", output_path)
     kind = detect(container_path)
     if kind == "container-v1":
         if format_for_output(output_path, fmt) != "fasta":
@@ -189,6 +191,7 @@ def consensus(clusters_path, output_path, *, overwrite: bool = False, **kwargs) 
 def decode(reads_path, output_path, *, options: DecodeOptionsV2 = DecodeOptionsV2(), workers: int = 0, overwrite: bool = False,
            temp_dir=None) -> dict[str, Any]:
     """DNA reads → the original ``.vxdna`` container, byte for byte. No key needed."""
+    _guard.enforce("decode", reads_path)
     kind = detect(reads_path)
     if kind == "reads-v1":
         report = v1.decode(reads_path, output_path, overwrite=overwrite)
@@ -215,6 +218,7 @@ def decode(reads_path, output_path, *, options: DecodeOptionsV2 = DecodeOptionsV
 def restore(path, output_path, *, key: bytes | None = None, options: DecodeOptionsV2 = DecodeOptionsV2(), workers: int = 0,
             overwrite: bool = False, temp_dir=None) -> dict[str, Any]:
     """Container (V1/V2) or DNA reads → the original file, verified end to end."""
+    _guard.enforce("restore", path)
     kind = detect(path)
     if kind == "container-v2":
         return arc.restore_file(path, output_path, key=key, workers=workers, overwrite=overwrite)

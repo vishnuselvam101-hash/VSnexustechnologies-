@@ -13,6 +13,8 @@ from collections.abc import Sequence
 from typing import Any
 from pathlib import Path
 
+from vnxdna.secure import guard as _guard
+
 from vnxdna.archive import container as _ct
 from vnxdna.archive import operations as _ar
 from vnxdna.archive.operations import ArchiveOptions
@@ -125,8 +127,9 @@ def verify(container: PathLike, *, key: bytes | None = None, passphrase: str | N
 def extract(container: PathLike, output_dir: PathLike, *, files: Sequence[str] | None = None, key: bytes | None = None,
             passphrase: str | None = None, overwrite: bool = False, apply_metadata: bool = False,
             allow_unencrypted: bool = False, expect_archive_id: str | bytes | None = None,
-            expect_sha256: str | bytes | None = None) -> ExtractResult:
+            expect_sha256: str | bytes | None = None, secure=None) -> ExtractResult:
     """Extract verified files. ``expect_archive_id`` / ``expect_sha256`` refuse any other archive (V6-SEC-03)."""
+    _guard.enforce("extract", container, secure)
     t0 = time.perf_counter()
     body = _ar.extract(container, output_dir, key=key, passphrase=passphrase, names=list(files) if files else None,
                        overwrite=overwrite, apply_metadata=apply_metadata, allow_unencrypted=allow_unencrypted,
@@ -159,13 +162,14 @@ def locate(container: PathLike, name: str, *, dna_profile: str | None = None, dn
 def encode(source: PathLike | Sequence[PathLike], output: PathLike, *, dna: DNAOptions | None = None,
            archive_options: ArchiveOptions | None = None, key: bytes | None = None, passphrase: str | None = None,
            verify: bool = False, overwrite: bool = False, keep_archive: PathLike | None = None, progress=None,
-           allow_unencrypted: bool = False) -> EncodeResult:
+           allow_unencrypted: bool = False, secure=None) -> EncodeResult:
     """A container → strands (E7–E14), or files/directories → archive (E0–E6, with ``archive_options``) → strands.
 
     Archive options are passed to the archive builder; for a container source they are refused with
     ``CONFIGURATION_ERROR`` (the container is already built), never silently ignored (spec §2.3.3). A key or passphrase
     given with a container source is checked against it (key check, manifest MAC), and an unencrypted container is
     refused (``KEY_FOR_UNENCRYPTED``) unless ``allow_unencrypted`` (V6-SEC-02)."""
+    _guard.enforce("encode", output, secure)
     t0 = time.perf_counter()
     opts = dna or DNAOptions()
     sources = [Path(source)] if isinstance(source, (str, os.PathLike)) else [Path(s) for s in source]
@@ -220,7 +224,7 @@ def decode(reads: PathLike, output: PathLike | None = None, *, options: DecodeOp
            key: bytes | None = None, passphrase: str | None = None, allow_unencrypted: bool = False,
            budget: RecoveryBudget | None = None, overwrite: bool = False, observer=None, task_id: str | None = None,
            progress=None, input_hash: bool = True, expect_archive_id: str | bytes | None = None,
-           expect_sha256: str | bytes | None = None) -> DecodeResult:
+           expect_sha256: str | bytes | None = None, secure=None) -> DecodeResult:
     """Reads → verified container (D0–D13), optionally extracted (D14); ``select`` = random access to some files.
 
     status SUCCESS | PARTIAL | FAILURE. A FAILURE without an exception carries ``error`` (INSUFFICIENT_REDUNDANCY).
@@ -228,6 +232,7 @@ def decode(reads: PathLike, output: PathLike | None = None, *, options: DecodeOp
     ``content_verified: false`` (spec §2.3.3). ``expect_archive_id`` / ``expect_sha256`` (override the options' values)
     refuse any other archive with ``ARCHIVE_MISMATCH`` (V6-SEC-03); a key or passphrase is checked against the recovered
     container, and an unencrypted one is refused unless ``allow_unencrypted`` (V6-SEC-02)."""
+    _guard.enforce("decode", reads, secure)
     from dataclasses import replace
     t0 = time.perf_counter()
     opts = options or DecodeOptions()
