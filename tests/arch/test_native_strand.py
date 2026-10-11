@@ -155,6 +155,9 @@ def test_abi_mismatch_is_ignored(tmp_path, monkeypatch):
     lib = ns.build(tmp_path / "libvnx_strand_abi99.so", extra_flags=["-DVNX_ST_ABI=99"])
     monkeypatch.setenv("VNXDNA_STRAND_LIB", str(lib))
     monkeypatch.setattr(ns, "_INPLACE", tmp_path / "missing.so")
+    # only the mismatched library: an installed build (``_vnx_strand*.so`` next to the package, as after
+    # ``pip install -e .`` in CI) would otherwise be the next candidate and load
+    monkeypatch.setattr(ns, "_candidates", lambda: [lib])
     ns._reset_for_tests()
     try:
         assert not ns.available()
