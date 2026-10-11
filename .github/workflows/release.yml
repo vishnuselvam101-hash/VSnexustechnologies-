@@ -5,9 +5,9 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: Git ref (tag) to build, e.g. v10.0.0
+        description: Git ref (tag) to build, e.g. v11.0.0
         required: true
-        default: v10.0.0
+        default: v11.0.0
 permissions:
   contents: read
 env:
