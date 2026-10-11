@@ -66,6 +66,16 @@ class Spill:
     def load(self, b: int) -> tuple[np.ndarray, np.ndarray]:
         return (np.fromfile(self.dir / f"acc{b}.bin", dtype=self.acc_dtype), np.fromfile(self.dir / f"pend{b}.bin", dtype=self.pend_dtype))
 
+    def records(self) -> int:
+        """Records spilled so far (verified + pending + unaddressed), from the file sizes; nothing is loaded."""
+        n = 0
+        for name, dtype in (("acc", self.acc_dtype), ("pend", self.pend_dtype)):
+            for b in range(self.B):
+                path = self.dir / f"{name}{b}.bin"
+                n += path.stat().st_size // dtype.itemsize if path.exists() else 0
+        orph = self.dir / "orph.bin"
+        return n + (orph.stat().st_size // self.pend_dtype.itemsize if orph.exists() else 0)
+
     def load_orphans(self) -> np.ndarray:
         """Read-only memory map of the unaddressed reads (pages are read on demand, so memory stays bounded)."""
         path = self.dir / "orph.bin"
