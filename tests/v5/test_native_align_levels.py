@@ -416,6 +416,24 @@ def test_path_report_records_level():
     assert e["differential"] == "pass" and e["simd_level"] == na.active_level()
 
 
+def test_selftest_workload_registered_by_the_sync_layer_only():
+    # the native layer never imports the reference aligner (tests/architecture R1/R7); sync.template registers it
+    import sys
+    code = ("import sys; from vnxdna.native import align as na; a = na.selftest_available(); "
+            "import vnxdna.sync.template; print(a, na.selftest_available(), 'vnxdna.sync.template' in sys.modules)")
+    out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True).stdout.split()
+    assert out == ["False", "True", "True"]
+
+
+def test_unregistered_workload_is_not_available_never_a_pass_or_quarantine(monkeypatch):
+    monkeypatch.setattr(na, "_SELFTEST_WORKLOAD", None)
+    with pytest.raises(na.NativeAlignmentError, match="not registered"):
+        na.selftest("scalar")
+    e = dispatch.select_path(differential=True)["kernels"]["align"]
+    assert e["differential"] == "not-available" and e["path"] == "native" and e["simd_level"] == na.active_level()
+    assert dispatch._run_selftest("align")[0] == "not-available"
+
+
 def _fail_levels(monkeypatch, bad):
     real = na.selftest
     monkeypatch.setattr(na, "selftest", lambda level: False if level in bad else real(level))

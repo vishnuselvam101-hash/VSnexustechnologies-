@@ -356,35 +356,27 @@ def align_usable(aligner, reads: list, quals: list | None, min_quality: int, tim
 
 
 # ============================================================================ differential self-test (dispatch)
+#: callable returning (aligner, reads, quals) for :func:`selftest`; registered by vnxdna.sync.template when it is
+#: imported (the reference aligner lives in a higher layer, so the native layer never imports it). Every native
+#: alignment runs through a TemplateAligner, so the workload is registered whenever this kernel is in use.
+_SELFTEST_WORKLOAD = None
+
+
+def register_selftest_workload(fn) -> None:
+    """Install the fixed self-test workload provider (called once by vnxdna.sync.template)."""
+    global _SELFTEST_WORKLOAD
+    _SELFTEST_WORKLOAD = fn
+
+
+def selftest_available() -> bool:
+    """True once the self-test workload (and with it the reference aligner) is registered."""
+    return _SELFTEST_WORKLOAD is not None
+
+
 def _selftest_workload():
-    """Fixed seeded reads on the default V4 layout: substitutions, insertions, deletions, N calls, reverse complements,
-    mixed qualities and lengths at both band edges; 21 reads, so every level ends with a ragged SIMD group."""
-    from vnxdna.v4.frame import PROFILES
-    from vnxdna.v4.sync import TemplateAligner
-    layout = PROFILES["v4-balanced"][0]
-    al = TemplateAligner(layout, 6, backend="reference")
-    rng = np.random.default_rng(20261011)
-    tpl, _ = layout.template()
-    reads, quals = [], []
-    for k in range(21):
-        s = rng.integers(0, 4, tpl.size).astype(np.uint8)
-        s[tpl >= 0] = tpl[tpl >= 0].astype(np.uint8)
-        for _ in range(k % 5):
-            pos = int(rng.integers(0, s.size))
-            op = (k + _) % 3
-            s = (np.insert(s, pos, np.uint8(rng.integers(0, 4))) if op == 0 else np.delete(s, pos) if op == 1
-                 else np.where(np.arange(s.size) == pos, (s + 1) % 4, s).astype(np.uint8))
-        if k == 7:
-            s = s[: tpl.size - 6]
-        elif k == 8:
-            s = np.concatenate([s, np.zeros(6, np.uint8)])[: tpl.size + 6]
-        elif k == 9:
-            s = (3 - s[::-1]).astype(np.uint8)
-        elif k == 10:
-            s[[3, 50]] = 4
-        reads.append(np.ascontiguousarray(s, dtype=np.uint8))
-        quals.append(None if k % 4 == 3 else rng.integers(0, 42, s.size).astype(np.uint8))
-    return al, reads, quals
+    if _SELFTEST_WORKLOAD is None:
+        raise NativeAlignmentError("self-test workload not registered (vnxdna.sync.template is not imported)")
+    return _SELFTEST_WORKLOAD()
 
 
 def selftest(level: str) -> bool:
