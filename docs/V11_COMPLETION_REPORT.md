@@ -27,7 +27,7 @@ Every number below comes from a committed results file or from the release-commi
 
 ## Validation
 - Full suite at the release commit: **4047 passed, 7 skipped, 0 failed** (`pytest -n 6 tests`, 359.98 s, run at
-  `d4c0f47` after both merges; later commits are docs only). Baseline v10.0.0: 3634 passed, 3 skipped, 0 failed.
+  `d4c0f47` after both merges; later commits change only docs, release metadata (CITATION.cff, workflow default ref) and the align sanitizer script). Baseline v10.0.0: 3634 passed, 3 skipped, 0 failed.
 - Native equivalence and golden reads per SIMD level; dispatcher fault injection; gate bypass tests per entry point;
   version tests. Collected per suite: `tests/v11` 101 (63 red-team), `tests/dispatch` 25, aligner level tests 102.
 - Sanitizers and fuzz: docs/V11_RELEASE_GATES.md (reads parser 1M execs clean). On the merged code: `align` harness
