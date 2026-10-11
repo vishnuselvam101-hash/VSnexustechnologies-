@@ -234,11 +234,12 @@ def test_vnx_conformance_is_conformant_on_each_backend(answers, backend):
     assert s["positive"] + s["negative"] == s["total"] and s["negative"] >= 90
     assert [r["id"] for r in doc["results"]] == [e["id"] for e in INDEX["vectors"]]
     assert doc["index_sha256"] == sha((HERE / "index.json").read_bytes())
-    expected_backend = {"native": {"align": "native", "reads": "native"}, "reference": {"align": "reference", "reads": "reference",
-                                                                                        "rs": "reference"}}[backend]
+    expected_backend = {"native": {"reads": "native"}, "reference": {"align": "reference", "reads": "reference",
+                                                                     "rs": "reference"}}[backend]
     assert {k: doc["backends"][k] for k in expected_backend} == expected_backend
-    if backend == "native":
+    if backend == "native":       # SIMD kernels report their level (rs since V7, align since V11 WP1)
         assert doc["backends"]["rs"] in ("scalar", "avx2", "avx512")
+        assert doc["backends"]["align"] in ("scalar", "avx2", "avx512")
 
 
 @pytest.mark.parametrize("backend", ["native", "reference"])
