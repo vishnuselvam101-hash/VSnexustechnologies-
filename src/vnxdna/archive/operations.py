@@ -560,6 +560,13 @@ def _safe_target(root: Path, rel: str) -> Path:
     return target
 
 
+def _check_inside(root: Path, directory: Path, rel: str) -> None:
+    """V11-RT-02: path-aware containment (a string prefix test lets ``/out2`` pass for ``/out``). ``root`` is resolved.
+    Checked again on the temporary file's directory just before the rename, which narrows the V6-SEC-10 window."""
+    if not directory.resolve().is_relative_to(root):
+        raise VNXOutputError(f"refusing to write outside the output directory: {rel!r}")
+
+
 def extract(path: str | os.PathLike, output_dir: str | os.PathLike, *, key: bytes | None = None, passphrase: str | None = None,
             names: list[str] | None = None, overwrite: bool = False, apply_metadata: bool = False,
             allow_unencrypted: bool = False, expect_archive_id: str | bytes | None = None,
@@ -601,9 +608,9 @@ def extract(path: str | os.PathLike, output_dir: str | os.PathLike, *, key: byte
             done.append(rec.path)
             continue
         target.parent.mkdir(parents=True, exist_ok=True)
-        if not str(target.resolve().parent).startswith(str(root)):
-            raise VNXOutputError(f"refusing to write outside the output directory: {rec.path!r}")
+        _check_inside(root, target.parent, rec.path)
         with atomic_output(target, overwrite=overwrite) as tmp:
+            _check_inside(root, tmp.parent, rec.path)
             fh = hashlib.sha256()
             with open(tmp, "wb") as out:
                 for data in iter_file(c, rec):
