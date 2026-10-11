@@ -62,11 +62,13 @@ def _origin(kernel: str, library: str | None) -> str | None:
 
 
 def _stale(module, origin: str | None, library: str | None) -> bool:
-    """An in-place development library older than its C source (it may not match the source any more)."""
+    """An in-place development library older than its C source or a file it includes (``*.inc`` next to it, e.g. the
+    per-SIMD-level align_dp.inc): it may not match the source any more."""
     if origin != "in-place" or library is None:
         return False
     try:
-        return Path(library).stat().st_mtime < module._SOURCE.stat().st_mtime
+        newest = max(f.stat().st_mtime for f in (module._SOURCE, *module._SOURCE.parent.glob("*.inc")))
+        return Path(library).stat().st_mtime < newest
     except OSError:
         return False
 
@@ -90,11 +92,13 @@ def kernel_status(kernel: str) -> dict:
                    auto_policy=st.get("auto_policy"))
     elif kernel == "cluster" and out["backend"] == "native":
         out["simd_level"] = st.get("fb_level")
-    elif kernel == "align" and out["backend"] == "native":
-        try:
-            out["simd_lanes"] = int(m._load().vnx_align_lanes())
-        except (AttributeError, OSError):
-            out["simd_lanes"] = None
+    elif kernel == "align":
+        # V11 WP1: the SIMD level is chosen per call (auto policy or VNXDNA_ALIGN_BACKEND); simd_lanes is its width
+        out["simd_level"] = st.get("simd_level")
+        if out["backend"] == "native":
+            out["simd_lanes"] = st.get("simd_lanes")
+        out.update(supported_levels=st.get("supported_levels"), quarantined_levels=st.get("quarantined_levels"),
+                   fallback_reason=st.get("fallback_reason"), auto_policy=st.get("auto_policy"))
     return out
 
 
@@ -116,7 +120,7 @@ def backend_summary() -> dict:
     out = {}
     for k, v in native_status()["kernels"].items():
         rec = {"backend": v.get("backend"), "abi_version": v.get("abi_version"), "library_origin": v.get("library_origin")}
-        if k == "rs":
+        if k in ("rs", "align"):
             rec["simd_level"] = v.get("simd_level")
         if v.get("error"):
             rec["error"] = v["error"]

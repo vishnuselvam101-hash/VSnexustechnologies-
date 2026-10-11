@@ -58,9 +58,14 @@ def main() -> int:
     ap.add_argument("--rounds", type=int, default=200)
     ap.add_argument("--reads", type=int, default=250)
     ap.add_argument("--seed", type=int, default=20261003)
+    ap.add_argument("--backend", default="native", choices=("native", "avx512", "avx2", "scalar"),
+                    help="native (auto SIMD level) or a forced SIMD level (V11 WP1)")
     a = ap.parse_args()
     if not na.available():
         print("native unavailable:", na.status()["load_error"])
+        return 2
+    if a.backend != "native" and a.backend not in na.supported_levels():
+        print(f"SIMD level {a.backend} not supported on this CPU/OS")
         return 2
     rng = np.random.default_rng(a.seed)
     names = sorted(LAYOUTS)
@@ -77,7 +82,7 @@ def main() -> int:
             quals = [rng.integers(0, 60, r.size).astype(np.uint8) if rng.random() < 0.9 else None for r in reads]
         minq = int(rng.integers(-5, 60))
         ref = TemplateAligner(layout, band, costs, backend="reference").project(reads, quals, minq)
-        nat = TemplateAligner(layout, band, costs, backend="native").project(reads, quals, minq)
+        nat = TemplateAligner(layout, band, costs, backend=a.backend).project(reads, quals, minq)
         for f in FIELDS:
             x, y = getattr(ref, f), getattr(nat, f)
             if x.dtype != y.dtype or not np.array_equal(x, y):
@@ -85,6 +90,7 @@ def main() -> int:
                 return 1
         total += len(reads)
     print(json.dumps({"rounds": a.rounds, "reads": total, "mismatches": 0, "library": na.status()["library"],
+                      "level": na.active_level(a.backend),
                       "seconds": round(time.perf_counter() - t0, 1)}))
     return 0
 

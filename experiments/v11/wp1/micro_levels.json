@@ -1,0 +1,1362 @@
+{
+  "experiment": "v11-wp1-micro-levels",
+  "simulated": true,
+  "statistic": "median",
+  "reps": 5,
+  "levels": [
+    "scalar",
+    "avx2",
+    "avx512"
+  ],
+  "commit": "49a20bdedf47abf8fe4fddf0a2e0a410c30cd294",
+  "kernel_source_sha256": "c5a81b7a4f1366b198558d06f9abdd9d54f0a399584988d233dc7bd5fbc826cf",
+  "library": "/root/vnx-dna-lab/v11-wp1-simd/src/vnxdna/v5/native/libvnx_align.so",
+  "python": "3.12.3",
+  "machine": "x86_64",
+  "cpu_count": 8,
+  "loadavg_before": [
+    2.8955078125,
+    3.66015625,
+    5.1025390625
+  ],
+  "loadavg_after": [
+    2.955078125,
+    3.6181640625,
+    5.05712890625
+  ],
+  "note": "single shared host; levels timed in rotating order within one process; C call = native kernel time",
+  "cases": [
+    {
+      "layout": "short-178nt",
+      "error_point": "clean",
+      "reads": 4096,
+      "reads_in_band": 4096,
+      "reads_sha256": "aadaea5afe966e3650d50ad8c56240c26530d5d3a10710e08dcb51fe9db429f3",
+      "projection_sha256_all_levels": "86820a21d69c8fb4c3458624a996f26a008a8b8d3872d282c9cad464eab78613",
+      "levels": {
+        "scalar": {
+          "c_call": {
+            "median": 0.023859,
+            "min": 0.023752,
+            "max": 0.024133
+          },
+          "dp": {
+            "median": 0.015673,
+            "min": 0.015637,
+            "max": 0.015777
+          },
+          "traceback": {
+            "median": 0.004452,
+            "min": 0.00444,
+            "max": 0.004547
+          },
+          "projection": {
+            "median": 0.002434,
+            "min": 0.002402,
+            "max": 0.002484
+          },
+          "pack": {
+            "median": 0.001066,
+            "min": 0.001032,
+            "max": 0.001079
+          },
+          "wall": {
+            "median": 0.025796,
+            "min": 0.025658,
+            "max": 0.026264
+          }
+        },
+        "avx2": {
+          "c_call": {
+            "median": 0.019701,
+            "min": 0.0196,
+            "max": 0.019849
+          },
+          "dp": {
+            "median": 0.011193,
+            "min": 0.011119,
+            "max": 0.011269
+          },
+          "traceback": {
+            "median": 0.004761,
+            "min": 0.004755,
+            "max": 0.004774
+          },
+          "projection": {
+            "median": 0.002971,
+            "min": 0.002946,
+            "max": 0.003007
+          },
+          "pack": {
+            "median": 0.000569,
+            "min": 0.000563,
+            "max": 0.000583
+          },
+          "wall": {
+            "median": 0.021614,
+            "min": 0.021517,
+            "max": 0.021838
+          }
+        },
+        "avx512": {
+          "c_call": {
+            "median": 0.011523,
+            "min": 0.011323,
+            "max": 0.01163
+          },
+          "dp": {
+            "median": 0.003144,
+            "min": 0.003103,
+            "max": 0.00316
+          },
+          "traceback": {
+            "median": 0.005272,
+            "min": 0.005208,
+            "max": 0.005376
+          },
+          "projection": {
+            "median": 0.002262,
+            "min": 0.002201,
+            "max": 0.002278
+          },
+          "pack": {
+            "median": 0.000585,
+            "min": 0.000547,
+            "max": 0.000598
+          },
+          "wall": {
+            "median": 0.013448,
+            "min": 0.013182,
+            "max": 0.013472
+          }
+        }
+      },
+      "c_call_speedup_vs_scalar": {
+        "scalar": 1.0,
+        "avx2": 1.211,
+        "avx512": 2.07
+      }
+    },
+    {
+      "layout": "short-178nt",
+      "error_point": "sub-0.5%",
+      "reads": 4096,
+      "reads_in_band": 4096,
+      "reads_sha256": "3f2465c10d6188041334649ce5e2e372d6b9cf86835d82e2a2ca15951acc5492",
+      "projection_sha256_all_levels": "964b6bddf0e45d2b8c60051f8abedcb0f12e48f375462039c8dcc7c3ee1268b7",
+      "levels": {
+        "scalar": {
+          "c_call": {
+            "median": 0.024032,
+            "min": 0.024,
+            "max": 0.024142
+          },
+          "dp": {
+            "median": 0.015757,
+            "min": 0.015752,
+            "max": 0.015797
+          },
+          "traceback": {
+            "median": 0.004483,
+            "min": 0.004472,
+            "max": 0.004542
+          },
+          "projection": {
+            "median": 0.002493,
+            "min": 0.002469,
+            "max": 0.002511
+          },
+          "pack": {
+            "median": 0.001071,
+            "min": 0.001061,
+            "max": 0.001077
+          },
+          "wall": {
+            "median": 0.026075,
+            "min": 0.026014,
+            "max": 0.026142
+          }
+        },
+        "avx2": {
+          "c_call": {
+            "median": 0.019805,
+            "min": 0.01975,
+            "max": 0.02003
+          },
+          "dp": {
+            "median": 0.011213,
+            "min": 0.011196,
+            "max": 0.011265
+          },
+          "traceback": {
+            "median": 0.004759,
+            "min": 0.004724,
+            "max": 0.004803
+          },
+          "projection": {
+            "median": 0.003009,
+            "min": 0.002992,
+            "max": 0.003025
+          },
+          "pack": {
+            "median": 0.000572,
+            "min": 0.000567,
+            "max": 0.000592
+          },
+          "wall": {
+            "median": 0.021819,
+            "min": 0.021774,
+            "max": 0.022087
+          }
+        },
+        "avx512": {
+          "c_call": {
+            "median": 0.011531,
+            "min": 0.011514,
+            "max": 0.0117
+          },
+          "dp": {
+            "median": 0.0031,
+            "min": 0.003085,
+            "max": 0.003133
+          },
+          "traceback": {
+            "median": 0.005292,
+            "min": 0.005287,
+            "max": 0.005373
+          },
+          "projection": {
+            "median": 0.002301,
+            "min": 0.002284,
+            "max": 0.002346
+          },
+          "pack": {
+            "median": 0.000582,
+            "min": 0.000562,
+            "max": 0.00061
+          },
+          "wall": {
+            "median": 0.013503,
+            "min": 0.01347,
+            "max": 0.013678
+          }
+        }
+      },
+      "c_call_speedup_vs_scalar": {
+        "scalar": 1.0,
+        "avx2": 1.213,
+        "avx512": 2.084
+      }
+    },
+    {
+      "layout": "short-178nt",
+      "error_point": "indel-0.5%+0.5%",
+      "reads": 4096,
+      "reads_in_band": 4096,
+      "reads_sha256": "e1e58b38cf10ea97693085e8028bfa93f418de771f04e2c0b9ba8549221a4d06",
+      "projection_sha256_all_levels": "da00c3ac39d9b92778c15e9b331b0315db9537a51e24bb4188516eca40ae6ea9",
+      "levels": {
+        "scalar": {
+          "c_call": {
+            "median": 0.024175,
+            "min": 0.024127,
+            "max": 0.025027
+          },
+          "dp": {
+            "median": 0.015754,
+            "min": 0.015709,
+            "max": 0.016083
+          },
+          "traceback": {
+            "median": 0.004602,
+            "min": 0.004578,
+            "max": 0.004791
+          },
+          "projection": {
+            "median": 0.002494,
+            "min": 0.002475,
+            "max": 0.002562
+          },
+          "pack": {
+            "median": 0.001097,
+            "min": 0.00108,
+            "max": 0.001141
+          },
+          "wall": {
+            "median": 0.026175,
+            "min": 0.026051,
+            "max": 0.027064
+          }
+        },
+        "avx2": {
+          "c_call": {
+            "median": 0.019804,
+            "min": 0.019796,
+            "max": 0.020414
+          },
+          "dp": {
+            "median": 0.011206,
+            "min": 0.011168,
+            "max": 0.011409
+          },
+          "traceback": {
+            "median": 0.004804,
+            "min": 0.004777,
+            "max": 0.005096
+          },
+          "projection": {
+            "median": 0.003003,
+            "min": 0.002989,
+            "max": 0.003069
+          },
+          "pack": {
+            "median": 0.000604,
+            "min": 0.000589,
+            "max": 0.000623
+          },
+          "wall": {
+            "median": 0.02182,
+            "min": 0.021765,
+            "max": 0.022416
+          }
+        },
+        "avx512": {
+          "c_call": {
+            "median": 0.011638,
+            "min": 0.011589,
+            "max": 0.012118
+          },
+          "dp": {
+            "median": 0.003127,
+            "min": 0.003099,
+            "max": 0.003175
+          },
+          "traceback": {
+            "median": 0.005442,
+            "min": 0.005399,
+            "max": 0.00577
+          },
+          "projection": {
+            "median": 0.002312,
+            "min": 0.002247,
+            "max": 0.002363
+          },
+          "pack": {
+            "median": 0.000578,
+            "min": 0.000572,
+            "max": 0.00058
+          },
+          "wall": {
+            "median": 0.013633,
+            "min": 0.013546,
+            "max": 0.014147
+          }
+        }
+      },
+      "c_call_speedup_vs_scalar": {
+        "scalar": 1.0,
+        "avx2": 1.221,
+        "avx512": 2.077
+      }
+    },
+    {
+      "layout": "short-178nt",
+      "error_point": "indel-1%+1%",
+      "reads": 4096,
+      "reads_in_band": 4093,
+      "reads_sha256": "375265d0312b4ee5cc6b6f79a2fc0378d3f8fa2b9b6a24ad2df1f60303f8467f",
+      "projection_sha256_all_levels": "89825bf1cc82ac17ac1bb221682d5e5a2121cc76fe5c89a935c907e2f87ad7ee",
+      "levels": {
+        "scalar": {
+          "c_call": {
+            "median": 0.025491,
+            "min": 0.025436,
+            "max": 0.027657
+          },
+          "dp": {
+            "median": 0.01646,
+            "min": 0.016406,
+            "max": 0.017638
+          },
+          "traceback": {
+            "median": 0.005016,
+            "min": 0.004964,
+            "max": 0.005603
+          },
+          "projection": {
+            "median": 0.00268,
+            "min": 0.002646,
+            "max": 0.002861
+          },
+          "pack": {
+            "median": 0.001146,
+            "min": 0.001131,
+            "max": 0.001271
+          },
+          "wall": {
+            "median": 0.02765,
+            "min": 0.027573,
+            "max": 0.031209
+          }
+        },
+        "avx2": {
+          "c_call": {
+            "median": 0.020667,
+            "min": 0.019874,
+            "max": 0.020694
+          },
+          "dp": {
+            "median": 0.011543,
+            "min": 0.011203,
+            "max": 0.011564
+          },
+          "traceback": {
+            "median": 0.005119,
+            "min": 0.004862,
+            "max": 0.00517
+          },
+          "projection": {
+            "median": 0.003116,
+            "min": 0.00299,
+            "max": 0.003142
+          },
+          "pack": {
+            "median": 0.000614,
+            "min": 0.000595,
+            "max": 0.000626
+          },
+          "wall": {
+            "median": 0.022729,
+            "min": 0.021918,
+            "max": 0.022822
+          }
+        },
+        "avx512": {
+          "c_call": {
+            "median": 0.012332,
+            "min": 0.01172,
+            "max": 0.014027
+          },
+          "dp": {
+            "median": 0.003205,
+            "min": 0.003087,
+            "max": 0.003454
+          },
+          "traceback": {
+            "median": 0.005901,
+            "min": 0.005505,
+            "max": 0.006885
+          },
+          "projection": {
+            "median": 0.002404,
+            "min": 0.002301,
+            "max": 0.00275
+          },
+          "pack": {
+            "median": 0.000588,
+            "min": 0.000568,
+            "max": 0.000668
+          },
+          "wall": {
+            "median": 0.014438,
+            "min": 0.013727,
+            "max": 0.016066
+          }
+        }
+      },
+      "c_call_speedup_vs_scalar": {
+        "scalar": 1.0,
+        "avx2": 1.233,
+        "avx512": 2.067
+      }
+    },
+    {
+      "layout": "default-313nt",
+      "error_point": "clean",
+      "reads": 4096,
+      "reads_in_band": 4096,
+      "reads_sha256": "d0d111babae9d226de1d2495f8b324fbc84fee235deff26d3f09c432aadbaaf9",
+      "projection_sha256_all_levels": "ef0b28fdf89ec9f3e877683a0b596e364f83c7435e1c9a990b33e0b08e5862bc",
+      "levels": {
+        "scalar": {
+          "c_call": {
+            "median": 0.041855,
+            "min": 0.041808,
+            "max": 0.041895
+          },
+          "dp": {
+            "median": 0.027539,
+            "min": 0.027488,
+            "max": 0.027591
+          },
+          "traceback": {
+            "median": 0.007787,
+            "min": 0.007766,
+            "max": 0.007819
+          },
+          "projection": {
+            "median": 0.004527,
+            "min": 0.004487,
+            "max": 0.00457
+          },
+          "pack": {
+            "median": 0.001731,
+            "min": 0.001725,
+            "max": 0.001772
+          },
+          "wall": {
+            "median": 0.044098,
+            "min": 0.043984,
+            "max": 0.044159
+          }
+        },
+        "avx2": {
+          "c_call": {
+            "median": 0.03405,
+            "min": 0.034,
+            "max": 0.034124
+          },
+          "dp": {
+            "median": 0.019722,
+            "min": 0.019691,
+            "max": 0.01984
+          },
+          "traceback": {
+            "median": 0.007921,
+            "min": 0.007905,
+            "max": 0.007946
+          },
+          "projection": {
+            "median": 0.005225,
+            "min": 0.005203,
+            "max": 0.005263
+          },
+          "pack": {
+            "median": 0.000932,
+            "min": 0.000924,
+            "max": 0.00094
+          },
+          "wall": {
+            "median": 0.036244,
+            "min": 0.036185,
+            "max": 0.036418
+          }
+        },
+        "avx512": {
+          "c_call": {
+            "median": 0.019643,
+            "min": 0.019423,
+            "max": 0.020116
+          },
+          "dp": {
+            "median": 0.005374,
+            "min": 0.005355,
+            "max": 0.005439
+          },
+          "traceback": {
+            "median": 0.009253,
+            "min": 0.009135,
+            "max": 0.009546
+          },
+          "projection": {
+            "median": 0.003742,
+            "min": 0.003672,
+            "max": 0.003865
+          },
+          "pack": {
+            "median": 0.00101,
+            "min": 0.000982,
+            "max": 0.00103
+          },
+          "wall": {
+            "median": 0.021777,
+            "min": 0.021682,
+            "max": 0.022386
+          }
+        }
+      },
+      "c_call_speedup_vs_scalar": {
+        "scalar": 1.0,
+        "avx2": 1.229,
+        "avx512": 2.131
+      }
+    },
+    {
+      "layout": "default-313nt",
+      "error_point": "sub-0.5%",
+      "reads": 4096,
+      "reads_in_band": 4096,
+      "reads_sha256": "76670b4e28bb3a37e8e988e5703beea9d692f480d109d63924fd0d85fa450b75",
+      "projection_sha256_all_levels": "f2151d1aef227786483587b447e2fcd90d24fe652b20c2ebcbb92d10a056150a",
+      "levels": {
+        "scalar": {
+          "c_call": {
+            "median": 0.042809,
+            "min": 0.04221,
+            "max": 0.054295
+          },
+          "dp": {
+            "median": 0.028119,
+            "min": 0.027778,
+            "max": 0.034408
+          },
+          "traceback": {
+            "median": 0.008017,
+            "min": 0.007865,
+            "max": 0.011303
+          },
+          "projection": {
+            "median": 0.004653,
+            "min": 0.004549,
+            "max": 0.00585
+          },
+          "pack": {
+            "median": 0.001778,
+            "min": 0.001763,
+            "max": 0.002427
+          },
+          "wall": {
+            "median": 0.044932,
+            "min": 0.044338,
+            "max": 0.056471
+          }
+        },
+        "avx2": {
+          "c_call": {
+            "median": 0.034522,
+            "min": 0.034168,
+            "max": 0.03474
+          },
+          "dp": {
+            "median": 0.019843,
+            "min": 0.019804,
+            "max": 0.019997
+          },
+          "traceback": {
+            "median": 0.008226,
+            "min": 0.008009,
+            "max": 0.008355
+          },
+          "projection": {
+            "median": 0.005268,
+            "min": 0.005206,
+            "max": 0.005298
+          },
+          "pack": {
+            "median": 0.00093,
+            "min": 0.000918,
+            "max": 0.000954
+          },
+          "wall": {
+            "median": 0.03669,
+            "min": 0.036382,
+            "max": 0.037032
+          }
+        },
+        "avx512": {
+          "c_call": {
+            "median": 0.019617,
+            "min": 0.019346,
+            "max": 0.020983
+          },
+          "dp": {
+            "median": 0.005405,
+            "min": 0.00535,
+            "max": 0.005614
+          },
+          "traceback": {
+            "median": 0.009254,
+            "min": 0.009153,
+            "max": 0.010143
+          },
+          "projection": {
+            "median": 0.003729,
+            "min": 0.003632,
+            "max": 0.003899
+          },
+          "pack": {
+            "median": 0.000985,
+            "min": 0.000954,
+            "max": 0.001061
+          },
+          "wall": {
+            "median": 0.021794,
+            "min": 0.021537,
+            "max": 0.023168
+          }
+        }
+      },
+      "c_call_speedup_vs_scalar": {
+        "scalar": 1.0,
+        "avx2": 1.24,
+        "avx512": 2.182
+      }
+    },
+    {
+      "layout": "default-313nt",
+      "error_point": "indel-0.5%+0.5%",
+      "reads": 4096,
+      "reads_in_band": 4096,
+      "reads_sha256": "0525116a522de7e51ff655414a01902f7d0291668cba64f83bd063da2e162a83",
+      "projection_sha256_all_levels": "09e118b4b225b2af10e7cc4df432f38226efff146ff46e5646c0ec90dfee384d",
+      "levels": {
+        "scalar": {
+          "c_call": {
+            "median": 0.042813,
+            "min": 0.041993,
+            "max": 0.043044
+          },
+          "dp": {
+            "median": 0.027774,
+            "min": 0.027399,
+            "max": 0.028027
+          },
+          "traceback": {
+            "median": 0.008066,
+            "min": 0.007974,
+            "max": 0.008151
+          },
+          "projection": {
+            "median": 0.004747,
+            "min": 0.004598,
+            "max": 0.004814
+          },
+          "pack": {
+            "median": 0.00182,
+            "min": 0.001791,
+            "max": 0.001848
+          },
+          "wall": {
+            "median": 0.045024,
+            "min": 0.044246,
+            "max": 0.04523
+          }
+        },
+        "avx2": {
+          "c_call": {
+            "median": 0.034531,
+            "min": 0.034387,
+            "max": 0.035137
+          },
+          "dp": {
+            "median": 0.01983,
+            "min": 0.019657,
+            "max": 0.020049
+          },
+          "traceback": {
+            "median": 0.008246,
+            "min": 0.008177,
+            "max": 0.008433
+          },
+          "projection": {
+            "median": 0.005324,
+            "min": 0.00526,
+            "max": 0.005437
+          },
+          "pack": {
+            "median": 0.00097,
+            "min": 0.000955,
+            "max": 0.000985
+          },
+          "wall": {
+            "median": 0.036713,
+            "min": 0.036597,
+            "max": 0.037376
+          }
+        },
+        "avx512": {
+          "c_call": {
+            "median": 0.019938,
+            "min": 0.019724,
+            "max": 0.020025
+          },
+          "dp": {
+            "median": 0.005391,
+            "min": 0.005344,
+            "max": 0.00557
+          },
+          "traceback": {
+            "median": 0.009451,
+            "min": 0.009414,
+            "max": 0.009531
+          },
+          "projection": {
+            "median": 0.003757,
+            "min": 0.003686,
+            "max": 0.003818
+          },
+          "pack": {
+            "median": 0.001004,
+            "min": 0.000985,
+            "max": 0.001031
+          },
+          "wall": {
+            "median": 0.022074,
+            "min": 0.021912,
+            "max": 0.02224
+          }
+        }
+      },
+      "c_call_speedup_vs_scalar": {
+        "scalar": 1.0,
+        "avx2": 1.24,
+        "avx512": 2.147
+      }
+    },
+    {
+      "layout": "default-313nt",
+      "error_point": "indel-1%+1%",
+      "reads": 4096,
+      "reads_in_band": 4052,
+      "reads_sha256": "a78efab9e8e6017d2ff887e876b1654188b0bec8d28182badfe9d54367f95d7c",
+      "projection_sha256_all_levels": "cbe20f1726a4c53a8d77ed08f0ae85add40d4cdb41d03ce4e05ee38b444009ab",
+      "levels": {
+        "scalar": {
+          "c_call": {
+            "median": 0.041967,
+            "min": 0.041752,
+            "max": 0.042495
+          },
+          "dp": {
+            "median": 0.0274,
+            "min": 0.027314,
+            "max": 0.027713
+          },
+          "traceback": {
+            "median": 0.00804,
+            "min": 0.007986,
+            "max": 0.008158
+          },
+          "projection": {
+            "median": 0.004517,
+            "min": 0.004466,
+            "max": 0.004582
+          },
+          "pack": {
+            "median": 0.00177,
+            "min": 0.001765,
+            "max": 0.001809
+          },
+          "wall": {
+            "median": 0.044075,
+            "min": 0.04385,
+            "max": 0.044619
+          }
+        },
+        "avx2": {
+          "c_call": {
+            "median": 0.033992,
+            "min": 0.033867,
+            "max": 0.034374
+          },
+          "dp": {
+            "median": 0.019489,
+            "min": 0.019422,
+            "max": 0.019686
+          },
+          "traceback": {
+            "median": 0.008224,
+            "min": 0.008111,
+            "max": 0.008291
+          },
+          "projection": {
+            "median": 0.005134,
+            "min": 0.005091,
+            "max": 0.005194
+          },
+          "pack": {
+            "median": 0.000954,
+            "min": 0.000939,
+            "max": 0.000974
+          },
+          "wall": {
+            "median": 0.036159,
+            "min": 0.035978,
+            "max": 0.036523
+          }
+        },
+        "avx512": {
+          "c_call": {
+            "median": 0.019551,
+            "min": 0.019488,
+            "max": 0.020349
+          },
+          "dp": {
+            "median": 0.005326,
+            "min": 0.00527,
+            "max": 0.005556
+          },
+          "traceback": {
+            "median": 0.009433,
+            "min": 0.009349,
+            "max": 0.00981
+          },
+          "projection": {
+            "median": 0.003647,
+            "min": 0.003559,
+            "max": 0.003767
+          },
+          "pack": {
+            "median": 0.000967,
+            "min": 0.000956,
+            "max": 0.000985
+          },
+          "wall": {
+            "median": 0.02164,
+            "min": 0.021584,
+            "max": 0.022336
+          }
+        }
+      },
+      "c_call_speedup_vs_scalar": {
+        "scalar": 1.0,
+        "avx2": 1.235,
+        "avx512": 2.147
+      }
+    },
+    {
+      "layout": "long-494nt",
+      "error_point": "clean",
+      "reads": 4096,
+      "reads_in_band": 4096,
+      "reads_sha256": "dd335b4c3d63965be997d92835d818f78c6a22286e3e2a9627a1d0e4207d6a98",
+      "projection_sha256_all_levels": "50280c4105049be9122fbf01fd7434b367c2422b900c63cc15eb009fb1bfa1b7",
+      "levels": {
+        "scalar": {
+          "c_call": {
+            "median": 0.066395,
+            "min": 0.066126,
+            "max": 0.068043
+          },
+          "dp": {
+            "median": 0.043671,
+            "min": 0.043532,
+            "max": 0.044718
+          },
+          "traceback": {
+            "median": 0.01232,
+            "min": 0.012282,
+            "max": 0.012732
+          },
+          "projection": {
+            "median": 0.007508,
+            "min": 0.007387,
+            "max": 0.007611
+          },
+          "pack": {
+            "median": 0.002691,
+            "min": 0.002654,
+            "max": 0.002743
+          },
+          "wall": {
+            "median": 0.068816,
+            "min": 0.068502,
+            "max": 0.070621
+          }
+        },
+        "avx2": {
+          "c_call": {
+            "median": 0.053646,
+            "min": 0.053457,
+            "max": 0.054536
+          },
+          "dp": {
+            "median": 0.031112,
+            "min": 0.031024,
+            "max": 0.031178
+          },
+          "traceback": {
+            "median": 0.012628,
+            "min": 0.012514,
+            "max": 0.012653
+          },
+          "projection": {
+            "median": 0.00822,
+            "min": 0.008164,
+            "max": 0.008228
+          },
+          "pack": {
+            "median": 0.001406,
+            "min": 0.001401,
+            "max": 0.001437
+          },
+          "wall": {
+            "median": 0.056096,
+            "min": 0.055866,
+            "max": 0.056992
+          }
+        },
+        "avx512": {
+          "c_call": {
+            "median": 0.030914,
+            "min": 0.03053,
+            "max": 0.031924
+          },
+          "dp": {
+            "median": 0.00856,
+            "min": 0.008417,
+            "max": 0.008738
+          },
+          "traceback": {
+            "median": 0.014563,
+            "min": 0.014452,
+            "max": 0.01519
+          },
+          "projection": {
+            "median": 0.005697,
+            "min": 0.005594,
+            "max": 0.005802
+          },
+          "pack": {
+            "median": 0.001837,
+            "min": 0.001827,
+            "max": 0.001935
+          },
+          "wall": {
+            "median": 0.033335,
+            "min": 0.032858,
+            "max": 0.034499
+          }
+        }
+      },
+      "c_call_speedup_vs_scalar": {
+        "scalar": 1.0,
+        "avx2": 1.238,
+        "avx512": 2.148
+      }
+    },
+    {
+      "layout": "long-494nt",
+      "error_point": "sub-0.5%",
+      "reads": 4096,
+      "reads_in_band": 4096,
+      "reads_sha256": "eca129c7b9c581ebf3a46c6a99e46006bf59d04f5ae6c597b1fdf48da40bdc54",
+      "projection_sha256_all_levels": "c150e6d99b8eeca113ee1425b332b9adf4457b310720ac8cc1a6fc4cc380124f",
+      "levels": {
+        "scalar": {
+          "c_call": {
+            "median": 0.065785,
+            "min": 0.065582,
+            "max": 0.065981
+          },
+          "dp": {
+            "median": 0.043354,
+            "min": 0.043256,
+            "max": 0.04346
+          },
+          "traceback": {
+            "median": 0.012153,
+            "min": 0.012131,
+            "max": 0.012186
+          },
+          "projection": {
+            "median": 0.007341,
+            "min": 0.007284,
+            "max": 0.007373
+          },
+          "pack": {
+            "median": 0.00266,
+            "min": 0.002657,
+            "max": 0.002663
+          },
+          "wall": {
+            "median": 0.068187,
+            "min": 0.067932,
+            "max": 0.068383
+          }
+        },
+        "avx2": {
+          "c_call": {
+            "median": 0.05303,
+            "min": 0.052899,
+            "max": 0.053099
+          },
+          "dp": {
+            "median": 0.030828,
+            "min": 0.030811,
+            "max": 0.030916
+          },
+          "traceback": {
+            "median": 0.01238,
+            "min": 0.012356,
+            "max": 0.012556
+          },
+          "projection": {
+            "median": 0.008059,
+            "min": 0.008038,
+            "max": 0.008086
+          },
+          "pack": {
+            "median": 0.001382,
+            "min": 0.001378,
+            "max": 0.001402
+          },
+          "wall": {
+            "median": 0.055393,
+            "min": 0.055239,
+            "max": 0.055411
+          }
+        },
+        "avx512": {
+          "c_call": {
+            "median": 0.030119,
+            "min": 0.030051,
+            "max": 0.030332
+          },
+          "dp": {
+            "median": 0.008273,
+            "min": 0.008248,
+            "max": 0.008459
+          },
+          "traceback": {
+            "median": 0.01432,
+            "min": 0.014257,
+            "max": 0.014387
+          },
+          "projection": {
+            "median": 0.005529,
+            "min": 0.005494,
+            "max": 0.005546
+          },
+          "pack": {
+            "median": 0.001747,
+            "min": 0.001737,
+            "max": 0.001773
+          },
+          "wall": {
+            "median": 0.03243,
+            "min": 0.032384,
+            "max": 0.03267
+          }
+        }
+      },
+      "c_call_speedup_vs_scalar": {
+        "scalar": 1.0,
+        "avx2": 1.241,
+        "avx512": 2.184
+      }
+    },
+    {
+      "layout": "long-494nt",
+      "error_point": "indel-0.5%+0.5%",
+      "reads": 4096,
+      "reads_in_band": 4082,
+      "reads_sha256": "3ed96780b9980ccac17620caf4a8347a238e15199aebd947115c7964c1d8a106",
+      "projection_sha256_all_levels": "13e289da87e41c26caca47b98c190090abbf7bdb57ba3ceb0a62e041a94d7974",
+      "levels": {
+        "scalar": {
+          "c_call": {
+            "median": 0.0671,
+            "min": 0.066171,
+            "max": 0.073747
+          },
+          "dp": {
+            "median": 0.043819,
+            "min": 0.043323,
+            "max": 0.048402
+          },
+          "traceback": {
+            "median": 0.012635,
+            "min": 0.012465,
+            "max": 0.013929
+          },
+          "projection": {
+            "median": 0.007529,
+            "min": 0.007428,
+            "max": 0.00834
+          },
+          "pack": {
+            "median": 0.002748,
+            "min": 0.002715,
+            "max": 0.002824
+          },
+          "wall": {
+            "median": 0.069591,
+            "min": 0.068682,
+            "max": 0.07623
+          }
+        },
+        "avx2": {
+          "c_call": {
+            "median": 0.053694,
+            "min": 0.053299,
+            "max": 0.054492
+          },
+          "dp": {
+            "median": 0.031006,
+            "min": 0.03087,
+            "max": 0.031283
+          },
+          "traceback": {
+            "median": 0.012771,
+            "min": 0.012586,
+            "max": 0.013068
+          },
+          "projection": {
+            "median": 0.008174,
+            "min": 0.008141,
+            "max": 0.008382
+          },
+          "pack": {
+            "median": 0.001477,
+            "min": 0.001421,
+            "max": 0.001486
+          },
+          "wall": {
+            "median": 0.056159,
+            "min": 0.055733,
+            "max": 0.056965
+          }
+        },
+        "avx512": {
+          "c_call": {
+            "median": 0.030902,
+            "min": 0.030741,
+            "max": 0.031269
+          },
+          "dp": {
+            "median": 0.008485,
+            "min": 0.008463,
+            "max": 0.008624
+          },
+          "traceback": {
+            "median": 0.014732,
+            "min": 0.014664,
+            "max": 0.014828
+          },
+          "projection": {
+            "median": 0.005581,
+            "min": 0.005516,
+            "max": 0.005686
+          },
+          "pack": {
+            "median": 0.001864,
+            "min": 0.001831,
+            "max": 0.001885
+          },
+          "wall": {
+            "median": 0.033293,
+            "min": 0.033087,
+            "max": 0.033654
+          }
+        }
+      },
+      "c_call_speedup_vs_scalar": {
+        "scalar": 1.0,
+        "avx2": 1.25,
+        "avx512": 2.171
+      }
+    },
+    {
+      "layout": "long-494nt",
+      "error_point": "indel-1%+1%",
+      "reads": 4096,
+      "reads_in_band": 3943,
+      "reads_sha256": "1389f7bafd89624133c1cf77af4108773158c2731b96d3ff53dc83631c0707bb",
+      "projection_sha256_all_levels": "25a8a38a853172d74ad7ee0eaa974979809b095686e000cf955c0a5d2e8e4524",
+      "levels": {
+        "scalar": {
+          "c_call": {
+            "median": 0.064095,
+            "min": 0.06407,
+            "max": 0.064682
+          },
+          "dp": {
+            "median": 0.041997,
+            "min": 0.04177,
+            "max": 0.042238
+          },
+          "traceback": {
+            "median": 0.012255,
+            "min": 0.012218,
+            "max": 0.012354
+          },
+          "projection": {
+            "median": 0.007033,
+            "min": 0.006967,
+            "max": 0.007152
+          },
+          "pack": {
+            "median": 0.002641,
+            "min": 0.002631,
+            "max": 0.002697
+          },
+          "wall": {
+            "median": 0.066623,
+            "min": 0.06646,
+            "max": 0.06718
+          }
+        },
+        "avx2": {
+          "c_call": {
+            "median": 0.051701,
+            "min": 0.051481,
+            "max": 0.051862
+          },
+          "dp": {
+            "median": 0.029876,
+            "min": 0.029745,
+            "max": 0.02994
+          },
+          "traceback": {
+            "median": 0.01241,
+            "min": 0.012273,
+            "max": 0.01242
+          },
+          "projection": {
+            "median": 0.007822,
+            "min": 0.007799,
+            "max": 0.007846
+          },
+          "pack": {
+            "median": 0.001393,
+            "min": 0.001387,
+            "max": 0.001416
+          },
+          "wall": {
+            "median": 0.054139,
+            "min": 0.05385,
+            "max": 0.054294
+          }
+        },
+        "avx512": {
+          "c_call": {
+            "median": 0.029967,
+            "min": 0.029872,
+            "max": 0.030092
+          },
+          "dp": {
+            "median": 0.008128,
+            "min": 0.008116,
+            "max": 0.008222
+          },
+          "traceback": {
+            "median": 0.01443,
+            "min": 0.014405,
+            "max": 0.014516
+          },
+          "projection": {
+            "median": 0.005347,
+            "min": 0.005322,
+            "max": 0.005368
+          },
+          "pack": {
+            "median": 0.001794,
+            "min": 0.001754,
+            "max": 0.001807
+          },
+          "wall": {
+            "median": 0.032351,
+            "min": 0.032173,
+            "max": 0.032589
+          }
+        }
+      },
+      "c_call_speedup_vs_scalar": {
+        "scalar": 1.0,
+        "avx2": 1.24,
+        "avx512": 2.139
+      }
+    }
+  ]
+}

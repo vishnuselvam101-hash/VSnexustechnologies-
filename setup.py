@@ -57,7 +57,8 @@ class build_native(build_ext or object):
                 shutil.copyfile(dest, Path("src") / dest.relative_to(self.build_lib))
 
 
-setup(ext_modules=[Extension(name, [source], extra_compile_args=list(_nb.COMPILE_FLAGS), optional=True)
+setup(ext_modules=[Extension(name, [source], extra_compile_args=list(_nb.COMPILE_FLAGS), optional=True,
+                             depends=sorted(str(f) for f in Path(source).parent.glob("*.inc")))   # e.g. align_dp.inc
                    for name, source in _nb.KERNELS.items()]
                   + [Extension(name, [source], extra_compile_args=list(_nb.CXX_COMPILE_FLAGS), language="c++",
                                optional=True) for name, source in getattr(_nb, "CXX_KERNELS", {}).items()],

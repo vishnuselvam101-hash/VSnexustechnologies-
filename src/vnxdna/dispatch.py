@@ -18,7 +18,11 @@ Quarantine acts on kernels built on ``native._loader.Kernel`` (strand, integrity
 environment (``VNXDNA_<K>_QUARANTINED``) so worker processes inherit it. The align, reads, rs and cluster loaders
 keep their own static selection; their path is still probed and recorded.
 
-Known gap: only ``integrity`` has a differential self-test (:data:`SELFTESTS`). For every other kernel
+The align kernel (V11 WP1) has a self-test per SIMD level: in ``auto`` a failing level is quarantined
+(``VNXDNA_ALIGN_QUARANTINED_LEVELS``, inherited by workers) and selection steps down to the next level, finally the
+reference; an explicit request (``native``, ``avx512``, ``avx2``, ``scalar``) that fails raises :class:`DispatchError`.
+
+Known gap: only ``integrity`` and ``align`` have a differential self-test (:data:`SELFTESTS`). For every other kernel
 ``VNXDNA_DIFFERENTIAL=1`` records ``"differential": "not-available"``: the kernel is NOT verified at run time and
 correctness rests on the bit-exactness test suites (tests/native, tests/backend_equivalence) only.
 """
@@ -48,9 +52,42 @@ def _selftest_integrity() -> bool:
     return got.dtype == want.dtype and got.shape == want.shape and got.tobytes() == want.tobytes()
 
 
-# kernel -> callable returning True when native == reference on a fixed workload. Only integrity is covered; the
-# other kernels report "not-available" under the differential check (see the module docstring, "Known gap").
-SELFTESTS: dict[str, Callable[[], bool]] = {"integrity": _selftest_integrity}
+def _selftest_align() -> bool:
+    """Fixed seeded reads through the active SIMD level of the aligner vs TemplateAligner._align, all 7 arrays byte for
+    byte (vnxdna.native.align.selftest)."""
+    from .native import align
+    level = align.active_level()
+    return True if level == "reference" else align.selftest(level)
+
+
+# kernel -> callable returning True when native == reference on a fixed workload. Only integrity and align are covered;
+# the other kernels report "not-available" under the differential check (see the module docstring, "Known gap").
+SELFTESTS: dict[str, Callable[[], bool]] = {"integrity": _selftest_integrity, "align": _selftest_align}
+
+
+def _check_align_levels(requested: str, entry: dict) -> None:
+    """Differential check of the aligner, level by level (see the module docstring). Updates ``entry`` in place."""
+    from .native import align
+    quarantined = []
+    while True:
+        level = align.active_level()
+        if level == "reference":
+            entry.update(path="reference", simd_level=None, reason="differential-fail-fallback", differential="fail",
+                         detail=f"every native SIMD level failed the self-check: {','.join(quarantined)}")
+            return
+        try:
+            passed, detail = align.selftest(level), "native output differs from the reference"
+        except Exception as error:  # noqa: BLE001 - any failure of the native path is a failed check
+            passed, detail = False, f"{type(error).__name__}: {error}"
+        if passed:
+            entry.update(path="native", simd_level=level, differential="pass")
+            if quarantined:
+                entry.update(reason="differential-level-fallback", detail=f"quarantined: {','.join(quarantined)}")
+            return
+        if requested != "auto":
+            raise DispatchError(f"native align kernel ({level}) failed the differential self-check: {detail}")
+        align.quarantine_level(level)
+        quarantined.append(level)
 
 
 def _differential_requested(differential: bool | None) -> bool:
@@ -125,6 +162,12 @@ def select_path(workload: dict | None = None, *, differential: bool | None = Non
                 raise DispatchError(f"native {k} kernel requested but unusable: {cap['error']}")
             backend = "reference"
         entry = {"path": backend, "reason": reason}
+        if k == "align":
+            entry["simd_level"] = cap["simd_level"]
+            if check and backend == "native":
+                _check_align_levels(requested, entry)
+            out[k] = entry
+            continue
         if check and backend == "native":
             status, detail = _run_selftest(k)
             entry["differential"] = status

@@ -19,10 +19,22 @@ import pytest
 from vnxdna.v4 import channel as ch
 from vnxdna.v4.sync import SyncCosts
 
-from .native_support import LAYOUTS, assert_identical, project_both, strand
+from vnxdna.native import align as na
+
+from .native_support import LAYOUTS, NATIVE, assert_identical, project_both, strand
 
 REPO = Path(__file__).resolve().parents[2]
 pytestmark = pytest.mark.usefixtures("native_ready")
+
+
+@pytest.fixture(autouse=True, params=tuple(na.LEVELS))
+def simd_level(request, native_ready, monkeypatch):
+    """Every test of this module runs once per SIMD level (V11 WP1); levels this CPU/OS cannot run are skipped."""
+    level = request.param
+    if level not in na.supported_levels():
+        pytest.skip(f"SIMD level {level} not supported on this CPU/OS")
+    monkeypatch.setitem(NATIVE, "backend", level)
+    return level
 
 
 # ============================================================================ golden (Phase 1 fingerprints)
@@ -42,7 +54,7 @@ def test_phase1_golden_fingerprints(case):
     p1 = _phase1()
     reads, meta = p1.make_reads(p1.LAYOUTS[case["layout_name"]], p1.ERROR_POINTS[case["error_point"]])
     assert meta["reads_sha256"] == case["reads_sha256"], "read generation drifted from Phase 1"
-    nat = TemplateAligner(p1.LAYOUTS[case["layout_name"]], case["band"], backend="native").project(reads)
+    nat = TemplateAligner(p1.LAYOUTS[case["layout_name"]], case["band"], backend=NATIVE["backend"]).project(reads)
     assert p1._projection_sha(nat) == case["projection_sha256"]
 
 
@@ -227,7 +239,7 @@ def test_batch_composition_independence():
     from vnxdna.v4.sync import TemplateAligner
     layout = LAYOUTS["default-313nt"]
     reads = _fuzz_reads(layout, np.random.default_rng(5), 37)
-    al = TemplateAligner(layout, 6, backend="native")
+    al = TemplateAligner(layout, 6, backend=NATIVE["backend"])
     full = al.project(reads)
     perm = np.random.default_rng(6).permutation(len(reads))
     shuffled = al.project([reads[i] for i in perm])
