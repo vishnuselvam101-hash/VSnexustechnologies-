@@ -101,16 +101,21 @@ choice end to end on this host, so the auto policy (avx512 > avx2 > scalar) stan
 | peak RSS ≤ V10 + 10 % | ratio 0.969–0.994 on indel | MET |
 | native vs reference equivalence suites unchanged and green | full suite on `5f70316`: 3981 passed, 7 skipped, 0 failed (uncommitted lab log `results/v11-integrate-20261011-223701.log`; baseline expectation ≥ 3634) | MET |
 | ASan/UBSan clean for touched C | `experiments/v11/wp1/sanitizers-run.log`: gcc and clang ASan+UBSan, clang UBSan-trap, overall PASS; its recorded kernel source SHA-256 (`c5a81b7a…`) equals the merged `align.c`, and no native source changed after it | MET |
-| cProfile before/after committed under `experiments/v11/` | not committed | **NOT MET** |
+| cProfile before/after committed under `experiments/v11/` | `experiments/v11/wp1/profile.py` → `profile-summary.json`, `profile-top.txt`, `profile-v10.prof`, `profile-v11.prof` (4 MiB indel, w1, seed 95500; added after the release benchmark) | MET (w1 only; see below) |
 
 **Overall WP1 §9 verdict: NOT MET.**
 - The w1 indel speed-up reaches the 1.25x target.
 - The w4 indel speed-up (1.174x) does not.
-- The cProfile before/after artefact is missing.
+- The cProfile before/after artefact is now committed (w1; one profiled run per version, not a timing benchmark).
 - Correctness, RSS and equivalence criteria are met.
 
-Hypothesis, not measured here: at w4 the aligner is a smaller share of wall time than at w1, so the same kernel speed-up
-yields a smaller end-to-end gain. A w4 profile (the missing cProfile artefact) is needed to confirm it.
+Profile (SIMULATED, `experiments/v11/wp1/profile-summary.json`; one cProfile run per version, 4 MiB indel decode, 1
+worker, same prepared reads, both SUCCESS and byte-identical to the input; host load about 2 from two 1-CPU fuzz
+campaigns running at the same time): `align_usable` cumulative time 6.14 s (V10) → 3.40 s (V11), −45 %, over the same
+162 calls; profiled decode 14.76 s → 12.31 s (1.20x). Everything outside the aligner took about 8.6–8.9 s in both
+versions, so by Amdahl's law the aligner speed-up alone cannot reach 1.25x end to end once the non-aligner part
+dominates. Hypothesis, not measured here: at w4 the aligner is an even smaller share of wall time, which would explain
+the lower w4 gain. cProfile only sees the parent process, so a w4 profile needs a per-worker profiler (not done).
 
 ## 6. Trend V9 → V10 → V11 (indicative only)
 

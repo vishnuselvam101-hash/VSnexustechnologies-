@@ -56,14 +56,16 @@ All 85 measured runs succeeded with output SHA-256 identical between V10 and V11
 −8 % to +1.1 % of V10. Outside the indel path there is no speed-up (all CIs contain 1.0).
 
 **WP1 §9 verdict: NOT MET.** The w4 indel target (≥ 1.25x) was not reached: 1.174x, whole CI below 1.25. The w1 target
-was met (1.283x). The cProfile before/after artefact required by §9 was not committed.
+was met (1.283x). The cProfile before/after artefact (w1) was added after the release benchmark: aligner time −45 %
+(6.14 → 3.40 s), profiled decode 1.20x; the non-aligner part (about 8.6–8.9 s) is unchanged (`experiments/v11/wp1/profile-summary.json`).
 
 ## Limitations
 - **Nanopore-like 10 MB run deferred.** The 10 MB nanopore-like case (seed 93100) ends in **EXPLICIT_FAILURE**: the
   clustering stage stops on its candidate-pair budget and recovers nothing; no wrong data is returned (jobs #82, #86,
   blocked). It is not fixed in V11.
 - **Preset F is not in V11.** The nanopore preset F work lives on branch `work/nanopore-f2` and is not merged into V11.
-- **WP1 §9 not met:** 4 MiB indel decode at w4 is 1.174x, below the 1.25x target; no cProfile before/after committed.
+- **WP1 §9 not met:** 4 MiB indel decode at w4 is 1.174x, below the 1.25x target. The w1 profile shows the remaining
+  time is outside the aligner; no w4 (per-worker) profile was taken.
 - The RS-decoder and align fuzz harnesses ran below 1M execs (time-boxed smokes).
 - Benchmarks: one shared host under moderate background load, n = 5, not reproduced on a quiet or second machine; two
   medians fall just below 1.0 (clean decode w4 0.981, encode 1 MiB w4 0.995) with CIs containing 1.0 — no regression
