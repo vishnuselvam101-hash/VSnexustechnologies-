@@ -34,12 +34,15 @@ def _p_init(layout: Layout, band: int, costs: SyncCosts, min_q: int, rc: bool, s
         _P["geom"] = Geometry(layout)
 
 
-def _try(reads: list[np.ndarray], quals: list | None, with_quality: bool = False, diag: dict | None = None) -> tuple:
+def _try(reads: list[np.ndarray], quals: list | None, with_quality: bool = False, diag: dict | None = None,
+         flat: tuple | None = None) -> tuple:
     """Fast and sync paths (plus eager smart/soft) for one list of reads. Returns (acc, fields, payload, projected
     bases, cost, path, hard bases, stats), and with ``with_quality`` also the projected qualities (None unless the
     worker keeps them for quality-weighted consensus). ``diag`` (V7 stage counters, observability only): a dict that
     receives per-read arrays of the last attempt (erased frame bytes, inner RS and CRC outcome, marker mismatches,
-    RS errata); it never changes a result."""
+    RS errata); it never changes a result. ``flat`` = (codes, quals or None, offsets, lengths) when ``reads`` (and
+    ``quals``) are consecutive views into flat buffers: the exact-length reads are then gathered from the buffers
+    instead of stacked view by view (V12 pass-1 bookkeeping; same values)."""
     lay: Layout = _P["lay"]
     n = len(reads)
     if diag is not None:
@@ -55,14 +58,18 @@ def _try(reads: list[np.ndarray], quals: list | None, with_quality: bool = False
     path = np.zeros(n, dtype=np.int8)          # 1 fast, 2 sync
     # quality of each projected frame base (V6 Phase 4 weighted consensus; 0 where no read base or no qualities)
     proj_q = np.zeros((n, lay.frame_nt), dtype=np.uint8) if _P.get("qw") else None
-    lengths = np.fromiter((r.size for r in reads), dtype=np.int64, count=n)
+    lengths = flat[3] if flat is not None else np.fromiter((r.size for r in reads), dtype=np.int64, count=n)
     exact = np.flatnonzero(lengths == lay.strand_nt)
     if exact.size:
-        mat = np.stack([reads[i] for i in exact])
+        if flat is not None:
+            eidx = flat[2][exact][:, None] + np.arange(lay.strand_nt, dtype=np.int64)[None, :]
+            mat = flat[0][eidx]
+        else:
+            mat = np.stack([reads[i] for i in exact])
         fb, mism = strip_markers_exact(lay, mat)
         er = fb > 3
         if quals is not None and (_P["min_q"] or proj_q is not None):
-            qm = np.stack([quals[i] for i in exact])
+            qm = flat[1][eidx] if flat is not None else np.stack([quals[i] for i in exact])
             tpl, pos = lay.template()
             if _P["min_q"]:
                 er |= qm[:, pos] < _P["min_q"]
@@ -211,44 +218,88 @@ def _orientation(codes: np.ndarray, lengths: np.ndarray) -> np.ndarray:
     want = tpl[mpos].astype(np.uint8)
     starts = np.flatnonzero(np.diff(mpos, prepend=-2) > 1)          # first marker position of each marker block
     top = max(0, codes.size - 1)
-    sf = np.zeros((n, starts.size), dtype=np.int64)
-    sr = np.zeros((n, starts.size), dtype=np.int64)
-    for s in range(-_ORIENT_SHIFT, _ORIENT_SHIFT + 1):
+    margin = max(2, mpos.size // 8)
+
+    def score(rows: np.ndarray, s: int, rc: bool) -> np.ndarray:
+        """Per-block marker agreement of reads ``rows`` at shift ``s``, forward or as reverse complement."""
         p = mpos[None, :] + s
-        inside = (p >= 0) & (p < lengths[:, None])
-        fidx = np.clip(offs[:, None] + p, 0, top)
-        hf = (codes[fidx] == want[None, :]) & inside
-        ridx = np.clip(offs[:, None] + lengths[:, None] - 1 - p, 0, top)
-        hr = (_RC[codes[ridx]] == want[None, :]) & inside
-        np.maximum(sf, np.add.reduceat(hf, starts, axis=1, dtype=np.int64), out=sf)
-        np.maximum(sr, np.add.reduceat(hr, starts, axis=1, dtype=np.int64), out=sr)
-    return sr.sum(axis=1) > sf.sum(axis=1) + max(2, mpos.size // 8)
+        ln = lengths[rows][:, None]
+        inside = (p >= 0) & (p < ln)
+        if rc:
+            idx = np.clip(offs[rows][:, None] + ln - 1 - p, 0, top)
+            hit = (_RC[codes[idx]] == want[None, :]) & inside
+        else:
+            idx = np.clip(offs[rows][:, None] + p, 0, top)
+            hit = (codes[idx] == want[None, :]) & inside
+        return np.add.reduceat(hit, starts, axis=1, dtype=np.int64)
+
+    # Best block agreement over the shifts, forward (sf) and reverse complement (sr); a read is flipped when
+    # sum(sr) > sum(sf) + margin. Since sr never exceeds the marker count, a read whose forward score already reaches
+    # marker count - margin cannot be flipped whatever the remaining shifts give: it leaves the scan (decisions are
+    # identical to scoring every shift for every read, with far fewer gathers: most reads are decided at shift 0 or +-1).
+    sf = score(np.arange(n), 0, False)
+    sr = np.zeros_like(sf)
+    rows = np.flatnonzero(sf.sum(axis=1) + margin < mpos.size)
+    if rows.size:
+        sr[rows] = score(rows, 0, True)
+    for s in [x for k in range(1, _ORIENT_SHIFT + 1) for x in (-k, k)]:
+        if not rows.size:
+            break
+        sf_rows = np.maximum(sf[rows], score(rows, s, False))
+        sf[rows] = sf_rows
+        sr[rows] = np.maximum(sr[rows], score(rows, s, True))
+        rows = rows[sf_rows.sum(axis=1) + margin < mpos.size]
+    return sr.sum(axis=1) > sf.sum(axis=1) + margin
+
+
+def _gather_rows(flat: np.ndarray, offs: np.ndarray, lengths: np.ndarray, sel: np.ndarray, cols: np.ndarray,
+                 clip: int | None = None) -> tuple[np.ndarray, np.ndarray]:
+    """Rows ``sel`` of a flat read buffer as a (len(sel), len(cols)) matrix plus the valid mask: entry (j, c) is read
+    ``sel[j]``'s base at position ``cols[c]`` (clipped to ``clip`` when given) and 0 where the read is shorter than
+    ``cols[c]``. One gather instead of a Python loop over reads (V12 pass-1 bookkeeping); the loop form it replaces
+    is in tests/v12/test_pass1_gather.py."""
+    valid = cols[None, :] < lengths[sel][:, None]
+    out = np.zeros((sel.size, cols.size), dtype=np.uint8)
+    if sel.size and flat.size:
+        idx = offs[sel][:, None] + cols[None, :]
+        got = flat[np.where(valid, idx, 0)]
+        if clip is not None:
+            np.minimum(got, clip, out=got)
+        out[valid] = got[valid]
+    return out, valid
 
 
 def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | None) -> dict:
     cpu0 = time.process_time()
     lay: Layout = _P["lay"]
     offs = np.concatenate([[0], np.cumsum(lengths)])
-    reads = [batch_codes[offs[i]:offs[i + 1]] for i in range(lengths.size)]
-    ql = None if quals is None else [quals[offs[i]:offs[i + 1]] for i in range(lengths.size)]
     rc_used = np.zeros(lengths.size, dtype=bool)
     d = {} if _P.get("diag") else None           # V7 stage counters (observability only)
     flip = np.zeros(lengths.size, dtype=bool)
+    # flat buffers of the reads in the orientation pass 1 works on (the batch, or a copy with the flipped reads
+    # written in place); the read lists below are views into them
+    codes, qflat = batch_codes, quals
     if _P["rc"]:
         # orientation pre-pass: marker agreement at the expected (unshifted) positions, forward vs reverse complement
         flip = _orientation(batch_codes, lengths)
-        for i in np.flatnonzero(flip).tolist():
-            reads[i] = _RC[reads[i][::-1]]
-            if ql is not None:
-                ql[i] = ql[i][::-1]
+        if flip.any():
+            codes = batch_codes.copy()
+            qflat = None if quals is None else quals.copy()
+            for i in np.flatnonzero(flip).tolist():
+                a, b = int(offs[i]), int(offs[i + 1])
+                codes[a:b] = _RC[batch_codes[a:b][::-1]]
+                if qflat is not None:
+                    qflat[a:b] = quals[a:b][::-1]
         rc_used |= flip
-    acc, fields, payload, proj, cost, path, hard, sstats, pq = _try(reads, ql, with_quality=True, diag=d)
+    reads = [codes[offs[i]:offs[i + 1]] for i in range(lengths.size)]
+    ql = None if qflat is None else [qflat[offs[i]:offs[i + 1]] for i in range(lengths.size)]
+    acc, fields, payload, proj, cost, path, hard, sstats, pq = _try(reads, ql, with_quality=True, diag=d,
+                                                                   flat=(codes, qflat, offs, lengths))
     if d is not None:
         d["flip"] = flip.copy()
         d["rc_tried"] = np.zeros(lengths.size, dtype=bool)
         d["rc_adopted"] = np.zeros(lengths.size, dtype=bool)
-    oriented = reads                       # the orientation each read's projection refers to (pending raw reads)
-    oriented_q = ql
+    ocodes, oq = codes, qflat              # the orientation each read's projection refers to (pending raw reads)
     if _P["rc"]:
         bad = np.flatnonzero(~acc & (cost > 2 * _P["al"].costs.insertion))
         if bad.size:
@@ -269,13 +320,14 @@ def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | N
             rc_used[sel] = ~rc_used[sel]
             if pq is not None:
                 pq[sel] = q2[better]
-            if _P.get("smart") is not None or _P.get("soft") is not None:
-                oriented = list(reads)
-                oriented_q = None if ql is None else list(ql)
+            if (_P.get("smart") is not None or _P.get("soft") is not None) and sel.size:
+                ocodes = codes.copy()
+                oq = None if qflat is None else qflat.copy()
                 for j in np.flatnonzero(better).tolist():
-                    oriented[bad[j]] = rreads[j]
-                    if oriented_q is not None:
-                        oriented_q[bad[j]] = rq[j]
+                    a, b = int(offs[bad[j]]), int(offs[bad[j] + 1])
+                    ocodes[a:b] = rreads[j]
+                    if oq is not None:
+                        oq[a:b] = rq[j]
     # pending: every failed but aligned read. Its tentative address comes from the hard header bases (even where the
     # header was erased by an indel); pass 2 snaps addresses that are not expected to the nearest missing address.
     pend = np.flatnonzero(~acc & (cost < (1 << 28)))
@@ -293,10 +345,8 @@ def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | N
         _, fpos = lay.template()
         hpos = fpos[: 4 * HEADER_BYTES]
         raw = np.zeros((pend.size, lay.frame_nt), dtype=np.uint8)
-        for j, i in enumerate(pend.tolist()):
-            r = reads[i]
-            take = hpos[hpos < r.size]
-            raw[j, : take.size] = np.minimum(r[take], 3)
+        # header positions are ascending, so the positions inside a read are a prefix: a masked gather
+        raw[:, : hpos.size] = _gather_rows(codes, offs, lengths, pend, hpos, clip=3)[0]
         alt = tentative_address(lay, nt_to_bytes(raw))
         good = (ta[:, 0] >= 0) | (alt[:, 0] >= 0)
         if d is not None:
@@ -329,17 +379,11 @@ def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | N
         width = lay.strand_nt + max(_P["al"].band, _P["al"].retry_band)
 
         def pack(sel):
-            raw = np.zeros((sel.size, width), dtype=np.uint8)
-            rawq = np.zeros((sel.size, width), dtype=np.uint8)
-            rawlen = np.zeros(sel.size, dtype=np.int64)
-            hasq = np.zeros(sel.size, dtype=np.uint8)
-            for j, i in enumerate(sel.tolist()):
-                r = oriented[i][:width]
-                raw[j, : r.size] = r
-                rawlen[j] = r.size
-                if oriented_q is not None and oriented_q[i] is not None:
-                    rawq[j, : r.size] = oriented_q[i][:width]
-                    hasq[j] = 1
+            cols = np.arange(width, dtype=np.int64)
+            raw, _ = _gather_rows(ocodes, offs, lengths, sel, cols)
+            rawq = np.zeros((sel.size, width), dtype=np.uint8) if oq is None else _gather_rows(oq, offs, lengths, sel, cols)[0]
+            rawlen = np.minimum(lengths[sel], width).astype(np.int64)
+            hasq = np.full(sel.size, 0 if oq is None else 1, dtype=np.uint8)
             return raw, rawq, rawlen, hasq
 
         out["pend_raw"], out["pend_rawq"], out["pend_rawlen"], out["pend_hasq"] = pack(pend[good])
