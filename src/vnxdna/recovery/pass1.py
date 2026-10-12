@@ -15,6 +15,7 @@ from vnxdna.sync.template import SyncCosts, TemplateAligner, frame_erasures_to_b
 
 
 _RC = np.array([3, 2, 1, 0, 4], dtype=np.uint8)
+_ORIENT_SHIFT = 2       # orientation pre-pass: marker blocks also match up to this many nt left or right (V12)
 # ============================================================================ pass 1 worker
 _P: dict = {}
 
@@ -194,6 +195,11 @@ def _orientation(codes: np.ndarray, lengths: np.ndarray) -> np.ndarray:
 
     Vectorised over the flat batch: marker positions are gathered from each read's start (forward) and from its end
     (reverse complement) without per-read Python work.
+
+    V12: each marker block scores its best agreement over shifts of up to ``_ORIENT_SHIFT`` nt. One indel shifts every
+    later marker; V11 compared unshifted positions only, so 4.5 % of forward reads with indels (SIMULATED, 1 %/0.2 %/0.2 %
+    channel) were flipped, failed, and were only rescued by the reverse-complement retry. The retry is unchanged: a wrong
+    orientation still costs only time.
     """
     lay: Layout = _P["lay"]
     n = lengths.size
@@ -203,12 +209,20 @@ def _orientation(codes: np.ndarray, lengths: np.ndarray) -> np.ndarray:
         return np.zeros(n, dtype=bool)
     offs = np.concatenate([[0], np.cumsum(lengths)])[:-1]
     want = tpl[mpos].astype(np.uint8)
-    inside = mpos[None, :] < lengths[:, None]
-    fidx = np.minimum(offs[:, None] + mpos[None, :], max(0, codes.size - 1))
-    sf = ((codes[fidx] == want[None, :]) & inside).sum(axis=1)
-    ridx = np.clip(offs[:, None] + lengths[:, None] - 1 - mpos[None, :], 0, max(0, codes.size - 1))
-    sr = ((_RC[codes[ridx]] == want[None, :]) & inside).sum(axis=1)
-    return sr > sf + max(2, mpos.size // 8)
+    starts = np.flatnonzero(np.diff(mpos, prepend=-2) > 1)          # first marker position of each marker block
+    top = max(0, codes.size - 1)
+    sf = np.zeros((n, starts.size), dtype=np.int64)
+    sr = np.zeros((n, starts.size), dtype=np.int64)
+    for s in range(-_ORIENT_SHIFT, _ORIENT_SHIFT + 1):
+        p = mpos[None, :] + s
+        inside = (p >= 0) & (p < lengths[:, None])
+        fidx = np.clip(offs[:, None] + p, 0, top)
+        hf = (codes[fidx] == want[None, :]) & inside
+        ridx = np.clip(offs[:, None] + lengths[:, None] - 1 - p, 0, top)
+        hr = (_RC[codes[ridx]] == want[None, :]) & inside
+        np.maximum(sf, np.add.reduceat(hf, starts, axis=1, dtype=np.int64), out=sf)
+        np.maximum(sr, np.add.reduceat(hr, starts, axis=1, dtype=np.int64), out=sr)
+    return sr.sum(axis=1) > sf.sum(axis=1) + max(2, mpos.size // 8)
 
 
 def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | None) -> dict:
