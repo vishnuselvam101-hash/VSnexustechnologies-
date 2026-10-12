@@ -1,5 +1,43 @@
 # Changelog
 
+## 12.0.0 (tag `v12.0.0`; performance release; docs/V12_COMPLETION_REPORT.md)
+
+All channel results are SIMULATED; no DNA was synthesised, stored or sequenced. Archive, container and strand formats
+are unchanged from v11.0.0 (no new format version); decode output is byte-identical to v11.0.0 on every benchmark seed.
+Benchmarks: docs/V12_BENCHMARK_REPORT.md. The low-coverage and real-data robustness scope of the V12 brief
+(notes V12-DESIGN-LOWCOV) is not part of this release.
+
+### Added
+- **Native orientation kernel** `vnxdna.native.orient` (`native/c/orient.c`, ABI 1): the pass-1 orientation
+  pre-pass runs in C, bit-exact with the NumPy reference `pass1._orientation_reference` (equivalence on every layout,
+  golden hashes, 125 405-read differential fuzz, gcc/clang ASan+UBSan). `VNXDNA_ORIENT_BACKEND` = auto | native |
+  reference, `VNXDNA_ORIENT_LIB`; `python -m vnxdna.native.orient build`; reported by `python -m vnxdna.native`, the
+  conformance `--backend` switch and the dispatch path report.
+- **A/A and A/B benchmark harness** `experiments/v12/bench/` (paired per seed, alternating order, bootstrap CI,
+  `compare_aa.py` against the A/A noise band) with the committed runs `baseline-aa`, `ab-pass2`, `ab-pass1`, `ab-orient`.
+- `tests/v12/`: exact statistics, orientation, parallel pass 2, pass-1 gathers, native orientation kernel (+91 tests).
+
+### Changed
+- **Parallel pass 2.** Duplicate resolution and consensus per spill bucket run on the pass-1 worker pool; each bucket
+  returns two arrays (addresses, payload matrix). Output identical for any worker count.
+- **Shift-tolerant orientation pre-pass.** Marker blocks score their best agreement within ±2 nt, so one indel no
+  longer flips a forward read (forward reads with indels flipped 4.9 % → 0.01 %, reverse-complement reads detected
+  73 % → 99.6 % on the test fixtures). Reads whose forward agreement already settles the decision leave the scan early.
+- **Pass-1 bookkeeping** without per-read Python loops (flat gathers for exact-length rows, raw headers, pending
+  records).
+- Stage-counter and read-clustering goldens re-pinned for the new pre-pass (status and container SHAs unchanged).
+
+### Fixed
+- `false_accept_bound` and `entropy_bits_sum` in the decode report differed in the last float bits between worker
+  counts (latent since V11: float sums merged per batch/chunk/bucket). Smart/soft summaries now accumulate exact
+  rational terms and convert once; `tests/v12/test_exact_stats.py` fails on the v11.0.0 code.
+
+### Performance (SIMULATED, 4 MiB, 1 %/0.2 %/0.2 % indel channel, coverage 5, one 4C/8T host, v11.0.0 = 1.0)
+- Decode: 1 worker 1.11x, 2 workers 1.15x, 4 workers 1.23x, 8 workers 1.34x; reverse-complement 1.24x, dropout 1.27x,
+  substitution 1.17x, 16 MiB 1.32x; clean, 64 KiB and encode within the A/A noise band. Pre-registered targets T1
+  (4 workers ≥ 1.25) and T2 (1 worker ≥ 1.15) are **not met**; T5 (peak RSS ≤ 1.10x) is **not met** (up to 1.23x at
+  4 workers on clean/substitution inputs). Details and every CI: docs/V12_BENCHMARK_REPORT.md.
+
 ## 11.0.0 (tag `v11.0.0`; production-oriented release; docs/V11_COMPLETION_REPORT.md)
 
 All channel results are SIMULATED; no DNA was synthesised, stored or sequenced. Archive, container and strand formats
