@@ -533,8 +533,9 @@ def _sorted_blocks(scan: ScanResult, loaded: LoadedV2, workdir: Path, stats: Mut
 
     def filtered(block: np.ndarray) -> np.ndarray:
         keep = (block["tag"] == tag) & (block["stripe"].astype(np.int64) < stripe_count)
-        stats["records_foreign_or_out_of_range"] += int((~keep).sum())
-        return block[keep]
+        dropped = int((~keep).sum())
+        stats["records_foreign_or_out_of_range"] += dropped
+        return block[keep] if dropped else block  # no copy when every record is kept (the normal case)
 
     def read_blocks(path: Path) -> Iterator[np.ndarray]:
         with path.open("rb") as handle:
@@ -605,19 +606,32 @@ def assemble_chunks(scan: ScanResult, loaded: LoadedV2, workdir: Path, *, wanted
                 break
             if block.size:
                 carry.append(block)
+            del block
         if not carry:
             return np.zeros(0, dtype=record_dtype(p))
-        joined = concat_records(carry, carry[0].dtype)
-        cut = int(np.searchsorted(joined["stripe"].astype(np.int64), stripe_end, side="left"))
-        carry.clear()
-        if cut < joined.size:
-            carry.append(joined[cut:])
-        return joined[:cut]
+        # The parts are in non-decreasing stripe order, so the records below stripe_end are a prefix of their
+        # concatenation. Copy that prefix into one array part by part, releasing each part as it is copied: peak memory
+        # stays one chunk's records plus one block (np.concatenate held every part and the joined copy at once).
+        cuts = [int(np.searchsorted(part["stripe"].astype(np.int64), stripe_end, side="left")) for part in carry]
+        taken = np.empty(sum(cuts), dtype=carry[0].dtype)  # the record dtype, so the big-endian layout is kept
+        rest: list[np.ndarray] = []
+        pos = 0
+        for cut in cuts:
+            part = carry.pop(0)
+            taken[pos:pos + cut] = part[:cut]
+            pos += cut
+            if cut < part.size:
+                rest.append(part[cut:])
+            del part
+        carry.extend(rest)
+        return taken
 
     for c in wanted_list:
         lo, stripes = int(first[c]), int(count[c])
         taken = records_until(lo + stripes)
-        taken = taken[taken["stripe"].astype(np.int64) >= lo]
+        below = taken["stripe"].astype(np.int64) < lo
+        if below.any():
+            taken = taken[~below]
         try:
             yield c, _decode_chunk(c, taken, lo, stripes, int(sizes[c]), code, p, k, n, loaded, stats)
         except (InsufficientRedundancyError, IntegrityError) as error:

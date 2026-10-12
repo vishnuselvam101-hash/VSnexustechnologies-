@@ -72,6 +72,10 @@ was met (1.283x). The cProfile before/after artefact (w1) was added after the re
 - Benchmarks: one shared host under moderate background load, n = 5, not reproduced on a quiet or second machine; two
   medians fall just below 1.0 (clean decode w4 0.981, encode 1 MiB w4 0.995) with CIs containing 1.0 — no regression
   shown, none ruled out.
+- `tests/v3/test_release_review_v3.py::test_sigterm_cleans_up_like_ctrl_c[1.0]` can fail on a fast runner with rc
+  -15: the signal lands after the command has committed its output, while the interpreter is exiting (reproduced
+  locally; experiments/v11/mem/CI_RECOVER_PEAK_AND_SIGTERM.md). A test timing race, not a product defect; the test is
+  unchanged.
 - All results are SIMULATED on one host (4 cores / 8 threads, 31 GB).
 
 ## Next

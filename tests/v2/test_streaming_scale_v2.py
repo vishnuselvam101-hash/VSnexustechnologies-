@@ -140,3 +140,40 @@ def test_dna_pipeline_peak_memory_does_not_grow_with_input_size(tmp_path):
     for stage in ("encode", "decode"):
         assert growth[(stage, 4 << 20)] < growth[(stage, 1 << 20)] * 1.25 + 24 * 2**20, growth
     assert list(wd.iterdir()) == []
+
+
+def test_pass2_memory_is_bounded_by_two_spill_blocks(tmp_path, monkeypatch):
+    """Pass 2 (records → chunks) holds about two spill blocks (the one being read and the carried tail of the previous).
+
+    Before the fix, gathering a chunk's records kept the raw block, a filtered copy, the previous joined array, the
+    ``np.concatenate`` result and its big-endian ``astype`` copy alive together, about five blocks; so the recover
+    peak stepped up once the input needed more than one spill block (the 8 MB / 64 MB CI peak test).
+    """
+    import random
+    import tracemalloc
+
+    from vnxdna.v2 import decoder
+
+    write(tmp_path / "in.bin", random.Random(5).randbytes(600_000))
+    store_file(tmp_path / "in.bin", tmp_path / "a.vxdna", options=FAST)
+    encode_file(tmp_path / "a.vxdna", tmp_path / "s.vxs")
+    monkeypatch.setattr(decoder, "SPILL_BLOCK_RECORDS", 8192)
+    block_bytes = 8192 * decoder.record_dtype(FAST.payload_bytes).itemsize
+    real, peak = decoder.assemble_chunks, {}
+
+    def measured(*args, **kwargs):
+        tracemalloc.reset_peak()
+        start = tracemalloc.get_traced_memory()[0]
+        yield from real(*args, **kwargs)
+        peak["pass2"] = tracemalloc.get_traced_memory()[1] - start
+
+    monkeypatch.setattr(decoder, "assemble_chunks", measured)
+    tracemalloc.start()
+    try:
+        report = api.recover(tmp_path / "s.vxs", tmp_path / "o.bin", workers=1)
+    finally:
+        tracemalloc.stop()
+    assert (tmp_path / "o.bin").read_bytes() == (tmp_path / "in.bin").read_bytes()
+    assert report["recovery"]["pass2_mode"] == "sequential"
+    assert report["validated_records_spilled"] > 4 * 8192  # several spill blocks
+    assert peak["pass2"] < 3 * block_bytes, (peak, block_bytes)  # was about 5.2 blocks

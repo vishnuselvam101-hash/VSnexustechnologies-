@@ -39,6 +39,10 @@ are unchanged from v10.0.0 (no new format version). Benchmarks: see docs/V11_BEN
   directory is removed; a stop inside read clustering no longer keeps the removed unplaced-read store memory-mapped. A
   memory regression test asserts that DNA-pipeline peak RSS does not grow with input size past the spill-bucket bound;
   measurements are in `experiments/v11/mem/` (SIMULATED). The 10 MB nanopore-like run is deferred (not part of V11).
+- **V2 `recover` peak memory no longer steps up with input size.** Pass 2 (records → chunks) kept about five 13 MB
+  spill blocks alive (a filtered copy of every block, the carried previous array, the concatenation and its
+  big-endian copy); it now holds about two. The 64 MB recover peak drops from 155 MB to 105 MB, the same as 8 MB
+  (SIMULATED, one host; present since v10.0.0; experiments/v11/mem/CI_RECOVER_PEAK_AND_SIGTERM.md). Output unchanged.
 - `vnxdna.__version__` and `python -m vnxdna.native` reported `6.0.0.dev0`; now `11.0.0` (a test keeps the version equal
   to the CHANGELOG head). Stale "Unreleased" sections are folded under the releases they shipped in; no entry was removed.
 
