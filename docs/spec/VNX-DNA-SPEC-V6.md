@@ -467,6 +467,12 @@ decodes. Primer trimming in pass 1 costs O(reads × (Lf + Lr) × band) with band
 - At the start of Phase 2, `src/vnxdna/_version.py` MUST become a PEP 440 development version of the next release:
   `"6.0.0.dev0"`, incremented per merge to the build branch. The release sets `"6.0.0"`.
 - Output written by a development tree therefore never claims a released version.
+- **Frozen manifest format stamp (V11).** From 11.0.0.dev0 the package version and the manifest stamp are separate
+  values. Manifests (VNX4 `encoder.version` and `extensions.vnx.software`, and the V1/V2 `.vxdna` encoder stamps) record
+  `MANIFEST_ENCODER_VERSION = "6.0.0.dev0"` (`src/vnxdna/core/version.py`), a frozen *format stamp*, not the software
+  version: manifest bytes feed archive ids and the golden fixtures, so the stamp changes only together with a deliberate
+  container-format compatibility decision. Readers MUST NOT infer the writing software from it; `vnx version` reports
+  the software version.
 - `vnx version` MUST report every axis. It replaces the hard-coded `"frame_version": 4` (`v4/cli.py:126`):
 
 ```json

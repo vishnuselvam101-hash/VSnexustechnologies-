@@ -22,6 +22,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
+from vnxdna.core import guard as _guard
 from . import __version__
 from .channel import ChannelConfig, simulate as _simulate_pool
 from .container import manifest as mf
@@ -162,6 +163,7 @@ def encode(container_path: str | os.PathLike, output_path: str | os.PathLike, *,
     The stored chunks are checked against their manifest SHA-256 before
     encoding, so a corrupted container is never written to DNA. No key is needed.
     """
+    _guard.enforce("encode", output_path)
     p = Path(container_path)
     kind = detect_input(p)
     _reject_legacy(kind, p)
@@ -202,6 +204,7 @@ def decode(reads_path: str | os.PathLike, output_path: str | os.PathLike, *, opt
     Every stored chunk is verified against its manifest SHA-256 before the
     container is written. The result is byte-identical to the original container.
     """
+    _guard.enforce("decode", reads_path)
     p = Path(reads_path)
     if detect_input(p) != "reads":
         _reject_legacy(detect_input(p), p)
@@ -216,10 +219,12 @@ def decode(reads_path: str | os.PathLike, output_path: str | os.PathLike, *, opt
     return report
 
 
+@_guard.gated("restore")
 def restore(path: str | os.PathLike, output_path: str | os.PathLike, *, key: bytes | None = None,
             options: DecodeOptions = DecodeOptions(), overwrite: bool = False) -> dict[str, Any]:
     """Container **or** DNA reads → original file, fully verified (SHA-256 recomputed)."""
     opened = _open(path, key, require_key=True, options=options)
+    _guard.rebind("restore", path, opened.reader.manifest.archive_id)  # read files: re-check under the recovered archive id
     data, stats = opened.reader.read_all()
     vxdna.atomic_write(output_path, data, overwrite=overwrite)
     report = _recovery_report(opened, stats)
@@ -229,6 +234,7 @@ def restore(path: str | os.PathLike, output_path: str | os.PathLike, *, key: byt
     return report
 
 
+@_guard.gated("restore")
 def recover(reads_path: str | os.PathLike, output_path: str | os.PathLike, *, key: bytes | None = None,
             options: DecodeOptions = DecodeOptions(), overwrite: bool = False) -> dict[str, Any]:
     """DNA reads → original file in one step (decode + restore)."""
@@ -240,6 +246,7 @@ def recover(reads_path: str | os.PathLike, output_path: str | os.PathLike, *, ke
     return report
 
 
+@_guard.gated("extract")
 def extract(path: str | os.PathLike, output_path: str | os.PathLike, *, chunk: int | None = None, start: int | None = None,
             end: int | None = None, key: bytes | None = None, options: DecodeOptions = DecodeOptions(),
             overwrite: bool = False) -> dict[str, Any]:
@@ -247,6 +254,7 @@ def extract(path: str | os.PathLike, output_path: str | os.PathLike, *, chunk: i
     if (chunk is None) == (start is None):
         raise InvalidInputError("specify exactly one of --chunk or --start (with optional --end)")
     opened = _open(path, key, require_key=True, options=options)
+    _guard.rebind("extract", path, opened.reader.manifest.archive_id)
     reader = opened.reader
     if chunk is not None:
         readout = reader.read_chunks([chunk])

@@ -19,6 +19,7 @@ import contextvars
 import multiprocessing
 import os
 import time
+import traceback
 from collections import Counter
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
@@ -185,6 +186,12 @@ class ClusterStage:
         t = time.perf_counter()
         try:
             self._run()
+        except BaseException as error:
+            # the finished frames below hold views of the unplaced-read memory map; drop their locals so a caller that
+            # keeps the exception does not pin the store file the decode is about to remove
+            if error.__traceback__ is not None and error.__traceback__.tb_next is not None:
+                traceback.clear_frames(error.__traceback__.tb_next)
+            raise
         finally:
             self.seconds = time.perf_counter() - t
             self._publish_counters()

@@ -330,6 +330,7 @@ def _deferred_recovery(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Cou
     finally:
         if pool is not None:
             pool.shutdown()
+        orph = None         # release the memory map: a traceback that keeps this frame must not pin the removed orph.bin
     skipped_keys: set = set()
     skipped = 0
     for b in range(B):

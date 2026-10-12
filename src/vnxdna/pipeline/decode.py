@@ -55,6 +55,10 @@ def decode_reads(reads_path: str | os.PathLike, output: str | os.PathLike | None
     from vnxdna.core.observe import Events
     from vnxdna.recovery.planner import RecoveryPlanner
     from vnxdna.native import backend_summary
+    from vnxdna.dispatch import path_report
+    # path selection (and the opt-in differential self-check / quarantine) BEFORE any kernel runs or worker starts,
+    # so a failing native kernel is bypassed for this whole run and the report states the path that actually ran
+    path_selection = path_report()
     ev = Events(observer, task_id, t0)
     backends = backend_summary()        # provenance: which kernels run natively (never raises; additive report field)
     cluster_box: dict = {}              # V7 read clustering (opt-in): the stage object, for its report block
@@ -80,6 +84,7 @@ def decode_reads(reads_path: str | os.PathLike, output: str | os.PathLike | None
     if sc is not None:
         rep_["stage_counters"] = sc.block(status=res.status, report=rep_)
     rep_["native_backends"] = backends
+    rep_["path_selection"] = path_selection
     ev.emit("decode_end", "output", status=res.status, seconds=round(rep_.get("seconds", 0.0), 4),
             groups_decoded=rep_.get("groups_decoded"), groups_failed=rep_.get("groups_failed"),
             peak_rss_bytes=rep_.get("peak_rss_bytes"))
@@ -107,6 +112,7 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
         raise VNXFormatError(f"cannot read {reads_path}: {error.strerror or error}") from None
     buckets = _bucket_count(est_reads)
     tmp_root = tempfile.mkdtemp(prefix="vnx4-decode-", dir=workdir)
+    spill = cluster = None
     try:
         smart = opt.indel_recovery == "smart"
         softm = opt.soft_decoding != "off"
@@ -121,7 +127,6 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
                      opt.soft_config if softm else None)
         clustering = opt.read_clustering != "off"
         initargs = base_args + (deferred, qw, opt.retry_band, stage_counters is not None) + ((True,) if clustering else ())
-        cluster = None
         if clustering:
             # V7 item A (opt-in): unplaced-read store in pass 1; the stage itself runs lazily in pass 2 (fill-only)
             from vnxdna.recovery.cluster.stage import ClusterStage
@@ -222,4 +227,10 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
                         **({"cluster": cluster} if cluster is not None else {}))
         return result
     finally:
+        # a stop in pass 1 leaves the spill files open; close them before removing the directory, or the removed files
+        # keep their disk blocks for as long as the caller holds the exception (its traceback keeps this frame alive)
+        if spill is not None:
+            spill.close()
+        if cluster is not None:
+            cluster.store.close()
         shutil.rmtree(tmp_root, ignore_errors=True)

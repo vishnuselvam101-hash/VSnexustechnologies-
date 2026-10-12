@@ -19,13 +19,13 @@ import os
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
-from .. import __version__
 from ..dna.constraints import ConstraintSpec
 from ..dna.strand import FRAME_FORMAT, StrandGeometry
 from ..ecc.cauchy import CauchyErasureCode
 from ..errors import ConfigurationError
 from . import compression, crypto
 from . import manifest as mf
+from ..core.version import MANIFEST_ENCODER_VERSION
 
 
 @dataclass(frozen=True)
@@ -135,7 +135,7 @@ def build_container(data: bytes, options: StoreOptions = StoreOptions(), key: by
     raw: dict[str, Any] = {
         "format": mf.FORMAT_MAGIC,
         "format_version": mf.FORMAT_VERSION,
-        "encoder": {"name": "vnxdna", "version": __version__},
+        "encoder": {"name": "vnxdna", "version": MANIFEST_ENCODER_VERSION},
         "required_features": sorted(mf.required_features(options.mapping, encrypted)),
         "archive_id": archive_id.hex(),
         "created_at": options.timestamp,

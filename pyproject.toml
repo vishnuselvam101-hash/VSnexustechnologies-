@@ -36,7 +36,7 @@ version = {attr = "vnxdna._version.__version__"}
 where = ["src"]
 
 [tool.setuptools.package-data]
-"vnxdna.v5" = ["native/*.c"]
+"vnxdna.v5" = ["native/*.c", "native/*.inc"]
 "vnxdna.v6" = ["native/*.c"]
 "vnxdna.native" = ["c/*.c", "cpp/*.cpp", "rust/*/Cargo.toml", "rust/*/Cargo.lock", "rust/*/src/*.rs"]
 "vnxdna.core" = ["schemas/*.json"]

@@ -83,6 +83,22 @@ def assign(frames: np.ndarray, ks: np.ndarray, variants: np.ndarray, targets: np
     return tgt, var, dist.astype(np.int64), sec.astype(np.int64)
 
 
+def _sizes(parity, mul, inv, known, sym, rows=None, rows_name="") -> None:
+    """V11-RT-09: the C++ ABI takes k, m and P from parity and sym and reads known (n), sym (n x P), mul (256 x 256), inv
+    (256) and the candidate rows without a length; refuse any array of another size before the call."""
+    if parity.ndim != 2 or sym.ndim != 2:
+        raise ValueError("parity and sym must be 2-D")
+    n = parity.shape[0] + parity.shape[1]
+    if mul.size != 256 * 256 or inv.size != 256:
+        raise ValueError("mul must hold 256 x 256 and inv 256 GF(256) entries")
+    if known.shape != (n,) or sym.shape[0] != n:
+        raise ValueError(f"known and sym must have n = k + m = {n} rows")
+    if rows is not None:
+        pos, *payloads = rows
+        if pos.ndim != 1 or any(a.shape != (pos.size, sym.shape[1]) for a in payloads):
+            raise ValueError(f"{rows_name} must have one row of P = {sym.shape[1]} bytes per position")
+
+
 def decode_row(parity: np.ndarray, mul: np.ndarray, inv: np.ndarray, known: np.ndarray, sym: np.ndarray,
                cpos: np.ndarray, cval: np.ndarray, cok: np.ndarray, min_extra: int, margin: int, max_subsets: int):
     """See vnxdna.recovery.outer_list.decode_row_reference. Returns (sym, accepted columns, best, second)."""
@@ -97,6 +113,7 @@ def decode_row(parity: np.ndarray, mul: np.ndarray, inv: np.ndarray, known: np.n
     cok = np.ascontiguousarray(cok, dtype=np.uint8).reshape(-1, P)
     mul = np.ascontiguousarray(mul, dtype=np.uint8)
     inv = np.ascontiguousarray(inv, dtype=np.uint8)
+    _sizes(parity, mul, inv, known, sym, (cpos, cval, cok), "cval and cok")
     best = np.empty(P, np.int32)
     second = np.empty(P, np.int32)
     nc = cpos.size
@@ -120,6 +137,7 @@ def ransac(parity: np.ndarray, mul: np.ndarray, inv: np.ndarray, known: np.ndarr
     hval = np.ascontiguousarray(hval, dtype=np.uint8).reshape(-1, P)
     mul = np.ascontiguousarray(mul, dtype=np.uint8)
     inv = np.ascontiguousarray(inv, dtype=np.uint8)
+    _sizes(parity, mul, inv, known, sym, (hpos, hval), "hval")
     agree = np.zeros(hpos.size, np.int32)
     nh = hpos.size
     best = _check(lib.vnx_ol_ransac(k, m, P, parity.ctypes.data, mul.ctypes.data, inv.ctypes.data, known.ctypes.data,

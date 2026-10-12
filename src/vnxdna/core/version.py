@@ -5,7 +5,12 @@ The software version is the package version (``vnxdna._version``, recorded as ``
 """
 from vnxdna._version import __version__
 
-__all__ = ["__version__", "FORMAT_VERSION", "FRAME_VERSION", "SPEC_VERSION", "CONTAINER_READ", "CONTAINER_WRITE",
+#: Encoder/software stamp written into container manifests. Deliberately NOT the package version: manifest bytes feed archive
+#: ids and the pinned golden fixtures, so it changes only with a container-format compatibility decision (V11 WP4). It is a
+#: frozen *format stamp* (spec §4.2), not a software version: never derive the writing software from it.
+MANIFEST_ENCODER_VERSION = "6.0.0.dev0"
+
+__all__ = ["__version__", "MANIFEST_ENCODER_VERSION", "FORMAT_VERSION", "FRAME_VERSION", "SPEC_VERSION", "CONTAINER_READ", "CONTAINER_WRITE",
            "FRAME_READ", "FRAME_WRITE", "LEGACY_DETECTED", "SUPERBLOCK_READ", "SUPERBLOCK_WRITE", "CODECS", "codec_id"]
 FORMAT_VERSION = (4, 0)   # VNX4 container major, minor
 FRAME_VERSION = 4         # strand frame version nibble

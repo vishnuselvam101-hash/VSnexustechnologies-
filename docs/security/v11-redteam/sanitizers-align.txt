@@ -1,0 +1,20 @@
+# run 2026-10-11 on work/v11-redteam at a7772da (clean tree), PY=/root/vnx-dna-lab/.venv/bin/python, nice 19, CPUs 6-7
+kernel source sha256: c5a81b7a4f1366b198558d06f9abdd9d54f0a399584988d233dc7bd5fbc826cf
+gcc:   gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+clang: Ubuntu clang version 18.1.3 (1ubuntu1)
+gcc-asan-ubsan: tests/v5/test_native_alignment.py tests/v5/test_native_alignment_equivalence.py exit=0 (304 passed in 111.94s (0:01:51))
+gcc-asan-ubsan stress_fuzz scalar: {"rounds": 60, "reads": 15000, "mismatches": 0, "library": "/tmp/v11rt/san-align/gcc_asan_ubsan.so", "level": "scalar", "seconds": 20.6}
+gcc-asan-ubsan stress_fuzz avx2: {"rounds": 60, "reads": 15000, "mismatches": 0, "library": "/tmp/v11rt/san-align/gcc_asan_ubsan.so", "level": "avx2", "seconds": 18.7}
+gcc-asan-ubsan stress_fuzz avx512: {"rounds": 60, "reads": 15000, "mismatches": 0, "library": "/tmp/v11rt/san-align/gcc_asan_ubsan.so", "level": "avx512", "seconds": 19.9}
+clang-asan-ubsan: tests/v5/test_native_alignment.py tests/v5/test_native_alignment_equivalence.py exit=0 (304 passed in 95.29s (0:01:35))
+clang-asan-ubsan stress_fuzz scalar: {"rounds": 60, "reads": 15000, "mismatches": 0, "library": "/tmp/v11rt/san-align/clang_asan_ubsan.so", "level": "scalar", "seconds": 17.1}
+clang-asan-ubsan stress_fuzz avx2: {"rounds": 60, "reads": 15000, "mismatches": 0, "library": "/tmp/v11rt/san-align/clang_asan_ubsan.so", "level": "avx2", "seconds": 16.4}
+clang-asan-ubsan stress_fuzz avx512: {"rounds": 60, "reads": 15000, "mismatches": 0, "library": "/tmp/v11rt/san-align/clang_asan_ubsan.so", "level": "avx512", "seconds": 16.1}
+clang-ubsan-trap: tests/v5/test_native_alignment.py tests/v5/test_native_alignment_equivalence.py exit=0 (304 passed in 49.06s)
+clang-ubsan-trap stress_fuzz scalar: {"rounds": 60, "reads": 15000, "mismatches": 0, "library": "/tmp/v11rt/san-align/clang_ubsan_trap.so", "level": "scalar", "seconds": 7.7}
+clang-ubsan-trap stress_fuzz avx2: {"rounds": 60, "reads": 15000, "mismatches": 0, "library": "/tmp/v11rt/san-align/clang_ubsan_trap.so", "level": "avx2", "seconds": 7.6}
+clang-ubsan-trap stress_fuzz avx512: {"rounds": 60, "reads": 15000, "mismatches": 0, "library": "/tmp/v11rt/san-align/clang_ubsan_trap.so", "level": "avx512", "seconds": 7.5}
+gcc canary: AddressSanitizer fired as expected
+clang canary: AddressSanitizer fired as expected
+overall: PASS
+rc=0

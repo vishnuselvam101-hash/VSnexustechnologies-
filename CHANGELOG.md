@@ -1,5 +1,64 @@
 # Changelog
 
+## 11.0.0 (tag `v11.0.0`; production-oriented release; docs/V11_COMPLETION_REPORT.md)
+
+All channel results are SIMULATED; no DNA was synthesised, stored or sequenced. Archive, container and strand formats
+are unchanged from v10.0.0 (no new format version). Benchmarks: see docs/V11_BENCHMARK_REPORT.md.
+
+### Added
+- **SIMD levels in the native aligner (WP1, native ABI 3).** `align.c` runs its DP/traceback loop at 4 lanes
+  (portable), 8 lanes (AVX2) or 16 lanes (AVX-512F/BW), chosen at run time; a level the CPU/OS cannot run is refused
+  before any of its code executes. `VNXDNA_ALIGN_BACKEND` accepts `avx512|avx2|scalar`; `status()` reports
+  `simd_level`. Output is byte-identical at every level (equivalence and V4/V5/V6 golden-read tests run per level). The
+  loader accepts only ABI-3 libraries, so a stale prebuilt library falls back to the reference instead of loading.
+- **Adaptive execution dispatcher (WP2, `vnxdna.native.dispatch`).** One capability probe, deterministic path choice,
+  safe fallback to the reference implementation, and the selected path recorded in every encode and decode report
+  (additive `path_selection` field). Opt-in `VNXDNA_DIFFERENTIAL` self-check compares native and reference output on a
+  sample, quarantines a mismatching native kernel (reference fallback), or raises when native was requested explicitly.
+- **Opt-in VNX-Secure gate (WP4)** (`vnxdna.core.guard`): `encode`, `decode` and `extract` in `vnxdna.sdk.api` accept
+  `secure=SecureContext(...)`, and the metadata reads `inspect`, `verify`, `list_entries` and `locate` are gated as
+  `list`/`verify`/`locate`. Every plaintext path is gated: the legacy `api`/`v2.api` restore, recover and extract,
+  `v2.archive.restore_file` and `v2.archive.extract_range` (plus encode and decode), by
+  `VNX_SECURE_HOME`/`VNX_SECURE_TOKEN`/`VNX_SECURE_SESSION` (env, so the CLIs are covered). `VNX_SECURE_REQUIRE=1` makes a
+  missing context a denial, and a token or session without the full set is denied (`partial_context`). The resource is
+  `archive:<archive_id>` (rename/copy cannot dodge a lock); read files are re-checked under the recovered archive id
+  before any plaintext exists. Lock and revocation state written by another process is re-read before each decision. The
+  gate uses the existing `ControlPlane.authorize`, fails closed (any error is `AccessDenied`), runs before any work and
+  never puts a token in an error. Default behaviour is unchanged.
+
+### Changed
+- The manifest `encoder.version` / `extensions.vnx.software` value is now a frozen **format stamp**
+  (`MANIFEST_ENCODER_VERSION = "6.0.0.dev0"`, spec §4.2), kept byte-identical so archive ids and golden fixtures do not
+  move; it is not the software version. `vnxdna.v4.container.__version__` is the package version again (it had been an
+  alias of the stamp); the stamp is `vnxdna.v4.container.MANIFEST_ENCODER_VERSION`.
+
+- `vnx-dna --version` and `vnx --version` print the package version (tests keep both equal to `vnxdna._version`).
+
+### Fixed
+- **Memory and cleanup (WP3).** A stopped or interrupted decode releases its spill files and orphan map before the spill
+  directory is removed; a stop inside read clustering no longer keeps the removed unplaced-read store memory-mapped. A
+  memory regression test asserts that DNA-pipeline peak RSS does not grow with input size past the spill-bucket bound;
+  measurements are in `experiments/v11/mem/` (SIMULATED). The 10 MB nanopore-like run is deferred (not part of V11).
+- **V2 `recover` peak memory no longer steps up with input size.** Pass 2 (records → chunks) kept about five 13 MB
+  spill blocks alive (a filtered copy of every block, the carried previous array, the concatenation and its
+  big-endian copy); it now holds about two. The 64 MB recover peak drops from 155 MB to 105 MB, the same as 8 MB
+  (SIMULATED, one host; present since v10.0.0; experiments/v11/mem/CI_RECOVER_PEAK_AND_SIGTERM.md). Output unchanged.
+- `vnxdna.__version__` and `python -m vnxdna.native` reported `6.0.0.dev0`; now `11.0.0` (a test keeps the version equal
+  to the CHANGELOG head). Stale "Unreleased" sections are folded under the releases they shipped in; no entry was removed.
+
+### Security (local red-team review, job #90; docs/security/V11_SECURITY_REVIEW.md)
+Nine findings fixed, each with a regression test that failed before the fix; no CRITICAL finding.
+- HIGH V11-RT-05: `vnx conformance --vectors` could write vector files outside its temporary directory (absolute or
+  `..` paths); both paths must now be relative archive paths that resolve inside it.
+- MEDIUM V11-RT-01: a forged, CRC-valid superblock claiming ~10^8 groups exhausted memory in pass 2; refused up front
+  (RESOURCE_LIMIT) when the reads cannot support the claim. MEDIUM V11-RT-04: the legacy v0.1 reader's zstd bound
+  allocated the size the frame declared; now a stream bounded by the manifest size.
+- LOW V11-RT-02 (extract containment is path-aware and re-checked before the rename; the V6-SEC-10 TOCTOU window is
+  narrower, not closed), RT-03 (`sdk.archive` passes the VNX-Secure gate), RT-06 (conformance gzip reads capped at
+  256 MiB), RT-07 (keys/passphrases kept out of reprs; warning on group/other-readable key files), RT-08 (relative
+  `VNXDNA_*_LIB` overrides refused, so `dlopen` never searches), RT-09 (C++ outer-list wrappers check every buffer
+  length before the call; no ABI change).
+
 ## 10.0.0 (tag `v10.0.0`; hybrid native architecture; docs/V10_COMPLETION_REPORT.md)
 
 All channel results are SIMULATED; no DNA was synthesised, stored or sequenced. Formats are unchanged: v9.0.0 and
@@ -36,7 +95,7 @@ v10.0.0 write byte-identical FASTA and recover byte-identical containers (docs/A
 - Conformance strand backend; oracle crash when list decoding was off; list-decoding rounds stopped early when a
   round only found candidates; UBSan finding in the candidate step (qsort on NULL).
 
-## Unreleased
+## 7.0.0 – 9.0.0 (formerly "Unreleased"; shipped in v7.0.0, v8.0.0 and v9.0.0)
 
 ### Added (V9, in development; docs/V9_PREREGISTRATION.md)
 
@@ -233,7 +292,7 @@ synthesised, stored or sequenced. Deferred work and the reason for each item: do
   `vnx locate` on V6 striped pools (job #62), `--select` when some failed groups lie outside the index (job #66).
 - No physical validation of any kind.
 
-## Unreleased (6.0.0.dev0) — job #79: opt-in redundancy profile for heavy dropout (PERF-DROP)
+## 6.0.0 development notes (formerly "Unreleased"; shipped in 6.0.0) — job #79: opt-in redundancy profile for heavy dropout (PERF-DROP)
 
 Formats unchanged; default unchanged. Channel results are SIMULATED (benchmarks/competitors/lab/results/b0-dropout).
 
@@ -251,7 +310,7 @@ Formats unchanged; default unchanged. Channel results are SIMULATED (benchmarks/
 - `benchmarks/competitors/lab/dropout_report.py` writes the per-cell Wilson tables and applies the pre-registered rule.
   `seen_barocdes.json`, a runtime artefact of a third-party codec committed by mistake, is no longer tracked.
 
-## Unreleased (6.0.0.dev0) — job #80: opt-in retry band (ALIGN-BAND)
+## 6.0.0 development notes (formerly "Unreleased"; shipped in 6.0.0) — job #80: opt-in retry band (ALIGN-BAND)
 
 Formats unchanged; default unchanged. Channel results are SIMULATED (experiments/v6/align-band).
 
@@ -265,7 +324,7 @@ Formats unchanged; default unchanged. Channel results are SIMULATED (experiments
   The ground-truth funnel (AB-DIAG) puts the next nanopore-like bottlenecks at header-address recovery and
   whole-segment erasure. Native = reference on 102,400 fuzzed reads (AB-FUZZ).
 
-## Unreleased (6.0.0.dev0) — V6 Phase 3 (channel-model framework)
+## 6.0.0 development notes (formerly "Unreleased"; shipped in 6.0.0) — V6 Phase 3 (channel-model framework)
 
 Plan: docs/V6_ARCHITECTURE.md §8 Phase 3; docs/CHANNEL_MODEL.md. Formats unchanged. Every channel result is SIMULATED.
 
@@ -283,7 +342,7 @@ Plan: docs/V6_ARCHITECTURE.md §8 Phase 3; docs/CHANNEL_MODEL.md. Formats unchan
   give byte-identical reads to the current simulator, as /0 and as /1. Old `ChannelConfig` JSON gives byte-identical
   output (tests/simulation/test_sim_compat.py).
 
-## Unreleased (6.0.0.dev0) — V6 Phase 2 (codec/API refactor, version fixes, P1 bugs)
+## 6.0.0 development notes (formerly "Unreleased"; shipped in 6.0.0) — V6 Phase 2 (codec/API refactor, version fixes, P1 bugs)
 
 Plan: docs/V6_ARCHITECTURE.md §7–§8; formats unchanged (goldens v4_0, v5_0, v6_0 decode bit-exactly). Channel results
 are SIMULATED.
@@ -314,7 +373,7 @@ are SIMULATED.
   (`--consensus-weighting quality`; default `count` unchanged). Failure taxonomy, pre-registered comparison (efficacy
   REJECT, no default change), CNR IDS statistics (PUBLIC-DATA-DERIVED): experiments/v6/phase4.
 
-## Unreleased — V6 Phase 1 (outer-code resilience)
+## 6.0.0 development notes (formerly "Unreleased"; shipped in 6.0.0) — V6 Phase 1 (outer-code resilience)
 
 Opt-in; without the new options encoding is byte-identical to 5.0.0. All results are SIMULATED. Details:
 docs/V6_PHASE1_REPORT.md, format: docs/V6_OUTER_CODE.md.

@@ -1,0 +1,157 @@
+{
+  "scenario": {
+    "kind": "decode",
+    "bytes": 4194304,
+    "workers": 1,
+    "seed": 95500,
+    "channel": {
+      "substitution_rate": 0.01,
+      "insertion_rate": 0.002,
+      "deletion_rate": 0.002,
+      "coverage": 5
+    }
+  },
+  "evidence": "SIMULATED",
+  "load1_end": 2.25537109375,
+  "runs": [
+    {
+      "label": "v10",
+      "tree": "/root/vnx-dna-lab/v10-rel",
+      "outcome": "SUCCESS",
+      "matches_input": true,
+      "decode_seconds_profiled": 14.758,
+      "profile_total_s": 15.046,
+      "native": {
+        "align": "native",
+        "reads": "native",
+        "rs": "native",
+        "cluster": "native",
+        "strand": "native",
+        "integrity": "native",
+        "outerlist": "native"
+      },
+      "align_functions_by_cumtime": {
+        "align.py:197:align_usable": {
+          "calls": 162,
+          "tottime_s": 5.7481,
+          "cumtime_s": 6.1398
+        },
+        "align.py:179:_reads_in_domain": {
+          "calls": 162,
+          "tottime_s": 0.1673,
+          "cumtime_s": 0.2159
+        },
+        "align.py:216:<genexpr>": {
+          "calls": 565788,
+          "tottime_s": 0.071,
+          "cumtime_s": 0.071
+        },
+        "align.py:192:_ptr": {
+          "calls": 2592,
+          "tottime_s": 0.006,
+          "cumtime_s": 0.0183
+        },
+        "align.py:172:config_in_domain": {
+          "calls": 162,
+          "tottime_s": 0.0012,
+          "cumtime_s": 0.0035
+        },
+        "align.py:86:_load": {
+          "calls": 172,
+          "tottime_s": 0.0001,
+          "cumtime_s": 0.0027
+        },
+        "align.py:138:status": {
+          "calls": 3,
+          "tottime_s": 0.0,
+          "cumtime_s": 0.0027
+        },
+        "align.py:126:resolve_backend": {
+          "calls": 4,
+          "tottime_s": 0.0,
+          "cumtime_s": 0.0027
+        },
+        "align.py:115:available": {
+          "calls": 7,
+          "tottime_s": 0.0,
+          "cumtime_s": 0.0026
+        },
+        "align.py:59:_candidates": {
+          "calls": 1,
+          "tottime_s": 0.0,
+          "cumtime_s": 0.0022
+        }
+      }
+    },
+    {
+      "label": "v11",
+      "tree": "/root/vnx-dna-lab/v11",
+      "outcome": "SUCCESS",
+      "matches_input": true,
+      "decode_seconds_profiled": 12.311,
+      "profile_total_s": 12.578,
+      "native": {
+        "align": "native",
+        "reads": "native",
+        "rs": "native",
+        "cluster": "native",
+        "strand": "native",
+        "integrity": "native",
+        "outerlist": "native"
+      },
+      "align_functions_by_cumtime": {
+        "align.py:288:align_usable": {
+          "calls": 162,
+          "tottime_s": 2.9798,
+          "cumtime_s": 3.4022
+        },
+        "align.py:270:_reads_in_domain": {
+          "calls": 162,
+          "tottime_s": 0.1769,
+          "cumtime_s": 0.2248
+        },
+        "align.py:312:<genexpr>": {
+          "calls": 565788,
+          "tottime_s": 0.0776,
+          "cumtime_s": 0.0776
+        },
+        "align.py:283:_ptr": {
+          "calls": 2592,
+          "tottime_s": 0.0068,
+          "cumtime_s": 0.0199
+        },
+        "align.py:172:_resolve": {
+          "calls": 167,
+          "tottime_s": 0.0017,
+          "cumtime_s": 0.0119
+        },
+        "align.py:210:active_level": {
+          "calls": 163,
+          "tottime_s": 0.0003,
+          "cumtime_s": 0.0096
+        },
+        "align.py:263:config_in_domain": {
+          "calls": 162,
+          "tottime_s": 0.0012,
+          "cumtime_s": 0.0036
+        },
+        "align.py:153:supported_levels": {
+          "calls": 171,
+          "tottime_s": 0.003,
+          "cumtime_s": 0.0031
+        },
+        "align.py:223:status": {
+          "calls": 4,
+          "tottime_s": 0.0,
+          "cumtime_s": 0.0028
+        },
+        "align.py:110:_load": {
+          "calls": 504,
+          "tottime_s": 0.0002,
+          "cumtime_s": 0.0027
+        }
+      }
+    }
+  ],
+  "profiled_decode_ratio_v10_over_v11": 1.199
+}

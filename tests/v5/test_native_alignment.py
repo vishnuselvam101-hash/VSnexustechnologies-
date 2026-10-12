@@ -77,14 +77,15 @@ def test_abi_mismatch_is_rejected(monkeypatch, native_ready):
 def test_outside_domain_uses_reference(case, native_ready, monkeypatch):
     calls = []
     lib = na._load()
-    orig = lib.vnx_align_batch
+    orig = lib.vnx_align_batch_lv          # ABI 3: the aligner calls the explicit-level entry point
 
     def spy(*a):
         calls.append(1)
         return orig(*a)
 
     class Proxy:
-        vnx_align_batch = staticmethod(spy)
+        vnx_align_batch_lv = staticmethod(spy)
+        vnx_align_levels = staticmethod(lib.vnx_align_levels)
     monkeypatch.setattr(na, "_lib", Proxy())
     rng = np.random.default_rng(4)
     reads = [strand(LAY, rng) for _ in range(5)]
@@ -111,11 +112,13 @@ def test_outside_domain_uses_reference(case, native_ready, monkeypatch):
 
 def test_in_domain_reaches_kernel(native_ready, monkeypatch):
     calls = []
-    orig = na._load().vnx_align_batch
+    orig = na._load().vnx_align_batch_lv
 
     class Proxy:
+        vnx_align_levels = staticmethod(na._load().vnx_align_levels)
+
         @staticmethod
-        def vnx_align_batch(*a):
+        def vnx_align_batch_lv(*a):
             calls.append(1)
             return orig(*a)
     monkeypatch.setattr(na, "_lib", Proxy())
@@ -213,8 +216,10 @@ def test_profiled_entry_point_is_identical(native_ready):
 
 def test_kernel_error_raises_not_ignored(native_ready, monkeypatch):
     class Proxy:
+        vnx_align_levels = staticmethod(na._load().vnx_align_levels)
+
         @staticmethod
-        def vnx_align_batch(*a):
+        def vnx_align_batch_lv(*a):
             return -5
     monkeypatch.setattr(na, "_lib", Proxy())
     with pytest.raises(na.NativeAlignmentError, match="traceback"):
@@ -267,7 +272,7 @@ def test_decode_identical_with_either_backend(tmp_path, monkeypatch, native_read
         # native_backends records which aligner ran: it must name this backend (and is the only field allowed to differ)
         assert res.report["native_backends"]["align"]["backend"] == backend
         rep = {k: v for k, v in res.report.items()
-               if k not in ("stage_seconds", "seconds", "peak_rss_bytes", "output", "native_backends")}
+               if k not in ("stage_seconds", "seconds", "peak_rss_bytes", "output", "native_backends", "path_selection")}
         reports[backend] = (res.status, json.dumps(rep, sort_keys=True, default=str))
     assert reports["reference"] == reports["native"]
     status = reports["native"][0]

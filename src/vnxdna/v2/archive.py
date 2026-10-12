@@ -44,7 +44,8 @@ import numpy as np
 import zstandard
 import zlib
 
-from .. import __version__
+from vnxdna.core import guard as _guard
+from ..core.version import MANIFEST_ENCODER_VERSION, __version__  # noqa: F401 (public name)
 from ..container.builder import _safe_name
 from ..container.compression import decompress
 from ..errors import (AuthenticationError, ConfigurationError, IntegrityError, InvalidInputError, KeyRequiredError, MetadataError,
@@ -558,7 +559,7 @@ def store_file(input_path: str | os.PathLike, output_path: str | os.PathLike, *,
                         if cipher is not None else plain_clear)
         raw: dict[str, Any] = {
             "format": mf.FORMAT_MAGIC, "format_version": mf.FORMAT_VERSION,
-            "encoder": {"name": "vnxdna", "version": __version__},
+            "encoder": {"name": "vnxdna", "version": MANIFEST_ENCODER_VERSION},
             "required_features": sorted(mf.required_features(options.mapping, key is not None, final_epoch > 0)),
             "archive_id": archive_id.hex(), "created_at": options.timestamp, "profile": options.profile,
             "chunk_size": cs, "chunk_count": n,
@@ -638,12 +639,14 @@ def container_stored_chunks(cf: ContainerFileV2, loaded: LoadedV2, chunks: Itera
         yield c, data
 
 
+@_guard.gated("restore")
 def restore_file(path: str | os.PathLike, output_path: str | os.PathLike, *, key: bytes | None = None, workers: int = 0,
                  overwrite: bool = False) -> dict[str, Any]:
     started = time.perf_counter()
     workers = workers or default_workers()
     cf, loaded = open_container(path, key)
     try:
+        _guard.rebind("restore", path, loaded.manifest.archive_id)
         stats: dict[str, int] = {}
         chunks = verified_plaintext(loaded, container_stored_chunks(cf, loaded, range(loaded.manifest.chunk_count), stats), workers)
         result = write_verified_plaintext(loaded, chunks, output_path, overwrite=overwrite)
@@ -657,12 +660,14 @@ def restore_file(path: str | os.PathLike, output_path: str | os.PathLike, *, key
             "throughput_mb_s": result["size"] / elapsed / 1e6 if elapsed else None}
 
 
+@_guard.gated("extract")
 def extract_range(path: str | os.PathLike, output_path: str | os.PathLike, *, offset: int, length: int | None,
                   key: bytes | None = None, overwrite: bool = False) -> dict[str, Any]:
     """Random access on a container: read and verify only the chunks that cover [offset, offset+length)."""
     started = time.perf_counter()
     cf, loaded = open_container(path, key)
     try:
+        _guard.rebind("extract", path, loaded.manifest.archive_id)
         assert loaded.content is not None  # open_container requires the key, so the content record is open
         size = loaded.content.size
         end = size if length is None else offset + length

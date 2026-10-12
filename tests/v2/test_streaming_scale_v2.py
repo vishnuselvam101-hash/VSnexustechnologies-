@@ -85,3 +85,95 @@ def test_peak_memory_does_not_grow_with_file_size(tmp_path):
         peaks[size] = stage_peaks
     for small, large in zip(peaks[8_000_000], peaks[64_000_000]):
         assert large < small * 1.25 + 48 * 2**20, peaks
+
+
+_DNA_STAGE = r"""
+import json, resource, sys
+from pathlib import Path
+from vnxdna import sdk
+from vnxdna.archive.operations import ArchiveOptions
+from vnxdna.pipeline.encode import DNAOptions
+from vnxdna.recovery.options import DecodeOptions
+stage, a, b, wd = sys.argv[1], Path(sys.argv[2]), Path(sys.argv[3]), sys.argv[4]
+with open("/proc/self/statm") as f:
+    base = int(f.read().split()[1]) * 4096
+if stage == "encode":
+    r = sdk.encode([a], b, dna=DNAOptions(profile="v4-balanced", workers=1), archive_options=ArchiveOptions(workers=1),
+                   allow_unencrypted=True)
+else:
+    import tempfile
+    from vnxdna.recovery import spill
+    tempfile.tempdir = wd
+    spill.READS_PER_BUCKET = int(sys.argv[5])        # small buckets: the pass-2 bound is reached at test scale
+    r = sdk.decode(a, b, options=DecodeOptions(workers=1), allow_unencrypted=True)
+print(json.dumps({"status": str(r.status), "growth": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024 - base}))
+"""
+
+
+@pytest.mark.slow
+def test_dna_pipeline_peak_memory_does_not_grow_with_input_size(tmp_path):
+    """V11 WP3 memory regression guard for the DNA pipeline (sdk.encode -> sdk.decode of the strands as reads, one
+    worker, each stage in a fresh process). With spill buckets of 20 000 reads (production: 200 000) both sizes are past
+    the one-bucket bound, so the peak-RSS growth over the post-import baseline must not grow from 1 MiB to 4 MiB
+    (v10.0.0 and V11 measure about 13 MiB encode and 50-59 MiB decode at 1, 4 and 8 MiB; experiments/v11/mem); the
+    decode leaves no spill files behind."""
+    import json
+    import os
+    import random
+    import subprocess
+
+    import vnxdna
+    env = dict(os.environ, PYTHONPATH=os.path.dirname(os.path.dirname(vnxdna.__file__)))
+    wd = tmp_path / "spill"
+    wd.mkdir()
+    growth: dict = {}
+    for size in (1 << 20, 4 << 20):
+        src = tmp_path / f"{size}.bin"
+        src.write_bytes(random.Random(size).randbytes(size))
+        for stage, a, b in (("encode", src, tmp_path / f"{size}.fasta"), ("decode", tmp_path / f"{size}.fasta", tmp_path / f"{size}.vnx")):
+            p = subprocess.run([sys.executable, "-c", _DNA_STAGE, stage, str(a), str(b), str(wd), "20000"],
+                               capture_output=True, text=True, env=env, timeout=600, check=False)
+            assert p.returncode == 0, p.stderr[-800:]
+            r = json.loads(p.stdout.strip().splitlines()[-1])
+            assert r["status"].endswith("SUCCESS"), r
+            growth[(stage, size)] = r["growth"]
+    for stage in ("encode", "decode"):
+        assert growth[(stage, 4 << 20)] < growth[(stage, 1 << 20)] * 1.25 + 24 * 2**20, growth
+    assert list(wd.iterdir()) == []
+
+
+def test_pass2_memory_is_bounded_by_two_spill_blocks(tmp_path, monkeypatch):
+    """Pass 2 (records → chunks) holds about two spill blocks (the one being read and the carried tail of the previous).
+
+    Before the fix, gathering a chunk's records kept the raw block, a filtered copy, the previous joined array, the
+    ``np.concatenate`` result and its big-endian ``astype`` copy alive together, about five blocks; so the recover
+    peak stepped up once the input needed more than one spill block (the 8 MB / 64 MB CI peak test).
+    """
+    import random
+    import tracemalloc
+
+    from vnxdna.v2 import decoder
+
+    write(tmp_path / "in.bin", random.Random(5).randbytes(600_000))
+    store_file(tmp_path / "in.bin", tmp_path / "a.vxdna", options=FAST)
+    encode_file(tmp_path / "a.vxdna", tmp_path / "s.vxs")
+    monkeypatch.setattr(decoder, "SPILL_BLOCK_RECORDS", 8192)
+    block_bytes = 8192 * decoder.record_dtype(FAST.payload_bytes).itemsize
+    real, peak = decoder.assemble_chunks, {}
+
+    def measured(*args, **kwargs):
+        tracemalloc.reset_peak()
+        start = tracemalloc.get_traced_memory()[0]
+        yield from real(*args, **kwargs)
+        peak["pass2"] = tracemalloc.get_traced_memory()[1] - start
+
+    monkeypatch.setattr(decoder, "assemble_chunks", measured)
+    tracemalloc.start()
+    try:
+        report = api.recover(tmp_path / "s.vxs", tmp_path / "o.bin", workers=1)
+    finally:
+        tracemalloc.stop()
+    assert (tmp_path / "o.bin").read_bytes() == (tmp_path / "in.bin").read_bytes()
+    assert report["recovery"]["pass2_mode"] == "sequential"
+    assert report["validated_records_spilled"] > 4 * 8192  # several spill blocks
+    assert peak["pass2"] < 3 * block_bytes, (peak, block_bytes)  # was about 5.2 blocks

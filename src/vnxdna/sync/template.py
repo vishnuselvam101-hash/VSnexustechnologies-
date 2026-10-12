@@ -60,20 +60,25 @@ class Projection:
 class TemplateAligner:
     def __init__(self, layout: Layout, band: int = 6, costs: SyncCosts | None = None, backend: str | None = None,
                  retry_band: int = 0):
-        # backend: "auto" | "native" | "reference" (None = $VNXDNA_ALIGN_BACKEND, default auto). The NumPy code below
+        # backend: "auto" | "native" | "avx512" | "avx2" | "scalar" | "reference" (None = $VNXDNA_ALIGN_BACKEND, default
+        # auto; a level name forces that native SIMD level, V11 WP1). The NumPy code below
         # (_align/_traceback) is the reference; the V5 native kernel reproduces it bit for bit (V5 alignment contract).
         # retry_band (V6, opt-in; 0 = off): reads with band < |len − T| ≤ retry_band, which the band cannot align, are
         # aligned by a second aligner of band ``retry_band`` (the same DP and kernel, only a wider band). Reads inside
         # ``band`` never see it, so their projection is unchanged bit for bit.
         from vnxdna.native import align as _na
         self.backend = _na.resolve_backend(backend)
+        # the level align_usable runs: an explicit backend pins it ("native"/"auto": the auto policy, a level name: that
+        # level), so an explicit native aligner never follows VNXDNA_ALIGN_BACKEND=reference; None follows the environment
+        req = None if backend is None else _na.requested_backend(backend)     # normalised: "Native" == "native"
+        self.level_request = req if req in (*_na.LEVELS, "native", "auto") else None
         self.layout = layout
         self.band = band
         self.costs = costs or SyncCosts()
         if retry_band and retry_band <= band:
             raise ValueError("retry_band must be 0 (off) or larger than band")
         self.retry_band = int(retry_band)
-        self.retry = TemplateAligner(layout, retry_band, self.costs, self.backend) if retry_band else None
+        self.retry = TemplateAligner(layout, retry_band, self.costs, backend) if retry_band else None
         tpl, frame_pos = layout.template()
         self.tpl = tpl.astype(np.int16)
         self.frame_pos = frame_pos
@@ -118,7 +123,8 @@ class TemplateAligner:
                     w.bases, w.erased, w.ok, w.insertions, w.deletions, w.marker_mismatches, w.cost)
         if self.backend == "native" and idx.size:
             from vnxdna.native import align as _na
-            res = _na.align_usable(self, [reads[i] for i in idx], None if quals is None else [quals[i] for i in idx], min_quality)
+            res = _na.align_usable(self, [reads[i] for i in idx], None if quals is None else [quals[i] for i in idx], min_quality,
+                                  backend=getattr(self, "level_request", None))
             if res is not None:      # None: input outside the native domain -> the reference below
                 out_bases[idx], out_er[idx], ok[idx], ins_n[idx], del_n[idx], mm[idx], cost[idx] = res
                 return Projection(out_bases, out_er, ok, ins_n, del_n, mm, cost)
@@ -273,3 +279,43 @@ def strip_markers_exact(layout: Layout, reads: np.ndarray) -> tuple[np.ndarray, 
 
 def frame_erasures_to_bytes(erased_nt: np.ndarray) -> np.ndarray:
     return erased_nt.reshape(erased_nt.shape[0], -1, 4).any(axis=2)
+
+
+# ============================================================================ native aligner self-test (V11 WP1)
+def _native_selftest_workload():
+    """Fixed seeded reads on the default V4 layout: substitutions, insertions, deletions, N calls, reverse complements,
+    mixed qualities and lengths at both band edges; 21 reads, so every level ends with a ragged SIMD group. Used by
+    vnxdna.native.align.selftest, which compares a SIMD level against TemplateAligner._align (the reference)."""
+    from vnxdna.dnaenc.layout import PROFILES
+    layout = PROFILES["v4-balanced"][0]
+    al = TemplateAligner(layout, 6, backend="reference")
+    rng = np.random.default_rng(20261011)
+    tpl, _ = layout.template()
+    reads, quals = [], []
+    for k in range(21):
+        s = rng.integers(0, 4, tpl.size).astype(np.uint8)
+        s[tpl >= 0] = tpl[tpl >= 0].astype(np.uint8)
+        for _ in range(k % 5):
+            pos = int(rng.integers(0, s.size))
+            op = (k + _) % 3
+            s = (np.insert(s, pos, np.uint8(rng.integers(0, 4))) if op == 0 else np.delete(s, pos) if op == 1
+                 else np.where(np.arange(s.size) == pos, (s + 1) % 4, s).astype(np.uint8))
+        if k == 7:
+            s = s[: tpl.size - 6]
+        elif k == 8:
+            s = np.concatenate([s, np.zeros(6, np.uint8)])[: tpl.size + 6]
+        elif k == 9:
+            s = (3 - s[::-1]).astype(np.uint8)
+        elif k == 10:
+            s[[3, 50]] = 4
+        reads.append(np.ascontiguousarray(s, dtype=np.uint8))
+        quals.append(None if k % 4 == 3 else rng.integers(0, 42, s.size).astype(np.uint8))
+    return al, reads, quals
+
+
+def _register_native_selftest() -> None:
+    from vnxdna.native import align as _na
+    _na.register_selftest_workload(_native_selftest_workload)
+
+
+_register_native_selftest()

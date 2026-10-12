@@ -83,7 +83,7 @@ class Claims:
 @dataclass
 class TokenAuthority:
     """Issues and validates tokens. ``revoked_*`` sets are the revocation state (persisted by the control plane)."""
-    key: bytes
+    key: bytes = field(repr=False)
     clock: object
     ttl: float = 900.0
     revoked_tokens: set = field(default_factory=set)

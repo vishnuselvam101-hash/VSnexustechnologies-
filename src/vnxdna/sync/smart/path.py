@@ -131,7 +131,7 @@ def align_with_path(aligner: TemplateAligner, reads: list, quals: list | None = 
     sub_q = None if quals is None else [quals[i] for i in idx]
     res = None
     if want == "native":
-        res = na.align_usable(aligner, sub_r, sub_q, min_quality, readpos=True)
+        res = na.align_usable(aligner, sub_r, sub_q, min_quality, readpos=True, backend=getattr(aligner, "level_request", None))
     if res is None:
         ref = _reference_twin(aligner)
         for start in range(0, idx.size, 2048):

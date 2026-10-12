@@ -1,0 +1,20 @@
+# environment checks, 2026-10-11, worktree work/v11-redteam at a7772da (libraries built in place)
+## readelf -d src/vnxdna/native/c/libvnx_cluster.so (RPATH/RUNPATH/NEEDED)
+ 0x0000000000000001 (NEEDED) Shared library: [libc.so.6]
+## readelf -d src/vnxdna/native/c/libvnx_integrity.so (RPATH/RUNPATH/NEEDED)
+ 0x0000000000000001 (NEEDED) Shared library: [libgcc_s.so.1]
+ 0x0000000000000001 (NEEDED) Shared library: [libc.so.6]
+ 0x0000000000000001 (NEEDED) Shared library: [ld-linux-x86-64.so.2]
+## readelf -d src/vnxdna/native/c/libvnx_outerlist.so (RPATH/RUNPATH/NEEDED)
+ 0x0000000000000001 (NEEDED) Shared library: [libstdc++.so.6]
+ 0x0000000000000001 (NEEDED) Shared library: [libc.so.6]
+## readelf -d src/vnxdna/native/c/libvnx_strand.so (RPATH/RUNPATH/NEEDED)
+ 0x0000000000000001 (NEEDED) Shared library: [libc.so.6]
+## readelf -d src/vnxdna/v5/native/libvnx_align.so (RPATH/RUNPATH/NEEDED)
+ 0x0000000000000001 (NEEDED) Shared library: [libc.so.6]
+## readelf -d src/vnxdna/v6/native/libvnx_reads.so (RPATH/RUNPATH/NEEDED)
+ 0x0000000000000001 (NEEDED) Shared library: [libc.so.6]
+## readelf -d src/vnxdna/v6/native/libvnx_rs.so (RPATH/RUNPATH/NEEDED)
+ 0x0000000000000001 (NEEDED) Shared library: [libc.so.6]
+## typer
+typer 0.27.2 pretty_exceptions_show_locals default = False

@@ -21,9 +21,18 @@ class Spill:
         if raw_nt:     # V5 smart indel recovery keeps the raw read for consensus realignment
             pend += [("raw", "u1", (raw_nt,)), ("rawq", "u1", (raw_nt,)), ("rawlen", ">u2"), ("hasq", "u1")]
         self.pend_dtype = np.dtype(pend)
-        self.acc_files = [open(workdir / f"acc{b}.bin", "wb") for b in range(buckets)]
-        self.pend_files = [open(workdir / f"pend{b}.bin", "wb") for b in range(buckets)]
-        self.orph_file = open(workdir / "orph.bin", "wb") if raw_nt else None
+        self.acc_files: list = []
+        self.pend_files: list = []
+        self.orph_file = None
+        try:
+            for b in range(buckets):
+                self.acc_files.append(open(workdir / f"acc{b}.bin", "wb"))
+            for b in range(buckets):
+                self.pend_files.append(open(workdir / f"pend{b}.bin", "wb"))
+            self.orph_file = open(workdir / "orph.bin", "wb") if raw_nt else None
+        except BaseException:
+            self.close()            # e.g. EMFILE part-way: do not leak the handles already open
+            raise
 
     def write(self, res: dict) -> None:
         if self.orph_file is not None and "orph_raw" in res and len(res["orph_raw"]):
@@ -50,11 +59,22 @@ class Spill:
                 files[int(k)].write(rec[b == k].tobytes())
 
     def close(self) -> None:
+        """Idempotent."""
         for f in self.acc_files + self.pend_files + ([self.orph_file] if self.orph_file is not None else []):
             f.close()
 
     def load(self, b: int) -> tuple[np.ndarray, np.ndarray]:
         return (np.fromfile(self.dir / f"acc{b}.bin", dtype=self.acc_dtype), np.fromfile(self.dir / f"pend{b}.bin", dtype=self.pend_dtype))
+
+    def records(self) -> int:
+        """Records spilled so far (verified + pending + unaddressed), from the file sizes; nothing is loaded."""
+        n = 0
+        for name, dtype in (("acc", self.acc_dtype), ("pend", self.pend_dtype)):
+            for b in range(self.B):
+                path = self.dir / f"{name}{b}.bin"
+                n += path.stat().st_size // dtype.itemsize if path.exists() else 0
+        orph = self.dir / "orph.bin"
+        return n + (orph.stat().st_size // self.pend_dtype.itemsize if orph.exists() else 0)
 
     def load_orphans(self) -> np.ndarray:
         """Read-only memory map of the unaddressed reads (pages are read on demand, so memory stays bounded)."""

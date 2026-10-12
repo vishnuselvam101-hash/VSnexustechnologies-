@@ -104,12 +104,12 @@ def test_default_encoding_identical_to_v5_release(tmp_path):
 def _build_with_5_0_0_manifest_fields(inputs, out):
     """The default archive exactly as 5.0.0 wrote it: encoder.version 5.0.0 and no writer-provenance block."""
     from vnxdna.v4 import container as ct
-    old = ct.__version__
-    ct.__version__ = "5.0.0"
+    old = ct.MANIFEST_ENCODER_VERSION
+    ct.MANIFEST_ENCODER_VERSION = "5.0.0"
     try:
         ar.build_archive(inputs, out, ar.ArchiveOptions(writer_provenance=False))     # 6.x: extensions.vnx is opt-out
     finally:
-        ct.__version__ = old
+        ct.MANIFEST_ENCODER_VERSION = old
 
 
 def test_superblock_v1_bytes_unchanged_and_v2_roundtrip():

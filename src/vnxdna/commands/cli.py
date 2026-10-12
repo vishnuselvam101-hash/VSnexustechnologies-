@@ -119,9 +119,18 @@ EXPECT_SHA_OPT = typer.Option(None, "--expect-sha256",
                               help="Refuse a container whose SHA-256 differs (64 hex characters; exit 1 ARCHIVE_MISMATCH).")
 
 
+def _print_version(value: bool) -> None:
+    if value:
+        from vnxdna._version import __version__
+        typer.echo(f"vnx {__version__}")
+        raise typer.Exit()
+
+
 @app.callback()
 def main_callback(verbose: bool = typer.Option(False, "--verbose", "-v", help="Show tracebacks for internal errors."),
-                  progress: bool = typer.Option(False, "--progress", help="Progress, stage, throughput on stderr.")) -> None:
+                  progress: bool = typer.Option(False, "--progress", help="Progress, stage, throughput on stderr."),
+                  show_version: bool = typer.Option(False, "--version", callback=_print_version, is_eager=True,
+                                                    help="Print the software version and exit.")) -> None:
     STATE["verbose"] = verbose
     STATE["progress"] = progress
 
