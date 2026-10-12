@@ -22,6 +22,7 @@ jobs:
           python -m vnxdna.v6.native_rs build --strict
           python -m vnxdna.native.cluster build --strict
           python -m vnxdna.native.strand build --strict
+          python -m vnxdna.native.orient build --strict
           python -m vnxdna.native.integrity build --strict
       - run: ruff check src tests research
       - run: python -m pytest
@@ -119,7 +120,7 @@ jobs:
       - run: npm run build
       - run: VNX_TEST_PYTHON=python npm test
   sanitizers:
-    # ASan+UBSan builds (gcc; clang ASan+UBSan and UBSan trap mode) of the C kernels (align, reads, rs, cluster, strand),
+    # ASan+UBSan builds (gcc; clang ASan+UBSan and UBSan trap mode) of the C kernels (align, reads, rs, cluster, strand, orient),
     # each running its native equivalence tests, a differential stress fuzz against the reference and an ASan canary
     runs-on: ubuntu-latest
     steps:

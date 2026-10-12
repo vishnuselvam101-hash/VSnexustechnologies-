@@ -35,7 +35,7 @@ import numpy as np
 
 SCHEMA = "vnx.path/1"
 DIFFERENTIAL_ENV = "VNXDNA_DIFFERENTIAL"
-_LOADER_KERNELS = ("strand", "integrity", "outerlist")
+_LOADER_KERNELS = ("strand", "orient", "integrity", "outerlist")
 
 
 class DispatchError(RuntimeError):

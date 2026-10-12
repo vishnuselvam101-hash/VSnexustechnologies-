@@ -11,6 +11,7 @@ import numpy as np
 from vnxdna.dnaenc.frame4 import decode_frames, tentative_address
 from vnxdna.dnaenc.layout import HEADER_BYTES, Layout
 from vnxdna.dnaenc.mapping import nt_to_bytes
+from vnxdna.native import orient as native_orient
 from vnxdna.sync.template import SyncCosts, TemplateAligner, frame_erasures_to_bytes, strip_markers_exact
 
 
@@ -200,13 +201,13 @@ def _soft_evidence(read, qual, proj_bases, proj_erased, rpos, plan):
 def _orientation(codes: np.ndarray, lengths: np.ndarray) -> np.ndarray:
     """True where the reverse complement agrees better with the marker template (layouts with markers only).
 
-    Vectorised over the flat batch: marker positions are gathered from each read's start (forward) and from its end
-    (reverse complement) without per-read Python work.
-
     V12: each marker block scores its best agreement over shifts of up to ``_ORIENT_SHIFT`` nt. One indel shifts every
     later marker; V11 compared unshifted positions only, so 4.5 % of forward reads with indels (SIMULATED, 1 %/0.2 %/0.2 %
     channel) were flipped, failed, and were only rescued by the reverse-complement retry. The retry is unchanged: a wrong
     orientation still costs only time.
+
+    The scan runs in the native kernel ``vnxdna.native.orient`` when it loads (``VNXDNA_ORIENT_BACKEND``), else in
+    :func:`_orientation_reference`, the NumPy specification the kernel is checked against bit for bit.
     """
     lay: Layout = _P["lay"]
     n = lengths.size
@@ -214,11 +215,24 @@ def _orientation(codes: np.ndarray, lengths: np.ndarray) -> np.ndarray:
     mpos = np.flatnonzero(tpl >= 0)
     if n == 0 or mpos.size == 0:
         return np.zeros(n, dtype=bool)
-    offs = np.concatenate([[0], np.cumsum(lengths)])[:-1]
     want = tpl[mpos].astype(np.uint8)
     starts = np.flatnonzero(np.diff(mpos, prepend=-2) > 1)          # first marker position of each marker block
-    top = max(0, codes.size - 1)
     margin = max(2, mpos.size // 8)
+    if native_orient.resolve_backend() == "native":
+        return native_orient.scan(codes, lengths, mpos, want, starts, margin, _ORIENT_SHIFT)
+    return _orientation_reference(codes, lengths, mpos, want, starts, margin)
+
+
+def _orientation_reference(codes: np.ndarray, lengths: np.ndarray, mpos: np.ndarray, want: np.ndarray,
+                           starts: np.ndarray, margin: int) -> np.ndarray:
+    """NumPy reference of the orientation scan (the specification of native/c/orient.c).
+
+    Vectorised over the flat batch: marker positions are gathered from each read's start (forward) and from its end
+    (reverse complement) without per-read Python work.
+    """
+    n = lengths.size
+    offs = np.concatenate([[0], np.cumsum(lengths)])[:-1]
+    top = max(0, codes.size - 1)
 
     def score(rows: np.ndarray, s: int, rc: bool) -> np.ndarray:
         """Per-block marker agreement of reads ``rows`` at shift ``s``, forward or as reverse complement."""
