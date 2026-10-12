@@ -107,7 +107,7 @@ def test_cluster_reads_keeps_clustering_and_reports_the_record():
 
 
 def test_config_default_and_validation():
-    assert ClusterConfig().bucket_cap_floor == 64 and ClusterConfig().to_dict()["bucket_cap_floor"] == 64
+    assert ClusterConfig().bucket_cap_floor == 2 and ClusterConfig().to_dict()["bucket_cap_floor"] == 2
     with pytest.raises(VNXConfigurationError):
         ClusterConfig(bucket_cap_floor=-1).validate()
     assert graph.is_stop([{"limit": "max_candidate_pairs", "stopped": False}, {"limit": "candidate_memory"}])

@@ -48,9 +48,11 @@ class ClusterConfig:
     max_candidate_pairs_ceiling: int = 1_000_000_000
     candidate_chunk_pairs: int = 1 << 25        # slot pairs held in memory at once (8 B each); results do not depend on it
     # V12: over the budget, lower the bucket cap (largest buckets first: the least specific k-mers) down to this floor
-    # instead of stopping; the stage stops only if no cap >= the floor fits. 64 = max_cluster_reads, the most reads a
-    # cluster's consensus uses, so a strand's own reads still fit one bucket. A floor >= bucket_cap disables it.
-    bucket_cap_floor: int = 64
+    # instead of stopping; the stage stops only if no cap >= the floor fits. The budget, not the cap, bounds the work,
+    # and every cluster frame is still verified (inner RS + CRC-32, container SHA-256), so a lower cap can only add
+    # verified frames compared with stopping: default 2 (any cap). At 10 MB D13-F1 (SIMULATED, ~10 reads per strand)
+    # the slot pairs come from buckets of <= 64 reads, so a floor of 64 still stopped. A floor >= bucket_cap disables it.
+    bucket_cap_floor: int = 2
     # §5.2 verification: accept an edge iff distance <= theta * max(La, Lb); band |dL| + band_slack
     theta: float = 0.30
     band_slack: int = 32
