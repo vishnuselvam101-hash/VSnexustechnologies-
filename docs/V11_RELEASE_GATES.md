@@ -15,6 +15,8 @@ outside the repository; only these summaries are committed.
 | Fuzz smoke, native parser (`reads`) | PASS | `fuzz/run.sh reads` (libFuzzer + ASan + UBSan, 1 CPU, 4 GiB slice): 1 000 000 execs, 10 204 exec/s, 0 crashes, peak RSS 437 MB |
 | Fuzz smoke, `align` harness | clean, time-boxed | 420 s: 276 514 execs, 0 crashes (pre-WP1 `align.c`). **Re-run after merge**; WP1 also fuzzes every SIMD level in its sanitizer script. |
 | Fuzz smoke, `rs` harness | clean, time-boxed | 420 s: 61 404 execs (145 exec/s), 0 crashes. Below 1M execs; the RS decoder is not a parser, so the ≥ 1M rule (baseline §9 WP4) does not cover it. |
+| Fuzz campaign, `align` harness, merged code (added 2026-10-12, after the release suite run) | PASS | `fuzz/run.sh align 3600` (libFuzzer + ASan + UBSan, 1 CPU, 4 GiB slice) on the merged ABI 3 `align.c`: 3 600 s, 2 062 008 execs (572 exec/s), 0 crashes, peak RSS 473 MB, cov 545 |
+| Fuzz campaign, `rs` harness, merged code (added 2026-10-12) | clean, below 1M | `fuzz/run.sh rs 3600`, same setup: 3 600 s, 489 685 execs (135 exec/s), 0 crashes, peak RSS 449 MB, cov 358. One CPU-hour; still below 1M execs (not a parser, see the row above). |
 | ruff | PASS | `ruff check src tests research`: All checks passed |
 | mypy | PASS | `mypy` (pyproject package set, 148 files): no issues, after typing one list in `core/guard.py` (54fc778, annotation only) |
 | Full test suite | PASS | `pytest -n 6 tests` at `d4c0f47` (after the WP1/WP3/red-team/release merges, 7 native kernels built): 4047 passed, 7 skipped, 0 failed, 359.98 s |

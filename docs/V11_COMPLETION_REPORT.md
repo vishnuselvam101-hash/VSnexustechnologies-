@@ -31,7 +31,8 @@ Every number below comes from a committed results file or from the release-commi
 - Native equivalence and golden reads per SIMD level; dispatcher fault injection; gate bypass tests per entry point;
   version tests. Collected per suite: `tests/v11` 101 (63 red-team), `tests/dispatch` 25, aligner level tests 102.
 - Sanitizers and fuzz: docs/V11_RELEASE_GATES.md (reads parser 1M execs clean). On the merged code: `align` harness
-  (ABI 3) 300 s, 143 786 runs, 0 crashes (time-boxed smoke, below 1M); ruff and mypy clean; wheel built from
+  (ABI 3) 300 s, 143 786 runs, 0 crashes (time-boxed smoke), then a one-CPU-hour campaign with 2 062 008 runs and
+  0 crashes; `rs` harness one CPU-hour, 489 685 runs, 0 crashes; ruff and mypy clean; wheel built from
   `git archive`, clean venv: both CLIs print 11.0.0, all 7 packaged native libraries load (align ABI 3, avx512),
   `vnx-dna pipeline` round trip of 200 000 random bytes byte-identical.
 - Security: secret scan (0 unreviewed findings), pip-audit (5 known, triaged, unreachable) — docs/SECURITY.md; red-team
@@ -66,7 +67,8 @@ was met (1.283x). The cProfile before/after artefact (w1) was added after the re
 - **Preset F is not in V11.** The nanopore preset F work lives on branch `work/nanopore-f2` and is not merged into V11.
 - **WP1 §9 not met:** 4 MiB indel decode at w4 is 1.174x, below the 1.25x target. The w1 profile shows the remaining
   time is outside the aligner; no w4 (per-worker) profile was taken.
-- The RS-decoder and align fuzz harnesses ran below 1M execs (time-boxed smokes).
+- The RS-decoder fuzz harness ran one CPU-hour (489 685 execs, 0 crashes), still below 1M execs. The align harness
+  reached 2 062 008 execs with 0 crashes.
 - Benchmarks: one shared host under moderate background load, n = 5, not reproduced on a quiet or second machine; two
   medians fall just below 1.0 (clean decode w4 0.981, encode 1 MiB w4 0.995) with CIs containing 1.0 — no regression
   shown, none ruled out.
@@ -76,4 +78,4 @@ was met (1.283x). The cProfile before/after artefact (w1) was added after the re
 - Nanopore-like 10 MB: candidate-pair headroom or graceful degradation, then re-run (jobs #86, #82).
 - Decide on preset F from `work/nanopore-f2` with its held-out evaluations.
 - Lift the `cryptography<47` pin to clear the triaged advisories (founder decision).
-- Longer RS/align fuzz campaigns on the merged code.
+- A longer RS-decoder fuzz campaign (≥ 1M execs).
