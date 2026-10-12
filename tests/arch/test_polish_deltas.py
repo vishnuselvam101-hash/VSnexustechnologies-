@@ -211,7 +211,7 @@ def test_c_rejects_inconsistent_arguments():
         nc.polish_deltas(tpl, np.ones(T + 1, np.int32), buf, off, lens, rs, band, dip, 1, 1, 10)
     with pytest.raises(ValueError):
         nc.polish_deltas(tpl, mc, buf, off, lens, np.array([0, 1, 1]), band, dip, 1, 1, 10)   # does not end at n
-    assert ctypes.CDLL(nc.status()["library"]).vnx_cl_abi_version() == nc.ABI_VERSION == 5
+    assert ctypes.CDLL(nc.status()["library"]).vnx_cl_abi_version() == nc.ABI_VERSION == 6
 
 
 def test_polish_uses_the_fused_kernel_and_matches_the_fallback(monkeypatch, tmp_path):

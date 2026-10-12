@@ -47,6 +47,10 @@ class ClusterConfig:
     max_candidate_pairs_per_read: int = 200
     max_candidate_pairs_ceiling: int = 1_000_000_000
     candidate_chunk_pairs: int = 1 << 25        # slot pairs held in memory at once (8 B each); results do not depend on it
+    # V12: over the budget, lower the bucket cap (largest buckets first: the least specific k-mers) down to this floor
+    # instead of stopping; the stage stops only if no cap >= the floor fits. 64 = max_cluster_reads, the most reads a
+    # cluster's consensus uses, so a strand's own reads still fit one bucket. A floor >= bucket_cap disables it.
+    bucket_cap_floor: int = 64
     # §5.2 verification: accept an edge iff distance <= theta * max(La, Lb); band |dL| + band_slack
     theta: float = 0.30
     band_slack: int = 32
@@ -105,6 +109,7 @@ class ClusterConfig:
     def validate(self) -> ClusterConfig:
         ints = {"max_unplaced_reads": 0, "k": 4, "sketch_size": 1, "bucket_cap": 2, "min_shared_slots": 1, "max_candidate_pairs": 0,
                 "max_candidate_pairs_per_read": 0, "max_candidate_pairs_ceiling": 0, "candidate_chunk_pairs": 1,
+                "bucket_cap_floor": 0,
                 "band_slack": 0, "max_cluster_reads": 2, "max_refine_pairs": 0, "consensus_band": 1, "c_sub": 1,
                 "c_indel": 1, "slack": 0, "min_votes": 1, "rounds": 0, "max_peels": 1, "max_trials": 1, "gmd_step": 1,
                 "gmd_steps": 0, "medoid_members": 1, "fill_trials": 1, "max_list_candidates": 0, "list_variants": 1,

@@ -4,6 +4,11 @@
   shared by many strands: markers, common header bytes, primers, low-entropy payloads). A candidate pair shares at
   least ``min_shared_slots`` retained buckets (default 2; the architecture states 1 — see below); its relative
   orientation is the majority XOR of the orientation bits over the shared slots (ties: same orientation).
+* Budget: the slot pairs (sum of C(size, 2) over the retained buckets) are bounded by ``max_pairs``. With a
+  ``cap_floor`` (V12; ``ClusterConfig.bucket_cap_floor``), a pool over the budget lowers the bucket cap to the largest c
+  in [max(2, cap_floor), bucket_cap) whose slot pairs fit, drops the larger buckets (counted, reported as a budget
+  record that did not stop the stage) and continues; the largest buckets are the least specific k-mers. Only when no
+  such c exists does the step stop as before (no pairs, the stage refuses to cluster).
 * Verification: banded edit distance of the oriented pair; the edge is accepted iff distance ≤ θ · max(La, Lb).
   Pairs are processed by shared slots (descending), then (min index, max index); a pair whose reads are already in one
   component is skipped (it cannot change the components, so the components do not depend on this order).
@@ -49,18 +54,43 @@ class Clustering:
     orient: np.ndarray            # (n,) 1 = reverse complement relative to the cluster's reference read
     score: np.ndarray             # (n,) float64 assignment score, NaN = unassigned
     counts: Counter = field(default_factory=Counter)
-    budget: dict | None = None    # the work budget that stopped the stage, if any
+    budget: dict | list | None = None  # the work budget record (or records, in order) that limited the stage, if any
+
+
+def _stop_record(max_pairs: int, used: int) -> dict:
+    return {"limit": "max_candidate_pairs", "allowed": max_pairs, "used": used,
+            "effect": "clustering stage stopped; no cluster frame produced"}
+
+
+def _lowered(counts: Counter, bucket_cap: int, max_pairs: int, cap: int, dropped: int, used: int, requested: int) -> dict:
+    counts["candidate_bucket_cap"] = cap
+    counts["buckets_over_budget_cap"] += dropped
+    counts["candidate_pairs_slots"] = used
+    counts["candidate_pairs_slots_requested"] = requested
+    return {"limit": "max_candidate_pairs", "allowed": max_pairs, "used": used, "requested": requested,
+            "bucket_cap": cap, "buckets_dropped": dropped, "stopped": False,
+            "effect": f"bucket cap lowered from {bucket_cap} to {cap}: {dropped} more buckets ignored; clustering continued"}
+
+
+#: budget limits of the candidate step; a record of one stops the stage unless it says ``"stopped": False``
+CANDIDATE_STOPS = ("max_candidate_pairs", "candidate_memory")
+
+
+def is_stop(budget) -> bool:
+    """True when a budget record (or any of a list of them) stopped the candidate step."""
+    recs = [] if budget is None else budget if isinstance(budget, list) else [budget]
+    return any(r["limit"] in CANDIDATE_STOPS and r.get("stopped", True) for r in recs)
 
 
 def candidate_pairs(hashes: np.ndarray, orient: np.ndarray, bucket_cap: int, max_pairs: int, counts: Counter,
-                    min_shared: int = 1, chunk_pairs: int = _nc.DEFAULT_CHUNK_PAIRS
+                    min_shared: int = 1, chunk_pairs: int = _nc.DEFAULT_CHUNK_PAIRS, cap_floor: int | None = None
                     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, dict | None]:
     """Native or reference :func:`candidate_pairs_reference` (identical results and counters). The native step holds
     at most ``chunk_pairs`` slot pairs at once; if it cannot allocate its working memory the step stops and reports
     the ``candidate_memory`` limit (no pairs, like an exceeded work budget) instead of failing the decode."""
     if hashes.ndim == 2 and hashes.shape[1] >= 1 and hashes.shape[0] <= (1 << 31) and _nc.resolve_backend() == "native":
         try:
-            a, b, rel, st = _nc.candidates(hashes, orient, bucket_cap, max_pairs, min_shared, chunk_pairs)
+            a, b, rel, st = _nc.candidates(hashes, orient, bucket_cap, max_pairs, min_shared, chunk_pairs, cap_floor)
         except _nc.NativeClusterMemoryError:
             counts["candidate_memory_exhausted"] += 1
             return np.zeros(0, np.int64), np.zeros(0, np.int64), np.zeros(0, np.uint8), {
@@ -70,26 +100,28 @@ def candidate_pairs(hashes: np.ndarray, orient: np.ndarray, bucket_cap: int, max
             counts["buckets_over_cap"] += int(st[0])
         if st[2]:
             counts["candidate_pairs_slots"] = int(st[1])
-            return np.zeros(0, np.int64), np.zeros(0, np.int64), np.zeros(0, np.uint8), {
-                "limit": "max_candidate_pairs", "allowed": max_pairs, "used": int(st[1]),
-                "effect": "clustering stage stopped; no cluster frame produced"}
+            return np.zeros(0, np.int64), np.zeros(0, np.int64), np.zeros(0, np.uint8), _stop_record(max_pairs, int(st[1]))
+        rec = _lowered(counts, bucket_cap, max_pairs, int(st[9]), int(st[10]), int(st[1]), int(st[11])) if st[9] else None
         if not st[6]:
-            return np.zeros(0, np.int64), np.zeros(0, np.int64), np.zeros(0, np.uint8), None
+            return np.zeros(0, np.int64), np.zeros(0, np.int64), np.zeros(0, np.uint8), rec
         counts["candidate_pairs"] += int(st[3])
         counts["candidate_pairs_below_min_shared"] += int(st[4])
-        return a, b, rel, None
-    return candidate_pairs_reference(hashes, orient, bucket_cap, max_pairs, counts, min_shared)
+        return a, b, rel, rec
+    return candidate_pairs_reference(hashes, orient, bucket_cap, max_pairs, counts, min_shared, cap_floor)
 
 
 def candidate_pairs_reference(hashes: np.ndarray, orient: np.ndarray, bucket_cap: int, max_pairs: int, counts: Counter,
-                              min_shared: int = 1) -> tuple[np.ndarray, np.ndarray, np.ndarray, dict | None]:
+                              min_shared: int = 1, cap_floor: int | None = None
+                              ) -> tuple[np.ndarray, np.ndarray, np.ndarray, dict | None]:
     """(a, b, relative orientation) with a < b for pairs sharing at least ``min_shared`` retained buckets, sorted by
-    shared slots (descending), then (a, b); and the budget record if ``max_pairs`` was exceeded."""
+    shared slots (descending), then (a, b); and the budget record if ``max_pairs`` was exceeded (a stop, or with
+    ``cap_floor`` the lowered bucket cap)."""
     n, s = hashes.shape
-    pa: list = []
-    pb: list = []
-    px: list = []
+    lo_cap = max(2, cap_floor) if cap_floor is not None else bucket_cap
+    lowerable = lo_cap < bucket_cap
+    buckets: list = []                  # (slot, members) of the retained buckets, in the reference order
     total = 0
+    first_over = None
     for i in range(s):
         h = hashes[:, i]
         valid = orient[:, i] < 2
@@ -105,19 +137,40 @@ def candidate_pairs_reference(hashes: np.ndarray, orient: np.ndarray, bucket_cap
         counts["buckets_over_cap"] += int((size > bucket_cap).sum())
         for st, en in zip(starts[(size >= 2) & (size <= bucket_cap)].tolist(), ends[(size >= 2) & (size <= bucket_cap)].tolist()):
             mem = np.sort(order[st:en])
-            m = mem.size
-            iu, ju = np.triu_indices(m, 1)
-            total += iu.size
-            if total > max_pairs:
-                counts["candidate_pairs_slots"] = total
-                return np.zeros(0, np.int64), np.zeros(0, np.int64), np.zeros(0, np.uint8), {
-                    "limit": "max_candidate_pairs", "allowed": max_pairs, "used": total,
-                    "effect": "clustering stage stopped; no cluster frame produced"}
-            pa.append(mem[iu])
-            pb.append(mem[ju])
-            px.append(orient[mem[iu], i] ^ orient[mem[ju], i])
+            total += mem.size * (mem.size - 1) // 2
+            if total > max_pairs and first_over is None:
+                first_over = (total, counts["buckets_over_cap"])
+                if not lowerable:
+                    counts["candidate_pairs_slots"] = total
+                    return np.zeros(0, np.int64), np.zeros(0, np.int64), np.zeros(0, np.uint8), _stop_record(max_pairs, total)
+            buckets.append((i, mem))
+    rec = None
+    if first_over is not None:
+        # the largest cap c whose slot pairs fit the budget (a function of the bucket-size histogram)
+        hist = Counter(m.size for _, m in buckets)
+        acc, cap = 0, 1
+        for sz in range(2, min(bucket_cap, n) + 1):
+            add = hist.get(sz, 0) * (sz * (sz - 1) // 2)
+            if acc + add > max_pairs:
+                break
+            acc, cap = acc + add, sz
+        if cap < lo_cap:                # no cap at or above the floor fits: stop as without a floor
+            counts["buckets_over_cap"] = first_over[1]
+            counts["candidate_pairs_slots"] = first_over[0]
+            return np.zeros(0, np.int64), np.zeros(0, np.int64), np.zeros(0, np.uint8), _stop_record(max_pairs, first_over[0])
+        kept = [(i, m) for i, m in buckets if m.size <= cap]
+        rec = _lowered(counts, bucket_cap, max_pairs, cap, len(buckets) - len(kept), acc, min(total, (1 << 63) - 1))
+        buckets = kept
+    pa: list = []
+    pb: list = []
+    px: list = []
+    for i, mem in buckets:
+        iu, ju = np.triu_indices(mem.size, 1)
+        pa.append(mem[iu])
+        pb.append(mem[ju])
+        px.append(orient[mem[iu], i] ^ orient[mem[ju], i])
     if not pa:
-        return np.zeros(0, np.int64), np.zeros(0, np.int64), np.zeros(0, np.uint8), None
+        return np.zeros(0, np.int64), np.zeros(0, np.int64), np.zeros(0, np.uint8), rec
     a = np.concatenate(pa).astype(np.int64)
     b = np.concatenate(pb).astype(np.int64)
     x = np.concatenate(px).astype(np.int64)
@@ -134,7 +187,7 @@ def candidate_pairs_reference(hashes: np.ndarray, orient: np.ndarray, bucket_cap
     # are already connected cannot change them), it only lets more pairs be skipped
     order = np.lexsort((uk, -shared))
     uk, rel = uk[order], rel[order]
-    return (uk // n).astype(np.int64), (uk % n).astype(np.int64), rel, None
+    return (uk // n).astype(np.int64), (uk % n).astype(np.int64), rel, rec
 
 
 class _UF:
@@ -187,9 +240,10 @@ def cluster_reads(reads: list, hashes: np.ndarray, orient_bits: np.ndarray, cfg:
         return Clustering(labels, orient, score, counts)
     lens = np.fromiter((r.size for r in reads), dtype=np.int64, count=n)
     counts["reads_without_sketch"] = int((orient_bits[:, 0] == 2).sum()) if orient_bits.size else n
+    budget: dict | list | None
     a, b, rel, budget = candidate_pairs(hashes, orient_bits, cfg.bucket_cap, cfg.candidate_budget(n), counts,
-                                        cfg.min_shared_slots, cfg.candidate_chunk_pairs)
-    if budget is not None:
+                                        cfg.min_shared_slots, cfg.candidate_chunk_pairs, cfg.bucket_cap_floor)
+    if is_stop(budget):
         counts["unassigned"] = n
         return Clustering(labels, orient, score, counts, budget)
     maxlen = np.maximum(lens[a], lens[b]) if a.size else np.zeros(0, np.int64)
@@ -213,8 +267,9 @@ def cluster_reads(reads: list, hashes: np.ndarray, orient_bits: np.ndarray, cfg:
         mem = np.flatnonzero(root == c)
         _refine(reads, mem, orient, labels, score, cfg, counts, refine_left)
     if refine_left[0] < 0:
-        budget = {"limit": "max_refine_pairs", "allowed": cfg.max_refine_pairs,
+        refine = {"limit": "max_refine_pairs", "allowed": cfg.max_refine_pairs,
                   "effect": "members of oversized components beyond the budget left unassigned"}
+        budget = refine if budget is None else [budget, refine]
     final = np.bincount(labels[labels >= 0], minlength=n)
     single = (labels >= 0) & (final[np.maximum(labels, 0)] < 2)
     labels[single] = -1

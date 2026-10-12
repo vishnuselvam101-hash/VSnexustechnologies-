@@ -46,7 +46,7 @@ import numpy as np
 
 from vnxdna import _native_build as _nb
 
-ABI_VERSION = 5
+ABI_VERSION = 6
 BACKENDS = ("auto", "native", "reference")
 INF = 1 << 28
 MAX_COST = 1024
@@ -80,6 +80,7 @@ class NativeClusterMemoryError(NativeClusterError, MemoryError):
 
 #: slot pairs materialised at once by the candidate step (8 bytes each: 256 MiB); results do not depend on it
 DEFAULT_CHUNK_PAIRS = 1 << 25
+_INT64_MAX = (1 << 63) - 1
 
 
 _lib = None
@@ -117,6 +118,8 @@ def _bind(lib) -> None:
     lib.vnx_cl_candidates.argtypes = [i64, i32, p, p, i64, i64, i64, p, p, p, i64, p]
     lib.vnx_cl_cand_run.restype = ctypes.c_int
     lib.vnx_cl_cand_run.argtypes = [i64, i32, p, p, i64, i64, i64, i64, p, ctypes.POINTER(ctypes.c_void_p)]
+    lib.vnx_cl_cand_run_capped.restype = ctypes.c_int
+    lib.vnx_cl_cand_run_capped.argtypes = [i64, i32, p, p, i64, i64, i64, i64, i64, p, ctypes.POINTER(ctypes.c_void_p)]
     lib.vnx_cl_cand_take.restype = ctypes.c_int
     lib.vnx_cl_cand_take.argtypes = [p, i64, p, p, p, i64]
     lib.vnx_cl_cand_free.restype = None
@@ -329,10 +332,12 @@ def sketch(raw: np.ndarray, lengths: np.ndarray, k: int, s: int) -> tuple[np.nda
 
 
 def candidates(hashes: np.ndarray, orient: np.ndarray, bucket_cap: int, max_pairs: int, min_shared: int,
-               chunk_pairs: int = DEFAULT_CHUNK_PAIRS) -> tuple:
+               chunk_pairs: int = DEFAULT_CHUNK_PAIRS, cap_floor: int | None = None) -> tuple:
     """(a, b, rel, stats); stats = [buckets_over_cap, slot pairs, budget hit, kept, below min_shared, slots with >= 2
-    sketched reads, retained buckets, partitions, slot-pair buffer entries]. At most ``chunk_pairs`` slot pairs (or
-    one read's, if more) are held at once; the result does not depend on it. Raises NativeClusterMemoryError when the
+    sketched reads, retained buckets, partitions, slot-pair buffer entries, lowered bucket cap (0 = not lowered),
+    buckets dropped by it, slot pairs at ``bucket_cap``]. At most ``chunk_pairs`` slot pairs (or one read's, if more)
+    are held at once; the result does not depend on it. ``cap_floor`` (None = never): over the budget, the bucket cap
+    may be lowered down to it (see ``graph.candidate_pairs_reference``). Raises NativeClusterMemoryError when the
     working memory cannot be allocated (nothing is returned in that case)."""
     lib = _lib_or_raise()
     hashes = np.ascontiguousarray(hashes, dtype=np.uint32)
@@ -340,10 +345,12 @@ def candidates(hashes: np.ndarray, orient: np.ndarray, bucket_cap: int, max_pair
     if hashes.ndim != 2 or orient.shape != hashes.shape:
         raise ValueError(f"hashes must be 2-D and orient the same shape, got {hashes.shape} and {orient.shape}")
     n, s = hashes.shape
-    stats = np.zeros(9, dtype=np.int64)
+    stats = np.zeros(12, dtype=np.int64)
     handle = ctypes.c_void_p()
-    _check(lib.vnx_cl_cand_run(n, s, _ptr(hashes), _ptr(orient), int(bucket_cap), int(max_pairs), int(min_shared),
-                               int(chunk_pairs), _ptr(stats), ctypes.byref(handle)), "candidates")
+    floor = _INT64_MAX if cap_floor is None else min(int(cap_floor), _INT64_MAX)
+    _check(lib.vnx_cl_cand_run_capped(n, s, _ptr(hashes), _ptr(orient), int(bucket_cap), int(max_pairs),
+                                      int(min_shared), int(chunk_pairs), floor, _ptr(stats), ctypes.byref(handle)),
+           "candidates")
     try:
         k = int(stats[3]) if not stats[2] else 0
         a = np.empty(k, dtype=np.int64)
