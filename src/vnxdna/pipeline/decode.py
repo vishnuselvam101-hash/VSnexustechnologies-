@@ -112,7 +112,7 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
         raise VNXFormatError(f"cannot read {reads_path}: {error.strerror or error}") from None
     buckets = _bucket_count(est_reads)
     tmp_root = tempfile.mkdtemp(prefix="vnx4-decode-", dir=workdir)
-    spill = cluster = None
+    spill = cluster = pool = None
     try:
         smart = opt.indel_recovery == "smart"
         softm = opt.soft_decoding != "off"
@@ -170,14 +170,19 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
             for b in batches():
                 take(_process(*b))
         else:
-            with ProcessPoolExecutor(max_workers=opt.workers, initializer=_p_init, initargs=initargs) as pool:
-                window: deque = deque()
-                for b in batches():
-                    window.append(pool.submit(_process, *b))
-                    if len(window) >= 2 * opt.workers:
-                        take(window.popleft().result(), len(window))
-                while window:
+            # the pool outlives pass 1: V12 parallel pass 2 runs bucket consensus on the same workers (shut down below)
+            pool = ProcessPoolExecutor(max_workers=opt.workers, initializer=_p_init, initargs=initargs)
+            window: deque = deque()
+            for b in batches():
+                window.append(pool.submit(_process, *b))
+                if len(window) >= 2 * opt.workers:
                     take(window.popleft().result(), len(window))
+            while window:
+                take(window.popleft().result(), len(window))
+            if deferred or clustering or select or stage_counters is not None:
+                # pass 2 keeps its serial loop here (V11 behaviour); later stages start their own pools
+                pool.shutdown(wait=True)
+                pool = None
         spill.close()
         if cluster is not None:
             cluster.close_pass1()
@@ -224,9 +229,11 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
         planner.checkpoint("pass 2 start")
         result = _pass2(spill, lay, opt, stats, stage, t0, output, overwrite, partial_dir, select, select_dir, key, passphrase,
                         tmp_root, planner, ev, recover_groups, allow_unencrypted,
-                        **({"cluster": cluster} if cluster is not None else {}))
+                        **({"cluster": cluster} if cluster is not None else {}), pool=pool)
         return result
     finally:
+        if pool is not None:
+            pool.shutdown(wait=True, cancel_futures=True)
         # a stop in pass 1 leaves the spill files open; close them before removing the directory, or the removed files
         # keep their disk blocks for as long as the caller holds the exception (its traceback keeps this frame alive)
         if spill is not None:
