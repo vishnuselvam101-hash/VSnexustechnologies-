@@ -17,6 +17,7 @@ MODULES = {
     "cluster": ("vnxdna.native.cluster", "VNXDNA_CLUSTER_LIB"),
     "rs": ("vnxdna.native.rs", "VNXDNA_RS_LIB"),
     "strand": ("vnxdna.native.strand", "VNXDNA_STRAND_LIB"),
+    "orient": ("vnxdna.native.orient", "VNXDNA_ORIENT_LIB"),
 }
 
 
