@@ -9,6 +9,9 @@ The development run of 93100 at e13853a (floor 64) still stopped: its slot pairs
 1935d89 sets the floor default to 2. The held-out seeds are run on 1935d89 (their first attempt at e13853a exited at
 start-up, before building an archive: the diag driver needs a recorded W1 row; they now use
 tmp driver fresh10m.py = diag_10m.py without the recorded-row check). Seeds and criteria are unchanged.
+Second amendment (11:09, still before any held-out decode): the development re-run at 1935d89 reached the clustering
+stage and spent >7 min in a per-cluster scan (O(clusters x reads)); 2ec76f0 replaces it with one grouped pass (same
+results). The held-out seeds run on 2ec76f0.
 
 ## Question
 At 10 MB (D13-F1 nanopore-like channel, profile and driver of experiments/v10/w3/diag_10m.py, decoder preset E),
