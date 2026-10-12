@@ -37,7 +37,8 @@ def main(work: Path) -> dict:
         truth = (work / "w1m" / seed / "sha").read_text().split()[-1]
         out["mib1"].append({"seed": int(seed), "tree": tree, "status": row.get("status"), "exact": row.get("output_sha256") == truth,
                             "output_sha256": row.get("output_sha256"), "failed_groups": row.get("failed_groups"),
-                            "decode_seconds": row.get("seconds"), **_time(work / "w1m" / f"time-{seed}-{tree}.txt")})
+                            "decode_seconds": row.get("seconds"), "clustering_status": row.get("clustering_status"),
+                            "budget": row.get("budget"), **_time(work / "w1m" / f"time-{seed}-{tree}.txt")})
     for f in sorted((work / "diag10m" / "results").glob("diag-*-E.json")):
         d = json.loads(f.read_text())
         seed = f.stem.split("-")[1]

@@ -1,0 +1,234 @@
+{
+ "label": "SIMULATED: reads from a software channel model; no DNA was synthesised, stored or sequenced",
+ "mib1": [
+  {
+   "seed": 93020,
+   "tree": "BASE",
+   "status": "FAILURE",
+   "exact": false,
+   "output_sha256": null,
+   "failed_groups": [
+    242
+   ],
+   "decode_seconds": 144.27,
+   "clustering_status": null,
+   "budget": null,
+   "peak_rss_kib": 1073184,
+   "wall_seconds": 144.69,
+   "exit": 0
+  },
+  {
+   "seed": 93020,
+   "tree": "FINAL",
+   "status": "FAILURE",
+   "exact": false,
+   "output_sha256": null,
+   "failed_groups": [
+    242
+   ],
+   "decode_seconds": 139.72,
+   "clustering_status": "ran",
+   "budget": [],
+   "peak_rss_kib": 1083660,
+   "wall_seconds": 140.02,
+   "exit": 0
+  },
+  {
+   "seed": 93020,
+   "tree": "NEW",
+   "status": "FAILURE",
+   "exact": false,
+   "output_sha256": null,
+   "failed_groups": [
+    242
+   ],
+   "decode_seconds": 146.58,
+   "clustering_status": null,
+   "budget": null,
+   "peak_rss_kib": 1084792,
+   "wall_seconds": 146.89,
+   "exit": 0
+  },
+  {
+   "seed": 93021,
+   "tree": "BASE",
+   "status": "FAILURE",
+   "exact": false,
+   "output_sha256": null,
+   "failed_groups": [
+    144
+   ],
+   "decode_seconds": 192.69,
+   "clustering_status": null,
+   "budget": null,
+   "peak_rss_kib": 1076700,
+   "wall_seconds": 193.01,
+   "exit": 0
+  },
+  {
+   "seed": 93021,
+   "tree": "FINAL",
+   "status": "FAILURE",
+   "exact": false,
+   "output_sha256": null,
+   "failed_groups": [
+    144
+   ],
+   "decode_seconds": 138.06,
+   "clustering_status": "ran",
+   "budget": [],
+   "peak_rss_kib": 1081864,
+   "wall_seconds": 138.31,
+   "exit": 0
+  },
+  {
+   "seed": 93021,
+   "tree": "NEW",
+   "status": "FAILURE",
+   "exact": false,
+   "output_sha256": null,
+   "failed_groups": [
+    144
+   ],
+   "decode_seconds": 144.09,
+   "clustering_status": null,
+   "budget": null,
+   "peak_rss_kib": 1083980,
+   "wall_seconds": 144.47,
+   "exit": 0
+  },
+  {
+   "seed": 93022,
+   "tree": "BASE",
+   "status": "FAILURE",
+   "exact": false,
+   "output_sha256": null,
+   "failed_groups": [
+    55,
+    311
+   ],
+   "decode_seconds": 142.61,
+   "clustering_status": null,
+   "budget": null,
+   "peak_rss_kib": 1072968,
+   "wall_seconds": 142.87,
+   "exit": 0
+  },
+  {
+   "seed": 93022,
+   "tree": "FINAL",
+   "status": "FAILURE",
+   "exact": false,
+   "output_sha256": null,
+   "failed_groups": [
+    55,
+    311
+   ],
+   "decode_seconds": 141.07,
+   "clustering_status": "ran",
+   "budget": [],
+   "peak_rss_kib": 1073044,
+   "wall_seconds": 141.31,
+   "exit": 0
+  },
+  {
+   "seed": 93022,
+   "tree": "NEW",
+   "status": "FAILURE",
+   "exact": false,
+   "output_sha256": null,
+   "failed_groups": [
+    55,
+    311
+   ],
+   "decode_seconds": 144.44,
+   "clustering_status": null,
+   "budget": null,
+   "peak_rss_kib": 1072656,
+   "wall_seconds": 144.68,
+   "exit": 0
+  }
+ ],
+ "mb10": [
+  {
+   "seed": 93100,
+   "outcome": "EXACT",
+   "commit": "2ec76f0091fea7449683a54dec55360daa7e2933",
+   "load1": 2.75,
+   "decode_seconds": 938.874,
+   "clustering_status": "ran",
+   "budget": [
+    {
+     "allowed": 584574400,
+     "bucket_cap": 52,
+     "buckets_dropped": 519532,
+     "effect": "bucket cap lowered from 256 to 52: 519532 more buckets ignored; clustering continued",
+     "limit": "max_candidate_pairs",
+     "requested": 2537730294,
+     "stopped": false,
+     "used": 575203254
+    }
+   ],
+   "frames_verified": 237628,
+   "reads": 2922872,
+   "clusters": 290695,
+   "clustered_reads": 1932828,
+   "unassigned": 990044,
+   "candidate_pairs": 12831102,
+   "pairs_verified": 11114085,
+   "candidate_bucket_cap": 52,
+   "buckets_over_budget_cap": 519532,
+   "fill": {
+    "data_cluster_conflicts": 0,
+    "data_confirmations": 153453,
+    "data_symbols": 83569,
+    "data_unused_row_decodable": 5,
+    "rows_filled": 4031,
+    "rows_short": 4031
+   },
+   "peak_rss_kib": 5943388,
+   "wall_seconds": 1735.48,
+   "exit": 0
+  },
+  {
+   "seed": 93110,
+   "outcome": "EXACT",
+   "commit": "2ec76f0091fea7449683a54dec55360daa7e2933",
+   "load1": 2.74,
+   "decode_seconds": 933.175,
+   "clustering_status": "ran",
+   "budget": [
+    {
+     "allowed": 583835400,
+     "bucket_cap": 52,
+     "buckets_dropped": 518422,
+     "effect": "bucket cap lowered from 256 to 52: 518422 more buckets ignored; clustering continued",
+     "limit": "max_candidate_pairs",
+     "requested": 2530761156,
+     "stopped": false,
+     "used": 575349915
+    }
+   ],
+   "frames_verified": 237426,
+   "reads": 2919177,
+   "clusters": 290614,
+   "clustered_reads": 1929495,
+   "unassigned": 989682,
+   "candidate_pairs": 12822091,
+   "pairs_verified": 11110437,
+   "candidate_bucket_cap": 52,
+   "buckets_over_budget_cap": 518422,
+   "fill": {
+    "data_cluster_conflicts": 0,
+    "data_confirmations": 153550,
+    "data_symbols": 83295,
+    "data_unused_row_decodable": 7,
+    "rows_filled": 4031,
+    "rows_short": 4031
+   },
+   "peak_rss_kib": 5935692,
+   "wall_seconds": 1738.69,
+   "exit": 0
+  }
+ ]
+}
