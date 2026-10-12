@@ -4,7 +4,7 @@ SIMULATED: reads from a software channel model; no DNA was synthesised, stored o
 
 Written and committed before any run of the seeds below, on code e45c0c9 (branch work/nano-10mb).
 
-## Amendment (2026-10-12 10:55, before any held-out decode)
+## Amendment (2026-10-12 10:44, before any held-out decode)
 The development run of 93100 at e13853a (floor 64) still stopped: its slot pairs come from buckets of <= 64 reads.
 1935d89 sets the floor default to 2. The held-out seeds are run on 1935d89 (their first attempt at e13853a exited at
 start-up, before building an archive: the diag driver needs a recorded W1 row; they now use

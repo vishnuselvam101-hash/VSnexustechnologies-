@@ -31,7 +31,7 @@ from vnxdna.native import cluster as _nc
 from vnxdna.recovery.cluster import ClusterConfig
 from vnxdna.recovery.cluster.consensus import cluster_consensus
 from vnxdna.recovery.cluster.editdist import revcomp
-from vnxdna.recovery.cluster.graph import CANDIDATE_STOPS, cluster_reads, is_stop  # noqa: F401 (CANDIDATE_STOPS re-exported)
+from vnxdna.recovery.cluster.graph import CANDIDATE_STOPS, cluster_reads, is_stop, members  # noqa: F401 (CANDIDATE_STOPS re-exported)
 
 from vnxdna.recovery.cluster.sketch import sketch_reads
 from vnxdna.recovery.cluster.store import UnplacedStore
@@ -89,8 +89,8 @@ def cluster_frames(reads: list, lay: Layout, cfg: ClusterConfig, marker_mismatch
     if is_stop(cl.budget):
         return [], cl.budget
     clusters = []
-    for cid in np.unique(cl.labels[cl.labels >= 0]).tolist():
-        mem = np.flatnonzero(cl.labels == cid)
+    ids = np.unique(cl.labels[cl.labels >= 0])
+    for cid, mem in zip(ids.tolist(), members(cl.labels, ids)):
         if mem.size > cfg.max_cluster_reads:
             counts["cluster_reads_capped"] += int(mem.size - cfg.max_cluster_reads)
             mem = mem[: cfg.max_cluster_reads]
