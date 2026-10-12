@@ -190,6 +190,17 @@ def candidate_pairs_reference(hashes: np.ndarray, orient: np.ndarray, bucket_cap
     return (uk // n).astype(np.int64), (uk % n).astype(np.int64), rel, rec
 
 
+def members(labels: np.ndarray, ids: np.ndarray) -> list:
+    """For each ID in ``ids`` (ascending), the indices i with labels[i] == ID in ascending order: one stable sort
+    instead of one scan of ``labels`` per ID (identical to ``np.flatnonzero(labels == ID)``)."""
+    sel = np.flatnonzero(np.isin(labels, ids))
+    order = sel[np.argsort(labels[sel], kind="stable")]
+    lab = labels[order]
+    lo = np.searchsorted(lab, ids, "left")
+    hi = np.searchsorted(lab, ids, "right")
+    return [order[a:b] for a, b in zip(lo.tolist(), hi.tolist())]
+
+
 class _UF:
     """Union-find with orientation parity; roots are the smallest index of their set."""
 
@@ -262,9 +273,9 @@ def cluster_reads(reads: list, hashes: np.ndarray, orient_bits: np.ndarray, cfg:
     score[member] = best[member]
     counts["components"] = int((size >= 2).sum())
     refine_left = [cfg.max_refine_pairs]
-    for c in np.flatnonzero(size > cfg.max_cluster_reads).tolist():
+    big = np.flatnonzero(size > cfg.max_cluster_reads)
+    for mem in members(root, big):
         counts["components_refined"] += 1
-        mem = np.flatnonzero(root == c)
         _refine(reads, mem, orient, labels, score, cfg, counts, refine_left)
     if refine_left[0] < 0:
         refine = {"limit": "max_refine_pairs", "allowed": cfg.max_refine_pairs,

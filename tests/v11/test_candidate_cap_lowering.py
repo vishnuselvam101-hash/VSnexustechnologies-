@@ -113,3 +113,17 @@ def test_config_default_and_validation():
     assert graph.is_stop([{"limit": "max_candidate_pairs", "stopped": False}, {"limit": "candidate_memory"}])
     assert not graph.is_stop([{"limit": "max_candidate_pairs", "stopped": False}, {"limit": "max_refine_pairs"}])
     assert not graph.is_stop(None)
+
+
+@pytest.mark.parametrize("seed", range(6))
+def test_members_equals_one_scan_per_label(seed):
+    """The grouped pass of cluster_frames / cluster_reads (job 86: one scan per cluster was quadratic at 10 MB)."""
+    rng = np.random.default_rng(seed)
+    labels = rng.integers(-1, int(rng.integers(1, 50)), int(rng.integers(0, 2_000)))
+    ids = np.unique(labels[labels >= 0])
+    sub = ids[rng.random(ids.size) < 0.5]
+    for want in (ids, sub):
+        got = graph.members(labels, want)
+        assert len(got) == want.size
+        for cid, mem in zip(want.tolist(), got):
+            assert np.array_equal(mem, np.flatnonzero(labels == cid))
