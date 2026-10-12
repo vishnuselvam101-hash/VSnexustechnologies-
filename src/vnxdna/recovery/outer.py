@@ -21,6 +21,7 @@ from vnxdna.recovery.consensus import _consensus_symbols, resolve_duplicates
 from vnxdna.recovery.options import DecodeOptions, DecodeResult
 from vnxdna.recovery.spill import Spill
 from vnxdna.recovery.superblock import _decode_superblock
+from vnxdna.sync.smart.recovery import report_value
 from vnxdna.dnaenc.superblock import Superblock, group_k
 
 
@@ -328,7 +329,7 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
                   "reads": dict(stats), **sb_info, "duplicate_conflicts": conflicts}
         if v6 is not None:
             report["outer_v6"] = v6.report()
-        indel = dict(indel or {})
+        indel = {k: report_value(v) for k, v in (indel or {}).items()}      # exact float sums → float
         softd = {k[5:]: v for k, v in indel.items() if k.startswith("soft_")}
         indel = {k: v for k, v in indel.items() if not k.startswith("soft_")}
         if opt.indel_recovery == "smart":
