@@ -4,6 +4,12 @@ SIMULATED: reads from a software channel model; no DNA was synthesised, stored o
 
 Written and committed before any run of the seeds below, on code e45c0c9 (branch work/nano-10mb).
 
+## Amendment (2026-10-12 10:55, before any held-out decode)
+The development run of 93100 at e13853a (floor 64) still stopped: its slot pairs come from buckets of <= 64 reads.
+1935d89 sets the floor default to 2. The held-out seeds are run on 1935d89 (their first attempt at e13853a exited at
+start-up, before building an archive: the diag driver needs a recorded W1 row; they now use
+tmp driver fresh10m.py = diag_10m.py without the recorded-row check). Seeds and criteria are unchanged.
+
 ## Question
 At 10 MB (D13-F1 nanopore-like channel, profile and driver of experiments/v10/w3/diag_10m.py, decoder preset E),
 does the clustering stage now run (instead of stopping on max_candidate_pairs) without any false success, within
