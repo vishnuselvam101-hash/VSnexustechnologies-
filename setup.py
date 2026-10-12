@@ -1,8 +1,8 @@
 """Build hook for the optional native kernels (all other metadata is in pyproject.toml).
 
 C kernels: plain C shared libraries loaded with ctypes (no Python C API): the V5 marker aligner, the V6 read parser,
-the V6 inner Reed-Solomon decoder (runtime SIMD dispatch, no -march), the V7 read-clustering kernels and the strand
-builder. C++ kernels (``_native_build.CXX_KERNELS``, e.g. outer-code list decoding): the same C ABI contract, compiled
+the V6 inner Reed-Solomon decoder (runtime SIMD dispatch, no -march), the V7 read-clustering kernels, the strand
+builder and the V12 orientation scan. C++ kernels (``_native_build.CXX_KERNELS``, e.g. outer-code list decoding): the same C ABI contract, compiled
 as C++20 optional extensions. Rust kernels (``_native_build.RUST_KERNELS``, e.g. the integrity kernel): cdylib crates with the same C ABI
 contract, built with cargo (offline, standard library only) when a Rust toolchain is present.
 Every kernel is *optional*: without a compiler (or if one kernel fails to build) installation still succeeds and
