@@ -41,8 +41,8 @@
  "container_sha256": "3b7062c39497039f39d7b3b1e4efe3865324f80377c79d91a9b0aaadbc1e8305",
  "fill": {
   "data_cluster_conflicts": 0,
-  "data_confirmations": 47,
-  "data_symbols": 27,
+  "data_confirmations": 46,
+  "data_symbols": 28,
   "rows_filled": 1,
   "rows_short": 1
  },

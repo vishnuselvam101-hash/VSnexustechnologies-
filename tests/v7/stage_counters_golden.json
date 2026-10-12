@@ -2,9 +2,9 @@
  "indel": {
   "outer_ecc_failed_rows": [
    {
-    "from_consensus": 11,
+    "from_consensus": 10,
     "group": 0,
-    "have": 55,
+    "have": 54,
     "k": 64,
     "symbols": 80,
     "verified_pass1": 44
@@ -18,40 +18,40 @@
     "verified_pass1": 45
    },
    {
-    "from_consensus": 4,
+    "from_consensus": 3,
     "group": 2,
-    "have": 58,
+    "have": 57,
     "k": 64,
     "symbols": 80,
     "verified_pass1": 54
    },
    {
-    "from_consensus": 5,
+    "from_consensus": 6,
     "group": 3,
-    "have": 41,
+    "have": 42,
     "k": 43,
     "symbols": 59,
     "verified_pass1": 36
    }
   ],
   "outer_ecc_margins": {
-   "all": -9,
-   "consensus": -9,
+   "all": -10,
+   "consensus": -10,
    "pass1": -20,
    "rows": 4
   },
   "schema": "vnx.stage-counters/1",
   "stages": {
    "address": {
-    "pass2_pending_records": 1091,
+    "pass2_pending_records": 1197,
     "pass2_placed_direct": 146,
-    "pass2_placed_snapped": 72,
-    "pass2_unplaced": 873,
-    "pending_dropped_header_unreadable": 316,
+    "pass2_placed_snapped": 87,
+    "pass2_unplaced": 964,
+    "pending_dropped_header_unreadable": 210,
     "pending_header_erased": 758,
-    "pending_kept": 1091,
+    "pending_kept": 1197,
     "pending_projected_reading": 959,
-    "pending_raw_prefix_reading": 132
+    "pending_raw_prefix_reading": 238
    },
    "alignment": {
     "aligned": 1722,
@@ -67,23 +67,23 @@
     "applicable": 0
    },
    "consensus": {
-    "ambiguous_columns": 1749,
-    "attempted": 95,
-    "empty_columns": 3545,
-    "fail_erasures_exceed_parity": 43,
-    "recovered": 34,
+    "ambiguous_columns": 1900,
+    "attempted": 99,
+    "empty_columns": 3816,
+    "fail_erasures_exceed_parity": 49,
+    "recovered": 33,
     "several_reads": 64,
-    "single_read": 31
+    "single_read": 35
    },
    "coverage": {
     "missing_addresses": 120,
-    "missing_no_placed_read": 25,
-    "missing_one_placed_read": 31,
+    "missing_no_placed_read": 21,
+    "missing_one_placed_read": 35,
     "missing_several_placed_reads": 64
    },
    "crc": {
     "fail_mismatch": 52,
-    "pass2_fail_mismatch": 2
+    "pass2_fail_mismatch": 1
    },
    "indel_placement": {
     "aligned_erasures_exceed_parity": 1191,
@@ -100,15 +100,15 @@
    },
    "orientation": {
     "accepted_reverse_complement": 168,
-    "prepass_flipped": 435,
-    "rc_retry_adopted": 567,
-    "rc_retry_attempted": 1504
+    "prepass_flipped": 791,
+    "rc_retry_adopted": 109,
+    "rc_retry_attempted": 1422
    },
    "outer_ecc": {
     "rows_attempted": 4,
     "rows_below_k_symbols": 4,
     "rows_failed": 4,
-    "symbols_from_consensus": 34,
+    "symbols_from_consensus": 33,
     "symbols_verified_pass1": 179
    },
    "read_parsing": {
@@ -124,7 +124,7 @@
     "consensus_inner_ecc_pass2_fail_decode": 1,
     "consensus_single_read": 5,
     "pending_records": 17,
-    "pending_records_other_group": 35,
+    "pending_records_other_group": 42,
     "symbols_best_tag": 7,
     "symbols_from_consensus": 0,
     "symbols_needed": 3,
@@ -143,11 +143,11 @@
   "schema": "vnx.stage-counters/1",
   "stages": {
    "address": {
-    "pending_dropped_header_unreadable": 511,
+    "pending_dropped_header_unreadable": 443,
     "pending_header_erased": 802,
-    "pending_kept": 606,
+    "pending_kept": 674,
     "pending_projected_reading": 471,
-    "pending_raw_prefix_reading": 135
+    "pending_raw_prefix_reading": 203
    },
    "alignment": {
     "aligned": 1117,
@@ -177,8 +177,8 @@
     "fail_decode": 29
    },
    "orientation": {
-    "prepass_flipped": 483,
-    "rc_retry_adopted": 456,
+    "prepass_flipped": 776,
+    "rc_retry_adopted": 137,
     "rc_retry_attempted": 3177
    },
    "outer_ecc": {},
@@ -194,7 +194,7 @@
     "consensus_fail_erasures_exceed_parity": 2,
     "consensus_single_read": 2,
     "pending_records": 2,
-    "pending_records_other_group": 52,
+    "pending_records_other_group": 55,
     "symbols_best_tag": 0,
     "symbols_from_consensus": 0,
     "symbols_needed": 3,
