@@ -40,7 +40,7 @@ started when the 1-minute load was below 3.
 ### 10 MB, D13-F1, preset E (`ulimit -v` 14 GiB)
 | seed | role | code | outcome | clustering | bucket cap | slot pairs requested / used / allowed | clusters | decode s | wall s | peak RSS |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 93100 | v11.0.0 (2026-10-11 record) | 12ef9a9 | EXPLICIT_FAILURE | stopped | 256 | stop at 584,576,633 / - / 584,574,400 | 0 | - | 934 | 5.29 GB |
+| 93100 | before (2026-10-11 record, results/diag-93100-E-before-12ef9a9.json) | 12ef9a9 | EXPLICIT_FAILURE | stopped | 256 | stop at 584,576,633 / - / 584,574,400 | 0 | - | 934 | 5.29 GB |
 | 93100 | dev, floor 64 | e13853a | EXPLICIT_FAILURE | stopped | 256 | stop at 584,576,633 / - / 584,574,400 | 0 | 149 | 911 | 5.30 GB |
 | 93100 | dev | 2ec76f0 | **EXACT** | ran | 52 | 2,537,730,294 / 575,203,254 / 584,574,400 | 290,695 | 939 | 1,735 | 5.94 GB |
 | 93110 | held-out (PREREG) | 2ec76f0 | **EXACT** | ran | 52 | 2,530,761,156 / 575,349,915 / 583,835,400 | 290,614 | 933 | 1,739 | 5.94 GB |
