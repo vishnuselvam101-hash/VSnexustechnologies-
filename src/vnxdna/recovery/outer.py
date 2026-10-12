@@ -52,10 +52,11 @@ def _stripe_groups(sb: Superblock, groups: set) -> set:
 
 
 def _bucket_consensus(spill_dir: str, b: int, acc_dtype: np.dtype, pend_dtype: np.dtype, tag: int, total: int,
-                      n_sym: dict[int, int], lay: Layout, opt: DecodeOptions) -> tuple[dict, int, Counter]:
+                      n_sym: dict[int, int], lay: Layout, opt: DecodeOptions) -> tuple[np.ndarray, np.ndarray, int, Counter]:
     """Parallel pass 2, one bucket (runs in a worker process): exactly the serial loop's steps for one bucket of a full
     decode up to consensus. ``n_sym``: group → outer symbols per row, for the bucket's groups still to decode. Returns
-    (address → payload symbols, duplicate conflicts, stats delta)."""
+    (addresses (n, 4) int64, payloads (n, payload_bytes) uint8, duplicate conflicts, stats delta): two arrays, so the
+    result crosses the process boundary as two buffers instead of one pickled object per symbol."""
     d = Path(spill_dir)
     acc = np.fromfile(d / f"acc{b}.bin", dtype=acc_dtype)
     pend = np.fromfile(d / f"pend{b}.bin", dtype=pend_dtype)
@@ -67,7 +68,9 @@ def _bucket_consensus(spill_dir: str, b: int, acc_dtype: np.dtype, pend_dtype: n
         missing.update((KIND_DATA, tag, g, s_) for s_ in range(n) if (KIND_DATA, tag, g, s_) not in symbols)
     delta: Counter = Counter()
     symbols.update(_consensus_symbols(pend, symbols, lay, opt, delta, missing, None))
-    return symbols, conflicts, delta
+    keys = np.array(list(symbols.keys()), dtype=np.int64).reshape(-1, 4)
+    pay = np.stack(list(symbols.values())) if symbols else np.zeros((0, lay.payload_bytes), dtype=np.uint8)
+    return keys, np.ascontiguousarray(pay, dtype=np.uint8), conflicts, delta
 
 
 def _bucket_results(pool, spill: Spill, tag: int, total: int, n_sym: dict[int, dict[int, int]], lay: Layout,
@@ -201,14 +204,14 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
             for b in range(spill.B):
                 planner.checkpoint("pass 2")
                 if ahead is not None:
-                    symbols, c, delta = next(ahead)
+                    keys, pay, c, delta = next(ahead)
                     conflicts += c
                     _merge_stats(stats, delta)
                     targets_b = [g for g in range(b, total, spill.B) if g not in done]
                     by_group = {}
-                    for (kd, tg, g, s), v in symbols.items():
+                    for i, (kd, tg, g, s) in enumerate(keys.tolist()):
                         if kd == KIND_DATA and tg == tag:
-                            by_group.setdefault(g, {})[s] = v
+                            by_group.setdefault(g, {})[s] = pay[i]
                     for g in targets_b:
                         k = row_k(g)
                         syms = by_group.get(g, {})
