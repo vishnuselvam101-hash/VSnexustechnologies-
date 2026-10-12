@@ -141,7 +141,7 @@ def test_reports_record_path_and_outputs_byte_identical(tmp_path, monkeypatch):
     from vnxdna.pipeline.encode import encode_container
     c = _container(tmp_path)
     r1 = encode_container(c, tmp_path / "a.fa")
-    for k in ("INTEGRITY", "STRAND", "OUTERLIST", "ALIGN", "READS", "RS", "CLUSTER"):
+    for k in ("INTEGRITY", "STRAND", "ORIENT", "OUTERLIST", "ALIGN", "READS", "RS", "CLUSTER"):
         monkeypatch.setenv(f"VNXDNA_{k}_BACKEND", "reference")
     r2 = encode_container(c, tmp_path / "b.fa")
     assert r1["path_selection"]["schema"] == dispatch.SCHEMA
@@ -164,7 +164,7 @@ def test_decode_report_records_path_and_data_roundtrips(tmp_path):
 
 
 def _reference_env(monkeypatch):
-    for k in ("INTEGRITY", "STRAND", "OUTERLIST", "ALIGN", "READS", "RS", "CLUSTER"):
+    for k in ("INTEGRITY", "STRAND", "ORIENT", "OUTERLIST", "ALIGN", "READS", "RS", "CLUSTER"):
         monkeypatch.setenv(f"VNXDNA_{k}_BACKEND", "reference")
 
 
