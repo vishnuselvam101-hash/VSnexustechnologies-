@@ -10,6 +10,7 @@
  *   vnx_cl_fb          consensus.fb_calls_reference         forward-backward certain calls against templates
  *   vnx_cl_trial_costs consensus.trial_costs_reference      summed optimal costs of polish trial templates (V10 W2)
  *   vnx_cl_polish_deltas fold of polish.edit_costs_reference per candidate, as consensus._polish folds it (ABI 5)
+ *   vnx_cl_cand_run_capped  graph.candidate_pairs_reference with cap_floor: the budget lowers the bucket cap (ABI 6)
  *
  * Banded edit distance. The reference computes the global distance restricted to the diagonals
  * [min(0, dL) - slack, max(0, dL) + slack]. A path that leaves this band needs at least 2 * slack + 2 + |dL| indels, so
@@ -37,7 +38,7 @@
 #endif
 
 #ifndef VNX_CL_ABI /* overridable only so that the tests can build a mismatching library */
-#define VNX_CL_ABI 5
+#define VNX_CL_ABI 6
 #endif
 #define CL_INF (1 << 28)
 
@@ -129,7 +130,14 @@ static int cmp_pent(const void *x, const void *y) {
 /* stats: [0] buckets_over_cap, [1] slot pairs counted (candidate_pairs_slots), [2] 1 = max_pairs exceeded,
  *        [3] pairs kept (>= min_shared), [4] pairs below min_shared, [5] slots with >= 2 sketched reads, [6] retained
  *        buckets (size in [2, bucket_cap]); [5] and [6] tell which counters the reference creates. The handle API adds
- *        [7] partitions processed and [8] capacity (entries) of the slot-pair buffer.
+ *        [7] partitions processed and [8] capacity (entries) of the slot-pair buffer; the capped form (ABI 6) adds
+ *        [9] the lowered bucket cap (0 = not lowered), [10] retained buckets dropped by it and [11] the slot pairs at
+ *        the configured cap.
+ *
+ * Budget (ABI 6). When the slot pairs at `bucket_cap` exceed `max_pairs`, the bucket cap is lowered to the largest
+ * c in [max(2, cap_floor), bucket_cap) whose slot pairs fit (a function of the bucket-size histogram only, so of the
+ * input, not of the chunking); the buckets larger than c are dropped like over-cap buckets and the step continues. If
+ * no such c exists, the step stops exactly as without a floor (stats [0]-[6] as at the first slot pair over the budget).
  *
  * Memory is bounded by the input, not by the pairs: pass 1 walks the slots and retained buckets in the reference order
  * (so the budget stop and its counters are those of the reference), stores each retained bucket's members once
@@ -143,14 +151,16 @@ typedef struct {
 } cand_res_t;
 
 static int cand_core(int64_t n, int32_t s, const uint32_t *hashes, const uint8_t *orient, int64_t bucket_cap,
-                     int64_t max_pairs, int64_t min_shared, int64_t chunk_pairs, int64_t *stats, int64_t *extra,
-                     cand_res_t **res_out) {
+                     int64_t max_pairs, int64_t min_shared, int64_t chunk_pairs, int64_t cap_floor, int64_t *stats,
+                     int64_t *extra, cand_res_t **res_out) {
     *res_out = NULL;
     if (n < 0 || s < 1 || bucket_cap < 0 || max_pairs < 0 || chunk_pairs < 1 || !stats) return CL_EARG;
     if (n > ((int64_t)1 << 31)) return CL_EARG; /* index < 2^31 (uint32 with the orientation bit); key < 2^62 */
     if (n > 0 && (!hashes || !orient)) return CL_EARG;
     for (int i = 0; i < 7; i++) stats[i] = 0;
-    extra[0] = extra[1] = 0;
+    for (int i = 0; i < 5; i++) extra[i] = 0;
+    const int64_t lo_cap = cap_floor > 2 ? cap_floor : 2;
+    const int lowerable = lo_cap < bucket_cap; /* a cap c in [lo_cap, bucket_cap) may fit the budget */
     cand_res_t *res = calloc(1, sizeof(cand_res_t));
     if (!res) return CL_ENOMEM;
     if (n < 2) {
@@ -167,8 +177,11 @@ static int cand_core(int64_t n, int32_t s, const uint32_t *hashes, const uint8_t
     uint64_t *pairs = NULL;
     pent_t *pe = NULL;
     size_t pecap = 0;
-    if (!ent || !cnt || !mem || !bsz) goto out;
-    int64_t total = 0;
+    /* histogram of retained bucket sizes (only when the cap may be lowered); a bucket holds at most n reads */
+    const int64_t hmax = bucket_cap < n ? bucket_cap : n;
+    int64_t *hist = lowerable ? calloc((size_t)hmax + 1, sizeof(int64_t)) : NULL;
+    if (!ent || !cnt || !mem || !bsz || (lowerable && !hist)) goto out;
+    int64_t total = 0, first_over = -1, snap[3] = {0, 0, 0};
     for (int i = 0; i < s; i++) {
         int64_t m = 0;
         for (int64_t r = 0; r < n; r++)
@@ -194,12 +207,19 @@ static int cand_core(int64_t n, int32_t s, const uint32_t *hashes, const uint8_t
                 stats[6]++;
                 const int64_t np = sz * (sz - 1) / 2; /* sz <= 2^31: < 2^61 */
                 total = np > INT64_MAX - total ? INT64_MAX : total + np;
-                if (total > max_pairs) {
-                    stats[1] = total;
-                    stats[2] = 1;
-                    rc = CL_OK;
-                    goto out; /* budget stop: no pairs, as the reference */
+                if (total > max_pairs && first_over < 0) {
+                    first_over = total;
+                    snap[0] = stats[0];
+                    snap[1] = stats[5];
+                    snap[2] = stats[6];
+                    if (!lowerable) {
+                        stats[1] = total;
+                        stats[2] = 1;
+                        rc = CL_OK;
+                        goto out; /* budget stop: no pairs, as the reference */
+                    }
                 }
+                if (hist) hist[sz]++;
                 for (int64_t p = st; p < en; p++) {
                     const uint32_t a = ent[p].idx;
                     mem[mlen++] = a | ((uint32_t)(orient[(int64_t)a * s + i] & 1) << 31);
@@ -212,6 +232,50 @@ static int cand_core(int64_t n, int32_t s, const uint32_t *hashes, const uint8_t
     }
     free(ent);
     ent = NULL;
+    if (first_over >= 0) {
+        /* lower the cap: the largest c whose slot pairs sum(hist[sz] * C(sz, 2), sz <= c) fit the budget */
+        int64_t acc = 0, c = 1;
+        for (int64_t sz = 2; sz <= hmax; sz++) {
+            const int64_t np = sz * (sz - 1) / 2;
+            if (hist[sz] && np > (max_pairs - acc) / hist[sz]) break; /* hist[sz] * np > max_pairs - acc */
+            acc += hist[sz] * np;
+            c = sz;
+        }
+        if (c < lo_cap) { /* no cap at or above the floor fits: stop as without a floor */
+            stats[0] = snap[0];
+            stats[5] = snap[1];
+            stats[6] = snap[2];
+            stats[1] = first_over;
+            stats[2] = 1;
+            rc = CL_OK;
+            goto out;
+        }
+        size_t w = 0, nb = 0;
+        int64_t dropped = 0;
+        memset(cnt, 0, (size_t)n * sizeof(int64_t));
+        for (size_t bk = 0, off = 0; bk < blen; off += bsz[bk++]) {
+            const int64_t sz = bsz[bk];
+            if (sz > c) {
+                dropped++;
+                continue;
+            }
+            for (int64_t p = 0; p < sz; p++) {
+                const uint32_t v = mem[off + (size_t)p];
+                mem[w + (size_t)p] = v; /* w <= off: compaction in place */
+                cnt[v & 0x7FFFFFFFu] += sz - 1 - p;
+            }
+            w += (size_t)sz;
+            bsz[nb++] = (uint32_t)sz;
+        }
+        blen = nb;
+        extra[2] = c;
+        extra[3] = dropped;
+        extra[4] = total;
+        stats[6] -= dropped;
+        total = acc;
+    }
+    free(hist);
+    hist = NULL;
     stats[1] = total;
     if (total == 0) {
         rc = CL_OK;
@@ -302,6 +366,7 @@ static int cand_core(int64_t n, int32_t s, const uint32_t *hashes, const uint8_t
     pe = NULL;
     rc = CL_OK;
 out:
+    free(hist);
     free(ent);
     free(cnt);
     free(mem);
@@ -328,17 +393,30 @@ static void cand_write(const cand_res_t *res, int64_t n, int64_t *a_out, int64_t
 
 /* Handle API (ABI 4). run: stats has 9 entries (above); *handle receives the result (kept pairs = stats[3]; 0 after a
  * budget stop). take: writes the kept pairs into arrays of at least stats[3] entries. free: releases the handle. */
-int vnx_cl_cand_run(int64_t n, int32_t s, const uint32_t *hashes, const uint8_t *orient, int64_t bucket_cap,
-                    int64_t max_pairs, int64_t min_shared, int64_t chunk_pairs, int64_t *stats, void **handle) {
+/* capped (ABI 6): stats has 12 entries; cap_floor >= bucket_cap gives the result of vnx_cl_cand_run */
+int vnx_cl_cand_run_capped(int64_t n, int32_t s, const uint32_t *hashes, const uint8_t *orient, int64_t bucket_cap,
+                           int64_t max_pairs, int64_t min_shared, int64_t chunk_pairs, int64_t cap_floor,
+                           int64_t *stats, void **handle) {
     if (!handle || !stats) return CL_EARG;
     *handle = NULL;
     cand_res_t *res = NULL;
-    const int rc = cand_core(n, s, hashes, orient, bucket_cap, max_pairs, min_shared, chunk_pairs, stats, stats + 7,
-                             &res);
+    const int rc = cand_core(n, s, hashes, orient, bucket_cap, max_pairs, min_shared, chunk_pairs, cap_floor, stats,
+                             stats + 7, &res);
     if (rc == CL_OK) {
         res->kept = stats[2] ? 0 : res->kept;
         *handle = res;
     }
+    return rc;
+}
+
+int vnx_cl_cand_run(int64_t n, int32_t s, const uint32_t *hashes, const uint8_t *orient, int64_t bucket_cap,
+                    int64_t max_pairs, int64_t min_shared, int64_t chunk_pairs, int64_t *stats, void **handle) {
+    if (!handle || !stats) return CL_EARG;
+    int64_t st[12];
+    const int rc = vnx_cl_cand_run_capped(n, s, hashes, orient, bucket_cap, max_pairs, min_shared, chunk_pairs,
+                                          INT64_MAX, st, handle);
+    if (rc == CL_OK || rc == CL_ENOMEM)
+        for (int i = 0; i < 9; i++) stats[i] = st[i];
     return rc;
 }
 
@@ -364,9 +442,10 @@ int vnx_cl_candidates(int64_t n, int32_t s, const uint32_t *hashes, const uint8_
                       int64_t max_pairs, int64_t min_shared, int64_t *a_out, int64_t *b_out, uint8_t *rel_out,
                       int64_t out_cap, int64_t *stats) {
     if (out_cap < 0) return CL_EARG;
-    int64_t extra[2];
+    int64_t extra[5];
     cand_res_t *res = NULL;
-    int rc = cand_core(n, s, hashes, orient, bucket_cap, max_pairs, min_shared, INT64_MAX, stats, extra, &res);
+    int rc = cand_core(n, s, hashes, orient, bucket_cap, max_pairs, min_shared, INT64_MAX, INT64_MAX, stats, extra,
+                       &res);
     if (rc != CL_OK) return rc;
     if (stats[2] || res->kept == 0) {
         vnx_cl_cand_free(res);

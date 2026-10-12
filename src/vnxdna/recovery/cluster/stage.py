@@ -31,15 +31,13 @@ from vnxdna.native import cluster as _nc
 from vnxdna.recovery.cluster import ClusterConfig
 from vnxdna.recovery.cluster.consensus import cluster_consensus
 from vnxdna.recovery.cluster.editdist import revcomp
-from vnxdna.recovery.cluster.graph import cluster_reads
+from vnxdna.recovery.cluster.graph import CANDIDATE_STOPS, cluster_reads, is_stop  # noqa: F401 (CANDIDATE_STOPS re-exported)
 
 from vnxdna.recovery.cluster.sketch import sketch_reads
 from vnxdna.recovery.cluster.store import UnplacedStore
 from vnxdna.recovery.consensus import resolve_duplicates
 
 SCHEMA = "vnx.read-clustering/1"
-#: limits that stop the candidate step: no pairs, so no clusters and no frames
-CANDIDATE_STOPS = ("max_candidate_pairs", "candidate_memory")
 #: clusters handed to the consensus step at once (bounds memory; the result does not depend on it)
 CONSENSUS_BATCH = 256
 _CONSENSUS = cluster_consensus     # the real function; a replaced module attribute (an observer) keeps the in-process path
@@ -70,9 +68,9 @@ def consensus_processes(workers: int, batches: int) -> int:
 
 def cluster_frames(reads: list, lay: Layout, cfg: ClusterConfig, marker_mismatch: int = 4, counts: Counter | None = None,
                    cons: Counter | None = None, checkpoint=None, raw: np.ndarray | None = None,
-                   workers: int | None = None, rejects: list | None = None) -> tuple[list[dict], dict | None]:
-    """Reads (any order and orientation) → verified cluster frames, in cluster-ID order, and the work budget that
-    stopped the stage (None if none did). Every frame passed inner RS + CRC-32; nothing here trusts a read's header.
+                   workers: int | None = None, rejects: list | None = None) -> tuple[list[dict], dict | list | None]:
+    """Reads (any order and orientation) → verified cluster frames, in cluster-ID order, and the work budget
+    record(s) that stopped or limited the stage (None if none did). Every frame passed inner RS + CRC-32; nothing here trusts a read's header.
     ``raw``: the reads as a zero-padded (n, W) matrix when the caller already has one (the store's memory map).
     ``workers`` (default: the kernel-thread count in effect, i.e. the decoder's workers inside the stage) > 1: the
     consensus batches run in that many worker processes (:func:`consensus_processes`). Clusters are independent, so the
@@ -88,7 +86,7 @@ def cluster_frames(reads: list, lay: Layout, cfg: ClusterConfig, marker_mismatch
     hashes, orient = sketch_reads(raw, lens, cfg.k, cfg.sketch_size)
     cl = cluster_reads(reads, hashes, orient, cfg)
     counts.update(cl.counts)
-    if cl.budget is not None and cl.budget["limit"] in CANDIDATE_STOPS:
+    if is_stop(cl.budget):
         return [], cl.budget
     clusters = []
     for cid in np.unique(cl.labels[cl.labels >= 0]).tolist():
@@ -231,8 +229,8 @@ class ClusterStage:
                 _INFO.reset(token)
             self.consensus_processes = info.get("consensus_processes")
         if budget is not None:
-            self.budget.append(budget)
-            if budget["limit"] in CANDIDATE_STOPS:
+            self.budget += budget if isinstance(budget, list) else [budget]
+            if is_stop(budget):
                 self.status = "budget_exceeded"
                 return
         self._write_frames(frames)
