@@ -278,6 +278,11 @@ def strip_markers_exact(layout: Layout, reads: np.ndarray) -> tuple[np.ndarray, 
 
 
 def frame_erasures_to_bytes(erased_nt: np.ndarray) -> np.ndarray:
+    """(N, 4B) per-base erasure flags → (N, B) per-byte flags (a byte is erased when any of its four bases is)."""
+    if erased_nt.dtype.itemsize == 1 and erased_nt.ndim == 2 and erased_nt.shape[1] % 4 == 0 and erased_nt.flags.c_contiguous:
+        # V12 session 5: one comparison on the uint32 view of each four flags instead of a length-4 axis reduction
+        # (NumPy's reduce iterator costs more per row than the reduction itself); identical result
+        return erased_nt.view(np.uint32).reshape(erased_nt.shape[0], erased_nt.shape[1] // 4) != 0
     return erased_nt.reshape(erased_nt.shape[0], -1, 4).any(axis=2)
 
 

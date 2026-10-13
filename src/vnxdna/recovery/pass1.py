@@ -76,7 +76,8 @@ def _try(reads: list[np.ndarray], quals: list | None, with_quality: bool = False
                 er |= qm[:, pos] < _P["min_q"]
             if proj_q is not None:
                 proj_q[exact] = qm[:, pos]
-        frames = nt_to_bytes(np.minimum(fb, 3))
+        hard = np.minimum(fb, 3)            # computed once: the frame bytes and the hard bases below (V12 session 5)
+        frames = nt_to_bytes(hard)
         P = decode_frames(lay, frames, frame_erasures_to_bytes(er))
         ok = P.ok
         idx = exact[ok]
@@ -89,7 +90,7 @@ def _try(reads: list[np.ndarray], quals: list | None, with_quality: bool = False
             diag["erased_bytes"][exact] = frame_erasures_to_bytes(er).sum(axis=1)
             diag["rs_ok"][exact], diag["crc_ok"][exact] = P.rs_ok, P.crc_ok
             diag["marker_mm"][exact], diag["errata"][exact] = mism, P.errata
-        hard_bases[exact] = np.minimum(fb, 3)
+        hard_bases[exact] = hard
         pb = fb.copy()
         pb[er] = 4
         proj_bases[exact] = pb
@@ -111,7 +112,8 @@ def _try(reads: list[np.ndarray], quals: list | None, with_quality: bool = False
         else:
             from vnxdna.sync.smart.path import align_with_path
             pr, rpos = align_with_path(_P["al"], rreads, rquals, _P["min_q"])   # identical projection + the path
-        frames = nt_to_bytes(np.minimum(pr.bases, 3))
+        hard = np.minimum(pr.bases, 3)
+        frames = nt_to_bytes(hard)
         er = frame_erasures_to_bytes(pr.erased)
         P = decode_frames(lay, frames, er, errors_only_retry=False)   # sync erasures come from detected indels
         ok = P.ok & pr.ok
@@ -157,7 +159,7 @@ def _try(reads: list[np.ndarray], quals: list | None, with_quality: bool = False
             ri = np.asarray(rpos)[:, fpos].astype(np.int64)
             proj_q[rest] = np.where(ri >= 0, np.take_along_axis(qmat, np.maximum(ri, 0), axis=1), 0)
         cost[rest] = np.where(pr.ok, pr.cost, 1 << 28)
-        hard_bases[rest] = np.minimum(pr.bases, 3)
+        hard_bases[rest] = hard
         pb = pr.bases.copy()
         pb[pr.erased] = 4
         proj_bases[rest] = pb
