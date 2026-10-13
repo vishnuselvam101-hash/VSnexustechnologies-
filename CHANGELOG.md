@@ -10,17 +10,20 @@ benchmark seed. Benchmarks: docs/V13_BENCHMARK_REPORT.md; plan and pre-declared 
 - **Aligner ABI 4** (`src/vnxdna/v5/native/align.c`): `vnx_align_batch_sel_lv` aligns any selected reads of a flat
   batch in place (per-read start and length arrays; the contiguous entry points are unchanged);
   `native.align.align_usable_flat`, `TemplateAligner.project_flat`.
-- **Orientation kernel ABI 3** (`src/vnxdna/native/c/orient.c`): `vnx_or_rc_bound` (ABI 2), a lower bound on the
+- **Orientation kernel ABI 4** (`src/vnxdna/native/c/orient.c`): `vnx_or_rc_bound` (ABI 2), a lower bound on the
   band-limited marker-template alignment cost of a read taken as a reverse complement (reference
   `pass1._rc_bound_reference`); `vnx_or_spec_project` (ABI 3), the marker-anchored speculative projection of a read
-  onto frame coordinates (reference `pass1._spec_project_reference`).
+  onto frame coordinates (reference `pass1._spec_project_reference`); `vnx_or_pack_exact` and
+  `vnx_or_pack_projection` (ABI 4), the frame packing of the exact-length and projected reads (references
+  `pass1._pack_exact_reference`, `pass1._pack_projection_reference`).
+- `dnaenc.frame4.decode_frames_reference` (the V12 form of `decode_frames`); `pipeline.decode._prefetch`.
 - `DecodeOptions.orientation_retry` = `bounded` (default) | `always`; CLI `--orientation-retry`; SDK config key;
   `report["reads"]["rc_retry_skipped"]`.
 - `DecodeOptions.sync_speculation` = `markers` (default) | `off`; CLI `--sync-speculation`; SDK config key;
   `report["reads"]["speculative"]`; stage counter `inner_ecc.verified_speculative`.
 - `dnaenc.mapping.nt_to_bytes_reference`, `recovery.consensus._row_ids`.
 - V13 A/B benchmark harness `experiments/v13/bench/` (the V12 harness with labels v12/v13, BASE_TREE = build/v12 6bf7749).
-- `tests/v13/`: flat pass-1 path, `nt_to_bytes`, row ids, bounded retry, speculative projection (see the completion report for the count).
+- `tests/v13/`: flat pass-1 path, `nt_to_bytes`, row ids, bounded retry, speculative projection, `decode_frames`, frame packing, parser prefetch (see the completion report for the count).
 
 ### Changed
 - **Flat pass-1 data path.** The default decode configuration never builds per-read view lists: `_process` → `_try` →
@@ -37,6 +40,10 @@ benchmark seed. Benchmarks: docs/V13_BENCHMARK_REPORT.md; plan and pre-declared 
   harsh indel pool (37 more verified reads, one more outer row decoded).
 - `nt_to_bytes` packs four codes per uint32 multiply (4.4× on a pass-1 batch); `snap_addresses` builds its membership
   table with a lexsort partition instead of `np.unique(axis=0)`.
+- `decode_frames` runs its keystream XOR and CRC once over the rows without flagged erasures and again only over the
+  rows the inner code corrected (same fields as the V12 form).
+- The flat pass-1 path packs frames in the native kernel (gather, marker mismatches, N/quality erasures, bytes and
+  per-byte erasure flags in one pass); pass 1 parses the next two batches on a background thread.
 
 ### Fixed
 - `native.heap`: the cached `malloc_trim` pointer is typed so the CI mypy job passes (two errors since 12.0.0's 521adb0).

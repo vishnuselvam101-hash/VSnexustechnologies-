@@ -124,20 +124,74 @@ reference on 125,273 fuzz cases (release build) and under gcc/clang ASan+UBSan a
 CLI `--sync-speculation`, SDK config key; the flat path only (the smart/soft/quality-weighted list path keeps the DP
 for every read).
 
-## 5. What was not changed, and why
+## 5. Pass-1 glue after B1 (S1, S3, S4)
 
-- The DP alignment of the reads the speculative projection does not verify (≈ 11 % of the single-worker samples
-  after B1: the pending reads, the reads with several marker mismatches and the reverse-complement retries) and the
-  inner RS kernel (≈ 10 %): both native and SIMD already; no cheaper exact form was found.
-- `decode_frames` glue (≈ 7 %: keystream XOR, CRC and copies, now over the speculative frames too), the FASTQ parser
-  (≈ 5 %, serial), the orientation scan (≈ 4 %) and pass 2 (≈ 7 %): each below the A/B noise band of a single lever;
-  listed as the remaining profile in `docs/V13_BENCHMARK_REPORT.md`.
+With the DP mostly bypassed, the single-worker profile at 0f5b5bb (`results/v13/pyspy-w1-indel-0f5b5bb.txt` in the
+lab) was dominated by NumPy passes around the native kernels: `decode_frames` 21 % of the samples with the RS kernel
+itself at 11.5 %, the exact-length path's gather + marker strip + `np.minimum` + `nt_to_bytes` + erasure folding
+about 12 %, the serial FASTQ parse 9 %. Three changes, each pinned to its V12 form:
+
+- **S1 `decode_frames`** (`dnaenc.frame4`): the keystream XOR and the CRC of the first (CRC-first) pass run once, over
+  the rows without flagged erasures only (a row with erasures is never clean); the rows the inner code touched are
+  descrambled and CRC-checked again from the corrected frame. The V12 form stays as `decode_frames_reference`;
+  `tests/v13/test_decode_frames.py` pins every field of `Parsed` on every profile with random errors, erasures and both
+  retry modes.
+- **S3 native frame packing** (`vnx_or_pack_exact`, `vnx_or_pack_projection`; orient kernel ABI 4; references
+  `pass1._pack_exact_reference` / `_pack_projection_reference`): one pass per read gathers the exact-length read,
+  counts its marker mismatches, applies the N and quality erasures and packs `hard = min(b, 3)`, the projection with
+  erased bases = 4, the frame bytes (`nt_to_bytes` order) and the per-byte erasure flags; the projection form packs
+  the speculative and DP projections. Used by the flat path only (the list path and quality-weighted consensus keep
+  the NumPy form). `tests/v13/test_pack_frames.py` (every layout, with and without qualities, golden hashes,
+  backend-independent pass-1 results, C argument checks); the orient stress fuzz compares both kernels every round;
+  gcc/clang ASan+UBSan and UBSan-trap PASS (`results/v13/orient-sanitizers-s3-*.txt`), 1,000-round release fuzz
+  127,206 cases 0 mismatches (`results/v13/fuzz-orient-s3-*.txt`).
+- **S4 parser prefetch** (`pipeline.decode._prefetch`): a thread parses up to two batches ahead of pass 1; the native
+  parser and the file reads release the GIL, so parsing overlaps the pass-1 work at one worker and the result handling
+  of the pool path. Same batches, same order, the parser's exception raised at the consumer's position in the stream
+  (`tests/v13/test_prefetch.py`); memory bounded by two extra batches.
+
+Single-run effect at one worker on the 4 MiB indel workload (quiet host, SIMULATED, lab single runs; the A/B numbers
+are in `docs/V13_BENCHMARK_REPORT.md`): 6.76 s at 0f5b5bb → 6.2 (S1) → 5.7 (S3) → 5.4 (S1 erasure-aware pass) →
+5.0–5.1 s (S4). Rejected for want of a measurable gain: sorting the spill records once per batch instead of one mask
+per bucket (within run-to-run noise at three buckets).
+
+## 6. The 10× budget, and why the remaining floor is where it is
+
+Founder target: 10× end-to-end against 6bf7749 (w1 9.36 s → 0.94 s, w4 2.99 s → 0.30 s on the 4 MiB indel single
+runs). Measured at 60e1e54 (same runs): w1 ≈ 5.0–5.1 s, w4 ≈ 1.9–2.0 s. The single-worker budget after S4, from
+the py-spy shares at b1fa07d (`results/v13/pyspy-s1b` in the lab session notes) scaled to the 5.4 s run:
+
+| stage | seconds (w1) | nature |
+|---|---|---|
+| inner RS kernel (`decode_rows_avx2`), ~1.0 M frames incl. the speculative ones | 0.68 | native, SIMD |
+| banded DP of the reads the projection did not verify + RC retries | 0.63 | native, SIMD |
+| speculative projection kernel | 0.39 | native |
+| `decode_frames` glue (XOR, CRC, gathers), after S1 | 0.40 | NumPy |
+| FASTQ parse (native, serial; overlapped by S4 at w1) | 0.33 | native |
+| pass 2 (duplicates, consensus, outer rows, container) | 0.46 | NumPy + Python |
+| orientation scan + RC bound kernels | 0.37 | native |
+| layout probe | 0.25 | NumPy + Python |
+| pass-1 bookkeeping (pending headers, retry selection, stats, spill records) | 0.5 | NumPy |
+| imports, output write, verify | 0.3 | — |
+
+Removing every NumPy pass (a fused native pass 1: parse → orient → projection → RS/CRC → DP fallback over whole
+batches) would leave the native kernels and pass 2: about 2.5 s at one worker, ≈ 3.7×. 10× at one worker (0.94 s)
+is below the sum of the RS kernel, the DP and the parse alone (1.6 s) and therefore not reachable without a faster
+DP, a faster RS decode (fewer frames or a cheaper erasure-only path) and a parallel parse. At four workers the
+serial main-process work (parse, probe, spill, pass 2) is about 1.3 s of the 1.9 s; 0.30 s is below the serial
+parse alone, so 10× at w4 needs byte-range parallel parsing in the workers and a native pass 2 as well. These are
+the structural items left open (`docs/V13_COMPLETION_REPORT.md` "Next"); none was started in V13.
+
+## 7. What was not changed, and why
+
+- The DP alignment (`align_groups_l16`) and the inner RS kernel: both native and SIMD already; no cheaper exact form
+  was found in V13.
 - Batch transport between the main process and the workers (pickled NumPy buffers; ≈ 0.3 s of main-process time at
   4 workers, overlapped with worker time) and the serial outer-row decode of pass 2 (≈ 0.2 s): measured, left as is.
 - Worker count heuristics: none added; `workers` stays an explicit option.
 
-## 6. Diagnostics
+## 8. Diagnostics
 
 `report["reads"]["rc_retry_skipped"]` (every mode; 0 with `"always"`), `report["reads"]["speculative"]` (0 with
-`sync_speculation="off"`), `report["native_backends"]` (orient ABI 3, align ABI 4), stage counters unchanged in meaning
+`sync_speculation="off"`), `report["native_backends"]` (orient ABI 4, align ABI 4), stage counters unchanged in meaning
 (`orientation.rc_retry_attempted` now counts retries actually run; `inner_ecc.verified_speculative` added).
