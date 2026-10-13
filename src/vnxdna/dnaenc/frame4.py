@@ -133,7 +133,56 @@ class Parsed:
 
 def decode_frames(layout: Layout, frames: np.ndarray, erasures: np.ndarray | None = None, *,
                   errors_only_retry: bool = True) -> Parsed:
-    """Inner RS decoding (errors + erasures) and CRC check for (N, frame_bytes) received frames."""
+    """Inner RS decoding (errors + erasures) and CRC check for (N, frame_bytes) received frames.
+
+    V13 S1: the keystream XOR and the CRC run once over the batch; only the rows the inner code touched (``todo``)
+    are descrambled and CRC-checked again. A clean row's corrected frame is the received frame, so its plain bytes
+    and CRC verdict are those of the first pass (same values as :func:`decode_frames_reference`)."""
+    n = frames.shape[0]
+    p = layout.payload_bytes
+    inner = InnerRS(layout.inner_parity)
+    frames = np.ascontiguousarray(frames, dtype=np.uint8)
+    span = HEADER_BYTES - 1 + p + CRC_BYTES
+    ks = keystreams(span)
+    # 1) CRC-first: a frame without flagged erasures whose CRC verifies is accepted without RS decoding (a corrupt frame
+    #    passes the CRC with probability ~2^-32, the same check that guards every RS correction below)
+    plain = frames[:, 1:1 + span] ^ ks[frames[:, 0]]
+    crc_ok = (crc32_bytes_be(crc32_rows(plain[:, : 9 + p])) == plain[:, 9 + p:]).all(axis=1)
+    clean = crc_ok.copy()
+    if erasures is not None:
+        clean &= ~erasures.any(axis=1)
+    ok = clean.copy()
+    errata = np.zeros(n, dtype=np.int64)
+    todo = np.flatnonzero(~clean)
+    if todo.size:
+        sub = frames[todo]
+        if erasures is not None and erasures[todo].any():
+            er = erasures[todo].copy()
+            er[er.sum(axis=1) > layout.inner_parity] = False
+        else:
+            er = None
+        f1, ok1, e1 = inner.decode(sub, er)
+        if errors_only_retry and er is not None:
+            retry = ~ok1
+            if retry.any():
+                f2, ok2, e2 = inner.decode(sub[retry])
+                ridx = np.flatnonzero(retry)
+                f1[ridx[ok2]] = f2[ok2]
+                ok1[ridx[ok2]] = True
+                e1[ridx[ok2]] = e2[ok2]
+        ok[todo], errata[todo] = ok1, e1
+        plain1 = f1[:, 1:1 + span] ^ ks[f1[:, 0]]
+        plain[todo] = plain1
+        crc_ok[todo] = (crc32_bytes_be(crc32_rows(plain1[:, : 9 + p])) == plain1[:, 9 + p:]).all(axis=1)
+    good = ok & crc_ok & ((plain[:, 0] >> 4) == FRAME_VERSION) & ((plain[:, 0] & 15) <= KIND_SUPER)
+    return Parsed(good, plain[:, 0] & 15, (plain[:, 1].astype(np.int64) << 8) | plain[:, 2],
+                  plain[:, 3:7].copy().view(">u4").reshape(n).astype(np.int64),
+                  plain[:, 7:9].copy().view(">u2").reshape(n).astype(np.int64), plain[:, 9:9 + p], errata, ok, crc_ok)
+
+
+def decode_frames_reference(layout: Layout, frames: np.ndarray, erasures: np.ndarray | None = None, *,
+                  errors_only_retry: bool = True) -> Parsed:
+    """The V12 form of :func:`decode_frames` (its specification; tests/v13/test_decode_frames.py pins equality)."""
     n = frames.shape[0]
     p = layout.payload_bytes
     inner = InnerRS(layout.inner_parity)
