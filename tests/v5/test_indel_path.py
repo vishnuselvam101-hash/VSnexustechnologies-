@@ -64,7 +64,7 @@ def test_path_semantics(native_ready):
 
 def test_path_entry_point_rejects_missing_output(native_ready):
     lib = na._load()
-    assert lib.vnx_align_abi_version() == 3 == na.ABI_VERSION
+    assert lib.vnx_align_abi_version() == 4 == na.ABI_VERSION
     al = TemplateAligner(LAYOUTS["default-313nt"], 6, backend="native")
     g = na.geometry(al)
     read = strand(al.layout, np.random.default_rng(1))

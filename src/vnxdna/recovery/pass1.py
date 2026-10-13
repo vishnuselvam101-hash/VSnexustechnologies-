@@ -17,6 +17,8 @@ from vnxdna.sync.template import SyncCosts, TemplateAligner, frame_erasures_to_b
 
 _RC = np.array([3, 2, 1, 0, 4], dtype=np.uint8)
 _ORIENT_SHIFT = 2       # orientation pre-pass: marker blocks also match up to this many nt left or right (V12)
+_FLAT_PATH = True       # V13 C1/C2: the default configuration works on flat buffers; False = the V12 per-read view lists
+#                         (the specification the flat path is pinned to, tests/v13/test_pass1_flat.py)
 # ============================================================================ pass 1 worker
 _P: dict = {}
 
@@ -45,7 +47,16 @@ def _try(reads: list[np.ndarray], quals: list | None, with_quality: bool = False
     ``quals``) are consecutive views into flat buffers: the exact-length reads are then gathered from the buffers
     instead of stacked view by view (V12 pass-1 bookkeeping; same values)."""
     lay: Layout = _P["lay"]
-    n = len(reads)
+    if flat is not None:
+        lengths = flat[3]
+        n = int(lengths.size)
+    else:
+        n = len(reads)
+        lengths = np.fromiter((r.size for r in reads), dtype=np.int64, count=n)
+    qsrc = flat[1] if flat is not None else quals          # the batch's qualities, flat or as views
+    if reads is None and (_P.get("smart") is not None or _P.get("soft") is not None or _P.get("qw")):
+        raise ValueError("flat-only reads need the default recovery configuration (no smart/soft recovery, no "
+                         "quality-weighted consensus)")
     if diag is not None:
         diag.update(erased_bytes=np.full(n, lay.frame_bytes, dtype=np.int64), rs_ok=np.zeros(n, dtype=bool),
                     crc_ok=np.zeros(n, dtype=bool), marker_mm=np.zeros(n, dtype=np.int64),
@@ -59,7 +70,6 @@ def _try(reads: list[np.ndarray], quals: list | None, with_quality: bool = False
     path = np.zeros(n, dtype=np.int8)          # 1 fast, 2 sync
     # quality of each projected frame base (V6 Phase 4 weighted consensus; 0 where no read base or no qualities)
     proj_q = np.zeros((n, lay.frame_nt), dtype=np.uint8) if _P.get("qw") else None
-    lengths = flat[3] if flat is not None else np.fromiter((r.size for r in reads), dtype=np.int64, count=n)
     exact = np.flatnonzero(lengths == lay.strand_nt)
     if exact.size:
         if flat is not None:
@@ -69,7 +79,7 @@ def _try(reads: list[np.ndarray], quals: list | None, with_quality: bool = False
             mat = np.stack([reads[i] for i in exact])
         fb, mism = strip_markers_exact(lay, mat)
         er = fb > 3
-        if quals is not None and (_P["min_q"] or proj_q is not None):
+        if qsrc is not None and (_P["min_q"] or proj_q is not None):
             qm = _gather_exact(flat[1], estart, lay.strand_nt) if flat is not None else np.stack([quals[i] for i in exact])
             tpl, pos = lay.template()
             if _P["min_q"]:
@@ -105,9 +115,16 @@ def _try(reads: list[np.ndarray], quals: list | None, with_quality: bool = False
     sstats: Counter = Counter()
     soft_jobs: list = []                   # (read index, evidence) for the V5 Phase 4 soft stage
     if rest.size:
-        rreads = [reads[i] for i in rest]
-        rquals = None if quals is None else [quals[i] for i in rest]
-        if smart is None and soft is None and not (proj_q is not None and rquals is not None):
+        if reads is None:
+            # V13 C1: the sync path on the flat batch, no per-read views (same Projection as the list form)
+            rreads = rquals = None
+            pr = _P["al"].project_flat(flat[0], flat[2], lengths, rest, flat[1], _P["min_q"])
+        else:
+            rreads = [reads[i] for i in rest]
+            rquals = None if quals is None else [quals[i] for i in rest]
+        if reads is None:
+            pass
+        elif smart is None and soft is None and not (proj_q is not None and rquals is not None):
             pr = _P["al"].project(rreads, rquals, _P["min_q"])
         else:
             from vnxdna.sync.smart.path import align_with_path
@@ -304,6 +321,22 @@ def _gather_rows(flat: np.ndarray, offs: np.ndarray, lengths: np.ndarray, sel: n
     return out, valid
 
 
+def _rc_flat(codes: np.ndarray, qflat: np.ndarray | None, offs: np.ndarray, lengths: np.ndarray,
+             sel: np.ndarray) -> tuple:
+    """Reads ``sel`` of a flat batch, each reversed and complemented, as a new flat batch (codes, quals or None,
+    offsets, lengths) in the order of ``sel``: one gather instead of a per-read loop (V13 C2; the loop form it
+    replaces is in tests/v13/test_pass1_flat.py). Code 4 (N) stays 4."""
+    L = lengths[sel].astype(np.int64, copy=False)
+    roffs = np.zeros(L.size + 1, dtype=np.int64)
+    np.cumsum(L, out=roffs[1:])
+    total = int(roffs[-1])
+    # output position p of read j reads source position offs[sel[j]] + L[j] - 1 - (p - roffs[j])
+    src = np.repeat(offs[sel].astype(np.int64, copy=False) + L - 1 + roffs[:-1], L) - np.arange(total, dtype=np.int64)
+    rcodes = _RC[codes[src]]
+    rq = None if qflat is None else qflat[src]
+    return rcodes, rq, roffs, L
+
+
 def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | None) -> dict:
     cpu0 = time.process_time()
     lay: Layout = _P["lay"]
@@ -326,8 +359,11 @@ def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | N
                 if qflat is not None:
                     qflat[a:b] = quals[a:b][::-1]
         rc_used |= flip
-    reads = [codes[offs[i]:offs[i + 1]] for i in range(lengths.size)]
-    ql = None if qflat is None else [qflat[offs[i]:offs[i + 1]] for i in range(lengths.size)]
+    if _FLAT_PATH and _P.get("smart") is None and _P.get("soft") is None and not _P.get("qw"):
+        reads = ql = None       # V13 C1: the default configuration works on the flat buffers only (no view lists)
+    else:
+        reads = [codes[offs[i]:offs[i + 1]] for i in range(lengths.size)]
+        ql = None if qflat is None else [qflat[offs[i]:offs[i + 1]] for i in range(lengths.size)]
     acc, fields, payload, proj, cost, path, hard, sstats, pq = _try(reads, ql, with_quality=True, diag=d,
                                                                    flat=(codes, qflat, offs, lengths))
     if d is not None:
@@ -338,10 +374,15 @@ def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | N
     if _P["rc"]:
         bad = np.flatnonzero(~acc & (cost > 2 * _P["al"].costs.insertion))
         if bad.size:
-            rreads = [_RC[reads[i][::-1]] for i in bad]
-            rq = None if ql is None else [ql[i][::-1] for i in bad]
             d2 = {} if d is not None else None
-            a2, f2, p2, pr2, c2, path2, h2, s2, q2 = _try(rreads, rq, with_quality=True, diag=d2)
+            if reads is None:
+                # V13 C2: the retried reads reversed and complemented by one gather into a flat buffer
+                a2, f2, p2, pr2, c2, path2, h2, s2, q2 = _try(None, None, with_quality=True, diag=d2,
+                                                             flat=_rc_flat(codes, qflat, offs, lengths, bad))
+            else:
+                rreads = [_RC[reads[i][::-1]] for i in bad]
+                rq = None if ql is None else [ql[i][::-1] for i in bad]
+                a2, f2, p2, pr2, c2, path2, h2, s2, q2 = _try(rreads, rq, with_quality=True, diag=d2)
             sstats.update(s2)
             better = a2 | (c2 < cost[bad])
             sel = bad[better]

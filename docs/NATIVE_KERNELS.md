@@ -7,7 +7,7 @@ the same results more slowly.
 
 | kernel | module | C source | packaged extension | reference |
 |---|---|---|---|---|
-| `align`: V5 marker-template aligner | `vnxdna.v5.native_alignment` | `src/vnxdna/v5/native/align.c` | `vnxdna/v5/_vnx_align*.so` | `vnxdna.v4.sync` (NumPy) |
+| `align`: V5 marker-template aligner (ABI 4 since V13: `vnx_align_batch_sel_lv` aligns selected reads of a flat batch in place, no per-read copies) | `vnxdna.v5.native_alignment` | `src/vnxdna/v5/native/align.c` | `vnxdna/v5/_vnx_align*.so` | `vnxdna.v4.sync` (NumPy) |
 | `reads`: V6 FASTQ/FASTA read parser | `vnxdna.v6.native_reads` | `src/vnxdna/v6/native/reads.c` | `vnxdna/v6/_vnx_reads*.so` | `vnxdna.v4.reads` |
 | `rs`: V6 inner Reed-Solomon (GF(256)) decoder | `vnxdna.v6.native_rs` | `src/vnxdna/v6/native/rs.c` | `vnxdna/v6/_vnx_rs*.so` | `vnxdna.v4.rs_fast` (NumPy) |
 | `cluster`: V7 read clustering (sketch, candidate pairs, banded edit distance, verification), forward-backward consensus calls and (V9, ABI 2) the full-template polish edit costs (`vnx_cl_edit_costs` = `polish.edit_costs_reference`) | `vnxdna.native.cluster` | `src/vnxdna/native/c/cluster.c` | `vnxdna/_vnx_cluster*.so` | `vnxdna.recovery.cluster` (NumPy; the `*_reference` functions) |

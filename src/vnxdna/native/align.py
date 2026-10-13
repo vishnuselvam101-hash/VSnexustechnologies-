@@ -38,7 +38,7 @@ import numpy as np
 
 from vnxdna import _native_build as _nb
 
-ABI_VERSION = 3
+ABI_VERSION = 4
 MAX_BAND = 64
 MAX_TEMPLATE = 8192
 MAX_COST = 65536
@@ -105,6 +105,9 @@ def _bind(lib) -> None:
         fn = getattr(lib, name)
         fn.restype = ctypes.c_int
         fn.argtypes = [*args, *extra, i32]
+    # ABI 4 (V13): selected reads of a larger buffer, (n, codes, starts, lens, total, ...) — lens inserted after starts
+    lib.vnx_align_batch_sel_lv.restype = ctypes.c_int
+    lib.vnx_align_batch_sel_lv.argtypes = [i64, p, p, p, *args[3:], i32]
 
 
 def _load():
@@ -305,10 +308,7 @@ def align_usable(aligner, reads: list, quals: list | None, min_quality: int, tim
     level = active_level(backend)
     if level == "reference":
         return None
-    lanes = LEVELS[level]
     n = len(reads)
-    lay = aligner.layout
-    g = geometry(aligner)
     lengths = np.fromiter((r.size for r in reads), dtype=np.int64, count=n)
     offsets = np.zeros(n + 1, dtype=np.int64)
     np.cumsum(lengths, out=offsets[1:])
@@ -320,6 +320,57 @@ def align_usable(aligner, reads: list, quals: list | None, min_quality: int, tim
         qflat = np.zeros(total, dtype=np.uint8)
         for k in np.flatnonzero(has_q).tolist():
             qflat[offsets[k]:offsets[k + 1]] = quals[k]
+    return _run_kernel(lib, aligner, n, codes, offsets, total, qflat, has_q, min_quality, LEVELS[level], timings, readpos,
+                       t_start)
+
+
+def _flat_in_domain(codes, starts, lengths, qflat) -> bool:
+    """The flat-buffer counterpart of :func:`_reads_in_domain`: every read lies inside ``codes`` (and ``qflat``)."""
+    if not isinstance(codes, np.ndarray) or codes.dtype != np.uint8 or codes.ndim != 1:
+        return False
+    for a in (starts, lengths):
+        if not isinstance(a, np.ndarray) or a.ndim != 1 or a.dtype.kind not in "iu" or a.size != lengths.size:
+            return False
+    if qflat is not None and (not isinstance(qflat, np.ndarray) or qflat.dtype != np.uint8 or qflat.ndim != 1
+                              or qflat.size != codes.size):
+        return False
+    if starts.size and (int(starts.min()) < 0 or int(lengths.min()) < 0
+                        or int((starts.astype(np.int64) + lengths.astype(np.int64)).max()) > codes.size):
+        return False
+    return True
+
+
+def align_usable_flat(aligner, codes: np.ndarray, starts: np.ndarray, lengths: np.ndarray, qflat: np.ndarray | None,
+                      min_quality: int, backend: str | None = None):
+    """:func:`align_usable` for reads given as ranges of flat buffers: read ``k`` is ``codes[starts[k]:starts[k] +
+    lengths[k]]`` and, when ``qflat`` is given, has the qualities ``qflat[...]`` of the same range (every read has
+    qualities then; the list form's per-read ``None`` is ``qflat=None`` for the whole call). Returns the same seven
+    arrays as :func:`align_usable` on the equivalent lists (pinned by tests/v13/test_pass1_flat.py), or None outside
+    the native domain. The kernel reads the selected ranges in place (ABI 4 entry ``vnx_align_batch_sel_lv``): no
+    per-read views, no ``np.concatenate``, no copy (V13 C1)."""
+    lib = _load()
+    if lib is None or not config_in_domain(aligner, min_quality) or not _flat_in_domain(codes, starts, lengths, qflat):
+        return None
+    level = active_level(backend)
+    if level == "reference":
+        return None
+    n = int(lengths.size)
+    lens = np.ascontiguousarray(lengths, dtype=np.int64)
+    starts = np.ascontiguousarray(starts, dtype=np.int64)
+    codes = np.ascontiguousarray(codes)
+    qflat = None if qflat is None else np.ascontiguousarray(qflat)
+    has_q = None if qflat is None else np.ones(n, dtype=np.uint8)
+    return _run_kernel(lib, aligner, n, codes, starts, int(codes.size), qflat, has_q, min_quality, LEVELS[level], None,
+                       False, None, lens=lens)
+
+
+def _run_kernel(lib, aligner, n: int, codes, offsets, total: int, qflat, has_q, min_quality: int, lanes: int, timings,
+                readpos: bool, t_start, lens=None):
+    """One call of the batch kernel on validated flat buffers; shared by the list and flat entry points. With ``lens``
+    (ABI 4) ``offsets`` are the n read starts inside ``codes`` of ``total`` entries and the selected-reads entry runs."""
+    import time
+    lay = aligner.layout
+    g = geometry(aligner)
     bases = np.empty((n, lay.frame_nt), dtype=np.uint8)
     erased = np.empty((n, lay.frame_nt), dtype=np.uint8)
     ok = np.empty(n, dtype=np.uint8)
@@ -334,7 +385,11 @@ def align_usable(aligner, reads: list, quals: list | None, min_quality: int, tim
             int(c.deletion), int(c.marker_deletion_extra), int(c.guard_segments), int(min_quality),
             _ptr(bases), _ptr(erased), _ptr(ok), _ptr(ins), _ptr(dele), _ptr(mm), _ptr(cost))
     rpos = None
-    if readpos:
+    if lens is not None:
+        if readpos or timings is not None:
+            raise ValueError("the selected-reads entry has no readpos or timings form")
+        rc = lib.vnx_align_batch_sel_lv(n, _ptr(codes) if total else None, _ptr(offsets), _ptr(lens), *args[3:], lanes)
+    elif readpos:
         rpos = np.empty((n, aligner.T), dtype=np.int16)
         rc = lib.vnx_align_batch_path_lv(*args, _ptr(rpos), lanes)
     elif timings is None:

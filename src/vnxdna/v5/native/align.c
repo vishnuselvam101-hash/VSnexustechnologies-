@@ -41,7 +41,7 @@
 #endif
 
 /* 2: adds vnx_align_batch_path (read position of every template base); 3: SIMD levels (*_lv, vnx_align_levels) */
-#define VNX_ALIGN_ABI 3
+#define VNX_ALIGN_ABI 4
 
 #define INF_COST ((int32_t)(1 << 28))
 #define OP_DIAG 0
@@ -180,10 +180,12 @@ static int validate_geometry(const geom_t *g) {
 /*
  * Align n usable reads. codes/quals are flat buffers indexed by offsets[0..n] (offsets[0] == 0, non-decreasing,
  * offsets[n] == total_len). quals may be NULL; has_qual[k] (NULL = every read) says whether read k has qualities.
+ * ABI 4: with lens != NULL, read k is codes[offsets[k] .. offsets[k] + lens[k]) instead (any n reads of a larger
+ * buffer of total_len entries, in any order; offsets then has n entries and need not be monotone or start at 0).
  * Outputs: bases/erased (n * frame_nt uint8), ok (n uint8), ins/del/mm/cost (n int64).
  */
-static int align_batch(int64_t n, const uint8_t *codes, const int64_t *offsets, int64_t total_len, const uint8_t *quals,
-                       const uint8_t *has_qual, int32_t T, const int16_t *tpl, const int32_t *seg_of, const int32_t *prev_seg,
+static int align_batch(int64_t n, const uint8_t *codes, const int64_t *offsets, const int64_t *lens, int64_t total_len,
+                       const uint8_t *quals, const uint8_t *has_qual, int32_t T, const int16_t *tpl, const int32_t *seg_of, const int32_t *prev_seg,
                        const int32_t *next_seg, int32_t n_segments, int32_t frame_nt, const int32_t *frame_pos,
                        const int32_t *seg_frame, int32_t band, int32_t c_mm, int32_t c_ins, int32_t c_del, int32_t c_x, int32_t guard,
                        int32_t min_q, uint8_t *out_bases, uint8_t *out_erased, uint8_t *out_ok, int64_t *out_ins, int64_t *out_del,
@@ -202,10 +204,11 @@ static int align_batch(int64_t n, const uint8_t *codes, const int64_t *offsets, 
                 .min_q = min_q};
     int rc = validate_geometry(&g);
     if (rc != VNX_OK) return rc;
-    if (offsets[0] != 0 || offsets[n] != total_len) return VNX_E_READ;
+    if (!lens && (offsets[0] != 0 || offsets[n] != total_len)) return VNX_E_READ;
     for (int64_t k = 0; k < n; k++) {
-        const int64_t L = offsets[k + 1] - offsets[k];
-        if (L < 0 || offsets[k + 1] > total_len || L < (int64_t)T - band || L > (int64_t)T + band) return VNX_E_READ;
+        const int64_t a = offsets[k];
+        const int64_t L = lens ? lens[k] : offsets[k + 1] - a;
+        if (L < 0 || a < 0 || a > total_len - L || L < (int64_t)T - band || L > (int64_t)T + band) return VNX_E_READ;
         if (has_qual && has_qual[k] && L > 0 && !quals) return VNX_E_ARG;   /* an empty read reads no quality */
     }
     if ((uint64_t)n > SIZE_MAX / (size_t)frame_nt) return VNX_E_ARG;   /* output row indexing cannot overflow */
@@ -213,13 +216,13 @@ static int align_batch(int64_t n, const uint8_t *codes, const int64_t *offsets, 
 
     for (;;) {
         switch (lanes) {
-        case 4: rc = align_groups_l4(&g, n, codes, offsets, quals, has_qual, out_bases, out_erased, out_ok, out_ins, out_del,
-                                     out_mm, out_cost, out_rpos, tm); break;
+        case 4: rc = align_groups_l4(&g, n, codes, offsets, lens, quals, has_qual, out_bases, out_erased, out_ok, out_ins,
+                                     out_del, out_mm, out_cost, out_rpos, tm); break;
 #if VNX_X86
-        case 8: rc = align_groups_l8(&g, n, codes, offsets, quals, has_qual, out_bases, out_erased, out_ok, out_ins, out_del,
-                                     out_mm, out_cost, out_rpos, tm); break;
-        case 16: rc = align_groups_l16(&g, n, codes, offsets, quals, has_qual, out_bases, out_erased, out_ok, out_ins, out_del,
-                                       out_mm, out_cost, out_rpos, tm); break;
+        case 8: rc = align_groups_l8(&g, n, codes, offsets, lens, quals, has_qual, out_bases, out_erased, out_ok, out_ins,
+                                     out_del, out_mm, out_cost, out_rpos, tm); break;
+        case 16: rc = align_groups_l16(&g, n, codes, offsets, lens, quals, has_qual, out_bases, out_erased, out_ok, out_ins,
+                                       out_del, out_mm, out_cost, out_rpos, tm); break;
 #endif
         default: return VNX_E_UNSUPPORTED;
         }
@@ -245,16 +248,37 @@ static int align_batch(int64_t n, const uint8_t *codes, const int64_t *offsets, 
     n, codes, offsets, total_len, quals, has_qual, T, tpl, seg_of, prev_seg, next_seg, n_segments, frame_nt, frame_pos,    \
         seg_frame, band, c_mm, c_ins, c_del, c_x, guard, min_q, out_bases, out_erased, out_ok, out_ins, out_del, out_mm,   \
         out_cost
+/* the same arguments for align_batch, which takes the ABI-4 lens pointer (NULL: contiguous offsets[0..n]) */
+#define VNX_ARGS_L                                                                                                          \
+    n, codes, offsets, NULL, total_len, quals, has_qual, T, tpl, seg_of, prev_seg, next_seg, n_segments, frame_nt,         \
+        frame_pos, seg_frame, band, c_mm, c_ins, c_del, c_x, guard, min_q, out_bases, out_erased, out_ok, out_ins, out_del, \
+        out_mm, out_cost
 
-int vnx_align_batch_lv(VNX_PARAMS, int32_t lanes) { return align_batch(VNX_ARGS, NULL, NULL, lanes); }
+int vnx_align_batch_lv(VNX_PARAMS, int32_t lanes) { return align_batch(VNX_ARGS_L, NULL, NULL, lanes); }
 
-int vnx_align_batch(VNX_PARAMS) { return align_batch(VNX_ARGS, NULL, NULL, 4); }
+int vnx_align_batch(VNX_PARAMS) { return align_batch(VNX_ARGS_L, NULL, NULL, 4); }
+
+/* ABI 4 (V13): align n selected reads of a flat buffer in place. Read k is codes[starts[k] .. starts[k] + lens[k])
+ * (quals likewise); total_len is the size of the buffers, every read must lie inside them. Same outputs as
+ * vnx_align_batch_lv on the same reads copied into a contiguous buffer. */
+int vnx_align_batch_sel_lv(int64_t n, const uint8_t *codes, const int64_t *starts, const int64_t *lens, int64_t total_len,
+                           const uint8_t *quals, const uint8_t *has_qual, int32_t T, const int16_t *tpl, const int32_t *seg_of,
+                           const int32_t *prev_seg, const int32_t *next_seg, int32_t n_segments, int32_t frame_nt,
+                           const int32_t *frame_pos, const int32_t *seg_frame, int32_t band, int32_t c_mm, int32_t c_ins,
+                           int32_t c_del, int32_t c_x, int32_t guard, int32_t min_q, uint8_t *out_bases, uint8_t *out_erased,
+                           uint8_t *out_ok, int64_t *out_ins, int64_t *out_del, int64_t *out_mm, int64_t *out_cost,
+                           int32_t lanes) {
+    if (!lens && n > 0) return VNX_E_ARG;
+    return align_batch(n, codes, starts, lens, total_len, quals, has_qual, T, tpl, seg_of, prev_seg, next_seg, n_segments,
+                       frame_nt, frame_pos, seg_frame, band, c_mm, c_ins, c_del, c_x, guard, min_q, out_bases, out_erased,
+                       out_ok, out_ins, out_del, out_mm, out_cost, NULL, NULL, lanes);
+}
 
 /* Same as vnx_align_batch, and also writes out_readpos (n * T int16): for every template position the read index it
  * was aligned to on the traceback path (DIAG steps), or -1 if it was deleted or the read is not ok. */
 int vnx_align_batch_path_lv(VNX_PARAMS, int16_t *out_readpos, int32_t lanes) {
     if (!out_readpos && n > 0) return VNX_E_ARG;
-    return align_batch(VNX_ARGS, out_readpos, NULL, lanes);
+    return align_batch(VNX_ARGS_L, out_readpos, NULL, lanes);
 }
 
 int vnx_align_batch_path(VNX_PARAMS, int16_t *out_readpos) { return vnx_align_batch_path_lv(VNX_ARGS, out_readpos, 4); }
@@ -264,7 +288,7 @@ int vnx_align_batch_path(VNX_PARAMS, int16_t *out_readpos) { return vnx_align_ba
 int vnx_align_batch_profiled_lv(VNX_PARAMS, double *timings, int32_t lanes) {
     if (!timings) return VNX_E_ARG;
     timers_t tm = {0.0, 0.0, 0.0, 0.0};
-    const int rc = align_batch(VNX_ARGS, NULL, &tm, lanes);
+    const int rc = align_batch(VNX_ARGS_L, NULL, &tm, lanes);
     timings[0] += tm.pack;
     timings[1] += tm.dp;
     timings[2] += tm.traceback;

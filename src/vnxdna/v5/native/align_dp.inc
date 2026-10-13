@@ -187,8 +187,8 @@ VNX_TARGET static int finish_lane(const geom_t *g, scratch_t *s, int lane, const
 
 /* Sections 4-6 for n validated reads in groups of LANES. Returns VNX_OK, VNX_E_NOMEM (scratch allocation failed before any
  * output was written; the caller may retry at a narrower level) or VNX_E_TRACE. */
-VNX_TARGET static int align_groups(const geom_t *g, int64_t n, const uint8_t *codes, const int64_t *offsets, const uint8_t *quals,
-                                   const uint8_t *has_qual, uint8_t *out_bases, uint8_t *out_erased, uint8_t *out_ok,
+VNX_TARGET static int align_groups(const geom_t *g, int64_t n, const uint8_t *codes, const int64_t *offsets, const int64_t *lens,
+                                   const uint8_t *quals, const uint8_t *has_qual, uint8_t *out_bases, uint8_t *out_erased, uint8_t *out_ok,
                                    int64_t *out_ins, int64_t *out_del, int64_t *out_mm, int64_t *out_cost, int16_t *out_rpos,
                                    timers_t *tm) {
     const int32_t T = g->T, band = g->B, frame_nt = g->frame_nt, n_segments = g->n_segments;
@@ -216,7 +216,7 @@ VNX_TARGET static int align_groups(const geom_t *g, int64_t n, const uint8_t *co
         for (int l = 0; l < LANES; l++) {
             const int64_t k = k0 + (l < take ? l : 0);
             const int64_t a = offsets[k];
-            const int32_t Li = (int32_t)(offsets[k + 1] - a);
+            const int32_t Li = (int32_t)(lens ? lens[k] : offsets[k + 1] - a);   /* ABI 4: lens = selected reads */
             Lv[l] = Li;
             for (size_t c = 0; c < rlen; c++) {
                 const int64_t col = (int64_t)c - band;

@@ -135,6 +135,49 @@ class TemplateAligner:
             out_bases[sel], out_er[sel], ok[sel], ins_n[sel], del_n[sel], mm[sel], cost[sel] = res
         return Projection(out_bases, out_er, ok, ins_n, del_n, mm, cost)
 
+    def project_flat(self, codes: np.ndarray, offs: np.ndarray, lengths: np.ndarray, sel: np.ndarray,
+                     qflat: np.ndarray | None = None, min_quality: int = 0) -> Projection:
+        """:meth:`project` for the reads ``sel`` of a flat batch (read ``i`` is ``codes[offs[i]:offs[i] + lengths[i]]``,
+        its qualities the same range of ``qflat``): the same Projection, rows in the order of ``sel``, without per-read
+        views (V13 C1; equivalence pinned by tests/v13/test_pass1_flat.py). The native kernel receives the selected
+        reads through one gather; outside its domain, or on the reference backend, the reads are viewed and aligned
+        exactly as :meth:`project` does."""
+        n = int(sel.size)
+        lay = self.layout
+        out_bases = np.full((n, lay.frame_nt), 4, dtype=np.uint8)
+        out_er = np.ones((n, lay.frame_nt), dtype=bool)
+        ok = np.zeros(n, dtype=bool)
+        ins_n = np.zeros(n, dtype=np.int64)
+        del_n = np.zeros(n, dtype=np.int64)
+        mm = np.zeros(n, dtype=np.int64)
+        cost = np.full(n, int(INF), dtype=np.int64)
+        if n == 0:
+            return Projection(out_bases, out_er, ok, ins_n, del_n, mm, cost)
+        L = lengths[sel].astype(np.int64, copy=False)
+        usable = np.abs(L - self.T) <= self.band
+        idx = np.flatnonzero(usable)
+        if self.retry is not None:
+            wide = np.flatnonzero(~usable & (np.abs(L - self.T) <= self.retry_band))
+            if wide.size:
+                w = self.retry.project_flat(codes, offs, lengths, sel[wide], qflat, min_quality)
+                out_bases[wide], out_er[wide], ok[wide], ins_n[wide], del_n[wide], mm[wide], cost[wide] = (
+                    w.bases, w.erased, w.ok, w.insertions, w.deletions, w.marker_mismatches, w.cost)
+        if self.backend == "native" and idx.size:
+            from vnxdna.native import align as _na
+            res = _na.align_usable_flat(self, codes, offs[sel[idx]], L[idx], qflat, min_quality,
+                                       backend=getattr(self, "level_request", None))
+            if res is not None:      # None: input outside the native domain -> the reference below
+                out_bases[idx], out_er[idx], ok[idx], ins_n[idx], del_n[idx], mm[idx], cost[idx] = res
+                return Projection(out_bases, out_er, ok, ins_n, del_n, mm, cost)
+        reads = [codes[offs[i]:offs[i] + lengths[i]] for i in sel.tolist()]
+        quals = None if qflat is None else [qflat[offs[i]:offs[i] + lengths[i]] for i in sel.tolist()]
+        for start in range(0, idx.size, 2048):
+            s2 = idx[start:start + 2048]
+            res = self._align([reads[i] for i in s2], L[s2], None if quals is None else [quals[i] for i in s2],
+                              min_quality)
+            out_bases[s2], out_er[s2], ok[s2], ins_n[s2], del_n[s2], mm[s2], cost[s2] = res
+        return Projection(out_bases, out_er, ok, ins_n, del_n, mm, cost)
+
     def _align(self, reads, lengths, quals, min_quality):
         n = len(reads)
         B = self.band
