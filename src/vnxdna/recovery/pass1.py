@@ -25,7 +25,7 @@ _P: dict = {}
 
 def _p_init(layout: Layout, band: int, costs: SyncCosts, min_q: int, rc: bool, smart_cfg=None, soft_cfg=None,
             defer: bool = False, qw: bool = False, retry_band: int = 0, diag: bool = False, unplaced: bool = False,
-            rc_retry: str = "bounded") -> None:
+            rc_retry: str = "bounded", spec: str = "markers") -> None:
     # defer: pass 1 of the deferred schedule — the cheap V4 paths only; smart/soft run later on the pending reads
     # qw: V6 Phase 4 quality-weighted consensus — keep the Phred quality of every projected frame base of pending reads
     # retry_band: V6 opt-in second, wider band for reads beyond ``band`` (0 = off, the V4 behaviour)
@@ -34,8 +34,10 @@ def _p_init(layout: Layout, band: int, costs: SyncCosts, min_q: int, rc: bool, s
     # rc_retry: V13 D1 — "bounded" skips the reverse-complement retry of a failed read when a lower bound on its
     # reverse-complement alignment cost already reaches the forward cost (the retry could then only be adopted
     # through a verified reverse-complement frame, see _process); "always" = the V12 retry of every failed read
+    # spec: V13 B1 — "markers" projects the reads of the sync path from their marker-block shifts first and runs the
+    # DP only for those whose speculative frame does not verify (_spec_project); "off" = the DP for every read
     _P.update(lay=layout, al=TemplateAligner(layout, band, costs, retry_band=retry_band), min_q=min_q, rc=rc, smart=smart_cfg, soft=soft_cfg,
-              defer=defer, qw=qw, diag=diag, unpl=unplaced, rc_retry=rc_retry)
+              defer=defer, qw=qw, diag=diag, unpl=unplaced, rc_retry=rc_retry, spec=spec)
     if smart_cfg is not None or soft_cfg is not None:
         from vnxdna.sync.smart.recovery import Geometry
         _P["geom"] = Geometry(layout)
@@ -71,7 +73,7 @@ def _try(reads: list[np.ndarray], quals: list | None, with_quality: bool = False
     cost = np.full(n, 1 << 28, dtype=np.int64)
     parsed_fields = np.zeros((n, 4), dtype=np.int64)
     payload = np.zeros((n, lay.payload_bytes), dtype=np.uint8)
-    path = np.zeros(n, dtype=np.int8)          # 1 fast, 2 sync
+    path = np.zeros(n, dtype=np.int8)          # 1 fast, 2 sync, 3 smart, 4 soft, 5 speculative sync (V13 B1)
     # quality of each projected frame base (V6 Phase 4 weighted consensus; 0 where no read base or no qualities)
     proj_q = np.zeros((n, lay.frame_nt), dtype=np.uint8) if _P.get("qw") else None
     exact = np.flatnonzero(lengths == lay.strand_nt)
@@ -118,6 +120,36 @@ def _try(reads: list[np.ndarray], quals: list | None, with_quality: bool = False
     soft = None if defer else _P.get("soft")
     sstats: Counter = Counter()
     soft_jobs: list = []                   # (read index, evidence) for the V5 Phase 4 soft stage
+    if rest.size and reads is None and _P.get("spec", "markers") == "markers" and lay.markers:
+        # V13 B1: marker-anchored speculative projection. A read whose frame verifies (inner RS + CRC) from the
+        # projection implied by its marker-block shifts is accepted without the DP; every other read of ``rest``
+        # takes the DP below, unchanged. Acceptances can only be added by this step, never removed.
+        sok, sbases, serased, smm, sind = _spec_project(flat[0], flat[2][rest], lengths[rest], flat[1], _P["min_q"])
+        sidx = np.flatnonzero(sok)
+        if sidx.size:
+            hard_s = np.minimum(sbases[sidx], 3)
+            er_s = frame_erasures_to_bytes(serased[sidx])
+            Ps = decode_frames(lay, nt_to_bytes(hard_s), er_s, errors_only_retry=False)
+            hit = Ps.ok
+            if hit.any():
+                ridx = rest[sidx[hit]]
+                c = _P["al"].costs
+                acc[ridx] = True
+                path[ridx] = 5
+                parsed_fields[ridx] = np.stack([Ps.kind, Ps.tag, Ps.group, Ps.symbol], axis=1)[hit]
+                payload[ridx] = Ps.payload[hit]
+                # nominal cost of the speculative alignment (marker mismatches + one indel per unit of shift change);
+                # no decision depends on the cost of an accepted read
+                cost[ridx] = smm[sidx[hit]] * c.marker_mismatch + sind[sidx[hit]] * min(c.insertion, c.deletion)
+                hard_bases[ridx] = hard_s[hit]
+                pb = sbases[sidx[hit]].copy()
+                pb[serased[sidx[hit]]] = 4
+                proj_bases[ridx] = pb
+                if diag is not None:
+                    diag["erased_bytes"][ridx] = er_s[hit].sum(axis=1)
+                    diag["rs_ok"][ridx], diag["crc_ok"][ridx] = Ps.rs_ok[hit], Ps.crc_ok[hit]
+                    diag["marker_mm"][ridx], diag["errata"][ridx] = smm[sidx[hit]], Ps.errata[hit]
+                rest = rest[~acc[rest]]
     if rest.size:
         if reads is None:
             # V13 C1: the sync path on the flat batch, no per-read views (same Projection as the list form)
@@ -339,6 +371,110 @@ def _rc_bound(codes: np.ndarray, offs: np.ndarray, lengths: np.ndarray) -> np.nd
     return _rc_bound_reference(codes, lengths, offs, mpos, want, starts, band, c.marker_mismatch, c.insertion, c.deletion)
 
 
+def _spec_project_reference(codes: np.ndarray, lengths: np.ndarray, offs: np.ndarray, qflat: np.ndarray | None,
+                            min_q: int, T: int, mpos: np.ndarray, want: np.ndarray, starts: np.ndarray,
+                            frame_pos: np.ndarray, band: int) -> tuple:
+    """Marker-anchored speculative projection of the selected reads onto frame coordinates, without the DP (the
+    specification of ``native.orient.spec_project``, V13 B1). Returns (ok, bases, erased, mm, indels).
+
+    For a read of length ``L`` (``delta = L - T``, ``|delta| <= band`` or the read is not projected) the marker blocks
+    (``starts`` indexes the first marker of each block in ``mpos``) are visited left to right with a running shift
+    ``s_prev`` (0 at the start). A block takes the first shift of the sequence ``s_prev, s_prev - 1, s_prev + 1,
+    s_prev - 2, ...`` (``|s| <= band``, the whole block inside the read) at which every marker matches; if none does,
+    it keeps ``s_prev`` when at most one marker mismatches there (counted in ``mm``), otherwise the read is not
+    projected. ``indels`` is the sum of the shift changes, including the final change to ``delta``. A template position
+    ``p`` lies in region ``r`` = the number of blocks whose first marker is ``<= p``; its left shift is that of block
+    ``r - 1`` (0 for the first region) and its right shift that of block ``r`` (``delta`` after the last block). Its
+    base is the read base at ``p + left shift`` (4 outside the read) and it is erased when that base is not A/C/G/T,
+    when its quality is below ``min_q`` (``qflat`` given) or when the two shifts differ (the region holds an indel).
+    Only frame positions are returned. A read that is not projected has bases 4, every position erased, mm and indels 0.
+
+    Unlike the DP (``TemplateAligner``) this projection does not minimise a cost: it is only ever used behind the inner
+    RS + CRC verification of the frame it yields."""
+    n = int(lengths.size)
+    F = int(frame_pos.size)
+    L = lengths.astype(np.int64, copy=False)
+    offs = offs.astype(np.int64, copy=False)
+    bases = np.full((n, F), 4, dtype=np.uint8)
+    erased = np.ones((n, F), dtype=bool)
+    mm = np.zeros(n, dtype=np.int64)
+    indels = np.zeros(n, dtype=np.int64)
+    alive = np.abs(L - T) <= band
+    if n == 0:
+        return alive, bases, erased, mm, indels
+    nb = int(starts.size) if mpos.size else 0
+    blocks = [mpos[a:b].astype(np.int64) for a, b in zip(starts, np.append(starts[1:], mpos.size))] if nb else []
+    s_prev = np.zeros(n, dtype=np.int64)
+    shifts = np.zeros((n, nb), dtype=np.int64)
+    for b, bl in enumerate(blocks):
+        wb = want[starts[b]:starts[b] + bl.size]
+        found = np.zeros(n, dtype=bool)
+        for d in range(2 * band + 1):
+            k = (d + 1) // 2
+            s = s_prev - k if d % 2 else s_prev + k
+            rows = np.flatnonzero(alive & ~found & (s >= -band) & (s <= band) & (bl[0] + s >= 0) & (bl[-1] + s < L))
+            if rows.size == 0:
+                continue
+            hit = (codes[offs[rows, None] + bl[None, :] + s[rows, None]] == wb[None, :]).all(axis=1)
+            r2 = rows[hit]
+            indels[r2] += np.abs(s[r2] - s_prev[r2])
+            s_prev[r2] = s[r2]
+            found[r2] = True
+        rows = np.flatnonzero(alive & ~found)
+        if rows.size:
+            s = s_prev[rows]
+            inside = (bl[0] + s >= 0) & (bl[-1] + s < L[rows])
+            bad = np.full(rows.size, bl.size + 1, dtype=np.int64)
+            r_in = rows[inside]
+            if r_in.size:
+                bad[inside] = (codes[offs[r_in, None] + bl[None, :] + s_prev[r_in, None]] != wb[None, :]).sum(axis=1)
+            keep = bad <= 1
+            mm[rows[keep]] += bad[keep]
+            alive[rows[~keep]] = False
+        shifts[:, b] = s_prev
+    ok = alive
+    delta = L - T
+    indels += np.abs(delta - s_prev)
+    mm[~ok] = 0
+    indels[~ok] = 0
+    if F == 0 or not ok.any():
+        return ok, bases, erased, mm, indels
+    rows = np.flatnonzero(ok)
+    if nb:
+        region = np.searchsorted(mpos[starts], frame_pos, side="right")
+        sl = np.where(region[None, :] == 0, 0, shifts[rows][:, np.maximum(region - 1, 0)])
+        sr = np.where(region[None, :] == nb, delta[rows, None], shifts[rows][:, np.minimum(region, nb - 1)])
+    else:
+        sl = np.zeros((rows.size, F), dtype=np.int64)
+        sr = np.broadcast_to(delta[rows, None], (rows.size, F))
+    j = frame_pos[None, :].astype(np.int64) + sl
+    inside = (j >= 0) & (j < L[rows, None])
+    idx = np.clip(offs[rows, None] + j, 0, max(0, codes.size - 1))
+    base = np.where(inside, np.minimum(codes[idx], 4), 4).astype(np.uint8)
+    er = (sl != sr) | (base > 3)
+    if qflat is not None:
+        er |= inside & (qflat[idx] < min_q)
+    bases[rows] = base
+    erased[rows] = er
+    return ok, bases, erased, mm, indels
+
+
+def _spec_project(codes: np.ndarray, offs: np.ndarray, lengths: np.ndarray, qflat: np.ndarray | None,
+                  min_q: int) -> tuple:
+    """The speculative projection of the selected reads with the worker's layout and band (native kernel when it
+    loads, else the reference)."""
+    lay: Layout = _P["lay"]
+    al = _P["al"]
+    tpl, fpos = lay.template()
+    mpos = np.flatnonzero(tpl >= 0)
+    want = tpl[mpos].astype(np.uint8)
+    starts = np.flatnonzero(np.diff(mpos, prepend=-2) > 1)
+    band = max(al.band, al.retry_band)
+    if native_orient.resolve_backend() == "native":
+        return native_orient.spec_project(codes, lengths, offs, qflat, min_q, tpl.size, mpos, want, starts, fpos, band)
+    return _spec_project_reference(codes, lengths, offs, qflat, min_q, tpl.size, mpos, want, starts, fpos, band)
+
+
 _GATHER_ROWS = 512      # rows per gather chunk (V12 session 5): the int64 index matrix of one chunk is 512 x strand_nt
 #                         x 8 B (1.3 MiB at 313 nt); one index for the whole 8192-read batch was 20 MiB per worker, and
 #                         the freed arena stayed resident, raising the peak RSS of every pass-1 worker by that much
@@ -499,7 +635,8 @@ def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | N
            "pend_fields": pend_fields, "pend_bases": pend_bases, "pend_alt": pend_alt,
            **({} if pq is None else {"pend_pq": out_pq,
                                      "pend_pqok": np.full(out_pq.shape[0], int(ql is not None), dtype=np.uint8)}),
-           "stats": {"reads": int(lengths.size), "fast": int((path == 1).sum()), "sync": int((path == 2).sum()),
+           "stats": {"reads": int(lengths.size), "fast": int((path == 1).sum()),
+                     "sync": int(((path == 2) | (path == 5)).sum()), "speculative": int((path == 5).sum()),
                      "reverse_complement": int((rc_used & acc).sum()), "pending": int(pend_fields.shape[0]), "orphans": orphans,
                      "unaligned": int((~acc).sum()) - int(pend.size), "rc_retry_skipped": rc_skipped}}
     al = _P["al"]

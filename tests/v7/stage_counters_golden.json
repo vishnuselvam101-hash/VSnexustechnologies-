@@ -2,63 +2,55 @@
  "indel": {
   "outer_ecc_failed_rows": [
    {
-    "from_consensus": 10,
+    "from_consensus": 8,
     "group": 0,
     "have": 54,
     "k": 64,
     "symbols": 80,
-    "verified_pass1": 44
+    "verified_pass1": 46
    },
    {
-    "from_consensus": 14,
+    "from_consensus": 9,
     "group": 1,
     "have": 59,
     "k": 64,
     "symbols": 80,
-    "verified_pass1": 45
+    "verified_pass1": 50
    },
    {
-    "from_consensus": 3,
+    "from_consensus": 2,
     "group": 2,
     "have": 57,
     "k": 64,
     "symbols": 80,
-    "verified_pass1": 54
-   },
-   {
-    "from_consensus": 6,
-    "group": 3,
-    "have": 42,
-    "k": 43,
-    "symbols": 59,
-    "verified_pass1": 36
+    "verified_pass1": 55
    }
   ],
   "outer_ecc_margins": {
    "all": -10,
    "consensus": -10,
-   "pass1": -20,
+   "pass1": -18,
    "rows": 4
   },
   "schema": "vnx.stage-counters/1",
   "stages": {
    "address": {
-    "pass2_pending_records": 1197,
-    "pass2_placed_direct": 146,
-    "pass2_placed_snapped": 87,
+    "pass2_pending_records": 1160,
+    "pass2_placed_direct": 119,
+    "pass2_placed_snapped": 77,
     "pass2_unplaced": 964,
     "pending_dropped_header_unreadable": 210,
-    "pending_header_erased": 758,
-    "pending_kept": 1197,
-    "pending_projected_reading": 959,
-    "pending_raw_prefix_reading": 238
+    "pending_header_erased": 742,
+    "pending_kept": 1160,
+    "pending_projected_reading": 929,
+    "pending_raw_prefix_reading": 231
    },
    "alignment": {
     "aligned": 1722,
-    "aligned_with_marker_mismatch": 1059,
+    "aligned_with_marker_mismatch": 1047,
     "exact_length": 146,
     "fail_drift_beyond_band": 82,
-    "marker_mismatches": 2433,
+    "marker_mismatches": 2404,
     "net_drift_beyond_band": 82,
     "net_drift_within_band": 1722
    },
@@ -67,49 +59,51 @@
     "applicable": 0
    },
    "consensus": {
-    "ambiguous_columns": 1900,
-    "attempted": 99,
-    "empty_columns": 3816,
-    "fail_erasures_exceed_parity": 49,
-    "recovered": 33,
-    "several_reads": 64,
-    "single_read": 35
+    "ambiguous_columns": 1827,
+    "attempted": 88,
+    "empty_columns": 3647,
+    "fail_erasures_exceed_parity": 48,
+    "recovered": 24,
+    "several_reads": 55,
+    "single_read": 33
    },
    "coverage": {
-    "missing_addresses": 120,
-    "missing_no_placed_read": 21,
-    "missing_one_placed_read": 35,
-    "missing_several_placed_reads": 64
+    "missing_addresses": 110,
+    "missing_no_placed_read": 22,
+    "missing_one_placed_read": 33,
+    "missing_several_placed_reads": 55
    },
    "crc": {
     "fail_mismatch": 52,
     "pass2_fail_mismatch": 1
    },
    "indel_placement": {
-    "aligned_erasures_exceed_parity": 1191,
-    "aligned_erasures_within_parity": 531,
-    "erased_bytes": 35851,
-    "fail_erasures_exceed_parity": 1101
+    "aligned_erasures_exceed_parity": 1183,
+    "aligned_erasures_within_parity": 539,
+    "erased_bytes": 35831,
+    "fail_erasures_exceed_parity": 1073
    },
    "inner_ecc": {
-    "fail_decode": 254,
-    "pass2_fail_decode": 16,
-    "verified_after_rs_errata": 313,
+    "fail_decode": 245,
+    "pass2_fail_decode": 15,
+    "verified_after_rs_errata": 350,
     "verified_fast": 28,
-    "verified_sync": 287
+    "verified_speculative": 216,
+    "verified_sync": 108
    },
    "orientation": {
-    "accepted_reverse_complement": 168,
+    "accepted_reverse_complement": 189,
     "prepass_flipped": 791,
     "rc_retry_adopted": 109,
     "rc_retry_attempted": 364
    },
    "outer_ecc": {
     "rows_attempted": 4,
-    "rows_below_k_symbols": 4,
-    "rows_failed": 4,
-    "symbols_from_consensus": 33,
-    "symbols_verified_pass1": 179
+    "rows_below_k_symbols": 3,
+    "rows_decoded": 1,
+    "rows_failed": 3,
+    "symbols_from_consensus": 24,
+    "symbols_verified_pass1": 189
    },
    "read_parsing": {
     "reads": 1804,

@@ -166,7 +166,7 @@ def test_golden_counters_do_not_depend_on_worker_count(golden_reads, tmp_path):
 def test_every_read_has_exactly_one_pass1_fate(pool, harsh_pools, tmp_path):
     sc = _run(harsh_pools["reads"][pool], tmp_path / "o.vnx", stage_counters=True)[3]["stages"]
     n = sc["read_parsing"]["reads"]
-    verified = sum(sc["inner_ecc"].get(f"verified_{p}", 0) for p in ("fast", "sync", "smart", "soft"))
+    verified = sum(sc["inner_ecc"].get(f"verified_{p}", 0) for p in ("fast", "sync", "smart", "soft", "speculative"))
     failed = (sc["alignment"].get("fail_drift_beyond_band", 0) + sc["alignment"].get("fail_path_beyond_band", 0)
               + sc["indel_placement"].get("fail_erasures_exceed_parity", 0) + sc["inner_ecc"].get("fail_decode", 0)
               + sc["crc"].get("fail_mismatch", 0) + sc["address"].get("fail_invalid_version_or_kind", 0))

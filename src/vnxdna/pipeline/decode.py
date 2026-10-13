@@ -127,7 +127,8 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
         base_args = (lay, opt.band, opt.sync_costs, opt.min_quality, opt.reverse_complement, opt.indel_config if smart else None,
                      opt.soft_config if softm else None)
         clustering = opt.read_clustering != "off"
-        initargs = base_args + (deferred, qw, opt.retry_band, stage_counters is not None, clustering, opt.orientation_retry)
+        initargs = base_args + (deferred, qw, opt.retry_band, stage_counters is not None, clustering, opt.orientation_retry,
+                                opt.sync_speculation)
         if clustering:
             # V7 item A (opt-in): unplaced-read store in pass 1; the stage itself runs lazily in pass 2 (fill-only)
             from vnxdna.recovery.cluster.stage import ClusterStage

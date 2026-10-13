@@ -1,8 +1,9 @@
 """Differential stress fuzz of the native orientation scan against the NumPy reference (SIMULATED reads).
 
 Every round draws a layout (every profile's layout plus two synthetic ones), a channel (substitution rate, indel rate,
-reverse-complement rate, junk share) and a batch of reads, then compares ``pass1._orientation`` under
-``VNXDNA_ORIENT_BACKEND=native`` and ``=reference`` read by read. A case is one read.
+reverse-complement rate, junk share) and a batch of reads, then compares ``pass1._orientation``, ``pass1._rc_bound``
+(ABI 2) and ``pass1._spec_project`` (ABI 3) under ``VNXDNA_ORIENT_BACKEND=native`` and ``=reference`` read by read.
+A case is one read.
 
 usage: PYTHONPATH=src python benchmarks/v12/native_orient/stress_fuzz.py [rounds] [reads-per-round] [seed]
 exit 1 on the first mismatch (printed with the layout, channel and read index).
@@ -80,6 +81,17 @@ def main(argv: list[str]) -> int:
         if nb.shape != rb.shape or nb.dtype != rb.dtype or not np.array_equal(nb, rb):
             print(f"MISMATCH rc_bound round {k} layout {lay!r} channel {chan} reads {np.flatnonzero(nb != rb).tolist()[:10]}")
             return 1
+        # V13 B1: the speculative projection (ABI 3) of the same selection, with and without qualities, native vs reference
+        q = rng.integers(0, 60, codes.size).astype(np.uint8) if rng.random() < 0.5 else None
+        mq = int(rng.integers(0, 40)) if q is not None else 0
+        os.environ["VNXDNA_ORIENT_BACKEND"] = "native"
+        ns = pass1._spec_project(codes, offs[sel], lengths[sel], q, mq)
+        os.environ["VNXDNA_ORIENT_BACKEND"] = "reference"
+        rs = pass1._spec_project(codes, offs[sel], lengths[sel], q, mq)
+        for name, a, b in zip(("ok", "bases", "erased", "mm", "indels"), ns, rs):
+            if a.shape != b.shape or a.dtype != b.dtype or not np.array_equal(a, b):
+                print(f"MISMATCH spec_project {name} round {k} layout {lay!r} channel {chan}")
+                return 1
         cases += n
         flipped += int(ref.sum())
     print(f"orient stress fuzz: rounds={rounds} cases={cases} flipped={flipped} mismatches=0 "

@@ -16,7 +16,7 @@ import numpy as np
 
 from vnxdna.native._loader import Kernel, NativeKernelError, module_contract
 
-ABI_VERSION = 2            # 2 (V13): adds vnx_or_rc_bound
+ABI_VERSION = 3            # 2 (V13 D1): adds vnx_or_rc_bound; 3 (V13 B1): adds vnx_or_spec_project
 _ERRORS = {-1: "invalid argument", -2: "out of memory"}
 
 
@@ -26,6 +26,8 @@ def _bind(lib) -> None:
     lib.vnx_or_scan.argtypes = [i64, p, i64, p, p, i64, p, p, p, i64, i64, i64, p]
     lib.vnx_or_rc_bound.restype = ctypes.c_int
     lib.vnx_or_rc_bound.argtypes = [i64, p, i64, p, p, i64, p, p, p, i64, i64, i64, i64, i64, p]
+    lib.vnx_or_spec_project.restype = ctypes.c_int
+    lib.vnx_or_spec_project.argtypes = [i64, p, i64, p, p, p, i64, i64, i64, p, p, p, i64, i64, p, i64, p, p, p, p, p]
 
 
 KERNEL = Kernel("orient", "VNXDNA_ORIENT", ABI_VERSION, "vnx_or_abi_version", _bind, "vnxdna.recovery.pass1", __name__)
@@ -130,6 +132,46 @@ def rc_bound(codes: np.ndarray, lengths: np.ndarray, offs: np.ndarray, mpos: np.
     if rc < 0:
         raise NativeOrientError(f"native reverse-complement bound failed ({rc}: {_ERRORS.get(rc, 'unknown')})")
     return out
+
+
+def spec_project(codes: np.ndarray, lengths: np.ndarray, offs: np.ndarray, qflat: np.ndarray | None, min_q: int,
+                 T: int, mpos: np.ndarray, want: np.ndarray, starts: np.ndarray, frame_pos: np.ndarray,
+                 band: int) -> tuple:
+    """Marker-anchored speculative projection of the selected reads (``pass1._spec_project_reference``; ABI 3):
+    (ok, bases, erased, mm, indels) — ok (n,) bool, bases/erased (n, frame_nt) uint8/bool, mm/indels (n,) int64.
+    ``offs``/``lengths`` select any reads of ``codes``; ``qflat`` (same size as ``codes``) or None."""
+    lib = KERNEL.lib()
+    codes, lengths, mpos, want, starts, block = _template_args(codes, lengths, mpos, want, starts)
+    offs = np.ascontiguousarray(offs, dtype=np.int64)
+    frame_pos = np.ascontiguousarray(frame_pos, dtype=np.int64)
+    if offs.ndim != 1 or offs.size != lengths.size:
+        raise ValueError("offs must give one start per selected read")
+    if lengths.size and (lengths.min() < 0 or offs.min() < 0 or (offs + lengths).max() > codes.size):
+        raise ValueError("every selected read must lie inside codes")
+    if qflat is not None:
+        qflat = np.ascontiguousarray(qflat, dtype=np.uint8)
+        if qflat.shape != codes.shape:
+            raise ValueError("qflat must have one quality per code")
+    if band < 0 or T < 1 or frame_pos.ndim != 1 or frame_pos.size > T:
+        raise ValueError("band must be non-negative, T positive and frame_pos at most T positions")
+    if frame_pos.size and (frame_pos.min() < 0 or frame_pos.max() >= T):
+        raise ValueError("frame_pos must index the template")
+    if mpos.size and (mpos.min() < 0 or mpos.max() >= T):
+        raise ValueError("mpos must index the template")
+    n, F = lengths.size, frame_pos.size
+    ok = np.zeros(n, dtype=np.uint8)
+    bases = np.full((n, F), 4, dtype=np.uint8)
+    erased = np.ones((n, F), dtype=np.uint8)
+    mm = np.zeros(n, dtype=np.int64)
+    indels = np.zeros(n, dtype=np.int64)
+    rc = lib.vnx_or_spec_project(n, codes.ctypes.data, codes.size, lengths.ctypes.data, offs.ctypes.data,
+                                 None if qflat is None else qflat.ctypes.data, int(min_q), int(T), mpos.size,
+                                 mpos.ctypes.data, want.ctypes.data, block.ctypes.data, starts.size if mpos.size else 0,
+                                 F, frame_pos.ctypes.data, int(band), ok.ctypes.data, bases.ctypes.data,
+                                 erased.ctypes.data, mm.ctypes.data, indels.ctypes.data)
+    if rc < 0:
+        raise NativeOrientError(f"native speculative projection failed ({rc}: {_ERRORS.get(rc, 'unknown')})")
+    return ok.view(bool), bases, erased.view(bool), mm, indels
 
 
 def main(argv=None) -> int:

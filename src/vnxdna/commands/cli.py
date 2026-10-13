@@ -412,6 +412,10 @@ def decode(reads: Path, output: Optional[Path] = typer.Option(None, "--output", 
                None, "--orientation-retry",
                help="bounded (default): skip the reverse-complement retry where its cost bound reaches the forward cost; "
                     "always: retry every failed read."),
+           sync_speculation: Optional[str] = typer.Option(
+               None, "--sync-speculation",
+               help="markers (default): project reads from their marker-block shifts and align by the DP only those "
+                    "that do not verify; off: align every read by the DP."),
            read_clustering: Optional[str] = typer.Option(
                None, "--read-clustering",
                help="off (default) or fallback: V7 header-independent read clustering + per-cluster consensus whose "
@@ -447,7 +451,7 @@ def decode(reads: Path, output: Optional[Path] = typer.Option(None, "--output", 
                                   soft_decoding=soft_decoding, recovery_schedule=recovery_schedule,
                                   consensus_weighting=consensus_weighting, max_container_bytes=max_container_bytes, expect_archive_id=expect_archive_id,
                                   expect_sha256=expect_sha256, read_clustering=read_clustering,
-                                  orientation_retry=orientation_retry)
+                                  orientation_retry=orientation_retry, sync_speculation=sync_speculation)
         return _decode(reads, output, extract_dir, partial_dir, select, opts, force, key_file, passphrase_env, report, events,
                        task_id, allow_unencrypted, not no_input_hash)
     _run(go)

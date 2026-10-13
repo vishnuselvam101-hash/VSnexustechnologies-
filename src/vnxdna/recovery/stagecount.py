@@ -184,7 +184,7 @@ def pass1_counts(lay, lengths: np.ndarray, codes: np.ndarray, d: dict, acc: np.n
     c["inner_ecc.fail_decode"] = int((fate == 4).sum())
     c["crc.fail_mismatch"] = int((fate == 5).sum())
     c["address.fail_invalid_version_or_kind"] = int((fate == 6).sum())
-    for k, v in ((1, "fast"), (2, "sync"), (3, "smart"), (4, "soft")):
+    for k, v in ((1, "fast"), (2, "sync"), (3, "smart"), (4, "soft"), (5, "speculative")):
         c[f"inner_ecc.verified_{v}"] = int((acc & (path == k)).sum())
     c["inner_ecc.verified_after_rs_errata"] = int((acc & (d["errata"] > 0)).sum())
     c["address.pending_kept"] = int(d["pend_good"].sum())

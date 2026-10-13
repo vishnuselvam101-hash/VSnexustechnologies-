@@ -186,10 +186,12 @@ def test_process_flat_path_equals_the_list_path(archive_reads, channel, min_q, d
     opt = DecodeOptions()
     lay = archive_reads["layout"]
     monkeypatch.setattr(pass1, "_FLAT_PATH", True)
-    pass1._p_init(lay, opt.band, opt.sync_costs, min_q, True, diag=diag, rc_retry="always")   # C1/C2 only: the V12 retry rule on both paths
+    # C1/C2 only: the V12 retry rule and the DP for every read on both paths (the bounded retry and the speculative
+    # projection are flat-path features, pinned by test_rc_retry_bound.py and test_spec_projection.py)
+    pass1._p_init(lay, opt.band, opt.sync_costs, min_q, True, diag=diag, rc_retry="always", spec="off")
     flat = _run(archive_reads[channel], min_q > 0)
     monkeypatch.setattr(pass1, "_FLAT_PATH", False)
-    pass1._p_init(lay, opt.band, opt.sync_costs, min_q, True, diag=diag, rc_retry="always")
+    pass1._p_init(lay, opt.band, opt.sync_costs, min_q, True, diag=diag, rc_retry="always", spec="off")
     lists = _run(archive_reads[channel], min_q > 0)
     _assert_same_outputs(flat, lists)
     stats = sum((x["stats"]["fast"] + x["stats"]["sync"] for x in flat), 0)
@@ -205,7 +207,7 @@ def test_process_without_reverse_complement_and_with_smart_recovery_still_agree(
     lay = archive_reads["layout"]
     for flag in (True, False):
         monkeypatch.setattr(pass1, "_FLAT_PATH", flag)
-        pass1._p_init(lay, opt.band, opt.sync_costs, 0, False)
+        pass1._p_init(lay, opt.band, opt.sync_costs, 0, False, spec="off")
         res = _run(archive_reads["indel"], False)
         if flag:
             keep = res

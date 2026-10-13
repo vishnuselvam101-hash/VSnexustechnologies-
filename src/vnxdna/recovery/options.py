@@ -32,6 +32,13 @@ class DecodeOptions:
     # read as V12 did. Only the default recovery configuration (no smart/soft recovery, no quality-weighted
     # consensus) applies the bound.
     orientation_retry: str = "bounded"
+    # V13 B1: "markers" (default) projects a read whose length differs from the strand length (or whose exact-length
+    # frame failed) from its marker-block shifts first and accepts it when the inner RS and CRC verify; the
+    # marker-template DP runs only for the reads that do not verify. "off" aligns every such read by the DP (the V12
+    # path). Verified frames are accepted either way; the speculative path can only add acceptances
+    # (report["reads"]["speculative"] counts them). Only the default recovery configuration (no smart/soft recovery,
+    # no quality-weighted consensus) uses it.
+    sync_speculation: str = "markers"
     consensus_threshold: float = 0.6    # minimum posterior for a consensus base; below → erasure
     # V6 Phase 4 (opt-in): how pass-2 consensus weighs the pending reads of one address. "count" = the V4 vote (one
     # vote per read base, the default); "quality" = each projected base weighted by its own Phred quality
@@ -83,6 +90,8 @@ class DecodeOptions:
             raise VNXConfigurationError("workers must be in 1..256")
         if self.orientation_retry not in ("bounded", "always"):
             raise VNXConfigurationError("orientation_retry must be 'bounded' or 'always'")
+        if self.sync_speculation not in ("markers", "off"):
+            raise VNXConfigurationError("sync_speculation must be 'markers' or 'off'")
         if not 1 <= self.band <= 64:
             raise VNXConfigurationError("band must be in 1..64")
         if (not isinstance(self.retry_band, int) or isinstance(self.retry_band, bool)
