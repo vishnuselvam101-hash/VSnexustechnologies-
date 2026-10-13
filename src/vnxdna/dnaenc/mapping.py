@@ -37,8 +37,9 @@ _NT_MUL = np.uint32(0x40100401)         # 1 + 2^10 + 2^20 + 2^30: lands code k o
 
 def nt_to_bytes(nt: np.ndarray) -> np.ndarray:
     """(N, 4B) base codes (0..3) → (N, B) bytes."""
-    if (nt.dtype == np.uint8 and nt.ndim == 2 and nt.shape[1] % 4 == 0 and nt.shape[1] and nt.flags.c_contiguous
-            and nt.flags.aligned):
+    if nt.dtype == np.uint8 and nt.ndim == 2 and nt.shape[1] % 4 == 0 and nt.shape[1]:
+        if not (nt.flags.c_contiguous and nt.flags.aligned):
+            nt = np.ascontiguousarray(nt)        # one copy (a fancy-indexed column gather arrives Fortran-ordered)
         # V13 C3: one uint32 per output byte. With the codes masked to 2 bits, x * _NT_MUL puts code 0 at bits 30-31,
         # code 1 at 28-29, code 2 at 26-27 and code 3 at 24-25 (the other partial products occupy disjoint 2-bit
         # slots below bit 24, so nothing carries); the top byte is the result. Same bytes as the reference form below
