@@ -1,6 +1,6 @@
 # Changelog
 
-## 13.0.0-dev (branch `build/v13`, unreleased; docs/V13_COMPLETION_REPORT.md)
+## 13.0.0 (branch `build/v13`, release candidate, not tagged; docs/V13_COMPLETION_REPORT.md)
 
 All channel results are SIMULATED; no DNA was synthesised, stored or sequenced. Archive, container and strand formats
 are unchanged from 12.0.0 (no new format version); decode output is byte-identical to build/v12 (6bf7749) on every
