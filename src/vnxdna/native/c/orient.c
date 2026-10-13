@@ -23,7 +23,7 @@
 #include <stdlib.h>
 
 #ifndef VNX_OR_ABI /* overridable only so that the tests can build a mismatching library */
-#define VNX_OR_ABI 1
+#define VNX_OR_ABI 2
 #endif
 
 enum { OR_OK = 0, OR_EARG = -1, OR_ENOMEM = -2 };
@@ -102,6 +102,58 @@ int vnx_or_scan(int64_t n, const uint8_t *codes, int64_t ncodes, const int64_t *
             sr = sum(br, nblocks);
         }
         flip[i] = sr > sf + margin;
+    }
+    free(buf);
+    return OR_OK;
+}
+
+/* ABI 2 (V13 D1): lower bound on the marker-template alignment cost of each read taken as a reverse complement.
+ * For every marker block (consecutive marker positions) any alignment of band B either keeps one shift s, |s| <= B,
+ * for the whole block (cost >= c_mm * mismatches at that shift) or places an insertion or deletion inside the block
+ * (cost >= min(c_ins, c_del)); blocks and the ops inside them are disjoint, so
+ *   out[i] = sum over blocks b of min(c_mm * (size_b - max_{|s|<=B} hits_b(s)), c_ins, c_del)
+ * never exceeds the cost of any alignment the DP of vnxdna.sync.template can return for the reverse complement.
+ * Same arguments as vnx_or_scan (offs may select any reads of the buffer); band, c_mm, c_ins, c_del >= 0.
+ * Reference: vnxdna.recovery.pass1._rc_bound_reference. */
+int vnx_or_rc_bound(int64_t n, const uint8_t *codes, int64_t ncodes, const int64_t *lengths, const int64_t *offs,
+                    int64_t nm, const int64_t *mpos, const uint8_t *want, const int64_t *block, int64_t nblocks,
+                    int64_t band, int64_t c_mm, int64_t c_ins, int64_t c_del, int64_t *out)
+{
+    if (n < 0 || ncodes < 0 || nm < 0 || nblocks < 0 || nblocks > nm || band < 0 || band > INT32_MAX) return OR_EARG;
+    if (c_mm < 0 || c_ins < 0 || c_del < 0 || c_mm > INT32_MAX || c_ins > INT32_MAX || c_del > INT32_MAX) return OR_EARG;
+    if ((n > 0 && (!lengths || !offs || !out)) || (ncodes > 0 && !codes)) return OR_EARG;
+    if (nm > 0 && (!mpos || !want || !block)) return OR_EARG;
+    for (int64_t m = 0; m < nm; m++) {
+        if (block[m] < 0 || block[m] >= nblocks || (m > 0 && block[m] < block[m - 1])) return OR_EARG;
+        if (mpos[m] < 0 || mpos[m] > INT32_MAX || (m > 0 && mpos[m] <= mpos[m - 1])) return OR_EARG;
+    }
+    for (int64_t i = 0; i < n; i++)
+        if (lengths[i] < 0 || offs[i] < 0 || offs[i] > ncodes - lengths[i]) return OR_EARG;
+    if (n == 0) return OR_OK;
+    if (nm == 0) {
+        for (int64_t i = 0; i < n; i++) out[i] = 0;
+        return OR_OK;
+    }
+    const int64_t c_indel = c_ins < c_del ? c_ins : c_del;
+    int64_t *buf = (int64_t *)malloc((size_t)(3 * nblocks) * sizeof(int64_t));
+    if (!buf) return OR_ENOMEM;
+    int64_t *best = buf, *tmp = buf + nblocks, *size = buf + 2 * nblocks;
+    for (int64_t b = 0; b < nblocks; b++) size[b] = 0;
+    for (int64_t m = 0; m < nm; m++) size[block[m]]++;
+    for (int64_t i = 0; i < n; i++) {
+        const uint8_t *r = codes + offs[i];
+        int64_t len = lengths[i];
+        for (int64_t b = 0; b < nblocks; b++) best[b] = 0;
+        for (int64_t s = -band; s <= band; s++) {
+            score(r, len, nm, mpos, want, block, nblocks, s, 1, tmp);
+            for (int64_t b = 0; b < nblocks; b++) if (tmp[b] > best[b]) best[b] = tmp[b];
+        }
+        int64_t total = 0;
+        for (int64_t b = 0; b < nblocks; b++) {
+            int64_t mm = c_mm * (size[b] - best[b]);
+            total += mm < c_indel ? mm : c_indel;
+        }
+        out[i] = total;
     }
     free(buf);
     return OR_OK;

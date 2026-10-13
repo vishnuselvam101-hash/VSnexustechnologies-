@@ -24,14 +24,18 @@ _P: dict = {}
 
 
 def _p_init(layout: Layout, band: int, costs: SyncCosts, min_q: int, rc: bool, smart_cfg=None, soft_cfg=None,
-            defer: bool = False, qw: bool = False, retry_band: int = 0, diag: bool = False, unplaced: bool = False) -> None:
+            defer: bool = False, qw: bool = False, retry_band: int = 0, diag: bool = False, unplaced: bool = False,
+            rc_retry: str = "bounded") -> None:
     # defer: pass 1 of the deferred schedule — the cheap V4 paths only; smart/soft run later on the pending reads
     # qw: V6 Phase 4 quality-weighted consensus — keep the Phred quality of every projected frame base of pending reads
     # retry_band: V6 opt-in second, wider band for reads beyond ``band`` (0 = off, the V4 behaviour)
     # diag: V7 opt-in stage counters (recovery.stagecount); observability only, never changes a decision
     # unplaced: V7 opt-in read clustering — also return every unverified read, raw, for the unplaced-read store
+    # rc_retry: V13 D1 — "bounded" skips the reverse-complement retry of a failed read when a lower bound on its
+    # reverse-complement alignment cost already reaches the forward cost (the retry could then only be adopted
+    # through a verified reverse-complement frame, see _process); "always" = the V12 retry of every failed read
     _P.update(lay=layout, al=TemplateAligner(layout, band, costs, retry_band=retry_band), min_q=min_q, rc=rc, smart=smart_cfg, soft=soft_cfg,
-              defer=defer, qw=qw, diag=diag, unpl=unplaced)
+              defer=defer, qw=qw, diag=diag, unpl=unplaced, rc_retry=rc_retry)
     if smart_cfg is not None or soft_cfg is not None:
         from vnxdna.sync.smart.recovery import Geometry
         _P["geom"] = Geometry(layout)
@@ -285,6 +289,56 @@ def _orientation_reference(codes: np.ndarray, lengths: np.ndarray, mpos: np.ndar
     return sr.sum(axis=1) > sf.sum(axis=1) + margin
 
 
+_RC256 = np.full(256, 255, dtype=np.uint8)      # complement table over every byte value: codes above 4 never match
+_RC256[:5] = _RC
+
+
+def _rc_bound_reference(codes: np.ndarray, lengths: np.ndarray, offs: np.ndarray, mpos: np.ndarray, want: np.ndarray,
+                        starts: np.ndarray, band: int, c_mm: int, c_ins: int, c_del: int) -> np.ndarray:
+    """Lower bound on the band-``band`` marker-template alignment cost of each selected read as a reverse complement
+    (the specification of ``native.orient.rc_bound``, V13 D1).
+
+    Any alignment within the band either keeps one shift ``s`` (|s| <= band) for all the markers of a block, paying
+    ``c_mm`` per mismatching marker, or places an insertion or deletion inside that block, paying at least
+    ``min(c_ins, c_del)``; blocks and the operations inside them are disjoint, so the sum over blocks of
+    ``min(c_mm * (block size - best hits over the shifts), c_ins, c_del)`` is at most the cost of every alignment the
+    DP can return (tests/v13/test_rc_retry_bound.py checks it against the DP on random reads)."""
+    n = lengths.size
+    out = np.zeros(n, dtype=np.int64)
+    if n == 0 or mpos.size == 0:
+        return out
+    offs = offs.astype(np.int64, copy=False)
+    lengths = lengths.astype(np.int64, copy=False)
+    sizes = np.diff(np.append(starts, mpos.size)).astype(np.int64)
+    best = np.zeros((n, starts.size), dtype=np.int64)
+    top = max(0, codes.size - 1)
+    ln = lengths[:, None]
+    for s in range(-int(band), int(band) + 1):
+        p = mpos[None, :] + s
+        inside = (p >= 0) & (p < ln)
+        idx = np.clip(offs[:, None] + ln - 1 - p, 0, top)
+        hit = (_RC256[codes[idx]] == want[None, :]) & inside
+        np.maximum(best, np.add.reduceat(hit, starts, axis=1, dtype=np.int64), out=best)
+    return np.minimum(int(c_mm) * (sizes[None, :] - best), min(int(c_ins), int(c_del))).sum(axis=1)
+
+
+def _rc_bound(codes: np.ndarray, offs: np.ndarray, lengths: np.ndarray) -> np.ndarray:
+    """The reverse-complement cost bound of the selected reads with the worker's layout, band and costs (native kernel
+    when it loads, else the reference)."""
+    lay: Layout = _P["lay"]
+    al = _P["al"]
+    tpl, _ = lay.template()
+    mpos = np.flatnonzero(tpl >= 0)
+    want = tpl[mpos].astype(np.uint8)
+    starts = np.flatnonzero(np.diff(mpos, prepend=-2) > 1)
+    band = max(al.band, al.retry_band)
+    c = al.costs
+    if native_orient.resolve_backend() == "native":
+        return native_orient.rc_bound(codes, lengths, offs, mpos, want, starts, band, c.marker_mismatch, c.insertion,
+                                      c.deletion)
+    return _rc_bound_reference(codes, lengths, offs, mpos, want, starts, band, c.marker_mismatch, c.insertion, c.deletion)
+
+
 _GATHER_ROWS = 512      # rows per gather chunk (V12 session 5): the int64 index matrix of one chunk is 512 x strand_nt
 #                         x 8 B (1.3 MiB at 313 nt); one index for the whole 8192-read batch was 20 MiB per worker, and
 #                         the freed arena stayed resident, raising the peak RSS of every pass-1 worker by that much
@@ -371,8 +425,16 @@ def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | N
         d["rc_tried"] = np.zeros(lengths.size, dtype=bool)
         d["rc_adopted"] = np.zeros(lengths.size, dtype=bool)
     ocodes, oq = codes, qflat              # the orientation each read's projection refers to (pending raw reads)
+    rc_skipped = 0
     if _P["rc"]:
         bad = np.flatnonzero(~acc & (cost > 2 * _P["al"].costs.insertion))
+        if bad.size and reads is None and _P.get("rc_retry", "bounded") == "bounded":
+            # V13 D1: the retry is adopted when its frame verifies or its alignment cost is below the forward cost.
+            # Where the bound on the reverse-complement cost already reaches the forward cost, only a verified
+            # reverse-complement frame could still adopt it; such reads are not retried (counted in the stats).
+            keep = _rc_bound(codes, offs[bad], lengths[bad]) < cost[bad]
+            rc_skipped = int(bad.size - keep.sum())
+            bad = bad[keep]
         if bad.size:
             d2 = {} if d is not None else None
             if reads is None:
@@ -439,7 +501,7 @@ def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | N
                                      "pend_pqok": np.full(out_pq.shape[0], int(ql is not None), dtype=np.uint8)}),
            "stats": {"reads": int(lengths.size), "fast": int((path == 1).sum()), "sync": int((path == 2).sum()),
                      "reverse_complement": int((rc_used & acc).sum()), "pending": int(pend_fields.shape[0]), "orphans": orphans,
-                     "unaligned": int((~acc).sum()) - int(pend.size)}}
+                     "unaligned": int((~acc).sum()) - int(pend.size), "rc_retry_skipped": rc_skipped}}
     al = _P["al"]
     if al.retry_band:
         # V6 opt-in retry band: reads beyond the band that the wider band aligned (stat absent when the option is off)

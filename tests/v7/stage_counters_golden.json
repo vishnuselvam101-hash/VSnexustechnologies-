@@ -102,7 +102,7 @@
     "accepted_reverse_complement": 168,
     "prepass_flipped": 791,
     "rc_retry_adopted": 109,
-    "rc_retry_attempted": 1422
+    "rc_retry_attempted": 364
    },
    "outer_ecc": {
     "rows_attempted": 4,
@@ -179,7 +179,7 @@
    "orientation": {
     "prepass_flipped": 776,
     "rc_retry_adopted": 137,
-    "rc_retry_attempted": 3177
+    "rc_retry_attempted": 2994
    },
    "outer_ecc": {},
    "read_parsing": {

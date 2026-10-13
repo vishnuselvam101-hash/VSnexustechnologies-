@@ -70,6 +70,16 @@ def main(argv: list[str]) -> int:
             bad = np.flatnonzero(nat != ref)
             print(f"MISMATCH round {k} layout {lay!r} channel {chan} reads {bad.tolist()[:10]}")
             return 1
+        # V13 D1: the reverse-complement cost bound (ABI 2) on a random selection of the batch, native vs reference
+        sel = rng.permutation(n)[: int(rng.integers(0, n + 1))] if n else np.zeros(0, dtype=np.int64)
+        offs = np.concatenate([[0], np.cumsum(lengths)])[:-1].astype(np.int64)
+        os.environ["VNXDNA_ORIENT_BACKEND"] = "native"
+        nb = pass1._rc_bound(codes, offs[sel], lengths[sel])
+        os.environ["VNXDNA_ORIENT_BACKEND"] = "reference"
+        rb = pass1._rc_bound(codes, offs[sel], lengths[sel])
+        if nb.shape != rb.shape or nb.dtype != rb.dtype or not np.array_equal(nb, rb):
+            print(f"MISMATCH rc_bound round {k} layout {lay!r} channel {chan} reads {np.flatnonzero(nb != rb).tolist()[:10]}")
+            return 1
         cases += n
         flipped += int(ref.sum())
     print(f"orient stress fuzz: rounds={rounds} cases={cases} flipped={flipped} mismatches=0 "

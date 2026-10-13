@@ -186,10 +186,10 @@ def test_process_flat_path_equals_the_list_path(archive_reads, channel, min_q, d
     opt = DecodeOptions()
     lay = archive_reads["layout"]
     monkeypatch.setattr(pass1, "_FLAT_PATH", True)
-    pass1._p_init(lay, opt.band, opt.sync_costs, min_q, True, diag=diag)
+    pass1._p_init(lay, opt.band, opt.sync_costs, min_q, True, diag=diag, rc_retry="always")   # C1/C2 only: the V12 retry rule on both paths
     flat = _run(archive_reads[channel], min_q > 0)
     monkeypatch.setattr(pass1, "_FLAT_PATH", False)
-    pass1._p_init(lay, opt.band, opt.sync_costs, min_q, True, diag=diag)
+    pass1._p_init(lay, opt.band, opt.sync_costs, min_q, True, diag=diag, rc_retry="always")
     lists = _run(archive_reads[channel], min_q > 0)
     _assert_same_outputs(flat, lists)
     stats = sum((x["stats"]["fast"] + x["stats"]["sync"] for x in flat), 0)

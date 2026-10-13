@@ -26,6 +26,12 @@ class DecodeOptions:
     retry_band: int = 0
     min_quality: int = 0                # bases below this Phred score become erasures (soft-information hook)
     reverse_complement: bool = True
+    # V13 D1: "bounded" (default) skips the reverse-complement retry of a failed read when a lower bound on its
+    # reverse-complement alignment cost already reaches its forward cost (only a verified reverse-complement frame
+    # could then adopt the retry; report["reads"]["rc_retry_skipped"] counts them); "always" retries every failed
+    # read as V12 did. Only the default recovery configuration (no smart/soft recovery, no quality-weighted
+    # consensus) applies the bound.
+    orientation_retry: str = "bounded"
     consensus_threshold: float = 0.6    # minimum posterior for a consensus base; below → erasure
     # V6 Phase 4 (opt-in): how pass-2 consensus weighs the pending reads of one address. "count" = the V4 vote (one
     # vote per read base, the default); "quality" = each projected base weighted by its own Phred quality
@@ -75,6 +81,8 @@ class DecodeOptions:
         self.cluster_config = validate_mode(self.read_clustering, self.cluster_config)
         if not 1 <= self.workers <= 256:
             raise VNXConfigurationError("workers must be in 1..256")
+        if self.orientation_retry not in ("bounded", "always"):
+            raise VNXConfigurationError("orientation_retry must be 'bounded' or 'always'")
         if not 1 <= self.band <= 64:
             raise VNXConfigurationError("band must be in 1..64")
         if (not isinstance(self.retry_band, int) or isinstance(self.retry_band, bool)
