@@ -13,8 +13,9 @@ are **SIMULATED** (channel simulator, one host).
   rule (whole-container SHA-256 + structural validation), VNX-Secure, authentication and encryption.
 - The V12 memory behaviour: chunked gathers (`_GATHER_ROWS`), one filtered copy per pass-2 bucket, `trim_heap()`
   between stages, the pass-1 result window of 2 × workers and the pass-2 bucket window of 2 × workers.
-- The pass-1 decisions of the V12 decoder (which reads are accepted, which are pending, which orientation is used) for
-  every configuration; see §3 for the one rule whose *work* changes while its decisions are preserved.
+- The pass-1 decisions of the V12 decoder for every read the V12 decoder accepted and for every orientation it chose;
+  see §3 for the one rule whose *work* changes while its decisions are preserved, and §4 for the one step that can
+  accept reads V12 left pending (never the reverse).
 
 ## 2. Pass-1 data path (C1–C3, E1)
 
@@ -83,17 +84,60 @@ This is the one V13 change that touches a decision rule. It is deterministic, re
 work (one kernel pass over the candidate reads), and falls back to the full retry whenever the bound does not settle
 the case.
 
-## 4. What was not changed, and why
+## 4. Marker-anchored speculative projection (B1)
 
-- The DP alignment itself (≈ 30 % of the single-worker wall after V13; the floor of the current algorithm) and the
-  inner RS kernel (≈ 10 %): both already native and SIMD; a marker-anchored speculative projection accepted only on
-  inner-code verification (plan §4 item 6) would remove most DP calls but needs a new native kernel with its own
-  sanitizer and fuzz evidence; not attempted in this session.
+After C1–E1 and D1 the banded DP (`align_groups_l16`) was still 24 % of the single-worker samples
+(`results/v13/pyspy-w1-indel-7b433d6.txt` in the lab) although most of the reads it aligned were then verified by the
+inner code: on the 4 MiB indel workload 303k of the 443k reads of the sync path verify. V13 projects such reads
+without the DP, behind the same verification that guards the exact-length fast path.
+
+Kernel `vnx_or_spec_project` (orient ABI 3; reference `pass1._spec_project_reference`, the specification):
+
+1. a read of length `L` (`delta = L − T`, `|delta| <= band`) visits its marker blocks left to right with a running
+   shift `s_prev` (0 at the start). A block takes the first shift of `s_prev, s_prev−1, s_prev+1, s_prev−2, …`
+   (`|s| <= band`, the whole block inside the read) at which every marker matches; if none does, it keeps `s_prev`
+   when at most one marker mismatches there (counted), otherwise the read is not projected;
+2. template position `p` lies in region `r` = the number of blocks whose first marker is `<= p`; its base is the
+   read base at `p + (shift of block r−1, 0 for the first region)`, 4 outside the read; it is erased when it is not
+   A/C/G/T, when its quality is below `min_quality`, or when the shifts of blocks `r−1` and `r` differ (`delta` after
+   the last block): the region holds an indel and the inner code treats it as an erasure, as the DP would for the
+   segment it blames;
+3. the frame goes through `decode_frames` with the sync-path rule (`errors_only_retry=False`). A verified frame is
+   accepted (`path` 5, counted under `sync` and `speculative` in the report, `inner_ecc.verified_speculative` in the
+   stage counters); every other read of the sync path takes the DP exactly as before.
+
+The projection minimises no cost; it is only ever used behind the inner RS + CRC verification, so a read it projects
+wrongly fails verification and is aligned by the DP. The step can therefore only add acceptances: on simulated reads
+of a real archive (indel, 50 % reverse-complement and heavy channels) every read accepted with
+`sync_speculation="off"` is accepted with `"markers"` with the same fields and payload, and the container is
+byte-identical on every benchmark seed. Acceptances it adds are reads whose DP alignment did not verify (the DP blames
+one segment per indel; the region rule erases the whole region) — the pending set shrinks (4 MiB indel seed 95300:
+pending 139,942 → 111,221, consensus attempts 107 → 31). The harsh indel stage-counter pool re-pinned in
+`tests/v7/stage_counters_golden.json` gains 37 verified reads and decodes one more outer row (still a failing pool).
+
+Cost: one pass over the marker blocks per read (3.8 % of the single-worker samples at
+`results/v13/pyspy-w1-indel-59e6463.txt`) plus one inner decode of every projected frame; the DP's share fell from
+24 % to 11 %, the inner RS kernel's rose from 7 % to 10 % (it now decodes the speculative frames too). Native ==
+reference on 125,273 fuzz cases (release build) and under gcc/clang ASan+UBSan and UBSan-trap
+(`results/v13/orient-sanitizers-b1-*.txt`); golden hashes and the rules on hand-built reads in
+`tests/v13/test_spec_projection.py`. `DecodeOptions.sync_speculation = "markers"` (default) | `"off"`,
+CLI `--sync-speculation`, SDK config key; the flat path only (the smart/soft/quality-weighted list path keeps the DP
+for every read).
+
+## 5. What was not changed, and why
+
+- The DP alignment of the reads the speculative projection does not verify (≈ 11 % of the single-worker samples
+  after B1: the pending reads, the reads with several marker mismatches and the reverse-complement retries) and the
+  inner RS kernel (≈ 10 %): both native and SIMD already; no cheaper exact form was found.
+- `decode_frames` glue (≈ 7 %: keystream XOR, CRC and copies, now over the speculative frames too), the FASTQ parser
+  (≈ 5 %, serial), the orientation scan (≈ 4 %) and pass 2 (≈ 7 %): each below the A/B noise band of a single lever;
+  listed as the remaining profile in `docs/V13_BENCHMARK_REPORT.md`.
 - Batch transport between the main process and the workers (pickled NumPy buffers; ≈ 0.3 s of main-process time at
   4 workers, overlapped with worker time) and the serial outer-row decode of pass 2 (≈ 0.2 s): measured, left as is.
 - Worker count heuristics: none added; `workers` stays an explicit option.
 
-## 5. Diagnostics
+## 6. Diagnostics
 
-`report["reads"]["rc_retry_skipped"]` (every mode; 0 with `"always"`), `report["native_backends"]` (orient ABI 2,
-align ABI 4), stage counters unchanged in meaning (`orientation.rc_retry_attempted` now counts retries actually run).
+`report["reads"]["rc_retry_skipped"]` (every mode; 0 with `"always"`), `report["reads"]["speculative"]` (0 with
+`sync_speculation="off"`), `report["native_backends"]` (orient ABI 3, align ABI 4), stage counters unchanged in meaning
+(`orientation.rc_retry_attempted` now counts retries actually run; `inner_ecc.verified_speculative` added).

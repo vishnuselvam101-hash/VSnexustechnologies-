@@ -265,24 +265,30 @@ def test_decode_identical_with_either_backend(tmp_path, monkeypatch, native_read
     en.encode_container(tmp_path / "a.vnx", tmp_path / "s.fasta", en.DNAOptions())
     kw, min_q = CHANNELS[channel]
     ch.simulate_file(tmp_path / "s.fasta", tmp_path / "r.fastq", ch.ChannelConfig(**kw))
-    reports = {}
-    for backend in ("reference", "native"):
-        monkeypatch.setenv("VNXDNA_ALIGN_BACKEND", backend)
-        res = de.decode_reads(tmp_path / "r.fastq", tmp_path / f"{backend}.vnx", de.DecodeOptions(workers=workers, min_quality=min_q))
-        # native_backends records which aligner ran: it must name this backend (and is the only field allowed to differ)
-        assert res.report["native_backends"]["align"]["backend"] == backend
-        rep = {k: v for k, v in res.report.items()
-               if k not in ("stage_seconds", "seconds", "peak_rss_bytes", "output", "native_backends", "path_selection")}
-        reports[backend] = (res.status, json.dumps(rep, sort_keys=True, default=str))
-    assert reports["reference"] == reports["native"]
-    status = reports["native"][0]
-    if channel == "mild":
-        assert status == "SUCCESS"
-        assert (tmp_path / "reference.vnx").read_bytes() == (tmp_path / "native.vnx").read_bytes()
-        ar.extract(tmp_path / "native.vnx", tmp_path / "out")
-        assert hashlib.sha256((tmp_path / "out" / "in.bin").read_bytes()).hexdigest() == sha
-    else:
-        assert status != "SUCCESS"
+    # V13: the speculative sync path (independent of the aligner backend) recovers the harsh pool, so the pinned
+    # failure path runs with it off (every read through the DP, the most aligner work); the default path is checked
+    # for backend identity as well
+    for spec in (("off", "markers") if channel == "harsh" else ("markers",)):
+        reports = {}
+        for backend in ("reference", "native"):
+            monkeypatch.setenv("VNXDNA_ALIGN_BACKEND", backend)
+            res = de.decode_reads(tmp_path / "r.fastq", tmp_path / f"{backend}.vnx",
+                                  de.DecodeOptions(workers=workers, min_quality=min_q, sync_speculation=spec), overwrite=True)
+            # native_backends records which aligner ran: it must name this backend (and is the only field allowed to differ)
+            assert res.report["native_backends"]["align"]["backend"] == backend
+            rep = {k: v for k, v in res.report.items()
+                   if k not in ("stage_seconds", "seconds", "peak_rss_bytes", "output", "native_backends", "path_selection")}
+            reports[backend] = (res.status, json.dumps(rep, sort_keys=True, default=str))
+        assert reports["reference"] == reports["native"]
+        status = reports["native"][0]
+        if channel == "mild":
+            assert status == "SUCCESS"
+        elif spec == "off":
+            assert status != "SUCCESS"
+        if status == "SUCCESS":  # whichever path succeeded, the recovered archive must be the original bytes
+            assert (tmp_path / "reference.vnx").read_bytes() == (tmp_path / "native.vnx").read_bytes()
+            ar.extract(tmp_path / "native.vnx", tmp_path / f"out-{spec}")
+            assert hashlib.sha256((tmp_path / f"out-{spec}" / "in.bin").read_bytes()).hexdigest() == sha
 
 
 def test_reads_with_many_lengths_in_one_simd_group(native_ready):

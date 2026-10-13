@@ -10,22 +10,31 @@ benchmark seed. Benchmarks: docs/V13_BENCHMARK_REPORT.md; plan and pre-declared 
 - **Aligner ABI 4** (`src/vnxdna/v5/native/align.c`): `vnx_align_batch_sel_lv` aligns any selected reads of a flat
   batch in place (per-read start and length arrays; the contiguous entry points are unchanged);
   `native.align.align_usable_flat`, `TemplateAligner.project_flat`.
-- **Orientation kernel ABI 2** (`src/vnxdna/native/c/orient.c`): `vnx_or_rc_bound`, a lower bound on the band-limited
-  marker-template alignment cost of a read taken as a reverse complement (reference `pass1._rc_bound_reference`).
+- **Orientation kernel ABI 3** (`src/vnxdna/native/c/orient.c`): `vnx_or_rc_bound` (ABI 2), a lower bound on the
+  band-limited marker-template alignment cost of a read taken as a reverse complement (reference
+  `pass1._rc_bound_reference`); `vnx_or_spec_project` (ABI 3), the marker-anchored speculative projection of a read
+  onto frame coordinates (reference `pass1._spec_project_reference`).
 - `DecodeOptions.orientation_retry` = `bounded` (default) | `always`; CLI `--orientation-retry`; SDK config key;
   `report["reads"]["rc_retry_skipped"]`.
+- `DecodeOptions.sync_speculation` = `markers` (default) | `off`; CLI `--sync-speculation`; SDK config key;
+  `report["reads"]["speculative"]`; stage counter `inner_ecc.verified_speculative`.
 - `dnaenc.mapping.nt_to_bytes_reference`, `recovery.consensus._row_ids`.
 - V13 A/B benchmark harness `experiments/v13/bench/` (the V12 harness with labels v12/v13, BASE_TREE = build/v12 6bf7749).
-- `tests/v13/`: flat pass-1 path, `nt_to_bytes`, row ids, bounded retry (+ tests; see the completion report for the count).
+- `tests/v13/`: flat pass-1 path, `nt_to_bytes`, row ids, bounded retry, speculative projection (see the completion report for the count).
 
 ### Changed
 - **Flat pass-1 data path.** The default decode configuration never builds per-read view lists: `_process` → `_try` →
   `project_flat` → the ABI-4 kernel work on the batch buffers; the reverse-complement retry reverses its reads with one
   gather. Same results as the list path (pinned).
+- **Speculative sync path.** A read of the sync path is first projected from the shifts of its marker blocks and
+  accepted when the inner RS and CRC verify; only the reads that do not verify take the marker-template DP. The step
+  can only add acceptances (reads whose DP alignment did not verify may now verify from the region-erased projection,
+  so `pending` and the consensus counters fall); every read V12 accepted is still accepted with the same payload.
 - **Bounded reverse-complement retry.** A failed read is retried as a reverse complement only when the cost bound of
   that alignment is below its forward cost (only a verified reverse-complement frame could otherwise adopt the retry;
   none does on the validation corpus). `--orientation-retry always` restores the V12 rule. Stage-counter goldens
-  re-pinned: only `orientation.rc_retry_attempted` changed.
+  re-pinned: D1 changed only `orientation.rc_retry_attempted`; B1 changed the sync/speculative/pending split of the
+  harsh indel pool (37 more verified reads, one more outer row decoded).
 - `nt_to_bytes` packs four codes per uint32 multiply (4.4× on a pass-1 batch); `snap_addresses` builds its membership
   table with a lexsort partition instead of `np.unique(axis=0)`.
 

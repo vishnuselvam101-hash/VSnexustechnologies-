@@ -469,7 +469,7 @@ def _spec_project(codes: np.ndarray, offs: np.ndarray, lengths: np.ndarray, qfla
     mpos = np.flatnonzero(tpl >= 0)
     want = tpl[mpos].astype(np.uint8)
     starts = np.flatnonzero(np.diff(mpos, prepend=-2) > 1)
-    band = max(al.band, al.retry_band)
+    band = al.band          # reads of the opt-in retry window (band < |len - T| <= retry_band) take the DP as before
     if native_orient.resolve_backend() == "native":
         return native_orient.spec_project(codes, lengths, offs, qflat, min_q, tpl.size, mpos, want, starts, fpos, band)
     return _spec_project_reference(codes, lengths, offs, qflat, min_q, tpl.size, mpos, want, starts, fpos, band)
