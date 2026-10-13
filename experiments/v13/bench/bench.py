@@ -152,7 +152,7 @@ def main(argv=None) -> int:
         s = summary()
         for name, r in s["scenarios"].items():
             print(f"{name:18s} v12 {r['seconds_median']['v12']:7.3f}s  v13 {r['seconds_median']['v13']:7.3f}s  "
-                  f"ratio {r['ratio_v11_over_v12']['median']:.3f} {r['ratio_v11_over_v12']['ci95']}  "
+                  f"ratio {r['ratio_v12_over_v13']['median']:.3f} {r['ratio_v12_over_v13']['ci95']}  "
                   f"identical={r['identical_outcome_and_output']}  outcomes={r['outcomes']['v13']}  "
                   f"false_success={r['false_success']}")
         if "scaling_vs_w1" in s:
