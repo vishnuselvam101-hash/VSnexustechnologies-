@@ -32,6 +32,7 @@ from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
 from vnxdna.core.errors import VNXFormatError
+from vnxdna.core.util import trim_heap
 from vnxdna.native.reads import iter_reads
 from vnxdna.recovery.options import DecodeOptions, DecodeResult
 from vnxdna.recovery.outer import _pass2
@@ -184,6 +185,7 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
                 pool.shutdown(wait=True)
                 pool = None
         spill.close()
+        trim_heap()                     # the pass-1 result window is gone; return its pages before pass 2 (memory only)
         if cluster is not None:
             cluster.close_pass1()
         if stage_counters is not None:

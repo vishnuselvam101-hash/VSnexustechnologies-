@@ -80,21 +80,30 @@ def resolve_duplicates(acc: np.ndarray) -> tuple[dict, int]:
         return out, 0
     order = np.lexsort((acc["symbol"], acc["group"], acc["tag"], acc["kind"]))
     acc = acc[order]
-    keys = np.stack([acc["kind"].astype(np.int64), acc["tag"].astype(np.int64), acc["group"].astype(np.int64),
-                     acc["symbol"].astype(np.int64)], axis=1)
-    change = np.flatnonzero((np.diff(keys, axis=0) != 0).any(axis=1)) + 1
+    del order
+    # address runs of the sorted records, field by field (V12 session 5: no (n, 4) int64 key matrix; same runs)
+    change = np.zeros(len(acc) - 1, dtype=bool)
+    for name in ("kind", "tag", "group", "symbol"):
+        col = acc[name]
+        change |= col[1:] != col[:-1]
+    change = np.flatnonzero(change) + 1
     starts = np.concatenate([[0], change])
     ends = np.concatenate([change, [len(acc)]])
     pay = acc["payload"]
-    first = np.repeat(starts, ends - starts)
-    same = (pay == pay[first]).all(axis=1)
+    # a run is uniform when every record equals the first, i.e. when every consecutive pair is equal: compare
+    # neighbours (one (n - 1, P) comparison) instead of gathering the first record of each run for every record
+    same = np.ones(len(acc), dtype=bool)
+    for a in range(1, len(acc), 1 << 14):                   # chunked: the (rows, P) comparison stays small
+        b = min(a + (1 << 14), len(acc))
+        same[a:b] = (pay[a:b] == pay[a - 1:b - 1]).all(axis=1)
+    same[starts] = True
     uniform = np.logical_and.reduceat(same, starts)
-    klist = keys[starts].tolist()
+    klist = list(zip(*(acc[name][starts].tolist() for name in ("kind", "tag", "group", "symbol"))))
     for gi in np.flatnonzero(uniform).tolist():
-        out[tuple(klist[gi])] = pay[starts[gi]]
+        out[klist[gi]] = pay[starts[gi]]
     for gi in np.flatnonzero(~uniform).tolist():
         s, e = int(starts[gi]), int(ends[gi])
-        key = tuple(klist[gi])
+        key = klist[gi]
         c = Counter(acc["payload"][i].tobytes() for i in range(s, e))
         (top, n1), *rest = c.most_common(2) + [(None, 0)]
         n2 = rest[0][1] if rest else 0

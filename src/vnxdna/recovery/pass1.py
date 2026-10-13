@@ -63,14 +63,14 @@ def _try(reads: list[np.ndarray], quals: list | None, with_quality: bool = False
     exact = np.flatnonzero(lengths == lay.strand_nt)
     if exact.size:
         if flat is not None:
-            eidx = flat[2][exact][:, None] + np.arange(lay.strand_nt, dtype=np.int64)[None, :]
-            mat = flat[0][eidx]
+            estart = flat[2][exact]
+            mat = _gather_exact(flat[0], estart, lay.strand_nt)
         else:
             mat = np.stack([reads[i] for i in exact])
         fb, mism = strip_markers_exact(lay, mat)
         er = fb > 3
         if quals is not None and (_P["min_q"] or proj_q is not None):
-            qm = flat[1][eidx] if flat is not None else np.stack([quals[i] for i in exact])
+            qm = _gather_exact(flat[1], estart, lay.strand_nt) if flat is not None else np.stack([quals[i] for i in exact])
             tpl, pos = lay.template()
             if _P["min_q"]:
                 er |= qm[:, pos] < _P["min_q"]
@@ -266,20 +266,39 @@ def _orientation_reference(codes: np.ndarray, lengths: np.ndarray, mpos: np.ndar
     return sr.sum(axis=1) > sf.sum(axis=1) + margin
 
 
+_GATHER_ROWS = 512      # rows per gather chunk (V12 session 5): the int64 index matrix of one chunk is 512 x strand_nt
+#                         x 8 B (1.3 MiB at 313 nt); one index for the whole 8192-read batch was 20 MiB per worker, and
+#                         the freed arena stayed resident, raising the peak RSS of every pass-1 worker by that much
+
+
+def _gather_exact(flat: np.ndarray, starts: np.ndarray, width: int) -> np.ndarray:
+    """(len(starts), width) matrix of the ``width`` consecutive entries of ``flat`` from each start (reads of exactly
+    ``width`` entries, as views into the flat batch), gathered in row chunks of ``_GATHER_ROWS`` so the temporary index
+    matrix stays small. Same values as ``np.stack`` of the views (tests/v12/test_pass1_gather.py)."""
+    out = np.empty((starts.size, width), dtype=flat.dtype)
+    cols = np.arange(width, dtype=np.int64)[None, :]
+    for a in range(0, starts.size, _GATHER_ROWS):
+        out[a:a + _GATHER_ROWS] = flat[starts[a:a + _GATHER_ROWS][:, None] + cols]
+    return out
+
+
 def _gather_rows(flat: np.ndarray, offs: np.ndarray, lengths: np.ndarray, sel: np.ndarray, cols: np.ndarray,
                  clip: int | None = None) -> tuple[np.ndarray, np.ndarray]:
     """Rows ``sel`` of a flat read buffer as a (len(sel), len(cols)) matrix plus the valid mask: entry (j, c) is read
     ``sel[j]``'s base at position ``cols[c]`` (clipped to ``clip`` when given) and 0 where the read is shorter than
-    ``cols[c]``. One gather instead of a Python loop over reads (V12 pass-1 bookkeeping); the loop form it replaces
-    is in tests/v12/test_pass1_gather.py."""
+    ``cols[c]``. One gather per row chunk instead of a Python loop over reads (V12 pass-1 bookkeeping); the loop form
+    it replaces is in tests/v12/test_pass1_gather.py."""
     valid = cols[None, :] < lengths[sel][:, None]
     out = np.zeros((sel.size, cols.size), dtype=np.uint8)
     if sel.size and flat.size:
-        idx = offs[sel][:, None] + cols[None, :]
-        got = flat[np.where(valid, idx, 0)]
-        if clip is not None:
-            np.minimum(got, clip, out=got)
-        out[valid] = got[valid]
+        starts = offs[sel]
+        for a in range(0, sel.size, _GATHER_ROWS):
+            v = valid[a:a + _GATHER_ROWS]
+            got = flat[np.where(v, starts[a:a + _GATHER_ROWS][:, None] + cols[None, :], 0)]
+            if clip is not None:
+                np.minimum(got, clip, out=got)
+            o = out[a:a + _GATHER_ROWS]
+            o[v] = got[v]
     return out, valid
 
 

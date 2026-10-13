@@ -7,6 +7,7 @@ import os
 import shutil
 import time
 from collections import Counter, deque
+from itertools import chain
 from pathlib import Path
 
 import numpy as np
@@ -14,7 +15,7 @@ import numpy as np
 from vnxdna.archive import container as ct, operations as ar
 from vnxdna.codec.codecs import make_outer
 from vnxdna.core.errors import VNXDecodeError, VNXIntegrityError, VNXKeyError
-from vnxdna.core.util import archive_mismatch, atomic_output, peak_rss_bytes
+from vnxdna.core.util import archive_mismatch, atomic_output, peak_rss_bytes, trim_heap
 from vnxdna.core.version import FRAME_VERSION, codec_id
 from vnxdna.dnaenc.layout import KIND_DATA, Layout
 from vnxdna.recovery.consensus import _consensus_symbols, resolve_duplicates
@@ -57,20 +58,29 @@ def _bucket_consensus(spill_dir: str, b: int, acc_dtype: np.dtype, pend_dtype: n
     decode up to consensus. ``n_sym``: group → outer symbols per row, for the bucket's groups still to decode. Returns
     (addresses (n, 4) int64, payloads (n, payload_bytes) uint8, duplicate conflicts, stats delta): two arrays, so the
     result crosses the process boundary as two buffers instead of one pickled object per symbol."""
+    trim_heap()                 # the worker's freed pass-1 (or previous bucket) temporaries leave its RSS first
     d = Path(spill_dir)
     acc = np.fromfile(d / f"acc{b}.bin", dtype=acc_dtype)
     pend = np.fromfile(d / f"pend{b}.bin", dtype=pend_dtype)
-    acc = acc[(acc["kind"] == KIND_DATA) & (acc["tag"] == tag)]
-    acc = acc[acc["group"] < total]
+    keep = (acc["kind"] == KIND_DATA) & (acc["tag"] == tag) & (acc["group"] < total)
+    if not keep.all():
+        acc = acc[keep]         # one copy, not two; none when every record is this archive's data (the usual case)
+    del keep
     symbols, conflicts = resolve_duplicates(acc)
+    del acc                     # the payloads live on in the sorted copy the symbols view
     missing = set()
     for g, n in n_sym.items():
         missing.update((KIND_DATA, tag, g, s_) for s_ in range(n) if (KIND_DATA, tag, g, s_) not in symbols)
     delta: Counter = Counter()
     symbols.update(_consensus_symbols(pend, symbols, lay, opt, delta, missing, None))
-    keys = np.array(list(symbols.keys()), dtype=np.int64).reshape(-1, 4)
-    pay = np.stack(list(symbols.values())) if symbols else np.zeros((0, lay.payload_bytes), dtype=np.uint8)
-    return keys, np.ascontiguousarray(pay, dtype=np.uint8), conflicts, delta
+    del pend
+    n = len(symbols)
+    keys = np.fromiter(chain.from_iterable(symbols.keys()), dtype=np.int64, count=4 * n).reshape(n, 4)
+    pay = np.stack(list(symbols.values())) if n else np.zeros((0, lay.payload_bytes), dtype=np.uint8)
+    pay = np.ascontiguousarray(pay, dtype=np.uint8)
+    del symbols
+    trim_heap()
+    return keys, pay, conflicts, delta
 
 
 def _bucket_results(pool, spill: Spill, tag: int, total: int, n_sym: dict[int, dict[int, int]], lay: Layout,
