@@ -78,23 +78,26 @@ def _try(reads: list[np.ndarray], quals: list | None, with_quality: bool = False
     proj_q = np.zeros((n, lay.frame_nt), dtype=np.uint8) if _P.get("qw") else None
     exact = np.flatnonzero(lengths == lay.strand_nt)
     if exact.size:
-        if flat is not None:
-            estart = flat[2][exact]
-            mat = _gather_exact(flat[0], estart, lay.strand_nt)
+        if flat is not None and proj_q is None:
+            # V13 S3: gather, marker check, quality erasures and byte packing in one native pass over the reads
+            hard, pb, frames, erb, mism = _pack_exact(flat[0], flat[2][exact], qsrc, _P["min_q"])
         else:
-            mat = np.stack([reads[i] for i in exact])
-        fb, mism = strip_markers_exact(lay, mat)
-        er = fb > 3
-        if qsrc is not None and (_P["min_q"] or proj_q is not None):
-            qm = _gather_exact(flat[1], estart, lay.strand_nt) if flat is not None else np.stack([quals[i] for i in exact])
-            tpl, pos = lay.template()
-            if _P["min_q"]:
-                er |= qm[:, pos] < _P["min_q"]
-            if proj_q is not None:
-                proj_q[exact] = qm[:, pos]
-        hard = np.minimum(fb, 3)            # computed once: the frame bytes and the hard bases below (V12 session 5)
-        frames = nt_to_bytes(hard)
-        P = decode_frames(lay, frames, frame_erasures_to_bytes(er))
+            if flat is not None:
+                estart = flat[2][exact]
+                mat = _gather_exact(flat[0], estart, lay.strand_nt)
+            else:
+                mat = np.stack([reads[i] for i in exact])
+            fb, mism = strip_markers_exact(lay, mat)
+            er = fb > 3
+            if qsrc is not None and (_P["min_q"] or proj_q is not None):
+                qm = _gather_exact(flat[1], estart, lay.strand_nt) if flat is not None else np.stack([quals[i] for i in exact])
+                tpl, pos = lay.template()
+                if _P["min_q"]:
+                    er |= qm[:, pos] < _P["min_q"]
+                if proj_q is not None:
+                    proj_q[exact] = qm[:, pos]
+            hard, pb, frames, erb = _pack_projection(fb, er)
+        P = decode_frames(lay, frames, erb)
         ok = P.ok
         idx = exact[ok]
         acc[idx] = True
@@ -103,12 +106,10 @@ def _try(reads: list[np.ndarray], quals: list | None, with_quality: bool = False
         payload[idx] = P.payload[ok]
         cost[exact] = mism * _P["al"].costs.marker_mismatch
         if diag is not None:
-            diag["erased_bytes"][exact] = frame_erasures_to_bytes(er).sum(axis=1)
+            diag["erased_bytes"][exact] = erb.sum(axis=1)
             diag["rs_ok"][exact], diag["crc_ok"][exact] = P.rs_ok, P.crc_ok
             diag["marker_mm"][exact], diag["errata"][exact] = mism, P.errata
         hard_bases[exact] = hard
-        pb = fb.copy()
-        pb[er] = 4
         proj_bases[exact] = pb
     # exact-length reads whose markers all match gain nothing from re-alignment (same frame, same RS failure)
     hopeless = np.zeros(n, dtype=bool)
@@ -127,9 +128,8 @@ def _try(reads: list[np.ndarray], quals: list | None, with_quality: bool = False
         sok, sbases, serased, smm, sind = _spec_project(flat[0], flat[2][rest], lengths[rest], flat[1], _P["min_q"])
         sidx = np.flatnonzero(sok)
         if sidx.size:
-            hard_s = np.minimum(sbases[sidx], 3)
-            er_s = frame_erasures_to_bytes(serased[sidx])
-            Ps = decode_frames(lay, nt_to_bytes(hard_s), er_s, errors_only_retry=False)
+            hard_s, pb_s, frames_s, er_s = _pack_projection(sbases[sidx], serased[sidx])
+            Ps = decode_frames(lay, frames_s, er_s, errors_only_retry=False)
             hit = Ps.ok
             if hit.any():
                 ridx = rest[sidx[hit]]
@@ -142,9 +142,7 @@ def _try(reads: list[np.ndarray], quals: list | None, with_quality: bool = False
                 # no decision depends on the cost of an accepted read
                 cost[ridx] = smm[sidx[hit]] * c.marker_mismatch + sind[sidx[hit]] * min(c.insertion, c.deletion)
                 hard_bases[ridx] = hard_s[hit]
-                pb = sbases[sidx[hit]].copy()
-                pb[serased[sidx[hit]]] = 4
-                proj_bases[ridx] = pb
+                proj_bases[ridx] = pb_s[hit]
                 if diag is not None:
                     diag["erased_bytes"][ridx] = er_s[hit].sum(axis=1)
                     diag["rs_ok"][ridx], diag["crc_ok"][ridx] = Ps.rs_ok[hit], Ps.crc_ok[hit]
@@ -165,9 +163,7 @@ def _try(reads: list[np.ndarray], quals: list | None, with_quality: bool = False
         else:
             from vnxdna.sync.smart.path import align_with_path
             pr, rpos = align_with_path(_P["al"], rreads, rquals, _P["min_q"])   # identical projection + the path
-        hard = np.minimum(pr.bases, 3)
-        frames = nt_to_bytes(hard)
-        er = frame_erasures_to_bytes(pr.erased)
+        hard, pb, frames, er = _pack_projection(pr.bases, pr.erased)
         P = decode_frames(lay, frames, er, errors_only_retry=False)   # sync erasures come from detected indels
         ok = P.ok & pr.ok
         if diag is not None:
@@ -213,8 +209,6 @@ def _try(reads: list[np.ndarray], quals: list | None, with_quality: bool = False
             proj_q[rest] = np.where(ri >= 0, np.take_along_axis(qmat, np.maximum(ri, 0), axis=1), 0)
         cost[rest] = np.where(pr.ok, pr.cost, 1 << 28)
         hard_bases[rest] = hard
-        pb = pr.bases.copy()
-        pb[pr.erased] = 4
         proj_bases[rest] = pb
     if soft is not None:
         # exact-length reads whose markers all match skipped re-alignment: their frame is the read itself
@@ -473,6 +467,45 @@ def _spec_project(codes: np.ndarray, offs: np.ndarray, lengths: np.ndarray, qfla
     if native_orient.resolve_backend() == "native":
         return native_orient.spec_project(codes, lengths, offs, qflat, min_q, tpl.size, mpos, want, starts, fpos, band)
     return _spec_project_reference(codes, lengths, offs, qflat, min_q, tpl.size, mpos, want, starts, fpos, band)
+
+
+def _pack_projection_reference(bases: np.ndarray, erased: np.ndarray) -> tuple:
+    """NumPy form of the frame packing of (n, F) projected bases and erasure flags (the specification of
+    ``vnx_or_pack_projection``): (hard bases, projection with erased bases = 4, frame bytes, erased bytes)."""
+    hard = np.minimum(bases, 3).astype(np.uint8, copy=False)
+    proj = np.array(bases, dtype=np.uint8, copy=True)
+    proj[erased.astype(bool, copy=False)] = 4
+    return hard, proj, nt_to_bytes(hard), frame_erasures_to_bytes(np.ascontiguousarray(erased, dtype=np.uint8))
+
+
+def _pack_exact_reference(lay: Layout, codes: np.ndarray, offs: np.ndarray, qflat: np.ndarray | None, min_q: int) -> tuple:
+    """NumPy form of the exact-length path's frame packing (the specification of ``vnx_or_pack_exact``): the reads of
+    ``lay.strand_nt`` bases at ``offs`` → (hard, proj, frames, erased bytes, marker mismatches); a base is erased when
+    it is not A/C/G/T or (with qualities and ``min_q`` > 0) its quality is below ``min_q``."""
+    mat = _gather_exact(codes, offs, lay.strand_nt)
+    fb, mism = strip_markers_exact(lay, mat)
+    er = fb > 3
+    if qflat is not None and min_q:
+        er |= _gather_exact(qflat, offs, lay.strand_nt)[:, lay.template()[1]] < min_q
+    return (*_pack_projection_reference(fb, er), mism)
+
+
+def _pack_projection(bases: np.ndarray, erased: np.ndarray) -> tuple:
+    """Frame packing of projected bases (native kernel when it loads and the frame has 4k bases, else the reference)."""
+    if bases.shape[1] % 4 == 0 and native_orient.resolve_backend() == "native":
+        return native_orient.pack_projection(bases, erased)
+    return _pack_projection_reference(bases, erased)
+
+
+def _pack_exact(codes: np.ndarray, offs: np.ndarray, qflat: np.ndarray | None, min_q: int) -> tuple:
+    """Frame packing of the exact-length reads at ``offs`` with the worker's layout (native kernel or reference)."""
+    lay: Layout = _P["lay"]
+    if lay.frame_nt % 4 == 0 and native_orient.resolve_backend() == "native":
+        tpl, fpos = lay.template()
+        mpos = np.flatnonzero(tpl >= 0)
+        return native_orient.pack_exact(codes, offs, qflat if min_q else None, min_q, tpl.size, mpos,
+                                        tpl[mpos].astype(np.uint8), fpos)
+    return _pack_exact_reference(lay, codes, offs, qflat, min_q)
 
 
 _GATHER_ROWS = 512      # rows per gather chunk (V12 session 5): the int64 index matrix of one chunk is 512 x strand_nt

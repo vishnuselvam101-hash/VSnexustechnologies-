@@ -23,7 +23,7 @@
 #include <stdlib.h>
 
 #ifndef VNX_OR_ABI /* overridable only so that the tests can build a mismatching library */
-#define VNX_OR_ABI 3
+#define VNX_OR_ABI 4
 #endif
 
 enum { OR_OK = 0, OR_EARG = -1, OR_ENOMEM = -2 };
@@ -273,5 +273,82 @@ int vnx_or_spec_project(int64_t n, const uint8_t *codes, int64_t ncodes, const i
         }
     }
     free(buf);
+    return OR_OK;
+}
+
+/* ABI 4 (V13 S3): frame packing of the pass-1 paths, one pass per read instead of six NumPy passes over the batch.
+ * References: vnxdna.recovery.pass1._pack_exact_reference and ._pack_projection_reference (the specifications).
+ *
+ * pack_frames: for F = frame_nt projected bases b[f] with erasure flags e[f] (F a multiple of 4):
+ *   hard[f]   = min(b[f], 3)                       the frame bases the inner code sees
+ *   proj[f]   = e[f] ? 4 : b[f]                    the projection kept for pass 2 (4 = erased)
+ *   frames[k] = hard[4k] << 6 | hard[4k+1] << 4 | hard[4k+2] << 2 | hard[4k+3]       (dnaenc.mapping.nt_to_bytes)
+ *   erased_bytes[k] = e[4k] | e[4k+1] | e[4k+2] | e[4k+3]                             (sync.template.frame_erasures_to_bytes)
+ * In the exact path (vnx_or_pack_exact) read i has exactly T bases at codes + offs[i]; b[f] = codes[offs[i] + frame_pos[f]],
+ * e[f] = b[f] > 3 || (quals && quals[offs[i] + frame_pos[f]] < min_q), and mm[i] counts the markers m with
+ * codes[offs[i] + mpos[m]] != want[m] (sync.template.strip_markers_exact). A flag value other than 0 counts as set. */
+static inline void pack_row(const uint8_t *b, const uint8_t *e, int64_t F, uint8_t *hard, uint8_t *proj,
+                            uint8_t *frames, uint8_t *ebytes)
+{
+    for (int64_t f = 0; f < F; f++) {
+        hard[f] = b[f] < 3 ? b[f] : (uint8_t)3;
+        proj[f] = e[f] ? (uint8_t)4 : b[f];
+    }
+    for (int64_t k = 0; k < F / 4; k++) {
+        const uint8_t *h = hard + 4 * k;
+        frames[k] = (uint8_t)((h[0] << 6) | (h[1] << 4) | (h[2] << 2) | h[3]);
+        const uint8_t *q = e + 4 * k;
+        ebytes[k] = (uint8_t)((q[0] | q[1] | q[2] | q[3]) != 0);
+    }
+}
+
+int vnx_or_pack_projection(int64_t n, const uint8_t *bases, const uint8_t *erased, int64_t F, uint8_t *out_hard,
+                           uint8_t *out_proj, uint8_t *out_frames, uint8_t *out_erased_bytes)
+{
+    if (n < 0 || F < 0 || F % 4 != 0 || F > INT32_MAX) return OR_EARG;
+    if (n > 0 && F > 0 && (!bases || !erased || !out_hard || !out_proj || !out_frames || !out_erased_bytes)) return OR_EARG;
+    if (F > 0 && (uint64_t)n > SIZE_MAX / (size_t)F) return OR_EARG;
+    for (int64_t i = 0; i < n; i++)
+        pack_row(bases + (size_t)i * (size_t)F, erased + (size_t)i * (size_t)F, F, out_hard + (size_t)i * (size_t)F,
+                 out_proj + (size_t)i * (size_t)F, out_frames + (size_t)i * (size_t)(F / 4),
+                 out_erased_bytes + (size_t)i * (size_t)(F / 4));
+    return OR_OK;
+}
+
+int vnx_or_pack_exact(int64_t n, const uint8_t *codes, int64_t ncodes, const int64_t *offs, const uint8_t *quals,
+                      int64_t min_q, int64_t T, int64_t nm, const int64_t *mpos, const uint8_t *want, int64_t F,
+                      const int64_t *frame_pos, uint8_t *out_hard, uint8_t *out_proj, uint8_t *out_frames,
+                      uint8_t *out_erased_bytes, int64_t *out_mm)
+{
+    if (n < 0 || ncodes < 0 || nm < 0 || T < 1 || T > INT32_MAX || F < 0 || F % 4 != 0 || F > T) return OR_EARG;
+    if (n > 0 && (!offs || !out_mm || (ncodes > 0 && !codes))) return OR_EARG;
+    if (n > 0 && F > 0 && (!frame_pos || !out_hard || !out_proj || !out_frames || !out_erased_bytes)) return OR_EARG;
+    if (nm > 0 && (!mpos || !want)) return OR_EARG;
+    if (F > 0 && (uint64_t)n > SIZE_MAX / (size_t)F) return OR_EARG;
+    for (int64_t m = 0; m < nm; m++)
+        if (mpos[m] < 0 || mpos[m] >= T) return OR_EARG;
+    for (int64_t f = 0; f < F; f++)
+        if (frame_pos[f] < 0 || frame_pos[f] >= T) return OR_EARG;
+    for (int64_t i = 0; i < n; i++)
+        if (offs[i] < 0 || offs[i] > ncodes - T) return OR_EARG;
+    if (n == 0) return OR_OK;
+    uint8_t *b = (uint8_t *)malloc((size_t)(2 * F + 2));      /* per-row scratch: the gathered bases and flags */
+    if (!b) return OR_ENOMEM;
+    uint8_t *e = b + F + 1;
+    for (int64_t i = 0; i < n; i++) {
+        const uint8_t *r = codes + offs[i];
+        const uint8_t *q = quals ? quals + offs[i] : NULL;
+        int64_t mm = 0;
+        for (int64_t m = 0; m < nm; m++) mm += r[mpos[m]] != want[m];
+        out_mm[i] = mm;
+        for (int64_t f = 0; f < F; f++) {
+            const int64_t p = frame_pos[f];
+            b[f] = r[p];
+            e[f] = (uint8_t)(r[p] > 3 || (q && (int64_t)q[p] < min_q));
+        }
+        pack_row(b, e, F, out_hard + (size_t)i * (size_t)F, out_proj + (size_t)i * (size_t)F,
+                 out_frames + (size_t)i * (size_t)(F / 4), out_erased_bytes + (size_t)i * (size_t)(F / 4));
+    }
+    free(b);
     return OR_OK;
 }

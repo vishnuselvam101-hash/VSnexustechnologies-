@@ -1,4 +1,4 @@
-"""V12: the native orientation scan (``native/c/orient.c``, orient ABI 1; ABI 2 and 3 since V13 add the retry bound and the speculative projection) equals the NumPy reference
+"""V12: the native orientation scan (``native/c/orient.c``, orient ABI 1; ABI 2, 3 and 4 since V13 add the retry bound, the speculative projection and the frame packing) equals the NumPy reference
 ``pass1._orientation_reference`` bit for bit, on every layout, for clean, substituted, indel, reverse-complemented,
 truncated, N-carrying and random junk reads; golden hashes pin the decisions of fixed batches for both backends; the C
 argument checks, ABI mismatch, backend selection and the status report are exercised.
@@ -192,7 +192,7 @@ def test_abi_mismatch_is_ignored(tmp_path, monkeypatch):
     no._reset_for_tests()
     try:
         assert not no.available()
-        assert "ABI 99 != 3" in no.status()["load_error"]
+        assert "ABI 99 != 4" in no.status()["load_error"]
         monkeypatch.setenv("VNXDNA_ORIENT_BACKEND", "auto")
         assert no.resolve_backend() == "reference"
         _init(BALANCED)
@@ -217,4 +217,4 @@ def test_backend_variable_is_validated(monkeypatch):
 
 def test_symbols_are_exported_with_c_types():
     assert isinstance(no.KERNEL.lib().vnx_or_abi_version, ctypes._CFuncPtr)
-    assert no.KERNEL.lib().vnx_or_abi_version() == no.ABI_VERSION == 3
+    assert no.KERNEL.lib().vnx_or_abi_version() == no.ABI_VERSION == 4

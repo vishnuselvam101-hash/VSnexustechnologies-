@@ -16,7 +16,7 @@ import numpy as np
 
 from vnxdna.native._loader import Kernel, NativeKernelError, module_contract
 
-ABI_VERSION = 3            # 2 (V13 D1): adds vnx_or_rc_bound; 3 (V13 B1): adds vnx_or_spec_project
+ABI_VERSION = 4            # 2 (V13 D1): vnx_or_rc_bound; 3 (V13 B1): vnx_or_spec_project; 4 (V13 S3): vnx_or_pack_*
 _ERRORS = {-1: "invalid argument", -2: "out of memory"}
 
 
@@ -28,6 +28,10 @@ def _bind(lib) -> None:
     lib.vnx_or_rc_bound.argtypes = [i64, p, i64, p, p, i64, p, p, p, i64, i64, i64, i64, i64, p]
     lib.vnx_or_spec_project.restype = ctypes.c_int
     lib.vnx_or_spec_project.argtypes = [i64, p, i64, p, p, p, i64, i64, i64, p, p, p, i64, i64, p, i64, p, p, p, p, p]
+    lib.vnx_or_pack_projection.restype = ctypes.c_int
+    lib.vnx_or_pack_projection.argtypes = [i64, p, p, i64, p, p, p, p]
+    lib.vnx_or_pack_exact.restype = ctypes.c_int
+    lib.vnx_or_pack_exact.argtypes = [i64, p, i64, p, p, i64, i64, i64, p, p, i64, p, p, p, p, p, p]
 
 
 KERNEL = Kernel("orient", "VNXDNA_ORIENT", ABI_VERSION, "vnx_or_abi_version", _bind, "vnxdna.recovery.pass1", __name__)
@@ -172,6 +176,63 @@ def spec_project(codes: np.ndarray, lengths: np.ndarray, offs: np.ndarray, qflat
     if rc < 0:
         raise NativeOrientError(f"native speculative projection failed ({rc}: {_ERRORS.get(rc, 'unknown')})")
     return ok.view(bool), bases, erased.view(bool), mm, indels
+
+
+def pack_projection(bases: np.ndarray, erased: np.ndarray) -> tuple:
+    """Frame packing of (n, F) projected bases and erasure flags (``pass1._pack_projection_reference``; ABI 4):
+    (hard (n, F) uint8, proj (n, F) uint8, frames (n, F/4) uint8, erased_bytes (n, F/4) bool)."""
+    lib = KERNEL.lib()
+    bases = np.ascontiguousarray(bases, dtype=np.uint8)
+    erased = np.ascontiguousarray(erased, dtype=np.uint8)
+    if bases.ndim != 2 or erased.shape != bases.shape or bases.shape[1] % 4:
+        raise ValueError("bases and erased must be (n, F) with F a multiple of 4")
+    n, F = bases.shape
+    hard = np.empty((n, F), dtype=np.uint8)
+    proj = np.empty((n, F), dtype=np.uint8)
+    frames = np.empty((n, F // 4), dtype=np.uint8)
+    ebytes = np.empty((n, F // 4), dtype=np.uint8)
+    rc = lib.vnx_or_pack_projection(n, bases.ctypes.data, erased.ctypes.data, F, hard.ctypes.data, proj.ctypes.data,
+                                    frames.ctypes.data, ebytes.ctypes.data)
+    if rc < 0:
+        raise NativeOrientError(f"native frame packing failed ({rc}: {_ERRORS.get(rc, 'unknown')})")
+    return hard, proj, frames, ebytes.view(bool)
+
+
+def pack_exact(codes: np.ndarray, offs: np.ndarray, qflat: np.ndarray | None, min_q: int, T: int, mpos: np.ndarray,
+               want: np.ndarray, frame_pos: np.ndarray) -> tuple:
+    """Frame packing of the exact-length reads at ``offs`` (``pass1._pack_exact_reference``; ABI 4):
+    (hard, proj, frames, erased_bytes, marker mismatches (n,) int64)."""
+    lib = KERNEL.lib()
+    codes = np.ascontiguousarray(codes, dtype=np.uint8)
+    offs = np.ascontiguousarray(offs, dtype=np.int64)
+    mpos = np.ascontiguousarray(mpos, dtype=np.int64)
+    want = np.ascontiguousarray(want, dtype=np.uint8)
+    frame_pos = np.ascontiguousarray(frame_pos, dtype=np.int64)
+    if codes.ndim != 1 or offs.ndim != 1 or mpos.ndim != 1 or want.shape != mpos.shape or frame_pos.ndim != 1:
+        raise ValueError("codes, offs, mpos, want and frame_pos must be one-dimensional (want one code per marker)")
+    if T < 1 or frame_pos.size % 4 or frame_pos.size > T:
+        raise ValueError("T must be positive and frame_pos a multiple of four positions of the template")
+    if (frame_pos.size and (frame_pos.min() < 0 or frame_pos.max() >= T)) or (mpos.size and (mpos.min() < 0 or mpos.max() >= T)):
+        raise ValueError("frame_pos and mpos must index the template")
+    if offs.size and (offs.min() < 0 or offs.max() > codes.size - T):
+        raise ValueError("every read must lie inside codes")
+    if qflat is not None:
+        qflat = np.ascontiguousarray(qflat, dtype=np.uint8)
+        if qflat.shape != codes.shape:
+            raise ValueError("qflat must have one quality per code")
+    n, F = offs.size, frame_pos.size
+    hard = np.empty((n, F), dtype=np.uint8)
+    proj = np.empty((n, F), dtype=np.uint8)
+    frames = np.empty((n, F // 4), dtype=np.uint8)
+    ebytes = np.empty((n, F // 4), dtype=np.uint8)
+    mm = np.empty(n, dtype=np.int64)
+    rc = lib.vnx_or_pack_exact(n, codes.ctypes.data, codes.size, offs.ctypes.data,
+                               None if qflat is None else qflat.ctypes.data, int(min_q), int(T), mpos.size,
+                               mpos.ctypes.data, want.ctypes.data, F, frame_pos.ctypes.data, hard.ctypes.data,
+                               proj.ctypes.data, frames.ctypes.data, ebytes.ctypes.data, mm.ctypes.data)
+    if rc < 0:
+        raise NativeOrientError(f"native frame packing failed ({rc}: {_ERRORS.get(rc, 'unknown')})")
+    return hard, proj, frames, ebytes.view(bool), mm
 
 
 def main(argv=None) -> int:

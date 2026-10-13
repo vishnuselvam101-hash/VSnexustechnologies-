@@ -2,7 +2,8 @@
 
 Every round draws a layout (every profile's layout plus two synthetic ones), a channel (substitution rate, indel rate,
 reverse-complement rate, junk share) and a batch of reads, then compares ``pass1._orientation``, ``pass1._rc_bound``
-(ABI 2) and ``pass1._spec_project`` (ABI 3) under ``VNXDNA_ORIENT_BACKEND=native`` and ``=reference`` read by read.
+(ABI 2), ``pass1._spec_project`` (ABI 3) and the frame packing ``pass1._pack_exact`` / ``_pack_projection``
+(ABI 4) under ``VNXDNA_ORIENT_BACKEND=native`` and ``=reference`` read by read.
 A case is one read.
 
 usage: PYTHONPATH=src python benchmarks/v12/native_orient/stress_fuzz.py [rounds] [reads-per-round] [seed]
@@ -91,6 +92,22 @@ def main(argv: list[str]) -> int:
         for name, a, b in zip(("ok", "bases", "erased", "mm", "indels"), ns, rs):
             if a.shape != b.shape or a.dtype != b.dtype or not np.array_equal(a, b):
                 print(f"MISMATCH spec_project {name} round {k} layout {lay!r} channel {chan}")
+                return 1
+        # V13 S3: frame packing (ABI 4) of the exact-length reads and of the speculative projection, native vs reference
+        ex = np.flatnonzero(lengths == lay.strand_nt)
+        for backend in ("native", "reference"):
+            os.environ["VNXDNA_ORIENT_BACKEND"] = backend
+            pk = pass1._pack_exact(codes, offs[ex], q, mq)
+            pp = pass1._pack_projection(rs[1], rs[2])
+            if backend == "native":
+                np_, pp_n = pk, pp
+        for name, a, b in zip(("hard", "proj", "frames", "erased_bytes", "mm"), np_, pk):
+            if a.shape != b.shape or a.dtype != b.dtype or not np.array_equal(a, b):
+                print(f"MISMATCH pack_exact {name} round {k} layout {lay!r} channel {chan}")
+                return 1
+        for name, a, b in zip(("hard", "proj", "frames", "erased_bytes"), pp_n, pp):
+            if a.shape != b.shape or a.dtype != b.dtype or not np.array_equal(a, b):
+                print(f"MISMATCH pack_projection {name} round {k} layout {lay!r} channel {chan}")
                 return 1
         cases += n
         flipped += int(ref.sum())

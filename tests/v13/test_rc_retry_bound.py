@@ -201,4 +201,4 @@ def test_kernel_argument_checks():
         no.rc_bound(codes, one, zero, mpos, want, starts, -1, 4, 6, 6)           # negative band
     with pytest.raises(ValueError):
         no.rc_bound(codes, one, np.zeros(2, dtype=np.int64), mpos, want, starts, 6, 4, 6, 6)   # offs/lengths mismatch
-    assert no.KERNEL.lib().vnx_or_abi_version() == no.ABI_VERSION == 3
+    assert no.KERNEL.lib().vnx_or_abi_version() == no.ABI_VERSION == 4

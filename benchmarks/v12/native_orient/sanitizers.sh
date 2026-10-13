@@ -16,7 +16,7 @@ mkdir -p "$W"
 PY=${PY:-python}
 export PYTHONPATH=${PYTHONPATH:-src}
 SRC=src/vnxdna/native/c/orient.c
-TESTS=${TESTS:-tests/v12/test_native_orient.py tests/v13/test_rc_retry_bound.py tests/v13/test_spec_projection.py}
+TESTS=${TESTS:-tests/v12/test_native_orient.py tests/v13/test_rc_retry_bound.py tests/v13/test_spec_projection.py tests/v13/test_pack_frames.py}
 fail=0
 echo "kernel source sha256: $(sha256sum $SRC | cut -d' ' -f1)"
 echo "== warnings (reported, not gating)"
