@@ -1,5 +1,37 @@
 # Changelog
 
+## 13.0.0-dev (branch `build/v13`, unreleased; docs/V13_COMPLETION_REPORT.md)
+
+All channel results are SIMULATED; no DNA was synthesised, stored or sequenced. Archive, container and strand formats
+are unchanged from 12.0.0 (no new format version); decode output is byte-identical to build/v12 (6bf7749) on every
+benchmark seed. Benchmarks: docs/V13_BENCHMARK_REPORT.md; plan and pre-declared workloads: docs/V13_PLAN.md.
+
+### Added
+- **Aligner ABI 4** (`src/vnxdna/v5/native/align.c`): `vnx_align_batch_sel_lv` aligns any selected reads of a flat
+  batch in place (per-read start and length arrays; the contiguous entry points are unchanged);
+  `native.align.align_usable_flat`, `TemplateAligner.project_flat`.
+- **Orientation kernel ABI 2** (`src/vnxdna/native/c/orient.c`): `vnx_or_rc_bound`, a lower bound on the band-limited
+  marker-template alignment cost of a read taken as a reverse complement (reference `pass1._rc_bound_reference`).
+- `DecodeOptions.orientation_retry` = `bounded` (default) | `always`; CLI `--orientation-retry`; SDK config key;
+  `report["reads"]["rc_retry_skipped"]`.
+- `dnaenc.mapping.nt_to_bytes_reference`, `recovery.consensus._row_ids`.
+- V13 A/B benchmark harness `experiments/v13/bench/` (the V12 harness with labels v12/v13, BASE_TREE = build/v12 6bf7749).
+- `tests/v13/`: flat pass-1 path, `nt_to_bytes`, row ids, bounded retry (+ tests; see the completion report for the count).
+
+### Changed
+- **Flat pass-1 data path.** The default decode configuration never builds per-read view lists: `_process` → `_try` →
+  `project_flat` → the ABI-4 kernel work on the batch buffers; the reverse-complement retry reverses its reads with one
+  gather. Same results as the list path (pinned).
+- **Bounded reverse-complement retry.** A failed read is retried as a reverse complement only when the cost bound of
+  that alignment is below its forward cost (only a verified reverse-complement frame could otherwise adopt the retry;
+  none does on the validation corpus). `--orientation-retry always` restores the V12 rule. Stage-counter goldens
+  re-pinned: only `orientation.rc_retry_attempted` changed.
+- `nt_to_bytes` packs four codes per uint32 multiply (4.4× on a pass-1 batch); `snap_addresses` builds its membership
+  table with a lexsort partition instead of `np.unique(axis=0)`.
+
+### Fixed
+- `native.heap`: the cached `malloc_trim` pointer is typed so the CI mypy job passes (two errors since 12.0.0's 521adb0).
+
 ## 12.0.0 (tag `v12.0.0`; performance release; docs/V12_COMPLETION_REPORT.md)
 
 All channel results are SIMULATED; no DNA was synthesised, stored or sequenced. Archive, container and strand formats
