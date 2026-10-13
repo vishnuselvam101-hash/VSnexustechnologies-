@@ -1,0 +1,192 @@
+"""Streaming decode engine (V13, **Rust** core ``native/rust/engine``): pass 1 of a decode in one native call.
+
+The crate ``vnx_engine`` (C ABI 1, loaded with ctypes) owns the whole pass-1 pipeline: file IO in large blocks, the
+FASTQ/FASTA scanner, the orientation pre-pass, the address scheduler, the decode attempts (exact-length packing, the
+marker-anchored projection, the banded DP, inner RS + CRC, the bounded reverse-complement retry, pending records) and the
+spill bucket files that pass 2 reads. The C kernels it reuses (inner RS, DP aligner, orientation/projection/packing) are
+compiled into the library. Every attempted read gets exactly the result of :func:`vnxdna.recovery.pass1._process`
+(default recovery configuration); see docs/V13_ENGINE_ARCHITECTURE.md.
+
+Backend: ``VNXDNA_ENGINE_BACKEND`` = auto | native | reference (reference = never use the engine); library override
+``VNXDNA_ENGINE_LIB``. Build: ``python -m vnxdna.native.engine build`` (cargo, offline, no third-party crates).
+"""
+from __future__ import annotations
+
+import ctypes
+import os
+
+import numpy as np
+
+from vnxdna.native._loader import NativeKernelError, RustKernel, module_contract
+
+ABI_VERSION = 1
+N_STATS = 32
+IO_BLOCK = 8 << 20
+TABLE_BITS = 21     # scheduler fingerprint tables: 2^21 window + 2^20 address slots (24 MiB, fixed)
+
+RC_OK, RC_UNSUPPORTED, RC_CANCELLED = 0, 1, 2
+_ERRORS = {-1: "invalid argument", -2: "IO error", -3: "kernel error", -4: "panic (caught at the ABI boundary)"}
+
+STAT_NAMES = ("reads", "fast", "sync", "speculative", "reverse_complement", "pending", "orphans", "unaligned",
+              "rc_retry_skipped", "attempted", "skipped", "input_bytes", "batches", "rounds", "ns_io", "ns_scan",
+              "ns_prep", "ns_attempt", "ns_spill", "ns_total", "acc_records", "max_batch", "table_evictions", "table_bytes", "cheap_attempts", "full_attempts",
+              "ns_cheap", "ns_full", "ns_group", "split_groups", "reserved30", "reserved31")
+
+
+class EngineUnsupported(RuntimeError):
+    """The input or configuration lies outside what the engine reproduces exactly (the caller falls back)."""
+
+
+class EngineCancelled(RuntimeError):
+    """The decode was cancelled (timeout or caller request) while the engine ran."""
+
+
+class EngineError(NativeKernelError):
+    """An internal engine error (kernel error, IO error, panic); the caller falls back."""
+
+
+_FIELDS = ("abi t frame_nt frame_bytes payload parity nm nblocks *mpos *want *block *frame_pos64 *tpl16 *seg_of "
+           "*prev_seg *next_seg n_segments *frame_pos32 *seg_frame band c_mm c_ins c_del c_x guard min_q rc rc_bounded "
+           "spec orient_margin orient_shift *ks span threads batch buckets align_lanes rs_level max_reads fmt dedup "
+           "frame_version *cancel io_block table_bits").split()
+
+
+class _Cfg(ctypes.Structure):
+    _fields_ = [(f.lstrip("*"), ctypes.c_void_p if f.startswith("*") else ctypes.c_int64) for f in _FIELDS]
+
+
+assert ctypes.sizeof(_Cfg) == 45 * 8
+
+
+def _bind(lib) -> None:
+    lib.vnx_eng_pass1.restype = ctypes.c_int32
+    lib.vnx_eng_pass1.argtypes = [ctypes.POINTER(_Cfg), ctypes.c_char_p, ctypes.c_char_p, ctypes.c_void_p,
+                                  ctypes.c_int64, ctypes.c_char_p, ctypes.c_int64]
+    lib.vnx_eng_n_stats.restype = ctypes.c_int64
+
+
+KERNEL = RustKernel("engine", "VNXDNA_ENGINE", ABI_VERSION, "vnx_eng_abi_version", _bind, "vnxdna.recovery.pass1",
+                    __name__, crate="engine")
+globals().update(module_contract(KERNEL))   # _HERE, _SOURCE, _INPLACE, CFLAGS, STRICT_CFLAGS, ENV, ENV_LIB, _candidates
+
+
+def available() -> bool:
+    return KERNEL.available()
+
+
+def resolve_backend() -> str:
+    return KERNEL.resolve()
+
+
+def status() -> dict:
+    return KERNEL.status()
+
+
+def build(output=None, extra_flags=None, strict=None):
+    return KERNEL.build(output, extra_flags, strict)
+
+
+class Cancel:
+    """A cancellation flag the engine polls once per IO block and batch (set from any thread, e.g. a timer)."""
+
+    def __init__(self) -> None:
+        self._flag = ctypes.c_int64(0)
+
+    def set(self) -> None:
+        self._flag.value = 1
+
+    @property
+    def is_set(self) -> bool:
+        return bool(self._flag.value)
+
+    def address(self) -> int:
+        return ctypes.addressof(self._flag)
+
+
+def _ptr(a: np.ndarray) -> int:
+    return a.ctypes.data
+
+
+def kernel_levels() -> tuple[int, int]:
+    """(DP lanes, RS level) the engine uses: the levels the align and rs kernels would run (their environment
+    selection applies); raises EngineUnsupported when either is pinned to its Python reference."""
+    from vnxdna.native import align as na
+    from vnxdna.native import rs as nrs
+    level = na.active_level()
+    if level == "reference":
+        raise EngineUnsupported("VNXDNA_ALIGN_BACKEND selects the Python reference")
+    rs_name = nrs.active_backend()
+    if rs_name == "reference":
+        raise EngineUnsupported("VNXDNA_RS_BACKEND selects the Python reference")
+    return na.LEVELS[level], nrs.LEVELS[rs_name]
+
+
+def run_pass1(reads_path: str | os.PathLike, spill_dir: str | os.PathLike, lay, opt, buckets: int, *, fmt: str,
+              threads: int, dedup: bool = True, batch: int | None = None, cancel: Cancel | None = None) -> dict:
+    """Pass 1 of a decode of ``reads_path`` into the spill bucket files of ``spill_dir`` (record format of
+    :class:`vnxdna.recovery.spill.Spill`, appended). Returns the statistics (``STAT_NAMES``). Raises EngineUnsupported
+    (outside the exact domain: fall back), EngineCancelled or EngineError."""
+    from vnxdna.dnaenc.layout import HEADER_BYTES, CRC_BYTES
+    from vnxdna.dnaenc.scrambler import keystreams
+    from vnxdna.core.version import FRAME_VERSION
+    from vnxdna.sync.template import TemplateAligner
+    from vnxdna.native.align import geometry
+    if fmt not in ("fastq", "fasta"):
+        raise EngineUnsupported(f"input format {fmt!r}")
+    if opt.retry_band:
+        raise EngineUnsupported("retry_band")
+    lib = KERNEL.lib()
+    lanes, rs_level = kernel_levels()
+    al = TemplateAligner(lay, opt.band, opt.sync_costs)
+    g = geometry(al)
+    tpl, fpos = lay.template()
+    mpos = np.ascontiguousarray(np.flatnonzero(tpl >= 0), dtype=np.int64)
+    want = np.ascontiguousarray(tpl[mpos], dtype=np.uint8)
+    starts = np.flatnonzero(np.diff(mpos, prepend=-2) > 1)
+    block = np.zeros(mpos.size, dtype=np.int64)
+    if mpos.size:
+        block[starts[1:]] = 1
+        block = np.ascontiguousarray(np.cumsum(block), dtype=np.int64)
+    span = HEADER_BYTES - 1 + lay.payload_bytes + CRC_BYTES
+    ks = np.ascontiguousarray(keystreams(span), dtype=np.uint8)
+    fpos64 = np.ascontiguousarray(fpos, dtype=np.int64)
+    c = opt.sync_costs
+    keep = (mpos, want, block, ks, fpos64, g)          # alive for the call
+    cancel = cancel or Cancel()
+    cfg = _Cfg(abi=ABI_VERSION, t=int(tpl.size), frame_nt=lay.frame_nt, frame_bytes=lay.frame_bytes,
+               payload=lay.payload_bytes, parity=lay.inner_parity, nm=int(mpos.size), nblocks=int(starts.size),
+               mpos=_ptr(mpos), want=_ptr(want), block=_ptr(block), frame_pos64=_ptr(fpos64), tpl16=_ptr(g["tpl"]),
+               seg_of=_ptr(g["seg_of"]), prev_seg=_ptr(g["prev_seg"]), next_seg=_ptr(g["next_seg"]),
+               n_segments=int(al.n_segments), frame_pos32=_ptr(g["frame_pos"]), seg_frame=_ptr(g["seg_frame"]),
+               band=int(opt.band), c_mm=int(c.marker_mismatch), c_ins=int(c.insertion), c_del=int(c.deletion),
+               c_x=int(c.marker_deletion_extra), guard=int(c.guard_segments), min_q=int(opt.min_quality),
+               rc=int(bool(opt.reverse_complement)), rc_bounded=int(opt.orientation_retry == "bounded"),
+               spec=int(opt.sync_speculation == "markers"), orient_margin=max(2, int(mpos.size) // 8),
+               orient_shift=2, ks=_ptr(ks), span=span, threads=int(threads),
+               batch=int(batch or 16384), buckets=int(buckets), align_lanes=lanes, rs_level=rs_level,
+               max_reads=int(opt.max_reads), fmt=1 if fmt == "fastq" else 2, dedup=int(bool(dedup)),
+               frame_version=int(FRAME_VERSION), cancel=cancel.address(), io_block=IO_BLOCK,
+               table_bits=TABLE_BITS)
+    stats = np.zeros(int(lib.vnx_eng_n_stats()), dtype=np.int64)
+    err = ctypes.create_string_buffer(512)
+    rc = lib.vnx_eng_pass1(ctypes.byref(cfg), os.fsencode(reads_path), os.fsencode(spill_dir), _ptr(stats),
+                           stats.size, err, len(err))
+    del keep
+    msg = err.value.decode("utf-8", "replace")
+    if rc == RC_UNSUPPORTED:
+        raise EngineUnsupported(msg)
+    if rc == RC_CANCELLED:
+        raise EngineCancelled(msg)
+    if rc != RC_OK:
+        raise EngineError(f"engine failed: {_ERRORS.get(rc, rc)}: {msg}")
+    return dict(zip(STAT_NAMES, stats.tolist()))
+
+
+
+
+def main(argv=None) -> int:
+    return KERNEL.main(argv)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

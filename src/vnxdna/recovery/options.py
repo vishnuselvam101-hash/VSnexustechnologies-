@@ -14,6 +14,9 @@ from vnxdna.sync.template import SyncCosts
 DEFAULT_MAX_CONTAINER_BYTES = 4 << 30
 
 
+ENGINES = ("auto", "stream", "v13", "reference")
+
+
 @dataclass
 class DecodeOptions:
     profile: str | None = None          # None = detect from read lengths
@@ -80,6 +83,18 @@ class DecodeOptions:
     # unresolved (FC-9); see vnxdna.recovery.cluster. cluster_config: a ClusterConfig (None = defaults).
     read_clustering: str = "off"
     cluster_config: object = None
+    # V13 engine (docs/V13_ENGINE_ARCHITECTURE.md): "auto" (default) = the streaming engine (Rust core) when it is built
+    # and the options are inside its domain, else the V13 path; any engine refusal, internal error or non-SUCCESS
+    # result falls back to the V13 path (report["engine"] records the rung that ran and why). "stream" = the engine or
+    # an error; "v13" = the V13 Python-orchestrated path; "reference" = the V13 path with every kernel on its Python
+    # reference.
+    engine: str = "auto"
+    # V13 engine: attempt only the reads whose address is not verified yet (address scheduler); False attempts every
+    # read (pass-1 results then equal the V13 path's, record for record)
+    engine_dedup: bool = True
+    # wall-clock limit of the decode in seconds (None = none): the engine stops at the next block and the decode
+    # raises VNXResourceError (code TIMEOUT); nothing is published
+    timeout_s: float | None = None
 
     def validate(self) -> None:
         if not isinstance(self.stage_counters, bool):
@@ -90,6 +105,13 @@ class DecodeOptions:
             raise VNXConfigurationError("workers must be in 1..256")
         if self.orientation_retry not in ("bounded", "always"):
             raise VNXConfigurationError("orientation_retry must be 'bounded' or 'always'")
+        if self.engine not in ENGINES:
+            raise VNXConfigurationError(f"engine must be one of {', '.join(ENGINES)}")
+        if not isinstance(self.engine_dedup, bool):
+            raise VNXConfigurationError("engine_dedup must be True or False")
+        if self.timeout_s is not None and (isinstance(self.timeout_s, bool) or not isinstance(self.timeout_s, (int, float))
+                                           or not self.timeout_s > 0):
+            raise VNXConfigurationError("timeout_s must be a positive number of seconds (or None)")
         if self.sync_speculation not in ("markers", "off"):
             raise VNXConfigurationError("sync_speculation must be 'markers' or 'off'")
         if not 1 <= self.band <= 64:
