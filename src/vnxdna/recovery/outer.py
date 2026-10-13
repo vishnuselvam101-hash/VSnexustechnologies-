@@ -15,9 +15,10 @@ import numpy as np
 from vnxdna.archive import container as ct, operations as ar
 from vnxdna.codec.codecs import make_outer
 from vnxdna.core.errors import VNXDecodeError, VNXIntegrityError, VNXKeyError
-from vnxdna.core.util import archive_mismatch, atomic_output, peak_rss_bytes, trim_heap
+from vnxdna.core.util import archive_mismatch, atomic_output, peak_rss_bytes
 from vnxdna.core.version import FRAME_VERSION, codec_id
 from vnxdna.dnaenc.layout import KIND_DATA, Layout
+from vnxdna.native.heap import trim_heap
 from vnxdna.recovery.consensus import _consensus_symbols, resolve_duplicates
 from vnxdna.recovery.options import DecodeOptions, DecodeResult
 from vnxdna.recovery.spill import Spill

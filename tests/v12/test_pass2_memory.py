@@ -7,7 +7,7 @@ from collections import Counter
 import numpy as np
 import pytest
 
-from vnxdna.core.util import trim_heap
+from vnxdna.native.heap import trim_heap
 from vnxdna.recovery import pass1
 from vnxdna.recovery.consensus import resolve_duplicates
 

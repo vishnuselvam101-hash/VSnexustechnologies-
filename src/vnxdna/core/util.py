@@ -192,22 +192,3 @@ def peak_rss_bytes() -> int:
     import resource
     return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024
 
-
-_TRIM = None
-
-
-def trim_heap() -> bool:
-    """Return freed heap pages to the operating system (glibc ``malloc_trim(0)``); a no-op elsewhere. The decoder's
-    worker processes call it between stages (V12 session 5): the pass-1 temporaries they freed otherwise stay resident
-    through pass 2, where every worker loads a spill bucket on top of them. Memory only; never changes a result."""
-    global _TRIM
-    if _TRIM is None:
-        _TRIM = False
-        try:
-            import ctypes
-            fn = ctypes.CDLL(None).malloc_trim
-            fn.argtypes, fn.restype = (ctypes.c_size_t,), ctypes.c_int
-            _TRIM = fn
-        except (OSError, AttributeError):
-            pass
-    return bool(_TRIM(0)) if _TRIM else False

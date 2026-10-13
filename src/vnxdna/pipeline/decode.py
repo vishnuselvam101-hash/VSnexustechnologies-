@@ -32,7 +32,7 @@ from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
 from vnxdna.core.errors import VNXFormatError
-from vnxdna.core.util import trim_heap
+from vnxdna.native.heap import trim_heap
 from vnxdna.native.reads import iter_reads
 from vnxdna.recovery.options import DecodeOptions, DecodeResult
 from vnxdna.recovery.outer import _pass2
