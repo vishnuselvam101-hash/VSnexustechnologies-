@@ -135,9 +135,10 @@ def decode_frames(layout: Layout, frames: np.ndarray, erasures: np.ndarray | Non
                   errors_only_retry: bool = True) -> Parsed:
     """Inner RS decoding (errors + erasures) and CRC check for (N, frame_bytes) received frames.
 
-    V13 S1: the keystream XOR and the CRC run once over the batch; only the rows the inner code touched (``todo``)
-    are descrambled and CRC-checked again. A clean row's corrected frame is the received frame, so its plain bytes
-    and CRC verdict are those of the first pass (same values as :func:`decode_frames_reference`)."""
+    V13 S1: the keystream XOR and the CRC of the first pass run over the rows without flagged erasures only (the
+    others can never be clean); the rows the inner code touched (``todo``) are descrambled and CRC-checked from the
+    corrected frame. A clean row's corrected frame is the received frame, so its plain bytes and CRC verdict are
+    those of the first pass (same values as :func:`decode_frames_reference`)."""
     n = frames.shape[0]
     p = layout.payload_bytes
     inner = InnerRS(layout.inner_parity)
@@ -146,11 +147,24 @@ def decode_frames(layout: Layout, frames: np.ndarray, erasures: np.ndarray | Non
     ks = keystreams(span)
     # 1) CRC-first: a frame without flagged erasures whose CRC verifies is accepted without RS decoding (a corrupt frame
     #    passes the CRC with probability ~2^-32, the same check that guards every RS correction below)
-    plain = frames[:, 1:1 + span] ^ ks[frames[:, 0]]
-    crc_ok = (crc32_bytes_be(crc32_rows(plain[:, : 9 + p])) == plain[:, 9 + p:]).all(axis=1)
-    clean = crc_ok.copy()
-    if erasures is not None:
-        clean &= ~erasures.any(axis=1)
+    if erasures is None or n == 0:
+        plain = frames[:, 1:1 + span] ^ ks[frames[:, 0]]
+        crc_ok = (crc32_bytes_be(crc32_rows(plain[:, : 9 + p])) == plain[:, 9 + p:]).all(axis=1)
+        clean = crc_ok.copy()
+    else:
+        # a row with flagged erasures is never clean: its plain bytes and CRC come from the inner decode below
+        cand = np.flatnonzero(~erasures.any(axis=1))
+        plain = np.empty((n, span), dtype=np.uint8)
+        crc_ok = np.zeros(n, dtype=bool)
+        if cand.size == n:
+            plain[...] = frames[:, 1:1 + span] ^ ks[frames[:, 0]]
+            crc_ok[...] = (crc32_bytes_be(crc32_rows(plain[:, : 9 + p])) == plain[:, 9 + p:]).all(axis=1)
+        elif cand.size:
+            sub0 = frames[cand]
+            plain0 = sub0[:, 1:1 + span] ^ ks[sub0[:, 0]]
+            plain[cand] = plain0
+            crc_ok[cand] = (crc32_bytes_be(crc32_rows(plain0[:, : 9 + p])) == plain0[:, 9 + p:]).all(axis=1)
+        clean = crc_ok.copy()
     ok = clean.copy()
     errata = np.zeros(n, dtype=np.int64)
     todo = np.flatnonzero(~clean)
