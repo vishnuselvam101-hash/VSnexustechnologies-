@@ -294,3 +294,131 @@ pub fn win_shifts(codes: &[u8], w: usize, a: i64, rc: bool, out: &mut [u64]) {
         out[k] = v.map_or(0, |v| win_fp(w, v));
     }
 }
+
+/// Orientation estimate for the screen only (the attempts use the exact pre-pass of pass 1): per marker block, the best
+/// agreement over shifts 0, -1, +1, -2, +2, summed over the first `SCREEN_BLOCKS` blocks, forward and as reverse
+/// complement. Returns (reverse complement more likely, best score of the chosen orientation, markers scored).
+pub const SCREEN_BLOCKS: usize = 4;
+
+#[inline]
+fn block_score(cfg: &Cfg, codes: &[u8], rc: bool, nblk: usize, first: &[usize]) -> i64 {
+    let l = codes.len() as i64;
+    let mut total = 0i64;
+    for b in 0..nblk {
+        let (m0, m1) = (first[b], first[b + 1]);
+        let mut best = 0i64;
+        for s in [0i64, -1, 1, -2, 2] {
+            let mut hit = 0i64;
+            for m in m0..m1 {
+                let p = cfg.mpos[m] + s;
+                if p < 0 || p >= l {
+                    continue;
+                }
+                let c = if rc {
+                    let c = codes[(l - 1 - p) as usize];
+                    if c < 4 { 3 - c } else { 4 }
+                } else {
+                    codes[p as usize]
+                };
+                hit += (c == cfg.want[m]) as i64;
+            }
+            if hit > best {
+                best = hit;
+                if best == (m1 - m0) as i64 {
+                    break;
+                }
+            }
+        }
+        total += best;
+    }
+    total
+}
+
+/// First marker index of every block, plus the marker count at the end (computed once per config).
+pub fn block_firsts(cfg: &Cfg) -> Vec<usize> {
+    let mut out = Vec::new();
+    for (m, &b) in cfg.block.iter().enumerate() {
+        if m == 0 || b != cfg.block[m - 1] {
+            out.push(m);
+        }
+    }
+    out.push(cfg.mpos.len());
+    out
+}
+
+#[inline]
+pub fn orient_estimate(cfg: &Cfg, codes: &[u8], first: &[usize]) -> (bool, i64, i64) {
+    let nblk = (first.len() - 1).min(SCREEN_BLOCKS);
+    if nblk == 0 {
+        return (false, 0, 0);
+    }
+    let total = first[nblk] as i64;
+    let f = block_score(cfg, codes, false, nblk, first);
+    if !cfg.rc || f + 2 >= total {
+        return (false, f, total);
+    }
+    let r = block_score(cfg, codes, true, nblk, first);
+    if r > f + 1 {
+        (true, r, total)
+    } else {
+        (false, f, total)
+    }
+}
+
+/// Open-addressing map fingerprint -> u32 for one batch (linear probing, cleared per batch).
+pub struct FpMap {
+    keys: Vec<u64>,
+    vals: Vec<u32>,
+    mask: usize,
+}
+
+impl FpMap {
+    pub fn new() -> FpMap {
+        FpMap { keys: Vec::new(), vals: Vec::new(), mask: 0 }
+    }
+
+    /// Clear and size for up to `n` entries (load <= 1/2).
+    pub fn reset(&mut self, n: usize) {
+        let cap = (2 * n.max(8)).next_power_of_two();
+        if self.keys.len() != cap {
+            self.keys = vec![0; cap];
+            self.vals = vec![0; cap];
+        } else {
+            self.keys.iter_mut().for_each(|k| *k = 0);
+        }
+        self.mask = cap - 1;
+    }
+
+    #[inline]
+    pub fn get(&self, fp: u64) -> Option<u32> {
+        let mut i = (fp >> 3) as usize & self.mask;
+        loop {
+            let k = self.keys[i];
+            if k == fp {
+                return Some(self.vals[i]);
+            }
+            if k == 0 {
+                return None;
+            }
+            i = (i + 1) & self.mask;
+        }
+    }
+
+    /// Insert unless present (first value wins).
+    #[inline]
+    pub fn insert_first(&mut self, fp: u64, v: u32) {
+        let mut i = (fp >> 3) as usize & self.mask;
+        loop {
+            let k = self.keys[i];
+            if k == fp {
+                return;
+            }
+            if k == 0 {
+                self.keys[i] = fp;
+                self.vals[i] = v;
+                return;
+            }
+            i = (i + 1) & self.mask;
+        }
+    }
+}

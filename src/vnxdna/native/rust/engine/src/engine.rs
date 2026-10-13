@@ -1,9 +1,7 @@
 //! The streaming pass-1 driver: IO blocks -> scan -> batch preparation (codes, orientation, header key) -> address
 //! scheduler -> decode attempts -> spill records. Memory is bounded by one IO block, its carry and one batch.
 
-use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
-use std::hash::{BuildHasherDefault, Hasher};
 use std::io::{BufWriter, Read, Write};
 use std::path::Path;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -13,10 +11,11 @@ use std::time::Instant;
 use crate::config::Cfg;
 use crate::ffi;
 use crate::io::Map;
+use crate::pool::Pool;
 use crate::pass1::{process, Fate, Flat, ProcOut, Scratch, PATH_FAST, PATH_SPEC, PATH_SYNC};
 use crate::scan::{convert, Rec, Scanner};
-use crate::sched::{frame_header, header_dist, header_raw, marker_mm, strand_windows, win_shifts, Bloom, Lossy, NFP, NS, NW,
-                   WIN_POS};
+use crate::sched::{block_firsts, frame_header, header_dist, header_raw, orient_estimate, strand_windows, win_shifts, Bloom,
+                   FpMap, Lossy, NFP, NS, NW, WIN_POS};
 
 pub enum EngErr {
     /// input outside what the engine reproduces exactly: the caller falls back to the reference path
@@ -66,15 +65,22 @@ pub const ST_SPLIT_GROUPS: usize = 29;
 pub const N_STATS: usize = 32;
 
 // ---------------------------------------------------------------------------------------------------- thread pool
-/// Run `f(chunk)` for chunks 0..nchunks on `threads` threads (the caller's thread included), chunks claimed from an
-/// atomic counter (dynamic balancing). Every thread gets its own slot of `slots`.
-fn par_chunks<S: Send, F>(threads: usize, nchunks: usize, slots: &mut [S], f: F) -> Result<(), EngErr>
+/// Run `f(chunk)` for chunks 0..nchunks on the pool's threads (the caller's included); chunks are claimed from an
+/// atomic counter (dynamic balancing). Worker t uses `slots[t]` only.
+fn par_chunks<S: Send, F>(pool: &Pool, nchunks: usize, slots: &mut [S], f: F) -> Result<(), EngErr>
 where
     F: Fn(usize, &mut S) -> Result<(), EngErr> + Sync,
 {
     let next = AtomicUsize::new(0);
     let err: Mutex<Option<EngErr>> = Mutex::new(None);
-    let work = |slot: &mut S| {
+    let nslots = slots.len();
+    let sp = SendPtr(slots.as_mut_ptr());
+    let job = |t: usize| {
+        if t >= nslots {
+            return;
+        }
+        // SAFETY: worker t is the only user of slots[t] during this call.
+        let slot = unsafe { &mut *sp.get().add(t) };
         loop {
             let c = next.fetch_add(1, Ordering::Relaxed);
             if c >= nchunks {
@@ -87,18 +93,10 @@ where
             }
         }
     };
-    let t = threads.min(nchunks).max(1);
-    if t == 1 {
-        work(&mut slots[0]);
-    } else {
-        let (first, rest) = slots.split_at_mut(1);
-        std::thread::scope(|sc| {
-            for slot in rest.iter_mut().take(t - 1) {
-                let w = &work;
-                sc.spawn(move || w(slot));
-            }
-            work(&mut first[0]);
-        });
+    if nchunks <= 1 || pool.threads() == 1 {
+        job(0);
+    } else if !pool.run(&job) {
+        return Err(EngErr::Kernel("panic in a worker thread".into()));
     }
     match err.into_inner().unwrap() {
         Some(e) => Err(e),
@@ -118,27 +116,6 @@ impl<T> SendPtr<T> {
         self.0
     }
 }
-
-// ---------------------------------------------------------------------------------------------------- local maps
-/// Hasher for keys that are already well-mixed fingerprints.
-#[derive(Default)]
-struct IdHasher(u64);
-
-impl Hasher for IdHasher {
-    fn finish(&self) -> u64 {
-        self.0
-    }
-    fn write(&mut self, bytes: &[u8]) {
-        for &b in bytes {
-            self.0 = (self.0 << 8) ^ b as u64;
-        }
-    }
-    fn write_u64(&mut self, v: u64) {
-        self.0 = v;
-    }
-}
-
-type IdMap<V> = HashMap<u64, V, BuildHasherDefault<IdHasher>>;
 
 // ---------------------------------------------------------------------------------------------------- batch state
 #[derive(Default)]
@@ -178,7 +155,6 @@ struct Batch {
     offs: Vec<i64>,
     lens: Vec<i64>,
     screen: Vec<Screen>,
-    flip: Vec<bool>,
     // outcome of attempted reads
     fate: Vec<Fate>,
     attempted: Vec<bool>,
@@ -206,6 +182,10 @@ pub struct Engine<'c> {
     pub stats: [i64; N_STATS],
     b: Batch,
     dbg: u32,
+    firsts: Vec<usize>,
+    pool: Pool,
+    gmap: FpMap,
+    hmap: FpMap,
 }
 
 fn ns(t: Instant) -> i64 {
@@ -226,7 +206,8 @@ impl<'c> Engine<'c> {
         Ok(Engine { cfg, slots, done: Lossy::new(bits.saturating_sub(1)), windex: Lossy::new(bits),
                     bloom: Bloom::new(bits + 2), acc_w, pend_w,
                     stats: [0; N_STATS], b: Batch::default(),
-                    dbg: std::env::var("VNX_ENG_DEBUG").ok().and_then(|v| v.parse().ok()).unwrap_or(0) })
+                    dbg: std::env::var("VNX_ENG_DEBUG").ok().and_then(|v| v.parse().ok()).unwrap_or(0),
+                    firsts: block_firsts(cfg), pool: Pool::new(cfg.threads), gmap: FpMap::new(), hmap: FpMap::new() })
     }
 
     /// Pass 1 over a whole read file: memory-mapped when possible, else read in blocks.
@@ -367,8 +348,6 @@ impl<'c> Engine<'c> {
             }
             b.screen.clear();
             b.screen.resize(n, Screen::default());
-            b.flip.clear();
-            b.flip.resize(n, false);
         }
         let chunk = 2048usize;
         let nchunks = (n + chunk - 1) / chunk;
@@ -377,12 +356,12 @@ impl<'c> Engine<'c> {
             let codes = SendPtr(b.codes.as_mut_ptr());
             let quals = SendPtr(b.quals.as_mut_ptr());
             let scr = SendPtr(b.screen.as_mut_ptr());
-            let flp = SendPtr(b.flip.as_mut_ptr());
+            let firsts = &self.firsts;
             let offs = &b.offs;
             let lens = &b.lens;
             let dedup = cfg.dedup;
             let t = cfg.t as i64;
-            par_chunks(cfg.threads, nchunks, &mut self.slots, |c, slot: &mut Slot| {
+            par_chunks(&self.pool, nchunks, &mut self.slots, |c, _slot: &mut Slot| {
                 let a = c * chunk;
                 let e = (a + chunk).min(n);
                 let base = offs[a] as usize;
@@ -405,31 +384,6 @@ impl<'c> Engine<'c> {
                         }
                     }
                 }
-                // orientation pre-pass of the chunk (pass1._orientation, native kernel): its decision is reused by the
-                // attempts, and the screen reads every read in the orientation it chose
-                let m = e - a;
-                slot.offs.clear();
-                for i in a..e {
-                    slot.offs.push(offs[i] - base as i64);
-                }
-                slot.flip8.clear();
-                slot.flip8.resize(m, 0);
-                if cfg.rc && !cfg.mpos.is_empty() {
-                    // SAFETY: offsets/lengths describe reads inside cs; flip8 has m entries.
-                    let rc = unsafe {
-                        ffi::vnx_or_scan(m as i64, cs.as_ptr(), cs.len() as i64, lens[a..e].as_ptr(), slot.offs.as_ptr(),
-                                         cfg.mpos.len() as i64, cfg.mpos.as_ptr(), cfg.want.as_ptr(), cfg.block.as_ptr(),
-                                         cfg.nblocks as i64, cfg.orient_margin, cfg.orient_shift,
-                                         slot.flip8.as_mut_ptr())
-                    };
-                    if rc != 0 {
-                        return Err(EngErr::Kernel(format!("orientation kernel error {}", rc)));
-                    }
-                }
-                for i in a..e {
-                    // SAFETY: read i belongs to this chunk only.
-                    unsafe { *flp.get().add(i) = slot.flip8[i - a] != 0 };
-                }
                 if !dedup {
                     return Ok(());
                 }
@@ -437,8 +391,8 @@ impl<'c> Engine<'c> {
                     let o = offs[i] as usize - base;
                     let rd = &cs[o..o + lens[i] as usize];
                     let mut sc = Screen::default();
-                    let rc = slot.flip8[i - a] != 0;
-                    sc.score = (rd.len() as i64 - t).abs() * 64 + marker_mm(cfg, rd, rc);
+                    let (rc, agree, total) = orient_estimate(cfg, rd, firsts);
+                    sc.score = (rd.len() as i64 - t).abs() * 64 + (total - agree);
                     let (hdr, hk) = header_raw(cfg, rd, rc);
                     sc.hdr = hdr;
                     sc.hk = hk.unwrap_or(0);
@@ -496,29 +450,39 @@ impl<'c> Engine<'c> {
                 }
                 x
             }
-            let mut local: IdMap<u32> = IdMap::default();
-            local.reserve(n * NW);
-            let mut by_hk: IdMap<u32> = IdMap::default();
+            let local = &mut self.gmap;
+            local.reset(n * NW);
+            let by_hk = &mut self.hmap;
+            by_hk.reset(n);
             let mut group_of: Vec<u32> = vec![u32::MAX; n];
             for i in 0..n {
                 let sc = &self.b.screen[i];
                 let mut g = u32::MAX;
                 let mut any_win = false;
-                for &x in sc.win.iter().filter(|&&x| x != 0) {
-                    any_win = true;
-                    if let Some(&h) = local.get(&x) {
-                        let r = root(&mut parent, h);
-                        if g == u32::MAX {
-                            g = r;
-                        } else if r != g {
-                            let (lo, hi) = if r < g { (r, g) } else { (g, r) };
-                            parent[hi as usize] = lo;
-                            g = lo;
+                // shift-0 windows first; the shifted readings only when no shift-0 window links the read
+                for pass in 0..2 {
+                    for (k, &x) in sc.win.iter().enumerate() {
+                        if x == 0 || (k % NS == 0) != (pass == 0) {
+                            continue;
                         }
+                        any_win = true;
+                        if let Some(h) = local.get(x) {
+                            let r = root(&mut parent, h);
+                            if g == u32::MAX {
+                                g = r;
+                            } else if r != g {
+                                let (lo, hi) = if r < g { (r, g) } else { (g, r) };
+                                parent[hi as usize] = lo;
+                                g = lo;
+                            }
+                        }
+                    }
+                    if g != u32::MAX {
+                        break;
                     }
                 }
                 if g == u32::MAX && !any_win && sc.hk != 0 {
-                    if let Some(&h) = by_hk.get(&sc.hk) {
+                    if let Some(h) = by_hk.get(sc.hk) {
                         g = root(&mut parent, h);
                     }
                 }
@@ -529,11 +493,11 @@ impl<'c> Engine<'c> {
                 group_of[i] = g;
                 for (k, &x) in sc.win.iter().enumerate() {
                     if x != 0 && k % NS == 0 {
-                        local.entry(x).or_insert(g);
+                        local.insert_first(x, g);
                     }
                 }
                 if sc.hk != 0 {
-                    by_hk.entry(sc.hk).or_insert(g);
+                    by_hk.insert_first(sc.hk, g);
                 }
             }
             // CSR of the final groups, members in (score, read) order
@@ -574,7 +538,7 @@ impl<'c> Engine<'c> {
                 let (cs, mbr) = (&cstart, &mb);
                 let gch = 1024usize;
                 let dbg = self.dbg;
-                par_chunks(cfg.threads, (ng + gch - 1) / gch, &mut self.slots, |c, _s: &mut Slot| {
+                par_chunks(&self.pool, (ng + gch - 1) / gch, &mut self.slots, |c, _s: &mut Slot| {
                     for g in c * gch..((c + 1) * gch).min(ng) {
                         let hit = dbg & 2 == 0 && mbr[cs[g]..cs[g + 1]].iter().any(|&i| {
                             let sc = &screen[i];
@@ -800,7 +764,6 @@ impl<'c> Engine<'c> {
         let quals = &b.quals;
         let offs = &b.offs;
         let lens = &b.lens;
-        let flip = &b.flip;
         let out = (
             SendPtr(b.fate.as_mut_ptr()),
             SendPtr(b.attempted.as_mut_ptr()),
@@ -817,7 +780,7 @@ impl<'c> Engine<'c> {
             SendPtr(b.vhdr.as_mut_ptr()),
         );
         let rc_skipped = AtomicUsize::new(0);
-        par_chunks(cfg.threads, nchunks, &mut self.slots, |c, slot: &mut Slot| {
+        par_chunks(&self.pool, nchunks, &mut self.slots, |c, slot: &mut Slot| {
             let sel = &todo[c * per..((c + 1) * per).min(m)];
             slot.codes.clear();
             slot.quals.clear();
@@ -833,11 +796,25 @@ impl<'c> Engine<'c> {
                     slot.quals.extend_from_slice(&quals[a..a + l]);
                 }
             }
-            // the orientation the screen's pre-pass chose (pass1._orientation), applied to the local copies
+            // orientation pre-pass (pass1._orientation, native kernel) and flips, on the local copies
             let k = sel.len();
+            slot.flip8.clear();
+            slot.flip8.resize(k, 0);
+            if cfg.rc && !cfg.mpos.is_empty() {
+                // SAFETY: offsets/lengths describe reads inside slot.codes; flip8 has k entries.
+                let rc = unsafe {
+                    ffi::vnx_or_scan(k as i64, slot.codes.as_ptr(), slot.codes.len() as i64, slot.lens.as_ptr(),
+                                     slot.offs.as_ptr(), cfg.mpos.len() as i64, cfg.mpos.as_ptr(), cfg.want.as_ptr(),
+                                     cfg.block.as_ptr(), cfg.nblocks as i64, cfg.orient_margin, cfg.orient_shift,
+                                     slot.flip8.as_mut_ptr())
+                };
+                if rc != 0 {
+                    return Err(EngErr::Kernel(format!("orientation kernel error {}", rc)));
+                }
+            }
             slot.flip.clear();
             for j in 0..k {
-                let fl = flip[sel[j]];
+                let fl = slot.flip8[j] != 0;
                 slot.flip.push(fl);
                 if fl {
                     let a = slot.offs[j] as usize;

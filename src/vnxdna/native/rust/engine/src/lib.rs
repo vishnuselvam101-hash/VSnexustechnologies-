@@ -17,6 +17,7 @@ mod ffi;
 pub mod frame;
 pub mod io;
 pub mod pass1;
+pub mod pool;
 pub mod scan;
 pub mod sched;
 
