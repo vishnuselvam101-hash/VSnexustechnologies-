@@ -1,0 +1,4 @@
+20:32:23 start A/B bench; build/v12 00bd160 vs v12-base 51550df; no other load planned
+20:37:39 niced small unit tests (tests/v12/test_pass1_gather.py, ~1 CPU, seconds) in v12-dev during indel-w2
+20:38:18 niced (19) single process pinned to CPU 7: scratch pass-1 old/new equivalence check for v12-dev (a few minutes)
+20:58:35 bench finished

@@ -6,7 +6,8 @@ import hashlib
 import os
 import shutil
 import time
-from collections import Counter
+from collections import Counter, deque
+from itertools import chain
 from pathlib import Path
 
 import numpy as np
@@ -17,10 +18,12 @@ from vnxdna.core.errors import VNXDecodeError, VNXIntegrityError, VNXKeyError
 from vnxdna.core.util import archive_mismatch, atomic_output, peak_rss_bytes
 from vnxdna.core.version import FRAME_VERSION, codec_id
 from vnxdna.dnaenc.layout import KIND_DATA, Layout
+from vnxdna.native.heap import trim_heap
 from vnxdna.recovery.consensus import _consensus_symbols, resolve_duplicates
 from vnxdna.recovery.options import DecodeOptions, DecodeResult
 from vnxdna.recovery.spill import Spill
 from vnxdna.recovery.superblock import _decode_superblock
+from vnxdna.sync.smart.recovery import report_value
 from vnxdna.dnaenc.superblock import Superblock, group_k
 
 
@@ -50,9 +53,67 @@ def _stripe_groups(sb: Superblock, groups: set) -> set:
     return out
 
 
+def _bucket_consensus(spill_dir: str, b: int, acc_dtype: np.dtype, pend_dtype: np.dtype, tag: int, total: int,
+                      n_sym: dict[int, int], lay: Layout, opt: DecodeOptions) -> tuple[np.ndarray, np.ndarray, int, Counter]:
+    """Parallel pass 2, one bucket (runs in a worker process): exactly the serial loop's steps for one bucket of a full
+    decode up to consensus. ``n_sym``: group → outer symbols per row, for the bucket's groups still to decode. Returns
+    (addresses (n, 4) int64, payloads (n, payload_bytes) uint8, duplicate conflicts, stats delta): two arrays, so the
+    result crosses the process boundary as two buffers instead of one pickled object per symbol."""
+    trim_heap()                 # the worker's freed pass-1 (or previous bucket) temporaries leave its RSS first
+    d = Path(spill_dir)
+    acc = np.fromfile(d / f"acc{b}.bin", dtype=acc_dtype)
+    pend = np.fromfile(d / f"pend{b}.bin", dtype=pend_dtype)
+    keep = (acc["kind"] == KIND_DATA) & (acc["tag"] == tag) & (acc["group"] < total)
+    if not keep.all():
+        acc = acc[keep]         # one copy, not two; none when every record is this archive's data (the usual case)
+    del keep
+    symbols, conflicts = resolve_duplicates(acc)
+    del acc                     # the payloads live on in the sorted copy the symbols view
+    missing = set()
+    for g, n in n_sym.items():
+        missing.update((KIND_DATA, tag, g, s_) for s_ in range(n) if (KIND_DATA, tag, g, s_) not in symbols)
+    delta: Counter = Counter()
+    symbols.update(_consensus_symbols(pend, symbols, lay, opt, delta, missing, None))
+    del pend
+    n = len(symbols)
+    keys = np.fromiter(chain.from_iterable(symbols.keys()), dtype=np.int64, count=4 * n).reshape(n, 4)
+    pay = np.stack(list(symbols.values())) if n else np.zeros((0, lay.payload_bytes), dtype=np.uint8)
+    pay = np.ascontiguousarray(pay, dtype=np.uint8)
+    del symbols
+    trim_heap()
+    return keys, pay, conflicts, delta
+
+
+def _bucket_results(pool, spill: Spill, tag: int, total: int, n_sym: dict[int, dict[int, int]], lay: Layout,
+                    opt: DecodeOptions):
+    """Yield ``_bucket_consensus`` results in bucket order, at most 2 × workers buckets in flight (bounded memory, as
+    the pass-1 window)."""
+    window: deque = deque()
+    nxt = 0
+    depth = 2 * max(1, opt.workers)
+    while nxt < spill.B or window:
+        while nxt < spill.B and len(window) < depth:
+            window.append(pool.submit(_bucket_consensus, str(spill.dir), nxt, spill.acc_dtype, spill.pend_dtype, tag,
+                                      total, n_sym[nxt], lay, opt))
+            nxt += 1
+        yield window.popleft().result()
+
+
+def _merge_stats(stats: Counter, delta: Counter) -> None:
+    """Add a worker's stats delta: plain counts add; nested Counters (``_indel``) merge, as in the serial loop."""
+    for k, v in delta.items():
+        if isinstance(v, Counter):
+            if isinstance(stats.get(k), Counter):
+                stats[k].update(v)
+            else:
+                stats[k] = v
+        else:
+            stats[k] += v
+
+
 def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage: dict, t0: float, output, overwrite, partial_dir,
            select, select_dir, key, passphrase, tmp_root, planner=None, ev=None, recover_groups=None,
-           allow_unencrypted=False, cluster=None) -> DecodeResult:
+           allow_unencrypted=False, cluster=None, pool=None) -> DecodeResult:
     if planner is None:
         from vnxdna.recovery.planner import RecoveryPlanner
         planner = RecoveryPlanner()
@@ -143,8 +204,35 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
         def run(groups_filter: set[int] | None, done: set[int]) -> None:
             nonlocal decoded, conflicts, done_rows
             done_rows = done
+            # V12 parallel pass 2: a full decode with the default observers hands each bucket's duplicate resolution
+            # and consensus to the pass-1 worker pool; results are taken in bucket order, so output never depends on
+            # the worker count. Random access, read clustering and stage counters keep the serial loop below.
+            ahead = None
+            if pool is not None and groups_filter is None and cluster is None and sc is None:
+                ahead = _bucket_results(pool, spill, tag, total, {
+                    b: {g: codec.symbols_for(row_k(g)) for g in range(b, total, spill.B) if g not in done}
+                    for b in range(spill.B)}, lay, opt)
             for b in range(spill.B):
                 planner.checkpoint("pass 2")
+                if ahead is not None:
+                    keys, pay, c, delta = next(ahead)
+                    conflicts += c
+                    _merge_stats(stats, delta)
+                    targets_b = [g for g in range(b, total, spill.B) if g not in done]
+                    by_group = {}
+                    for i, (kd, tg, g, s) in enumerate(keys.tolist()):
+                        if kd == KIND_DATA and tg == tag:
+                            by_group.setdefault(g, {})[s] = pay[i]
+                    for g in targets_b:
+                        k = row_k(g)
+                        syms = by_group.get(g, {})
+                        try:
+                            data = codec.decode_block(syms, k, P, g) if hasattr(codec, "decode_block") else codec.decode(syms, k, P)
+                        except VNXDecodeError as error:
+                            row_failed(g, syms, None, error)
+                            continue
+                        row_decoded(g, data, syms)
+                    continue
                 acc, pend = spill.load(b)
                 acc = acc[(acc["kind"] == KIND_DATA) & (acc["tag"] == tag)]
                 acc = acc[acc["group"] < total]
@@ -255,7 +343,7 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
                   "reads": dict(stats), **sb_info, "duplicate_conflicts": conflicts}
         if v6 is not None:
             report["outer_v6"] = v6.report()
-        indel = dict(indel or {})
+        indel = {k: report_value(v) for k, v in (indel or {}).items()}      # exact float sums → float
         softd = {k[5:]: v for k, v in indel.items() if k.startswith("soft_")}
         indel = {k: v for k, v in indel.items() if not k.startswith("soft_")}
         if opt.indel_recovery == "smart":

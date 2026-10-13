@@ -12,6 +12,7 @@ the same results more slowly.
 | `rs`: V6 inner Reed-Solomon (GF(256)) decoder | `vnxdna.v6.native_rs` | `src/vnxdna/v6/native/rs.c` | `vnxdna/v6/_vnx_rs*.so` | `vnxdna.v4.rs_fast` (NumPy) |
 | `cluster`: V7 read clustering (sketch, candidate pairs, banded edit distance, verification), forward-backward consensus calls and (V9, ABI 2) the full-template polish edit costs (`vnx_cl_edit_costs` = `polish.edit_costs_reference`) | `vnxdna.native.cluster` | `src/vnxdna/native/c/cluster.c` | `vnxdna/_vnx_cluster*.so` | `vnxdna.recovery.cluster` (NumPy; the `*_reference` functions) |
 | `strand`: encode strand builder (scrambler variant search, inner RS parity, 2-bit mapping, sync markers, constraint screen; hybrid architecture, ABI 1) | `vnxdna.native.strand` | `src/vnxdna/native/c/strand.c` | `vnxdna/_vnx_strand*.so` | `vnxdna.dnaenc.frame4` (NumPy) |
+| `orient`: V12 pass-1 orientation pre-pass (shift-tolerant marker agreement, forward vs reverse complement; ABI 1) | `vnxdna.native.orient` | `src/vnxdna/native/c/orient.c` | `vnxdna/_vnx_orient*.so` | `vnxdna.recovery.pass1._orientation_reference` (NumPy) |
 | `integrity`: batched frame CRC-32 (**Rust**, ABI 1) | `vnxdna.native.integrity` | `src/vnxdna/native/rust/integrity/` (crate `vnx_integrity`) | `vnxdna/_vnx_integrity*.so` | `vnxdna.core.crc` (NumPy) |
 | `outerlist`: outer-code list decoding of short rows (**C++20**, ABI 1) | `vnxdna.native.outerlist` | `src/vnxdna/native/cpp/outerlist.cpp` | `vnxdna/_vnx_outerlist*.so` | `vnxdna.recovery.outer_list` (Python) |
 
@@ -45,6 +46,7 @@ python -m vnxdna.v6.native_reads build [--strict]       # src/vnxdna/v6/native/l
 python -m vnxdna.v6.native_rs build [--strict]          # src/vnxdna/v6/native/libvnx_rs.so
 python -m vnxdna.native.cluster build [--strict]        # src/vnxdna/native/c/libvnx_cluster.so
 python -m vnxdna.native.strand build [--strict]         # src/vnxdna/native/c/libvnx_strand.so
+python -m vnxdna.native.orient build [--strict]         # src/vnxdna/native/c/libvnx_orient.so
 python -m vnxdna.native.integrity build [--strict]      # cargo; src/vnxdna/native/c/libvnx_integrity.so (Rust)
 python -m vnxdna.native.outerlist build [--strict]      # C++20; src/vnxdna/native/c/libvnx_outerlist.so
 ```
@@ -69,6 +71,8 @@ detect an in-place library that is older than a changed C source; `native_status
 | `VNXDNA_CLUSTER_THREADS` | 1-64 (default 1) | threads of the forward-backward and polish kernels within one decode process; results do not depend on it. The polish kernel needs 8 (T + 1)(2B + 1) bytes per thread (about 67 MB at the domain extremes). Memory scales with it: up to about 0.5 GB per call at the domain extremes (template 8192, band 512), times this count (`benchmarks/v7/native_cluster/README.md`) |
 | `VNXDNA_STRAND_BACKEND` | `auto` (default), `native`, `reference` | encode strand builder, same rules as the read parser |
 | `VNXDNA_STRAND_LIB` | path | strand-builder library to load first |
+| `VNXDNA_ORIENT_BACKEND` | `auto` (default), `native`, `reference` | V12 orientation pre-pass of the decoder, same rules as the read parser |
+| `VNXDNA_ORIENT_LIB` | path | orientation library to load first |
 | `VNXDNA_INTEGRITY_BACKEND` | `auto` (default), `native`, `reference` | Rust frame CRC-32 kernel, same rules as the read parser |
 | `VNXDNA_INTEGRITY_LIB` | path | integrity library to load first |
 | `VNXDNA_OUTERLIST_BACKEND` | `auto` (default), `native`, `reference` | C++ outer-list kernel (used only with `outer_list` on), same rules |

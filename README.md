@@ -1,12 +1,15 @@
 # VNX-DNA
 
-**Current release: v11.0.0 (production-oriented release: SIMD aligner levels, adaptive dispatcher, memory fixes,
-VNX-Secure gate, red-team security fixes; tag `v11.0.0`).** Status: 4047 tests pass (0 failed); 4 MiB indel decode
-1.17x (4 workers) and 1.28x (1 worker) faster than v10.0.0, other paths unchanged (SIMULATED, one host,
-[docs/V11_BENCHMARK_REPORT.md](docs/V11_BENCHMARK_REPORT.md)); the 10 MB nanopore-like case is still an explicit
-failure (deferred). Released versions are the git tags `v4.0.0` … `v11.0.0`. The package version is
-`11.0.0` (`vnx-dna --version`). Archive manifests carry a separate, frozen format stamp (`6.0.0.dev0`), so archive byte
-identity across V6–V11 is unchanged and pinned by the compatibility tests.
+**Current release: v12.0.0 (performance release: parallel pass 2, shift-tolerant orientation pre-pass with a native
+kernel, flat pass-1 bookkeeping, exact statistics across worker counts; tag `v12.0.0`).** Status: 4142 tests pass
+(0 failed); 4 MiB indel decode 1.23x (4 workers), 1.11x (1 worker) and 1.34x (8 workers) faster than v11.0.0, output
+byte-identical, no scenario slower beyond the A/A noise band (SIMULATED, one host,
+[docs/V12_BENCHMARK_REPORT.md](docs/V12_BENCHMARK_REPORT.md)). The pre-registered targets T1 (w4 >= 1.25) and T2
+(w1 >= 1.15) are not met (1.23 and 1.11); peak RSS at 4 workers is up to 1.23x v11 (T5 not met). The low-coverage
+and real-data scope of the V12 brief is not in this release. The 10 MB nanopore-like case is still an explicit
+failure (deferred). Released versions are the git tags `v4.0.0` … `v12.0.0`. The package version is
+`12.0.0` (`vnx-dna --version`). Archive manifests carry a separate, frozen format stamp (`6.0.0.dev0`), so archive byte
+identity across V6–V12 is unchanged and pinned by the compatibility tests.
 Release notes per version: [CHANGELOG.md](CHANGELOG.md) and `docs/V<N>_COMPLETION_REPORT.md`.
 
 VNX-DNA is a CPU-only software stack for the digital side of DNA

@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
+from fractions import Fraction
 
 import numpy as np
 
@@ -546,15 +547,29 @@ def plan_reads(geom: Geometry, reads: list, quals: list | None, proj: Projection
     return plans
 
 
+def exact_term(x: float):
+    """A float statistic as an exact term, so that sums of such terms are the same whatever the grouping: the decoder
+    merges per-batch, per-chunk and per-bucket counters, and the chunking depends on the worker count (V12 parallel
+    pass 2, deferred-round chunks). Float addition is not associative; ``Fraction`` addition is. Non-finite values stay
+    floats (``inf`` absorbs the sum). The report converts the sum back to float (``report_value``)."""
+    return Fraction(x) if math.isfinite(x) else x
+
+
+def report_value(v):
+    """The reportable (JSON) form of a counter: exact float sums back to float, everything else unchanged."""
+    return float(v) if isinstance(v, Fraction) else v
+
+
 def summarize_outcomes(plans: list[ReadPlan], outs: list[ReadOutcome], v4_erased: np.ndarray) -> dict:
-    """Counters for the decoder report (no truth): attempts, phases, window confidence, trials, erasures V4 vs V5."""
+    """Counters for the decoder report (no truth): attempts, phases, window confidence, trials, erasures V4 vs V5.
+    Float sums are exact terms (``exact_term``), so merging batch counters in any grouping gives one value."""
     c: dict = {"attempted": len(outs)}
     def add(k, v=1):
         c[k] = c.get(k, 0) + v
     for p, o, v4e in zip(plans, outs, v4_erased):
         add(f"phase_{o.phase}")
         add("trials", o.trials)
-        add("false_accept_bound", o.false_accept_bound)
+        add("false_accept_bound", exact_term(o.false_accept_bound))
         for st in o.window_status:
             add(f"windows_{st}")
         if o.accepted:

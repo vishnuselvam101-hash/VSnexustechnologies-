@@ -9,6 +9,15 @@ python -m pytest -m "not slow" # skip the bounded-memory measurement
 ruff check src tests research # lint (pyflakes rules), also run in CI
 ```
 
+## V12.0.0 release suite
+
+Counts at the release commit: see docs/V12_COMPLETION_REPORT.md §Validation (**4142 passed, 4 skipped, 0 failed** at
+the pre-release merge f712d91, `pytest -n 6 tests`, 6 workers, 378 s, all eight native kernels built; the release
+commit changes only docs and release metadata). Skips: `tests/v5/test_native_align_levels.py` (this CPU supports every
+level) and three opt-in install tests (`VNXDNA_INSTALL_TEST=1`). Add `vnxdna.native.orient` to the kernel build loop
+below. V12 suites: `tests/v12/` (exact statistics across worker counts, orientation pre-pass, parallel pass 2, pass-1
+gathers, native orientation kernel: equivalence on every layout, golden hashes, fuzz, sanitizers).
+
 ## V11.0.0 release suite
 
 Counts at the release commit: **4047 passed, 7 skipped, 0 failed** (`pytest -n 6 tests`, 6 workers, 359.98 s, all

@@ -23,6 +23,7 @@ KERNELS = {
     "vnxdna.v6._vnx_rs": "src/vnxdna/v6/native/rs.c",
     "vnxdna._vnx_cluster": "src/vnxdna/native/c/cluster.c",
     "vnxdna._vnx_strand": "src/vnxdna/native/c/strand.c",
+    "vnxdna._vnx_orient": "src/vnxdna/native/c/orient.c",
 }
 
 #: Rust kernels (built with cargo by setup.py when a Rust toolchain is present, else skipped like a failed C kernel):

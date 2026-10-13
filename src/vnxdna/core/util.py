@@ -191,3 +191,4 @@ def peak_rss_bytes() -> int:
     """Peak RSS of this process (and waited-for children reported separately by callers)."""
     import resource
     return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024
+

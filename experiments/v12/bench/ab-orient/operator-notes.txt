@@ -1,0 +1,2 @@
+22:25:53 start bench: v12-dev 812ed7d (work/v12-orient-native) vs v12-base 51550df; host idle (full suite finished 22:26), no other load planned
+22:50:49 bench finished

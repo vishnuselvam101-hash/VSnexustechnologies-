@@ -30,7 +30,7 @@ import numpy as np
 from vnxdna.core.errors import VNXConfigurationError
 from vnxdna.dnaenc.layout import Layout
 from vnxdna.dnaenc.frame4 import decode_frames
-from vnxdna.sync.smart.recovery import _false_accept
+from vnxdna.sync.smart.recovery import _false_accept, exact_term
 from vnxdna.recovery.soft import symbols as ss
 
 MODES = ("off", "erasure", "chase", "auto")
@@ -220,8 +220,9 @@ def summarize(outs: list[SoftOutcome]) -> dict:
         c[f"mode_{o.mode}"] = c.get(f"mode_{o.mode}", 0) + 1
         c["trials"] = c.get("trials", 0) + o.trials
         c["candidates"] = c.get("candidates", 0) + o.candidates
-        c["false_accept_bound"] = c.get("false_accept_bound", 0.0) + o.false_accept_bound
-        c["entropy_bits_sum"] = c.get("entropy_bits_sum", 0.0) + o.entropy_bits
+        # exact terms: the decoder merges these counters per batch/chunk/bucket in a worker-dependent grouping
+        c["false_accept_bound"] = c.get("false_accept_bound", 0) + exact_term(o.false_accept_bound)
+        c["entropy_bits_sum"] = c.get("entropy_bits_sum", 0) + exact_term(o.entropy_bits)
         if o.accepted:
             c["recovered"] = c.get("recovered", 0) + 1
             c["accepted_rank_sum"] = c.get("accepted_rank_sum", 0) + (o.accepted_rank or 0)
