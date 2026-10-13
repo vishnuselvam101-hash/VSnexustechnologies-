@@ -3,7 +3,7 @@
 SIMULATED: every input is produced by the VNX-DNA channel simulator; no DNA was synthesised, stored or sequenced.
 One host, one channel family; the numbers are this host's, not a product claim. Committed runs:
 `experiments/v12/bench/baseline-aa` (A/A noise floor), `ab-pass2` (00bd160), `ab-pass1` (ad9bff6),
-`ab-orient` (812ed7d, the release code). Each directory holds `e2e.jsonl`, `e2e-summary.json`, `summary.txt`,
+`ab-orient` (812ed7d), `ab-session5` (521adb0, the release code: session-5 memory and pass-1 fast paths). Each directory holds `e2e.jsonl`, `e2e-summary.json`, `summary.txt`,
 `vs-aa.txt`, `run.log`, `operator-notes.txt` and a README.
 
 ## 1. Method
@@ -52,6 +52,33 @@ Worker scaling of the 4 MiB indel decode vs 1 worker: v11 w2/w4/w8 = 1.75/2.85/3
 Absolute peak process-tree RSS at 4 workers (MiB, median): indel 413 → 435, clean 384 → 462, substitution 404 → 497,
 dropout 410 → 486, reverse complement 414 → 444, 16 MiB 419 → 454.
 
+## 3b. Results (ab-session5, release code 521adb0 vs v11.0.0) — supersedes §3
+
+Session 5 (docs/V12_SESSION5_REPORT.md) bounded the pass-1 gather index, removed the pass-2 bucket transients, trims
+the worker heaps between stages and replaced a length-4 axis reduction in the frame erasure packing. Same harness,
+seeds, inputs and sampler as §3:
+
+| scenario | v11 median s | v12 median s | ratio [CI95] | A/A [CI95] | verdict | RSS v12/v11 |
+|---|---|---|---|---|---|---|
+| indel-w1 | 10.721 | 8.640 | 1.238 [1.178, 1.259] | 0.964 [0.915, 1.002] | faster beyond noise | 0.97 |
+| indel-w2 | 6.014 | 4.927 | 1.257 [1.180, 1.321] | 0.988 [0.964, 0.998] | faster beyond noise | 1.00 |
+| indel-w4 | 3.771 | 2.760 | 1.377 [1.289, 1.385] | 1.008 [0.978, 1.046] | faster beyond noise | 1.01 |
+| indel-w8 | 2.718 | 1.914 | 1.412 [1.391, 1.512] | 0.992 [0.981, 1.005] | faster beyond noise | 0.99 |
+| indel-rc-w4 | 4.177 | 3.119 | 1.339 [1.329, 1.417] | 1.024 [0.995, 1.048] | faster beyond noise | 1.00 |
+| indel-dropout-w4 | 4.418 | 3.327 | 1.327 [1.272, 1.385] | 0.989 [0.979, 1.008] | faster beyond noise | 1.01 |
+| clean-w4 | 1.433 | 1.289 | 1.120 [1.069, 1.252] | 0.956 [0.941, 1.047] | faster beyond noise | 1.01 |
+| substitution-w4 | 2.387 | 1.984 | 1.179 [1.157, 1.209] | 1.000 [0.931, 1.039] | faster beyond noise | 0.97 |
+| indel-64k-w1 | 0.303 | 0.280 | 1.086 [0.998, 1.103] | 0.973 [0.937, 0.991] | faster beyond noise | 0.77 (one sampled pair) |
+| indel-16m-w4 | 14.409 | 9.696 | 1.486 [1.441, 1.525] | 1.005 [0.946, 1.017] | faster beyond noise | 1.02 |
+| encode-1m-w1 | 0.340 | 0.337 | 1.003 [0.957, 1.016] | 0.987 [0.888, 1.109] | within noise | 1.01 |
+| encode-4m-w1 | 1.294 | 1.309 | 0.975 [0.935, 1.071] | 1.010 [0.996, 1.071] | within noise | 1.00 |
+| encode-4m-w4 | 0.420 | 0.421 | 0.982 [0.910, 1.017] | 1.007 [0.935, 1.146] | within noise | 0.97 |
+
+Outcome and output identical on every one of the 63 rows; false successes 0. Worker scaling of the 4 MiB indel
+decode vs 1 worker: v11 w2/w4/w8 = 1.78/2.84/3.94; v12 = 1.75/3.13/4.51. Absolute peak process-tree RSS at 4 workers
+(MiB, median): indel 410 → 416, clean 388 → 389, substitution 414 → 402, dropout 412 → 420, reverse complement
+416 → 418, 16 MiB 417 → 427.
+
 ## 4. Progression within V12 (same harness, same v11.0.0 base)
 
 | scenario | ab-pass2 (00bd160: parallel pass 2 + shifted scan) | ab-pass1 (ad9bff6: + gathers, early exit, array returns) | ab-orient (812ed7d: + native kernel) |
@@ -73,11 +100,12 @@ the native kernel removed the scan from the profile (1.37 s → 0.27 s on 655 75
 
 ## 5. Targets (docs/V12_PLAN.md §4) — disclosed honestly
 
-T1 (w4 ≥ 1.25): **not met**, 1.228 (CI lower bound 1.205 > 1.0). T2 (w1 ≥ 1.15): **not met**, 1.114.
-T3 (nothing slower than 0.95): met on the re-run; the committed encode-4m-w4 row (0.940) is within the A/A band.
-T4 (identical output, 0 false successes): met. T5 (RSS ≤ 1.10 on every decode scenario): **not met** (1.19–1.23 on
-dropout, clean, substitution; 1.11 at w2). T6 (scaling reported, serial fraction explained): scaling reported, the
-serial fraction is not yet broken down. T7 (suite 0 failures, ≥ 4051 passed): met, 4142 passed.
+At the release code 521adb0 (§3b): T1 (w4 ≥ 1.25, CI lower bound > 1.0): met, 1.377 [1.289, 1.385]. T2 (w1 ≥ 1.15):
+met, 1.238. T3 (nothing slower than 0.95): met; the lowest row, encode-4m-w1 0.975, is within the A/A band. T4
+(identical output, 0 false successes): met. T5 (RSS ≤ 1.10 on every decode scenario): met, highest 1.017. T6 (scaling
+reported, serial fraction explained): docs/V12_SESSION5_REPORT.md §E. T7 (suite 0 failures, ≥ 4051 passed): met,
+4209 passed. At the earlier 812ed7d (§3) T1, T2 and T5 were not met (1.228, 1.114, RSS up to 1.23); the progression
+is in §4 and the causes in docs/V12_SESSION5_REPORT.md §B and §D.
 
 ## 6. Reproduction
 

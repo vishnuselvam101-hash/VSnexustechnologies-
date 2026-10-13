@@ -33,10 +33,15 @@ Benchmarks: docs/V12_BENCHMARK_REPORT.md. The low-coverage and real-data robustn
   rational terms and convert once; `tests/v12/test_exact_stats.py` fails on the v11.0.0 code.
 
 ### Performance (SIMULATED, 4 MiB, 1 %/0.2 %/0.2 % indel channel, coverage 5, one 4C/8T host, v11.0.0 = 1.0)
-- Decode: 1 worker 1.11x, 2 workers 1.15x, 4 workers 1.23x, 8 workers 1.34x; reverse-complement 1.24x, dropout 1.27x,
-  substitution 1.17x, 16 MiB 1.32x; clean, 64 KiB and encode within the A/A noise band. Pre-registered targets T1
-  (4 workers ≥ 1.25) and T2 (1 worker ≥ 1.15) are **not met**; T5 (peak RSS ≤ 1.10x) is **not met** (up to 1.23x at
-  4 workers on clean/substitution inputs). Details and every CI: docs/V12_BENCHMARK_REPORT.md.
+- Decode: 1 worker 1.24x, 2 workers 1.26x, 4 workers 1.38x, 8 workers 1.41x; reverse-complement 1.34x, dropout 1.33x,
+  substitution 1.18x, clean 1.12x, 64 KiB 1.09x, 16 MiB 1.49x; encode within the A/A noise band. Peak process-tree RSS
+  within 2 % of v11.0.0 on every decode scenario. Pre-registered targets T1–T7 met (docs/V12_BENCHMARK_REPORT.md §3b,
+  docs/V12_SESSION5_REPORT.md).
+- Session 5: the pass-1 exact-length gather runs in 512-row chunks (one 20 MiB int64 index per batch stayed resident in
+  every worker); pass-2 bucket consensus holds one filtered copy of the records and no key matrix; workers and the main
+  process return freed heap pages to the OS between stages (`vnxdna.native.heap.trim_heap`, glibc `malloc_trim`);
+  frame byte erasures are packed with one uint32 comparison instead of a length-4 axis reduction. Output unchanged;
+  tests/v12/test_pass2_memory.py and tests/v12/test_pass1_fastpaths.py pin each form to the one it replaces (+67 tests).
 
 ## 11.0.0 (tag `v11.0.0`; production-oriented release; docs/V11_COMPLETION_REPORT.md)
 

@@ -1,0 +1,1344 @@
+{
+  "label": "SIMULATED",
+  "host": {
+    "cpu": "Intel(R) Xeon(R) Gold 6240 CPU @ 2.60GHz",
+    "logical_cpus": 8,
+    "available_cpus": 8,
+    "python": "3.12.3",
+    "kernel": "6.8.0-146-generic"
+  },
+  "method": "paired per seed, alternating order, 1 warm-up per config per scenario discarded; ratio = v11 seconds / v12 seconds (>1 = V12 faster); 95 % CI = percentile bootstrap of the median ratio (10000 resamples, seed 11); with n = 5 it equals the min-max range",
+  "scenarios": {
+    "indel-w1": {
+      "kind": "decode",
+      "workers": 1,
+      "channel": {
+        "substitution_rate": 0.01,
+        "insertion_rate": 0.002,
+        "deletion_rate": 0.002,
+        "coverage": 5
+      },
+      "input_bytes": 4194304,
+      "n": 5,
+      "seeds": [
+        95500,
+        95501,
+        95502,
+        95503,
+        95504
+      ],
+      "commits": {
+        "v11": "51550df4e43d837fd4ab2f0ea8e1c92ac0767d24",
+        "v12": "521adb0c2b3c2c32da1be7dae0761a56fbf77fa8"
+      },
+      "identical_outcome_and_output": true,
+      "outcomes": {
+        "v11": [
+          "SUCCESS"
+        ],
+        "v12": [
+          "SUCCESS"
+        ]
+      },
+      "matches_input": {
+        "v11": 5,
+        "v12": 5
+      },
+      "false_success": {
+        "v11": 0,
+        "v12": 0
+      },
+      "seconds_median": {
+        "v11": 10.721,
+        "v12": 8.64
+      },
+      "seconds_range": {
+        "v11": [
+          10.546,
+          10.959
+        ],
+        "v12": [
+          8.57,
+          9.137
+        ]
+      },
+      "tree_rss_peak_mib_median": {
+        "v11": 104.3,
+        "v12": 101.7
+      },
+      "load1_range": [
+        1.0,
+        1.23
+      ],
+      "native": {
+        "v11": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "native",
+          "integrity": "native",
+          "outerlist": "native"
+        },
+        "v12": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "native",
+          "orient": "native",
+          "integrity": "native",
+          "outerlist": "native"
+        }
+      },
+      "stale_libraries": {
+        "v11": [],
+        "v12": []
+      },
+      "ratio_v11_over_v12": {
+        "median": 1.238,
+        "ci95": [
+          1.178,
+          1.259
+        ],
+        "per_seed": [
+          1.238,
+          1.25,
+          1.231,
+          1.259,
+          1.178
+        ],
+        "rss_ratio_median": 0.971,
+        "rss_ratio_n": 5
+      }
+    },
+    "indel-w2": {
+      "kind": "decode",
+      "workers": 2,
+      "channel": {
+        "substitution_rate": 0.01,
+        "insertion_rate": 0.002,
+        "deletion_rate": 0.002,
+        "coverage": 5
+      },
+      "input_bytes": 4194304,
+      "n": 5,
+      "seeds": [
+        95500,
+        95501,
+        95502,
+        95503,
+        95504
+      ],
+      "commits": {
+        "v11": "51550df4e43d837fd4ab2f0ea8e1c92ac0767d24",
+        "v12": "521adb0c2b3c2c32da1be7dae0761a56fbf77fa8"
+      },
+      "identical_outcome_and_output": true,
+      "outcomes": {
+        "v11": [
+          "SUCCESS"
+        ],
+        "v12": [
+          "SUCCESS"
+        ]
+      },
+      "matches_input": {
+        "v11": 5,
+        "v12": 5
+      },
+      "false_success": {
+        "v11": 0,
+        "v12": 0
+      },
+      "seconds_median": {
+        "v11": 6.014,
+        "v12": 4.927
+      },
+      "seconds_range": {
+        "v11": [
+          5.989,
+          6.51
+        ],
+        "v12": [
+          4.68,
+          5.098
+        ]
+      },
+      "tree_rss_peak_mib_median": {
+        "v11": 248.4,
+        "v12": 249.1
+      },
+      "load1_range": [
+        1.4,
+        1.54
+      ],
+      "native": {
+        "v11": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "native",
+          "integrity": "native",
+          "outerlist": "native"
+        },
+        "v12": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "native",
+          "orient": "native",
+          "integrity": "native",
+          "outerlist": "native"
+        }
+      },
+      "stale_libraries": {
+        "v11": [],
+        "v12": []
+      },
+      "ratio_v11_over_v12": {
+        "median": 1.257,
+        "ci95": [
+          1.18,
+          1.321
+        ],
+        "per_seed": [
+          1.257,
+          1.321,
+          1.202,
+          1.18,
+          1.299
+        ],
+        "rss_ratio_median": 1.004,
+        "rss_ratio_n": 5
+      }
+    },
+    "indel-w4": {
+      "kind": "decode",
+      "workers": 4,
+      "channel": {
+        "substitution_rate": 0.01,
+        "insertion_rate": 0.002,
+        "deletion_rate": 0.002,
+        "coverage": 5
+      },
+      "input_bytes": 4194304,
+      "n": 5,
+      "seeds": [
+        95300,
+        95301,
+        95302,
+        95303,
+        95304
+      ],
+      "commits": {
+        "v11": "51550df4e43d837fd4ab2f0ea8e1c92ac0767d24",
+        "v12": "521adb0c2b3c2c32da1be7dae0761a56fbf77fa8"
+      },
+      "identical_outcome_and_output": true,
+      "outcomes": {
+        "v11": [
+          "SUCCESS"
+        ],
+        "v12": [
+          "SUCCESS"
+        ]
+      },
+      "matches_input": {
+        "v11": 5,
+        "v12": 5
+      },
+      "false_success": {
+        "v11": 0,
+        "v12": 0
+      },
+      "seconds_median": {
+        "v11": 3.771,
+        "v12": 2.76
+      },
+      "seconds_range": {
+        "v11": [
+          3.72,
+          3.862
+        ],
+        "v12": [
+          2.723,
+          2.885
+        ]
+      },
+      "tree_rss_peak_mib_median": {
+        "v11": 409.8,
+        "v12": 416.0
+      },
+      "load1_range": [
+        1.45,
+        1.76
+      ],
+      "native": {
+        "v11": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "native",
+          "integrity": "native",
+          "outerlist": "native"
+        },
+        "v12": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "native",
+          "orient": "native",
+          "integrity": "native",
+          "outerlist": "native"
+        }
+      },
+      "stale_libraries": {
+        "v11": [],
+        "v12": []
+      },
+      "ratio_v11_over_v12": {
+        "median": 1.377,
+        "ci95": [
+          1.289,
+          1.385
+        ],
+        "per_seed": [
+          1.385,
+          1.367,
+          1.377,
+          1.384,
+          1.289
+        ],
+        "rss_ratio_median": 1.014,
+        "rss_ratio_n": 5
+      }
+    },
+    "indel-w8": {
+      "kind": "decode",
+      "workers": 8,
+      "channel": {
+        "substitution_rate": 0.01,
+        "insertion_rate": 0.002,
+        "deletion_rate": 0.002,
+        "coverage": 5
+      },
+      "input_bytes": 4194304,
+      "n": 5,
+      "seeds": [
+        95300,
+        95301,
+        95302,
+        95303,
+        95304
+      ],
+      "commits": {
+        "v11": "51550df4e43d837fd4ab2f0ea8e1c92ac0767d24",
+        "v12": "521adb0c2b3c2c32da1be7dae0761a56fbf77fa8"
+      },
+      "identical_outcome_and_output": true,
+      "outcomes": {
+        "v11": [
+          "SUCCESS"
+        ],
+        "v12": [
+          "SUCCESS"
+        ]
+      },
+      "matches_input": {
+        "v11": 5,
+        "v12": 5
+      },
+      "false_success": {
+        "v11": 0,
+        "v12": 0
+      },
+      "seconds_median": {
+        "v11": 2.718,
+        "v12": 1.914
+      },
+      "seconds_range": {
+        "v11": [
+          2.665,
+          2.866
+        ],
+        "v12": [
+          1.887,
+          1.929
+        ]
+      },
+      "tree_rss_peak_mib_median": {
+        "v11": 735.8,
+        "v12": 728.1
+      },
+      "load1_range": [
+        1.22,
+        1.9
+      ],
+      "native": {
+        "v11": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "native",
+          "integrity": "native",
+          "outerlist": "native"
+        },
+        "v12": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "native",
+          "orient": "native",
+          "integrity": "native",
+          "outerlist": "native"
+        }
+      },
+      "stale_libraries": {
+        "v11": [],
+        "v12": []
+      },
+      "ratio_v11_over_v12": {
+        "median": 1.412,
+        "ci95": [
+          1.391,
+          1.512
+        ],
+        "per_seed": [
+          1.391,
+          1.409,
+          1.431,
+          1.412,
+          1.512
+        ],
+        "rss_ratio_median": 0.993,
+        "rss_ratio_n": 5
+      }
+    },
+    "indel-rc-w4": {
+      "kind": "decode",
+      "workers": 4,
+      "channel": {
+        "substitution_rate": 0.01,
+        "insertion_rate": 0.002,
+        "deletion_rate": 0.002,
+        "coverage": 5,
+        "reverse_complement_rate": 0.5
+      },
+      "input_bytes": 4194304,
+      "n": 5,
+      "seeds": [
+        97000,
+        97001,
+        97002,
+        97003,
+        97004
+      ],
+      "commits": {
+        "v11": "51550df4e43d837fd4ab2f0ea8e1c92ac0767d24",
+        "v12": "521adb0c2b3c2c32da1be7dae0761a56fbf77fa8"
+      },
+      "identical_outcome_and_output": true,
+      "outcomes": {
+        "v11": [
+          "SUCCESS"
+        ],
+        "v12": [
+          "SUCCESS"
+        ]
+      },
+      "matches_input": {
+        "v11": 5,
+        "v12": 5
+      },
+      "false_success": {
+        "v11": 0,
+        "v12": 0
+      },
+      "seconds_median": {
+        "v11": 4.177,
+        "v12": 3.119
+      },
+      "seconds_range": {
+        "v11": [
+          4.117,
+          4.421
+        ],
+        "v12": [
+          3.086,
+          3.135
+        ]
+      },
+      "tree_rss_peak_mib_median": {
+        "v11": 416.2,
+        "v12": 418.0
+      },
+      "load1_range": [
+        1.6,
+        1.96
+      ],
+      "native": {
+        "v11": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "native",
+          "integrity": "native",
+          "outerlist": "native"
+        },
+        "v12": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "native",
+          "orient": "native",
+          "integrity": "native",
+          "outerlist": "native"
+        }
+      },
+      "stale_libraries": {
+        "v11": [],
+        "v12": []
+      },
+      "ratio_v11_over_v12": {
+        "median": 1.339,
+        "ci95": [
+          1.329,
+          1.417
+        ],
+        "per_seed": [
+          1.417,
+          1.334,
+          1.339,
+          1.329,
+          1.347
+        ],
+        "rss_ratio_median": 1.004,
+        "rss_ratio_n": 5
+      }
+    },
+    "indel-dropout-w4": {
+      "kind": "decode",
+      "workers": 4,
+      "channel": {
+        "substitution_rate": 0.01,
+        "insertion_rate": 0.002,
+        "deletion_rate": 0.002,
+        "coverage": 5,
+        "dropout_rate": 0.05
+      },
+      "input_bytes": 4194304,
+      "n": 5,
+      "seeds": [
+        97100,
+        97101,
+        97102,
+        97103,
+        97104
+      ],
+      "commits": {
+        "v11": "51550df4e43d837fd4ab2f0ea8e1c92ac0767d24",
+        "v12": "521adb0c2b3c2c32da1be7dae0761a56fbf77fa8"
+      },
+      "identical_outcome_and_output": true,
+      "outcomes": {
+        "v11": [
+          "SUCCESS"
+        ],
+        "v12": [
+          "SUCCESS"
+        ]
+      },
+      "matches_input": {
+        "v11": 5,
+        "v12": 5
+      },
+      "false_success": {
+        "v11": 0,
+        "v12": 0
+      },
+      "seconds_median": {
+        "v11": 4.418,
+        "v12": 3.327
+      },
+      "seconds_range": {
+        "v11": [
+          4.405,
+          4.545
+        ],
+        "v12": [
+          3.27,
+          3.463
+        ]
+      },
+      "tree_rss_peak_mib_median": {
+        "v11": 411.5,
+        "v12": 419.5
+      },
+      "load1_range": [
+        1.73,
+        2.2
+      ],
+      "native": {
+        "v11": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "native",
+          "integrity": "native",
+          "outerlist": "native"
+        },
+        "v12": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "native",
+          "orient": "native",
+          "integrity": "native",
+          "outerlist": "native"
+        }
+      },
+      "stale_libraries": {
+        "v11": [],
+        "v12": []
+      },
+      "ratio_v11_over_v12": {
+        "median": 1.327,
+        "ci95": [
+          1.272,
+          1.385
+        ],
+        "per_seed": [
+          1.272,
+          1.385,
+          1.327,
+          1.292,
+          1.373
+        ],
+        "rss_ratio_median": 1.01,
+        "rss_ratio_n": 5
+      }
+    },
+    "clean-w4": {
+      "kind": "decode",
+      "workers": 4,
+      "channel": {
+        "coverage": 3
+      },
+      "input_bytes": 4194304,
+      "n": 5,
+      "seeds": [
+        95100,
+        95101,
+        95102,
+        95103,
+        95104
+      ],
+      "commits": {
+        "v11": "51550df4e43d837fd4ab2f0ea8e1c92ac0767d24",
+        "v12": "521adb0c2b3c2c32da1be7dae0761a56fbf77fa8"
+      },
+      "identical_outcome_and_output": true,
+      "outcomes": {
+        "v11": [
+          "SUCCESS"
+        ],
+        "v12": [
+          "SUCCESS"
+        ]
+      },
+      "matches_input": {
+        "v11": 5,
+        "v12": 5
+      },
+      "false_success": {
+        "v11": 0,
+        "v12": 0
+      },
+      "seconds_median": {
+        "v11": 1.433,
+        "v12": 1.289
+      },
+      "seconds_range": {
+        "v11": [
+          1.421,
+          1.605
+        ],
+        "v12": [
+          1.269,
+          1.34
+        ]
+      },
+      "tree_rss_peak_mib_median": {
+        "v11": 387.9,
+        "v12": 388.7
+      },
+      "load1_range": [
+        1.56,
+        2.41
+      ],
+      "native": {
+        "v11": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "native",
+          "integrity": "native",
+          "outerlist": "native"
+        },
+        "v12": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "native",
+          "orient": "native",
+          "integrity": "native",
+          "outerlist": "native"
+        }
+      },
+      "stale_libraries": {
+        "v11": [],
+        "v12": []
+      },
+      "ratio_v11_over_v12": {
+        "median": 1.12,
+        "ci95": [
+          1.069,
+          1.252
+        ],
+        "per_seed": [
+          1.12,
+          1.1,
+          1.252,
+          1.069,
+          1.129
+        ],
+        "rss_ratio_median": 1.014,
+        "rss_ratio_n": 5
+      }
+    },
+    "substitution-w4": {
+      "kind": "decode",
+      "workers": 4,
+      "channel": {
+        "substitution_rate": 0.02,
+        "coverage": 5
+      },
+      "input_bytes": 4194304,
+      "n": 5,
+      "seeds": [
+        95200,
+        95201,
+        95202,
+        95203,
+        95204
+      ],
+      "commits": {
+        "v11": "51550df4e43d837fd4ab2f0ea8e1c92ac0767d24",
+        "v12": "521adb0c2b3c2c32da1be7dae0761a56fbf77fa8"
+      },
+      "identical_outcome_and_output": true,
+      "outcomes": {
+        "v11": [
+          "SUCCESS"
+        ],
+        "v12": [
+          "SUCCESS"
+        ]
+      },
+      "matches_input": {
+        "v11": 5,
+        "v12": 5
+      },
+      "false_success": {
+        "v11": 0,
+        "v12": 0
+      },
+      "seconds_median": {
+        "v11": 2.387,
+        "v12": 1.984
+      },
+      "seconds_range": {
+        "v11": [
+          2.294,
+          2.426
+        ],
+        "v12": [
+          1.945,
+          2.061
+        ]
+      },
+      "tree_rss_peak_mib_median": {
+        "v11": 414.4,
+        "v12": 401.9
+      },
+      "load1_range": [
+        1.94,
+        2.32
+      ],
+      "native": {
+        "v11": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "native",
+          "integrity": "native",
+          "outerlist": "native"
+        },
+        "v12": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "native",
+          "orient": "native",
+          "integrity": "native",
+          "outerlist": "native"
+        }
+      },
+      "stale_libraries": {
+        "v11": [],
+        "v12": []
+      },
+      "ratio_v11_over_v12": {
+        "median": 1.179,
+        "ci95": [
+          1.157,
+          1.209
+        ],
+        "per_seed": [
+          1.209,
+          1.177,
+          1.179,
+          1.157,
+          1.204
+        ],
+        "rss_ratio_median": 0.967,
+        "rss_ratio_n": 5
+      }
+    },
+    "indel-64k-w1": {
+      "kind": "decode",
+      "workers": 1,
+      "channel": {
+        "substitution_rate": 0.01,
+        "insertion_rate": 0.002,
+        "deletion_rate": 0.002,
+        "coverage": 5
+      },
+      "input_bytes": 65536,
+      "n": 5,
+      "seeds": [
+        97200,
+        97201,
+        97202,
+        97203,
+        97204
+      ],
+      "commits": {
+        "v11": "51550df4e43d837fd4ab2f0ea8e1c92ac0767d24",
+        "v12": "521adb0c2b3c2c32da1be7dae0761a56fbf77fa8"
+      },
+      "identical_outcome_and_output": true,
+      "outcomes": {
+        "v11": [
+          "SUCCESS"
+        ],
+        "v12": [
+          "SUCCESS"
+        ]
+      },
+      "matches_input": {
+        "v11": 5,
+        "v12": 5
+      },
+      "false_success": {
+        "v11": 0,
+        "v12": 0
+      },
+      "seconds_median": {
+        "v11": 0.303,
+        "v12": 0.28
+      },
+      "seconds_range": {
+        "v11": [
+          0.293,
+          0.308
+        ],
+        "v12": [
+          0.268,
+          0.308
+        ]
+      },
+      "tree_rss_peak_mib_median": {
+        "v11": 0.0,
+        "v12": 0.0
+      },
+      "load1_range": [
+        1.91,
+        2.4
+      ],
+      "native": {
+        "v11": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "native",
+          "integrity": "native",
+          "outerlist": "native"
+        },
+        "v12": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "native",
+          "orient": "native",
+          "integrity": "native",
+          "outerlist": "native"
+        }
+      },
+      "stale_libraries": {
+        "v11": [],
+        "v12": []
+      },
+      "ratio_v11_over_v12": {
+        "median": 1.086,
+        "ci95": [
+          0.998,
+          1.103
+        ],
+        "per_seed": [
+          1.103,
+          1.081,
+          0.998,
+          1.086,
+          1.093
+        ],
+        "rss_ratio_median": 0.768,
+        "rss_ratio_n": 1
+      }
+    },
+    "indel-16m-w4": {
+      "kind": "decode",
+      "workers": 4,
+      "channel": {
+        "substitution_rate": 0.01,
+        "insertion_rate": 0.002,
+        "deletion_rate": 0.002,
+        "coverage": 5
+      },
+      "input_bytes": 16777216,
+      "n": 3,
+      "seeds": [
+        97300,
+        97301,
+        97302
+      ],
+      "commits": {
+        "v11": "51550df4e43d837fd4ab2f0ea8e1c92ac0767d24",
+        "v12": "521adb0c2b3c2c32da1be7dae0761a56fbf77fa8"
+      },
+      "identical_outcome_and_output": true,
+      "outcomes": {
+        "v11": [
+          "SUCCESS"
+        ],
+        "v12": [
+          "SUCCESS"
+        ]
+      },
+      "matches_input": {
+        "v11": 3,
+        "v12": 3
+      },
+      "false_success": {
+        "v11": 0,
+        "v12": 0
+      },
+      "seconds_median": {
+        "v11": 14.409,
+        "v12": 9.696
+      },
+      "seconds_range": {
+        "v11": [
+          14.234,
+          14.629
+        ],
+        "v12": [
+          9.593,
+          9.879
+        ]
+      },
+      "tree_rss_peak_mib_median": {
+        "v11": 417.0,
+        "v12": 426.7
+      },
+      "load1_range": [
+        1.55,
+        2.52
+      ],
+      "native": {
+        "v11": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "native",
+          "integrity": "native",
+          "outerlist": "native"
+        },
+        "v12": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "native",
+          "orient": "native",
+          "integrity": "native",
+          "outerlist": "native"
+        }
+      },
+      "stale_libraries": {
+        "v11": [],
+        "v12": []
+      },
+      "ratio_v11_over_v12": {
+        "median": 1.486,
+        "ci95": [
+          1.441,
+          1.525
+        ],
+        "per_seed": [
+          1.486,
+          1.525,
+          1.441
+        ],
+        "rss_ratio_median": 1.017,
+        "rss_ratio_n": 3
+      }
+    },
+    "encode-1m-w1": {
+      "kind": "encode",
+      "workers": 1,
+      "channel": null,
+      "input_bytes": 1048576,
+      "n": 5,
+      "seeds": [
+        96000,
+        96001,
+        96002,
+        96003,
+        96004
+      ],
+      "commits": {
+        "v11": "51550df4e43d837fd4ab2f0ea8e1c92ac0767d24",
+        "v12": "521adb0c2b3c2c32da1be7dae0761a56fbf77fa8"
+      },
+      "identical_outcome_and_output": true,
+      "outcomes": {
+        "v11": [
+          "ENCODED"
+        ],
+        "v12": [
+          "ENCODED"
+        ]
+      },
+      "matches_input": {
+        "v11": 5,
+        "v12": 5
+      },
+      "false_success": {
+        "v11": 0,
+        "v12": 0
+      },
+      "seconds_median": {
+        "v11": 0.34,
+        "v12": 0.337
+      },
+      "seconds_range": {
+        "v11": [
+          0.332,
+          0.358
+        ],
+        "v12": [
+          0.327,
+          0.37
+        ]
+      },
+      "tree_rss_peak_mib_median": {
+        "v11": 51.3,
+        "v12": 51.2
+      },
+      "load1_range": [
+        2.59,
+        2.64
+      ],
+      "native": {
+        "v11": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "native",
+          "integrity": "native",
+          "outerlist": "native"
+        },
+        "v12": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "native",
+          "orient": "native",
+          "integrity": "native",
+          "outerlist": "native"
+        }
+      },
+      "stale_libraries": {
+        "v11": [],
+        "v12": []
+      },
+      "ratio_v11_over_v12": {
+        "median": 1.003,
+        "ci95": [
+          0.957,
+          1.016
+        ],
+        "per_seed": [
+          0.984,
+          1.01,
+          0.957,
+          1.016,
+          1.003
+        ],
+        "rss_ratio_median": 1.005,
+        "rss_ratio_n": 5
+      }
+    },
+    "encode-4m-w1": {
+      "kind": "encode",
+      "workers": 1,
+      "channel": null,
+      "input_bytes": 4194304,
+      "n": 5,
+      "seeds": [
+        96020,
+        96021,
+        96022,
+        96023,
+        96024
+      ],
+      "commits": {
+        "v11": "51550df4e43d837fd4ab2f0ea8e1c92ac0767d24",
+        "v12": "521adb0c2b3c2c32da1be7dae0761a56fbf77fa8"
+      },
+      "identical_outcome_and_output": true,
+      "outcomes": {
+        "v11": [
+          "ENCODED"
+        ],
+        "v12": [
+          "ENCODED"
+        ]
+      },
+      "matches_input": {
+        "v11": 5,
+        "v12": 5
+      },
+      "false_success": {
+        "v11": 0,
+        "v12": 0
+      },
+      "seconds_median": {
+        "v11": 1.294,
+        "v12": 1.309
+      },
+      "seconds_range": {
+        "v11": [
+          1.273,
+          1.382
+        ],
+        "v12": [
+          1.29,
+          1.384
+        ]
+      },
+      "tree_rss_peak_mib_median": {
+        "v11": 55.5,
+        "v12": 53.3
+      },
+      "load1_range": [
+        2.14,
+        2.46
+      ],
+      "native": {
+        "v11": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "native",
+          "integrity": "native",
+          "outerlist": "native"
+        },
+        "v12": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "native",
+          "orient": "native",
+          "integrity": "native",
+          "outerlist": "native"
+        }
+      },
+      "stale_libraries": {
+        "v11": [],
+        "v12": []
+      },
+      "ratio_v11_over_v12": {
+        "median": 0.975,
+        "ci95": [
+          0.935,
+          1.071
+        ],
+        "per_seed": [
+          1.071,
+          1.022,
+          0.975,
+          0.935,
+          0.952
+        ],
+        "rss_ratio_median": 0.996,
+        "rss_ratio_n": 5
+      }
+    },
+    "encode-4m-w4": {
+      "kind": "encode",
+      "workers": 4,
+      "channel": null,
+      "input_bytes": 4194304,
+      "n": 5,
+      "seeds": [
+        96030,
+        96031,
+        96032,
+        96033,
+        96034
+      ],
+      "commits": {
+        "v11": "51550df4e43d837fd4ab2f0ea8e1c92ac0767d24",
+        "v12": "521adb0c2b3c2c32da1be7dae0761a56fbf77fa8"
+      },
+      "identical_outcome_and_output": true,
+      "outcomes": {
+        "v11": [
+          "ENCODED"
+        ],
+        "v12": [
+          "ENCODED"
+        ]
+      },
+      "matches_input": {
+        "v11": 5,
+        "v12": 5
+      },
+      "false_success": {
+        "v11": 0,
+        "v12": 0
+      },
+      "seconds_median": {
+        "v11": 0.42,
+        "v12": 0.421
+      },
+      "seconds_range": {
+        "v11": [
+          0.413,
+          0.442
+        ],
+        "v12": [
+          0.415,
+          0.461
+        ]
+      },
+      "tree_rss_peak_mib_median": {
+        "v11": 196.0,
+        "v12": 189.0
+      },
+      "load1_range": [
+        2.2,
+        2.99
+      ],
+      "native": {
+        "v11": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "native",
+          "integrity": "native",
+          "outerlist": "native"
+        },
+        "v12": {
+          "align": "native",
+          "reads": "native",
+          "rs": "native",
+          "cluster": "native",
+          "strand": "native",
+          "orient": "native",
+          "integrity": "native",
+          "outerlist": "native"
+        }
+      },
+      "stale_libraries": {
+        "v11": [],
+        "v12": []
+      },
+      "ratio_v11_over_v12": {
+        "median": 0.982,
+        "ci95": [
+          0.91,
+          1.017
+        ],
+        "per_seed": [
+          0.91,
+          0.964,
+          1.017,
+          0.998,
+          0.982
+        ],
+        "rss_ratio_median": 0.965,
+        "rss_ratio_n": 5
+      }
+    }
+  },
+  "scaling_vs_w1": {
+    "v11": {
+      "indel-w1": 1.0,
+      "indel-w2": 1.783,
+      "indel-w4": 2.843,
+      "indel-w8": 3.944
+    },
+    "v12": {
+      "indel-w1": 1.0,
+      "indel-w2": 1.754,
+      "indel-w4": 3.13,
+      "indel-w8": 4.514
+    }
+  }
+}

@@ -1,0 +1,3 @@
+06:04 full suite at 0d275e0 finished (1 failure: layer rule R5, trim_heap moved to vnxdna.native.heap in 521adb0)
+06:12:15 start bench: build/v12 521adb0 vs v12-base 51550df (pristine v11.0.0); host 4C/8T, load 1.01 from the suite tail-off, nothing else planned
+06:37:05 bench finished

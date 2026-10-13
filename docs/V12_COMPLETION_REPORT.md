@@ -41,51 +41,59 @@ come from the committed files named next to them.
   `tests/v12/test_pass1_gather.py`.
 - `ruff check src tests research` clean.
 
-## Performance (SIMULATED; docs/V12_BENCHMARK_REPORT.md, experiments/v12/bench/ab-orient)
+## Performance (SIMULATED; docs/V12_BENCHMARK_REPORT.md, experiments/v12/bench/ab-session5)
 
-Median ratio v11.0.0 seconds / v12 seconds, 95 % bootstrap CI, 5 seeds (3 for 16 MiB), paired per seed:
+Median ratio v11.0.0 seconds / v12 seconds, 95 % bootstrap CI, 5 seeds (3 for 16 MiB), paired per seed. Session 5
+(memory and pass-1 fast paths, docs/V12_SESSION5_REPORT.md) superseded the ab-orient numbers of the first release
+draft (in parentheses):
 
 | scenario | ratio | verdict vs A/A band |
 |---|---|---|
-| 4 MiB indel, 1 worker | 1.114 [1.094, 1.146] | faster beyond noise |
-| 4 MiB indel, 2 workers | 1.148 [1.114, 1.163] | faster beyond noise |
-| 4 MiB indel, 4 workers | 1.228 [1.205, 1.312] | faster beyond noise |
-| 4 MiB indel, 8 workers | 1.344 [1.290, 1.423] | faster beyond noise |
-| reverse complement 50 %, 4 workers | 1.244 [1.217, 1.256] | faster beyond noise |
-| dropout 5 %, 4 workers | 1.269 [1.254, 1.314] | faster beyond noise |
-| substitution 2 %, 4 workers | 1.171 [1.146, 1.190] | faster beyond noise |
-| 16 MiB indel, 4 workers | 1.319 [1.312, 1.338] | faster beyond noise |
-| clean, 4 workers | 1.042 [1.041, 1.118] | within noise |
-| 64 KiB indel, 1 worker | 1.035 [0.936, 1.102] | within noise |
-| encode 1 MiB / 4 MiB w1 / 4 MiB w4 | 1.008 / 0.993 / 0.940 | within noise (encode-4m-w4 re-run: 0.972 [0.924, 1.051]) |
+| 4 MiB indel, 1 worker | 1.238 [1.178, 1.259] (was 1.114) | faster beyond noise |
+| 4 MiB indel, 2 workers | 1.257 [1.180, 1.321] (1.148) | faster beyond noise |
+| 4 MiB indel, 4 workers | 1.377 [1.289, 1.385] (1.228) | faster beyond noise |
+| 4 MiB indel, 8 workers | 1.412 [1.391, 1.512] (1.344) | faster beyond noise |
+| reverse complement 50 %, 4 workers | 1.339 [1.329, 1.417] (1.244) | faster beyond noise |
+| dropout 5 %, 4 workers | 1.327 [1.272, 1.385] (1.269) | faster beyond noise |
+| substitution 2 %, 4 workers | 1.179 [1.157, 1.209] (1.171) | faster beyond noise |
+| 16 MiB indel, 4 workers | 1.486 [1.441, 1.525] (1.319) | faster beyond noise |
+| clean, 4 workers | 1.120 [1.069, 1.252] (1.042) | faster beyond noise |
+| 64 KiB indel, 1 worker | 1.086 [0.998, 1.103] (1.035) | faster beyond noise |
+| encode 1 MiB / 4 MiB w1 / 4 MiB w4 | 1.003 / 0.975 / 0.982 | within noise |
 
 Pre-registered targets (`docs/V12_PLAN.md` §4):
 
 | target | required | result | status |
 |---|---|---|---|
-| T1 | 4 MiB indel w4 ≥ 1.25, CI lower bound > 1.0 | 1.228 [1.205, 1.312] | **not met** (CI lower bound > 1.0 holds) |
-| T2 | 4 MiB indel w1 ≥ 1.15 | 1.114 | **not met** |
-| T3 | no scenario slower than 0.95 | lowest committed row encode-4m-w4 0.940, re-run 0.972; every decode row ≥ 1.035 | met on the re-run, marginal in the committed run (noise) |
+| T1 | 4 MiB indel w4 ≥ 1.25, CI lower bound > 1.0 | 1.377 [1.289, 1.385] | met |
+| T2 | 4 MiB indel w1 ≥ 1.15 | 1.238 [1.178, 1.259] | met |
+| T3 | no scenario slower than 0.95 | lowest row encode-4m-w1 0.975 (within the A/A band); every decode row ≥ 1.086 | met |
 | T4 | byte-identical output, 0 false successes | identical on all 63 rows, 0 false successes | met |
-| T5 | peak process-tree RSS ≤ 1.10x on every decode scenario | indel-w4 1.05, 16 MiB 1.09, rc 1.07; dropout 1.19, clean 1.20, substitution 1.23, w2 1.11 | **not met** |
-| T6 | w4/w1 scaling reported for both trees with the serial fraction explained | v11 2.85x, v12 3.20x (w8: 3.76x / 4.53x); serial fraction not yet broken down | partly met |
-| T7 | full suite 0 failures, ≥ 4051 passed | 4142 passed, 0 failed | met |
+| T5 | peak process-tree RSS ≤ 1.10x on every decode scenario | highest 1.017 (16 MiB); clean 1.014, substitution 0.967, dropout 1.010, w2 1.004 | met |
+| T6 | w4/w1 scaling reported for both trees with the serial fraction explained | v11 2.84x, v12 3.13x (w8: 3.94x / 4.51x); measured serial parts ≈ 0.6–0.7 s of the 8.64 s w1 decode, Amdahl estimate 0.09 at w4 (docs/V12_SESSION5_REPORT.md §E) | met |
+| T7 | full suite 0 failures, ≥ 4051 passed | 4209 passed, 0 failed (521adb0) | met |
 
-Where the time went (stage timers and cProfile, single runs): the orientation scan fell from 1.37 s to 0.27 s of a
-w1 decode; pass 2 at w4 from 1.07 s serial to 0.45 s parallel; the remaining pass-1 worker CPU of the 4 MiB indel
-decode is dominated by native alignment (about 3.2 s) and the per-read `_try` bookkeeping.
+Where the time went (stage timers, cProfile and py-spy, single runs): the orientation scan fell from 1.37 s to 0.27 s
+of a w1 decode; pass 2 at w4 from 1.07 s serial to 0.45 s parallel; the byte-erasure packing from 12.1 ms to 0.16 ms
+per batch; the remaining pass-1 worker CPU of the 4 MiB indel decode is dominated by native alignment (about 22 % of
+the w1 samples) and the per-read Python glue of the sync path and the reverse-complement retry.
+
+Peak memory: the first release draft's +20–23 % at 4 workers (clean, substitution) came from a 20 MiB per-batch
+int64 gather index resident in every worker and from pass-2 buckets loaded on top of the workers' pass-1 residue; both
+are fixed (docs/V12_SESSION5_REPORT.md §B–C) and every decode scenario is within 2 % of v11.0.0.
 
 ## Limitations
 
-- T1, T2 and T5 are not met; the release ships the measured 1.23x (w4) / 1.11x (w1), not the directive's 1.25x.
-- Peak RSS at 4 workers grew by up to 23 % on clean and substitution inputs (384 → 462 MiB and 404 → 497 MiB): the
-  worker pool now outlives pass 1 and the parallel pass 2 keeps two buckets per worker in flight.
+- `trim_heap` (heap pages returned to the OS between stages) is glibc-specific; elsewhere it is a no-op and the
+  workers' pass-1 residue stays resident through pass 2 (not measured on such a platform).
+- The serial fraction of the worker scaling is an Amdahl estimate; the measured 8–12 % worker-CPU inflation at 4 and
+  8 workers is not attributed to one cause (SMT, memory bandwidth, the single feeder thread are hypotheses).
 - All benchmarks are on one host and one channel family; no real sequencing data was used.
 - The 10 MB nanopore-like case still fails explicitly (deferred); low-coverage robustness is not addressed.
 
 ## Next
 
-1. T5: measure clean-w4 with memray; cap in-flight pass-2 buckets or release pass-1 buffers before pass 2.
-2. T1/T2: profile `_try` bookkeeping and the reverse-complement retry in pass 1 (alignment is the floor).
-3. T6: break the serial fraction down from the stage timers.
-4. V12-DESIGN-LOWCOV (low-coverage and real-data robustness) as its own release.
+1. Founder release review of build/v12 (docs/V12_SESSION5_REPORT.md §I lists the release-engineer gates still to run).
+2. Optional single-worker margin: a flat `project` → `align_usable` path without per-read lists (about 7 % of the w1
+   samples).
+3. V12-DESIGN-LOWCOV (low-coverage and real-data robustness) as its own release.
