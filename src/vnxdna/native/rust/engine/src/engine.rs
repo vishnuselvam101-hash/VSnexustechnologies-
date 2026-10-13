@@ -104,6 +104,85 @@ where
     }
 }
 
+/// The IO + scan driver: hands every window of complete records to `sink` (records index `buf`, or the scanner's side
+/// buffer). Memory-mapped when `use_map` and the file can be mapped (consumed pages leave the resident set), else read
+/// in blocks of `block` bytes behind the carried incomplete record. `cfg` (optional) is polled for cancellation.
+pub fn scan_file<F>(path: &Path, fastq: bool, block: usize, use_map: bool, cfg: Option<&Cfg>, bytes: &mut u64,
+                    ns_scan: &mut i64, mut sink: F) -> Result<(), EngErr>
+where
+    F: FnMut(&[u8], &[u8], &[Rec]) -> Result<(), EngErr>,
+{
+    let mut f = File::open(path)?;
+    let mut scanner = Scanner::new(fastq);
+    let mut recs: Vec<Rec> = Vec::new();
+    let cancelled = || cfg.map_or(false, |c| c.cancelled());
+    if use_map {
+        if let Some(mut map) = Map::open(&f) {
+            let len = map.len();
+            *bytes = len as u64;
+            let mut pos = 0usize;
+            let mut win = block;
+            while pos < len {
+                if cancelled() {
+                    return Err(EngErr::Cancelled);
+                }
+                let end = (pos + win).min(len);
+                let eof = end == len;
+                map.will_need(end, win);
+                let ts = Instant::now();
+                recs.clear();
+                let data = &map.bytes()[pos..end];
+                let used = scanner.scan(data, eof, &mut recs).map_err(EngErr::Unsupported)?;
+                *ns_scan += ns(ts);
+                if used == 0 && !eof {
+                    win *= 2; // one record longer than the window
+                    continue;
+                }
+                sink(data, &scanner.side, &recs)?;
+                if eof && used < data.len() {
+                    return Err(EngErr::Unsupported("unparsed trailing input".into()));
+                }
+                pos += used;
+                map.release(pos);
+            }
+            return Ok(());
+        }
+    }
+    let mut buf: Vec<u8> = vec![0; block.max(1)];
+    let mut have = 0usize;
+    let mut eof = false;
+    loop {
+        if cancelled() {
+            return Err(EngErr::Cancelled);
+        }
+        if have == buf.len() {
+            buf.resize(buf.len() * 2, 0);
+        }
+        while !eof && have < buf.len() {
+            let k = f.read(&mut buf[have..])?;
+            if k == 0 {
+                eof = true;
+            } else {
+                have += k;
+                *bytes += k as u64;
+            }
+        }
+        let ts = Instant::now();
+        recs.clear();
+        let used = scanner.scan(&buf[..have], eof, &mut recs).map_err(EngErr::Unsupported)?;
+        *ns_scan += ns(ts);
+        sink(&buf[..have], &scanner.side, &recs)?;
+        buf.copy_within(used..have, 0);
+        have -= used;
+        if eof {
+            if have > 0 {
+                return Err(EngErr::Unsupported("unparsed trailing input".into()));
+            }
+            return Ok(());
+        }
+    }
+}
+
 /// A raw pointer that may cross threads; every use writes a range no other thread writes.
 #[derive(Clone, Copy)]
 struct SendPtr<T>(*mut T);
@@ -213,11 +292,24 @@ impl<'c> Engine<'c> {
     /// Pass 1 over a whole read file: memory-mapped when possible, else read in blocks.
     pub fn run_file(&mut self, path: &Path) -> Result<(), EngErr> {
         let t0 = Instant::now();
-        let f = File::open(path)?;
-        match Map::open(&f) {
-            Some(mut map) => self.run_map(&mut map)?,
-            None => self.run_read(f)?,
-        }
+        let cfg = self.cfg;
+        let mut bytes = 0u64;
+        let mut ns_scan = 0i64;
+        scan_file(path, cfg.fastq, cfg.io_block, true, Some(cfg), &mut bytes, &mut ns_scan, |buf, side, recs| {
+            let bsz = cfg.batch;
+            let mut a = 0;
+            while a < recs.len() {
+                let e = (a + bsz).min(recs.len());
+                self.batch(buf, side, &recs[a..e])?;
+                a = e;
+            }
+            if self.stats[ST_READS] > cfg.max_reads {
+                return Err(EngErr::Unsupported("more reads than max_reads".into()));
+            }
+            Ok(())
+        })?;
+        self.stats[ST_BYTES] = bytes as i64;
+        self.stats[ST_NS_SCAN] = ns_scan;
         let tw = Instant::now();
         for w in self.acc_w.iter_mut().chain(self.pend_w.iter_mut()) {
             w.flush()?;
@@ -227,100 +319,6 @@ impl<'c> Engine<'c> {
         self.stats[ST_TABLE_BYTES] = (self.done.bytes() + self.windex.bytes() + self.bloom.bytes()) as i64;
         self.stats[ST_NS_TOTAL] = ns(t0);
         Ok(())
-    }
-
-    /// Zero-copy path: windows of the mapping are scanned in place; consumed pages leave the resident set.
-    fn run_map(&mut self, map: &mut Map) -> Result<(), EngErr> {
-        let len = map.len();
-        self.stats[ST_BYTES] = len as i64;
-        let mut scanner = Scanner::new(self.cfg.fastq);
-        let mut recs: Vec<Rec> = Vec::new();
-        let mut pos = 0usize;
-        let mut win = self.cfg.io_block;
-        while pos < len {
-            if self.cfg.cancelled() {
-                return Err(EngErr::Cancelled);
-            }
-            let end = (pos + win).min(len);
-            let eof = end == len;
-            map.will_need(end, win);
-            let ts = Instant::now();
-            recs.clear();
-            let data = &map.bytes()[pos..end];
-            let used = scanner.scan(data, eof, &mut recs).map_err(EngErr::Unsupported)?;
-            self.stats[ST_NS_SCAN] += ns(ts);
-            if used == 0 && !eof {
-                win *= 2; // one record longer than the window
-                continue;
-            }
-            let bsz = self.cfg.batch;
-            let mut a = 0;
-            while a < recs.len() {
-                let e = (a + bsz).min(recs.len());
-                self.batch(data, &scanner.side, &recs[a..e])?;
-                a = e;
-            }
-            if self.stats[ST_READS] > self.cfg.max_reads {
-                return Err(EngErr::Unsupported("more reads than max_reads".into()));
-            }
-            if eof && used < data.len() {
-                return Err(EngErr::Unsupported("unparsed trailing input".into()));
-            }
-            pos += used;
-            map.release(pos);
-        }
-        Ok(())
-    }
-
-    /// Buffered path (pipes, special files): blocks are read behind the carried incomplete record.
-    fn run_read(&mut self, mut f: File) -> Result<(), EngErr> {
-        let block = self.cfg.io_block;
-        let mut buf: Vec<u8> = vec![0; block];
-        let mut have = 0usize;
-        let mut eof = false;
-        let mut scanner = Scanner::new(self.cfg.fastq);
-        let mut recs: Vec<Rec> = Vec::new();
-        loop {
-            if self.cfg.cancelled() {
-                return Err(EngErr::Cancelled);
-            }
-            let ti = Instant::now();
-            if have == buf.len() {
-                buf.resize(buf.len() * 2, 0);
-            }
-            while !eof && have < buf.len() {
-                let k = f.read(&mut buf[have..])?;
-                if k == 0 {
-                    eof = true;
-                } else {
-                    have += k;
-                    self.stats[ST_BYTES] += k as i64;
-                }
-            }
-            self.stats[ST_NS_IO] += ns(ti);
-            let ts = Instant::now();
-            recs.clear();
-            let used = scanner.scan(&buf[..have], eof, &mut recs).map_err(EngErr::Unsupported)?;
-            self.stats[ST_NS_SCAN] += ns(ts);
-            let bsz = self.cfg.batch;
-            let mut a = 0;
-            while a < recs.len() {
-                let e = (a + bsz).min(recs.len());
-                self.batch(&buf[..have], &scanner.side, &recs[a..e])?;
-                a = e;
-            }
-            if self.stats[ST_READS] > self.cfg.max_reads {
-                return Err(EngErr::Unsupported("more reads than max_reads".into()));
-            }
-            buf.copy_within(used..have, 0);
-            have -= used;
-            if eof {
-                if have > 0 {
-                    return Err(EngErr::Unsupported("unparsed trailing input".into()));
-                }
-                return Ok(());
-            }
-        }
     }
 
     /// One batch of records: convert + screen, group, attempt in rounds, spill.
@@ -649,6 +647,18 @@ impl<'c> Engine<'c> {
                 let tc = Instant::now();
                 self.attempt(todo, cheap)?;
                 self.stats[if cheap { ST_NS_CHEAP } else { ST_NS_FULL }] += ns(tc);
+                // record the verified addresses and strand windows (prefetch the table lines first: the inserts are
+                // random accesses into tables larger than the caches)
+                for &i in todo.iter() {
+                    if self.b.fate[i] == Fate::Accepted {
+                        self.done.prefetch(self.b.vkey[i]);
+                        for &w in &self.b.vwin[i] {
+                            if w != 0 {
+                                self.windex.prefetch(w);
+                            }
+                        }
+                    }
+                }
                 for &i in todo.iter() {
                     if self.b.fate[i] == Fate::Accepted {
                         self.done.insert(self.b.vkey[i]);

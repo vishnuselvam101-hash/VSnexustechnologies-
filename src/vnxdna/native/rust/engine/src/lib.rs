@@ -109,6 +109,76 @@ pub unsafe extern "C" fn vnx_eng_pass1(cfg: *const config::RawCfg, reads_path: *
     }
 }
 
+/// Parse a FASTQ (fmt 1) or FASTA (fmt 2) file with the engine's scanner (testing and fast parsing). Writes the codes
+/// (0..4), qualities (FASTQ, Phred clipped to 0..93) and lengths of every read; counts[0] = reads, counts[1] = bases.
+/// `block` is the IO window, `use_map` 0 forces the buffered path. Returns 0, 1 (input outside the scanner's exact
+/// domain, message in err), -1 (bad argument or capacity too small) or -2 (IO).
+///
+/// # Safety
+/// Buffers must hold the capacities given; `path` is NUL-terminated.
+#[no_mangle]
+pub unsafe extern "C" fn vnx_eng_scan_file(path: *const c_char, fmt: i32, block: i64, use_map: i32, codes: *mut u8,
+                                           codes_cap: i64, quals: *mut u8, lens: *mut i64, lens_cap: i64,
+                                           counts: *mut i64, err: *mut c_char, err_cap: i64) -> i32 {
+    let res = catch_unwind(AssertUnwindSafe(|| -> (i32, String) {
+        if counts.is_null() || codes_cap < 0 || lens_cap < 0 || block < 1 || (codes_cap > 0 && codes.is_null())
+            || (lens_cap > 0 && lens.is_null()) || !(fmt == 1 || fmt == 2) {
+            return (RC_EARG, "bad argument".into());
+        }
+        let p = match path_arg(path) {
+            Ok(p) => p,
+            Err(e) => return (RC_EARG, e),
+        };
+        let codes = if codes_cap > 0 { std::slice::from_raw_parts_mut(codes, codes_cap as usize) } else { &mut [] };
+        let mut qv = if !quals.is_null() && codes_cap > 0 {
+            Some(std::slice::from_raw_parts_mut(quals, codes_cap as usize))
+        } else {
+            None
+        };
+        let lens = if lens_cap > 0 { std::slice::from_raw_parts_mut(lens, lens_cap as usize) } else { &mut [] };
+        let (mut nr, mut nb) = (0usize, 0usize);
+        let mut bytes = 0u64;
+        let mut ns = 0i64;
+        let r = engine::scan_file(p, fmt == 1, block as usize, use_map != 0, None, &mut bytes, &mut ns, |buf, side, recs| {
+            for rec in recs {
+                if nr >= lens.len() || nb + rec.len > codes.len() {
+                    return Err(engine::EngErr::Io("capacity too small".into()));
+                }
+                let src = if rec.side { &side[rec.seq..rec.seq + rec.len] } else { &buf[rec.seq..rec.seq + rec.len] };
+                scan::convert(src, &mut codes[nb..nb + rec.len]);
+                if let Some(q) = qv.as_mut() {
+                    if rec.qual != usize::MAX {
+                        for (d, &s) in q[nb..nb + rec.len].iter_mut().zip(buf[rec.qual..rec.qual + rec.len].iter()) {
+                            *d = (s as i16 - 33).clamp(0, 93) as u8;
+                        }
+                    }
+                }
+                lens[nr] = rec.len as i64;
+                nr += 1;
+                nb += rec.len;
+            }
+            Ok(())
+        });
+        *counts = nr as i64;
+        *counts.add(1) = nb as i64;
+        match r {
+            Ok(()) => (RC_OK, String::new()),
+            Err(engine::EngErr::Io(m)) if m == "capacity too small" => (RC_EARG, m),
+            Err(e) => map_err(e),
+        }
+    }));
+    match res {
+        Ok((rc, msg)) => {
+            write_err(err, err_cap, &msg);
+            rc
+        }
+        Err(_) => {
+            write_err(err, err_cap, "engine panic (caught at the C ABI)");
+            RC_EPANIC
+        }
+    }
+}
+
 fn map_err(e: engine::EngErr) -> (i32, String) {
     match e {
         engine::EngErr::Unsupported(m) => (RC_UNSUPPORTED, m),

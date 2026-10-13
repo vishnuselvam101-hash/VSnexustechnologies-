@@ -92,9 +92,6 @@ class DecodeOptions:
     # V13 engine: attempt only the reads whose address is not verified yet (address scheduler); False attempts every
     # read (pass-1 results then equal the V13 path's, record for record)
     engine_dedup: bool = True
-    # wall-clock limit of the decode in seconds (None = none): the engine stops at the next block and the decode
-    # raises VNXResourceError (code TIMEOUT); nothing is published
-    timeout_s: float | None = None
 
     def validate(self) -> None:
         if not isinstance(self.stage_counters, bool):
@@ -109,9 +106,6 @@ class DecodeOptions:
             raise VNXConfigurationError(f"engine must be one of {', '.join(ENGINES)}")
         if not isinstance(self.engine_dedup, bool):
             raise VNXConfigurationError("engine_dedup must be True or False")
-        if self.timeout_s is not None and (isinstance(self.timeout_s, bool) or not isinstance(self.timeout_s, (int, float))
-                                           or not self.timeout_s > 0):
-            raise VNXConfigurationError("timeout_s must be a positive number of seconds (or None)")
         if self.sync_speculation not in ("markers", "off"):
             raise VNXConfigurationError("sync_speculation must be 'markers' or 'off'")
         if not 1 <= self.band <= 64:

@@ -63,6 +63,10 @@ def _bind(lib) -> None:
     lib.vnx_eng_pass1.argtypes = [ctypes.POINTER(_Cfg), ctypes.c_char_p, ctypes.c_char_p, ctypes.c_void_p,
                                   ctypes.c_int64, ctypes.c_char_p, ctypes.c_int64]
     lib.vnx_eng_n_stats.restype = ctypes.c_int64
+    i64, p = ctypes.c_int64, ctypes.c_void_p
+    lib.vnx_eng_scan_file.restype = ctypes.c_int32
+    lib.vnx_eng_scan_file.argtypes = [ctypes.c_char_p, ctypes.c_int32, i64, ctypes.c_int32, p, i64, p, p, i64, p,
+                                      ctypes.c_char_p, i64]
 
 
 KERNEL = RustKernel("engine", "VNXDNA_ENGINE", ABI_VERSION, "vnx_eng_abi_version", _bind, "vnxdna.recovery.pass1",
@@ -182,6 +186,29 @@ def run_pass1(reads_path: str | os.PathLike, spill_dir: str | os.PathLike, lay, 
     return dict(zip(STAT_NAMES, stats.tolist()))
 
 
+
+
+def scan_file(path: str | os.PathLike, fmt: str, *, block: int = IO_BLOCK, use_map: bool = True) -> tuple:
+    """Parse a FASTQ/FASTA file with the engine's scanner: (codes uint8, lengths int64, qualities uint8 or None),
+    the values ``vnxdna.dnaenc.reads.iter_reads`` yields (concatenated over its batches). Raises EngineUnsupported for
+    input outside the scanner's exact domain (the reference parser then decides: it parses it or raises)."""
+    lib = KERNEL.lib()
+    size = max(1, os.path.getsize(path))
+    codes = np.empty(size, dtype=np.uint8)
+    quals = np.empty(size, dtype=np.uint8) if fmt == "fastq" else None
+    lens = np.empty(size // 2 + 1, dtype=np.int64)
+    counts = np.zeros(2, dtype=np.int64)
+    err = ctypes.create_string_buffer(512)
+    rc = lib.vnx_eng_scan_file(os.fsencode(path), 1 if fmt == "fastq" else 2, int(block), int(bool(use_map)),
+                               _ptr(codes), codes.size, None if quals is None else _ptr(quals), _ptr(lens), lens.size,
+                               _ptr(counts), err, len(err))
+    msg = err.value.decode("utf-8", "replace")
+    if rc == RC_UNSUPPORTED:
+        raise EngineUnsupported(msg)
+    if rc != RC_OK:
+        raise EngineError(f"engine scan failed: {_ERRORS.get(rc, rc)}: {msg}")
+    n, nb = int(counts[0]), int(counts[1])
+    return codes[:nb].copy(), lens[:n].copy(), None if quals is None else quals[:nb].copy()
 
 
 def main(argv=None) -> int:

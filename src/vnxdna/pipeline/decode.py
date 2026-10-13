@@ -152,9 +152,9 @@ class _reference_backends:
 
 def _decode_ladder(reads_path, output, opt: DecodeOptions, t0: float, ev, **kw) -> DecodeResult:
     """The fallback ladder: stream engine -> V13 path -> Python references (docs/V13_ENGINE_ARCHITECTURE.md)."""
-    from vnxdna.core.errors import VNXError, VNXResourceError
+    from vnxdna.core.errors import VNXError
     from vnxdna.native import engine as ne
-    from vnxdna.recovery.planner import RecoveryPlanner
+    from vnxdna.recovery.planner import RecoveryPlanner, VNXBudgetExceeded
     info: dict = {"requested": opt.engine, "rung": None, "fallbacks": []}
     rung = {"auto": "stream", "stream": "stream", "v13": "v13", "reference": "reference"}[opt.engine]
     if rung == "stream":
@@ -164,12 +164,18 @@ def _decode_ladder(reads_path, output, opt: DecodeOptions, t0: float, ev, **kw) 
                 raise VNXConfigurationError(f"engine='stream' cannot run this decode: {why}")
             info["fallbacks"].append({"rung": "stream", "reason": why})
             rung = "v13"
+    # the hard wall-time budget (RecoveryBudget.max_wall_seconds) also stops the engine, at its next block or batch
     cancel = ne.Cancel()
     timer = None
-    if opt.timeout_s is not None:
-        timer = threading.Timer(float(opt.timeout_s), cancel.set)
+    limit = getattr(opt.recovery_budget, "max_wall_seconds", None)
+    if limit is not None:
+        timer = threading.Timer(max(0.0, float(limit) - (time.perf_counter() - t0)), cancel.set)
         timer.daemon = True
         timer.start()
+
+    def over_budget():
+        return VNXBudgetExceeded(f"wall-time budget of {limit} s exceeded in pass 1 (engine stopped)",
+                                 details={"budget": "max_wall_seconds", "limit": limit})
     try:
         if rung == "stream":
             t = time.perf_counter()
@@ -178,8 +184,7 @@ def _decode_ladder(reads_path, output, opt: DecodeOptions, t0: float, ev, **kw) 
                                     **({**kw, "partial_dir": None} if opt.engine == "auto" else kw), stream=cancel,
                                     engine_info=info)
             except ne.EngineCancelled:
-                raise VNXResourceError(f"decode timed out after {opt.timeout_s} s", stage="pass1", code="TIMEOUT",
-                                       retryable=True) from None
+                raise over_budget() from None
             except (ne.EngineUnsupported, ne.EngineError) as error:
                 if opt.engine == "stream":
                     raise
@@ -203,8 +208,7 @@ def _decode_ladder(reads_path, output, opt: DecodeOptions, t0: float, ev, **kw) 
             if ev:
                 ev.emit("engine_fallback", "pass1", rung="v13", reason=info["fallbacks"][-1]["reason"])
         if cancel.is_set:
-            raise VNXResourceError(f"decode timed out after {opt.timeout_s} s", stage="pass1", code="TIMEOUT",
-                                   retryable=True)
+            raise over_budget()
         planner = RecoveryPlanner(opt.recovery_budget, t0)
         if rung == "reference":
             with _reference_backends():

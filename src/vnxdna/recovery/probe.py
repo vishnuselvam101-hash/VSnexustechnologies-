@@ -105,10 +105,17 @@ def frame_heads(sample: list) -> dict:
     n = len(sample)
     fwd = np.full((n, 8), 4, dtype=np.uint8)
     rev = np.full((n, 8), 4, dtype=np.uint8)
-    for i, r in enumerate(sample):
-        if r.size >= 8:
-            fwd[i] = r[:8]
-            rev[i] = _RC[r[-8:][::-1]]
+    if n:
+        # V13: one gather over the concatenated sample instead of a Python loop per read (same values)
+        lens = np.fromiter((r.size for r in sample), dtype=np.int64, count=n)
+        long_ = np.flatnonzero(lens >= 8)
+        if long_.size:
+            flat = np.concatenate([sample[i] for i in long_.tolist()])
+            ends = np.cumsum(lens[long_])
+            starts = ends - lens[long_]
+            cols = np.arange(8, dtype=np.int64)
+            fwd[long_] = flat[starts[:, None] + cols[None, :]]
+            rev[long_] = _RC[flat[ends[:, None] - 1 - cols[None, :]]]
     out = {}
     for name, m in (("forward", fwd), ("reverse", rev)):
         valid = (m <= 3).all(axis=1)
