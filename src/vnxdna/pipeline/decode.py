@@ -24,8 +24,10 @@ Formerly ``vnxdna.v4.decoder`` (V6 Phase 2, M4)."""
 from __future__ import annotations
 
 import os
+import queue
 import shutil
 import tempfile
+import threading
 import time
 from collections import Counter, deque
 from concurrent.futures import ProcessPoolExecutor
@@ -90,6 +92,49 @@ def decode_reads(reads_path: str | os.PathLike, output: str | os.PathLike | None
             groups_decoded=rep_.get("groups_decoded"), groups_failed=rep_.get("groups_failed"),
             peak_rss_bytes=rep_.get("peak_rss_bytes"))
     return res
+
+
+_PREFETCH = 2       # V13 S4: batches the parser thread runs ahead of pass 1 (bounded: that many extra batches in memory)
+
+
+def _prefetch(gen, depth: int = _PREFETCH):
+    """Yield the items of ``gen`` produced by a background thread, ``depth`` items ahead at most.
+
+    The native parser and the file reads release the GIL, so parsing overlaps the pass-1 work of the consumer; the
+    items, their order and any exception (raised at the consumer's position in the stream, after the items parsed
+    before it) are those of ``gen`` itself. Closing the generator early stops the thread."""
+    q: queue.Queue = queue.Queue(depth)
+    stop = threading.Event()
+    done = object()
+
+    def run() -> None:
+        try:
+            for item in gen:
+                while not stop.is_set():
+                    try:
+                        q.put(item, timeout=0.05)
+                        break
+                    except queue.Full:
+                        continue
+                if stop.is_set():
+                    return
+            q.put(done)
+        except BaseException as error:  # noqa: BLE001 - re-raised in the consumer
+            q.put(error)
+
+    t = threading.Thread(target=run, name="vnx-reads-prefetch", daemon=True)
+    t.start()
+    try:
+        while True:
+            item = q.get()
+            if item is done:
+                return
+            if isinstance(item, BaseException):
+                raise item
+            yield item
+    finally:
+        stop.set()
+        t.join()
 
 
 def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner, *, overwrite, partial_dir, select,
@@ -169,13 +214,13 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
 
         if opt.workers == 1:
             _p_init(*initargs)
-            for b in batches():
+            for b in _prefetch(batches()):
                 take(_process(*b))
         else:
             # the pool outlives pass 1: V12 parallel pass 2 runs bucket consensus on the same workers (shut down below)
             pool = ProcessPoolExecutor(max_workers=opt.workers, initializer=_p_init, initargs=initargs)
             window: deque = deque()
-            for b in batches():
+            for b in _prefetch(batches()):
                 window.append(pool.submit(_process, *b))
                 if len(window) >= 2 * opt.workers:
                     take(window.popleft().result(), len(window))
