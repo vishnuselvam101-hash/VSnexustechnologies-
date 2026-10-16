@@ -121,7 +121,9 @@ def pool_case(rng: np.random.Generator, strands: int | None = None, per_strand: 
            "band_slack": int(rng.choice([0, 3, 32])), "max_cluster_reads": int(rng.choice([2, 4, 8, 64])),
            "max_refine_pairs": int(rng.choice([20, 2_000_000])), "medoid_members": int(rng.choice([2, 16])),
            # the frozen cases exercise the absolute budget (V10's per-read allowance would lift the 50-pair stop)
-           "max_candidate_pairs_per_read": 0}
+           "max_candidate_pairs_per_read": 0,
+           # and its stop (job 86's lowered bucket cap would let the 50-pair cases continue; tests/v11 covers it)
+           "bucket_cap_floor": 1 << 30}
     return reads, cfg
 
 

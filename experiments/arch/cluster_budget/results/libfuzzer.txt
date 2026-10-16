@@ -1,0 +1,3 @@
+libFuzzer + ASan + UBSan (clang 18), 2026-10-12, code e45c0c9
+capped_fuzz.c (vnx_cl_cand_run_capped vs floor-less forms): Done 102164 runs in 301 second(s), exit 0
+candidates_fuzz.c (vnx_cl_cand_run vs single-buffer form, regression): Done 51286 runs in 181 second(s), exit 0

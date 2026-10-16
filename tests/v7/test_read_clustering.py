@@ -219,6 +219,24 @@ def test_candidate_pair_budget_stops_the_stage_and_is_reported(pools, tmp_path):
     assert cl["frames_verified"] == 0 and data is None and st == "FAILURE"
 
 
+def test_candidate_pair_budget_lowers_the_bucket_cap_and_keeps_clustering(pools, tmp_path):
+    """Job 86: over the budget the bucket cap is lowered (floor 2 here) and the stage still runs; the record is reported
+    and does not stop the stage. SIMULATED: 120,223 slot pairs at cap 256; budget 10,000 -> cap 4, EXACT; budget 2,000
+    -> cap 2, too few clusters: an explicit failure, never a false success."""
+    p = pools["reads"]["helped"]
+    cfg = ClusterConfig(max_candidate_pairs=10_000, max_candidate_pairs_per_read=0, bucket_cap_floor=2)
+    st, data, rep = _run(p, tmp_path / "on.vnx", read_clustering="fallback", cluster_config=cfg)
+    cl = rep["clustering"]
+    (rec,) = cl["budget_exceeded"]
+    assert cl["status"] == "ran" and rec["limit"] == "max_candidate_pairs" and rec["stopped"] is False
+    assert rec["used"] <= rec["allowed"] == 10_000 < rec["requested"] and 2 <= rec["bucket_cap"] < 256
+    assert cl["clustering"]["candidate_bucket_cap"] == rec["bucket_cap"] and cl["frames_verified"] > 0
+    assert _outcome(p, tmp_path / "x.vnx", pools["container"], read_clustering="fallback", cluster_config=cfg)["outcome"] == EXACT
+    tight = ClusterConfig(max_candidate_pairs=2_000, max_candidate_pairs_per_read=0, bucket_cap_floor=2)
+    assert _outcome(p, tmp_path / "t.vnx", pools["container"], read_clustering="fallback",
+                    cluster_config=tight)["outcome"] in (EXACT, EXPLICIT_FAILURE)
+
+
 # ------------------------------------------------------------------------------------------------ negative
 def test_malformed_read_file_is_refused_with_a_typed_error(tmp_path):
     p = tmp_path / "bad.fastq"
