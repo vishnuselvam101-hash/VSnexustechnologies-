@@ -21,6 +21,7 @@ import pytest
 from vnxdna.core.errors import VNXConfigurationError, VNXFormatError
 from vnxdna.dnaenc import reads as ref_reads
 from vnxdna.native import engine as ne
+from vnxdna.recovery import engine as re_
 from vnxdna.native.reads import iter_reads
 from vnxdna.recovery import pass1
 from vnxdna.recovery.options import DecodeOptions
@@ -153,7 +154,7 @@ def _v13_spill(path, lay, opt, d: Path, buckets: int) -> Counter:
 
 def _engine_spill(path, lay, opt, d: Path, buckets: int, threads: int, dedup: bool) -> dict:
     Spill(d, buckets, lay.payload_bytes, lay.frame_nt).close()
-    return ne.run_pass1(path, d, lay, opt, buckets, fmt="fastq", threads=threads, dedup=dedup, batch=700)
+    return re_.run_pass1(path, d, lay, opt, buckets, fmt="fastq", threads=threads, dedup=dedup, batch=700)
 
 
 def _same_dirs(a: Path, b: Path) -> bool:
@@ -244,7 +245,7 @@ def test_fallback_when_engine_is_deselected(pools, tmp_path, monkeypatch):
 def test_fallback_on_engine_error(pools, tmp_path, monkeypatch):
     def boom(*a, **k):
         raise ne.EngineError("injected")
-    monkeypatch.setattr(ne, "run_pass1", boom)
+    monkeypatch.setattr(re_, "run_pass1", boom)
     res, out = _decode(pools, tmp_path, "indel")
     eng = res.report["engine"]
     assert res.status == "SUCCESS" and eng["rung"] == "v13" and "injected" in eng["fallbacks"][0]["reason"]
@@ -258,7 +259,7 @@ def test_fallback_on_non_success(pools, tmp_path, monkeypatch):
     decodes, and the output is the archive."""
     def nothing(reads_path, spill_dir, lay, opt, buckets, **kw):
         return {k: 0 for k in ne.STAT_NAMES} | {"reads": 1}
-    monkeypatch.setattr(ne, "run_pass1", nothing)
+    monkeypatch.setattr(re_, "run_pass1", nothing)
     res, out = _decode(pools, tmp_path, "indel")
     eng = res.report["engine"]
     assert res.status == "SUCCESS" and eng["rung"] == "v13" and eng["fallbacks"][0]["rung"] == "stream"
@@ -305,9 +306,11 @@ def test_abi_and_argument_checks(pools, tmp_path):
     lay = detect_layout(pools["clean"], opt)
     Spill(tmp_path, 1, lay.payload_bytes, lay.frame_nt).close()
     with pytest.raises(ne.EngineError):
-        ne.run_pass1(pools["clean"], tmp_path, lay, opt, 0, fmt="fastq", threads=1)      # 0 buckets: invalid argument
+        re_.run_pass1(pools["clean"], tmp_path, lay, opt, 0, fmt="fastq", threads=1)      # 0 buckets: invalid argument
     with pytest.raises(ne.EngineUnsupported):
-        ne.run_pass1(pools["clean"], tmp_path, lay, opt, 1, fmt="plain", threads=1)
+        re_.run_pass1(pools["clean"], tmp_path, lay, opt, 1, fmt="plain", threads=1)
+    with pytest.raises(ne.EngineUnsupported):
+        re_.params_for(lay, DecodeOptions(band=6, retry_band=12))
 
 
 # ------------------------------------------------------------------------------------------ configuration surface

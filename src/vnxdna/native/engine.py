@@ -9,11 +9,14 @@ compiled into the library. Every attempted read gets exactly the result of :func
 
 Backend: ``VNXDNA_ENGINE_BACKEND`` = auto | native | reference (reference = never use the engine); library override
 ``VNXDNA_ENGINE_LIB``. Build: ``python -m vnxdna.native.engine build`` (cargo, offline, no third-party crates).
+Layering: this binding takes :class:`EngineParams` (plain arrays and integers); :mod:`vnxdna.recovery.engine` builds
+them from a layout and the decode options and is what the decoder calls.
 """
 from __future__ import annotations
 
 import ctypes
 import os
+from dataclasses import dataclass
 
 import numpy as np
 
@@ -125,57 +128,76 @@ def kernel_levels() -> tuple[int, int]:
     return na.LEVELS[level], nrs.LEVELS[rs_name]
 
 
-def run_pass1(reads_path: str | os.PathLike, spill_dir: str | os.PathLike, lay, opt, buckets: int, *, fmt: str,
+@dataclass
+class EngineParams:
+    """What the engine needs of a layout and the decode options, as plain integers and arrays (built by
+    :func:`vnxdna.recovery.engine.params_for`; this module imports nothing above ``vnxdna.native``)."""
+
+    t: int                      # template length (nt)
+    frame_nt: int
+    frame_bytes: int
+    payload: int
+    parity: int
+    mpos: np.ndarray            # int64 marker positions (ascending)
+    want: np.ndarray            # uint8 marker codes
+    block: np.ndarray           # int64 marker block index per marker
+    nblocks: int
+    frame_pos64: np.ndarray     # int64 template position of every frame base
+    tpl16: np.ndarray           # aligner geometry (vnxdna.native.align.geometry)
+    seg_of: np.ndarray
+    prev_seg: np.ndarray
+    next_seg: np.ndarray
+    n_segments: int
+    frame_pos32: np.ndarray
+    seg_frame: np.ndarray
+    band: int
+    c_mm: int
+    c_ins: int
+    c_del: int
+    c_x: int
+    guard: int
+    min_q: int
+    rc: bool
+    rc_bounded: bool
+    spec: bool
+    ks: np.ndarray              # uint8 keystreams, 256 x span
+    span: int
+    max_reads: int
+    frame_version: int
+    orient_margin: int
+    orient_shift: int = 2
+
+
+def run_pass1(reads_path: str | os.PathLike, spill_dir: str | os.PathLike, params: EngineParams, buckets: int, *, fmt: str,
               threads: int, dedup: bool = True, batch: int | None = None, cancel: Cancel | None = None) -> dict:
     """Pass 1 of a decode of ``reads_path`` into the spill bucket files of ``spill_dir`` (record format of
     :class:`vnxdna.recovery.spill.Spill`, appended). Returns the statistics (``STAT_NAMES``). Raises EngineUnsupported
     (outside the exact domain: fall back), EngineCancelled or EngineError."""
-    from vnxdna.dnaenc.layout import HEADER_BYTES, CRC_BYTES
-    from vnxdna.dnaenc.scrambler import keystreams
-    from vnxdna.core.version import FRAME_VERSION
-    from vnxdna.sync.template import TemplateAligner
-    from vnxdna.native.align import geometry
     if fmt not in ("fastq", "fasta"):
         raise EngineUnsupported(f"input format {fmt!r}")
-    if opt.retry_band:
-        raise EngineUnsupported("retry_band")
     lib = KERNEL.lib()
     lanes, rs_level = kernel_levels()
-    al = TemplateAligner(lay, opt.band, opt.sync_costs)
-    g = geometry(al)
-    tpl, fpos = lay.template()
-    mpos = np.ascontiguousarray(np.flatnonzero(tpl >= 0), dtype=np.int64)
-    want = np.ascontiguousarray(tpl[mpos], dtype=np.uint8)
-    starts = np.flatnonzero(np.diff(mpos, prepend=-2) > 1)
-    block = np.zeros(mpos.size, dtype=np.int64)
-    if mpos.size:
-        block[starts[1:]] = 1
-        block = np.ascontiguousarray(np.cumsum(block), dtype=np.int64)
-    span = HEADER_BYTES - 1 + lay.payload_bytes + CRC_BYTES
-    ks = np.ascontiguousarray(keystreams(span), dtype=np.uint8)
-    fpos64 = np.ascontiguousarray(fpos, dtype=np.int64)
-    c = opt.sync_costs
-    keep = (mpos, want, block, ks, fpos64, g)          # alive for the call
+    q = params
+    arrays = {k: np.ascontiguousarray(getattr(q, k)) for k in ("mpos", "want", "block", "frame_pos64", "tpl16", "seg_of",
+                                                                "prev_seg", "next_seg", "frame_pos32", "seg_frame", "ks")}
     cancel = cancel or Cancel()
-    cfg = _Cfg(abi=ABI_VERSION, t=int(tpl.size), frame_nt=lay.frame_nt, frame_bytes=lay.frame_bytes,
-               payload=lay.payload_bytes, parity=lay.inner_parity, nm=int(mpos.size), nblocks=int(starts.size),
-               mpos=_ptr(mpos), want=_ptr(want), block=_ptr(block), frame_pos64=_ptr(fpos64), tpl16=_ptr(g["tpl"]),
-               seg_of=_ptr(g["seg_of"]), prev_seg=_ptr(g["prev_seg"]), next_seg=_ptr(g["next_seg"]),
-               n_segments=int(al.n_segments), frame_pos32=_ptr(g["frame_pos"]), seg_frame=_ptr(g["seg_frame"]),
-               band=int(opt.band), c_mm=int(c.marker_mismatch), c_ins=int(c.insertion), c_del=int(c.deletion),
-               c_x=int(c.marker_deletion_extra), guard=int(c.guard_segments), min_q=int(opt.min_quality),
-               rc=int(bool(opt.reverse_complement)), rc_bounded=int(opt.orientation_retry == "bounded"),
-               spec=int(opt.sync_speculation == "markers"), orient_margin=max(2, int(mpos.size) // 8),
-               orient_shift=2, ks=_ptr(ks), span=span, threads=int(threads),
+    cfg = _Cfg(abi=ABI_VERSION, t=int(q.t), frame_nt=int(q.frame_nt), frame_bytes=int(q.frame_bytes), payload=int(q.payload),
+               parity=int(q.parity), nm=int(arrays["mpos"].size), nblocks=int(q.nblocks), mpos=_ptr(arrays["mpos"]),
+               want=_ptr(arrays["want"]), block=_ptr(arrays["block"]), frame_pos64=_ptr(arrays["frame_pos64"]),
+               tpl16=_ptr(arrays["tpl16"]), seg_of=_ptr(arrays["seg_of"]), prev_seg=_ptr(arrays["prev_seg"]),
+               next_seg=_ptr(arrays["next_seg"]), n_segments=int(q.n_segments), frame_pos32=_ptr(arrays["frame_pos32"]),
+               seg_frame=_ptr(arrays["seg_frame"]), band=int(q.band), c_mm=int(q.c_mm), c_ins=int(q.c_ins),
+               c_del=int(q.c_del), c_x=int(q.c_x), guard=int(q.guard), min_q=int(q.min_q), rc=int(bool(q.rc)),
+               rc_bounded=int(bool(q.rc_bounded)), spec=int(bool(q.spec)), orient_margin=int(q.orient_margin),
+               orient_shift=int(q.orient_shift), ks=_ptr(arrays["ks"]), span=int(q.span), threads=int(threads),
                batch=int(batch or 16384), buckets=int(buckets), align_lanes=lanes, rs_level=rs_level,
-               max_reads=int(opt.max_reads), fmt=1 if fmt == "fastq" else 2, dedup=int(bool(dedup)),
-               frame_version=int(FRAME_VERSION), cancel=cancel.address(), io_block=IO_BLOCK,
-               table_bits=TABLE_BITS)
+               max_reads=int(q.max_reads), fmt=1 if fmt == "fastq" else 2, dedup=int(bool(dedup)),
+               frame_version=int(q.frame_version), cancel=cancel.address(), io_block=IO_BLOCK, table_bits=TABLE_BITS)
     stats = np.zeros(int(lib.vnx_eng_n_stats()), dtype=np.int64)
     err = ctypes.create_string_buffer(512)
     rc = lib.vnx_eng_pass1(ctypes.byref(cfg), os.fsencode(reads_path), os.fsencode(spill_dir), _ptr(stats),
                            stats.size, err, len(err))
-    del keep
+    del arrays                                  # alive for the call
     msg = err.value.decode("utf-8", "replace")
     if rc == RC_UNSUPPORTED:
         raise EngineUnsupported(msg)
@@ -184,8 +206,6 @@ def run_pass1(reads_path: str | os.PathLike, spill_dir: str | os.PathLike, lay, 
     if rc != RC_OK:
         raise EngineError(f"engine failed: {_ERRORS.get(rc, rc)}: {msg}")
     return dict(zip(STAT_NAMES, stats.tolist()))
-
-
 
 
 def scan_file(path: str | os.PathLike, fmt: str, *, block: int = IO_BLOCK, use_map: bool = True) -> tuple:

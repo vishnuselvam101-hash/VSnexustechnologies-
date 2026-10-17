@@ -122,7 +122,7 @@ def stream_refusal(opt: DecodeOptions, reads_path, select=None) -> str | None:
         return f"input not detected ({type(error).__name__})"
     if fmt not in ("fastq", "fasta"):
         return f"{fmt} input runs on the V13 path"
-    from vnxdna.native import engine as ne
+    from vnxdna.recovery import engine as ne
     try:
         if ne.resolve_backend() != "native":
             return "VNXDNA_ENGINE_BACKEND=reference"
@@ -153,7 +153,7 @@ class _reference_backends:
 def _decode_ladder(reads_path, output, opt: DecodeOptions, t0: float, ev, **kw) -> DecodeResult:
     """The fallback ladder: stream engine -> V13 path -> Python references (docs/V13_ENGINE_ARCHITECTURE.md)."""
     from vnxdna.core.errors import VNXError
-    from vnxdna.native import engine as ne
+    from vnxdna.recovery import engine as ne
     from vnxdna.recovery.planner import RecoveryPlanner, VNXBudgetExceeded
     info: dict = {"requested": opt.engine, "rung": None, "fallbacks": []}
     rung = {"auto": "stream", "stream": "stream", "v13": "v13", "reference": "reference"}[opt.engine]
@@ -346,7 +346,7 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
         if stream is not None:
             # V13 engine: pass 1 in one native call that writes the spill bucket files itself
             from vnxdna.dnaenc.reads import detect
-            from vnxdna.native import engine as ne
+            from vnxdna.recovery import engine as ne
             spill.close()
             es = ne.run_pass1(reads_path, tmp_root, lay, opt, buckets, fmt=detect(reads_path), threads=opt.threads,
                               dedup=opt.engine_dedup, cancel=stream)
