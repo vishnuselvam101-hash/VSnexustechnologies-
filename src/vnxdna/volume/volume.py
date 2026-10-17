@@ -133,6 +133,8 @@ class Volume:
             raise VNXFormatError(f"{root} is not a {VOLUME_FORMAT} volume", stage="volume")
         # the extent size is the volume's (volume.json); the options bring cache/write-back sizes, workers and codec options
         opt = replace(options or VolumeOptions(), extent_bytes=int(meta["extent_bytes"]))
+        if key is None and passphrase is None:
+            key, passphrase = opt.archive.key, opt.archive.passphrase       # a key given through the options
         if meta.get("encrypted") and key is None and passphrase is None:
             raise VNXConfigurationError("this volume is encrypted; pass the key or passphrase")
         if key is not None or passphrase is not None:

@@ -61,6 +61,7 @@ Every package lives under `src/vnxdna/`. A **layer** number constrains imports (
 | 5 | `vnxdna.physical` | physical-record schemas and validator; export/import package schemas, writer and reader (spec §9.3) | `experiments/v6/physical/schema/*`, `experiments/v6/physical/validate.py` |
 | 6 | `vnxdna.providers` | `DNAWriter`/`DNAReader`/`DNAProvider` protocols, registry, `ReferenceSimulatorProvider` (spec §9) | new |
 | 6 | `vnxdna.benchmark` | benchmark and experiment harness, data generator, sweeps, experiment manifest (`vnx.experiment/1`) | `v4/bench.py`, `v4/experiment.py`, `v4/sweep.py`, `v4/datagen.py` |
+| 6 | `vnxdna.volume` (V13) | the disk-like volume: extents as ordinary archives, write-back buffer, hot-extent cache, write-ahead journal, scrub | new (V13) |
 | 7 | `vnxdna.sdk` | **the stable public API** (§4) | new façade over `pipeline`, `archive`, `simulation`, `providers`, `benchmark` |
 | 7 | `vnxdna.conformance` | vector runner (spec §6); a small vector subset as package data | new |
 | 8 | `vnxdna.commands` | the `vnx` CLI: argument parsing, one SDK call, JSON output. No pipeline logic | `v4/cli.py`, `v4/config.py` (config parsing moves to `sdk.config`) |
