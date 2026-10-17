@@ -24,6 +24,7 @@ jobs:
           python -m vnxdna.native.strand build --strict
           python -m vnxdna.native.orient build --strict
           python -m vnxdna.native.integrity build --strict
+          python -m vnxdna.native.engine build --strict
       - run: ruff check src tests research
       - run: python -m pytest
       - run: python -m compileall -q src
@@ -96,12 +97,15 @@ jobs:
       - run: mypy
 
   rust:
-    # the Rust integrity kernel (src/vnxdna/native/rust/integrity): unit tests, warnings as errors, offline (no crates)
+    # the Rust kernels (src/vnxdna/native/rust/integrity, src/vnxdna/native/rust/engine): unit tests, warnings as errors,
+    # offline (no crates); the engine crate compiles the reused C kernels with the system C compiler (build.rs)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - run: cargo --version
       - run: cargo test --release --offline --locked --manifest-path src/vnxdna/native/rust/integrity/Cargo.toml
+        env: {RUSTFLAGS: -D warnings}
+      - run: cargo test --release --offline --locked --manifest-path src/vnxdna/native/rust/engine/Cargo.toml
         env: {RUSTFLAGS: -D warnings}
   web:
     # TypeScript web layer (web/): strict type check, dashboard build, node:test (contracts against the JSON schemas,

@@ -308,3 +308,71 @@ def test_abi_and_argument_checks(pools, tmp_path):
         ne.run_pass1(pools["clean"], tmp_path, lay, opt, 0, fmt="fastq", threads=1)      # 0 buckets: invalid argument
     with pytest.raises(ne.EngineUnsupported):
         ne.run_pass1(pools["clean"], tmp_path, lay, opt, 1, fmt="plain", threads=1)
+
+
+# ------------------------------------------------------------------------------------------ configuration surface
+def test_engine_configuration_surface(monkeypatch):
+    """One configuration surface: the environment sets the defaults, explicit options win, bad values are refused."""
+    monkeypatch.delenv("VNXDNA_ENGINE", raising=False)
+    monkeypatch.delenv("VNXDNA_ENGINE_THREADS", raising=False)
+    o = DecodeOptions()
+    assert o.engine == "auto" and o.engine_threads is None and o.threads == 1
+    assert DecodeOptions(workers=4).threads == 4 and DecodeOptions(workers=4, engine_threads=2).threads == 2
+    monkeypatch.setenv("VNXDNA_ENGINE", "v13")
+    monkeypatch.setenv("VNXDNA_ENGINE_THREADS", "3")
+    o = DecodeOptions(workers=2)
+    o.validate()
+    assert o.engine == "v13" and o.engine_threads == 3 and o.threads == 3
+    assert DecodeOptions(engine="stream", engine_threads=1).engine == "stream"       # explicit wins over the environment
+    monkeypatch.setenv("VNXDNA_ENGINE", "turbo")
+    with pytest.raises(VNXConfigurationError, match="VNXDNA_ENGINE"):
+        DecodeOptions().validate()
+    monkeypatch.setenv("VNXDNA_ENGINE", "auto")
+    monkeypatch.setenv("VNXDNA_ENGINE_THREADS", "many")
+    with pytest.raises(VNXConfigurationError, match="VNXDNA_ENGINE_THREADS"):
+        DecodeOptions().validate()
+    monkeypatch.delenv("VNXDNA_ENGINE_THREADS")
+    for bad in (0, 257, True, "2"):
+        with pytest.raises(VNXConfigurationError):
+            DecodeOptions(engine_threads=bad).validate()
+
+
+def test_engine_threads_are_independent_of_workers(pools, tmp_path):
+    a, out_a = _decode(pools, tmp_path, "indel", workers=1, engine_threads=3)
+    assert a.report["engine"]["rung"] == "stream" and a.report["engine"]["threads"] == 3
+    b, out_b = _decode(pools, tmp_path, "indel", workers=3, engine_threads=1)
+    assert b.report["engine"]["threads"] == 1 and out_a.read_bytes() == out_b.read_bytes() == pools["archive"].read_bytes()
+    assert a.report["engine"]["pass1"]["attempted"] == b.report["engine"]["pass1"]["attempted"]   # deterministic schedule
+
+
+def test_native_status_lists_the_engine():
+    import vnxdna
+    from vnxdna import native
+    st = vnxdna.native_status()
+    k = st["kernels"]["engine"]
+    assert k["backend"] == "native" and k["abi_version"] == ne.ABI_VERSION and k["reference"] == "vnxdna.recovery.pass1"
+    assert k["library"].endswith(".so") and k["library_origin"] in ("env", "packaged", "in-place")
+    assert native.backend_summary()["engine"]["backend"] == "native"
+    assert "engine" in native.KERNELS and native.main([]) == 0
+
+
+def test_cli_engine_flags(pools, tmp_path):
+    import json
+    from typer.testing import CliRunner
+    from vnxdna.commands.cli import app
+    runner = CliRunner()
+    reads = str(pools["indel"])
+    r = runner.invoke(app, ["decode", reads, "-o", str(tmp_path / "a.vnx"), "--engine", "v13", "--report",
+                            str(tmp_path / "a.json")])
+    assert r.exit_code == 0, r.output
+    rep = json.loads((tmp_path / "a.json").read_text())["result"]
+    assert rep["engine"]["rung"] == "v13" and rep["engine"]["requested"] == "v13"
+    r = runner.invoke(app, ["decode", reads, "-o", str(tmp_path / "b.vnx"), "--engine", "stream", "--no-engine-dedup",
+                            "--engine-threads", "2", "--report", str(tmp_path / "b.json")])
+    assert r.exit_code == 0, r.output
+    rep = json.loads((tmp_path / "b.json").read_text())["result"]
+    assert rep["engine"] == {**rep["engine"], "rung": "stream", "dedup": False, "threads": 2}
+    assert rep["engine"]["pass1"]["skipped"] == 0
+    assert (tmp_path / "a.vnx").read_bytes() == (tmp_path / "b.vnx").read_bytes() == pools["archive"].read_bytes()
+    r = runner.invoke(app, ["decode", reads, "-o", str(tmp_path / "c.vnx"), "--engine", "turbo"])
+    assert r.exit_code == 7 and not (tmp_path / "c.vnx").exists()

@@ -437,7 +437,17 @@ def decode(reads: Path, output: Optional[Path] = typer.Option(None, "--output", 
                None, "--max-container-bytes",
                help="Refuse a superblock claiming a larger container (default 4 GiB; exit 3 RESOURCE_LIMIT)."),
            expect_archive_id: Optional[str] = EXPECT_ID_OPT, expect_sha256: Optional[str] = EXPECT_SHA_OPT,
-           no_input_hash: bool = typer.Option(False, "--no-input-hash", help="Do not compute the SHA-256 of the read file.")
+           no_input_hash: bool = typer.Option(False, "--no-input-hash", help="Do not compute the SHA-256 of the read file."),
+           engine: Optional[str] = typer.Option(
+               None, "--engine",
+               help="V13 engine ladder: auto (default; the streaming engine when built and applicable, else the V13 path), "
+                    "stream (the engine or an error), v13 (the Python-orchestrated path) or reference (every kernel on its "
+                    "Python reference). Default from VNXDNA_ENGINE."),
+           engine_dedup: Optional[bool] = typer.Option(
+               None, "--engine-dedup/--no-engine-dedup",
+               help="V13 engine: attempt only reads whose address is not verified yet (default) or every read."),
+           engine_threads: Optional[int] = typer.Option(
+               None, "--engine-threads", help="V13 engine threads (default: --workers; VNXDNA_ENGINE_THREADS).")
            ) -> None:
     """Reconstruct a verified VNX4 container from DNA reads (FASTA/FASTQ)."""
     budget = {k: v for k, v in (("max_reads_examined", max_recovery_reads), ("max_round_b_reads", max_round_b_reads),
@@ -451,7 +461,8 @@ def decode(reads: Path, output: Optional[Path] = typer.Option(None, "--output", 
                                   soft_decoding=soft_decoding, recovery_schedule=recovery_schedule,
                                   consensus_weighting=consensus_weighting, max_container_bytes=max_container_bytes, expect_archive_id=expect_archive_id,
                                   expect_sha256=expect_sha256, read_clustering=read_clustering,
-                                  orientation_retry=orientation_retry, sync_speculation=sync_speculation)
+                                  orientation_retry=orientation_retry, sync_speculation=sync_speculation,
+                                  engine=engine, engine_dedup=engine_dedup, engine_threads=engine_threads)
         return _decode(reads, output, extract_dir, partial_dir, select, opts, force, key_file, passphrase_env, report, events,
                        task_id, allow_unencrypted, not no_input_hash)
     _run(go)

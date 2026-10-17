@@ -422,3 +422,76 @@ impl FpMap {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn lossy_table_inserts_finds_and_evicts() {
+        let mut t = Lossy::new(6);                        // 8 buckets x 8 slots
+        for i in 1..=64u64 {
+            t.insert(fmix(i));
+        }
+        assert!((1..=64u64).filter(|&i| t.contains(fmix(i))).count() >= 48);
+        t.insert(fmix(1));
+        assert!(t.inserts <= 65 && t.evictions <= 64 && t.bytes() == 8 * 8 * 8);
+        assert!(!t.contains(fmix(999_999)));              // never inserted (fingerprints are never 0)
+    }
+
+    #[test]
+    fn bloom_never_rejects_an_inserted_fingerprint() {
+        let mut b = Bloom::new(12);
+        let fps: Vec<u64> = (1..500u64).map(fmix).collect();
+        for &f in &fps {
+            b.insert(f);
+        }
+        assert!(fps.iter().all(|&f| b.maybe(f)));
+        assert!((500..5000u64).map(fmix).filter(|&f| b.maybe(f)).count() < 2000);
+    }
+
+    #[test]
+    fn fpmap_first_value_wins() {
+        let mut m = FpMap::new();
+        m.reset(10);
+        m.insert_first(fmix(7), 1);
+        m.insert_first(fmix(7), 2);
+        assert_eq!(m.get(fmix(7)), Some(1));
+        assert_eq!(m.get(fmix(8)), None);
+        m.reset(10);
+        assert_eq!(m.get(fmix(7)), None);
+    }
+
+    #[test]
+    fn windows_forward_and_reverse_complement_agree() {
+        let codes: Vec<u8> = (0..64u8).map(|i| (i * 7 + 3) % 4).collect();
+        let rc: Vec<u8> = codes.iter().rev().map(|&c| 3 - c).collect();
+        for a in [0i64, 5, 40] {
+            assert_eq!(win_rc(&codes, a), win_fwd(&rc, a));
+        }
+        assert_eq!(win_fwd(&codes, 41), None);
+        let mut with_n = codes.clone();
+        with_n[10] = 4;
+        assert_eq!(win_fwd(&with_n, 0), None);
+        let mut out = [0u64; NS];
+        win_shifts(&codes, 0, 5, false, &mut out);
+        assert_eq!(out[0], win_fp(0, win_fwd(&codes, 5).unwrap()));
+        assert_eq!(out[1], win_fp(0, win_fwd(&codes, 4).unwrap()));
+        assert_eq!(out[2], win_fp(0, win_fwd(&codes, 6).unwrap()));
+    }
+
+    #[test]
+    fn header_distance_counts_bases() {
+        let a: u128 = 0b11_00_01_10;
+        assert_eq!(header_dist(a, a), 0);
+        assert_eq!(header_dist(a, a ^ 0b01), 1);
+        assert_eq!(header_dist(a, a ^ 0b11_00_00_00), 1);
+        assert_eq!(header_dist(a, a ^ 0b10_00_00_01), 2);
+    }
+
+    #[test]
+    fn fmix_is_odd_and_spreads() {
+        assert!((0..1000u64).all(|i| fmix(i) & 1 == 1));
+        assert_ne!(fmix(1), fmix(2));
+    }
+}

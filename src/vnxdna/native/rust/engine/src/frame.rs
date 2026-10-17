@@ -220,3 +220,20 @@ pub fn tentative(cfg: &Cfg, hdr_bytes: &[u8]) -> Option<Fields> {
 pub fn pack4(b: &[u8]) -> u8 {
     (b[0] << 6) | (b[1] << 4) | (b[2] << 2) | b[3]
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn crc32_check_value() {
+        assert_eq!(crc32(b"123456789"), 0xCBF4_3926);     // the CRC-32/ISO-HDLC check value
+        assert_eq!(crc32(b""), 0);
+    }
+
+    #[test]
+    fn pack4_packs_first_base_highest() {
+        assert_eq!(pack4(&[3, 0, 1, 2]), 0b11_00_01_10);
+        assert_eq!(pack4(&[0, 0, 0, 1]), 1);
+    }
+}

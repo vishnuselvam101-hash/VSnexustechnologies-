@@ -241,3 +241,31 @@ impl Cfg {
         unsafe { std::ptr::read_volatile(self.cancel as *const i64) != 0 }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn null_and_out_of_range_configs_are_refused() {
+        // SAFETY: a null pointer is the documented refusal case.
+        assert!(unsafe { Cfg::from_raw(std::ptr::null()) }.is_err());
+        let raw = RawCfg {
+            abi: 1, t: 0, frame_nt: 4, frame_bytes: 1, payload: 1, parity: 0, nm: 0, nblocks: 0,
+            mpos: std::ptr::null(), want: std::ptr::null(), block: std::ptr::null(), frame_pos64: std::ptr::null(),
+            tpl16: std::ptr::null(), seg_of: std::ptr::null(), prev_seg: std::ptr::null(), next_seg: std::ptr::null(),
+            n_segments: 1, frame_pos32: std::ptr::null(), seg_frame: std::ptr::null(), band: 6, c_mm: 1, c_ins: 1,
+            c_del: 1, c_x: 1, guard: 1, min_q: 0, rc: 1, rc_bounded: 1, spec: 1, orient_margin: 2, orient_shift: 2,
+            ks: std::ptr::null(), span: 14, threads: 1, batch: 64, buckets: 1, align_lanes: 4, rs_level: 0,
+            max_reads: 1, fmt: 1, dedup: 1, frame_version: 4, cancel: std::ptr::null(), io_block: 1 << 16,
+            table_bits: 10,
+        };
+        // SAFETY: every array length is 0 or refused before the pointer is read (T = 0 fails first).
+        let err = match unsafe { Cfg::from_raw(&raw) } {
+            Ok(_) => panic!("T = 0 must be refused"),
+            Err(e) => e,
+        };
+        assert!(err.contains("T"), "{}", err);
+        assert_eq!(std::mem::size_of::<RawCfg>(), 45 * 8);
+    }
+}

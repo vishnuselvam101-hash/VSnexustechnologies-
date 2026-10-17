@@ -348,7 +348,7 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
             from vnxdna.dnaenc.reads import detect
             from vnxdna.native import engine as ne
             spill.close()
-            es = ne.run_pass1(reads_path, tmp_root, lay, opt, buckets, fmt=detect(reads_path), threads=opt.workers,
+            es = ne.run_pass1(reads_path, tmp_root, lay, opt, buckets, fmt=detect(reads_path), threads=opt.threads,
                               dedup=opt.engine_dedup, cancel=stream)
             for k in ("reads", "fast", "sync", "speculative", "reverse_complement", "pending", "orphans", "unaligned",
                       "rc_retry_skipped"):
@@ -358,7 +358,7 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
             cpu["seconds"] = es["ns_total"] / 1e9
             cpu["batches"] = es["batches"]
             if engine_info is not None:
-                engine_info["threads"] = opt.workers
+                engine_info["threads"] = opt.threads
                 engine_info["dedup"] = opt.engine_dedup
                 engine_info["pass1"] = {k: (round(v / 1e9, 4) if k.startswith("ns_") else v) for k, v in es.items()
                                         if not k.startswith("reserved")}

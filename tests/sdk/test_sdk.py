@@ -25,7 +25,8 @@ def check(res: sdk.Result) -> dict:
     schema.validate(res.to_cli(), "vnx.result/1")
     assert json.loads(json.dumps(doc, default=str)) is not None
     assert doc["software"]["name"] == "vnxdna" and doc["spec"] == "6.0"
-    assert set(doc["provenance"]["backends"]) == {"align", "reads", "rs", "cluster", "strand", "orient", "integrity", "outerlist"}
+    assert set(doc["provenance"]["backends"]) == {"align", "reads", "rs", "cluster", "strand", "orient", "integrity", "outerlist",
+                                                  "engine"}
     return doc
 
 
@@ -134,7 +135,8 @@ def test_benchmark_generate_validate_profiles_native_keygen(tmp_path):
     p = check(sdk.profiles())
     assert "v4-balanced" in p["result"]["layouts"] and "maximum-recovery" in p["result"]["redundancy"]
     n = check(sdk.native())
-    assert set(n["result"]["kernels"]) == {"align", "reads", "rs", "cluster", "strand", "orient", "integrity", "outerlist"}
+    assert set(n["result"]["kernels"]) == {"align", "reads", "rs", "cluster", "strand", "orient", "integrity", "outerlist",
+                                           "engine"}
     k = check(sdk.keygen(tmp_path / "k.key"))
     assert k["status"] == "OK" and (tmp_path / "k.key").stat().st_mode & 0o777 == 0o600
     b = check(sdk.benchmark("safe", (8_192,)))
@@ -158,7 +160,7 @@ def test_conformance_runs_the_packaged_vectors_with_both_backends():
     assert sdk.conformance(backend="reference").body["backends"] == {"align": "reference", "reads": "reference",
                                                                       "rs": "reference", "cluster": "reference",
                                                                       "strand": "reference", "orient": "reference", "integrity": "reference",
-                                                                      "outerlist": "reference"}
+                                                                      "outerlist": "reference", "engine": "reference"}
 
 
 def test_conformance_reports_a_wrong_expectation(tmp_path):

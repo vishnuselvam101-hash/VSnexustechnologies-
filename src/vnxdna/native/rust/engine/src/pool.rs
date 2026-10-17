@@ -118,3 +118,41 @@ impl Drop for Pool {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    #[test]
+    fn every_worker_runs_the_job_once() {
+        for threads in [1usize, 2, 5] {
+            let pool = Pool::new(threads);
+            assert_eq!(pool.threads(), threads);
+            let hits = AtomicUsize::new(0);
+            let seen = Mutex::new(Vec::new());
+            for _ in 0..3 {
+                assert!(pool.run(&|t| {
+                    hits.fetch_add(1, Ordering::Relaxed);
+                    seen.lock().unwrap().push(t);
+                }));
+            }
+            assert_eq!(hits.load(Ordering::Relaxed), 3 * threads);
+            let mut ids = seen.into_inner().unwrap();
+            ids.sort_unstable();
+            ids.dedup();
+            assert_eq!(ids, (0..threads).collect::<Vec<_>>());
+        }
+    }
+
+    #[test]
+    fn a_panicking_job_is_reported_and_the_pool_survives() {
+        let pool = Pool::new(3);
+        assert!(!pool.run(&|t| {
+            if t == 2 {
+                panic!("worker failure");
+            }
+        }));
+        assert!(pool.run(&|_t| {}));
+    }
+}

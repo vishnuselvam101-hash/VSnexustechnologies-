@@ -270,3 +270,66 @@ pub fn convert(src: &[u8], dst: &mut [u8]) {
         i += 1;
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn fastq(text: &[u8], eof: bool) -> Result<(usize, Vec<(usize, usize)>), String> {
+        let mut s = Scanner::new(true);
+        let mut out = Vec::new();
+        let used = s.scan(text, eof, &mut out)?;
+        Ok((used, out.iter().map(|r| (r.seq, r.len)).collect()))
+    }
+
+    #[test]
+    fn fastq_records_blank_lines_and_cr() {
+        let text = b"\n@r1\r\nACGT\r\n+\r\nIIII\r\n@r2\nAC\n+r2\nII\n";
+        let (used, recs) = fastq(text, true).unwrap();
+        assert_eq!(used, text.len());
+        assert_eq!(recs, vec![(6, 4), (25, 2)]);
+    }
+
+    #[test]
+    fn fastq_incomplete_record_is_carried_over_until_eof() {
+        let text = b"@r1\nACGT\n+\nIIII\n@r2\nAC\n+\n";
+        let (used, recs) = fastq(text, false).unwrap();
+        assert_eq!((used, recs.len()), (16, 1));
+        assert!(fastq(text, true).is_err());                      // truncated at EOF: the reference raises
+    }
+
+    #[test]
+    fn fastq_malformed_records_are_refused() {
+        assert!(fastq(b"ACGT\n+\nIIII\n", true).is_err());        // no '@'
+        assert!(fastq(b"@r\nACGT\n+\nII\n", true).is_err());       // quality length differs
+        assert!(fastq(b"@r\nACGT\n-\nIIII\n", true).is_err());     // no '+'
+    }
+
+    #[test]
+    fn fasta_wrapped_records_and_whitespace() {
+        let mut s = Scanner::new(false);
+        let mut out = Vec::new();
+        let text = b">r1 desc\nAC GT\n\tTT \n>r2\nA\n";
+        let used = s.scan(text, true, &mut out).unwrap();
+        assert_eq!(used, text.len());
+        assert_eq!(out.len(), 2);
+        // lines are stripped at both ends only (the reference's strip()): the inner space stays (and codes to N)
+        assert!(out[0].side && out[0].len == 7 && &s.side[out[0].seq..out[0].seq + 7] == b"AC GTTT");
+        assert!(!out[1].side && &text[out[1].seq..out[1].seq + out[1].len] == b"A");
+        assert!(Scanner::new(false).scan(b"ACGT\n>r\nA\n", true, &mut Vec::new()).is_err());
+    }
+
+    #[test]
+    fn convert_and_newline_search() {
+        let src = b"ACGTacgtNnX-ACGTACGTACGTACGTACGTACGTACG";
+        let mut dst = vec![9u8; src.len()];
+        convert(src, &mut dst);
+        let want: Vec<u8> = src.iter().map(|&c| LUT[c as usize]).collect();
+        assert_eq!(dst, want);
+        assert_eq!(&dst[..12], &[0, 1, 2, 3, 0, 1, 2, 3, 4, 4, 4, 4]);
+        let buf = b"0123456789012345678\n01";
+        assert_eq!(find_nl(buf, 0), Some(19));
+        assert_eq!(find_nl(buf, 20), None);
+        assert_eq!(find_nl(b"\n", 0), Some(0));
+    }
+}
