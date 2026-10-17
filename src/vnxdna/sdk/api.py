@@ -5,8 +5,10 @@ The ``vnx`` CLI (:mod:`vnxdna.commands`) is a thin layer over these functions: a
 """
 from __future__ import annotations
 
+import hashlib
 import os
 import shutil
+import sys
 import tempfile
 import time
 from collections.abc import Sequence
@@ -25,6 +27,7 @@ from vnxdna.pipeline import encode as _en
 from vnxdna.pipeline.encode import DNAOptions
 from vnxdna.recovery.options import DecodeOptions
 from vnxdna.recovery.planner import RecoveryBudget
+from vnxdna.sdk import cache as _cache
 from vnxdna.sdk.envelope import (ArchiveResult, BenchmarkResult, DecodeResult, EncodeResult, ExtractResult, InputHasher,
                                  InspectResult, ListResult, Result, SimulateResult, VerifyResult, error_json, file_ref)
 
@@ -33,7 +36,8 @@ PathLike = str | os.PathLike
 __all__ = ["archive", "encode", "decode", "inspect", "verify", "extract", "list_entries", "locate", "simulate", "benchmark",
            "codec_compare", "parse_size", "sweep", "channel_models", "channel_model", "channel_convert",
            "channel_sweep", "experiment_run", "experiment_reproduce", "generate", "validate_strands", "profiles",
-           "native", "keygen", "load_keys", "version", "conformance", "is_container"]
+           "native", "keygen", "load_keys", "version", "conformance", "is_container", "stream_encode", "stream_decode",
+           "volume_create", "volume_write", "volume_read", "volume_stat", "volume_scrub", "cache_stats", "cache_clear"]
 
 CONTAINER = [FORMAT_VERSION[0], FORMAT_VERSION[1]]
 
@@ -230,14 +234,18 @@ def decode(reads: PathLike, output: PathLike | None = None, *, options: DecodeOp
            key: bytes | None = None, passphrase: str | None = None, allow_unencrypted: bool = False,
            budget: RecoveryBudget | None = None, overwrite: bool = False, observer=None, task_id: str | None = None,
            progress=None, input_hash: bool = True, expect_archive_id: str | bytes | None = None,
-           expect_sha256: str | bytes | None = None, secure=None) -> DecodeResult:
+           expect_sha256: str | bytes | None = None, secure=None, cache_dir: PathLike | None = None) -> DecodeResult:
     """Reads → verified container (D0–D13), optionally extracted (D14); ``select`` = random access to some files.
 
     status SUCCESS | PARTIAL | FAILURE. A FAILURE without an exception carries ``error`` (INSUFFICIENT_REDUNDANCY).
     An encrypted archive decoded without a key publishes the verified ciphertext container: ``encrypted: true``,
     ``content_verified: false`` (spec §2.3.3). ``expect_archive_id`` / ``expect_sha256`` (override the options' values)
     refuse any other archive with ``ARCHIVE_MISMATCH`` (V6-SEC-03); a key or passphrase is checked against the recovered
-    container, and an unencrypted one is refused unless ``allow_unencrypted`` (V6-SEC-02)."""
+    container, and an unencrypted one is refused unless ``allow_unencrypted`` (V6-SEC-02).
+
+    ``cache_dir`` (or ``VNXDNA_CACHE_DIR``): the V13 result cache (:mod:`vnxdna.sdk.cache`): a whole-container decode
+    (no ``select``) whose input and options were decoded before is served from the cache (the container is copied and
+    re-verified); ``report["cache"]`` records the hit or miss. Off when neither is set."""
     _guard.enforce("decode", reads, secure)
     from dataclasses import replace
     t0 = time.perf_counter()
@@ -250,11 +258,30 @@ def decode(reads: PathLike, output: PathLike | None = None, *, options: DecodeOp
         opts = replace(opts, **expect)
     if output is None and extract_to is None and not select:
         raise VNXConfigurationError("give an output container, an extraction directory, or files to select")
+    cache = cache_key = None
+    cdir = _cache.configured_dir(cache_dir)
+    if cdir is not None and not select:
+        cache = _cache.ResultCache(cdir)
+        cache_key = _cache.key_for(reads, opts, has_key=key is not None or passphrase is not None)
     hasher = InputHasher("reads", [reads], enabled=input_hash)
     target, tmp = output, None
     ok = False
     try:
-        if select:
+        hit = cache.lookup(cache_key) if cache is not None and cache_key is not None else None
+        if hit is not None:
+            if output is None:
+                tmp = tempfile.mkdtemp(prefix="vnx-decode-")
+                target = Path(tmp) / "recovered.vnx"
+            assert target is not None
+            cached, report = hit
+            from vnxdna.core.util import atomic_output
+            with atomic_output(target, overwrite=overwrite) as t:
+                shutil.copyfile(cached, t)
+            res = _de.DecodeResult("SUCCESS", {**report, "cache": {"hit": True, "key": cache_key, "dir": str(cdir)}}, str(target))
+            if extract_to is not None and target is not None:
+                res.report["extract"] = _ar.extract(target, extract_to, key=key, passphrase=passphrase, overwrite=overwrite,
+                                                    allow_unencrypted=allow_unencrypted)
+        elif select:
             res = _de.decode_reads(reads, None, opts, select=list(select), select_dir=extract_to or Path("."), key=key,
                                    passphrase=passphrase, overwrite=overwrite, progress=progress, observer=observer,
                                    task_id=task_id, allow_unencrypted=allow_unencrypted)
@@ -265,6 +292,13 @@ def decode(reads: PathLike, output: PathLike | None = None, *, options: DecodeOp
             res = _de.decode_reads(reads, target, opts, overwrite=overwrite, partial_dir=partial_dir, key=key,
                                    passphrase=passphrase, progress=progress, observer=observer, task_id=task_id,
                                    allow_unencrypted=allow_unencrypted)
+            if res.status == "SUCCESS" and cache is not None and cache_key is not None and target is not None:
+                try:
+                    cache.store(cache_key, target, {k: v for k, v in res.report.items() if k != "extract"})
+                    res.report["cache"] = {"hit": False, "key": cache_key, "dir": str(cdir), "stored": True}
+                except OSError as exc:
+                    res.report["cache"] = {"hit": False, "key": cache_key, "dir": str(cdir), "stored": False,
+                                           "error": str(exc)[:200]}
             if res.status == "SUCCESS" and extract_to is not None and target is not None:
                 res.report["extract"] = _ar.extract(target, extract_to, key=key, passphrase=passphrase, overwrite=overwrite,
                                                     allow_unencrypted=allow_unencrypted)
@@ -300,6 +334,180 @@ def decode(reads: PathLike, output: PathLike | None = None, *, options: DecodeOp
     return DecodeResult("decode", res.status, rep, inputs=tuple(hasher.refs()), outputs=tuple(outputs), formats=formats,
                         seconds=time.perf_counter() - t0, stage_seconds=rep.get("stage_seconds"), workers=opts.workers,
                         error=error, config=_resolved(opts))
+
+
+# ================================================================================================================= V13: stream, volume, cache
+def stream_encode(source: PathLike | bytes, sink: PathLike, *, extent_bytes: int = 1 << 20, workers: int = 1,
+                  dna: DNAOptions | None = None, archive_options: ArchiveOptions | None = None, key: bytes | None = None,
+                  passphrase: str | None = None, manifest: PathLike | None = None, overwrite: bool = False, progress=None,
+                  secure=None) -> Result:
+    """A byte stream (file, ``"-"`` for stdin, bytes) → strands with bounded memory (:mod:`vnxdna.pipeline.stream`);
+    the ``vnx.stream/1`` manifest goes to ``manifest`` (default ``<sink>.stream.json``)."""
+    from vnxdna.pipeline import stream as _st
+    _guard.enforce("encode", sink if sink != "-" else (manifest or "-"), secure)
+    t0 = time.perf_counter()
+    aopt = archive_options or ArchiveOptions(archive_id="content")
+    if key is not None or passphrase is not None:
+        from dataclasses import replace
+        aopt = replace(aopt, key=key, passphrase=passphrase, archive_id="options")
+    opt = _st.StreamOptions(extent_bytes=extent_bytes, workers=workers, dna=dna or DNAOptions(), archive=aopt)
+    rep = _st.encode_stream(source, sink, options=opt, manifest=manifest, overwrite=overwrite, progress=progress)
+    inputs = (file_ref("source", source),) if isinstance(source, (str, os.PathLike)) and source != "-" else ()
+    outputs = [file_ref("manifest", rep["manifest"])]
+    if sink != "-":
+        outputs.insert(0, file_ref("strands", sink, rep["strands_sha256"]))
+    return EncodeResult("stream-encode", "SUCCESS", rep, inputs=inputs, outputs=tuple(outputs),
+                        formats={"stream": _st.STREAM_FORMAT, "container": CONTAINER, "frame_version": FRAME_VERSION},
+                        seconds=time.perf_counter() - t0, workers=workers, config=_resolved(opt.dna))
+
+
+def stream_decode(strands: PathLike, manifest: PathLike, output: PathLike, *, options: DecodeOptions | None = None,
+                  key: bytes | None = None, passphrase: str | None = None, overwrite: bool = False, progress=None,
+                  by_range: bool | None = None, secure=None) -> Result:
+    """Rebuild a streamed byte stream from its strands (or a SIMULATED read pool of them) and manifest."""
+    from vnxdna.pipeline import stream as _st
+    _guard.enforce("decode", strands, secure)
+    t0 = time.perf_counter()
+    opts = options or DecodeOptions()
+    rep = _st.decode_stream(strands, manifest, output, options=opts, key=key, passphrase=passphrase, overwrite=overwrite,
+                            progress=progress, by_range=by_range)
+    outputs = (file_ref("stream", output, rep["sha256"]),) if output != "-" else ()
+    return DecodeResult("stream-decode", "SUCCESS", rep, inputs=(file_ref("strands", strands), file_ref("manifest", manifest)),
+                        outputs=outputs, formats={"stream": _st.STREAM_FORMAT, "container": CONTAINER},
+                        seconds=time.perf_counter() - t0, workers=opts.workers, config=_resolved(opts))
+
+
+def _volume_options(extent_bytes, workers, dna, decode_options, key, passphrase, cache_bytes=None, write_back_bytes=None):
+    from dataclasses import replace
+    from vnxdna.volume import VolumeOptions
+    kw: dict[str, Any] = {}
+    if extent_bytes is not None:
+        kw["extent_bytes"] = extent_bytes
+    if workers:
+        kw["workers"] = workers
+    if dna is not None:
+        kw["dna"] = dna
+    if decode_options is not None:
+        kw["decode"] = decode_options
+    if cache_bytes is not None:
+        kw["cache_bytes"] = cache_bytes
+    if write_back_bytes is not None:
+        kw["write_back_bytes"] = write_back_bytes
+    opt = VolumeOptions(**kw)
+    if key is not None or passphrase is not None:
+        opt = replace(opt, archive=replace(opt.archive, key=key, passphrase=passphrase, archive_id="options"))
+    return opt
+
+
+def volume_create(path: PathLike, *, extent_bytes: int = 1 << 20, workers: int = 1, dna: DNAOptions | None = None,
+                  key: bytes | None = None, passphrase: str | None = None, overwrite: bool = False, secure=None) -> Result:
+    """Create an empty volume directory (``vnx.volume/1``)."""
+    from vnxdna.volume import Volume
+    _guard.enforce("encode", path, secure)
+    t0 = time.perf_counter()
+    opt = _volume_options(extent_bytes, workers, dna, None, key, passphrase)
+    with Volume.create(path, opt, overwrite=overwrite) as v:
+        body = v.stat()
+    return Result("volume-create", "SUCCESS", body, outputs=(file_ref("volume", path),),
+                  formats={"volume": body["format"]}, seconds=time.perf_counter() - t0, workers=workers, config=_resolved(opt.dna))
+
+
+def volume_write(path: PathLike, source: PathLike | bytes, *, offset: int | None = None, workers: int = 1,
+                 key: bytes | None = None, passphrase: str | None = None, progress=None, secure=None) -> Result:
+    """Write a file (or ``"-"`` for stdin, or bytes) into the volume at ``offset`` (default: append), then flush."""
+    from vnxdna.pipeline.stream import _extents, _open_source
+    from vnxdna.volume import Volume
+    _guard.enforce("encode", path, secure)
+    t0 = time.perf_counter()
+    opt = _volume_options(None, workers, None, None, key, passphrase)
+    src, close = _open_source(source)
+    written = 0
+    try:
+        with Volume.open(path, "rw", options=opt, key=key, passphrase=passphrase) as v:
+            if offset is None:
+                v.seek(0, os.SEEK_END)
+            else:
+                v.seek(offset)
+            start = v.tell()
+            for piece in _extents(src, 1 << 20):
+                written += v.write(piece)
+                if progress:
+                    progress({"stage": "volume_write", "bytes": written, "elapsed": time.perf_counter() - t0})
+            flushed = v.flush()
+            body = {"offset": start, "bytes": written, "flush": flushed, **v.stat()}
+    finally:
+        if close and hasattr(src, "close"):
+            src.close()
+    inputs = (file_ref("source", source),) if isinstance(source, (str, os.PathLike)) and source != "-" else ()
+    return Result("volume-write", "SUCCESS", body, inputs=inputs, outputs=(file_ref("volume", path),),
+                  formats={"volume": body["format"]}, seconds=time.perf_counter() - t0, workers=workers)
+
+
+def volume_read(path: PathLike, offset: int, length: int, output: PathLike | None = None, *, workers: int = 1,
+                key: bytes | None = None, passphrase: str | None = None, overwrite: bool = False, secure=None) -> Result:
+    """Read ``length`` bytes at ``offset`` (only the extents they lie in are decoded) into ``output`` (``"-"`` =
+    stdout; None = returned in ``body["data"]`` as bytes)."""
+    from vnxdna.volume import Volume
+    _guard.enforce("extract", path, secure)
+    t0 = time.perf_counter()
+    opt = _volume_options(None, workers, None, None, key, passphrase)
+    with Volume.open(path, "r", options=opt, key=key, passphrase=passphrase) as v:
+        data = v.read_at(offset, length)
+        st = v.stat()
+    body: dict[str, Any] = {"offset": offset, "requested": length, "bytes": len(data), "sha256": hashlib.sha256(data).hexdigest(),
+                            "extents_decoded": st["io"]["extents_decoded"], "decode_seconds": st["io"]["decode_seconds"],
+                            "size": st["size"]}
+    outputs: tuple = ()
+    if output == "-":
+        sys.stdout.buffer.write(data)
+        sys.stdout.buffer.flush()
+    elif output is not None:
+        from vnxdna.core.util import atomic_output
+        with atomic_output(output, overwrite=overwrite) as t:
+            t.write_bytes(data)
+        outputs = (file_ref("data", output, body["sha256"]),)
+    else:
+        body["data"] = data
+    return Result("volume-read", "SUCCESS", body, inputs=(file_ref("volume", path),), outputs=outputs,
+                  formats={"volume": st["format"]}, seconds=time.perf_counter() - t0, workers=workers)
+
+
+def volume_stat(path: PathLike, *, key: bytes | None = None, passphrase: str | None = None, secure=None) -> Result:
+    from vnxdna.volume import Volume
+    _guard.enforce("list", path, secure)
+    t0 = time.perf_counter()
+    with Volume.open(path, "r", key=key, passphrase=passphrase) as v:
+        body = {**v.stat(), "extent_records": v.extents()}
+    return Result("volume-stat", "SUCCESS", body, inputs=(file_ref("volume", path),), formats={"volume": body["format"]},
+                  seconds=time.perf_counter() - t0)
+
+
+def volume_scrub(path: PathLike, *, workers: int = 1, key: bytes | None = None, passphrase: str | None = None,
+                 secure=None) -> Result:
+    """Re-verify every committed extent (never repairs): status VERIFIED or DAMAGED."""
+    from vnxdna.volume import Volume
+    _guard.enforce("verify", path, secure)
+    t0 = time.perf_counter()
+    opt = _volume_options(None, workers, None, None, key, passphrase)
+    with Volume.open(path, "r", options=opt, key=key, passphrase=passphrase) as v:
+        body = v.scrub()
+        body["volume"] = v.stat()
+    return Result("volume-scrub", body["status"], body, inputs=(file_ref("volume", path),), formats={"volume": body["volume"]["format"]},
+                  seconds=time.perf_counter() - t0, workers=workers)
+
+
+def cache_stats(cache_dir: PathLike | None = None) -> Result:
+    d = _cache.configured_dir(cache_dir)
+    if d is None:
+        return Result("cache-stats", "SUCCESS", {"dir": None, "enabled": False, "entries": 0, "bytes": 0})
+    return Result("cache-stats", "SUCCESS", {"enabled": True, **_cache.ResultCache(d).stats()})
+
+
+def cache_clear(cache_dir: PathLike | None = None) -> Result:
+    d = _cache.configured_dir(cache_dir)
+    if d is None:
+        raise VNXConfigurationError("no result cache configured (VNXDNA_CACHE_DIR or --dir)")
+    return Result("cache-clear", "SUCCESS", _cache.ResultCache(d).clear())
 
 
 # ================================================================================================================= simulation

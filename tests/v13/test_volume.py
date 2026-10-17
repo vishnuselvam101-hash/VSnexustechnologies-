@@ -199,8 +199,8 @@ def test_locking_read_only_and_options(tmp_path):
     for bad in (dict(extent_bytes=100), dict(cache_bytes=-1), dict(workers=0), dict(write_back_bytes=-5)):
         with pytest.raises(VNXConfigurationError):
             VolumeOptions(**{"extent_bytes": E, **bad}).validate()
-    with pytest.raises(VNXConfigurationError):
-        Volume.open(tmp_path / "v", "rw", options=VolumeOptions(extent_bytes=2 * E))
+    with Volume.open(tmp_path / "v", "rw", options=VolumeOptions(extent_bytes=2 * E)) as v:
+        assert v.extent_bytes == E and v.options.extent_bytes == E            # the volume's extent size, not the options'
     with pytest.raises(VNXConfigurationError):
         Volume.open(tmp_path / "v", "rwx")
     (tmp_path / "not").mkdir()

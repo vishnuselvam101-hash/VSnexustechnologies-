@@ -16,12 +16,13 @@ export const EVENT_KINDS = ["run_start", "decode_start", "pass1_progress", "pass
   "pass2_end", "verify", "decode_end", "error", "command_end"] as const;
 export type EventKind = (typeof EVENT_KINDS)[number];
 
-export const RESULT_STATUSES = ["SUCCESS", "PARTIAL", "FAILURE", "VERIFIED", "EXTRACTED", "OK", "DONE"] as const;
+export const RESULT_STATUSES = ["SUCCESS", "PARTIAL", "FAILURE", "VERIFIED", "EXTRACTED", "OK", "DONE", "DAMAGED"] as const;
 export type ResultStatus = (typeof RESULT_STATUSES)[number];
 
 export const RESULT_KINDS = ["archive", "encode", "decode", "inspect", "verify", "extract", "list", "locate", "simulate",
   "benchmark", "sweep", "experiment", "conformance", "keygen", "validate", "generate", "profiles", "native",
-  "channel-model", "channel-sweep"] as const;
+  "channel-model", "channel-sweep", "stream-encode", "stream-decode", "volume-create", "volume-write", "volume-read",
+  "volume-stat", "volume-scrub", "cache-stats", "cache-clear"] as const;
 export type ResultKind = (typeof RESULT_KINDS)[number];
 
 export const ERROR_CATEGORIES = ["VERIFICATION_FAILED", "USAGE_ERROR", "INVALID_INPUT", "UNRECOVERABLE_CORRUPTION",

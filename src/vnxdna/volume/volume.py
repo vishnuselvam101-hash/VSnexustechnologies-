@@ -131,9 +131,8 @@ class Volume:
             raise VNXFormatError(f"{root} is not a VNX volume: {error}", stage="volume") from None
         if meta.get("format") != VOLUME_FORMAT or not isinstance(meta.get("extent_bytes"), int):
             raise VNXFormatError(f"{root} is not a {VOLUME_FORMAT} volume", stage="volume")
-        opt = options or VolumeOptions(extent_bytes=int(meta["extent_bytes"]))
-        if opt.extent_bytes != int(meta["extent_bytes"]):
-            raise VNXConfigurationError("extent_bytes is fixed when the volume is created")
+        # the extent size is the volume's (volume.json); the options bring cache/write-back sizes, workers and codec options
+        opt = replace(options or VolumeOptions(), extent_bytes=int(meta["extent_bytes"]))
         if meta.get("encrypted") and key is None and passphrase is None:
             raise VNXConfigurationError("this volume is encrypted; pass the key or passphrase")
         if key is not None or passphrase is not None:
