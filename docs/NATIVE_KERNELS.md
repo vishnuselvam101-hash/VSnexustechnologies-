@@ -1,6 +1,6 @@
 # Native kernels: installation, backend selection and diagnostics
 
-VNX-DNA has seven optional native kernels (five in C, one in C++, one in Rust). Each one is an accelerator for a Python/NumPy reference implementation, which
+VNX-DNA has nine optional native kernels (six in C, one in C++, two in Rust). Each one is an accelerator for a Python/NumPy reference implementation, which
 remains the specification: the native output is bit-identical (golden hashes and randomized equivalence fuzzing in
 `tests/v5/test_native_alignment*.py`, `tests/v6/native/`, `tests/v7/test_native_cluster.py`, `tests/v9/test_native_polish.py` and `tests/arch/`). Without a kernel, VNX-DNA runs the reference and gives
 the same results more slowly.
@@ -15,10 +15,11 @@ the same results more slowly.
 | `orient`: V12 pass-1 orientation pre-pass (shift-tolerant marker agreement, forward vs reverse complement; ABI 1) and, since V13 (ABI 2), the reverse-complement alignment cost bound of the bounded retry (`vnx_or_rc_bound`) | `vnxdna.native.orient` | `src/vnxdna/native/c/orient.c` | `vnxdna/_vnx_orient*.so` | `vnxdna.recovery.pass1._orientation_reference` (NumPy) |
 | `integrity`: batched frame CRC-32 (**Rust**, ABI 1) | `vnxdna.native.integrity` | `src/vnxdna/native/rust/integrity/` (crate `vnx_integrity`) | `vnxdna/_vnx_integrity*.so` | `vnxdna.core.crc` (NumPy) |
 | `outerlist`: outer-code list decoding of short rows (**C++20**, ABI 1) | `vnxdna.native.outerlist` | `src/vnxdna/native/cpp/outerlist.cpp` | `vnxdna/_vnx_outerlist*.so` | `vnxdna.recovery.outer_list` (Python) |
+| `engine`: V13 streaming decode engine (**Rust**, std only, ABI 1): pass 1 of a decode in one native call — memory-mapped IO with read-ahead, the FASTQ/FASTA scanner, orientation, the address scheduler, the decode attempts, the spill records and a thread pool; it links the `rs`, `align` and `orient` C kernels into its library (`build.rs`) | `vnxdna.native.engine` (parameters built by `vnxdna.recovery.engine`) | `src/vnxdna/native/rust/engine/` (crate `vnx_engine`) | `vnxdna/_vnx_engine*.so` | the V13 path: `vnxdna.recovery.pass1` on the other kernels (the ladder's next rung, [V13_ENGINE_ARCHITECTURE.md](V13_ENGINE_ARCHITECTURE.md)) |
 
 ## Installation
 
-`pip install .` (and `pip wheel .`) compiles all five C kernels as *optional* extensions (and builds the Rust kernel with cargo when it is installed) (`setup.py`; sources and flags
+`pip install .` (and `pip wheel .`) compiles all six C kernels as *optional* extensions (and builds the two Rust kernels with cargo when it is installed) (`setup.py`; sources and flags
 in `src/vnxdna/_native_build.py`). If no C compiler works, or one kernel fails to compile, the installation still
 succeeds and the affected kernels use the reference. Check the result after installing:
 
@@ -49,7 +50,14 @@ python -m vnxdna.native.strand build [--strict]         # src/vnxdna/native/c/li
 python -m vnxdna.native.orient build [--strict]         # src/vnxdna/native/c/libvnx_orient.so
 python -m vnxdna.native.integrity build [--strict]      # cargo; src/vnxdna/native/c/libvnx_integrity.so (Rust)
 python -m vnxdna.native.outerlist build [--strict]      # C++20; src/vnxdna/native/c/libvnx_outerlist.so
+python -m vnxdna.native.engine build [--strict]         # cargo; src/vnxdna/native/c/libvnx_engine.so (Rust + the C kernels it links)
 ```
+
+The engine crate builds offline with the standard library only (`cargo build --release --offline --locked`); its
+`build.rs` compiles `v6/native/rs.c`, `v5/native/align.c` and `native/c/orient.c` with `CC` (default `cc`) into a
+static archive linked into the library, so a decode through the engine runs the same C kernels as the V13 path.
+`--strict` adds `RUSTFLAGS=-D warnings`. `cargo test --release --offline --locked --manifest-path
+src/vnxdna/native/rust/engine/Cargo.toml` runs the crate's unit tests (CI job `rust`).
 
 Lookup order of every loader: the explicit `*_LIB` path, then the packaged extension, then the in-place library. A
 library whose ABI version differs from the module's is skipped (and named in `load_error`). The ABI number does not
@@ -77,6 +85,11 @@ detect an in-place library that is older than a changed C source; `native_status
 | `VNXDNA_INTEGRITY_LIB` | path | integrity library to load first |
 | `VNXDNA_OUTERLIST_BACKEND` | `auto` (default), `native`, `reference` | C++ outer-list kernel (used only with `outer_list` on), same rules |
 | `VNXDNA_OUTERLIST_LIB` | path | outer-list library to load first |
+| `VNXDNA_ENGINE_BACKEND` | `auto` (default), `native`, `reference` | the V13 streaming engine library: `reference` = never use it (the ladder runs the V13 path); `native` = raise if it does not load. The engine also needs the `align` and `rs` kernels not pinned to their references |
+| `VNXDNA_ENGINE_LIB` | path | engine library to load first (e.g. a sanitizer build) |
+| `VNXDNA_ENGINE` | `auto` (default), `stream`, `v13`, `reference` | the default of `DecodeOptions.engine` (the ladder rung requested; `vnx decode --engine` overrides it) |
+| `VNXDNA_ENGINE_THREADS` | 1-256 | the default of `DecodeOptions.engine_threads` (threads of the engine pool; unset = `workers`) |
+| `VNXDNA_CACHE_DIR`, `VNXDNA_CACHE_BYTES` | path, bytes | the V13 decode result cache of the SDK (`vnxdna.sdk.cache`; off when unset; default limit 1 GiB) |
 | `CXX` | compiler | C++ compiler for the explicit C++ builds |
 | `CARGO` | path | cargo for the Rust kernel builds (`/bin/false` skips them) |
 | `VNX_RS_REFERENCE` | `1` | the inner RS decoder (`vnxdna.v4.codecs.InnerRS.decode`) uses the V3 decoder `vnxdna.ecc.rs_batch` and bypasses `vnxdna.v6.native_rs` and `VNXDNA_RS_BACKEND` entirely. Read once when `vnxdna.v4.codecs` is imported. For reference comparisons and debugging; results are identical (tested), only slower. `native_status()` reports the RS backend as `reference` with `requested: "VNX_RS_REFERENCE=1"` |
@@ -96,8 +109,11 @@ Production code must never call it; `tests/v6/native/test_native_status.py` chec
 
 ## Sanitizers
 
-`tools/sanitizers.sh` (CI job `sanitizers`) runs gcc and clang ASan+UBSan builds of every kernel through the
-Python bindings. `tools/msan.sh` (CI job `msan`) runs MemorySanitizer on the kernels compiled into standalone C
+`tools/sanitizers.sh` (CI job `sanitizers`) runs gcc and clang ASan+UBSan builds of every C kernel through the
+Python bindings. `benchmarks/v13/native_engine/sanitizers.sh` covers the engine: gcc ASan+UBSan of the C kernels
+linked into the engine library (the engine tests run with the sanitized library), `cargo test` with warnings as
+errors, and a release build with Rust debug assertions and overflow checks running the engine tests (stable Rust has
+no sanitizer; every slice and arithmetic operation of the engine is bounds- and overflow-checked in that build). `tools/msan.sh` (CI job `msan`) runs MemorySanitizer on the kernels compiled into standalone C
 programs, without CPython. Why that route was taken, what it covers and the results are in
 [security/V7_MSAN.md](security/V7_MSAN.md).
 

@@ -90,3 +90,26 @@ The other commands restart from the beginning. They are pure functions of their 
 * Metadata streams rebuilt from DNA may not allocate more than the decodable metadata groups present.
 * The vectorised inner RS decoder works on blocks of at most 4,096 reads, and indel repair decodes hypotheses in
   blocks of 2,048, so both stay bounded.
+
+## V13: a stream of any length, and a disk-like volume
+
+The V4–V12 pipelines stream *inside* one archive (bounded memory per worker, but one container at a time). V13 adds
+two layers on top of the unchanged codec ([V13_ENGINE_ARCHITECTURE.md](V13_ENGINE_ARCHITECTURE.md) §4–§5):
+
+* **`vnxdna.pipeline.stream`** (`vnx stream encode|decode`): a byte stream (file, stdin, bytes, an iterator) is cut
+  into extents (default 1 MiB); every extent becomes an ordinary VNX archive encoded to strands by the unchanged
+  encoder; at most 2 x workers extents are in flight (extent bytes on disk in a work directory, strands in the
+  workers), so the resident memory does not grow with the stream. The `vnx.stream/1` manifest records every extent
+  (length, SHA-256, archive ID and tag, the byte range of its strands in the sink). Decoding rebuilds the stream
+  extent by extent, by strand byte range while the sink is the encoder's file and from the whole pool by archive ID
+  otherwise (a SIMULATED sequenced pool: one pass over the pool per extent); every extent is verified by the decoder
+  and against the manifest before it is written, and the whole-stream hash before the output is published.
+* **`vnxdna.volume`** (`vnx volume init|write|read|stat|scrub`): `write`/`append`/`seek`/`read`/`read_at`/`flush` over
+  extents stored as one strand file per extent version, a byte-bounded LRU cache of decoded extents, a write-back
+  buffer, a CRC-32-framed write-ahead journal (replayed on open; an interrupted flush leaves the volume at its last
+  commit and its orphan file is removed), and `scrub`. A range read decodes only the extents it lies in.
+
+Both keep every guarantee of the codec: each extent is a verified container (inner RS + CRC, outer code, SHA-256),
+nothing unverified is ever published, and the formats on disk and in DNA are unchanged (the manifest and the volume
+directory are new, versioned containers of ordinary archives). Measured rates (software codec on one host, SIMULATED
+pools) are in [V13_BENCHMARK_REPORT.md](V13_BENCHMARK_REPORT.md).

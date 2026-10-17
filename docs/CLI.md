@@ -133,6 +133,13 @@ prints its JSON. Exit codes are the table above. Errors are `vnx.error/1` JSON o
 | `conformance` | run the conformance vectors; `--vectors DIR`, `--select ID`, `--backend auto`, `native` or `reference`; exit 0 only if CONFORMANT |
 | `version`, `native` | `vnx.version/1` (software, spec and format versions) and the native kernel status |
 | `keygen FILE` | a new key file |
+| `stream encode FILE OUT.fasta` (V13) | a byte stream of any length (`-` = stdin) to strands with bounded memory: extents of `--extent-bytes` (default 1 MiB), `--workers N` extents in flight x 2, each an ordinary archive; the `vnx.stream/1` manifest goes to `--manifest` (default `OUT.fasta.stream.json`; required for a stdout sink). `--key-file`/`--passphrase-env` encrypt every extent |
+| `stream decode STRANDS MANIFEST OUT` (V13) | rebuilds the stream (`-` = stdout) from the encoder's strand file (each extent from its byte range) or from a SIMULATED read pool of it (each extent from the whole pool by archive ID; `--by-range/--by-pool` forces a path). Every extent and the whole stream are verified before the output is published |
+| `volume init DIR` (V13) | an empty disk-like volume (`vnx.volume/1`: `volume.json`, `journal.log`, `extents/`); `--extent-bytes` is fixed here |
+| `volume write DIR FILE [--offset N]` (V13) | writes a file (`-` = stdin) at `--offset` (default: append) and flushes: the dirty extents are encoded as new versions, published atomically and journaled |
+| `volume read DIR --offset N --length L -o OUT` (V13) | reads a byte range decoding only the extents it lies in (`-o -` = stdout) |
+| `volume stat DIR`, `volume scrub DIR` (V13) | size, extents, versions, cache and journal state, IO metrics (software codec rates); scrub re-verifies every committed extent (strand file hash, decode, extent hash), reports and never repairs: exit 0 only if VERIFIED |
+| `cache stats`, `cache clear` (V13) | the decode result cache (`--dir`, default `VNXDNA_CACHE_DIR`) |
 
 Opt-in decoder options (defaults unchanged; effects are SIMULATED results documented in the experiment READMEs):
 
@@ -143,6 +150,8 @@ Opt-in decoder options (defaults unchanged; effects are SIMULATED results docume
 | `--retry-band R` | reads beyond `--band` are aligned again with band R (0 = off, the default); suggested value 16 | `experiments/v6/align-band/README.md` |
 | `--max-recovery-reads N`, `--max-round-b-reads N` | budgets for the recovery rounds | `--help` |
 | `--read-clustering fallback` | V7 item A reference (EXPERIMENTAL): header-independent read clustering and per-cluster consensus; its verified frames only fill superblock symbols and addresses the default path left unresolved (FC-9), and the container SHA-256 still decides SUCCESS. `off` is the default. Budget: 4,000,000 unplaced reads (stage stops and is reported) | [V7_ARCHITECTURE.md](V7_ARCHITECTURE.md) §5, `experiments/v7/a1-smoke/README.md` |
+| `--orientation-retry bounded` (default) or `always`; `--sync-speculation markers` (default) or `off` | V13 pass-1 levers of the V13 path (the engine applies the same rules) | [V13_ARCHITECTURE.md](V13_ARCHITECTURE.md) |
+| `--engine auto` (default), `stream`, `v13` or `reference`; `--engine-dedup/--no-engine-dedup`; `--engine-threads N`; `--cache-dir DIR` | V13 ladder: `auto` runs the streaming engine (Rust core, pass 1 in one native call, address scheduler) when it is built and the options are in its domain, and falls back to the V13 Python-orchestrated path on any refusal, engine error or non-SUCCESS result (`report["engine"]` records the rung and the reason); `stream` = the engine or an error; `v13` = the V13 path; `reference` = the V13 path with every kernel on its Python reference. `--no-engine-dedup` attempts every read (pass-1 records equal the V13 path's). Defaults from `VNXDNA_ENGINE`, `VNXDNA_ENGINE_THREADS`. `--cache-dir` enables the decode result cache for this call | [V13_ENGINE_ARCHITECTURE.md](V13_ENGINE_ARCHITECTURE.md), [NATIVE_KERNELS.md](NATIVE_KERNELS.md) |
 
 Exit code 9 (PARTIAL) and 10 (PROVIDER_ERROR) are `vnx` only. Provider operations (`prepare`, `write`, `retrieve`, `read`)
 are SDK/Python calls on `vnxdna.providers`, not CLI commands ([INTEROPERABILITY.md](INTEROPERABILITY.md)).

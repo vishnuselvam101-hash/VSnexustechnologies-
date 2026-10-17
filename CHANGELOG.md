@@ -1,12 +1,53 @@
 # Changelog
 
-## 13.0.0 (branch `build/v13`, release candidate, not tagged; docs/V13_COMPLETION_REPORT.md)
+## 13.0.0 (branch `build/v13-final`, release candidate, not tagged; docs/V13_COMPLETION_REPORT.md)
 
 All channel results are SIMULATED; no DNA was synthesised, stored or sequenced. Archive, container and strand formats
 are unchanged from 12.0.0 (no new format version); decode output is byte-identical to build/v12 (6bf7749) on every
-benchmark seed. Benchmarks: docs/V13_BENCHMARK_REPORT.md; plan and pre-declared workloads: docs/V13_PLAN.md.
+benchmark seed. Two new, versioned containers of ordinary archives are added: the stream manifest (`vnx.stream/1`)
+and the volume directory (`vnx.volume/1`, journal `vnx.volume-journal/1`). Benchmarks: docs/V13_BENCHMARK_REPORT.md;
+plan and pre-declared workloads: docs/V13_PLAN.md; engine design and status: docs/V13_ENGINE_ARCHITECTURE.md.
 
-### Added
+### Added (V13 engine, streams, volume, cache)
+- **Streaming decode engine** (`src/vnxdna/native/rust/engine`, crate `vnx_engine`, Rust std only, C ABI 1, kernel
+  `engine`): pass 1 of a decode in one native call: memory-mapped IO with read-ahead and release of consumed pages,
+  a FASTQ/FASTA scanner equal to the reference parser (or a refusal), the orientation pre-pass, an **address
+  scheduler** (content fingerprints and raw header keys in fixed-size lossy tables; a read is attempted only while
+  its address is not verified; cheap paths first, the DP only for what they do not verify; deterministic across
+  thread counts), the decode attempts on the `rs`/`align`/`orient` C kernels linked into the library, the spill
+  records of pass 2, and a persistent thread pool. Binding `vnxdna.native.engine` (plain parameters), parameters from
+  a layout and the options in `vnxdna.recovery.engine`.
+- **Fallback ladder** `stream -> v13 -> reference` (`pipeline.decode._decode_ladder`): any engine refusal, internal
+  error or non-SUCCESS result falls back to the V13 Python-orchestrated path; request errors propagate unchanged;
+  the wall-time budget cancels the engine at its next block or batch. `DecodeOptions.engine` = `auto` (default) |
+  `stream` | `v13` | `reference`, `engine_dedup` (False attempts every read: pass-1 records equal the V13 path's),
+  `engine_threads` (None = `workers`); environment defaults `VNXDNA_ENGINE`, `VNXDNA_ENGINE_THREADS`; kernel
+  variables `VNXDNA_ENGINE_BACKEND`, `VNXDNA_ENGINE_LIB`; CLI `--engine`, `--engine-dedup/--no-engine-dedup`,
+  `--engine-threads`; SDK config keys; `report["engine"]` (rung, fallbacks, threads, per-stage seconds, reads
+  scanned/attempted/skipped, table statistics); `report["reads"]["skipped_redundant"]`.
+- **Streaming encode and decode** (`vnxdna.pipeline.stream`; `vnx stream encode|decode`; `sdk.stream_encode`,
+  `sdk.stream_decode`): a byte stream of any length (file, stdin, bytes, an iterator) cut into extents, each an
+  ordinary archive (content-derived ID) encoded by the unchanged encoder, at most 2 x workers extents in flight; the
+  `vnx.stream/1` manifest; decoding by strand byte range or from a whole (sequenced) pool by archive ID, every extent
+  and the whole stream verified before the output is published.
+- **Volume** (`vnxdna.volume`; `vnx volume init|write|read|stat|scrub`; `sdk.volume_*`): `write`/`append`/`seek`/
+  `tell`/`read`/`read_at`/`flush`/`close`/`stat`/`scrub`; extents as one strand file per version; a byte-bounded LRU
+  cache of decoded extents; a write-back buffer; a CRC-32-framed write-ahead journal with crash-consistent flush
+  (strand file published and synced before its record; orphans removed on the next read-write open); range reads
+  decode only the extents they touch; one writer at a time; encrypted volumes.
+- **Decode result cache** (`vnxdna.sdk.cache`; `sdk.decode(cache_dir=...)`, `VNXDNA_CACHE_DIR`,
+  `VNXDNA_CACHE_BYTES`; `vnx decode --cache-dir`, `vnx cache stats|clear`): off by default, never used by the
+  benchmarks; keyed by software version, git commit, native backends and engine library hash, input SHA-256 and
+  size, the output-changing options and key presence; bounded (LRU); cached containers re-verified by SHA-256.
+- `vnxdna.native` lists the engine (`native_status`, `--require-native`, reports); `pip install` builds it with
+  cargo; CI builds it strictly and runs the crate's unit tests; `benchmarks/v13/native_engine/sanitizers.sh`.
+- `vnx.result/1`: kinds `stream-encode`, `stream-decode`, `volume-create|write|read|stat|scrub`, `cache-stats|clear`
+  and the status `DAMAGED` (volume scrub); mirrored in the web contracts.
+- `tests/v13/`: engine (scanner agreement, pass-1 equality without the scheduler, scheduler determinism, byte-identical
+  decodes, ladder rungs and fallbacks, wall-time budget, configuration surface, CLI flags), stream, volume,
+  integration (SDK envelopes, cache, CLI JSON).
+
+### Added (V13 pass-1 levers of the Python path, from `build/v13`)
 - **Aligner ABI 4** (`src/vnxdna/v5/native/align.c`): `vnx_align_batch_sel_lv` aligns any selected reads of a flat
   batch in place (per-read start and length arrays; the contiguous entry points are unchanged);
   `native.align.align_usable_flat`, `TemplateAligner.project_flat`.
@@ -47,6 +88,11 @@ benchmark seed. Benchmarks: docs/V13_BENCHMARK_REPORT.md; plan and pre-declared 
 
 ### Fixed
 - `native.heap`: the cached `malloc_trim` pointer is typed so the CI mypy job passes (two errors since 12.0.0's 521adb0).
+- `tests/v3/test_release_review_v3.py::test_sigterm_cleans_up_like_ctrl_c`: a SIGTERM that lands after the output was
+  published (an atomic rename after full verification) and before the command returned is a skip, not a failure
+  (seen as a timing race in CI at delay 1.0).
+- Layering: `vnxdna.native.engine` imported layer-3 modules (`tests/architecture` R1, package cycle); the binding now
+  takes plain parameters and `vnxdna.recovery.engine` builds them.
 
 ## 12.0.0 (tag `v12.0.0`; performance release; docs/V12_COMPLETION_REPORT.md)
 

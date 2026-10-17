@@ -1,6 +1,9 @@
 # VNX-DNA V13 engine architecture (streaming engine, disk-like volume)
 
-Status: DESIGN, written before the code (branch `build/v13-hybrid`, base `build/v13` 9401721; A/B baseline V12 6bf7749).
+Status: IMPLEMENTED on `build/v13-final` (the design below was written before the code on `build/v13-hybrid`, base
+`build/v13` 9401721; A/B baseline V12 6bf7749). §8 records what shipped, what differs from the design and what was
+measured; the numbers of this document's §3 table were design estimates and are superseded by
+[V13_BENCHMARK_REPORT.md](V13_BENCHMARK_REPORT.md).
 Every channel number in this repository is SIMULATED. The "disk" vocabulary below (throughput, latency, volume) describes
 software codec rates on simulated read pools on this host. It is not a claim about physical DNA synthesis, storage or
 sequencing throughput.
@@ -166,3 +169,24 @@ fallback, cache off, threads = `workers`.
 * Once at the end: the full suite (never below 4,209 tests, never skipping or weakening one), `cargo test`, ASan/UBSan
   of the engine library (Rust + the reused C), a fuzz run of the scanner, and the compact A/B bench (3 workloads x w1/w4
   x 3 reps), reported per workload with its honest tier (below Tier 1 / 2x / 5x / 10x).
+
+## 8. Implementation status (2026-10-17, `build/v13-final`)
+
+| design item | status | where |
+|---|---|---|
+| Rust streaming core, pass 1 in one native call, C kernels linked in, C ABI + ctypes | shipped (`vnx_eng_pass1`, `vnx_eng_scan_file`, ABI 1) | `src/vnxdna/native/rust/engine/`, `vnxdna.native.engine` (binding, plain parameters), `vnxdna.recovery.engine` (parameters from a layout and the options) |
+| IO layer: mmap + read-ahead + release of consumed pages, buffered fallback | shipped (`io.rs`, `engine::scan_file`) | the resident set of a decode does not grow with the input (A/B RSS ratios in the benchmark report) |
+| scanner = reference parser or refusal | shipped (`scan.rs`; randomized agreement test, crate unit tests) | `tests/v13/test_engine.py` |
+| address scheduler (content fingerprints + raw header key, lossy tables, cheap-then-full rounds) | shipped (`sched.rs`, `engine.rs`) | deterministic across thread counts (test); `engine_dedup=False` attempts every read |
+| balancer: persistent pool, atomic chunk claiming, results merged in read order | shipped (`pool.rs`, `par_chunks`) | threads = `engine_threads` or `workers` |
+| fallback ladder stream -> v13 -> reference, timeout/cancel, request errors propagate | shipped (`pipeline.decode._decode_ladder`) | `report["engine"]` |
+| adaptive retry with an escalating recovery budget | not as a separate rung: the ladder's `v13` rung runs the full V12/V13 recovery (smart/soft recovery stay opt-in as before) | — |
+| streaming encode (bounded in-flight extents, ordered writer, stdin/stdout) | shipped | `vnxdna.pipeline.stream`, `vnx stream encode` |
+| volume: write/append/seek/read/read_at/flush, hot-extent LRU cache, write-back, journal/WAL, crash-consistent flush, scrub, range reads touching only the needed strands | shipped | `vnxdna.volume`, `vnx volume` |
+| result cache (keyed by software/commit/backends/engine library hash, input SHA-256 and size, options, key presence; bounded; off by default) | shipped at the SDK layer | `vnxdna.sdk.cache`, `sdk.decode(cache_dir=...)`, `vnx cache stats|clear`, `vnx decode --cache-dir` |
+| observability: `report["engine"]` (rung, fallbacks, threads, per-stage seconds, reads scanned/attempted/skipped, table statistics), `vnxdna native` lists the engine, `vnx volume stat` (cache hit rate, journal, IO rates) | shipped | — |
+| one configuration surface | shipped: `DecodeOptions.engine/engine_dedup/engine_threads`, SDK config keys, `VNXDNA_ENGINE`, `VNXDNA_ENGINE_THREADS`, `VNXDNA_ENGINE_BACKEND/_LIB`, `VNXDNA_CACHE_DIR/_BYTES`, CLI `--engine`, `--engine-dedup`, `--engine-threads`, `--cache-dir` | — |
+| native pass 2 | not done (the next lever: pass 2 and the layout probe are the serial Python remainder; see the benchmark report's stage budget) | — |
+
+Protection decision (§3, "one verified copy per address"): kept as the default, decided on measurement; the reasons
+are in [V13_COMPLETION_REPORT.md](V13_COMPLETION_REPORT.md) and the lab decision log.
