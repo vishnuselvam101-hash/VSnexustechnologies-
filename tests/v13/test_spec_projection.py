@@ -272,15 +272,22 @@ def test_option_validation_and_end_to_end(archive_reads, tmp_path):
     with pytest.raises(VNXConfigurationError, match="sync_speculation"):
         DecodeOptions(sync_speculation="dp").validate()
     outs = {}
+    # the per-read invariants below are those of the V13 path, which attempts every read (the V13 streaming engine
+    # attempts only the reads its address scheduler selects, so its counts differ between the two modes)
     for mode in ("markers", "off"):
         res = de.decode_reads(archive_reads["indel_rc"], tmp_path / f"{mode}.vnx",
-                              de.DecodeOptions(workers=2, sync_speculation=mode))
-        assert res.status == "SUCCESS"
+                              de.DecodeOptions(workers=2, sync_speculation=mode, engine="v13"))
+        assert res.status == "SUCCESS" and res.report["engine"]["rung"] == "v13"
         outs[mode] = ((tmp_path / f"{mode}.vnx").read_bytes(), res.report["reads"])
     assert outs["markers"][0] == outs["off"][0] == archive_reads["archive"].read_bytes()
     a, b = outs["markers"][1], outs["off"][1]
     assert a["speculative"] > 0 and b["speculative"] == 0
     assert a["sync"] >= b["sync"] and a["pending"] <= b["pending"] and a["reads"] == b["reads"] and a["fast"] == b["fast"]
+    # the default ladder (the engine when it is built) decodes both modes to the same bytes
+    for mode in ("markers", "off"):
+        res = de.decode_reads(archive_reads["indel_rc"], tmp_path / f"auto-{mode}.vnx",
+                              de.DecodeOptions(workers=2, sync_speculation=mode))
+        assert res.status == "SUCCESS" and (tmp_path / f"auto-{mode}.vnx").read_bytes() == outs["off"][0]
 
 
 def test_kernel_argument_checks():
