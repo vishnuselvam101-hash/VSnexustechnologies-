@@ -86,7 +86,7 @@ is not required). Reasons: NBD is a documented, long-supported kernel mechanism 
 its wire protocol is small and public (NBD protocol, fixed newstyle negotiation + transmission phase: read, write,
 flush, trim, FUA), it needs nothing beyond sockets and ioctls, it is the same mechanism `qemu-nbd` and `nbdkit` use,
 and it gives the kernel a standard block device that `fdisk`, `mkfs`, `mount` and ordinary applications use. Costs,
-documented in [V14_DEVICE_INTERFACE.md](V14_DEVICE_INTERFACE.md) when it is written: one socket hop and copy per
+documented in `V14_DEVICE_INTERFACE.md` (P8) when it is written: one socket hop and copy per
 request (bytes travel through the socket), a known hazard when the backend's own writes are on the same host under
 memory pressure (never put swap or the backend image on the exported device), and per-device attach requires root
 (or CAP_SYS_ADMIN) for the ioctls.
@@ -132,9 +132,8 @@ explicitly not called a block device.
 The Rust service and all new code compile for `aarch64-unknown-linux-gnu` with no x86 assumption (no inline SIMD;
 the C kernels keep their scalar fallbacks and runtime feature detection). The cross-build route on this host is
 `gcc-aarch64-linux-gnu` + the arm64 Rust standard library package (or a rustup toolchain with the aarch64 target) +
-`qemu-user-static` for running the unit tests; it is set up and documented in Phase 10 ([V14_RASPBERRY_PI_PROFILE.md]
-(V14_RASPBERRY_PI_PROFILE.md), [V14_BUILD_AND_DEPLOYMENT.md](V14_BUILD_AND_DEPLOYMENT.md)). Emulated runs are
-functional checks only, never performance numbers.
+`qemu-user-static` for running the unit tests; it is set up and documented in Phase 10 (`V14_RASPBERRY_PI_PROFILE.md`,
+`V14_BUILD_AND_DEPLOYMENT.md`). Emulated runs are functional checks only, never performance numbers.
 
 ## 4. What stays in Python, and why
 

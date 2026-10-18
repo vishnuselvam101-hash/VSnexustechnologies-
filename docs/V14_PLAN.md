@@ -17,7 +17,7 @@ docs/V15_FINALIZATION_PLAN.md).
 | toolchains | Python 3.12.3 (lab venv: numpy, pytest, pytest-xdist, hypothesis, ruff, mypy), gcc 13.3 / clang 18, rustc/cargo 1.75 (`--offline --locked`, std only, no crates), node 24.21 (web console; `node_modules` absent in the lab, `npm ci` needs the registry) |
 | host | Intel Xeon Gold 6240, 4 physical cores / 8 threads visible, ~31 GiB RAM, Linux 6.8.0-146, Ubuntu 24.04. Heavy jobs run in the lab's memory-limited systemd scope (`VNX_LAB_GOVERN=systemd`: MemoryMax 12 GiB for the suite, 8 GiB for benchmarks, no CPU quota); the governor CLI refuses admission on stale swap (2.6 GB used while >25 GB RAM is free), as in V13 |
 | build/test commands | `python -m vnxdna.<kernel> build` per kernel (`v5.native_alignment`, `v6.native_reads`, `v6.native_rs`, `native.cluster|strand|orient|integrity|outerlist`), `python -m vnxdna.native.engine build` (cargo, in place); `python -m vnxdna.native` lists backends; `pytest -o addopts= -p no:cacheprovider -n 6`; `ruff check src tests research`; `mypy`; `cargo test --release --offline --locked`; CI (`.github/workflows/ci.yml`): the same plus `tools/sanitizers.sh`, `tools/msan.sh`, `tests/fuzz`, `python -m vnxdna.native --require-native`, `tools/check_doc_links.py`, web `npm ci && npm run typecheck && npm run build` |
-| full suite at 58171b8 (this host) | SUITE_PENDING |
+| full suite at 58171b8 (this host) | **4,454 passed / 4 skipped / 0 failed**, 434.5 s, 6 xdist workers, systemd scope (the V13 release gate, reproduced; the 4 skips are the 3 opt-in install tests and the CPU-level test). Lab log `results/full-suite-58171b8-20261018-1021.txt` (not in the repository); recorded in [V14_BASELINE.md](V14_BASELINE.md) |
 | evidence available | `experiments/v13/bench/{ab-final2, baseline-aa, single-runs-f7586b9, single-runs-0093376, stream-volume, ab-final}` (raw rows, summaries, READMEs); lab logs `results/v13/*` (sanitizers, profiles) |
 
 ### 1.1 Report-derived V13 baselines and what this host reproduces
@@ -27,16 +27,16 @@ fixtures, SIMULATED) or marked unverified:
 
 | claim (docs/V13_BENCHMARK_REPORT.md) | Phase 0 reproduction at 58171b8 vs 6bf7749 | status |
 |---|---|---|
-| indel-w1 2.885x [2.732, 2.989] (v12 8.899 s, v13 3.121 s) | BENCH_PENDING | BENCH_PENDING |
-| indel-w4 1.704x [1.644, 1.770] (3.169 s / 1.855 s) | BENCH_PENDING | BENCH_PENDING |
-| clean-w4 2.200x [2.095, 2.372] (1.321 s / 0.600 s) | BENCH_PENDING | BENCH_PENDING |
-| decode RSS ~100 MiB at every worker count | BENCH_PENDING | BENCH_PENDING |
-| pool-mode stream decode O(extents x pool): 6.1 s (4 MiB) / 98 s (16 MiB) at 1 worker | POOL_PENDING | POOL_PENDING |
+| indel-w1 2.885x [2.732, 2.989] (v12 8.899 s, v13 3.121 s) | 2.811x [2.769, 2.968] (v12 8.921 s, v13 3.174 s) | reproduced (CIs overlap) |
+| indel-w4 1.704x [1.644, 1.770] (3.169 s / 1.855 s) | 1.741x [1.688, 2.115] (2.847 s / 1.659 s) | reproduced (CIs overlap) |
+| clean-w4 2.200x [2.095, 2.372] (1.321 s / 0.600 s) | 2.257x [2.010, 2.427] (1.301 s / 0.582 s) | reproduced (CIs overlap) |
+| decode RSS ~100 MiB at every worker count | V13 tree peak RSS median 99.9 / 100.9 / 98.8 MiB (indel-w1 / indel-w4 / clean-w4); V12 105.5 / 415.9 / 381.3 MiB | reproduced |
+| pool-mode stream decode O(extents x pool): 6.1 s (4 MiB) / 98 s (16 MiB) at 1 worker | 4.45 s (4) / 16.83 s (8) / 63.69 s (16 extents of 1 MiB), x3.78 per doubling (`experiments/v14/bench/phase0-pool/`) | scaling reproduced; absolute times differ (other harness) |
 | the 5.23x of `ab-final` (pre-fix scheduler) | not reproduced on purpose: it measured a scheduler that skipped distinct strands; it is not a V13 result and is never used as a baseline | superseded |
 | engine sanitizers PASS, cargo test 16, fuzz 58 | re-run in Phase 6 of V14 on the V14 code (not re-run on the baseline) | unverified at baseline |
 | web console node tests | never run in V13 (no node_modules); V14 workstream F runs them or records why not | unverified |
 
-Each `_PENDING` cell is filled from the committed Phase 0 runs before this plan is committed; nothing in it is estimated.
+Every cell of this table is filled from the committed Phase 0 runs; nothing in it is estimated.
 
 ### 1.2 Audit findings (what is actually in the tree)
 
@@ -105,7 +105,7 @@ remaining bottleneck quantified if it is missed.
 
 1. Output byte-identical to the input archive and to the V13 reference path on every benchmark seed and every test
    pool; 0 false successes (a SUCCESS with a different output) anywhere in the declared campaign.
-2. Full suite: never below the V13 release gate count (4,454 passed / 4 skipped at f7586b9; `SUITE_PENDING` at
+2. Full suite: never below the V13 release gate count (4,454 passed / 4 skipped at f7586b9; reproduced at
    58171b8 on this host), 0 failures; no test weakened, skipped or removed; V4/V5/V6 golden archives decode.
 3. Differential tests against the Python references for every native or engine change (attempted-read records,
    spill records, pass-2 symbols); determinism across thread/worker counts (same records, same output).

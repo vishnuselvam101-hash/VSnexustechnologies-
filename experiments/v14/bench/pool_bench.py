@@ -79,7 +79,7 @@ def _prepare(work: Path, extents: int, gen_tree: Path) -> tuple[Path, Path, Path
 
 
 def run(a) -> None:
-    trees = {"v13": Path(os.environ.get("V13_TREE", "/root/vnx-dna-lab/v14-base")), "v14": ROOT}
+    trees = {"v13": Path(os.environ.get("V13_TREE", "/root/vnx-dna-lab/v14-base")).resolve(), "v14": ROOT.resolve()}
     labels = a.trees.split(",")
     out_dir = Path(a.out)
     out_dir.mkdir(parents=True, exist_ok=True)
