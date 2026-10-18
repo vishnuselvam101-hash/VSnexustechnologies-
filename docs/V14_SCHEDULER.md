@@ -182,6 +182,12 @@ median of per-seed ratios with the percentile-bootstrap 95 % CI. Primary endpoin
 CI lower bound of the ratio is above 1.0 and above the A/A CI upper bound; on every other scenario the median ratio is
 reported, a regression (CI upper bound below 1.0) is reported as such. All rows must be SUCCESS with identical outputs.
 
+Amendment (before the second A/B pass; the first indel-w1 pass is kept and reported): the first pass ran the A/A
+config after the A B B A runs of each seed, and on the shared host its wall times drifted with position (the A/A
+ratio ranged 0.85–1.29). The harness now orders the three configs by a seed-dependent permutation followed by its
+mirror (each config twice, at mirrored positions) and also records the process CPU time (user + system), which the
+co-tenants disturb less than wall time at 1 worker. Wall time stays the primary metric; CPU time is secondary.
+
 ## 9. Results
 
 Filled in from the committed result files after the campaign and the A/B runs (next commit).

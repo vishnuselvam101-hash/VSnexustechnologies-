@@ -20,6 +20,7 @@ range). The host is shared, so every number is PROVISIONAL until re-measured on 
 from __future__ import annotations
 
 import argparse
+import itertools
 import json
 import os
 import random
@@ -62,7 +63,9 @@ print(json.dumps({"seconds": sec, "status": res.status, "output_sha256": hashlib
                   "matches_archive": data == (w / "a.vnx").read_bytes(), "rung": eng.get("rung"),
                   "fallbacks": eng.get("fallbacks"), "pass1": eng.get("pass1"),
                   "stage_seconds": res.report.get("stage_seconds"), "vnxdna_file": de.__file__,
-                  "peak_rss_bytes": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024}))
+                  "peak_rss_bytes": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024,
+                  "cpu_seconds": resource.getrusage(resource.RUSAGE_SELF).ru_utime
+                  + resource.getrusage(resource.RUSAGE_SELF).ru_stime}))
 out.unlink(missing_ok=True)
 """
 
@@ -110,9 +113,13 @@ def run(names: list[str], reps: int) -> None:
             if i == 0:
                 for c in CONFIGS:
                     step(w, c, workers)                       # warm-up, discarded
-            a, b = ("strand", "corroborated") if seed % 2 == 0 else ("corroborated", "strand")
-            order = [a, b] + [b, a] * (reps - 1) if reps > 1 else [a, b]
-            order += ["corroborated2"] * reps
+            if os.environ.get("VNX_AB_ORDER") == "v1":     # the first indel-w1 pass: A B B A, then the A/A runs
+                a, b = ("strand", "corroborated") if seed % 2 == 0 else ("corroborated", "strand")
+                order = [a, b] + [b, a] * (reps - 1) if reps > 1 else [a, b]
+                order += ["corroborated2"] * reps
+            else:                                            # amended: the A/A config interleaved, mirrored order
+                perm = list(itertools.permutations(CONFIGS))[(seed + i) % 6]
+                order = (list(perm) + list(perm)[::-1]) * ((reps + 1) // 2)
             rows = []
             for k, c in enumerate(order):
                 r = step(w, c, workers)
@@ -151,6 +158,10 @@ def summary() -> dict:
         med = {s: {c: statistics.median(r["seconds"] for r in rs if r["seed"] == s and r["config"] == c) for c in CONFIGS}
                for s in seeds}
         ratio = [med[s]["corroborated"] / med[s]["strand"] for s in seeds]
+        cpu = {s: {c: statistics.median(r["cpu_seconds"] for r in rs if r["seed"] == s and r["config"] == c)
+                   for c in CONFIGS} for s in seeds if all("cpu_seconds" in r for r in rs if r["seed"] == s)}
+        cratio = [cpu[s]["corroborated"] / cpu[s]["strand"] for s in cpu]
+        caa = [cpu[s]["corroborated"] / cpu[s]["corroborated2"] for s in cpu]
         aa = [med[s]["corroborated"] / med[s]["corroborated2"] for s in seeds]
         p1 = {c: [r["pass1"] for r in rs if r["config"] == c and r.get("pass1")] for c in ("strand", "corroborated")}
         out["scenarios"][name] = {
@@ -160,6 +171,10 @@ def summary() -> dict:
                                                "per_seed": [round(x, 3) for x in ratio]},
             "aa_corroborated_over_corroborated2": {"median": round(statistics.median(aa), 3), "ci95": _boot_ci(aa),
                                                    "per_seed": [round(x, 3) for x in aa]},
+            "cpu_seconds_median": {c: round(statistics.median(cpu[s][c] for s in cpu), 3) for c in CONFIGS} if cpu else None,
+            "cpu_ratio_corroborated_over_strand": {"median": round(statistics.median(cratio), 3), "ci95": _boot_ci(cratio),
+                                                   "per_seed": [round(x, 3) for x in cratio]} if cratio else None,
+            "cpu_aa": {"median": round(statistics.median(caa), 3), "ci95": _boot_ci(caa)} if caa else None,
             "all_success_and_identical": all(r["status"] == "SUCCESS" and r["matches_archive"] for r in rs)
             and all(len({r["output_sha256"] for r in rs if r["seed"] == s}) == 1 for s in seeds),
             "false_success": sum(r["status"] == "SUCCESS" and not r["matches_archive"] for r in rs),
