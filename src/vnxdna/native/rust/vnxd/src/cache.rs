@@ -7,18 +7,24 @@
 //!   the next flush reports the loss;
 //! * **write-through** (default): the write goes to the volume first; the cache is updated only when the volume
 //!   accepted it, and a failed write invalidates the extent's copy. The returned write state is the volume's;
-//! * **write-back** (opt-in): the write is kept in the cache as dirty and acknowledged as STAGED — volatile, never
-//!   durable. `flush` writes every dirty extent back (in extent order) and then flushes the volume; a writeback that
-//!   fails leaves its extent and every later dirty extent dirty, so a retry is possible and nothing is lost while
-//!   the process lives. Dirty data is lost if the process stops before a flush: write-back is for hosts that issue
-//!   flushes (filesystems do) and is documented as such;
+//! * **write-back** (opt-in): a single-extent write is kept in the cache as dirty and acknowledged as STAGED —
+//!   volatile, never durable. `flush` writes every dirty extent back (in extent order) and then flushes the volume;
+//!   a writeback that fails leaves its extent and every later dirty extent dirty, so a retry is possible and nothing
+//!   is lost while the process lives. Dirty data is lost if the process stops before a flush: write-back is for
+//!   hosts that issue flushes (filesystems do) and is documented as such. A multi-extent write always goes through
+//!   to the volume as one transaction (in both modes), so its atomicity never depends on the cache;
 //! * **memory**: every cached extent is a [`Buffer`] leased from the `Cache` quota of VNX-RAM. Making room evicts the
-//!   least recently used extents; a dirty victim is written back first (skipped if another request holds it). When
-//!   no room can be made, the request bypasses the cache (write-back degrades to write-through for that write). An
-//!   existing copy is overwritten in place, so a dirty copy is never dropped before its replacement is in the cache;
-//!   every writeback checks the copy's CRC-32 first;
+//!   least recently used extents (walking the LRU order lazily, O(log n) per candidate); a dirty victim is written
+//!   back first (skipped if another request holds it). When no room can be made, the request bypasses the cache
+//!   (write-back degrades to write-through for that write). An existing copy is overwritten in place, so a dirty copy
+//!   is never dropped before its replacement is installed; every writeback checks the copy's CRC-32 first;
+//! * **read-ahead** (opt-in, [`ExtentCache::with_readahead`]): after a miss on extent `e` that directly follows a
+//!   miss on `e - 1`, the next `n` extents are read into the cache as clean copies (extents another request holds,
+//!   or that are cached or lost, are skipped);
 //! * **consistency**: every operation on an extent holds that extent's cache lock across the volume call and the
-//!   cache update, so a read can never observe or install data older than a completed write.
+//!   cache update, so a read can never observe or install data older than a completed write. The cache-wide lock
+//!   only guards the index (which extent has which copy, LRU order, dirty flags): copying an extent and computing
+//!   its CRC-32 happen under the extent's own copy lock, outside it.
 
 use crate::addr::{ExtentId, Geometry};
 use crate::digest::crc32;
@@ -26,8 +32,9 @@ use crate::error::{err, ErrorCode, Result};
 use crate::io::ExtentStore;
 use crate::ram::{Buffer, MemoryManager, Subsystem, Wait};
 use crate::state::WriteState;
-use crate::volume::Volume;
+use crate::volume::{Patch, Volume};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::ops::Bound;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, TryLockError};
 
@@ -39,10 +46,30 @@ pub enum CacheMode {
     WriteBack,
 }
 
-struct Slot {
+/// One cached extent's bytes and their CRC-32. Only a thread holding the extent's stripe touches it, so its lock is
+/// never contended; it exists so that the bytes can be read and written outside the cache-wide index lock.
+struct Copy {
     buf: Buffer,
     crc: u32,
+}
+
+impl Copy {
+    fn intact(&self) -> bool {
+        crc32(self.buf.as_slice()) == self.crc
+    }
+}
+
+type Cell = Arc<Mutex<Copy>>;
+
+fn cell_lock(c: &Cell) -> MutexGuard<'_, Copy> {
+    c.lock().unwrap_or_else(|p| p.into_inner())
+}
+
+struct Slot {
+    cell: Cell,
     dirty: bool,
+    /// read into the cache by read-ahead and not read since
+    prefetched: bool,
     tick: u64,
 }
 
@@ -85,15 +112,28 @@ pub struct CacheStats {
     pub checksum_failures: AtomicU64,
     pub bypasses: AtomicU64,
     pub lost: AtomicU64,
+    /// extents read into the cache by read-ahead
+    pub prefetched: AtomicU64,
+    /// hits on extents that read-ahead brought in
+    pub prefetch_hits: AtomicU64,
 }
 
 pub struct ExtentCache {
     vol: Arc<Volume>,
     ram: Arc<MemoryManager>,
     mode: CacheMode,
+    readahead: u64,
+    /// extent number + 1 of the last read miss (0 = none)
+    last_miss: AtomicU64,
     inner: Mutex<Inner>,
     stripes: Vec<Mutex<()>>,
     pub stats: CacheStats,
+}
+
+/// The stripes a caller holds and the extents it is working on (never evicted by its own `make_room`).
+struct Held<'a> {
+    stripes: &'a [usize],
+    extents: &'a [ExtentId],
 }
 
 impl ExtentCache {
@@ -102,10 +142,18 @@ impl ExtentCache {
             vol,
             ram,
             mode,
+            readahead: 0,
+            last_miss: AtomicU64::new(0),
             inner: Mutex::new(Inner::default()),
             stripes: (0..LOCK_STRIPES).map(|_| Mutex::new(())).collect(),
             stats: CacheStats::default(),
         }
+    }
+
+    /// Enable sequential read-ahead of `extents` extents (0 = off, the default).
+    pub fn with_readahead(mut self, extents: u32) -> ExtentCache {
+        self.readahead = u64::from(extents);
+        self
     }
 
     pub fn volume(&self) -> &Arc<Volume> {
@@ -139,8 +187,8 @@ impl ExtentCache {
     }
 
     /// A leased buffer holding `data`, evicting least recently used extents to make room; None when no room can be
-    /// made (the caller then bypasses the cache). `holder` is the extent whose stripe the caller holds.
-    fn make_room(&self, data: &[u8], holder: ExtentId) -> Option<Buffer> {
+    /// made (the caller then bypasses the cache).
+    fn make_room(&self, data: &[u8], held: &Held<'_>) -> Option<Buffer> {
         loop {
             match self.ram.buffer(Subsystem::Cache, data.len(), Wait::No) {
                 Ok(mut b) => {
@@ -148,7 +196,7 @@ impl ExtentCache {
                     return Some(b);
                 }
                 Err(e) if e.code == ErrorCode::ResourceExhausted => {
-                    if !self.evict_one(holder) {
+                    if !self.evict_one(held) {
                         return None;
                     }
                 }
@@ -158,17 +206,20 @@ impl ExtentCache {
     }
 
     /// Evict the least recently used extent that can be evicted now; false if none can.
-    fn evict_one(&self, holder: ExtentId) -> bool {
-        let candidates: Vec<ExtentId> = self.inner().lru.values().copied().collect();
-        let holding = Self::stripe_of(holder);
-        for victim in candidates {
-            if victim == holder {
+    fn evict_one(&self, held: &Held<'_>) -> bool {
+        let mut after = 0u64;
+        loop {
+            // the next candidate in LRU order after the last one tried: no copy of the whole order
+            let next = self.inner().lru.range((Bound::Excluded(after), Bound::Unbounded)).next().map(|(t, e)| (*t, *e));
+            let Some((tick, victim)) = next else { return false };
+            after = tick;
+            if held.extents.contains(&victim) {
                 continue;
             }
             let si = Self::stripe_of(victim);
-            // the caller's own stripe is already held; any other is only try-locked, so no thread ever waits for one
-            // extent while holding another (no lock-order cycles)
-            let _g = if si == holding {
+            // stripes the caller holds are already ours; any other is only try-locked, so no thread ever waits for
+            // one extent while holding another (no lock-order cycles)
+            let _g = if held.stripes.contains(&si) {
                 None
             } else {
                 match self.stripes[si].try_lock() {
@@ -176,18 +227,16 @@ impl ExtentCache {
                     Err(TryLockError::WouldBlock) | Err(TryLockError::Poisoned(_)) => continue,
                 }
             };
-            let dirty_copy = {
-                let inner = self.inner();
-                match inner.slots.get(&victim) {
-                    None => continue,
-                    // a dirty copy failing its checksum is never written back; the next flush handles it
-                    Some(s) if s.dirty && crc32(s.buf.as_slice()) != s.crc => continue,
-                    Some(s) if s.dirty => Some(s.buf.as_slice().to_vec()),
-                    Some(_) => None,
-                }
+            let (cell, dirty) = match self.inner().slots.get(&victim) {
+                Some(s) if s.tick == tick => (s.cell.clone(), s.dirty),
+                _ => continue, // changed since it was picked
             };
-            if let Some(d) = dirty_copy {
-                if self.vol.write_extent(victim, &d).is_err() {
+            if dirty {
+                let copy = cell_lock(&cell);
+                if !copy.intact() {
+                    continue; // a dirty copy failing its checksum is never written back; the next flush handles it
+                }
+                if self.vol.write_extent(victim, copy.buf.as_slice()).is_err() {
                     self.stats.writeback_failures.fetch_add(1, Ordering::Relaxed);
                     continue; // keep it dirty; try another victim
                 }
@@ -197,26 +246,35 @@ impl ExtentCache {
             self.stats.evictions.fetch_add(1, Ordering::Relaxed);
             return true;
         }
-        false
     }
 
-    /// Put `data` in the cache as the copy of `e`. An existing copy is overwritten in place (same length, no
-    /// allocation), so a dirty copy is never dropped before its replacement is installed. False = not cached.
-    fn install(&self, e: ExtentId, data: &[u8], dirty: bool) -> bool {
-        {
+    /// Put `data` in the cache as the copy of `e` (the caller holds `e`'s stripe). An existing copy is overwritten
+    /// in place (same length, no allocation), so a dirty copy is never dropped before its replacement is installed.
+    /// False = not cached.
+    fn install(&self, e: ExtentId, data: &[u8], dirty: bool, held: &Held<'_>) -> bool {
+        let existing = {
             let mut inner = self.inner();
-            if let Some(s) = inner.slots.get_mut(&e) {
-                s.buf.as_mut_slice().copy_from_slice(data);
-                s.crc = crc32(data);
+            let cell = inner.slots.get_mut(&e).map(|s| {
                 s.dirty = dirty;
+                s.prefetched = false;
+                s.cell.clone()
+            });
+            if cell.is_some() {
                 inner.touch(e);
-                return true;
             }
+            cell
+        };
+        if let Some(cell) = existing {
+            let mut copy = cell_lock(&cell);
+            copy.buf.as_mut_slice().copy_from_slice(data);
+            copy.crc = crc32(data);
+            return true;
         }
-        match self.make_room(data, e) {
+        match self.make_room(data, held) {
             Some(buf) => {
+                let cell = Arc::new(Mutex::new(Copy { buf, crc: crc32(data) }));
                 let mut inner = self.inner();
-                inner.slots.insert(e, Slot { buf, crc: crc32(data), dirty, tick: 0 });
+                inner.slots.insert(e, Slot { cell, dirty, prefetched: false, tick: 0 });
                 inner.touch(e);
                 true
             }
@@ -239,39 +297,99 @@ impl ExtentCache {
         err(ErrorCode::Corruption, format!("extent {}: its acknowledged write-back copy failed its checksum and was lost", e.0))
     }
 
-    fn read_locked(&self, e: ExtentId) -> Result<Vec<u8>> {
-        {
+    fn read_locked(&self, e: ExtentId, held: &Held<'_>) -> Result<Vec<u8>> {
+        let hit = {
             let mut inner = self.inner();
             if inner.lost.contains(&e) {
                 return Self::lost_error(e);
             }
-            let hit = inner.slots.get(&e).map(|s| (s.buf.as_slice().to_vec(), s.crc, s.dirty));
-            if let Some((data, crc, dirty)) = hit {
-                if crc32(&data) == crc {
-                    inner.touch(e);
-                    self.stats.hits.fetch_add(1, Ordering::Relaxed);
-                    return Ok(data);
-                }
-                self.stats.checksum_failures.fetch_add(1, Ordering::Relaxed);
-                if dirty {
-                    self.lose(&mut inner, e);
-                    return Self::lost_error(e);
-                }
-                inner.remove(e);
+            let hit = inner.slots.get_mut(&e).map(|s| {
+                let was_prefetched = std::mem::replace(&mut s.prefetched, false);
+                (s.cell.clone(), s.dirty, was_prefetched)
+            });
+            if hit.is_some() {
+                inner.touch(e);
             }
+            hit
+        };
+        if let Some((cell, dirty, was_prefetched)) = hit {
+            // copy and check outside the index lock
+            let data = {
+                let copy = cell_lock(&cell);
+                copy.intact().then(|| copy.buf.as_slice().to_vec())
+            };
+            if let Some(data) = data {
+                self.stats.hits.fetch_add(1, Ordering::Relaxed);
+                if was_prefetched {
+                    self.stats.prefetch_hits.fetch_add(1, Ordering::Relaxed);
+                }
+                return Ok(data);
+            }
+            self.stats.checksum_failures.fetch_add(1, Ordering::Relaxed);
+            let mut inner = self.inner();
+            if dirty {
+                self.lose(&mut inner, e);
+                return Self::lost_error(e);
+            }
+            inner.remove(e);
         }
         self.stats.misses.fetch_add(1, Ordering::Relaxed);
         let data = self.vol.read_extent(e)?;
-        self.install(e, &data, false);
+        self.install(e, &data, false, held);
+        let prev = self.last_miss.swap(e.0 + 1, Ordering::Relaxed);
+        let sequential = prev != 0 && prev == e.0; // the previous miss was e - 1
+        if self.readahead > 0 && sequential {
+            self.read_ahead(e, held);
+        }
         Ok(data)
     }
 
-    fn write_locked(&self, e: ExtentId, data: &[u8]) -> Result<WriteState> {
+    /// Bring the `readahead` extents after `e` into the cache (clean), skipping any that another request holds or
+    /// that are cached or lost. Errors only end the read-ahead; they never fail the request that triggered it.
+    fn read_ahead(&self, e: ExtentId, held: &Held<'_>) {
+        let count = self.vol.geometry().extent_count();
+        for k in 1..=self.readahead {
+            let f = ExtentId(e.0 + k);
+            if f.0 >= count {
+                return;
+            }
+            let si = Self::stripe_of(f);
+            let _g = if held.stripes.contains(&si) {
+                None
+            } else {
+                match self.stripes[si].try_lock() {
+                    Ok(g) => Some(g),
+                    Err(_) => continue,
+                }
+            };
+            {
+                let inner = self.inner();
+                if inner.slots.contains_key(&f) || inner.lost.contains(&f) {
+                    continue;
+                }
+            }
+            let Ok(data) = self.vol.read_extent(f) else { return };
+            let mut keep: Vec<ExtentId> = held.extents.to_vec();
+            keep.push(f);
+            let mut stripes: Vec<usize> = held.stripes.to_vec();
+            stripes.push(si);
+            if !self.install(f, &data, false, &Held { stripes: &stripes, extents: &keep }) {
+                return; // no room: stop rather than evict more
+            }
+            if let Some(s) = self.inner().slots.get_mut(&f) {
+                s.prefetched = true;
+            }
+            self.stats.prefetched.fetch_add(1, Ordering::Relaxed);
+            self.last_miss.store(f.0 + 1, Ordering::Relaxed);
+        }
+    }
+
+    fn write_locked(&self, e: ExtentId, data: &[u8], held: &Held<'_>) -> Result<WriteState> {
         let len = self.vol.geometry().extent_len(e)?;
         if data.len() as u64 != len {
             return err(ErrorCode::InvalidArgument, format!("extent {} holds {len} bytes, got {}", e.0, data.len()));
         }
-        if self.mode == CacheMode::WriteBack && self.install(e, data, true) {
+        if self.mode == CacheMode::WriteBack && self.install(e, data, true, held) {
             self.inner().lost.remove(&e); // a whole-extent write replaces lost content
             return Ok(WriteState::Staged);
         }
@@ -279,7 +397,7 @@ impl ExtentCache {
         match self.vol.write_extent(e, data) {
             Ok(o) => {
                 self.inner().lost.remove(&e);
-                self.install(e, data, false);
+                self.install(e, data, false, held);
                 Ok(o.state)
             }
             Err(x) => {
@@ -294,28 +412,71 @@ impl ExtentCache {
         }
     }
 
+    /// Several extents in one volume transaction (both modes): the new contents are built from the cached view (so
+    /// a dirty copy's data is part of what becomes durable), committed by `Volume::write_extents`, then installed as
+    /// clean copies. On failure the volume is unchanged; clean copies are dropped and dirty copies kept.
+    fn write_many_locked(&self, patches: &[Patch<'_>], held: &Held<'_>) -> Result<WriteState> {
+        let geometry = self.vol.geometry();
+        let mut contents: Vec<Vec<u8>> = Vec::with_capacity(patches.len());
+        for p in patches {
+            let len = geometry.extent_len(p.extent)?;
+            if p.data.is_empty() || p.offset.checked_add(p.data.len() as u64).map_or(true, |end| end > len) {
+                return err(ErrorCode::InvalidArgument, format!("patch of extent {} outside its {len} bytes", p.extent.0));
+            }
+            let mut cur = if p.offset == 0 && p.data.len() as u64 == len {
+                p.data.to_vec()
+            } else {
+                self.read_locked(p.extent, held)?
+            };
+            let at = p.offset as usize;
+            cur[at..at + p.data.len()].copy_from_slice(p.data);
+            contents.push(cur);
+        }
+        let whole: Vec<Patch<'_>> =
+            patches.iter().zip(&contents).map(|(p, c)| Patch { extent: p.extent, offset: 0, data: c }).collect();
+        match self.vol.write_extents(&whole) {
+            Ok(ws) => {
+                for (p, c) in patches.iter().zip(&contents) {
+                    self.inner().lost.remove(&p.extent);
+                    self.install(p.extent, c, false, held);
+                }
+                Ok(ws)
+            }
+            Err(x) => {
+                let mut inner = self.inner();
+                for p in patches {
+                    if inner.slots.get(&p.extent).map_or(false, |s| !s.dirty) {
+                        inner.remove(p.extent);
+                    }
+                }
+                Err(x)
+            }
+        }
+    }
+
     /// Write every dirty extent back (in extent order), then flush the volume. Stops at the first backend failure.
     /// A dirty copy failing its checksum is never written: its extent becomes lost and the flush, after finishing
     /// the other extents, reports CORRUPTION once for every extent lost since the previous flush.
     pub fn flush(&self) -> Result<()> {
         for e in self.dirty_extents() {
             let _g = self.lock(e)?;
-            let copy = {
-                let mut inner = self.inner();
-                match inner.slots.get(&e) {
-                    Some(s) if s.dirty && crc32(s.buf.as_slice()) != s.crc => {
-                        self.stats.checksum_failures.fetch_add(1, Ordering::Relaxed);
-                        self.lose(&mut inner, e);
-                        continue;
-                    }
-                    Some(s) if s.dirty => s.buf.as_slice().to_vec(),
-                    _ => continue,
-                }
+            let cell = match self.inner().slots.get(&e) {
+                Some(s) if s.dirty => s.cell.clone(),
+                _ => continue,
             };
-            if let Err(x) = self.vol.write_extent(e, &copy) {
+            let copy = cell_lock(&cell);
+            if !copy.intact() {
+                drop(copy);
+                self.stats.checksum_failures.fetch_add(1, Ordering::Relaxed);
+                let mut inner = self.inner();
+                self.lose(&mut inner, e);
+                continue;
+            }
+            if let Err(x) = self.vol.write_extent(e, copy.buf.as_slice()) {
                 self.stats.writeback_failures.fetch_add(1, Ordering::Relaxed);
                 return Err(x);
             }
+            drop(copy);
             self.stats.writebacks.fetch_add(1, Ordering::Relaxed);
             if let Some(s) = self.inner().slots.get_mut(&e) {
                 s.dirty = false;
@@ -332,19 +493,16 @@ impl ExtentCache {
     /// Drop the copy of one extent (a dirty copy is written back first).
     pub fn invalidate(&self, e: ExtentId) -> Result<()> {
         let _g = self.lock(e)?;
-        let dirty = {
-            let mut inner = self.inner();
-            match inner.slots.get(&e) {
-                Some(s) if s.dirty && crc32(s.buf.as_slice()) != s.crc => {
-                    self.lose(&mut inner, e);
-                    return Self::lost_error(e);
-                }
-                Some(s) if s.dirty => Some(s.buf.as_slice().to_vec()),
-                _ => None,
+        let slot = self.inner().slots.get(&e).map(|s| (s.cell.clone(), s.dirty));
+        if let Some((cell, true)) = slot {
+            let copy = cell_lock(&cell);
+            if !copy.intact() {
+                drop(copy);
+                let mut inner = self.inner();
+                self.lose(&mut inner, e);
+                return Self::lost_error(e);
             }
-        };
-        if let Some(d) = dirty {
-            self.vol.write_extent(e, &d)?;
+            self.vol.write_extent(e, copy.buf.as_slice())?;
         }
         self.inner().remove(e);
         Ok(())
@@ -352,8 +510,9 @@ impl ExtentCache {
 
     #[cfg(test)]
     fn corrupt_copy(&self, e: ExtentId) {
-        if let Some(s) = self.inner().slots.get_mut(&e) {
-            s.buf.as_mut_slice()[0] ^= 1;
+        let cell = self.inner().slots.get(&e).map(|s| s.cell.clone());
+        if let Some(c) = cell {
+            cell_lock(&c).buf.as_mut_slice()[0] ^= 1;
         }
     }
 }
@@ -375,19 +534,49 @@ impl ExtentStore for ExtentCache {
 
     fn read_extent(&self, extent: ExtentId) -> Result<Vec<u8>> {
         let _g = self.lock(extent)?;
-        self.read_locked(extent)
+        self.read_locked(extent, &Held { stripes: &[Self::stripe_of(extent)], extents: &[extent] })
     }
 
     fn write_extent(&self, extent: ExtentId, data: &[u8]) -> Result<WriteState> {
         let _g = self.lock(extent)?;
-        self.write_locked(extent, data)
+        self.write_locked(extent, data, &Held { stripes: &[Self::stripe_of(extent)], extents: &[extent] })
     }
 
     fn modify_extent(&self, extent: ExtentId, patch: &mut dyn FnMut(&mut [u8])) -> Result<WriteState> {
         let _g = self.lock(extent)?;
-        let mut data = self.read_locked(extent)?;
+        let held = Held { stripes: &[Self::stripe_of(extent)], extents: &[extent] };
+        let mut data = self.read_locked(extent, &held)?;
         patch(&mut data);
-        self.write_locked(extent, &data)
+        self.write_locked(extent, &data, &held)
+    }
+
+    fn write_extents(&self, patches: &[Patch<'_>]) -> Result<WriteState> {
+        if let [p] = patches {
+            let len = self.vol.geometry().extent_len(p.extent)?;
+            if p.offset == 0 && p.data.len() as u64 == len {
+                return self.write_extent(p.extent, p.data);
+            }
+            if p.data.is_empty() || p.offset.checked_add(p.data.len() as u64).map_or(true, |end| end > len) {
+                return err(ErrorCode::InvalidArgument, format!("patch of extent {} outside its {len} bytes", p.extent.0));
+            }
+            let at = p.offset as usize;
+            return self.modify_extent(p.extent, &mut |b: &mut [u8]| b[at..at + p.data.len()].copy_from_slice(p.data));
+        }
+        if patches.is_empty() || patches.windows(2).any(|w| w[0].extent >= w[1].extent) {
+            return err(ErrorCode::InvalidArgument, "patched extents must be non-empty and strictly increasing");
+        }
+        // every stripe involved, in ascending order (as the volume does)
+        let mut idx: Vec<usize> = patches.iter().map(|p| Self::stripe_of(p.extent)).collect();
+        idx.sort_unstable();
+        idx.dedup();
+        let mut guards = Vec::with_capacity(idx.len());
+        for i in &idx {
+            guards.push(self.stripes[*i].lock().or_else(|_| err(ErrorCode::Internal, "cache lock poisoned"))?);
+        }
+        let extents: Vec<ExtentId> = patches.iter().map(|p| p.extent).collect();
+        let r = self.write_many_locked(patches, &Held { stripes: &idx, extents: &extents });
+        drop(guards);
+        r
     }
 
     fn flush(&self) -> Result<()> {
@@ -403,7 +592,7 @@ mod tests {
     use crate::journal::tests::TempDir;
     use crate::media::{CommitReceipt, MediaAdapter, MediaInfo, MemoryMedia};
     use crate::ram::RamConfig;
-    use crate::volume::VolumeConfig;
+    use crate::volume::{Patch, VolumeConfig};
     use std::sync::atomic::AtomicBool;
 
     /// Media whose puts fail while `down` is set (a backend outage).
@@ -699,5 +888,83 @@ mod tests {
             assert!(r.cache.dirty_extents().is_empty());
             assert_eq!(BlockIo::new(r.cache.volume().clone()).read(0, cap).unwrap(), model, "{mode:?}: volume after flush");
         }
+    }
+
+    #[test]
+    fn a_multi_extent_write_through_the_cache_is_one_volume_transaction() {
+        for mode in [CacheMode::WriteThrough, CacheMode::WriteBack] {
+            let r = rig(mode, 64);
+            r.cache.write_extent(ExtentId(1), &ext(1, 3)).unwrap(); // dirty in write-back mode
+            let mid = vec![7u8; 2048];
+            let ps = [
+                Patch { extent: ExtentId(1), offset: 2000, data: &[7u8; 48] },
+                Patch { extent: ExtentId(2), offset: 0, data: &mid },
+                Patch { extent: ExtentId(3), offset: 0, data: &[7u8; 10] },
+            ];
+            let ws = r.cache.write_extents(&ps).unwrap();
+            assert_eq!(ws, WriteState::Verified, "{mode:?}: always durable, never only staged");
+            assert!(r.cache.dirty_extents().is_empty(), "{mode:?}: the dirty data became durable with the batch");
+            let mut e1 = ext(1, 3);
+            e1[2000..].fill(7);
+            let mut e3 = ext(3, 0);
+            e3[..10].fill(7);
+            for (e, want) in [(1, e1), (2, mid.clone()), (3, e3)] {
+                assert_eq!(r.cache.volume().read_extent(ExtentId(e)).unwrap(), want, "{mode:?} extent {e} on the volume");
+                assert_eq!(r.cache.read_extent(ExtentId(e)).unwrap(), want, "{mode:?} extent {e} in the cache");
+            }
+            // a failing batch leaves the volume and the cached view unchanged
+            r.media.down.store(true, Ordering::SeqCst);
+            let ps2 = [Patch { extent: ExtentId(2), offset: 0, data: &[9u8; 2048] }, Patch { extent: ExtentId(4), offset: 5, data: &[9u8; 5] }];
+            assert_eq!(r.cache.write_extents(&ps2).unwrap_err().code, ErrorCode::BackendUnavailable);
+            r.media.down.store(false, Ordering::SeqCst);
+            assert_eq!(r.cache.read_extent(ExtentId(2)).unwrap(), mid, "{mode:?}");
+            assert_eq!(r.cache.read_extent(ExtentId(4)).unwrap(), ext(4, 0), "{mode:?}");
+            assert_eq!(r.cache.write_extents(&[ps[1], ps[0]]).unwrap_err().code, ErrorCode::InvalidArgument);
+        }
+    }
+
+    #[test]
+    fn sequential_misses_trigger_read_ahead_random_ones_do_not() {
+        let d = TempDir::new("cache-ra");
+        let g = Geometry::new(512, 1, 40).unwrap();
+        let vol = Arc::new(Volume::create(&d.0, g, [4; 16], 0, Arc::new(MemoryMedia::new()), VolumeConfig::default()).unwrap());
+        for e in 0..40 {
+            vol.write_extent(ExtentId(e), &[e as u8; 512]).unwrap();
+        }
+        let mut cfg = RamConfig::split(1 << 20);
+        cfg.quotas.insert(Subsystem::Cache, 64 << 10);
+        let cache = ExtentCache::new(vol.clone(), MemoryManager::new(cfg.clone()).unwrap(), CacheMode::WriteThrough).with_readahead(4);
+        for e in 0..20u64 {
+            assert_eq!(cache.read_extent(ExtentId(e)).unwrap(), [e as u8; 512]);
+        }
+        let (misses, pre, pre_hits) = (
+            cache.stats.misses.load(Ordering::Relaxed),
+            cache.stats.prefetched.load(Ordering::Relaxed),
+            cache.stats.prefetch_hits.load(Ordering::Relaxed),
+        );
+        assert!(misses <= 6, "sequential reads are mostly served by read-ahead: {misses} misses");
+        assert!(pre >= 14 && pre_hits >= 14, "prefetched {pre}, hits on them {pre_hits}");
+        // a strided pattern never looks sequential: no read-ahead
+        let cache = ExtentCache::new(vol, MemoryManager::new(cfg).unwrap(), CacheMode::WriteThrough).with_readahead(4);
+        for e in (0..40u64).step_by(3) {
+            assert_eq!(cache.read_extent(ExtentId(e)).unwrap(), [e as u8; 512]);
+        }
+        assert_eq!(cache.stats.prefetched.load(Ordering::Relaxed), 0);
+    }
+
+    #[test]
+    fn read_ahead_stays_within_the_quota_and_never_evicts_the_request_extent() {
+        let d = TempDir::new("cache-ra2");
+        let g = Geometry::new(512, 1, 40).unwrap();
+        let vol = Arc::new(Volume::create(&d.0, g, [4; 16], 0, Arc::new(MemoryMedia::new()), VolumeConfig::default()).unwrap());
+        let mut cfg = RamConfig::split(1 << 20);
+        cfg.quotas.insert(Subsystem::Cache, 3 * 4096); // three copies
+        let ram = MemoryManager::new(cfg).unwrap();
+        let cache = ExtentCache::new(vol, ram.clone(), CacheMode::WriteThrough).with_readahead(16);
+        for e in 0..40u64 {
+            assert_eq!(cache.read_extent(ExtentId(e)).unwrap(), [0u8; 512]);
+            assert!(cache.cached_extents() <= 3);
+        }
+        assert!(ram.usage(Subsystem::Cache).peak <= 3 * 4096);
     }
 }

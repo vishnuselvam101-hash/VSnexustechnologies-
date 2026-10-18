@@ -1,9 +1,13 @@
 //! VNX-IO: logical block requests over a [`Volume`] (master directive §7; docs/V14_VOLUME_AND_IO.md §5–§6).
 //!
 //! [`BlockIo`] turns byte-range requests into extent operations: a request is split into extent spans; a span that
-//! covers its whole extent is written directly, a partial span is a read-modify-write under the extent's lock. A
-//! write is atomic per extent (each extent is one transaction), not across extents — the same guarantee a disk
-//! gives per sector. Reads of unwritten ranges return zeros; every other byte returned was verified by the volume.
+//! covers its whole extent replaces it, a partial span is a read-modify-write under the extent's lock. A write is
+//! ONE transaction across all its extents (`ExtentStore::write_extents`, a single `map_batch` journal record): after
+//! a crash or an error either all of it is applied or none of it, as long as it spans at most
+//! [`MAX_BATCH_EXTENTS`] extents (every request of up to 64 MiB does when extents are larger than 64 KiB; a request
+//! spanning more extents is applied in transactions of that many extents, in order). Reads of unwritten ranges return zeros; every other
+//! byte returned was verified by the volume. With a VNX-RAM manager ([`BlockIo::with_ram`]) every request leases
+//! its transient working memory from the `io` quota first.
 //!
 //! [`IoQueue`] runs requests on a fixed set of worker threads behind a bounded queue:
 //! * **backpressure**: `submit` blocks while the queue is full; `try_submit` returns RESOURCE_EXHAUSTED instead;
@@ -24,8 +28,10 @@
 
 use crate::addr::{ExtentId, Geometry};
 use crate::error::{err, ErrorCode, Result};
+use crate::ram::{Lease, MemoryManager, Subsystem, Wait};
+use crate::record::MAX_BATCH_EXTENTS;
 use crate::state::WriteState;
-use crate::volume::Volume;
+use crate::volume::{Patch, Volume};
 use std::collections::{BTreeMap, VecDeque};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::mpsc::{sync_channel, Receiver, RecvTimeoutError, SyncSender};
@@ -52,6 +58,9 @@ pub trait ExtentStore: Send + Sync {
     fn write_extent(&self, extent: ExtentId, data: &[u8]) -> Result<WriteState>;
     /// Read-modify-write of one extent, atomic with respect to other operations on it.
     fn modify_extent(&self, extent: ExtentId, patch: &mut dyn FnMut(&mut [u8])) -> Result<WriteState>;
+    /// Apply several extent patches as ONE transaction (all or none); extents strictly increasing, at most
+    /// [`MAX_BATCH_EXTENTS`].
+    fn write_extents(&self, patches: &[Patch<'_>]) -> Result<WriteState>;
     fn flush(&self) -> Result<()>;
 }
 
@@ -68,6 +77,9 @@ impl ExtentStore for Volume {
     fn modify_extent(&self, extent: ExtentId, patch: &mut dyn FnMut(&mut [u8])) -> Result<WriteState> {
         Volume::modify_extent(self, extent, |b| patch(b)).map(|o| o.state)
     }
+    fn write_extents(&self, patches: &[Patch<'_>]) -> Result<WriteState> {
+        Volume::write_extents(self, patches)
+    }
     fn flush(&self) -> Result<()> {
         Volume::flush(self)
     }
@@ -78,12 +90,13 @@ impl ExtentStore for Volume {
 pub struct BlockIo {
     store: Arc<dyn ExtentStore>,
     vol: Arc<Volume>,
+    ram: Option<Arc<MemoryManager>>,
 }
 
 impl BlockIo {
     /// I/O directly on the volume.
     pub fn new(vol: Arc<Volume>) -> BlockIo {
-        BlockIo { store: vol.clone(), vol }
+        BlockIo { store: vol.clone(), vol, ram: None }
     }
 
     /// I/O through `store` (e.g. the cache) in front of `vol`; both must have the same geometry.
@@ -91,16 +104,43 @@ impl BlockIo {
         if store.geometry() != vol.geometry() {
             return err(ErrorCode::InvalidArgument, "the extent store and the volume have different geometries");
         }
-        Ok(BlockIo { store, vol })
+        Ok(BlockIo { store, vol, ram: None })
+    }
+
+    /// Lease every request's transient working memory from the `io` quota of `ram` (waiting while it is in use by
+    /// other requests). A request whose working memory exceeds the whole quota is INVALID_ARGUMENT.
+    pub fn with_ram(mut self, ram: Arc<MemoryManager>) -> BlockIo {
+        self.ram = Some(ram);
+        self
     }
 
     pub fn volume(&self) -> &Arc<Volume> {
         &self.vol
     }
 
+    /// Upper bound of the memory a request of `len` bytes allocates while it runs: its own buffer, plus for a read
+    /// one extent copy at a time; for a write one more copy of the request (the new extent contents a store may
+    /// build), two read-modify-write copies (the first and last extents) and one readback copy at a time.
+    pub fn working_bytes(&self, len: u64, write: bool) -> u64 {
+        let ext = self.vol.geometry().extent_bytes();
+        if write {
+            len.saturating_mul(2).saturating_add(ext.saturating_mul(3))
+        } else {
+            len.saturating_add(ext)
+        }
+    }
+
+    fn lease(&self, len: u64, write: bool) -> Result<Option<Lease>> {
+        match &self.ram {
+            None => Ok(None),
+            Some(ram) => ram.reserve(Subsystem::Io, self.working_bytes(len, write), Wait::Forever).map(Some),
+        }
+    }
+
     pub fn read(&self, offset: u64, len: u64) -> Result<Vec<u8>> {
         check_size(len)?;
         let spans = self.vol.geometry().spans(offset, len)?;
+        let _lease = self.lease(len, false)?;
         let len = usize::try_from(len).or_else(|_| err(ErrorCode::Overflow, "read length exceeds the address space"))?;
         let mut out = vec![0u8; len];
         for s in spans {
@@ -111,21 +151,19 @@ impl BlockIo {
         Ok(out)
     }
 
-    /// Write `data` at `offset`; returns the weakest write state reached by the extents written.
+    /// Write `data` at `offset` as one transaction (see the module documentation); returns the weakest write state
+    /// reached.
     pub fn write(&self, offset: u64, data: &[u8]) -> Result<WriteState> {
         check_size(data.len() as u64)?;
         let spans = self.vol.geometry().spans(offset, data.len() as u64)?;
+        let _lease = self.lease(data.len() as u64, true)?;
+        let patches: Vec<Patch<'_>> = spans
+            .iter()
+            .map(|s| Patch { extent: s.extent, offset: s.offset, data: &data[s.buf_offset as usize..(s.buf_offset + s.len) as usize] })
+            .collect();
         let mut weakest = WriteState::Verified;
-        for s in spans {
-            let src = &data[s.buf_offset as usize..(s.buf_offset + s.len) as usize];
-            let whole = s.offset == 0 && s.len == self.vol.geometry().extent_len(s.extent)?;
-            let state = if whole {
-                self.store.write_extent(s.extent, src)?
-            } else {
-                let at = s.offset as usize;
-                self.store.modify_extent(s.extent, &mut |buf: &mut [u8]| buf[at..at + src.len()].copy_from_slice(src))?
-            };
-            weakest = weakest.min(state);
+        for chunk in patches.chunks(MAX_BATCH_EXTENTS) {
+            weakest = weakest.min(self.store.write_extents(chunk)?);
         }
         Ok(weakest)
     }
@@ -566,12 +604,13 @@ mod tests {
                     Ok(_) => model[off as usize..(off + len) as usize].copy_from_slice(&data),
                     Err(_) => {
                         crashes += 1;
-                        // extents before the crashed one committed; the crashed extent is old or new; the rest untouched
                         drop(io);
                         let (v, _) = Volume::open(&d.0, m.clone(), VolumeConfig::default()).unwrap();
                         let after = BlockIo::new(Arc::new(v)).read(0, cap).unwrap();
                         let mut new_model = model.clone();
                         new_model[off as usize..(off + len) as usize].copy_from_slice(&data);
+                        // the request is one transaction: all of it or none of it, across every extent it spans
+                        assert!(after == model || after == new_model, "round {round}: a multi-extent write was split");
                         for e in 0..g.extent_count() {
                             let a = (e * eb) as usize;
                             let b = ((e + 1) * eb).min(cap) as usize;
@@ -585,6 +624,83 @@ mod tests {
             }
         }
         assert!(crashes >= 15, "only {crashes} crashes were injected");
+    }
+
+    #[test]
+    fn a_failed_multi_extent_write_leaves_every_extent_unchanged() {
+        // the backend refuses the third put: the extents already put are rolled back with the rest
+        struct NthPutFails(MemoryMedia, AtomicU64);
+        impl MediaAdapter for NthPutFails {
+            fn info(&self) -> MediaInfo {
+                self.0.info()
+            }
+            fn put(&self, at: GenerationRef, d: &[u8]) -> Result<CommitReceipt> {
+                if self.1.fetch_add(1, Ordering::SeqCst) == 2 {
+                    return err(ErrorCode::BackendUnavailable, "third put refused");
+                }
+                self.0.put(at, d)
+            }
+            fn get(&self, at: GenerationRef) -> Result<Vec<u8>> {
+                self.0.get(at)
+            }
+            fn remove(&self, at: GenerationRef) -> Result<()> {
+                self.0.remove(at)
+            }
+            fn list(&self) -> Result<Vec<GenerationRef>> {
+                self.0.list()
+            }
+            fn sync(&self) -> Result<()> {
+                Ok(())
+            }
+        }
+        let d = TempDir::new("io-batch");
+        let m = Arc::new(NthPutFails(MemoryMedia::new(), AtomicU64::new(u64::MAX / 2)));
+        let io = setup(&d, m.clone());
+        let cap = io.volume().geometry().capacity_bytes();
+        io.write(0, &vec![1u8; cap as usize]).unwrap();
+        let before = (io.read(0, cap).unwrap(), m.list().unwrap());
+        m.1.store(0, Ordering::SeqCst);
+        // 100 bytes into extent 0 .. 100 bytes into extent 4: five extents, two of them partial
+        assert_eq!(io.write(100, &vec![2u8; 4 * 2048]).unwrap_err().code, ErrorCode::BackendUnavailable);
+        assert_eq!((io.read(0, cap).unwrap(), m.list().unwrap()), before);
+        io.write(100, &vec![2u8; 4 * 2048]).unwrap();
+        let mut want = vec![1u8; cap as usize];
+        want[100..100 + 4 * 2048].fill(2);
+        assert_eq!(io.read(0, cap).unwrap(), want);
+    }
+
+    #[test]
+    fn requests_lease_their_working_memory_from_the_io_quota() {
+        use crate::ram::{RamConfig, Subsystem};
+        let d = TempDir::new("io-ram");
+        let io = setup(&d, Arc::new(MemoryMedia::new()));
+        let cap = io.volume().geometry().capacity_bytes();
+        let mut cfg = RamConfig::split(1 << 20);
+        cfg.quotas.insert(Subsystem::Io, 3 * io.working_bytes(4096, true));
+        let ram = MemoryManager::new(cfg).unwrap();
+        let io = io.with_ram(ram.clone());
+        std::thread::scope(|sc| {
+            for t in 0..8u64 {
+                let io = io.clone();
+                sc.spawn(move || {
+                    for i in 0..40u64 {
+                        let off = (t * 977 + i * 131) % (cap - 4096);
+                        io.write(off, &vec![t as u8; 1 + (i * 37 % 4096) as usize]).unwrap();
+                        io.read(off, 1 + (i * 53 % 4096)).unwrap();
+                    }
+                });
+            }
+        });
+        let u = ram.usage(Subsystem::Io);
+        assert!(u.peak <= 3 * io.working_bytes(4096, true), "io quota respected: {u:?}");
+        assert!(u.peak >= io.working_bytes(1, false), "requests did lease");
+        assert!(ram.outstanding().is_empty(), "every lease returned");
+        // a request that could never fit is refused before any effect
+        let mut small = RamConfig::split(1 << 20);
+        small.quotas.insert(Subsystem::Io, 4096);
+        let d2 = TempDir::new("io-ram2");
+        let io2 = setup(&d2, Arc::new(MemoryMedia::new())).with_ram(MemoryManager::new(small).unwrap());
+        assert_eq!(io2.write(0, &[1u8; 10]).unwrap_err().code, ErrorCode::InvalidArgument);
     }
 
     #[test]

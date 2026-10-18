@@ -1,12 +1,15 @@
 //! `vnxd` command line (Phase 1): contract inspection tools. The block-device service is added in Phase 8.
 //!
 //! * `vnxd version`: name, version, record format and protocol versions as canonical JSON;
-//! * `vnxd inspect-journal <file>`: decode a record file (superblock or journal) and print every record, the valid
-//!   length and the reason reading stopped, as canonical JSON. Exit 0 when the whole file decodes, 3 otherwise.
+//! * `vnxd inspect-journal <file>`: decode a volume journal (mirrored record pairs) or a plain record file and print
+//!   its layout, every record, the valid length, the reason reading stopped and the offsets of repaired pairs, as
+//!   canonical JSON, without changing the file. Exit 0 when the whole file decodes (a mirrored journal with a
+//!   repairable pair included), 3 otherwise.
 
 use std::process::ExitCode;
 use vnxd::json::{obj, Value};
-use vnxd::{proto, record};
+use vnxd::error::{ErrorCode, VnxError};
+use vnxd::{journal, proto, record};
 
 fn usage() -> ExitCode {
     eprintln!("usage: vnxd version | vnxd inspect-journal <file>");
@@ -38,26 +41,41 @@ fn main() -> ExitCode {
                     return ExitCode::from(1);
                 }
             };
-            let scan = record::scan(&buf);
+            // a mirrored journal first; a file that is not one is read as plain concatenated records
+            let (layout, records, valid_len, stop, repaired): (&str, Vec<record::Record>, usize, Option<VnxError>, Vec<u64>) =
+                match journal::parse(&buf) {
+                    Ok(p) => ("mirrored", p.records, p.valid_len, p.torn_tail, p.repaired),
+                    Err(e) if e.code == ErrorCode::Corruption && !buf.is_empty() => {
+                        // damage inside a mirrored journal: report where the plain reading stops too
+                        let s = record::scan(&buf);
+                        ("mirrored", s.records, s.valid_len, Some(e), Vec::new())
+                    }
+                    Err(_) => {
+                        let s = record::scan(&buf);
+                        ("plain", s.records, s.valid_len, s.tail_error, Vec::new())
+                    }
+                };
             let mut recs = Vec::new();
-            for r in &scan.records {
+            for r in &records {
                 match record::to_json(r) {
                     Ok(v) => recs.push(v),
                     Err(e) => recs.push(obj([("unprintable", Value::Str(e.to_string()))])),
                 }
             }
-            let tail = match &scan.tail_error {
+            let tail = match &stop {
                 Some(e) => obj([("code", Value::Str(e.code.as_str().into())), ("message", Value::Str(e.message.clone()))]),
                 None => Value::Null,
             };
             let v = obj([
                 ("bytes", Value::Int(buf.len() as i64)),
-                ("valid_len", Value::Int(scan.valid_len as i64)),
+                ("layout", Value::Str(layout.into())),
+                ("valid_len", Value::Int(valid_len as i64)),
                 ("records", Value::Arr(recs)),
                 ("tail_error", tail),
+                ("repaired", Value::Arr(repaired.iter().map(|o| Value::Int(*o as i64)).collect())),
             ]);
             println!("{}", v.canonical());
-            if scan.tail_error.is_none() {
+            if stop.is_none() {
                 ExitCode::SUCCESS
             } else {
                 ExitCode::from(3)

@@ -47,7 +47,7 @@ offset  size  field
      0     4  magic "VNXR"
      4     2  format version = 1
      6     2  kind
-     8     4  payload length n (must equal the kind's size)
+     8     4  payload length n (the kind's size; map_batch: 16 + 64 x entries)
     12     n  payload
   12+n     4  CRC-32 (zlib, reflected 0xEDB88320) of bytes [0, 12+n)
 ```
@@ -57,14 +57,17 @@ offset  size  field
 | 1 | superblock | device_id 16 B, block_size u32, blocks_per_extent u32, capacity_blocks u64, flags u32 (bit 0 = extents sealed; other bits reserved = 0) (36 B) |
 | 2 | map_update | txid u64 (>= 1), extent u64, generation u64 (>= 1), previous u64 (0 = none, else < generation), length u64, sha256 32 B (72 B) |
 | 3 | generation_released | txid u64 (>= 1), extent u64, generation u64 (>= 1) (24 B) |
+| 4 | map_batch | txid u64 (>= 1), count u32 (2..1024), reserved u32 = 0, then count entries of extent u64, generation u64 (>= 1), previous u64 (0 = none, else < generation), length u64, sha256 32 B; extents strictly increasing (16 + 64 x count B). One transaction remapping every listed extent at once (added in P4, before the contract is frozen at P12; kinds 1–3 unchanged) |
 
 Decoding errors: VERSION_MISMATCH for a format version other than 1; CORRUPTION for everything else (bad magic,
 unknown kind, wrong length, truncation, CRC mismatch, reserved flag, invalid geometry, generation 0, txid 0,
-previous >= generation). Encoders refuse to write a record the decoder would reject. A journal is a concatenation of
-records; reading stops at the first record that does not decode, and its offset (`valid_len`) is where the next
-append starts — a torn append loses only itself (the V13 volume journal rule). The JSON description of a record (for
-`vnxd inspect-journal` and the golden files) uses the field names above with `kind` = `superblock`, `map_update` or
-`generation_released` and hex strings for `device_id` and `sha256`. A u64 field above 2^63 − 1 is legal in a record
+previous >= generation, a batch count that disagrees with the length, a reserved batch field, batch extents out of
+order). Encoders refuse to write a record the decoder would reject. A plain record file is a concatenation of records;
+reading stops at the first record that does not decode (`valid_len`). The volume journal stores every record twice
+(mirrored pairs; [V14_VOLUME_AND_IO.md](V14_VOLUME_AND_IO.md) §2). The JSON description of a record (for
+`vnxd inspect-journal` and the golden files) uses the field names above with `kind` = `superblock`, `map_update`,
+`generation_released` or `map_batch` (whose `entries` is an array of objects with the entry fields) and hex strings
+for `device_id` and `sha256`. A u64 field above 2^63 − 1 is legal in a record
 but has no JSON description (protocol integers are signed 64-bit): describing it is an OVERFLOW error. Building a
 record from a description checks the 32-bit fields and generation >= 1 (INVALID_ARGUMENT).
 

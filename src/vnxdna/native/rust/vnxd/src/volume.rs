@@ -31,8 +31,9 @@ use crate::digest::sha256;
 use crate::error::{err, ErrorCode, Result, VnxError};
 use crate::journal::Journal;
 use crate::media::MediaAdapter;
-use crate::record::{GenerationReleased, MapUpdate, Record, Superblock};
+use crate::record::{BatchEntry, GenerationReleased, MapBatch, MapUpdate, Record, Superblock, MAX_BATCH_EXTENTS};
 use crate::state::WriteState;
+use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -106,6 +107,20 @@ pub struct RecoveryReport {
     /// backend objects of extents outside the device (left untouched)
     pub foreign: Vec<GenerationRef>,
     pub damaged: Vec<ExtentId>,
+    /// journal records read from their intact copy (the journal was then rewritten to restore the mirror)
+    pub journal_repaired: usize,
+    /// why restoring the mirror after a repair failed (the volume is open and correct, the journal still holds the
+    /// single intact copies; the next open or compaction retries)
+    pub mirror_restore_error: Option<VnxError>,
+}
+
+/// One extent of an atomic multi-extent write: `data` replaces the extent's bytes from `offset` on (a whole-extent
+/// update has offset 0 and the extent's length; anything else is a read-modify-write inside the transaction).
+#[derive(Clone, Copy, Debug)]
+pub struct Patch<'a> {
+    pub extent: ExtentId,
+    pub offset: u64,
+    pub data: &'a [u8],
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -210,31 +225,40 @@ impl Volume {
         let mut last_gen: BTreeMap<ExtentId, Generation> = BTreeMap::new();
         let mut last_txid = 0u64;
         for r in recs {
-            let (txid, at) = match &r {
-                Record::MapUpdate(m) => (m.txid, m.at),
-                Record::GenerationReleased(g) => (g.txid, g.at),
+            let (txid, entries): (u64, Vec<BatchEntry>) = match r {
+                Record::MapUpdate(m) => {
+                    (m.txid, vec![BatchEntry { at: m.at, previous: m.previous, length: m.length, sha256: m.sha256 }])
+                }
+                Record::MapBatch(b) => (b.txid, b.entries),
+                Record::GenerationReleased(g) => {
+                    if g.txid <= last_txid {
+                        return corrupt(format!("journal txid {} not after {last_txid}", g.txid));
+                    }
+                    if g.at.extent.0 >= geometry.extent_count() {
+                        return corrupt(format!("journal names extent {} beyond the device", g.at.extent.0));
+                    }
+                    if map.get(&g.at.extent).map(|e| e.generation) == Some(g.at.generation) {
+                        return corrupt(format!("journal releases the mapped generation {} of extent {}", g.at.generation.get(), g.at.extent.0));
+                    }
+                    last_txid = g.txid;
+                    let lg = last_gen.entry(g.at.extent).or_insert(g.at.generation);
+                    *lg = (*lg).max(g.at.generation);
+                    continue;
+                }
                 Record::Superblock(_) => return corrupt("second superblock in the journal"),
             };
             if txid <= last_txid {
                 return corrupt(format!("journal txid {txid} not after {last_txid}"));
             }
-            if at.extent.0 >= geometry.extent_count() {
-                return corrupt(format!("journal names extent {} beyond the device", at.extent.0));
-            }
             last_txid = txid;
-            if let Record::GenerationReleased(g) = &r {
-                if map.get(&g.at.extent).map(|e| e.generation) == Some(g.at.generation) {
-                    return corrupt(format!("journal releases the mapped generation {} of extent {}", g.at.generation.get(), g.at.extent.0));
+            // a map update or batch is checked whole, then applied whole (one transaction)
+            for m in &entries {
+                if m.at.extent.0 >= geometry.extent_count() {
+                    return corrupt(format!("journal names extent {} beyond the device", m.at.extent.0));
                 }
-            }
-            if let Record::MapUpdate(m) = &r {
                 if last_gen.get(&m.at.extent).map_or(false, |g| m.at.generation <= *g) {
                     return corrupt(format!("journal reuses generation {} of extent {}", m.at.generation.get(), m.at.extent.0));
                 }
-            }
-            let lg = last_gen.entry(at.extent).or_insert(at.generation);
-            *lg = (*lg).max(at.generation);
-            if let Record::MapUpdate(m) = r {
                 let current = map.get(&m.at.extent).map(|e| e.generation);
                 if current != m.previous {
                     return corrupt(format!("map update for extent {} expects previous {:?}, map has {:?}",
@@ -243,6 +267,9 @@ impl Volume {
                 if m.length != geometry.extent_len(m.at.extent)? {
                     return corrupt(format!("map update for extent {} with length {}", m.at.extent.0, m.length));
                 }
+            }
+            for m in entries {
+                last_gen.insert(m.at.extent, m.at.generation);
                 map.insert(m.at.extent, Entry { generation: m.at.generation, length: m.length, sha256: m.sha256 });
             }
         }
@@ -256,6 +283,11 @@ impl Volume {
         };
         let vol = Volume::assemble(dir, geometry, device_id, flags, media, cfg, state);
         vol.recover(&mut report)?;
+        report.journal_repaired = opened.repaired.len();
+        if !opened.repaired.is_empty() {
+            // rewrite both copies of every record from the replayed state; a failure leaves a readable journal
+            report.mirror_restore_error = vol.compact().err();
+        }
         Ok((vol, report))
     }
 
@@ -421,112 +453,189 @@ impl Volume {
         self.commit_locked(extent, &data)
     }
 
-    fn commit_locked(&self, extent: ExtentId, data: &[u8]) -> Result<CommitOutcome> {
-        let len = self.geometry.extent_len(extent)?;
-        if data.len() as u64 != len {
-            return err(ErrorCode::InvalidArgument, format!("extent {} holds {len} bytes, got {}", extent.0, data.len()));
+    /// Replace several extents in ONE transaction: after a crash or an error either every extent of `patches` has its
+    /// new content or none has (one `map_batch` record is the commit point). Extents must be strictly increasing,
+    /// 1..=[`MAX_BATCH_EXTENTS`] of them; partial patches are read-modify-writes inside the transaction. Returns the
+    /// write state reached (the same for every extent).
+    pub fn write_extents(&self, patches: &[Patch<'_>]) -> Result<WriteState> {
+        if patches.is_empty() || patches.len() > MAX_BATCH_EXTENTS {
+            return err(ErrorCode::InvalidArgument, format!("an atomic write covers 1..={MAX_BATCH_EXTENTS} extents, got {}", patches.len()));
         }
+        for (i, p) in patches.iter().enumerate() {
+            let len = self.geometry.extent_len(p.extent)?;
+            if p.data.is_empty() || p.offset.checked_add(p.data.len() as u64).map_or(true, |end| end > len) {
+                return err(ErrorCode::InvalidArgument, format!("patch of extent {} outside its {len} bytes", p.extent.0));
+            }
+            if i > 0 && patches[i - 1].extent >= p.extent {
+                return err(ErrorCode::InvalidArgument, "patched extents must be strictly increasing");
+            }
+        }
+        // every stripe involved, locked in ascending order (single-extent operations hold one stripe and never wait
+        // for a second, so no lock-order cycle exists)
+        let mut idx: Vec<usize> = patches.iter().map(|p| (p.extent.0 % LOCK_STRIPES as u64) as usize).collect();
+        idx.sort_unstable();
+        idx.dedup();
+        let mut _guards = Vec::with_capacity(idx.len());
+        for i in idx {
+            _guards.push(self.stripes[i].lock().or_else(|_| err(ErrorCode::Internal, "extent lock poisoned"))?);
+        }
+        let mut contents: Vec<(ExtentId, Cow<'_, [u8]>)> = Vec::with_capacity(patches.len());
+        for p in patches {
+            let len = self.geometry.extent_len(p.extent)?;
+            if p.offset == 0 && p.data.len() as u64 == len {
+                contents.push((p.extent, Cow::Borrowed(p.data)));
+            } else {
+                let mut cur = self.read_locked(p.extent)?;
+                let at = p.offset as usize;
+                cur[at..at + p.data.len()].copy_from_slice(p.data);
+                contents.push((p.extent, Cow::Owned(cur)));
+            }
+        }
+        let items: Vec<(ExtentId, &[u8])> = contents.iter().map(|(e, c)| (*e, c.as_ref())).collect();
+        self.commit_many_locked(&items).map(|(_, ws)| ws)
+    }
+
+    fn commit_locked(&self, extent: ExtentId, data: &[u8]) -> Result<CommitOutcome> {
+        let (gens, state) = self.commit_many_locked(&[(extent, data)])?;
+        Ok(CommitOutcome { generation: gens[0], state })
+    }
+
+    /// The commit procedure for one extent (a `map_update` record) or several (a `map_batch` record); the caller
+    /// holds every extent's stripe.
+    fn commit_many_locked(&self, items: &[(ExtentId, &[u8])]) -> Result<(Vec<Generation>, WriteState)> {
+        let mut lens = Vec::with_capacity(items.len());
+        for (extent, data) in items {
+            let len = self.geometry.extent_len(*extent)?;
+            if data.len() as u64 != len {
+                return err(ErrorCode::InvalidArgument, format!("extent {} holds {len} bytes, got {}", extent.0, data.len()));
+            }
+            lens.push(len);
+        }
+        let first = items[0].0;
+        let total: u64 = lens.iter().sum();
         let mut ws = WriteState::Received;
-        let generation = {
+        let gens: Vec<Generation> = {
             let mut st = self.lock_state()?;
             let max = self.cfg.max_stored_bytes;
-            if max > 0 && st.stored_bytes.saturating_add(len) > max {
-                return err(ErrorCode::NoSpace, format!("backend budget {max} bytes: {} stored, {len} more needed", st.stored_bytes));
+            if max > 0 && st.stored_bytes.saturating_add(total) > max {
+                return err(ErrorCode::NoSpace, format!("backend budget {max} bytes: {} stored, {total} more needed", st.stored_bytes));
             }
-            let g = match st.last_gen.get(&extent) {
-                Some(g) => g.next()?,
-                None => Generation::FIRST,
-            };
-            st.last_gen.insert(extent, g);
-            st.stored_bytes += len;
-            g
+            let mut gens = Vec::with_capacity(items.len());
+            for (extent, _) in items {
+                let g = match st.last_gen.get(extent) {
+                    Some(g) => g.next()?,
+                    None => Generation::FIRST,
+                };
+                st.last_gen.insert(*extent, g);
+                gens.push(g);
+            }
+            st.stored_bytes += total;
+            gens
         };
         ws = ws.advance(WriteState::Staged)?;
-        let at = GenerationRef { extent, generation };
-        let digest = sha256(data);
-        let unreserve = |v: &Volume| {
-            if let Ok(mut st) = v.lock_state() {
-                st.stored_bytes = st.stored_bytes.saturating_sub(len);
-            }
-        };
-        // undo a generation that will not be mapped; its space is given back only when the backend dropped it
-        let discard = |v: &Volume| {
-            match v.media.remove(at) {
-                Err(e) if e.code != ErrorCode::NotFound => {} // still held: it stays counted, the next open collects it
-                _ => unreserve(v),
-            }
-        };
-        let receipt = match self.media.put(at, data) {
-            Ok(r) => r,
-            Err(e) => {
-                discard(self);
-                return Err(e);
-            }
-        };
-        if receipt.sha256 != digest || receipt.length != len {
-            discard(self);
-            return corrupt(format!("backend receipt for extent {} does not describe the bytes written", extent.0));
-        }
-        ws = ws.advance(WriteState::BackendCommitted)?;
-        self.fault(Stage::AfterPut, extent)?;
-        let mut verified = false;
-        if self.cfg.verify_readback {
-            match self.media.get(at) {
-                Ok(back) if back == data => verified = true,
-                other => {
-                    discard(self);
-                    self.stats.integrity_failures.fetch_add(1, Ordering::Relaxed);
-                    return match other {
-                        Err(e) => Err(e),
-                        Ok(_) => corrupt(format!("readback of extent {} generation {} differs", extent.0, generation.get())),
-                    };
+        let at = |i: usize| GenerationRef { extent: items[i].0, generation: gens[i] };
+        let digests: Vec<[u8; 32]> = items.iter().map(|(_, d)| sha256(d)).collect();
+        // undo the generations that will not be mapped: the first `put` of them reached the backend; space is given
+        // back for every generation the backend no longer holds
+        let discard = |v: &Volume, put: usize| {
+            let mut freed = 0u64;
+            for i in 0..items.len() {
+                let gone = i >= put || !matches!(v.media.remove(at(i)), Err(e) if e.code != ErrorCode::NotFound);
+                if gone {
+                    freed += lens[i]; // a generation still held stays counted; the next open collects it
                 }
             }
+            if let Ok(mut st) = v.lock_state() {
+                st.stored_bytes = st.stored_bytes.saturating_sub(freed);
+            }
+        };
+        for (i, (extent, data)) in items.iter().enumerate() {
+            let receipt = match self.media.put(at(i), data) {
+                Ok(r) => r,
+                Err(e) => {
+                    discard(self, i + 1); // the failed put may have left something behind
+                    return Err(e);
+                }
+            };
+            if receipt.sha256 != digests[i] || receipt.length != lens[i] {
+                discard(self, i + 1);
+                return corrupt(format!("backend receipt for extent {} does not describe the bytes written", extent.0));
+            }
         }
-        self.fault(Stage::BeforeMapRecord, extent)?;
-        let previous = {
+        ws = ws.advance(WriteState::BackendCommitted)?;
+        self.fault(Stage::AfterPut, first)?;
+        let mut verified = false;
+        if self.cfg.verify_readback {
+            for (i, (extent, data)) in items.iter().enumerate() {
+                match self.media.get(at(i)) {
+                    Ok(back) if back == *data => {}
+                    other => {
+                        discard(self, items.len());
+                        self.stats.integrity_failures.fetch_add(1, Ordering::Relaxed);
+                        return match other {
+                            Err(e) => Err(e),
+                            Ok(_) => corrupt(format!("readback of extent {} generation {} differs", extent.0, gens[i].get())),
+                        };
+                    }
+                }
+            }
+            verified = true;
+        }
+        self.fault(Stage::BeforeMapRecord, first)?;
+        let previous: Vec<Option<Entry>> = {
             let mut st = self.lock_state()?;
-            let previous = st.map.get(&extent).cloned();
+            let previous: Vec<Option<Entry>> = items.iter().map(|(e, _)| st.map.get(e).cloned()).collect();
             let txid = st.next_txid;
-            let rec = Record::MapUpdate(MapUpdate {
-                txid,
-                at,
-                previous: previous.as_ref().map(|e| e.generation),
-                length: len,
-                sha256: digest,
-            });
+            let entries: Vec<BatchEntry> = (0..items.len())
+                .map(|i| BatchEntry {
+                    at: at(i),
+                    previous: previous[i].as_ref().map(|e| e.generation),
+                    length: lens[i],
+                    sha256: digests[i],
+                })
+                .collect();
+            let rec = if entries.len() == 1 {
+                let e = &entries[0];
+                Record::MapUpdate(MapUpdate { txid, at: e.at, previous: e.previous, length: e.length, sha256: e.sha256 })
+            } else {
+                Record::MapBatch(MapBatch { txid, entries })
+            };
             if self.fault.is_some() {
-                if let Err(e) = self.fault(Stage::TornMapRecord, extent) {
-                    let bytes = rec.encode()?;
-                    let _ = st.journal.append_raw(&bytes[..bytes.len() / 2]);
+                if let Err(e) = self.fault(Stage::TornMapRecord, first) {
+                    let bytes = crate::journal::encode_pair(&rec)?;
+                    let _ = st.journal.append_raw(&bytes[..bytes.len() / 4]);
                     return Err(e);
                 }
             }
             if let Err(e) = st.journal.append(&rec) {
                 if st.journal.is_poisoned() {
-                    // the map record may still reach the disk: keep generation g and stop the volume
+                    // the map record may still reach the disk: keep the generations and stop the volume
                     self.crashed.store(true, Ordering::SeqCst);
                     return Err(e);
                 }
                 drop(st);
-                discard(self);
+                discard(self, items.len());
                 return Err(e);
             }
             st.next_txid += 1;
-            st.map.insert(extent, Entry { generation, length: len, sha256: digest });
-            st.damaged.remove(&extent);
+            for i in 0..items.len() {
+                st.map.insert(items[i].0, Entry { generation: gens[i], length: lens[i], sha256: digests[i] });
+                st.damaged.remove(&items[i].0);
+            }
             previous
         };
         self.stats.commits.fetch_add(1, Ordering::Relaxed);
         if verified {
             ws = ws.advance(WriteState::Verified)?;
         }
-        self.fault(Stage::AfterMapRecord, extent)?;
-        if let Some(old) = previous {
-            self.release(GenerationRef { extent, generation: old.generation }, old.length)?;
+        self.fault(Stage::AfterMapRecord, first)?;
+        for (i, old) in previous.into_iter().enumerate() {
+            if let Some(old) = old {
+                self.release(GenerationRef { extent: items[i].0, generation: old.generation }, old.length)?;
+            }
         }
-        self.fault(Stage::AfterRemove, extent)?;
-        Ok(CommitOutcome { generation, state: ws })
+        self.fault(Stage::AfterRemove, first)?;
+        Ok((gens, ws))
     }
 
     /// Remove an unreferenced generation and journal its release. A failed remove leaves an orphan that the next
@@ -556,8 +665,16 @@ impl Volume {
         self.media.sync()
     }
 
-    /// Rewrite the journal as the superblock plus one map record per live extent (same txids, previous = none).
+    /// Rewrite the journal as the superblock, one map record per live extent (previous = none) and, for every extent
+    /// whose highest used generation is above its live one, a release record of that generation: replay then knows
+    /// every generation number ever used, so none is reused after a compaction.
     pub fn compact(&self) -> Result<u64> {
+        // no commit may be in flight: its generation is already counted in `last_gen` but not yet mapped, and a
+        // release record of it would make its map record look like a reuse. Every stripe, in ascending order.
+        let mut _guards = Vec::with_capacity(LOCK_STRIPES);
+        for m in &self.stripes {
+            _guards.push(m.lock().or_else(|_| err(ErrorCode::Internal, "extent lock poisoned"))?);
+        }
         let mut st = self.lock_state()?;
         let mut recs = vec![Record::Superblock(Superblock { device_id: self.device_id, geometry: self.geometry, flags: self.flags })];
         // one map record per extent, in txid order, re-numbered densely so replay keeps txids increasing
@@ -572,10 +689,17 @@ impl Volume {
                 sha256: e.sha256,
             }));
         }
+        let mut txid = live.len() as u64;
+        for (extent, hw) in st.last_gen.iter() {
+            if st.map.get(extent).map_or(true, |e| e.generation < *hw) {
+                txid += 1;
+                recs.push(Record::GenerationReleased(GenerationReleased { txid, at: GenerationRef { extent: *extent, generation: *hw } }));
+            }
+        }
         let before = st.journal.len();
         st.journal.rewrite(&recs)?;
-        st.next_txid = live.len() as u64 + 1;
-        Ok(before - st.journal.len())
+        st.next_txid = txid + 1;
+        Ok(before.saturating_sub(st.journal.len()))
     }
 }
 
@@ -584,6 +708,7 @@ mod tests {
     use super::*;
     use crate::journal::tests::TempDir;
     use crate::media::MemoryMedia;
+    use std::sync::atomic::AtomicU64;
 
     fn geo() -> Geometry {
         Geometry::new(512, 4, 10).unwrap() // extents of 2048, 2048, 1024 bytes
@@ -827,12 +952,32 @@ mod tests {
         }
         drop(v);
         let p = d.0.join(JOURNAL_FILE);
-        let mut bytes = std::fs::read(&p).unwrap();
-        bytes[52 + 20] ^= 1; // inside the first map record (after the 52-byte superblock)
+        let clean = std::fs::read(&p).unwrap();
+        // the journal is mirrored: superblock pair 2 x 52 bytes, then map record pairs of 2 x 88 bytes
+        let mut bytes = clean.clone();
+        bytes[104 + 20] ^= 1; // copy 1 of the first map record
+        bytes[104 + 88 + 20] ^= 1; // and copy 2
         std::fs::write(&p, &bytes).unwrap();
         let before = m.list().unwrap();
         assert_eq!(Volume::open(&d.0, m.clone(), VolumeConfig::default()).err().unwrap().code, ErrorCode::Corruption);
         assert_eq!(m.list().unwrap(), before, "no generation was garbage-collected");
+        assert_eq!(std::fs::read(&p).unwrap(), bytes, "the journal is untouched");
+        // one damaged copy, in the first or in the last record, is repaired and the mirror restored
+        for at in [104 + 20, clean.len() - 3] {
+            let mut bytes = clean.clone();
+            bytes[at] ^= 1;
+            std::fs::write(&p, &bytes).unwrap();
+            let (v, r) = Volume::open(&d.0, m.clone(), VolumeConfig::default()).unwrap();
+            assert_eq!(r.journal_repaired, 1, "flip at {at}");
+            assert!(r.orphans_removed.is_empty() && r.damaged.is_empty() && r.torn_tail.is_none());
+            for e in 0..3 {
+                assert_eq!(v.read_extent(ExtentId(e)).unwrap(), fill(e, 4), "flip at {at}");
+            }
+            drop(v);
+            let (_, r) = Volume::open(&d.0, m.clone(), VolumeConfig::default()).unwrap();
+            assert_eq!(r.journal_repaired, 0, "the repair rewrote both copies");
+            std::fs::write(&p, &clean).unwrap();
+        }
     }
 
     fn append(d: &TempDir, rec: Record) {
@@ -867,6 +1012,236 @@ mod tests {
         let at = GenerationRef { extent: ExtentId(1), generation: Generation::new(4).unwrap() };
         append(&d2, Record::MapUpdate(MapUpdate { txid: 102, at, previous: Some(Generation::new(3).unwrap()), length: 2048, sha256: [0; 32] }));
         assert_eq!(Volume::open(&d2.0, m2, VolumeConfig::default()).err().unwrap().code, ErrorCode::Corruption);
+    }
+
+    /// Media whose `fail_put`-th put from now on fails (0 = never).
+    struct FailNth {
+        inner: MemoryMedia,
+        puts: AtomicU64,
+        fail_put: AtomicU64,
+    }
+    impl FailNth {
+        fn new() -> FailNth {
+            FailNth { inner: MemoryMedia::new(), puts: AtomicU64::new(0), fail_put: AtomicU64::new(0) }
+        }
+        fn fail_in(&self, n: u64) {
+            self.fail_put.store(self.puts.load(Ordering::SeqCst) + n, Ordering::SeqCst);
+        }
+    }
+    impl MediaAdapter for FailNth {
+        fn info(&self) -> crate::media::MediaInfo {
+            self.inner.info()
+        }
+        fn put(&self, at: GenerationRef, d: &[u8]) -> Result<crate::media::CommitReceipt> {
+            let n = self.puts.fetch_add(1, Ordering::SeqCst) + 1;
+            if n == self.fail_put.load(Ordering::SeqCst) {
+                return err(ErrorCode::BackendUnavailable, "injected put failure");
+            }
+            self.inner.put(at, d)
+        }
+        fn get(&self, at: GenerationRef) -> Result<Vec<u8>> {
+            self.inner.get(at)
+        }
+        fn remove(&self, at: GenerationRef) -> Result<()> {
+            self.inner.remove(at)
+        }
+        fn list(&self) -> Result<Vec<GenerationRef>> {
+            self.inner.list()
+        }
+        fn sync(&self) -> Result<()> {
+            Ok(())
+        }
+    }
+
+    fn patches(v: u8) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
+        (vec![v; 100], fill(1, v), vec![v; 7])
+    }
+
+    fn expect_all(v: &Volume, base: u8, new: Option<u8>) {
+        let (mut e0, mut e1, mut e2) = (fill(0, base), fill(1, base), fill(2, base));
+        if let Some(n) = new {
+            e0[1948..].fill(n);
+            e1 = fill(1, n);
+            e2[..7].fill(n);
+        }
+        assert_eq!(v.read_extent(ExtentId(0)).unwrap(), e0);
+        assert_eq!(v.read_extent(ExtentId(1)).unwrap(), e1);
+        assert_eq!(v.read_extent(ExtentId(2)).unwrap(), e2);
+    }
+
+    #[test]
+    fn a_multi_extent_write_is_one_transaction() {
+        let d = TempDir::new("batch");
+        let m: Arc<dyn MediaAdapter> = Arc::new(MemoryMedia::new());
+        let v = new_vol(&d, m.clone());
+        for e in 0..3 {
+            v.write_extent(ExtentId(e), &fill(e, 1)).unwrap();
+        }
+        let (a, b, c) = patches(9);
+        let ps = [
+            Patch { extent: ExtentId(0), offset: 1948, data: &a },
+            Patch { extent: ExtentId(1), offset: 0, data: &b },
+            Patch { extent: ExtentId(2), offset: 0, data: &c },
+        ];
+        assert_eq!(v.write_extents(&ps).unwrap(), WriteState::Verified);
+        expect_all(&v, 1, Some(9));
+        assert_eq!(m.list().unwrap().len(), 3 + 1, "the three old generations were released");
+        drop(v);
+        let (v, r) = Volume::open(&d.0, m.clone(), VolumeConfig::default()).unwrap();
+        assert!(r.orphans_removed.is_empty() && r.torn_tail.is_none());
+        expect_all(&v, 1, Some(9));
+        // invalid batches fail before any effect
+        for bad in [
+            vec![],
+            vec![ps[1], ps[0]],
+            vec![ps[0], ps[0]],
+            vec![Patch { extent: ExtentId(2), offset: 1020, data: &a }],
+            vec![Patch { extent: ExtentId(5), offset: 0, data: &c }],
+        ] {
+            assert!(v.write_extents(&bad).is_err());
+        }
+        expect_all(&v, 1, Some(9));
+    }
+
+    #[test]
+    fn a_crash_at_any_stage_of_a_multi_extent_write_leaves_all_old_or_all_new() {
+        for (stage, expect_new) in [
+            (Stage::AfterPut, false),
+            (Stage::BeforeMapRecord, false),
+            (Stage::TornMapRecord, false),
+            (Stage::AfterMapRecord, true),
+            (Stage::AfterRemove, true),
+        ] {
+            let d = TempDir::new("batch-crash");
+            let m: Arc<dyn MediaAdapter> = Arc::new(MemoryMedia::new());
+            let v = new_vol(&d, m.clone());
+            for e in 0..3 {
+                v.write_extent(ExtentId(e), &fill(e, 1)).unwrap();
+            }
+            let v = v.with_fault_hook(crash_at(stage));
+            let (a, b, c) = patches(9);
+            let ps = [
+                Patch { extent: ExtentId(0), offset: 1948, data: &a },
+                Patch { extent: ExtentId(1), offset: 0, data: &b },
+                Patch { extent: ExtentId(2), offset: 0, data: &c },
+            ];
+            assert!(v.write_extents(&ps).is_err(), "{stage:?}");
+            drop(v);
+            let (v, r) = Volume::open(&d.0, m.clone(), VolumeConfig::default()).unwrap();
+            expect_all(&v, 1, expect_new.then_some(9));
+            assert_eq!(r.torn_tail.is_some(), stage == Stage::TornMapRecord, "{stage:?}");
+            assert_eq!(m.list().unwrap().len(), 3 + 1, "{stage:?}: only the live generations remain");
+            assert_eq!(v.stored_bytes().unwrap(), 2048 + 2048 + 1024, "{stage:?}");
+        }
+    }
+
+    #[test]
+    fn a_failed_put_inside_a_multi_extent_write_changes_nothing() {
+        for nth in 1..=3 {
+            let d = TempDir::new("batch-fail");
+            let fm = Arc::new(FailNth::new());
+            let m: Arc<dyn MediaAdapter> = fm.clone();
+            let v = new_vol(&d, m.clone());
+            for e in 0..3 {
+                v.write_extent(ExtentId(e), &fill(e, 1)).unwrap();
+            }
+            let before = (m.list().unwrap(), v.stored_bytes().unwrap());
+            fm.fail_in(nth);
+            let (a, b, c) = patches(9);
+            let ps = [
+                Patch { extent: ExtentId(0), offset: 1948, data: &a },
+                Patch { extent: ExtentId(1), offset: 0, data: &b },
+                Patch { extent: ExtentId(2), offset: 0, data: &c },
+            ];
+            assert_eq!(v.write_extents(&ps).unwrap_err().code, ErrorCode::BackendUnavailable, "put {nth}");
+            expect_all(&v, 1, None);
+            assert_eq!((m.list().unwrap(), v.stored_bytes().unwrap()), before, "put {nth}: no trace");
+            assert_eq!(v.write_extents(&ps).unwrap(), WriteState::Verified, "the volume keeps working");
+            expect_all(&v, 1, Some(9));
+        }
+    }
+
+    #[test]
+    fn a_multi_extent_write_that_does_not_fit_is_refused_whole() {
+        let d = TempDir::new("batch-space");
+        let cfg = VolumeConfig { max_stored_bytes: 2048 + 2048 + 1024 + 2048, ..Default::default() };
+        let m: Arc<dyn MediaAdapter> = Arc::new(MemoryMedia::new());
+        let v = Volume::create(&d.0, geo(), [1; 16], 0, m.clone(), cfg).unwrap();
+        for e in 0..3 {
+            v.write_extent(ExtentId(e), &fill(e, 1)).unwrap();
+        }
+        let (a, b, c) = patches(9);
+        let ps = [
+            Patch { extent: ExtentId(0), offset: 1948, data: &a },
+            Patch { extent: ExtentId(1), offset: 0, data: &b },
+            Patch { extent: ExtentId(2), offset: 0, data: &c },
+        ];
+        assert_eq!(v.write_extents(&ps).unwrap_err().code, ErrorCode::NoSpace);
+        expect_all(&v, 1, None);
+        assert_eq!(m.list().unwrap().len(), 3 + 1);
+    }
+
+    #[test]
+    fn replay_checks_a_batch_whole() {
+        let d = TempDir::new("batch-replay");
+        let m: Arc<dyn MediaAdapter> = Arc::new(MemoryMedia::new());
+        let v = new_vol(&d, m.clone());
+        v.write_extent(ExtentId(0), &fill(0, 1)).unwrap();
+        drop(v);
+        // the second entry claims a previous generation extent 1 never had: the whole journal is refused
+        let e = |x: u64, g: u64, p: u64| BatchEntry {
+            at: GenerationRef { extent: ExtentId(x), generation: Generation::new(g).unwrap() },
+            previous: Generation::new(p).ok(),
+            length: 2048,
+            sha256: [0; 32],
+        };
+        append(&d, Record::MapBatch(MapBatch { txid: 50, entries: vec![e(0, 2, 1), e(1, 3, 2)] }));
+        assert_eq!(Volume::open(&d.0, m, VolumeConfig::default()).err().unwrap().code, ErrorCode::Corruption);
+    }
+
+    #[test]
+    fn generations_are_never_reused_across_compaction() {
+        let d = TempDir::new("vol-hw");
+        let fm = Arc::new(FailNth::new());
+        let m: Arc<dyn MediaAdapter> = fm.clone();
+        let v = new_vol(&d, m.clone());
+        for i in 0..5u8 {
+            v.write_extent(ExtentId(0), &fill(0, i)).unwrap(); // generations 1..=5, 5 live
+        }
+        // extent 1: a write that never committed (generation 1 used, nothing mapped)
+        fm.fail_in(1);
+        assert!(v.write_extent(ExtentId(1), &fill(1, 1)).is_err());
+        v.compact().unwrap();
+        // a later write between compaction and reopen, and one after
+        assert_eq!(v.write_extent(ExtentId(0), &fill(0, 6)).unwrap().generation.get(), 6);
+        drop(v);
+        let (v, _) = Volume::open(&d.0, m.clone(), VolumeConfig::default()).unwrap();
+        v.compact().unwrap();
+        drop(v);
+        let (v, _) = Volume::open(&d.0, m.clone(), VolumeConfig::default()).unwrap();
+        assert_eq!(v.write_extent(ExtentId(0), &fill(0, 7)).unwrap().generation.get(), 7);
+        assert_eq!(v.write_extent(ExtentId(1), &fill(1, 2)).unwrap().generation.get(), 2, "generation 1 of extent 1 was used");
+        assert_eq!(v.read_extent(ExtentId(0)).unwrap(), fill(0, 7));
+    }
+
+    #[test]
+    fn a_p3_unmirrored_journal_is_refused_and_its_backend_untouched() {
+        let d = TempDir::new("vol-p3");
+        let m: Arc<dyn MediaAdapter> = Arc::new(MemoryMedia::new());
+        let v = new_vol(&d, m.clone());
+        v.write_extent(ExtentId(1), &fill(1, 5)).unwrap();
+        drop(v);
+        // rewrite the journal in the old layout: every record once
+        let p = d.0.join(JOURNAL_FILE);
+        let recs = Journal::open(&p).unwrap().records;
+        for keep in [1, recs.len()] {
+            let plain: Vec<u8> = recs[..keep].iter().flat_map(|r| r.encode().unwrap()).collect();
+            std::fs::write(&p, &plain).unwrap();
+            let before = m.list().unwrap();
+            assert_eq!(Volume::open(&d.0, m.clone(), VolumeConfig::default()).err().unwrap().code, ErrorCode::VersionMismatch);
+            assert_eq!(m.list().unwrap(), before, "nothing garbage-collected");
+            assert_eq!(std::fs::read(&p).unwrap(), plain, "journal untouched");
+        }
     }
 
     #[test]

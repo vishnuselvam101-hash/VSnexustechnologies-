@@ -65,7 +65,7 @@ def test_golden_messages(entry):
 
 def test_golden_files_cover_every_record_kind_and_both_protocols():
     kinds = {e["record"]["kind"] for e in _load("records.json")}
-    assert kinds == {"superblock", "map_update", "generation_released"}
+    assert kinds == {"superblock", "map_update", "generation_released", "map_batch"}
     msgs = _load("messages.json")
     assert {m["proto"] for m in msgs if "canonical" in m} == set(pr.PROTOCOLS)
     assert {"VERSION_MISMATCH", "PROTOCOL"} <= {m["error"] for m in msgs if "error" in m}
@@ -165,6 +165,25 @@ def test_record_descriptions_are_validated_like_rust():
     with pytest.raises(DeviceError) as e:
         rc.to_json(big)
     assert e.value.device_code == "OVERFLOW"
+
+
+def test_map_batches_are_validated_like_rust():
+    e = {"extent": 1, "generation": 2, "previous": 1, "length": 4096, "sha256": "00" * 32}
+    ok = {"kind": "map_batch", "txid": 5, "entries": [e, {**e, "extent": 2}]}
+    rec = rc.from_json(ok)
+    assert isinstance(rec, rc.MapBatch) and rc.to_json(rc.decode(rc.encode(rec))[0]) == ok
+    for bad in ({**ok, "entries": [e]}, {**ok, "entries": [e, e]}, {**ok, "entries": [{**e, "kind": "x"}, e]},
+                {**ok, "entries": [e, {**e, "extent": 2, "previous": 2}]}, {**ok, "entries": "x"},
+                {**ok, "entries": [{**e, "extent": i} for i in range(rc.MAX_BATCH_EXTENTS + 1)]}):
+        with pytest.raises(DeviceError) as err:
+            rc.from_json(bad)
+        assert err.value.device_code == "INVALID_ARGUMENT", bad
+    biggest = rc.MapBatch(1, tuple(rc.BatchEntry(i, 1, 0, 1, bytes(32)) for i in range(rc.MAX_BATCH_EXTENTS)))
+    raw = rc.encode(biggest)
+    assert len(raw) == 12 + 16 + 64 * rc.MAX_BATCH_EXTENTS + 4 and rc.decode(raw)[0] == biggest
+    with pytest.raises(DeviceError) as err:
+        rc.encode(rc.MapBatch(0, biggest.entries[:2]))
+    assert err.value.device_code == "CORRUPTION"
 
 
 def test_frame_layout_is_the_documented_one():

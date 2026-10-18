@@ -28,7 +28,7 @@ fn unhex(s: &str) -> Vec<u8> {
 #[test]
 fn records_encode_and_decode_byte_for_byte() {
     let entries = golden("records.json");
-    assert_eq!(entries.len(), 5);
+    assert_eq!(entries.len(), 6);
     for e in entries {
         let name = field(&e, "name").as_str().unwrap();
         let desc = field(&e, "record");

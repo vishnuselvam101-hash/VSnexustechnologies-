@@ -54,6 +54,28 @@ fn inspect_journal_reports_records_and_the_torn_tail() {
     assert_eq!(obj(&obj(&v)["tail_error"])["code"], Value::Str("CORRUPTION".into()));
     std::fs::remove_dir_all(&dir).unwrap();
 
+    // a mirrored volume journal: records once each, a damaged copy reported as repaired, the file untouched
+    let dir = std::env::temp_dir().join(format!("vnxd-cli-m-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let path = dir.join("journal");
+    let mut mirrored = Vec::new();
+    for g in 1..=3u64 {
+        let at = GenerationRef { extent: ExtentId(g), generation: Generation::new(g).unwrap() };
+        mirrored.extend(vnxd::journal::encode_pair(&Record::GenerationReleased(GenerationReleased { txid: g, at })).unwrap());
+    }
+    mirrored[80 + 20] ^= 1; // copy 1 of the second record
+    std::fs::write(&path, &mirrored).unwrap();
+    let (code, v) = vnxd(&["inspect-journal", path.to_str().unwrap()]);
+    assert_eq!(code, 0);
+    assert_eq!(obj(&v)["layout"], Value::Str("mirrored".into()));
+    assert_eq!(obj(&v)["repaired"], Value::Arr(vec![Value::Int(80)]));
+    match &obj(&v)["records"] {
+        Value::Arr(a) => assert_eq!(a.len(), 3),
+        _ => panic!("records"),
+    }
+    assert_eq!(std::fs::read(&path).unwrap(), mirrored, "inspection never changes the file");
+    std::fs::remove_dir_all(&dir).unwrap();
+
     let (code, _) = vnxd(&["inspect-journal", "/nonexistent/vnxd-journal"]);
     assert_eq!(code, 1);
     let (code, _) = vnxd(&["bogus"]);

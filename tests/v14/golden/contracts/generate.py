@@ -31,6 +31,14 @@ RECORDS = [
     ("map_update_remap", {"kind": "map_update", "txid": 9223372036854775807, "extent": 4095, "generation": 7,
                           "previous": 6, "length": 5, "sha256": hashlib.sha256(b"hello").hexdigest()}),
     ("generation_released", {"kind": "generation_released", "txid": 2, "extent": 4095, "generation": 6}),
+    # appended in P4 (atomic multi-extent writes); the entries above are unchanged byte for byte
+    ("map_batch", {"kind": "map_batch", "txid": 3, "entries": [
+        {"extent": 4, "generation": 2, "previous": 1, "length": 1048576,
+         "sha256": hashlib.sha256(b"extent 4 generation 2").hexdigest()},
+        {"extent": 5, "generation": 1, "previous": 0, "length": 1048576,
+         "sha256": hashlib.sha256(b"extent 5 generation 1").hexdigest()},
+        {"extent": 4095, "generation": 9, "previous": 8, "length": 5, "sha256": hashlib.sha256(b"hello").hexdigest()},
+    ]}),
 ]
 
 
@@ -60,7 +68,33 @@ def bad_records(good: bytes) -> list[tuple[str, bytes]]:
         ("superblock_bad_block_size", rc.encode(rc.from_json(RECORDS[0][1]))[:-4].replace(
             struct.pack("<I", 4096), struct.pack("<I", 4000), 1)),
         ("superblock_unknown_flag", None),  # filled below
+        # map_batch (P4)
+        ("batch_count_mismatch", None),
+        ("batch_reserved_set", None),
+        ("batch_extents_unordered", None),
+        ("batch_single_entry", None),
+        ("batch_partial_entry", None),
     ]
+
+
+def bad_batches(good: bytes) -> dict[str, bytes]:
+    """Malformed byte strings derived from one valid map-batch record (3 entries)."""
+    body = good[:-4]
+    head = 12
+    entry = 64
+
+    def length(b: bytes, n: int) -> bytes:
+        return b[:8] + struct.pack("<I", n) + b[12:]
+
+    first, second = body[head + 16:head + 16 + entry], body[head + 16 + entry:head + 16 + 2 * entry]
+    return {
+        "batch_count_mismatch": _with_crc(body[:head + 8] + struct.pack("<I", 2) + body[head + 12:]),
+        "batch_reserved_set": _with_crc(body[:head + 12] + struct.pack("<I", 1) + body[head + 16:]),
+        "batch_extents_unordered": _with_crc(body[:head + 16] + second + first + body[head + 16 + 2 * entry:]),
+        "batch_single_entry": _with_crc(length(body[:head + 8] + struct.pack("<I", 1) + body[head + 12:head + 16 + entry],
+                                               16 + entry)),
+        "batch_partial_entry": _with_crc(length(body[:-8], len(body) - 8 - head)),
+    }
 
 
 MESSAGES: list[tuple[str, str, str, str, str]] = [
@@ -160,6 +194,8 @@ def main() -> None:
             raw = _with_crc(raw)
         if name == "superblock_unknown_flag":
             raw = _with_crc(sb[:-4] + struct.pack("<I", 3))
+        if name.startswith("batch_"):
+            raw = bad_batches(bytes.fromhex(recs[5]["hex"]))[name]
         try:
             rc.decode(raw)
         except DeviceError as e:

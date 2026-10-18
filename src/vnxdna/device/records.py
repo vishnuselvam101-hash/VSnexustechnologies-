@@ -1,8 +1,9 @@
 """Persisted record format ``vnx.record/1`` (docs/V14_CONTRACTS.md §3); mirror of ``vnxd/src/record.rs``.
 
 Frame (little-endian): magic ``VNXR`` | u16 format version 1 | u16 kind | u32 payload length | payload |
-u32 CRC-32 (zlib) of everything before it. Payloads have a fixed size per kind. Decoding is strict; a journal is
-read up to the first record that does not decode.
+u32 CRC-32 (zlib) of everything before it. Payloads have a fixed size per kind, except ``map_batch`` (16 bytes +
+64 per entry, 2..1024 entries). Decoding is strict. ``scan`` reads a plain concatenation of records up to the first
+that does not decode; the volume journal stores every record twice (docs/V14_VOLUME_AND_IO.md §2).
 """
 from __future__ import annotations
 
@@ -16,12 +17,15 @@ from .contracts import DeviceError, Geometry
 MAGIC = b"VNXR"
 FORMAT_VERSION = 1
 HEADER = struct.Struct("<4sHHI")
-KIND_SUPERBLOCK, KIND_MAP_UPDATE, KIND_GENERATION_RELEASED = 1, 2, 3
+KIND_SUPERBLOCK, KIND_MAP_UPDATE, KIND_GENERATION_RELEASED, KIND_MAP_BATCH = 1, 2, 3, 4
+MAX_BATCH_EXTENTS = 1024
 FLAG_SEALED = 1
 _KNOWN_FLAGS = FLAG_SEALED
 _SUPERBLOCK = struct.Struct("<16sIIQI")
 _MAP_UPDATE = struct.Struct("<QQQQQ32s")
 _RELEASED = struct.Struct("<QQQ")
+_BATCH_HEAD = struct.Struct("<QII")
+_BATCH_ENTRY = struct.Struct("<QQQQ32s")
 _PAYLOAD = {KIND_SUPERBLOCK: _SUPERBLOCK, KIND_MAP_UPDATE: _MAP_UPDATE, KIND_GENERATION_RELEASED: _RELEASED}
 U64_MAX = (1 << 64) - 1
 
@@ -52,7 +56,24 @@ class GenerationReleased:
     generation: int
 
 
-Record = Union[Superblock, MapUpdate, GenerationReleased]
+@dataclass(frozen=True)
+class BatchEntry:
+    extent: int
+    generation: int
+    previous: int
+    length: int
+    sha256: bytes
+
+
+@dataclass(frozen=True)
+class MapBatch:
+    """Transaction ``txid`` remaps every extent of ``entries`` at once (2..MAX_BATCH_EXTENTS, extents increasing)."""
+
+    txid: int
+    entries: tuple[BatchEntry, ...]
+
+
+Record = Union[Superblock, MapUpdate, GenerationReleased, MapBatch]
 
 
 def _corrupt(msg: str) -> DeviceError:
@@ -60,8 +81,8 @@ def _corrupt(msg: str) -> DeviceError:
 
 
 def _kind(rec: Record) -> int:
-    return {Superblock: KIND_SUPERBLOCK, MapUpdate: KIND_MAP_UPDATE, GenerationReleased: KIND_GENERATION_RELEASED}[
-        type(rec)]
+    return {Superblock: KIND_SUPERBLOCK, MapUpdate: KIND_MAP_UPDATE, GenerationReleased: KIND_GENERATION_RELEASED,
+            MapBatch: KIND_MAP_BATCH}[type(rec)]
 
 
 def validate(rec: Record) -> None:
@@ -72,6 +93,18 @@ def validate(rec: Record) -> None:
         if rec.flags & ~_KNOWN_FLAGS:
             raise _corrupt(f"unknown superblock flags {rec.flags:#x}")
         return
+    if isinstance(rec, MapBatch):
+        if not 0 <= rec.txid <= U64_MAX:
+            raise DeviceError("OVERFLOW", "record field outside 0..2^64-1")
+        if rec.txid == 0:
+            raise _corrupt("map batch with txid 0")
+        if not 2 <= len(rec.entries) <= MAX_BATCH_EXTENTS:
+            raise _corrupt(f"map batch of {len(rec.entries)} extents (2..={MAX_BATCH_EXTENTS})")
+        for i, e in enumerate(rec.entries):
+            _validate_entry(e.extent, e.generation, e.previous, e.length, e.sha256, "map batch")
+            if i and rec.entries[i - 1].extent >= e.extent:
+                raise _corrupt("map batch: extents not strictly increasing")
+        return
     ints = (rec.txid, rec.extent, rec.generation) + ((rec.previous, rec.length) if isinstance(rec, MapUpdate) else ())
     if any(not 0 <= v <= U64_MAX for v in ints):
         raise DeviceError("OVERFLOW", "record field outside 0..2^64-1")
@@ -80,10 +113,18 @@ def validate(rec: Record) -> None:
     if rec.txid == 0:
         raise _corrupt(f"{type(rec).__name__} with txid 0")
     if isinstance(rec, MapUpdate):
-        if len(rec.sha256) != 32:
-            raise DeviceError("INVALID_ARGUMENT", "sha256 must be 32 bytes")
-        if rec.previous and rec.previous >= rec.generation:
-            raise _corrupt("map update: previous generation not older than the new one")
+        _validate_entry(rec.extent, rec.generation, rec.previous, rec.length, rec.sha256, "map update")
+
+
+def _validate_entry(extent: int, generation: int, previous: int, length: int, sha256: bytes, what: str) -> None:
+    if any(not 0 <= v <= U64_MAX for v in (extent, generation, previous, length)):
+        raise DeviceError("OVERFLOW", "record field outside 0..2^64-1")
+    if generation == 0:
+        raise _corrupt("generation 0")
+    if len(sha256) != 32:
+        raise DeviceError("INVALID_ARGUMENT", "sha256 must be 32 bytes")
+    if previous and previous >= generation:
+        raise _corrupt(f"{what}: previous generation not older than the new one")
 
 
 def encode(rec: Record) -> bytes:
@@ -93,6 +134,9 @@ def encode(rec: Record) -> bytes:
         payload = _SUPERBLOCK.pack(rec.device_id, g.block_size, g.blocks_per_extent, g.capacity_blocks, rec.flags)
     elif isinstance(rec, MapUpdate):
         payload = _MAP_UPDATE.pack(rec.txid, rec.extent, rec.generation, rec.previous, rec.length, rec.sha256)
+    elif isinstance(rec, MapBatch):
+        payload = _BATCH_HEAD.pack(rec.txid, len(rec.entries), 0) + b"".join(
+            _BATCH_ENTRY.pack(e.extent, e.generation, e.previous, e.length, e.sha256) for e in rec.entries)
     else:
         payload = _RELEASED.pack(rec.txid, rec.extent, rec.generation)
     body = HEADER.pack(MAGIC, FORMAT_VERSION, _kind(rec), len(payload)) + payload
@@ -109,9 +153,13 @@ def decode(buf: bytes, offset: int = 0) -> tuple[Record, int]:
         raise _corrupt("bad record magic")
     if version != FORMAT_VERSION:
         raise DeviceError("VERSION_MISMATCH", f"record format version {version} (supported: 1)")
-    if kind not in _PAYLOAD:
+    if kind == KIND_MAP_BATCH:
+        if (n < _BATCH_HEAD.size + 2 * _BATCH_ENTRY.size or n > _BATCH_HEAD.size + MAX_BATCH_EXTENTS * _BATCH_ENTRY.size
+                or (n - _BATCH_HEAD.size) % _BATCH_ENTRY.size):
+            raise _corrupt(f"map batch payload length {n}")
+    elif kind not in _PAYLOAD:
         raise _corrupt(f"unknown record kind {kind}")
-    if n != _PAYLOAD[kind].size:
+    elif n != _PAYLOAD[kind].size:
         raise _corrupt(f"record kind {kind}: payload length {n}, expected {_PAYLOAD[kind].size}")
     total = HEADER.size + n + 4
     if len(view) < total:
@@ -119,8 +167,19 @@ def decode(buf: bytes, offset: int = 0) -> tuple[Record, int]:
     (stored,) = struct.unpack_from("<I", view, total - 4)
     if zlib.crc32(view[:HEADER.size + n]) != stored:
         raise _corrupt("record CRC-32 mismatch")
-    fields = _PAYLOAD[kind].unpack_from(view, HEADER.size)
     rec: Record
+    if kind == KIND_MAP_BATCH:
+        txid, count, reserved = _BATCH_HEAD.unpack_from(view, HEADER.size)
+        if reserved:
+            raise _corrupt("map batch: reserved field set")
+        if count != (n - _BATCH_HEAD.size) // _BATCH_ENTRY.size:
+            raise _corrupt(f"map batch: count {count} does not match its payload length {n}")
+        base = HEADER.size + _BATCH_HEAD.size
+        rec = MapBatch(txid, tuple(BatchEntry(*_BATCH_ENTRY.unpack_from(view, base + i * _BATCH_ENTRY.size))
+                                   for i in range(count)))
+        validate(rec)
+        return rec, total
+    fields = _PAYLOAD[kind].unpack_from(view, HEADER.size)
     if kind == KIND_SUPERBLOCK:
         device_id, bs, bpe, cap, flags = fields
         try:
@@ -165,9 +224,10 @@ def to_json(rec: Record) -> dict[str, Any]:
     Protocol JSON integers are signed 64-bit: a field above 2^63 - 1 cannot be described and is an OVERFLOW error.
     """
     out = _describe(rec)
-    for k, v in out.items():
-        if type(v) is int and v > I64_MAX:
-            raise DeviceError("OVERFLOW", f"{v} exceeds the JSON integer range")
+    for item in [out] + list(out.get("entries", [])):
+        for v in item.values():
+            if type(v) is int and v > I64_MAX:
+                raise DeviceError("OVERFLOW", f"{v} exceeds the JSON integer range")
     return out
 
 
@@ -179,13 +239,19 @@ def _describe(rec: Record) -> dict[str, Any]:
     if isinstance(rec, MapUpdate):
         return {"kind": "map_update", "txid": rec.txid, "extent": rec.extent, "generation": rec.generation,
                 "previous": rec.previous, "length": rec.length, "sha256": rec.sha256.hex()}
+    if isinstance(rec, MapBatch):
+        return {"kind": "map_batch", "txid": rec.txid,
+                "entries": [{"extent": e.extent, "generation": e.generation, "previous": e.previous,
+                             "length": e.length, "sha256": e.sha256.hex()} for e in rec.entries]}
     return {"kind": "generation_released", "txid": rec.txid, "extent": rec.extent, "generation": rec.generation}
 
 
+_ENTRY_KEYS = {"extent", "generation", "previous", "length", "sha256"}
 _KEYS = {
     "superblock": {"kind", "device_id", "block_size", "blocks_per_extent", "capacity_blocks", "flags"},
     "map_update": {"kind", "txid", "extent", "generation", "previous", "length", "sha256"},
     "generation_released": {"kind", "txid", "extent", "generation"},
+    "map_batch": {"kind", "txid", "entries"},
 }
 
 
@@ -226,6 +292,22 @@ def from_json(d: dict[str, Any]) -> Record:
                                                        u("capacity_blocks")), u32("flags"))
     elif kind == "map_update":
         rec = MapUpdate(u("txid"), u("extent"), gen("generation"), u("previous"), u("length"), h("sha256", 32))
+    elif kind == "map_batch":
+        items = d["entries"]
+        if not isinstance(items, list):
+            raise DeviceError("INVALID_ARGUMENT", "map_batch.entries must be an array")
+        entries = []
+        for it in items:
+            if not isinstance(it, dict) or set(it) != _ENTRY_KEYS:
+                raise DeviceError("INVALID_ARGUMENT", f"map_batch entry fields must be exactly {sorted(_ENTRY_KEYS)}")
+            m = from_json({"kind": "map_update", "txid": 1, **it})
+            assert isinstance(m, MapUpdate)
+            entries.append(BatchEntry(m.extent, m.generation, m.previous, m.length, m.sha256))
+        rec = MapBatch(u("txid"), tuple(entries))
+        try:
+            validate(rec)
+        except DeviceError as e:
+            raise DeviceError("INVALID_ARGUMENT", e.device_message) from None
     else:
         rec = GenerationReleased(u("txid"), u("extent"), gen("generation"))
     return rec

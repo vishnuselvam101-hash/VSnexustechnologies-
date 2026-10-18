@@ -10,7 +10,8 @@ journal files.
 A volume is a directory holding `journal` and is bound to one media adapter that stores the extents' generations.
 
 ```
-journal   superblock (geometry, device id, flags), then map_update and generation_released records (vnx.record/1)
+journal   superblock (geometry, device id, flags), then map_update, map_batch and generation_released records
+          (vnx.record/1), every record stored twice (a mirrored pair)
 backend   one immutable generation per (extent, generation): the extent's full bytes
           + the binding marker (extent 2^64 - 1, generation 1): "VNXDEV01" + device id
 ```
@@ -20,27 +21,44 @@ with another device's marker is refused (INVALID_ARGUMENT) and nothing on it is 
 
 ## 2. Journal
 
-Append-only. `append` writes one record and calls `fdatasync` before it returns: a record is durable exactly when
-`append` returns `Ok`. A failed append cuts the file back to the last complete record; if that rollback fails too,
-the journal is poisoned (every later append fails) and the volume stops, keeping the new generation, because the
-record may still reach the disk. `open` keeps every record up to the first that does not decode. It truncates there
-only when the rest is a torn last append: shorter than one record and with no decodable record after it. Any other
-undecodable bytes are damage inside the committed journal: `open` refuses with CORRUPTION and changes nothing, so
-committed records after the damage are never discarded and their generations never garbage-collected.
+Append-only, **mirrored**: every record is written twice, back to back, in one append. `append` writes the pair and
+calls `fdatasync` before it returns: a record is durable exactly when `append` returns `Ok`. A failed append cuts the
+file back to the last complete pair; if that rollback fails too, the journal is poisoned (every later append fails)
+and the volume stops, keeping the new generations, because the record may still reach the disk.
 
-Limit: a bit flip in the last, complete record cannot be told apart from a torn append. That record is dropped; its
-transaction is undone (the extent keeps its previous, verified content, never zeros). Each
-record's txid is greater than the previous one; replay refuses a journal that breaks that, names an extent beyond
-the device, has a second superblock, has a map update whose `previous` is not the current mapping, or has a length
-other than the extent's (CORRUPTION). `compact` replaces the journal atomically (temporary file, fsync, rename, fsync
-of the directory) with the superblock and one map record per live extent; the handle on the new file is opened
-before the rename, so later appends always reach the live journal. Replay also refuses a release of the generation
-currently mapped and a map update whose generation is not above every generation the journal used for the extent.
-After a compaction the released numbers are forgotten and may be used again; they no longer exist on the backend.
+`open` reads the pairs in order:
 
-## 3. Write transaction (one extent)
+| what it finds | outcome |
+|---|---|
+| both copies intact and equal | the record |
+| one copy damaged (any byte, header included) | the record from the other copy; counted in `journal_repaired`; after recovery the volume compacts the journal, which rewrites both copies (if that rewrite fails, the volume still opens and reports `mirror_restore_error`) |
+| the file ends inside the last pair (copy 2 incomplete; copy 1 incomplete; the append stopped inside the header), or the last append's header was written and the rest of its pair is zeros, or a zero-filled tail no longer than the largest pair this device can write (a map batch of min(extent count, 1,024) entries) — and nothing decodable follows | a torn append: cut there, reported as `torn_tail` |
+| anything else: both copies of a complete pair damaged, damage followed by decodable records, a non-zero garbage tail, a zero-filled tail longer than one append, a damaged or unpaired superblock | damage inside the committed journal: CORRUPTION (or VERSION_MISMATCH below), nothing changed (committed records are never discarded and their generations never garbage-collected) |
+| the record after a valid first copy is a different valid record, or the superblock has no copy | an unmirrored journal (the P2/P3 layout): VERSION_MISMATCH at the first pair, CORRUPTION elsewhere |
 
-Writes replace a whole extent with a new generation; a partial write is a read-modify-write under the extent's lock.
+Only the last append can be torn, because every append is fsynced before the next one starts; a crash leaves a
+prefix of it or a zero-filled range, which is what the torn rules accept. So a single damaged byte anywhere, in the
+last record too, no longer undoes a transaction. What remains ambiguous: a zero-filled tail no longer than the
+largest append the device can write is cut as torn even if it overwrote committed records (a lost write of the last
+page, for example); with the default geometry that is at most 2 x 65,568 = 131,136 bytes of journal tail.
+`vnxd inspect-journal` prints the same reading without
+changing the file.
+
+Replay: each record's txid is greater than the previous one; replay refuses a journal that breaks that, names an
+extent beyond the device, has a second superblock, has a map update (or batch entry) whose `previous` is not the
+current mapping, whose generation is not above every generation the journal used for the extent, or whose length is
+not the extent's, or releases the generation currently mapped (CORRUPTION). A `map_batch` is checked whole and then
+applied whole. `compact` replaces the journal atomically (temporary file, fsync, rename, fsync of the directory) with
+the superblock, one map record per live extent and, for every extent whose highest used generation is above its live
+one, a release record of that generation, so generation numbers are never reused, across compactions too. Compaction
+holds every extent lock (no commit in flight); the handle on the new file is opened before the rename, so later
+appends always reach the live journal.
+
+## 3. Write transaction
+
+Writes replace whole extents with new generations; a partial extent is a read-modify-write inside the transaction.
+A transaction covers one extent (`map_update`) or up to 1,024 extents (`map_batch`, `Volume::write_extents`): the
+steps below run for every extent of it, and the single map record is the commit point of all of them.
 
 | step | action | state | crash here leaves |
 |---|---|---|---|
@@ -51,8 +69,10 @@ Writes replace a whole extent with a new generation; a partial write is a read-m
 | 5 | `media.remove(previous)`, append `generation_released` | — | new mapping |
 
 A torn map record (crash inside step 4) is cut at open: old mapping + orphan g. A failed put, a receipt that does not
-describe the bytes, a failed readback or a failed map append aborts the write, removes g and releases the space; the
-mapping is unchanged. A failed remove in step 5 does not fail the write: the old generation stays as an orphan and
+describe the bytes, a failed readback or a failed map append aborts the write, removes every new generation of the
+transaction and releases the space; no mapping changes. The space check covers the whole transaction up front (one
+NO_SPACE, no trace). A multi-extent transaction locks its extents' lock stripes in ascending order; single-extent
+operations hold one stripe and never wait for a second, so no lock-order cycle exists. A failed remove in step 5 does not fail the write: the old generation stays as an orphan and
 the next open collects it.
 
 ## 4. Recovery (`open`)
@@ -75,10 +95,17 @@ their class (BACKEND_UNAVAILABLE / BACKEND_BUSY are retryable).
 
 ## 6. VNX-IO
 
-`BlockIo` maps byte ranges to extent spans (`Geometry::spans`): whole-extent spans are written directly, partial spans
-are read-modify-write. A request past the capacity is OUT_OF_RANGE, a zero-length request INVALID_ARGUMENT, before any
-effect. A multi-extent write is atomic per extent, not as a whole (as a disk is atomic per sector); its result is the
-weakest write state of its extents. `flush` syncs the backend (map records are already fsynced).
+`BlockIo` maps byte ranges to extent spans (`Geometry::spans`) and writes them as one transaction
+(`ExtentStore::write_extents`): after a crash or an error a write request is applied entirely or not at all, across
+every extent it spans. That holds for requests spanning up to 1,024 extents, which is every request (64 MiB cap)
+when extents are larger than 64 KiB (the default extent is 1 MiB; an unaligned 64 MiB request over extents of exactly
+64 KiB touches 1,025); a request spanning more extents is applied as consecutive transactions of 1,024 extents, in
+order. A request past the capacity is OUT_OF_RANGE, a zero-length
+request INVALID_ARGUMENT, before any effect. `flush` syncs the backend (map records are already fsynced). With a
+VNX-RAM manager (`BlockIo::with_ram`), each request first leases its working memory from the `io` quota: its own
+length plus one extent (read), or twice its length plus three extents (write: the new extent contents a store
+builds, two read-modify-write copies and one readback copy); a request larger than the whole quota is
+INVALID_ARGUMENT.
 
 `IoQueue` (workers + bounded queue):
 
@@ -114,4 +141,9 @@ queue ordering over 300 overlapping writes with interleaved reads, backpressure,
 both shutdown modes; and, from the Phase 2 review: damage inside the journal refused without truncation or garbage
 collection, another volume's or an unbound backend refused and untouched, foreign objects left alone across opens,
 replay refusing a released live generation or a reused one, cancel and deadline resolving behind a stuck write, a
-panicking adapter failing only its own requests, and oversized requests refused.
+panicking adapter failing only its own requests, and oversized requests refused. Added when the limits were removed
+(before P4): a one-byte flip at every offset of a journal repaired, damage to both copies refused (in the last
+record too), every torn prefix of a pair cut, an unmirrored journal refused; multi-extent transactions (crash at
+every stage: all old or all new; a failed put at each position: no trace; NO_SPACE whole; replay checking a batch
+whole); generation numbers never reused across compactions; the random crash workload now requires every request to
+be all-or-nothing across its extents; request memory leases under 8 threads.
