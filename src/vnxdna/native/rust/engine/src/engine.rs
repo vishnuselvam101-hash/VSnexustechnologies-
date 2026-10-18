@@ -284,6 +284,7 @@ struct Batch {
     conf: Vec<[i64; 4]>,
     /// marker-anchored projections of the reads (n x fb bytes, n x fb read flags, computed flag), filled on demand
     pproj: Vec<u8>,
+    pproj2: Vec<u8>,
     pok: Vec<u8>,
     pdone: Vec<u8>,
     /// store version at a read's last screen against the stored frames (u64::MAX = never screened)
@@ -330,11 +331,11 @@ fn push_cand(cand: &mut [u64; 4], nc: &mut usize, v: u64) {
 /// (`done`): it depends on the read alone, so every frame the read is compared with reuses it.
 #[allow(clippy::too_many_arguments)]
 #[inline]
-fn ensure_proj(cfg: &Cfg, g: &StrandGeom, codes: &[u8], rc: bool, buf: &mut Vec<u8>, proj: &mut [u8], ok: &mut [u8],
-               done: &mut u8) {
+fn ensure_proj(cfg: &Cfg, g: &StrandGeom, codes: &[u8], rc: bool, buf: &mut Vec<u8>, proj: &mut [u8], proj2: &mut [u8],
+               ok: &mut [u8], done: &mut u8) {
     if *done == 0 {
         let rd = oriented(codes, rc, buf);
-        strand_project(g, &cfg.mpos, &cfg.want, rd, proj, ok);
+        strand_project(g, &cfg.mpos, &cfg.want, rd, proj, proj2, ok);
         *done = 1;
     }
 }
@@ -345,8 +346,8 @@ fn ensure_proj(cfg: &Cfg, g: &StrandGeom, codes: &[u8], rc: bool, buf: &mut Vec<
 /// frame, read from its corrected header).
 #[allow(clippy::too_many_arguments)]
 fn strand_screen(cfg: &Cfg, store: &FrameStore, wmap: &WinMap, bloom: &Bloom, g: &StrandGeom, budget: usize,
-                 sc: &Screen, codes: &[u8], except: u64, buf: &mut Vec<u8>, proj: &mut [u8], ok: &mut [u8],
-                 done: &mut u8) -> (usize, Option<[i64; 4]>) {
+                 sc: &Screen, codes: &[u8], except: u64, buf: &mut Vec<u8>, proj: &mut [u8], proj2: &mut [u8],
+                 ok: &mut [u8], done: &mut u8) -> (usize, Option<[i64; 4]>) {
     let mut cand = [0u64; 4];
     let mut nc = 0usize;
     if sc.hk != 0 && sc.hk != except && bloom.maybe(sc.hk) {
@@ -365,8 +366,8 @@ fn strand_screen(cfg: &Cfg, store: &FrameStore, wmap: &WinMap, bloom: &Bloom, g:
     for &v in &cand[..nc] {
         let Some(fr) = store.get(v) else { continue };
         checked += 1;
-        ensure_proj(cfg, g, codes, sc.rc, buf, proj, ok, done);
-        if strand_unconfirmed(proj, ok, fr) <= budget {
+        ensure_proj(cfg, g, codes, sc.rc, buf, proj, proj2, ok, done);
+        if strand_unconfirmed(g, proj, proj2, ok, fr) <= budget {
             let a = tentative(cfg, &fr[..HEADER_BYTES]).map_or([-1; 4], |h| [h.kind, h.tag, h.group, h.symbol]);
             return (checked, Some(a));
         }
@@ -392,7 +393,7 @@ impl<'c> Engine<'c> {
         // the adaptive scheduler keeps verified frames instead of the V13 fingerprint tables (similar memory)
         let (vb, sb) = if cfg.strand { (4, bits.saturating_sub(3)) } else { (bits, 2) };
         let geom = if cfg.strand {
-            strand_geometry(&cfg.frame_pos64, cfg.fb, &cfg.mpos, &cfg.block, cfg.t, cfg.band)
+            strand_geometry(&cfg.frame_pos64, cfg.fb, &cfg.mpos, &cfg.block, cfg.t, cfg.band, HEADER_BYTES + cfg.p)
         } else {
             None
         };
@@ -562,6 +563,7 @@ impl<'c> Engine<'c> {
             b.conf.resize(n, [-1; 4]);
             if cfg.strand {
                 b.pproj.resize(n * cfg.fb, 0);
+                b.pproj2.resize(n * cfg.fb, 0);
                 b.pok.resize(n * cfg.fb, 0);
                 b.pdone.clear();
                 b.pdone.resize(n, 0);
@@ -683,6 +685,7 @@ impl<'c> Engine<'c> {
                     let fb = cfg.fb;
                     let (pp, po, pd) = (SendPtr(self.b.pproj.as_mut_ptr()), SendPtr(self.b.pok.as_mut_ptr()),
                                         SendPtr(self.b.pdone.as_mut_ptr()));
+                    let p2 = SendPtr(self.b.pproj2.as_mut_ptr());
                     let (sv, version) = (SendPtr(self.b.sver.as_mut_ptr()), self.store_version);
                     let (ncand, nchk, nrej) = (AtomicUsize::new(0), AtomicUsize::new(0), AtomicUsize::new(0));
                     let rch = 1024usize;
@@ -693,12 +696,13 @@ impl<'c> Engine<'c> {
                         for j in c * rch..((c + 1) * rch).min(n) {
                             let rd = &codes[offs[j] as usize..(offs[j] + lens[j]) as usize];
                             // SAFETY: read j (its projection row and flag) belongs to this chunk only.
-                            let (proj, ok, done) = unsafe {
+                            let (proj, proj2, ok, done) = unsafe {
                                 (std::slice::from_raw_parts_mut(pp.get().add(j * fb), fb),
+                                 std::slice::from_raw_parts_mut(p2.get().add(j * fb), fb),
                                  std::slice::from_raw_parts_mut(po.get().add(j * fb), fb), &mut *pd.get().add(j))
                             };
                             let (k, hit) = strand_screen(cfg, store, wmap, bloom, g, budget, &screen[j], rd, 0, &mut buf,
-                                                         proj, ok, done);
+                                                         proj, proj2, ok, done);
                             k0 += (k > 0) as usize;
                             k1 += k;
                             k2 += k - hit.is_some() as usize;
@@ -868,6 +872,7 @@ impl<'c> Engine<'c> {
             let fb = cfg.fb;
             let b = &mut self.b;
             let (pp, po, pd) = (SendPtr(b.pproj.as_mut_ptr()), SendPtr(b.pok.as_mut_ptr()), SendPtr(b.pdone.as_mut_ptr()));
+            let p2 = SendPtr(b.pproj2.as_mut_ptr());
             let (codes, offs, lens, screen) = (&b.codes, &b.offs, &b.lens, &b.screen);
             let need = &need;
             let pch = 1024usize;
@@ -879,6 +884,7 @@ impl<'c> Engine<'c> {
                     unsafe {
                         ensure_proj(cfg, g, rd, screen[j].rc, &mut buf,
                                     std::slice::from_raw_parts_mut(pp.get().add(j * fb), fb),
+                                    std::slice::from_raw_parts_mut(p2.get().add(j * fb), fb),
                                     std::slice::from_raw_parts_mut(po.get().add(j * fb), fb), &mut *pd.get().add(j));
                     }
                 }
@@ -930,8 +936,8 @@ impl<'c> Engine<'c> {
                         b.sver[j] = version;
                         let rd = &b.codes[b.offs[j] as usize..(b.offs[j] + b.lens[j]) as usize];
                         let (k, hit) = strand_screen(cfg, store, wmap, bloom, g, budget, &b.screen[j], rd, 0, &mut obuf,
-                                                     &mut b.pproj[j * fb..(j + 1) * fb], &mut b.pok[j * fb..(j + 1) * fb],
-                                                     &mut b.pdone[j]);
+                                                     &mut b.pproj[j * fb..(j + 1) * fb], &mut b.pproj2[j * fb..(j + 1) * fb],
+                                                     &mut b.pok[j * fb..(j + 1) * fb], &mut b.pdone[j]);
                         stats[ST_STRAND_CHECKS] += k as i64;
                         stats[ST_STRAND_REJECTS] += (k - hit.is_some() as usize) as i64;
                         if let Some(a) = hit {
@@ -1131,10 +1137,12 @@ impl<'c> Engine<'c> {
                                     let src = if b.pdone[j] == 0 && b.codes[rj] == b.codes[ri] { i } else { j };
                                     let rd = &b.codes[b.offs[src] as usize..(b.offs[src] + b.lens[src]) as usize];
                                     ensure_proj(cfg, g, rd, b.screen[src].rc, &mut obuf,
-                                                &mut b.pproj[src * fb..(src + 1) * fb], &mut b.pok[src * fb..(src + 1) * fb],
-                                                &mut b.pdone[src]);
-                                    strand_unconfirmed(&b.pproj[src * fb..(src + 1) * fb], &b.pok[src * fb..(src + 1) * fb],
-                                                       fr) <= budget
+                                                &mut b.pproj[src * fb..(src + 1) * fb],
+                                                &mut b.pproj2[src * fb..(src + 1) * fb],
+                                                &mut b.pok[src * fb..(src + 1) * fb], &mut b.pdone[src]);
+                                    strand_unconfirmed(g, &b.pproj[src * fb..(src + 1) * fb],
+                                                       &b.pproj2[src * fb..(src + 1) * fb],
+                                                       &b.pok[src * fb..(src + 1) * fb], fr) <= budget
                                 }
                                 _ => false,
                             };
@@ -1148,6 +1156,7 @@ impl<'c> Engine<'c> {
                                     let (k, hit) = strand_screen(cfg, &self.store, &self.wmap, &self.bloom, g, budget,
                                                                  &b.screen[j], rd, b.vkey[i], &mut obuf,
                                                                  &mut b.pproj[j * fb..(j + 1) * fb],
+                                                                 &mut b.pproj2[j * fb..(j + 1) * fb],
                                                                  &mut b.pok[j * fb..(j + 1) * fb], &mut b.pdone[j]);
                                     self.stats[ST_STRAND_CHECKS] += k as i64;
                                     self.stats[ST_STRAND_REJECTS] += (k - hit.is_some() as usize) as i64;
@@ -1190,6 +1199,12 @@ impl<'c> Engine<'c> {
                             // the rest: one bulk claim when it came from a split (several unverified strands), else one
                             // ordinary claim
                             let rest_bulk = other.len() >= 4;
+                            // a member the strand check rejected goes straight to the full attempt (it runs the cheap
+                            // paths first, with the same result for a read they accept: pass1::try_reads), instead of a
+                            // cheap attempt followed by a full one
+                            for &j in &other {
+                                cheap_done[j] = true;
+                            }
                             for (part, is_bulk) in parts.into_iter().map(|p| (p.1, false)).chain(std::iter::once((rest, rest_bulk))) {
                                 if part.is_empty() {
                                     continue;

@@ -462,7 +462,12 @@ pub struct StrandGeom {
     pub fb: usize,
     pub t: usize,
     pub band: i64,
+    /// first frame byte of the CRC + inner parity tail: a segment reaching into it is never read across an indel
+    pub tail: usize,
 }
+
+/// Unconfirmed bytes charged for every shift change (indel segment) a comparison uses, on top of its unmatched bytes.
+pub const SHIFT_CHARGE: usize = 1;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct StrandSeg {
@@ -475,7 +480,8 @@ pub struct StrandSeg {
 
 /// Geometry of the strand check, or None when a frame byte's bases are not contiguous on the template or a gap between
 /// frame runs is not a marker block (the check is then never applied).
-pub fn strand_geometry(fp: &[i64], fb: usize, mpos: &[i64], block: &[i64], t: usize, band: i64) -> Option<StrandGeom> {
+pub fn strand_geometry(fp: &[i64], fb: usize, mpos: &[i64], block: &[i64], t: usize, band: i64, tail: usize)
+                       -> Option<StrandGeom> {
     if fp.len() < 4 * fb || block.len() != mpos.len() {
         return None;
     }
@@ -516,32 +522,45 @@ pub fn strand_geometry(fp: &[i64], fb: usize, mpos: &[i64], block: &[i64], t: us
             None
         };
     }
-    Some(StrandGeom { segs, blocks, fb, t, band })
+    Some(StrandGeom { segs, blocks, fb, t, band, tail })
 }
 
-/// Marker-anchored projection of a read (`rd`, oriented) onto the frame: `proj[j]` = the read's byte at frame byte j and
-/// `ok[j]` = 1 when it was read at an anchored shift (else the byte counts as unconfirmed). Every marker block is located
-/// at the only exact match of all its bases among the shifts c, c - 1, c + 1, c - 2, c + 2 (|shift| <= band) around
-/// the previous anchored shift c; a block with no exact match, or with several (ambiguous), has no anchor. The read start (shift 0) and the read end
-/// (shift = read length - template length) anchor the first and the last segment. A segment is read at shift d when
-/// both its anchors are d, or when every anchor it has equals the established shift E (no change; E starts at 0 and
-/// becomes the shift of every segment read); otherwise (a shift change inside it, or one seen by a single marker) none of
-/// its bytes is read. So a shift change is accepted only once two exact markers agree on it, every segment holding an
-/// indel is unconfirmed as a whole (the charge for a shift change), the bytes of a segment are read at ONE shift, and the
-/// projection depends on the read alone, never on the frame it is compared with.
-pub fn strand_project(g: &StrandGeom, mpos: &[i64], want: &[u8], rd: &[u8], proj: &mut [u8], ok: &mut [u8]) {
+/// Marker-anchored projection of a read (`rd`, oriented) onto the frame. `ok[j]` bit 0: `proj[j]` is the read's byte at
+/// frame byte j at the segment's shift; bit 2: the segment holds an indel (its two anchors differ by at most 2), then
+/// `proj[j]` is the byte at the left anchor's shift (bit 0) and `proj2[j]` the byte at the right anchor's shift (bit 1).
+/// ok[j] = 0: unread (counts as unconfirmed). Every marker block is located at the only exact match of all its bases
+/// among the shifts c, c - 1, c + 1, c - 2, c + 2 (|shift| <= band) around the previous anchored shift c; a block with no
+/// exact match, or several (ambiguous), has no anchor. The read start (shift 0) and the read end (shift = read length -
+/// template length) anchor the first and last segment. A segment is read at shift d when both its anchors are d, or
+/// when every anchor it has equals the established shift E (no change; E starts at 0 and becomes the shift of every
+/// segment read). A segment whose two anchors are both present and differ holds an indel: it is read at both shifts,
+/// unless it reaches into the CRC + parity tail (then it is unread); E becomes its right anchor. Any other case (a
+/// change seen by one marker only) leaves the segment unread. So shift changes are read off the read's own markers
+/// (two exact markers on either side), never chosen against a reference, and the projection depends on the read alone.
+pub fn strand_project(g: &StrandGeom, mpos: &[i64], want: &[u8], rd: &[u8], proj: &mut [u8], proj2: &mut [u8],
+                      ok: &mut [u8]) {
     let l = rd.len() as i64;
+    let byte_at = |q: i64| -> Option<u8> {
+        if q < 0 || q + 4 > l {
+            return None;
+        }
+        let w = &rd[q as usize..q as usize + 4];
+        if w.iter().all(|&x| x < 4) { Some((w[0] << 6) | (w[1] << 4) | (w[2] << 2) | w[3]) } else { None }
+    };
     // Fast path, decision-identical to the general one: a read of template length whose every marker base reads at
     // shift 0 has shift 0 in every block's candidate set, so each anchor is 0 or none (ambiguous), the end anchor is 0
-    // and the established shift stays 0: every segment is read at shift 0.
+    // and the established shift stays 0: every segment is read at shift 0, none holds an indel.
     if l == g.t as i64 && mpos.iter().zip(want).all(|(&q, &w)| rd[q as usize] == w) {
         for sg in &g.segs {
             for b in 0..sg.nb {
-                let q = (sg.q0 + 4 * b as i64) as usize;
-                let w = &rd[q..q + 4];
                 let j = sg.j0 + b;
-                proj[j] = (w[0] << 6) | ((w[1] & 3) << 4) | ((w[2] & 3) << 2) | (w[3] & 3);
-                ok[j] = (w[0] | w[1] | w[2] | w[3] < 4) as u8;
+                match byte_at(sg.q0 + 4 * b as i64) {
+                    Some(v) => {
+                        proj[j] = v;
+                        ok[j] = 1;
+                    }
+                    None => ok[j] = 0,
+                }
             }
         }
         return;
@@ -571,41 +590,77 @@ pub fn strand_project(g: &StrandGeom, mpos: &[i64], want: &[u8], rd: &[u8], proj
         }
         anchor.push(found);
     }
-    let mut est = 0i64;
+    // est: the established shift; firm: est was confirmed by two exact markers (or is the read start's 0)
+    let (mut est, mut firm) = (0i64, true);
     for sg in &g.segs {
         let la = sg.left.map_or(Some(0), |b| anchor[b]);
         let ra = sg.right.map_or(Some(l - g.t as i64), |b| anchor[b]);
-        let d = if la.is_some() && la == ra {
-            la
-        } else if la.map_or(true, |x| x == est) && ra.map_or(true, |x| x == est) {
-            Some(est)
-        } else {
-            None
+        let (d, d2) = match (la, ra) {
+            (Some(x), Some(y)) if x == y => (Some(x), None),
+            (Some(x), Some(y)) if x == est && firm && (x - y).abs() <= 2 && sg.j0 + sg.nb <= g.tail => (Some(x), Some(y)),
+            _ if firm && la.map_or(true, |x| x == est) && ra.map_or(true, |x| x == est) => (Some(est), None),
+            _ => (None, None),
         };
         for b in 0..sg.nb {
             let j = sg.j0 + b;
             ok[j] = 0;
+            let q = sg.q0 + 4 * b as i64;
             if let Some(d) = d {
-                let q = sg.q0 + 4 * b as i64 + d;
-                if q >= 0 && q + 4 <= l {
-                    let w = &rd[q as usize..q as usize + 4];
-                    if w.iter().all(|&x| x < 4) {
-                        proj[j] = (w[0] << 6) | (w[1] << 4) | (w[2] << 2) | w[3];
-                        ok[j] = 1;
-                    }
+                if let Some(v) = byte_at(q + d) {
+                    proj[j] = v;
+                    ok[j] |= 1;
+                }
+            }
+            if let Some(d2) = d2 {
+                ok[j] |= 4;
+                if let Some(v) = byte_at(q + d2) {
+                    proj2[j] = v;
+                    ok[j] |= 2;
                 }
             }
         }
-        if let Some(d) = d {
-            est = d;
+        match (d, d2) {
+            (Some(x), None) => {
+                est = x;
+                firm = true;
+            }
+            (_, Some(y)) => {
+                est = y;                                 // seen by one marker so far: firm once a second one agrees
+                firm = false;
+            }
+            _ => {
+                if let Some(y) = ra {
+                    est = y;
+                    firm = false;
+                }
+            }
         }
     }
 }
 
-/// Frame bytes a projection does not confirm against `frame`: unread, or different (a plain Hamming count over bytes).
-#[inline]
-pub fn strand_unconfirmed(proj: &[u8], ok: &[u8], frame: &[u8]) -> usize {
-    proj.iter().zip(ok).zip(frame).filter(|((&p, &o), &f)| o == 0 || p != f).count()
+/// Frame bytes a projection does not confirm against `frame` (a Hamming count over bytes), plus SHIFT_CHARGE per indel
+/// segment. In an indel segment the bytes before one split point are compared at the left shift and the bytes from it
+/// on at the right shift (one split per segment, the best one): the read's markers decide that the segment holds an
+/// indel, the frame only locates it.
+pub fn strand_unconfirmed(g: &StrandGeom, proj: &[u8], proj2: &[u8], ok: &[u8], frame: &[u8]) -> usize {
+    let mut unconf = 0;
+    for sg in &g.segs {
+        let (a, e) = (sg.j0, sg.j0 + sg.nb);
+        if ok[a] & 4 == 0 {
+            unconf += (a..e).filter(|&j| ok[j] & 1 == 0 || proj[j] != frame[j]).count();
+            continue;
+        }
+        let ml = |j: usize| (ok[j] & 1 != 0 && proj[j] == frame[j]) as usize;
+        let mr = |j: usize| (ok[j] & 2 != 0 && proj2[j] == frame[j]) as usize;
+        let mut cur: usize = (a..e).map(mr).sum();          // split at a: every byte at the right shift
+        let mut best = cur;
+        for j in a..e {
+            cur = cur + ml(j) - mr(j);                        // move byte j to the left side
+            best = best.max(cur);
+        }
+        unconf += sg.nb - best + SHIFT_CHARGE;
+    }
+    unconf
 }
 
 /// The read in the given orientation: the codes themselves, or their reverse complement written into `buf` (N stays a
@@ -775,12 +830,13 @@ mod tests {
         fn new(fb: usize) -> Check {
             let (fp, t) = geometry(fb);
             let (mpos, want, block) = markers(fb);
-            Check { g: strand_geometry(&fp, fb, &mpos, &block, t, 8).unwrap(), mpos, want, fp, t }
+            Check { g: strand_geometry(&fp, fb, &mpos, &block, t, 8, fb - 20).unwrap(), mpos, want, fp, t }
         }
         fn unconfirmed(&self, rd: &[u8], frame: &[u8]) -> usize {
-            let (mut p, mut o) = (vec![0u8; frame.len()], vec![0u8; frame.len()]);
-            strand_project(&self.g, &self.mpos, &self.want, rd, &mut p, &mut o);
-            strand_unconfirmed(&p, &o, frame)
+            let n = frame.len();
+            let (mut p, mut p2, mut o) = (vec![0u8; n], vec![0u8; n], vec![0u8; n]);
+            strand_project(&self.g, &self.mpos, &self.want, rd, &mut p, &mut p2, &mut o);
+            strand_unconfirmed(&self.g, &p, &p2, &o, frame)
         }
     }
 
@@ -796,10 +852,10 @@ mod tests {
         let (mpos, _, block) = markers(70);
         let mut bad = fp.clone();
         bad[2] += 1;                                     // a byte split by a gap: the check is never applied
-        assert!(strand_geometry(&bad, 70, &mpos, &block, t, 8).is_none());
-        assert!(strand_geometry(&fp[..10], 70, &mpos, &block, t, 8).is_none());
+        assert!(strand_geometry(&bad, 70, &mpos, &block, t, 8, 50).is_none());
+        assert!(strand_geometry(&fp[..10], 70, &mpos, &block, t, 8, 50).is_none());
         let flat: Vec<i64> = (0..280).collect();         // no markers: one segment anchored by the read ends
-        let g = strand_geometry(&flat, 70, &[], &[], 280, 8).unwrap();
+        let g = strand_geometry(&flat, 70, &[], &[], 280, 8, 50).unwrap();
         assert_eq!(g.segs.len(), 1);
     }
 
@@ -818,13 +874,16 @@ mod tests {
         let mut mk = s.clone();                          // a substituted marker base: no shift change, nothing lost
         mk[c.mpos[4] as usize] = (mk[c.mpos[4] as usize] + 1) & 3;
         assert_eq!(c.unconfirmed(&mk, &k), 0);
-        let mut del = s.clone();                         // a deletion inside the header: that segment is charged
-        del.remove(10);
-        assert_eq!(c.unconfirmed(&del, &k), 6);
-        let mut ins = s.clone();                         // an insertion and a deletion: two segments charged
+        let mut del = s.clone();                         // a deletion inside the header: the byte holding it plus the
+        del.remove(10);                                  // charge for the shift change
+        assert_eq!(c.unconfirmed(&del, &k), 1 + SHIFT_CHARGE);
+        let mut ins = s.clone();                         // an insertion and a deletion in two payload segments
         ins.insert(120, 2);
-        ins.remove(250);
-        assert_eq!(c.unconfirmed(&ins, &k), 12);
+        ins.remove(190);
+        assert!(c.unconfirmed(&ins, &k) <= 2 * (1 + SHIFT_CHARGE));
+        let mut tail = s.clone();                        // an indel in a CRC + parity segment: that segment is unread
+        tail.remove(290);
+        assert!(c.unconfirmed(&tail, &k) >= 4);
         let mut n = s.clone();
         n[50] = 4;                                       // an N never agrees
         assert_eq!(c.unconfirmed(&n, &k), 1);
@@ -848,17 +907,44 @@ mod tests {
             if seed % 7 == 0 {
                 s[40] = 4;                                              // an N
             }
-            let (mut p1, mut o1) = (vec![0u8; fb], vec![0u8; fb]);
-            strand_project(&c.g, &c.mpos, &c.want, &s, &mut p1, &mut o1);
+            let (mut p1, mut q1, mut o1) = (vec![0u8; fb], vec![0u8; fb], vec![0u8; fb]);
+            strand_project(&c.g, &c.mpos, &c.want, &s, &mut p1, &mut q1, &mut o1);
             let mut s2 = s.clone();
             s2.push(0);
-            let (mut p2, mut o2) = (vec![0u8; fb], vec![0u8; fb]);
-            strand_project(&c.g, &c.mpos, &c.want, &s2, &mut p2, &mut o2);
+            let (mut p2, mut q2, mut o2) = (vec![0u8; fb], vec![0u8; fb], vec![0u8; fb]);
+            strand_project(&c.g, &c.mpos, &c.want, &s2, &mut p2, &mut q2, &mut o2);
             let last = c.g.segs.last().unwrap().j0;
             for j in 0..last {
                 assert_eq!((o1[j], o1[j] == 0 || p1[j] == p2[j]), (o2[j], true), "seed {} byte {}", seed, j);
             }
         }
+    }
+
+    #[test]
+    fn a_channel_indel_absorbs_at_most_its_own_segment() {
+        // the bounded indel allowance: K' = K with a planted one-base shift inside payload segment 3 (bytes 18..24)
+        // and 11 more differing bytes elsewhere (17 in all); a reading of K' with a channel deletion exactly at the
+        // planted shift lines that segment up with K, but the allowance stops there: >= 11 bytes stay unconfirmed
+        let fb = 70;
+        let c = Check::new(fb);
+        let k = frame_of(9, fb);
+        let s = strand(&c.fp, c.t, &k);
+        let q = c.fp[4 * 20] as usize + 1;                   // inside segment 3
+        let end = c.fp[4 * 23 + 3] as usize;                 // its last frame base
+        let mut s2 = s.clone();
+        s2.insert(q, 3);                                     // planted shift: one base in, the segment's last out
+        s2.remove(end + 1);
+        let mut k2 = unstrand(&c.fp, &s2, fb);
+        for j in [2usize, 5, 8, 30, 33, 36, 40, 44, 52, 60, 66] {
+            k2[j] ^= 0x10;
+        }
+        let ham = k.iter().zip(&k2).filter(|(x, y)| x != y).count();
+        assert!(ham >= 13, "{}", ham);
+        let mut read = strand(&c.fp, c.t, &k2);
+        read.remove(q);                                      // the channel deletes the planted base
+        let u = c.unconfirmed(&read, &k);
+        assert!(u >= 11 && u > 9, "{} unconfirmed", u);
+        assert!(c.unconfirmed(&strand(&c.fp, c.t, &k2), &k) >= ham);     // and an error-free reading is plain Hamming
     }
 
     #[test]
