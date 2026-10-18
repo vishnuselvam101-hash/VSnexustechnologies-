@@ -1,0 +1,317 @@
+{
+  "label": "SIMULATED (software codec rates on this host; the pool is produced by the channel simulator)",
+  "channel": {
+    "seed": 7,
+    "coverage": 3,
+    "substitution_rate": 0.01
+  },
+  "python": "3.12.3",
+  "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+  "cpu_count": 8,
+  "per_extents": {
+    "4": {
+      "v13": {
+        "n": 2,
+        "commit": "58171b8494ad09e02fb9f2bb18e5e5e406bb7373",
+        "workers": 1,
+        "pool_bytes": 251683006,
+        "seconds_median": 4.506,
+        "seconds_range": [
+          4.502,
+          4.511
+        ],
+        "outcomes": [
+          "SUCCESS"
+        ],
+        "matches_input": true,
+        "false_success": 0,
+        "maxrss_mib_median": 102.7,
+        "load1_range": [
+          1.63,
+          1.69
+        ],
+        "report_keys": [
+          "by_pool",
+          "by_range",
+          "extents",
+          "mb_s",
+          "seconds",
+          "sha256",
+          "total_bytes"
+        ],
+        "stages_median": {}
+      },
+      "v14": {
+        "n": 2,
+        "commit": "d25b86c26f34a2505c441ea25c59d46e48a24b3e",
+        "workers": 1,
+        "pool_bytes": 251683006,
+        "seconds_median": 1.38,
+        "seconds_range": [
+          1.343,
+          1.418
+        ],
+        "outcomes": [
+          "SUCCESS"
+        ],
+        "matches_input": true,
+        "false_success": 0,
+        "maxrss_mib_median": 98.2,
+        "load1_range": [
+          1.63,
+          1.63
+        ],
+        "report_keys": [
+          "by_pool",
+          "by_pool_fallback",
+          "by_pool_linear",
+          "by_range",
+          "extents",
+          "mb_s",
+          "partition_seconds",
+          "pass1_seconds",
+          "pool_partition_records",
+          "pool_pass2_seconds",
+          "pool_records",
+          "seconds",
+          "sha256",
+          "total_bytes"
+        ],
+        "stages_median": {
+          "pass1_seconds": 1.116,
+          "partition_seconds": 0.026,
+          "pool_pass2_seconds": 0.185
+        }
+      },
+      "ratio_v13_over_v14_median": 3.265
+    },
+    "8": {
+      "v13": {
+        "n": 2,
+        "commit": "58171b8494ad09e02fb9f2bb18e5e5e406bb7373",
+        "workers": 1,
+        "pool_bytes": 503477122,
+        "seconds_median": 16.261,
+        "seconds_range": [
+          16.233,
+          16.288
+        ],
+        "outcomes": [
+          "SUCCESS"
+        ],
+        "matches_input": true,
+        "false_success": 0,
+        "maxrss_mib_median": 102.1,
+        "load1_range": [
+          1.27,
+          1.38
+        ],
+        "report_keys": [
+          "by_pool",
+          "by_range",
+          "extents",
+          "mb_s",
+          "seconds",
+          "sha256",
+          "total_bytes"
+        ],
+        "stages_median": {}
+      },
+      "v14": {
+        "n": 2,
+        "commit": "d25b86c26f34a2505c441ea25c59d46e48a24b3e",
+        "workers": 1,
+        "pool_bytes": 503477122,
+        "seconds_median": 2.455,
+        "seconds_range": [
+          2.443,
+          2.466
+        ],
+        "outcomes": [
+          "SUCCESS"
+        ],
+        "matches_input": true,
+        "false_success": 0,
+        "maxrss_mib_median": 98.8,
+        "load1_range": [
+          1.27,
+          1.3
+        ],
+        "report_keys": [
+          "by_pool",
+          "by_pool_fallback",
+          "by_pool_linear",
+          "by_range",
+          "extents",
+          "mb_s",
+          "partition_seconds",
+          "pass1_seconds",
+          "pool_partition_records",
+          "pool_pass2_seconds",
+          "pool_records",
+          "seconds",
+          "sha256",
+          "total_bytes"
+        ],
+        "stages_median": {
+          "pass1_seconds": 1.929,
+          "partition_seconds": 0.039,
+          "pool_pass2_seconds": 0.41
+        }
+      },
+      "ratio_v13_over_v14_median": 6.624
+    },
+    "16": {
+      "v13": {
+        "n": 2,
+        "commit": "58171b8494ad09e02fb9f2bb18e5e5e406bb7373",
+        "workers": 1,
+        "pool_bytes": 1007641530,
+        "seconds_median": 63.611,
+        "seconds_range": [
+          63.17,
+          64.051
+        ],
+        "outcomes": [
+          "SUCCESS"
+        ],
+        "matches_input": true,
+        "false_success": 0,
+        "maxrss_mib_median": 103.5,
+        "load1_range": [
+          1.06,
+          1.13
+        ],
+        "report_keys": [
+          "by_pool",
+          "by_range",
+          "extents",
+          "mb_s",
+          "seconds",
+          "sha256",
+          "total_bytes"
+        ],
+        "stages_median": {}
+      },
+      "v14": {
+        "n": 2,
+        "commit": "d25b86c26f34a2505c441ea25c59d46e48a24b3e",
+        "workers": 1,
+        "pool_bytes": 1007641530,
+        "seconds_median": 4.899,
+        "seconds_range": [
+          4.806,
+          4.992
+        ],
+        "outcomes": [
+          "SUCCESS"
+        ],
+        "matches_input": true,
+        "false_success": 0,
+        "maxrss_mib_median": 99.9,
+        "load1_range": [
+          1.07,
+          1.08
+        ],
+        "report_keys": [
+          "by_pool",
+          "by_pool_fallback",
+          "by_pool_linear",
+          "by_range",
+          "extents",
+          "mb_s",
+          "partition_seconds",
+          "pass1_seconds",
+          "pool_partition_records",
+          "pool_pass2_seconds",
+          "pool_records",
+          "seconds",
+          "sha256",
+          "total_bytes"
+        ],
+        "stages_median": {
+          "pass1_seconds": 3.99,
+          "partition_seconds": 0.094,
+          "pool_pass2_seconds": 0.7
+        }
+      },
+      "ratio_v13_over_v14_median": 12.984
+    },
+    "32": {
+      "v13": {
+        "n": 1,
+        "commit": "58171b8494ad09e02fb9f2bb18e5e5e406bb7373",
+        "workers": 1,
+        "pool_bytes": 2016394170,
+        "seconds_median": 252.29,
+        "seconds_range": [
+          252.29,
+          252.29
+        ],
+        "outcomes": [
+          "SUCCESS"
+        ],
+        "matches_input": true,
+        "false_success": 0,
+        "maxrss_mib_median": 109.8,
+        "load1_range": [
+          1.27,
+          1.27
+        ],
+        "report_keys": [
+          "by_pool",
+          "by_range",
+          "extents",
+          "mb_s",
+          "seconds",
+          "sha256",
+          "total_bytes"
+        ],
+        "stages_median": {}
+      },
+      "v14": {
+        "n": 1,
+        "commit": "d25b86c26f34a2505c441ea25c59d46e48a24b3e",
+        "workers": 1,
+        "pool_bytes": 2016394170,
+        "seconds_median": 10.02,
+        "seconds_range": [
+          10.02,
+          10.02
+        ],
+        "outcomes": [
+          "SUCCESS"
+        ],
+        "matches_input": true,
+        "false_success": 0,
+        "maxrss_mib_median": 101.8,
+        "load1_range": [
+          1.69,
+          1.69
+        ],
+        "report_keys": [
+          "by_pool",
+          "by_pool_fallback",
+          "by_pool_linear",
+          "by_range",
+          "extents",
+          "mb_s",
+          "partition_seconds",
+          "pass1_seconds",
+          "pool_partition_records",
+          "pool_pass2_seconds",
+          "pool_records",
+          "seconds",
+          "sha256",
+          "total_bytes"
+        ],
+        "stages_median": {
+          "pass1_seconds": 7.951,
+          "partition_seconds": 0.236,
+          "pool_pass2_seconds": 1.558
+        }
+      },
+      "ratio_v13_over_v14_median": 25.179
+    }
+  }
+}

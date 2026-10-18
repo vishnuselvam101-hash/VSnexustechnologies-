@@ -90,6 +90,19 @@ def encode_extent(data_path: str | os.PathLike, strands: str | os.PathLike, dna:
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+def _verify_extent_container(out: str | os.PathLike, rec: dict, *, key: bytes | None = None,
+                             passphrase: str | None = None) -> bytes:
+    """Open a decoded extent container, extract its one file, and return the bytes verified against the manifest record
+    (length and SHA-256). Shared by the per-extent and the linear pool decode paths. Fails closed."""
+    c = ct.open_container(out, key=key, passphrase=passphrase)
+    f = c.file(EXTENT_NAME)
+    data = b"".join(ar.iter_file(c, f))
+    if len(data) != rec["length"] or hashlib.sha256(data).hexdigest() != rec["sha256"]:
+        raise VNXIntegrityError(f"extent {rec.get('index', '?')}: decoded bytes do not match the manifest",
+                                stage="stream", details={"extent": rec.get("index")})
+    return data
+
+
 def decode_extent(strands: str | os.PathLike, rec: dict, options: DecodeOptions, *, key: bytes | None = None,
                   passphrase: str | None = None, work: str | os.PathLike | None = None) -> bytes:
     """Decode the extent ``rec`` (manifest record) from ``strands`` (its own strand file, or a pool holding several
@@ -104,13 +117,7 @@ def decode_extent(strands: str | os.PathLike, rec: dict, options: DecodeOptions,
         if res.status != "SUCCESS":
             raise VNXIntegrityError(f"extent {rec.get('index', '?')} did not decode: status {res.status}",
                                     stage="stream", details={"extent": rec.get("index"), "status": res.status})
-        c = ct.open_container(out, key=key, passphrase=passphrase)
-        f = c.file(EXTENT_NAME)
-        data = b"".join(ar.iter_file(c, f))
-        if len(data) != rec["length"] or hashlib.sha256(data).hexdigest() != rec["sha256"]:
-            raise VNXIntegrityError(f"extent {rec.get('index', '?')}: decoded bytes do not match the manifest",
-                                    stage="stream", details={"extent": rec.get("index")})
-        return data
+        return _verify_extent_container(out, rec, key=key, passphrase=passphrase)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
@@ -367,7 +374,10 @@ def decode_stream(strands: str | os.PathLike, manifest: str | os.PathLike, outpu
                                  "from the encoder's strand file (by range) or keep extents in separate files",
                                  stage="stream", details={"archive_tags": dup})
 
-    if by_range is False or (by_range is None and doc["extents"] and not _range_matches(strands, doc["extents"][0])):
+    # One use-range decision per extent up front, so the pooled extents can share a single layout probe + pass 1.
+    use_ranges = [(_range_matches(strands, rec) if by_range is None else by_range) for rec in doc["extents"]]
+    pooled = [rec for rec, ur in zip(doc["extents"], use_ranges) if not ur]
+    if pooled:
         check_tags()
     to_stdout = output == "-"
     out_path = None if to_stdout else Path(output)
@@ -376,12 +386,26 @@ def decode_stream(strands: str | os.PathLike, manifest: str | os.PathLike, outpu
     total = hashlib.sha256()
     done = 0
     ranged = 0
+    pool_fast = 0
+    pool_fallback = 0
+    pool_decoder = None
+    # Linear pool decode (V14 P6-A): run the layout probe and pass 1 once for the whole shuffled pool, then decode each
+    # pooled extent from its own archive-tag partition. Excluded configurations (and any setup failure) leave
+    # pool_decoder None, and every pooled extent then takes the legacy whole-pool decode_extent path below. A per-extent
+    # failure also falls back, so the output is byte-for-byte that of the legacy path.
+    if pooled:
+        from vnxdna.pipeline.decode import PoolDecoder, pool_decode_refusal
+        if pool_decode_refusal(opt) is None:
+            try:
+                pool_decoder = PoolDecoder(strands, opt, [int(rec["archive_tag"], 16) for rec in pooled],
+                                           key=key, passphrase=passphrase, workdir=workdir)
+            except Exception:  # noqa: BLE001 - any pass-1/partition failure falls back to the per-extent path
+                pool_decoder = None
     try:
         with (atomic_output(out_path, overwrite=overwrite) if out_path else _stdout()) as tmp_out:
             out = sys.stdout.buffer if tmp_out is None else open(tmp_out, "wb")
             try:
-                for rec in doc["extents"]:
-                    use_range = _range_matches(strands, rec) if by_range is None else by_range
+                for rec, use_range in zip(doc["extents"], use_ranges):
                     if use_range:
                         part = work / f"r{rec['index']}.{fmt}"
                         with open(strands, "rb") as f, open(part, "wb") as g:
@@ -398,8 +422,19 @@ def decode_stream(strands: str | os.PathLike, manifest: str | os.PathLike, outpu
                         part.unlink()
                         ranged += 1
                     else:
-                        check_tags()
-                        data = decode_extent(strands, rec, opt, key=key, passphrase=passphrase, work=work)
+                        data = None
+                        if pool_decoder is not None:
+                            try:
+                                data = pool_decoder.decode(
+                                    rec, lambda out_c, rec=rec: _verify_extent_container(out_c, rec, key=key, passphrase=passphrase))
+                            except Exception:  # noqa: BLE001 - any per-extent failure falls back, output still verified
+                                data = None
+                        if data is None:
+                            data = decode_extent(strands, rec, opt, key=key, passphrase=passphrase, work=work)
+                            pool_fallback += 1
+                        else:
+                            pool_fast += 1
+                    assert data is not None
                     out.write(data)
                     total.update(data)
                     done += 1
@@ -413,10 +448,22 @@ def decode_stream(strands: str | os.PathLike, manifest: str | os.PathLike, outpu
             if total.hexdigest() != doc["sha256"]:
                 raise VNXIntegrityError("the rebuilt stream does not hash as the manifest records", stage="stream")
         seconds = time.perf_counter() - t0
-        return {"output": "-" if to_stdout else str(out_path), "extents": done, "by_range": ranged, "by_pool": done - ranged,
-                "total_bytes": doc["total_bytes"], "sha256": doc["sha256"], "seconds": round(seconds, 4),
-                "mb_s": round(doc["total_bytes"] / max(1e-9, seconds) / 1e6, 3)}
+        rep = {"output": "-" if to_stdout else str(out_path), "extents": done, "by_range": ranged, "by_pool": done - ranged,
+               "by_pool_linear": pool_fast, "by_pool_fallback": pool_fallback,
+               "total_bytes": doc["total_bytes"], "sha256": doc["sha256"], "seconds": round(seconds, 4),
+               "mb_s": round(doc["total_bytes"] / max(1e-9, seconds) / 1e6, 3)}
+        if pool_decoder is not None:
+            # the linear pool decode's cost split: one layout probe + pass 1, one partition, then pass 2 per extent
+            # (partition/index is ~O(pool + extents); pass 2 touches only each extent's own partition)
+            rep["pass1_seconds"] = round(pool_decoder.pass1_seconds, 4)
+            rep["partition_seconds"] = round(pool_decoder.partition_seconds, 4)
+            rep["pool_pass2_seconds"] = round(pool_decoder.pass2_seconds, 4)
+            rep["pool_records"] = pool_decoder.records_total
+            rep["pool_partition_records"] = dict(sorted(pool_decoder.partition_records.items()))
+        return rep
     finally:
+        if pool_decoder is not None:
+            pool_decoder.close()
         shutil.rmtree(work, ignore_errors=True)
 
 

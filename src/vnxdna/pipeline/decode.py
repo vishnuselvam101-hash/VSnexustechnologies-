@@ -31,9 +31,12 @@ import threading
 import time
 from collections import Counter, deque
 from concurrent.futures import ProcessPoolExecutor
+from dataclasses import replace
 from pathlib import Path
 
-from vnxdna.core.errors import VNXConfigurationError, VNXFormatError
+import numpy as np
+
+from vnxdna.core.errors import VNXConfigurationError, VNXFormatError, VNXIntegrityError
 from vnxdna.native.heap import trim_heap
 from vnxdna.native.reads import iter_reads
 from vnxdna.recovery.options import DecodeOptions, DecodeResult
@@ -452,3 +455,227 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
         if cluster is not None:
             cluster.store.close()
         shutil.rmtree(tmp_root, ignore_errors=True)
+
+
+# ============================================================================ linear-time shuffled-pool decode (V14 P6-A)
+# A streamed pool (vnxdna.pipeline.stream) holds one ordinary archive per extent, each with its own content-derived
+# archive ID and 16-bit archive tag. Decoding the pool one extent at a time (stream.decode_extent) re-ran a WHOLE-POOL
+# decode_reads for every extent: layout probe + pass 1 rescanned every read E times (O(E x pool)). PoolDecoder runs the
+# layout probe and pass 1 ONCE, partitions the spill by archive tag (acc by its verified tag, pend by its raw header
+# tag), and runs pass 2 per extent against its own partition, so the work is ~O(pool + extents). The decoded container
+# is still verified against the superblock SHA-256 and the caller re-checks it against the manifest; any per-extent
+# failure falls back to the whole-pool decode_extent, so the result is byte-for-byte that of the legacy path.
+#
+# Equivalence of the partition: pass 1 does not depend on the tag options, so one pass 1 produces the same spill a
+# per-extent decode would. Pass 2 keeps only acc whose verified tag == the extent's tag, so partitioning acc by tag is
+# exact. Pass-2 consensus groups pending reads by their raw (kind, tag, group, symbol) key and snaps them only against
+# the missing addresses of the SAME tag, so a read of tag Y never contributes to tag Z's consensus EXCEPT through a
+# cross-tag address snap (a read whose raw header, or alternate reading, lands within one byte of another tag's missing
+# address). Partitioning pend by raw tag drops those rare cross-tag snaps; when one would have mattered the extent
+# simply recovers fewer symbols and, if it then fails, falls back to the whole-pool path, so correctness is preserved.
+# evidence_refusal sees the whole-pool record count (Spill.view(records=...)), matching the legacy denominator.
+#
+# Restricted to the default recovery configuration: smart indel recovery / soft decoding keep unaddressed *orphan*
+# reads that have no tag to partition on and rewrite the spill per archive, read clustering and stage counters add
+# per-decode state, and random access is never used by the stream path. Any of these falls back to the legacy path.
+def pool_decode_refusal(opt: DecodeOptions) -> str | None:
+    """Why the linear pool path cannot decode this configuration (None = it can)."""
+    if opt.indel_recovery != "segment":
+        return "smart indel recovery keeps unaddressed orphan reads"
+    if opt.soft_decoding != "off":
+        return "soft decoding keeps unaddressed orphan reads"
+    if opt.read_clustering != "off":
+        return "read clustering adds per-decode state"
+    if opt.stage_counters:
+        return "stage counters add per-decode state"
+    return None
+
+
+class PoolDecoder:
+    """One layout probe + one pass 1 over a shuffled pool, then pass 2 per extent against a per-archive-tag partition.
+
+    ``options`` must already be validated and must pass :func:`pool_decode_refusal`. ``tags`` are the distinct 16-bit
+    archive tags of the pool's extents (the manifest's duplicate-tag refusal has already run)."""
+
+    def __init__(self, reads_path, options: DecodeOptions, tags, *, key=None, passphrase=None, workdir=None):
+        self.opt = options
+        self.key = key
+        self.passphrase = passphrase
+        self.tags = [int(t) for t in tags]
+        self._root = Path(tempfile.mkdtemp(prefix="vnx-pool-", dir=workdir))
+        self._src_dir = self._root / "pass1"
+        self._parts_dir = self._root / "parts"
+        self._work_dir = self._root / "work"
+        for d in (self._src_dir, self._parts_dir, self._work_dir):
+            d.mkdir()
+        self.pass1_seconds = 0.0
+        self.partition_seconds = 0.0
+        self.pass2_seconds = 0.0            # summed over the extents decoded so far
+        self.pass2_extents = 0
+        self.partition_records: dict[int, int] = {}
+        try:
+            t = time.perf_counter()
+            self._pass1(Path(reads_path))
+            self.pass1_seconds = time.perf_counter() - t
+            t = time.perf_counter()
+            self._partition()
+            self.partition_seconds = time.perf_counter() - t
+        except BaseException:
+            self.close()
+            raise
+
+    # -------------------------------------------------------------------- pass 1 (once over the whole pool)
+    def _pass1(self, reads_path: Path) -> None:
+        opt = self.opt
+        lay = detect_layout(reads_path, opt)
+        self.lay = lay
+        try:
+            est_reads = max(1, reads_path.stat().st_size // (lay.strand_nt + 20))
+        except OSError as error:
+            raise VNXFormatError(f"cannot read {reads_path}: {error.strerror or error}") from None
+        buckets = _bucket_count(est_reads)
+        self.B = buckets
+        qw = opt.consensus_weighting == "quality"
+        # default recovery configuration only (pool_decode_refusal has excluded smart/soft/clustering/stage counters)
+        src = Spill(self._src_dir, buckets, lay.payload_bytes, lay.frame_nt, 0, lay.frame_nt if qw else 0)
+        self._src = src
+        stats: Counter = Counter()
+        base_args = (lay, opt.band, opt.sync_costs, opt.min_quality, opt.reverse_complement, None, None)
+        #            (deferred, qw, retry_band, stage_counters, clustering, orientation_retry, sync_speculation)
+        initargs = base_args + (False, qw, opt.retry_band, False, False, opt.orientation_retry, opt.sync_speculation)
+
+        def batches():
+            for batch in iter_reads(reads_path, opt.batch_reads, max_reads=opt.max_reads):
+                q = batch.quals if (opt.min_quality or qw) else None
+                yield batch.codes, batch.lengths, q
+
+        def take(res) -> None:
+            src.write(res)
+            stats.update(res["stats"])
+
+        rung = {"auto": "stream", "stream": "stream", "v13": "v13", "reference": "reference"}[opt.engine]
+        used_engine = False
+        if rung == "stream" and stream_refusal(opt, reads_path) is None:
+            from vnxdna.dnaenc.reads import detect
+            from vnxdna.recovery import engine as ne
+            src.close()
+            try:
+                es = ne.run_pass1(reads_path, str(self._src_dir), lay, opt, buckets, fmt=detect(reads_path),
+                                  threads=opt.threads, dedup=opt.engine_dedup, cancel=None)
+                for k in ("reads", "fast", "sync", "speculative", "reverse_complement", "pending", "orphans",
+                          "unaligned", "rc_retry_skipped"):
+                    stats[k] += es[k]
+                if es["skipped"]:
+                    stats["skipped_redundant"] += es["skipped"]
+                used_engine = True
+            except (ne.EngineUnsupported, ne.EngineError):
+                used_engine = False
+        if not used_engine:
+            # Python pass 1 (V13 path), optionally with every kernel pinned to its reference
+            src = self._src = Spill(self._src_dir, buckets, lay.payload_bytes, lay.frame_nt, 0, lay.frame_nt if qw else 0)
+            ctx = _reference_backends() if rung == "reference" else _nullctx()
+            with ctx:
+                if opt.workers == 1:
+                    _p_init(*initargs)
+                    for b in _prefetch(batches()):
+                        take(_process(*b))
+                else:
+                    pool = ProcessPoolExecutor(max_workers=opt.workers, initializer=_p_init, initargs=initargs)
+                    try:
+                        window: deque = deque()
+                        for b in _prefetch(batches()):
+                            window.append(pool.submit(_process, *b))
+                            if len(window) >= 2 * opt.workers:
+                                take(window.popleft().result())
+                        while window:
+                            take(window.popleft().result())
+                    finally:
+                        pool.shutdown(wait=True, cancel_futures=True)
+            src.close()
+        trim_heap()
+        if stats["reads"] == 0:
+            raise VNXFormatError("the read file contains no reads", stage="input")
+        if stats["fast"] + stats["sync"] == 0:
+            check_unsupported_after_pass1(reads_path)
+        self.stats = stats
+        self.records_total = src.records()
+
+    # -------------------------------------------------------------------- partition the spill by archive tag
+    def _partition(self) -> None:
+        src = self._src
+        tagset = set(self.tags)
+        roots = {t: (self._parts_dir / f"{t:04x}") for t in self.tags}
+        for d in roots.values():
+            d.mkdir()
+        counts: Counter = Counter()
+        for b in range(self.B):
+            acc, pend = src.load(b)
+            self._write_bucket(acc, "acc", b, roots, tagset, counts)
+            self._write_bucket(pend, "pend", b, roots, tagset, counts)
+        self.partition_records = {t: int(counts.get(t, 0)) for t in self.tags}
+        self.parts = {t: Spill.view(roots[t], self.B, src.acc_dtype, src.pend_dtype, self.records_total)
+                      for t in self.tags}
+
+    @staticmethod
+    def _write_bucket(arr: np.ndarray, name: str, b: int, roots: dict, tagset: set, counts: Counter) -> None:
+        """Stable-partition one bucket's records by their 16-bit tag; one file per manifest tag (empty where none),
+        so every partition has the full bucket set and keeps the records in their original (pass-1) order."""
+        slices: dict = {}
+        if arr.size:
+            order = np.argsort(arr["tag"], kind="stable")
+            srt = arr[order]
+            t = srt["tag"]
+            change = np.flatnonzero(t[1:] != t[:-1]) + 1 if len(srt) > 1 else np.zeros(0, dtype=np.int64)
+            starts = np.concatenate([[0], change])
+            ends = np.concatenate([change, [len(srt)]])
+            for s, e in zip(starts.tolist(), ends.tolist()):
+                tg = int(t[s])
+                if tg in tagset:
+                    slices[tg] = srt[s:e].tobytes()
+                    counts[tg] += int(e - s)
+        for tg, d in roots.items():
+            (d / f"{name}{b}.bin").write_bytes(slices.get(tg, b""))
+
+    # -------------------------------------------------------------------- pass 2, one extent, from its partition
+    def decode(self, rec: dict, consume):
+        """Decode the extent ``rec`` (manifest record) from its tag partition and pass the verified container path to
+        ``consume`` (which returns the extent's bytes). Raises on any failure; the caller falls back to the legacy
+        whole-pool :func:`vnxdna.pipeline.stream.decode_extent`."""
+        from vnxdna.recovery.planner import RecoveryBudget, RecoveryPlanner
+        tag = int(rec["archive_tag"], 16)
+        part = self.parts.get(tag)
+        if part is None:
+            raise VNXFormatError(f"pool extent {rec.get('index', '?')}: archive tag {tag:04x} is not in the pool partition",
+                                 stage="stream")
+        opt_e = replace(self.opt, expect_archive_id=rec["archive_id"], archive_tag=tag)
+        work = Path(tempfile.mkdtemp(prefix="vnx-pool-extent-", dir=self._work_dir))
+        try:
+            t0 = time.perf_counter()
+            budget = opt_e.recovery_budget          # a RecoveryBudget after validate(); narrowed for the type checker
+            planner = RecoveryPlanner(budget if isinstance(budget, RecoveryBudget) else None, t0)
+            out = work / "e.vnx"
+            res = _pass2(part, self.lay, opt_e, Counter(self.stats), {}, t0, out, True, None, None, None,
+                         self.key, self.passphrase, str(work), planner, None, None, False, pool=None)
+            if res.status != "SUCCESS":
+                raise VNXIntegrityError(f"pool extent {rec.get('index', '?')} did not decode: status {res.status}",
+                                        stage="stream", details={"extent": rec.get("index"), "status": res.status})
+            data = consume(out)
+            self.pass2_seconds += time.perf_counter() - t0
+            self.pass2_extents += 1
+            return data
+        finally:
+            shutil.rmtree(work, ignore_errors=True)
+
+    def close(self) -> None:
+        src = getattr(self, "_src", None)
+        if src is not None:
+            src.close()
+        shutil.rmtree(self._root, ignore_errors=True)
+
+
+class _nullctx:
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
