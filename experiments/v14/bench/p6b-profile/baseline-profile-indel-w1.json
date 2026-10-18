@@ -1,0 +1,105 @@
+{
+ "label": "SIMULATED",
+ "mode": "single",
+ "workers": 1,
+ "wall_s": 3.1524,
+ "profiled": true,
+ "output_sha256": "c15cf62c9432be3d2eb9a842cd2fba56e3d6ff58e39c2de8f2fde5a0eabaf181",
+ "matches": true,
+ "report": {
+  "status": "SUCCESS",
+  "stage_seconds": {
+   "pass1_reads": 2.6078414539806545,
+   "pass1_worker_cpu": 2.602819985,
+   "pass2_decode": 0.27815155405551195,
+   "verify": 0.014060877030715346
+  }
+ },
+ "stages": {
+  "resolve_vectorised": {
+   "calls": 6,
+   "cum_s": 0.0378,
+   "own_s": 0.0223
+  },
+  "pass2": {
+   "calls": 1,
+   "cum_s": 0.3008,
+   "own_s": 0.0003
+  },
+  "resolve_duplicates": {
+   "calls": 1,
+   "cum_s": 0.0003,
+   "own_s": 0.0002
+  },
+  "consensus_symbols": {
+   "calls": 6,
+   "cum_s": 0.1063,
+   "own_s": 0.0062
+  },
+  "superblock": {
+   "calls": 1,
+   "cum_s": 0.0047,
+   "own_s": 0.0006
+  },
+  "pass1_engine": {
+   "calls": 2,
+   "cum_s": 5.2114,
+   "own_s": 2.6049
+  },
+  "spill_load": {
+   "calls": 7,
+   "cum_s": 0.0118,
+   "own_s": 0.0002
+  },
+  "layout_probe": {
+   "calls": 1,
+   "cum_s": 0.1157,
+   "own_s": 0.0016
+  },
+  "np_fromfile": {
+   "calls": 14,
+   "cum_s": 0.0113,
+   "own_s": 0.0106
+  },
+  "argsort": {
+   "calls": 6,
+   "cum_s": 0.0001,
+   "own_s": 0.0
+  },
+  "sha256_update": {
+   "calls": 5,
+   "cum_s": 0.0116,
+   "own_s": 0.0116
+  }
+ },
+ "top_own": [
+  "   ncalls  tottime  percall  cumtime  percall filename:lineno(function)",
+  "        1    2.605    2.605    2.605    2.605 /root/vnx-dna-lab/v14/src/vnxdna/native/engine.py:200(run_pass1)",
+  "        6    0.052    0.009    0.252    0.042 /root/vnx-dna-lab/v14/src/vnxdna/recovery/outer.py:239(_fast_bucket)",
+  "        6    0.022    0.004    0.038    0.006 /root/vnx-dna-lab/v14/src/vnxdna/recovery/outer.py:87(_resolve_vectorised)",
+  "   141/47    0.022    0.000    0.120    0.003 <frozen importlib._bootstrap>:1349(_find_and_load)",
+  "        1    0.021    0.021    0.273    0.273 /root/vnx-dna-lab/v14/src/vnxdna/recovery/outer.py:281(run)",
+  "     2344    0.019    0.000    0.019    0.000 {method 'reduce' of 'numpy.ufunc' objects}",
+  "        6    0.019    0.003    0.021    0.003 /root/vnx-dna-lab/v14/src/vnxdna/recovery/consensus.py:145(_row_ids)",
+  "       16    0.016    0.001    0.016    0.001 /root/vnx-dna-lab/v14/src/vnxdna/native/rs.py:235(_run)",
+  "        6    0.015    0.003    0.027    0.005 /root/vnx-dna-lab/v14/src/vnxdna/native/reads.py:242(iter_reads_native)",
+  "   162/14    0.014    0.000    0.113    0.008 {built-in method builtins.exec}",
+  "        1    0.013    0.013    0.114    0.114 /root/vnx-dna-lab/v14/src/vnxdna/recovery/probe.py:128(probe_reads)",
+  "    20485    0.012    0.000    0.012    0.000 /root/vnx-dna-lab/v14/src/vnxdna/recovery/probe.py:94(<genexpr>)",
+  "        5    0.012    0.002    0.012    0.002 {method 'update' of '_hashlib.HASH' objects}",
+  "    46835    0.011    0.000    0.011    0.000 /root/vnx-dna-lab/v14/src/vnxdna/recovery/consensus.py:307(<genexpr>)",
+  "       14    0.011    0.001    0.011    0.001 {built-in method numpy.fromfile}",
+  "        1    0.011    0.011    0.018    0.018 /root/vnx-dna-lab/v14/src/vnxdna/recovery/probe.py:101(frame_heads)",
+  "      181    0.010    0.000    0.010    0.000 {method 'tolist' of 'numpy.ndarray' objects}",
+  "       93    0.010    0.000    0.010    0.000 {built-in method marshal.loads}",
+  "        2    0.009    0.005    0.009    0.005 {method 'readinto' of '_io.BufferedReader' objects}",
+  "      162    0.009    0.000    0.009    0.000 /root/vnx-dna-lab/.venv/lib/python3.12/site-packages/numpy/lib/_function_base_impl.py:5220(delete)",
+  "        7    0.008    0.001    0.022    0.003 {built-in method numpy.fromiter}",
+  "     1640    0.008    0.000    0.008    0.000 {built-in method posix.pwrite}",
+  "      228    0.007    0.000    0.007    0.000 {method 'searchsorted' of 'numpy.ndarray' objects}",
+  "       14    0.006    0.000    0.006    0.000 {built-in method posix.unlink}",
+  "        6    0.006    0.001    0.106    0.018 /root/vnx-dna-lab/v14/src/vnxdna/recovery/consensus.py:284(_consensus_symbols)"
+ ],
+ "reference": "the encoded container (decode_reads output)",
+ "host_load1_note": "lab host idle (load ~0.1) when these were taken"
+}

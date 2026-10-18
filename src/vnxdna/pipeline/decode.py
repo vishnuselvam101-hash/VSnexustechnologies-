@@ -610,7 +610,10 @@ class PoolDecoder:
                     for b in _prefetch(batches()):
                         take(_process(*b))
                 else:
-                    pool = ProcessPoolExecutor(max_workers=opt.workers, initializer=_p_init, initargs=initargs)
+                    # vnxdna.core.workers: workers ignore SIGINT and die with the parent; an interrupt kills them
+                    # instead of joining the pool (a join after an interrupt can hang)
+                    from vnxdna.core.workers import process_pool
+                    pool = process_pool(opt.workers, initializer=_p_init, initargs=initargs)
                     try:
                         window: deque = deque()
                         for b in _prefetch(batches()):
@@ -619,8 +622,11 @@ class PoolDecoder:
                                 take(window.popleft().result())
                         while window:
                             take(window.popleft().result())
+                    except KeyboardInterrupt:
+                        pool.abort()
+                        raise
                     finally:
-                        pool.shutdown(wait=True, cancel_futures=True)
+                        pool.close()
             src.close()
         trim_heap()
         if stats["reads"] == 0:

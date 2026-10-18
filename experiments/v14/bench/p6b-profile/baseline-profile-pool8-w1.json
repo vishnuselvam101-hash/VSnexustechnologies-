@@ -1,0 +1,135 @@
+{
+ "label": "SIMULATED",
+ "mode": "pool",
+ "workers": 1,
+ "wall_s": 2.6372,
+ "profiled": true,
+ "output_sha256": "248cc0aec7581b31bcacb2f55abc6dbd614385e3d97617125c97efe4a62e00c9",
+ "matches": true,
+ "report": {
+  "by_range": 0,
+  "by_pool": 8,
+  "by_pool_linear": 8,
+  "by_pool_fallback": 0,
+  "total_bytes": 8388608,
+  "sha256": "248cc0aec7581b31bcacb2f55abc6dbd614385e3d97617125c97efe4a62e00c9",
+  "seconds": 2.5575,
+  "mb_s": 3.28,
+  "pass1_seconds": 2.056,
+  "partition_seconds": 0.0402,
+  "pool_pass2_seconds": 0.4039,
+  "pool_records": 406068,
+  "pool_partition_records": {
+   "6655": 50886,
+   "6755": 50805,
+   "16599": 50839,
+   "16886": 50835,
+   "23373": 50700,
+   "24584": 50663,
+   "32819": 50688,
+   "60407": 50501
+  }
+ },
+ "stages": {
+  "file_write": {
+   "calls": 120,
+   "cum_s": 0.0167,
+   "own_s": 0.0167
+  },
+  "pool_partition": {
+   "calls": 1,
+   "cum_s": 0.0402,
+   "own_s": 0.0002
+  },
+  "resolve_vectorised": {
+   "calls": 56,
+   "cum_s": 0.0603,
+   "own_s": 0.0354
+  },
+  "resolve_duplicates": {
+   "calls": 8,
+   "cum_s": 0.0017,
+   "own_s": 0.001
+  },
+  "pass2": {
+   "calls": 8,
+   "cum_s": 0.3337,
+   "own_s": 0.0011
+  },
+  "pool_pass1": {
+   "calls": 1,
+   "cum_s": 2.056,
+   "own_s": 0.0001
+  },
+  "consensus_symbols": {
+   "calls": 56,
+   "cum_s": 0.0135,
+   "own_s": 0.0018
+  },
+  "superblock": {
+   "calls": 8,
+   "cum_s": 0.0081,
+   "own_s": 0.0017
+  },
+  "pass1_engine": {
+   "calls": 2,
+   "cum_s": 3.8178,
+   "own_s": 1.9083
+  },
+  "layout_probe": {
+   "calls": 1,
+   "cum_s": 0.1377,
+   "own_s": 0.0015
+  },
+  "spill_load": {
+   "calls": 71,
+   "cum_s": 0.0235,
+   "own_s": 0.0006
+  },
+  "np_fromfile": {
+   "calls": 142,
+   "cum_s": 0.0207,
+   "own_s": 0.0159
+  },
+  "argsort": {
+   "calls": 23,
+   "cum_s": 0.0036,
+   "own_s": 0.0001
+  },
+  "sha256_update": {
+   "calls": 24,
+   "cum_s": 0.0409,
+   "own_s": 0.0409
+  }
+ },
+ "top_own": [
+  "   ncalls  tottime  percall  cumtime  percall filename:lineno(function)",
+  "        1    1.908    1.908    1.909    1.909 /root/vnx-dna-lab/v14/src/vnxdna/native/engine.py:200(run_pass1)",
+  "       56    0.068    0.001    0.228    0.004 /root/vnx-dna-lab/v14/src/vnxdna/recovery/outer.py:239(_fast_bucket)",
+  "      114    0.060    0.001    0.060    0.001 {built-in method _hashlib.openssl_sha256}",
+  "       24    0.041    0.002    0.041    0.002 {method 'update' of '_hashlib.HASH' objects}",
+  "       56    0.035    0.001    0.060    0.001 /root/vnx-dna-lab/v14/src/vnxdna/recovery/outer.py:87(_resolve_vectorised)",
+  "        9    0.024    0.003    0.024    0.003 {built-in method posix.fsync}",
+  "     3975    0.023    0.000    0.023    0.000 {method 'reduce' of 'numpy.ufunc' objects}",
+  "        6    0.019    0.003    0.033    0.005 /root/vnx-dna-lab/v14/src/vnxdna/native/reads.py:242(iter_reads_native)",
+  "      120    0.017    0.000    0.017    0.000 {method 'write' of '_io.BufferedWriter' objects}",
+  "   173/10    0.017    0.000    0.103    0.010 {built-in method builtins.exec}",
+  "        8    0.016    0.002    0.245    0.031 /root/vnx-dna-lab/v14/src/vnxdna/recovery/outer.py:281(run)",
+  "      142    0.016    0.000    0.021    0.000 {built-in method numpy.fromfile}",
+  "        4    0.016    0.004    0.016    0.004 /root/vnx-dna-lab/v14/src/vnxdna/native/rs.py:235(_run)",
+  "        1    0.015    0.015    0.136    0.136 /root/vnx-dna-lab/v14/src/vnxdna/recovery/probe.py:128(probe_reads)",
+  "     3288    0.015    0.000    0.015    0.000 {built-in method posix.pwrite}",
+  "        1    0.014    0.014    0.023    0.023 /root/vnx-dna-lab/v14/src/vnxdna/recovery/probe.py:101(frame_heads)",
+  "    20485    0.012    0.000    0.012    0.000 /root/vnx-dna-lab/v14/src/vnxdna/recovery/probe.py:94(<genexpr>)",
+  "       92    0.011    0.000    0.011    0.000 {built-in method marshal.loads}",
+  "      143    0.011    0.000    0.011    0.000 {built-in method posix.unlink}",
+  "        2    0.010    0.005    0.010    0.005 {method 'readinto' of '_io.BufferedReader' objects}",
+  "     3334    0.009    0.000    0.017    0.000 /root/vnx-dna-lab/.venv/lib/python3.12/site-packages/numpy/_core/numeric.py:2471(array_equal)",
+  "     3288    0.009    0.000    0.031    0.000 /root/vnx-dna-lab/v14/src/vnxdna/recovery/outer.py:215(row_decoded)",
+  "       60    0.007    0.000    0.008    0.000 /root/vnx-dna-lab/.venv/lib/python3.12/site-packages/numpy/_core/shape_base.py:378(stack)",
+  "      537    0.006    0.000    0.006    0.000 {method 'tolist' of 'numpy.ndarray' objects}",
+  "       14    0.006    0.000    0.033    0.002 /root/vnx-dna-lab/v14/src/vnxdna/pipeline/decode.py:623(_write_bucket)"
+ ],
+ "reference": "the stream input (in.bin)",
+ "host_load1_note": "lab host idle (load ~0.1) when these were taken"
+}
