@@ -1,0 +1,514 @@
+{
+  "label": "SIMULATED",
+  "provisional": true,
+  "method": "same tree, engine_scheduler strand vs corroborated (+ corroborated A/A), paired per seed, order A B B A, per-seed median of the runs; ratio = corroborated / strand (> 1 = strand faster); 95 % CI = percentile bootstrap of the median per-seed ratio (10000 resamples, seed 11)",
+  "commits": [
+    "c56ccaa7e0581d5d771c70569b07a38d371ac0ba"
+  ],
+  "scenarios": {
+    "indel-w1": {
+      "n_seeds": 5,
+      "runs": 30,
+      "workers": 1,
+      "seconds_median": {
+        "strand": 2.491,
+        "corroborated": 3.161,
+        "corroborated2": 3.096
+      },
+      "ratio_corroborated_over_strand": {
+        "median": 1.222,
+        "ci95": [
+          1.167,
+          1.367
+        ],
+        "per_seed": [
+          1.367,
+          1.204,
+          1.167,
+          1.222,
+          1.269
+        ]
+      },
+      "aa_corroborated_over_corroborated2": {
+        "median": 1.015,
+        "ci95": [
+          0.983,
+          1.119
+        ],
+        "per_seed": [
+          1.119,
+          0.999,
+          1.015,
+          0.983,
+          1.038
+        ]
+      },
+      "cpu_seconds_median": {
+        "strand": 3.416,
+        "corroborated": 4.064,
+        "corroborated2": 3.987
+      },
+      "cpu_ratio_corroborated_over_strand": {
+        "median": 1.171,
+        "ci95": [
+          1.117,
+          1.272
+        ],
+        "per_seed": [
+          1.272,
+          1.148,
+          1.117,
+          1.171,
+          1.19
+        ]
+      },
+      "cpu_aa": {
+        "median": 1.006,
+        "ci95": [
+          0.994,
+          1.099
+        ]
+      },
+      "all_success_and_identical": true,
+      "false_success": 0,
+      "fallbacks": 0,
+      "attempted_median": {
+        "strand": 177689.0,
+        "corroborated": 323341.0
+      },
+      "full_attempts_median": {
+        "strand": 37961.0,
+        "corroborated": 66197.0
+      },
+      "peak_rss_mib_median": {
+        "strand": 151.6,
+        "corroborated": 151.6,
+        "corroborated2": 151.6
+      },
+      "load1_range": [
+        1.1,
+        1.37
+      ]
+    },
+    "indel-w4": {
+      "n_seeds": 5,
+      "runs": 30,
+      "workers": 4,
+      "seconds_median": {
+        "strand": 1.615,
+        "corroborated": 1.619,
+        "corroborated2": 1.622
+      },
+      "ratio_corroborated_over_strand": {
+        "median": 1.004,
+        "ci95": [
+          0.96,
+          1.024
+        ],
+        "per_seed": [
+          1.024,
+          1.021,
+          0.96,
+          0.988,
+          1.004
+        ]
+      },
+      "aa_corroborated_over_corroborated2": {
+        "median": 0.993,
+        "ci95": [
+          0.972,
+          1.022
+        ],
+        "per_seed": [
+          1.022,
+          0.972,
+          0.979,
+          1.011,
+          0.993
+        ]
+      },
+      "cpu_seconds_median": {
+        "strand": 3.509,
+        "corroborated": 4.059,
+        "corroborated2": 4.096
+      },
+      "cpu_ratio_corroborated_over_strand": {
+        "median": 1.164,
+        "ci95": [
+          1.126,
+          1.171
+        ],
+        "per_seed": [
+          1.166,
+          1.171,
+          1.126,
+          1.164,
+          1.159
+        ]
+      },
+      "cpu_aa": {
+        "median": 0.98,
+        "ci95": [
+          0.964,
+          1.015
+        ]
+      },
+      "all_success_and_identical": true,
+      "false_success": 0,
+      "fallbacks": 0,
+      "attempted_median": {
+        "strand": 177438.0,
+        "corroborated": 323485.0
+      },
+      "full_attempts_median": {
+        "strand": 37590.0,
+        "corroborated": 66312.0
+      },
+      "peak_rss_mib_median": {
+        "strand": 148.1,
+        "corroborated": 148.1,
+        "corroborated2": 148.1
+      },
+      "load1_range": [
+        1.32,
+        1.64
+      ]
+    },
+    "indel-rc-w4": {
+      "n_seeds": 5,
+      "runs": 30,
+      "workers": 4,
+      "seconds_median": {
+        "strand": 1.693,
+        "corroborated": 1.741,
+        "corroborated2": 1.714
+      },
+      "ratio_corroborated_over_strand": {
+        "median": 1.016,
+        "ci95": [
+          1.0,
+          1.033
+        ],
+        "per_seed": [
+          1.0,
+          1.013,
+          1.033,
+          1.018,
+          1.016
+        ]
+      },
+      "aa_corroborated_over_corroborated2": {
+        "median": 1.011,
+        "ci95": [
+          0.979,
+          1.038
+        ],
+        "per_seed": [
+          1.001,
+          0.979,
+          1.02,
+          1.038,
+          1.011
+        ]
+      },
+      "cpu_seconds_median": {
+        "strand": 3.719,
+        "corroborated": 4.48,
+        "corroborated2": 4.347
+      },
+      "cpu_ratio_corroborated_over_strand": {
+        "median": 1.184,
+        "ci95": [
+          1.157,
+          1.207
+        ],
+        "per_seed": [
+          1.157,
+          1.174,
+          1.207,
+          1.184,
+          1.204
+        ]
+      },
+      "cpu_aa": {
+        "median": 1.019,
+        "ci95": [
+          0.987,
+          1.05
+        ]
+      },
+      "all_success_and_identical": true,
+      "false_success": 0,
+      "fallbacks": 0,
+      "attempted_median": {
+        "strand": 181806.0,
+        "corroborated": 325237.0
+      },
+      "full_attempts_median": {
+        "strand": 39053.0,
+        "corroborated": 66831.0
+      },
+      "peak_rss_mib_median": {
+        "strand": 144.9,
+        "corroborated": 144.9,
+        "corroborated2": 144.9
+      },
+      "load1_range": [
+        1.09,
+        1.44
+      ]
+    },
+    "clean-w4": {
+      "n_seeds": 5,
+      "runs": 30,
+      "workers": 4,
+      "seconds_median": {
+        "strand": 0.661,
+        "corroborated": 0.578,
+        "corroborated2": 0.6
+      },
+      "ratio_corroborated_over_strand": {
+        "median": 0.883,
+        "ci95": [
+          0.874,
+          0.943
+        ],
+        "per_seed": [
+          0.943,
+          0.879,
+          0.874,
+          0.887,
+          0.883
+        ]
+      },
+      "aa_corroborated_over_corroborated2": {
+        "median": 1.007,
+        "ci95": [
+          0.96,
+          1.028
+        ],
+        "per_seed": [
+          1.028,
+          0.966,
+          0.96,
+          1.009,
+          1.007
+        ]
+      },
+      "cpu_seconds_median": {
+        "strand": 1.782,
+        "corroborated": 1.705,
+        "corroborated2": 1.748
+      },
+      "cpu_ratio_corroborated_over_strand": {
+        "median": 0.949,
+        "ci95": [
+          0.944,
+          1.005
+        ],
+        "per_seed": [
+          1.005,
+          0.944,
+          0.949,
+          0.957,
+          0.947
+        ]
+      },
+      "cpu_aa": {
+        "median": 1.0,
+        "ci95": [
+          0.966,
+          1.053
+        ]
+      },
+      "all_success_and_identical": true,
+      "false_success": 0,
+      "fallbacks": 0,
+      "attempted_median": {
+        "strand": 131151.0,
+        "corroborated": 131151.0
+      },
+      "full_attempts_median": {
+        "strand": 0.0,
+        "corroborated": 0.0
+      },
+      "peak_rss_mib_median": {
+        "strand": 103.2,
+        "corroborated": 101.8,
+        "corroborated2": 101.8
+      },
+      "load1_range": [
+        1.04,
+        1.45
+      ]
+    },
+    "substitution-w4": {
+      "n_seeds": 5,
+      "runs": 30,
+      "workers": 4,
+      "seconds_median": {
+        "strand": 1.319,
+        "corroborated": 1.374,
+        "corroborated2": 1.394
+      },
+      "ratio_corroborated_over_strand": {
+        "median": 1.034,
+        "ci95": [
+          1.003,
+          1.066
+        ],
+        "per_seed": [
+          1.034,
+          1.049,
+          1.066,
+          1.027,
+          1.003
+        ]
+      },
+      "aa_corroborated_over_corroborated2": {
+        "median": 0.977,
+        "ci95": [
+          0.931,
+          1.041
+        ],
+        "per_seed": [
+          0.977,
+          0.931,
+          0.992,
+          0.955,
+          1.041
+        ]
+      },
+      "cpu_seconds_median": {
+        "strand": 2.982,
+        "corroborated": 3.312,
+        "corroborated2": 3.367
+      },
+      "cpu_ratio_corroborated_over_strand": {
+        "median": 1.114,
+        "ci95": [
+          1.107,
+          1.163
+        ],
+        "per_seed": [
+          1.114,
+          1.11,
+          1.163,
+          1.12,
+          1.107
+        ]
+      },
+      "cpu_aa": {
+        "median": 0.988,
+        "ci95": [
+          0.957,
+          1.012
+        ]
+      },
+      "all_success_and_identical": true,
+      "false_success": 0,
+      "fallbacks": 0,
+      "attempted_median": {
+        "strand": 172666.0,
+        "corroborated": 365019.0
+      },
+      "full_attempts_median": {
+        "strand": 30955.0,
+        "corroborated": 21766.0
+      },
+      "peak_rss_mib_median": {
+        "strand": 133.7,
+        "corroborated": 133.7,
+        "corroborated2": 133.7
+      },
+      "load1_range": [
+        1.33,
+        1.91
+      ]
+    },
+    "indel-shuffled-w1": {
+      "n_seeds": 5,
+      "runs": 30,
+      "workers": 1,
+      "seconds_median": {
+        "strand": 3.13,
+        "corroborated": 3.465,
+        "corroborated2": 3.424
+      },
+      "ratio_corroborated_over_strand": {
+        "median": 1.107,
+        "ci95": [
+          1.069,
+          1.131
+        ],
+        "per_seed": [
+          1.126,
+          1.107,
+          1.069,
+          1.131,
+          1.093
+        ]
+      },
+      "aa_corroborated_over_corroborated2": {
+        "median": 1.006,
+        "ci95": [
+          0.987,
+          1.027
+        ],
+        "per_seed": [
+          1.006,
+          1.015,
+          1.001,
+          1.027,
+          0.987
+        ]
+      },
+      "cpu_seconds_median": {
+        "strand": 4.037,
+        "corroborated": 4.362,
+        "corroborated2": 4.342
+      },
+      "cpu_ratio_corroborated_over_strand": {
+        "median": 1.08,
+        "ci95": [
+          1.049,
+          1.103
+        ],
+        "per_seed": [
+          1.097,
+          1.08,
+          1.049,
+          1.103,
+          1.071
+        ]
+      },
+      "cpu_aa": {
+        "median": 1.01,
+        "ci95": [
+          0.987,
+          1.017
+        ]
+      },
+      "all_success_and_identical": true,
+      "false_success": 0,
+      "fallbacks": 0,
+      "attempted_median": {
+        "strand": 213152.0,
+        "corroborated": 329373.0
+      },
+      "full_attempts_median": {
+        "strand": 73619.0,
+        "corroborated": 104420.0
+      },
+      "peak_rss_mib_median": {
+        "strand": 589.3,
+        "corroborated": 589.3,
+        "corroborated2": 589.3
+      },
+      "load1_range": [
+        1.08,
+        1.37
+      ]
+    }
+  }
+}

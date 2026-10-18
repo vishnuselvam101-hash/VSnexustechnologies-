@@ -1,7 +1,7 @@
 # V14 adaptive recovery scheduler (Phase 6, workstream C)
 
 Status: implemented in the streaming engine (`src/vnxdna/native/rust/engine/src/{engine,sched}.rs`), default
-`engine_scheduler="strand"`. Every number in this document is SIMULATED (channel simulator, evidence category D) and
+`engine_scheduler="strand"` (performance against the V13 rule: §9.2; default open, §9.4). Every number in this document is SIMULATED (channel simulator, evidence category D) and
 comes from a committed results file under `experiments/v14/bench/p6c-scheduler/`. Timings are PROVISIONAL: the lab host
 was shared with three other agents while they were taken.
 
@@ -58,12 +58,16 @@ bytes. It depends on the read alone, never on the frame it is later compared wit
 segments (one marker period each, I2). Every marker block is located at the only exact match of all its bases among
 the shifts c, c±1, c±2 around the previous anchored shift c (|shift| ≤ band). A block with no exact match, or with
 several (ambiguous), gets no anchor. The read start (shift 0) and the read end (read length − template length) anchor
-the first and last segment. A segment is read at shift d only when both its anchors are d, or when every anchor it has
-equals the established shift E (no change; E starts at 0). Otherwise none of its bytes is read. So:
-(a) a shift change is accepted only after two exact markers agree on it;
-(b) every segment that holds an indel is unconfirmed as a whole: that is the charge for a shift change, 4–6 bytes on
-    v4-balanced;
-(c) all bytes of a segment are read at one shift.
+the first and last segment. A segment is read at shift d when both its anchors are d, or when the established shift
+E is firm (confirmed by two exact markers; E starts at 0) and every anchor the segment has equals E. A segment whose
+two anchors are both present and differ (by at most 2), with its left anchor equal to the firm E, holds an indel. It is
+read at both read-determined shifts, unless it reaches into the CRC + parity tail, where it is not read at all (the
+review's tail rule). E then takes the right anchor, which becomes firm only when the next marker agrees. Every other
+segment is not read. So:
+(a) shift changes are read off the read's own markers and never chosen against a reference;
+(b) an indel segment is compared with one best split point (bytes before at the left shift, from it on at the right
+    shift) and charged `SHIFT_CHARGE` = 1 extra unconfirmed byte; the byte holding the indel usually mismatches too;
+(c) a channel indel can therefore absorb at most its own segment (test `a_channel_indel_absorbs_at_most_its_own_segment`).
 A template-length read whose every marker base reads at shift 0 takes a fast path that is decision-identical (proof in
 the code comment; test `exact_length_fast_path_equals_the_general_projection`).
 
@@ -81,8 +85,10 @@ bytes.
   unconfirmed bytes) is now a regression test that must leave ≥ 19 unconfirmed bytes for every such pair (test
   `review_probe_shifted_frame_far_in_hamming_is_not_confirmed`). The planted shift read through a channel insertion that
   undoes it is the test `indel_variant_of_a_verified_frame_is_not_confirmed`.
-- *Allowance for indels.* A channel indel costs the whole segment that holds it. Indels can only remove bytes from the
-  confirmed set; they never let a differing byte count as confirmed.
+- *Allowance for indels (bounded).* A split is possible only in a segment where the read's own markers show an indel.
+  Within that segment, a planted content shift in K' that the channel indel happens to undo can be absorbed: at most
+  one segment (≤ 6 bytes) per channel indel, at a charge of 1 byte each. This is part of the probabilistic assumption
+  below, because it needs a channel indel at the planted position.
 - *Probabilistic part* (stated as an assumption about the simulated channel, not proved). A reading of K' passes only if
   the channel turned at least `margin` differing bytes into exactly K's bytes (one specific substitution or more per
   byte, ≤ p_sub/3 each: C(n, 8)·(p_sub/3)^8 for n differing bytes, ~10^-13 at n = 30 and p_sub = 1 %). Or the read
@@ -223,60 +229,66 @@ co-tenants disturb less than wall time at 1 worker. Wall time stays the primary 
 
 ## 9. Results
 
-All SIMULATED. Files: `experiments/v14/bench/p6c-scheduler/{campaign.jsonl, campaign-summary.json, ab.jsonl,
-ab-summary.json, zero-payload/}`.
+All SIMULATED. The review (§3, I4) changed the strand check after the first measurements. The pre-review design's
+files are kept as `*-prereview*` and are superseded: its 1.22× indel-w1 gain came partly from the unsafe free shift
+search. Current files: `experiments/v14/bench/p6c-scheduler/{campaign.jsonl, campaign-summary.json, ab.jsonl,
+ab-summary.json, zero-payload/after-review-*.json}`.
 
-### 9.1 Safety campaign (28 runs, 3,391,358 reads per mode)
+### 9.1 Safety campaign (final code f4d6c09, 28 runs, 3,391,358 reads per mode)
 
 | mode | false skips | skips without evidence address | lost verified addresses | payload disagreements | decodes identical to reference | outer records identical | false successes | ladder fallbacks |
 |---|---|---|---|---|---|---|---|---|
 | `strand` | **0** | 0 | **0** | 0 | 28/28 | 28/28 | 0 | 2 (as the reference) |
 | `corroborated` (V13 rule) | 30,698 | 1,941,993 | 227,404 | 0 | 28/28 (only through the ladder) | 26/28 | 0 | 14 (12 on six structured pools, 2 as the reference) |
 
-`strand` attempted 1,611,002 reads (47.5 %), with 545,178 DP attempts against 3,391,358 in the diagnostic mode. Every
-acceptance criterion of §8 holds on every run; `skip_other` = `sched_rescued` = 0. Two preregistered pools cannot be
-decoded in any mode (random-dropout-uneven: FAILURE; zeros-noisy-headers at 3 %/1 %/1 %: no superblock). All three modes
-end in the same status there, and the pass-1 criteria still hold. On zeros-noisy-headers the strand scheduler skips only
-19 and 27 reads: copies that noisy are attempted (the conservative cost).
+`strand` attempted 1,971,093 reads (58 %) and made 879,902 full (DP) attempts, against 3,391,358 for each in the
+diagnostic mode. The pre-review design attempted 47.5 % and made 545,178 full attempts. Every acceptance criterion of
+§8 holds on every run; `skip_other` = `sched_rescued` = 0. Two preregistered pools cannot be decoded in any mode
+(random-dropout-uneven: FAILURE; zeros-noisy-headers: no superblock), and all modes end in the same status there.
 
-### 9.2 End-to-end A/B (PROVISIONAL; idle host, load 1.0–1.9, `ab-summary.json`)
+### 9.2 End-to-end A/B (PROVISIONAL; idle host, load 1.1–2.2, final code, `ab-summary.json`)
 
-The first two indel-w1 passes were taken at host load 15–31 and are discarded (not committed). The run below uses the
-amended order. Ratio = corroborated / strand seconds (> 1 = strand faster), n = 5 seeds, 95 % CI = min–max.
+Ratio = corroborated / strand seconds (> 1 = strand faster), n = 5 seeds, 95 % CI = min–max. 180 rows, all SUCCESS
+with identical outputs, 0 false successes, 0 fallbacks.
 
-| scenario | strand s | corroborated s | ratio [CI] | A/A [CI] | CPU-time ratio [CI] | reads attempted strand / corroborated |
+| scenario | strand s | corroborated s | ratio [CI] | A/A [CI] | CPU ratio [CI] | reads attempted / full attempts, strand vs corroborated |
 |---|---|---|---|---|---|---|
-| indel-w1 (primary) | 2.491 | 3.161 | **1.222 [1.167, 1.367]** | 1.015 [0.983, 1.119] | 1.171 [1.117, 1.272] | 177,689 / 323,341 |
-| indel-w4 | 1.615 | 1.619 | 1.004 [0.960, 1.024] | 0.993 [0.972, 1.022] | 1.164 [1.126, 1.171] | 177,438 / 323,485 |
-| indel-rc-w4 | 1.693 | 1.741 | 1.016 [1.000, 1.033] | 1.011 [0.979, 1.038] | 1.184 [1.157, 1.207] | 181,806 / 325,237 |
-| clean-w4 | 0.661 | 0.578 | **0.883 [0.874, 0.943]** (regression) | 1.007 [0.960, 1.028] | 0.949 [0.944, 1.005] | 131,151 / 131,151 |
-| substitution-w4 | 1.319 | 1.374 | 1.034 [1.003, 1.066] | 0.977 [0.931, 1.041] | 1.114 [1.107, 1.163] | 172,666 / 365,019 |
-| indel-shuffled-w1 | 3.130 | 3.465 | 1.107 [1.069, 1.131] | 1.006 [0.987, 1.027] | 1.080 [1.049, 1.103] | 213,152 / 329,373 |
+| indel-w1 (primary) | 4.337 | 3.084 | **0.701 [0.700, 0.718]** | 0.992 [0.973, 1.044] | 0.715 [0.712, 0.733] | 310,552 / 173,712 vs 323,341 / 66,197 |
+| indel-w4 | 2.446 | 1.656 | 0.675 [0.649, 0.707] | 0.993 [0.921, 1.053] | 0.683 [0.679, 0.720] | 310,506 / 173,839 vs 323,485 / 66,312 |
+| indel-rc-w4 | 2.476 | 1.727 | 0.696 [0.682, 0.720] | 0.992 [0.980, 1.082] | 0.722 [0.699, 0.734] | 313,497 / 175,140 vs 325,237 / 66,831 |
+| clean-w4 | 0.741 | 0.579 | 0.780 [0.775, 0.796] | 0.952 [0.877, 1.043] | 0.812 [0.808, 0.831] | 131,253 / 102 vs 131,151 / 0 |
+| substitution-w4 | 1.383 | 1.354 | 0.990 [0.972, 1.063] | 1.024 [0.989, 1.114] | 1.022 [1.001, 1.062] | 174,967 / 33,898 vs 365,019 / 21,766 |
+| indel-shuffled-w1 | 4.578 | 3.411 | 0.748 [0.728, 0.792] | 0.988 [0.975, 1.053] | 0.756 [0.740, 0.802] | 315,552 / 140,624 vs 329,373 / 104,420 |
 
-Primary endpoint met: the indel-w1 CI lower bound (1.167) is above 1.0 and above the A/A upper bound (1.119). At 4
-workers the attempts move to the thread pool, so CPU time drops 11–18 % but wall time does not (the serial grouping,
-pass 2 and the strand checks in the rounds dominate). clean-w4 regresses by 12 % (median wall): every copy of a clean
-pool verifies on the fast path, both schedulers attempt the same 131,151 reads, and the strand checks are pure
-overhead. All 180 timed rows are SUCCESS with identical outputs: 0 false successes, 0 fallbacks. Peak process RSS is
-the same for both modes (e.g. 151.6 MiB at indel-w1; 103.2 vs 101.8 MiB at clean-w4).
+**The primary endpoint is NOT met.** With the reviewed (Hamming-exact) check, the strand scheduler is 25–33 % slower
+than the V13 rule on the indel workloads, 22 % slower on clean pools, and equal on substitutions.
+- *Why.* At 1 % substitutions and 0.4 % indels on 313 nt, many genuine copies leave more than 9 unconfirmed bytes (the
+  close checks are rejected: `strand_rejects` in `ab.jsonl`), so they are attempted. Most of them
+  carry indels, so their cheap paths fail and they go to the DP: 2.6× the V13 rule's full attempts. The V13 rule skips
+  these copies on their header key, which is what makes it unsafe on structured data.
+- *Against the diagnostic mode (exploratory, not preregistered, pass 1 only, indel-w1 fixture, median of 3;
+  `exploratory-pass1-all-vs-strand.txt`).* Attempt
+  every read: 3.53 s at 1 thread, 1.27 s at 4. Strand: 3.89 s, 1.95 s. V13 rule: 2.65 s, 1.26 s. On random indel pools
+  the strand scheduler costs more than attempting every read.
+- *clean-w4.* Both schedulers attempt the same reads. The overhead is the codeword check, the projections and the
+  screens. The decision-identical cuts of §6 (exact-length fast path, projections computed once and in the thread pool,
+  reuse for identical reads, no repeated screen of an unchanged store, a quadratic de-duplication removed) reduced it in
+  exploratory pass-1 timings (not committed). What remains (end to end: 0.741 s against 0.579 s) is reported as cost.
 
-### 9.3 Zero-run payloads (workstream E's finding, `zero-payload/`)
+### 9.3 Zero-run payloads (workstream E's finding)
 
-E's `payload-zeros-4m-w{1,4}` workloads (zero-heavy, compression none, archive dedup off, indel channel) run with the
-`suite.py repro` harness. Before = build/v14 423efa0 (V13 rule); after = this branch (strand):
+Before = build/v14 423efa0 (V13 rule); after = this branch.
 
-| workload | before: rung, status, seconds, tree RSS | after |
-|---|---|---|
-| 1 MiB smoke, w1, seed 98085 | stream FAILURE → fallback to v13, SUCCESS, 1.77 s, 120.6 MiB | stream, no fallback, SUCCESS, 1.12 s, 107.2 MiB |
-| 4 MiB, w4, seed 98080 | stream FAILURE → fallback to v13, SUCCESS, 2.85 s, 489.8 MiB | stream, no fallback, SUCCESS, 2.21 s, 111.1 MiB |
+| workload | before | after (pre-review strand) | after (final strand) |
+|---|---|---|---|
+| zeros 1 MiB smoke, w1, seed 98085 | stream FAILURE → v13 fallback, 1.77 s, 120.6 MiB | stream, 1.12 s, 107.2 MiB | stream, no fallback, SUCCESS, 1.50 s, 110.0 MiB |
+| zeros 4 MiB, w4, seed 98080 | stream FAILURE → v13 fallback, 2.85 s, 489.8 MiB | stream, 2.21 s, 111.1 MiB | stream, no fallback, SUCCESS, 2.82 s, 114.2 MiB |
 
-Before, the V13 rule attempted 37,702 of 655,750 reads at 4 MiB and lost most addresses. The strand scheduler attempts
-374,967 of them and decodes on the engine rung.
+### 9.4 Limits and the open decision
 
-### 9.4 Limits
-
-- The safety argument (§3) is a probability bound under the simulated channel, not a proof for any channel. The
-  campaign found no false skip in 1.78 M skips, which bounds rates far above the analytic estimate only.
-- No gain at 4 workers in wall time, and a 12 % loss on clean pools. A cheaper strand screen (parallel close checks,
-  skipping the screen when the read's own header key already names a verified frame) is the next lever.
+- The safety argument (§3) is deterministic for error-free readings and a probability under the simulated channel
+  otherwise. A channel indel absorbs at most its own segment. The campaign found no false skip.
+- Default: `strand` stays the default in this branch because it is the only rule that never loses a strand. It is,
+  however, slower than both the V13 rule and the diagnostic mode on random indel pools. Choosing the default (strand,
+  the diagnostic mode, or the V13 rule with its documented loss on structured data) is left to the lead and founder.
 - Layouts with r ≤ 3 attempt every read; r = 4 needs exact agreement.

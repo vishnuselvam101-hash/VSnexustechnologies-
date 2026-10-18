@@ -1,0 +1,5 @@
+EXPLORATORY (not preregistered), SIMULATED, final code f4d6c09, idle host.
+Pass 1 only (engine ns_total), 4 MiB random input, indel channel (1 % sub, 0.2 % ins, 0.2 % del, coverage 5),
+data seed 95500, channel seed 95507 (the indel-w1 fixture); median of 3 runs per mode, modes interleaved.
+threads=1: all (engine_dedup=False) 3.528 s | strand 3.893 s | corroborated 2.645 s
+threads=4: all 1.274 s | strand 1.946 s | corroborated 1.261 s

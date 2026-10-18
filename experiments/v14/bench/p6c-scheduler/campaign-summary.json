@@ -39,8 +39,8 @@
       "sched_rescued": 0,
       "engine_fallbacks": 2,
       "reads": 3391358,
-      "attempted": 1611002,
-      "full_attempts": 545178,
+      "attempted": 1971093,
+      "full_attempts": 879902,
       "pools_with_lost_addresses": [],
       "pools_with_fallbacks": [
         "random-dropout-uneven"
