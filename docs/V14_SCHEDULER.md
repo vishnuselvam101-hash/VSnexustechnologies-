@@ -35,10 +35,15 @@ Modes (`DecodeOptions.engine_dedup`, `DecodeOptions.engine_scheduler`, CLI `--en
   payloads (zero runs, repeated records, column parity of equal data) therefore give equal strand payloads when the
   variant is equal; payload windows are no evidence of identity. The scrambler also makes a strand's bases at a wrong
   shift agree with another strand's only by chance.
-- **I4 (a verified frame is a codeword).** A read is accepted only when its frame decodes with the inner RS code, the
-  descrambled CRC-32 verifies and the version nibble and kind are valid (`frame.rs::decode_frames`). The engine keeps
-  that corrected frame (`Batch::vframe`, `FrameStore`) and compares later reads with it. The CRC is error detection: it
-  is never used as identity evidence, and the container's SHA-256 check and the ladder are unchanged.
+- **I4 (a stored reference frame is a codeword).** A read is accepted when its frame passes the inner RS code and the
+  descrambled CRC-32 verifies with a valid version nibble and kind (`frame.rs::decode_frames`). A row with no erasure
+  whose CRC already verifies is accepted as read, without a syndrome check, and the CRC does not cover the r parity
+  bytes, so such a frame can carry parity errors (review finding). Before a frame becomes the stored reference of its
+  address, the engine therefore decodes it once more with the inner code (`Engine::codeword_check`): a codeword is
+  stored as is; a frame whose parity bytes alone were wrong is stored with the re-derived parity
+  (`store_parity_fixed`); anything else is not stored (`store_rejected`). Claim closes compare against the stored
+  frame, never against the accepted read's own frame. The accepted records themselves are unchanged. The CRC is error
+  detection only: it is never identity evidence, and the container's SHA-256 check and the ladder are unchanged.
 - **I5 (per-read independence).** A read's pass-1 outcome never depends on the other reads of the call
   (`pass1.rs` module comment): skipping one read changes no other read's records.
 - **I6 (what pass 2 does with copies).** Accepted records of one address are resolved by strict majority of identical
@@ -48,30 +53,49 @@ Modes (`DecodeOptions.engine_dedup`, `DecodeOptions.engine_scheduler`, CLI `--en
 
 ## 3. The strand check (the only identity evidence)
 
-`sched::strand_unconfirmed(segs, band, t, read, frame_words, budget)`: the read (in the orientation the screen
-estimates) is compared with the verified frame K byte by byte. The frame's bytes are split into segments of at most 6
-bytes whose bases are contiguous on the template (a marker period). Walking the segments with a running shift d (read
-position = template position + d), each segment takes the shift among d, d−1, d+1, d−2, d+2 (|d| ≤ band) at which the
-most bytes agree in all four bases; a segment counts only when at least half of its bytes agree at that shift (otherwise
-all its bytes are unconfirmed and d is kept); a byte is *confirmed* when its four bases equal K's. N bases and positions
-outside the read never agree. A pre-check scores the last two segments first, anchored at the read end; it can only
-reject. The read is a **confirmed copy of K** when at most `budget` of the frame's bytes are unconfirmed.
+**Projection.** `sched::strand_project` reads the read (in the orientation the screen estimates) onto the frame's
+bytes. It depends on the read alone, never on the frame it is later compared with. The frame's bytes fall into
+segments (one marker period each, I2). Every marker block is located at the only exact match of all its bases among
+the shifts c, c±1, c±2 around the previous anchored shift c (|shift| ≤ band). A block with no exact match, or with
+several (ambiguous), gets no anchor. The read start (shift 0) and the read end (read length − template length) anchor
+the first and last segment. A segment is read at shift d only when both its anchors are d, or when every anchor it has
+equals the established shift E (no change; E starts at 0). Otherwise none of its bytes is read. So:
+(a) a shift change is accepted only after two exact markers agree on it;
+(b) every segment that holds an indel is unconfirmed as a whole: that is the charge for a shift change, 4–6 bytes on
+    v4-balanced;
+(c) all bytes of a segment are read at one shift.
+A template-length read whose every marker base reads at shift 0 takes a fast path that is decision-identical (proof in
+the code comment; test `exact_length_fast_path_equals_the_general_projection`).
 
-`budget = r + 1 − margin` with `margin = min(8, r + 1)`, and no strand check at all when r + 1 < 5
-(`sched::strand_budget`): r = 16 → budget 9 (margin 8), r = 20 → 13, r = 12 → 5, r = 4 → 0 (exact agreement, margin 5),
-r ≤ 3 → never.
+**Comparison.** `strand_unconfirmed(proj, ok, K)` counts the frame bytes that are unread or differ from the stored
+frame K: a Hamming count. The read is a **confirmed copy of K** when at most `budget` bytes are unconfirmed.
+`budget = r + 1 − margin` with `margin = min(8, r + 1)`, and no strand check when r + 1 < 5 (`sched::strand_budget`):
+r = 16 → 9; r = 20 → 13; r = 12 → 5; r = 4 → 0 (exact agreement, margin 5); r ≤ 3 → never.
 
-**Why a confirmed copy of K is not a different strand K'.** By I1, K' differs from K in at least r + 1 bytes. The read
-agrees with K on all but `budget` bytes, so on at least `margin` bytes where K' differs from K the read shows K's byte.
-A reading of K' shows K's byte there only if the channel changed it into exactly K's byte (at least one specific
-substitution per such byte, probability ≤ p_sub/3 each), or a wrong shift was chosen in that segment, which needs at
-least half of the segment's bytes to agree at the wrong shift (I3: about 256^-3 for a 6-byte segment). With margin 8 and
-p_sub = 1 %, a pair (reading of K', verified K) with n differing bytes passes with probability about
-C(n, 8)·(0.0033)^8 (n = 30: 8·10^-14). This bound holds for every pair of distinct strands, including strands with
-identical payloads, neighbouring addresses one base apart, column-parity strands, and strands of other archives in the
-pool: it uses only I1, never the payload, the header or the CRC. It is a probability under the simulated channel model,
-not a certainty; a wrong skip loses one reading (other readings of K' are still attempted), never data, and every output
-is still verified by the outer code, the container SHA-256 and the ladder.
+**What this guarantees.** By I1 (MDS) and I4, every other frame K' differs from the stored codeword K in at least r + 1
+bytes.
+- *Deterministic part.* An error-free reading of K' has all its markers at shift 0, because the encoder writes the
+  markers, not the data. It is therefore compared unshifted and leaves at least r + 1 > budget unconfirmed bytes. It is
+  never skipped, whatever the payloads are, chosen plaintexts included. The review's construction (K' = K with a base
+  inserted and another deleted between markers, plus an address bit flipped: 19 bytes away, previously confirmed with 2
+  unconfirmed bytes) is now a regression test that must leave ≥ 19 unconfirmed bytes for every such pair (test
+  `review_probe_shifted_frame_far_in_hamming_is_not_confirmed`). The planted shift read through a channel insertion that
+  undoes it is the test `indel_variant_of_a_verified_frame_is_not_confirmed`.
+- *Allowance for indels.* A channel indel costs the whole segment that holds it. Indels can only remove bytes from the
+  confirmed set; they never let a differing byte count as confirmed.
+- *Probabilistic part* (stated as an assumption about the simulated channel, not proved). A reading of K' passes only if
+  the channel turned at least `margin` differing bytes into exactly K's bytes (one specific substitution or more per
+  byte, ≤ p_sub/3 each: C(n, 8)·(p_sub/3)^8 for n differing bytes, ~10^-13 at n = 30 and p_sub = 1 %). Or the read
+  must be mis-anchored: in some segment, both true markers destroyed by the channel and exact false markers at one
+  common wrong shift on both sides. False markers are built from frame bases, which a chosen plaintext can control.
+  So a planted pair still needs channel errors in at least two markers per mis-anchored segment, plus enough segments
+  to cover the margin. This is the remaining chosen-plaintext caveat.
+- *Consequence of a wrong skip.* One reading of K' is withheld. Its other readings are still attempted, the outer code
+  and the container SHA-256 still verify the output, and the ladder is unchanged. A skip never changes decoded bytes.
+
+The review asked for the CRC + parity tail to be confirmed with no shift change since the last payload segment. The
+projection gives this and more: no segment, tail included, is ever read at a shift that two exact markers have not
+confirmed, and a tail segment that holds an indel is unconfirmed.
 
 ## 4. Skip conditions (strand mode) and evidence categories
 
@@ -80,7 +104,7 @@ comes from (`engine.rs::batch`):
 
 | reason (counter) | when | frame compared with |
 |---|---|---|
-| `skip_claim_strand` | a claim (reads linked by payload windows) gets a verified member K; every unresolved member (never attempted, or a failed cheap attempt) is checked | K's frame; if that fails, the stored frames named by the member's header key and windows (another verified strand) |
+| `skip_claim_strand` | a claim (reads linked by payload windows) gets a verified member K; every unresolved member (never attempted, or a failed cheap attempt) is checked | the stored (codeword-checked) frame of K's address; if that fails, the stored frames named by the member's header key and windows (another verified strand) |
 | `skip_screen_strand` | before the rounds of a batch, every read; and again when a read's turn comes in a round | stored frames (`FrameStore`, keyed by address) named by the read's raw header key or by verified strands holding one of its windows (`WinMap`) |
 
 Header keys and windows are **leads** only: they choose which frames to compare, never decide. Evidence categories per
@@ -114,6 +138,8 @@ observed, kept as a safety net). With no strand check available (r + 1 < 5) noth
 | CRC-32 match | error detection only (I4); not identity |
 | nearest supported address by header distance as identity | used by V13 to assign single readings to a claim; in strand mode it never decides a skip |
 | a budget above r + 1 − 5 | the margin would fall below 5 bytes |
+| a free per-segment shift search against the reference (the first V14 version) | it measured an edit distance while the MDS bound is a Hamming bound: a frame ≥ r + 1 bytes away but a few indels from K passed (review finding) |
+| comparing an accepted read's own frame without a codeword check | clean-path frames can carry parity errors (I4) |
 | tail (CRC + parity) windows only | they bound pairs with equal payloads but not pairs differing in the payload outside the windows; used only as an early reject |
 
 Conservative cost (documented): layouts with r + 1 < 5 attempt every read; reads damaged beyond the budget are attempted
@@ -127,13 +153,19 @@ fail (counted in `strand_rejects`).
   `skip_claim_near`, `skip_claim_deferred` for the V13 rule; `skip_screen_strand`, `skip_claim_strand` for strand mode;
   `skip_other` = a skip without a reason, must be 0), `strand_checks`, `strand_rejects`, `screen_candidates`,
   `redundant_accepts` (an accepted read whose address was already verified: a wasted attempt; a lower bound),
-  `store_evictions`, `sched_rescued`, `split_groups`, `rounds`. `skipped` = the sum of the skip-reason counters.
+  `store_evictions`, `sched_rescued`, `store_parity_fixed`, `store_rejected`, `split_groups`, `rounds`. `skipped` = the sum of the skip-reason counters.
 - Fallback activations stay in `report["engine"]["fallbacks"]` (ladder), `report["engine"]["scheduler"]` names the mode.
 - Per-read decision trace: `VNX_ENG_TRACE=<file>` appends one line per read: `index decision kind tag group symbol`, with
   decision `A` (accepted; address verified), `P` (pending), `D` (dropped) or `S<reason>` (skipped; the address of the
   frame it was confirmed against, or −1 when the rule records none). The campaign joins it with the simulator's
   ground truth.
 - Diagnostic mode: `engine_dedup=False` / `--no-engine-dedup` attempts every read (unchanged from V13).
+- Selection: `DecodeOptions.engine_scheduler` / SDK config key / CLI `--engine-scheduler {strand,corroborated}`; there is
+  no environment-variable override.
+- Overhead cuts that cannot change a decision: the exact-length projection fast path; a read's projection is computed
+  once (it depends on the read alone) and, before the rounds, in the thread pool; a read identical to the claim's
+  verified read reuses that read's projection; a screen is not repeated while the store is unchanged since the read's
+  last screen (`store_version`).
 - Determinism: the screens before the rounds read only tables written before them; all inserts happen serially in read
   order; the trace and spill files are identical across thread counts (tests).
 - Memory: strand mode replaces the V13 fingerprint tables (8 + 16 MiB + a 1 MiB Bloom filter) by a frame store of 2^18

@@ -15,9 +15,9 @@ use crate::io::Map;
 use crate::pool::Pool;
 use crate::pass1::{process, Fate, Flat, ProcOut, Scratch, PATH_FAST, PATH_SPEC, PATH_SYNC};
 use crate::scan::{convert, Rec, Scanner};
-use crate::sched::{block_firsts, frame_header, frame_words, header_dist, header_raw, orient_estimate, oriented, strand_budget,
-                   strand_segments, strand_unconfirmed, strand_windows, win_shifts, Bloom, FpMap, FrameStore, Lossy, WinMap,
-                   NFP, NS, NW, WIN_POS};
+use crate::sched::{block_firsts, frame_header, header_dist, header_raw, orient_estimate, oriented, strand_budget,
+                   strand_geometry, strand_project, strand_unconfirmed, strand_windows, win_shifts, Bloom, FpMap, FrameStore,
+                   Lossy, StrandGeom, WinMap, NFP, NS, NW, WIN_POS};
 
 pub enum EngErr {
     /// input outside what the engine reproduces exactly: the caller falls back to the reference path
@@ -78,6 +78,8 @@ pub const ST_STORE_EVICTIONS: usize = 41;
 pub const ST_SCREEN_CANDIDATES: usize = 42;
 pub const ST_SKIP_OTHER: usize = 43;
 pub const ST_SCHED_RESCUED: usize = 44;
+pub const ST_STORE_PARITY_FIXED: usize = 45;
+pub const ST_STORE_REJECTED: usize = 46;
 pub const N_STATS: usize = 48;
 
 // skip reasons (Batch::why)
@@ -280,6 +282,12 @@ struct Batch {
     why: Vec<u8>,
     /// address of the verified frame a skipped read was counted as a copy of ([-1; 4] = not known)
     conf: Vec<[i64; 4]>,
+    /// marker-anchored projections of the reads (n x fb bytes, n x fb read flags, computed flag), filled on demand
+    pproj: Vec<u8>,
+    pok: Vec<u8>,
+    pdone: Vec<u8>,
+    /// store version at a read's last screen against the stored frames (u64::MAX = never screened)
+    sver: Vec<u64>,
 }
 
 pub struct Engine<'c> {
@@ -300,8 +308,11 @@ pub struct Engine<'c> {
     // adaptive scheduler (cfg.strand): verified frames, window -> address candidates, strand-check geometry
     store: FrameStore,
     wmap: WinMap,
-    segs: Vec<(i64, usize, usize)>,
+    geom: Option<StrandGeom>,
     budget: Option<usize>,
+    /// number of insert events into the frame store / window map / Bloom filter (strand mode): a screen against an
+    /// unchanged store repeats its earlier answer, so it is not run again
+    store_version: u64,
     /// diagnostic per-read decision trace (VNX_ENG_TRACE=path; text, one line per read)
     trace: Option<BufWriter<File>>,
 }
@@ -315,14 +326,27 @@ fn push_cand(cand: &mut [u64; 4], nc: &mut usize, v: u64) {
     }
 }
 
+/// The marker-anchored projection of read `codes` (screen orientation `rc`) into `proj`/`ok`, computed once per read
+/// (`done`): it depends on the read alone, so every frame the read is compared with reuses it.
+#[allow(clippy::too_many_arguments)]
+#[inline]
+fn ensure_proj(cfg: &Cfg, g: &StrandGeom, codes: &[u8], rc: bool, buf: &mut Vec<u8>, proj: &mut [u8], ok: &mut [u8],
+               done: &mut u8) {
+    if *done == 0 {
+        let rd = oriented(codes, rc, buf);
+        strand_project(g, &cfg.mpos, &cfg.want, rd, proj, ok);
+        *done = 1;
+    }
+}
+
 /// Strand screen of one read against the stored verified frames (adaptive scheduler): the candidates are the address
 /// its raw header reads and the addresses of verified strands holding one of its windows (at most 4, `except` left
 /// out); a candidate is only a lead, the strand check decides. Returns (frames checked, the address of the confirming
 /// frame, read from its corrected header).
 #[allow(clippy::too_many_arguments)]
-fn strand_screen(cfg: &Cfg, store: &FrameStore, wmap: &WinMap, bloom: &Bloom, segs: &[(i64, usize, usize)],
-                 budget: usize, sc: &Screen, codes: &[u8], except: u64, fw: &mut Vec<u32>, buf: &mut Vec<u8>)
-                 -> (usize, Option<[i64; 4]>) {
+fn strand_screen(cfg: &Cfg, store: &FrameStore, wmap: &WinMap, bloom: &Bloom, g: &StrandGeom, budget: usize,
+                 sc: &Screen, codes: &[u8], except: u64, buf: &mut Vec<u8>, proj: &mut [u8], ok: &mut [u8],
+                 done: &mut u8) -> (usize, Option<[i64; 4]>) {
     let mut cand = [0u64; 4];
     let mut nc = 0usize;
     if sc.hk != 0 && sc.hk != except && bloom.maybe(sc.hk) {
@@ -337,16 +361,12 @@ fn strand_screen(cfg: &Cfg, store: &FrameStore, wmap: &WinMap, bloom: &Bloom, se
             }
         }
     }
-    if nc == 0 {
-        return (0, None);
-    }
-    let rd = oriented(codes, sc.rc, buf);
     let mut checked = 0;
     for &v in &cand[..nc] {
         let Some(fr) = store.get(v) else { continue };
         checked += 1;
-        frame_words(fr, fw);
-        if strand_unconfirmed(segs, cfg.band, cfg.t, rd, fw, budget) <= budget {
+        ensure_proj(cfg, g, codes, sc.rc, buf, proj, ok, done);
+        if strand_unconfirmed(proj, ok, fr) <= budget {
             let a = tentative(cfg, &fr[..HEADER_BYTES]).map_or([-1; 4], |h| [h.kind, h.tag, h.group, h.symbol]);
             return (checked, Some(a));
         }
@@ -371,12 +391,16 @@ impl<'c> Engine<'c> {
         let bits = cfg.table_bits as u32;
         // the adaptive scheduler keeps verified frames instead of the V13 fingerprint tables (similar memory)
         let (vb, sb) = if cfg.strand { (4, bits.saturating_sub(3)) } else { (bits, 2) };
-        let segs = if cfg.strand { strand_segments(&cfg.frame_pos64, cfg.fb) } else { Vec::new() };
-        let budget = if segs.is_empty() { None } else { strand_budget(cfg.r) };
+        let geom = if cfg.strand {
+            strand_geometry(&cfg.frame_pos64, cfg.fb, &cfg.mpos, &cfg.block, cfg.t, cfg.band)
+        } else {
+            None
+        };
+        let budget = geom.as_ref().and_then(|_| strand_budget(cfg.r));
         Ok(Engine { cfg, slots, done: Lossy::new(vb.saturating_sub(1)), windex: Lossy::new(vb),
                     bloom: Bloom::new(bits + 2), acc_w, pend_w,
                     store: FrameStore::new(sb, cfg.fb), wmap: WinMap::new(if cfg.strand { bits.saturating_sub(2) } else { 2 }),
-                    segs, budget,
+                    geom, budget, store_version: 0,
                     trace: match std::env::var_os("VNX_ENG_TRACE") {
                         Some(p) => Some(BufWriter::new(OpenOptions::new().append(true).create(true).open(p)?)),
                         None => None,
@@ -536,6 +560,14 @@ impl<'c> Engine<'c> {
             b.why.resize(n, 0);
             b.conf.clear();
             b.conf.resize(n, [-1; 4]);
+            if cfg.strand {
+                b.pproj.resize(n * cfg.fb, 0);
+                b.pok.resize(n * cfg.fb, 0);
+                b.pdone.clear();
+                b.pdone.resize(n, 0);
+                b.sver.clear();
+                b.sver.resize(n, u64::MAX);
+            }
         }
         // ---- grouping (serial). Reads are linked by their content: a read joins every provisional group one of its
         // windows (shifts -1, 0, +1) matches a shift-0 window of; union-find merges such groups. Header readings never
@@ -646,23 +678,33 @@ impl<'c> Engine<'c> {
                 if let (0, Some(budget)) = (self.dbg & 2, self.budget) {
                     let rp = SendPtr(rskip.as_mut_ptr());
                     let cp = SendPtr(self.b.conf.as_mut_ptr());
-                    let (store, wmap, segs) = (&self.store, &self.wmap, &self.segs);
+                    let (store, wmap, g) = (&self.store, &self.wmap, self.geom.as_ref().unwrap());
                     let (codes, offs, lens) = (&self.b.codes, &self.b.offs, &self.b.lens);
+                    let fb = cfg.fb;
+                    let (pp, po, pd) = (SendPtr(self.b.pproj.as_mut_ptr()), SendPtr(self.b.pok.as_mut_ptr()),
+                                        SendPtr(self.b.pdone.as_mut_ptr()));
+                    let (sv, version) = (SendPtr(self.b.sver.as_mut_ptr()), self.store_version);
                     let (ncand, nchk, nrej) = (AtomicUsize::new(0), AtomicUsize::new(0), AtomicUsize::new(0));
                     let rch = 1024usize;
                     let bloom = &self.bloom;
                     par_chunks(&self.pool, (n + rch - 1) / rch, &mut self.slots, |c, _s: &mut Slot| {
                         let (mut k0, mut k1, mut k2) = (0usize, 0usize, 0usize);
-                        let (mut fw, mut buf) = (Vec::new(), Vec::new());
+                        let mut buf = Vec::new();
                         for j in c * rch..((c + 1) * rch).min(n) {
                             let rd = &codes[offs[j] as usize..(offs[j] + lens[j]) as usize];
-                            let (k, hit) = strand_screen(cfg, store, wmap, bloom, segs, budget, &screen[j], rd, 0,
-                                                         &mut fw, &mut buf);
+                            // SAFETY: read j (its projection row and flag) belongs to this chunk only.
+                            let (proj, ok, done) = unsafe {
+                                (std::slice::from_raw_parts_mut(pp.get().add(j * fb), fb),
+                                 std::slice::from_raw_parts_mut(po.get().add(j * fb), fb), &mut *pd.get().add(j))
+                            };
+                            let (k, hit) = strand_screen(cfg, store, wmap, bloom, g, budget, &screen[j], rd, 0, &mut buf,
+                                                         proj, ok, done);
                             k0 += (k > 0) as usize;
                             k1 += k;
                             k2 += k - hit.is_some() as usize;
                             // SAFETY: read j belongs to this chunk only.
                             unsafe {
+                                *sv.get().add(j) = version;
                                 *rp.get().add(j) = hit.is_some();
                                 if let Some(a) = hit {
                                     *cp.get().add(j) = a;
@@ -805,13 +847,51 @@ impl<'c> Engine<'c> {
         // reading a clearly different address (identical payload windows at another address) form a new claim. A claim
         // whose members all failed the cheap paths gets full attempts (DP, reverse-complement retry, pending records),
         // best first, one per round, until one verifies.
+        // adaptive scheduler: the projections the claim closes will need (every member but the first of each claim; a
+        // projection depends on its read alone), computed here in the thread pool instead of serially in the rounds
+        if let (true, Some(g)) = (cfg.strand && cfg.dedup && self.budget.is_some(), self.geom.as_ref()) {
+            // (a member whose read is identical to the claim's first read reuses that read's projection: same codes, same
+            // screen orientation, same projection)
+            let mut need: Vec<usize> = Vec::new();
+            let rd_of = |b: &Batch, j: usize| -> std::ops::Range<usize> { b.offs[j] as usize..(b.offs[j] + b.lens[j]) as usize };
+            for (ci, &(a, e)) in ranges.iter().enumerate() {
+                if !bulk_init.contains(&ci) && e - a > 1 {
+                    let first = members[a];
+                    need.push(first);
+                    for &j in &members[a + 1..e] {
+                        if self.b.codes[rd_of(&self.b, j)] != self.b.codes[rd_of(&self.b, first)] {
+                            need.push(j);
+                        }
+                    }
+                }
+            }
+            let fb = cfg.fb;
+            let b = &mut self.b;
+            let (pp, po, pd) = (SendPtr(b.pproj.as_mut_ptr()), SendPtr(b.pok.as_mut_ptr()), SendPtr(b.pdone.as_mut_ptr()));
+            let (codes, offs, lens, screen) = (&b.codes, &b.offs, &b.lens, &b.screen);
+            let need = &need;
+            let pch = 1024usize;
+            par_chunks(&self.pool, (need.len() + pch - 1) / pch, &mut self.slots, |c, _s: &mut Slot| {
+                let mut buf = Vec::new();
+                for &j in &need[c * pch..((c + 1) * pch).min(need.len())] {
+                    let rd = &codes[offs[j] as usize..(offs[j] + lens[j]) as usize];
+                    // SAFETY: every read appears in one claim only, so row j is written by one chunk only.
+                    unsafe {
+                        ensure_proj(cfg, g, rd, screen[j].rc, &mut buf,
+                                    std::slice::from_raw_parts_mut(pp.get().add(j * fb), fb),
+                                    std::slice::from_raw_parts_mut(po.get().add(j * fb), fb), &mut *pd.get().add(j));
+                    }
+                }
+                Ok(())
+            })?;
+        }
         let mut next: Vec<usize> = vec![0; ranges.len()];
         let mut full_next: Vec<usize> = vec![0; ranges.len()];
         let mut open: Vec<usize> = (0..ranges.len()).collect();
         let mut cheap_todo: Vec<usize> = Vec::new();
         let mut full_todo: Vec<usize> = Vec::new();
         let per_round = 1usize;
-        let (mut fw, mut fw2, mut obuf): (Vec<u32>, Vec<u32>, Vec<u8>) = (Vec::new(), Vec::new(), Vec::new());
+        let mut obuf: Vec<u8> = Vec::new();
         // adaptive scheduler state: bulk claims, first round of a claim, reads whose cheap attempt already failed
         let mut bulk: Vec<bool> = vec![false; ranges.len()];
         let mut start: Vec<usize> = vec![1; ranges.len()];
@@ -838,12 +918,20 @@ impl<'c> Engine<'c> {
                     // earlier rounds included) found no confirmed copy; a failed cheap attempt is never repeated
                     let budget = self.budget;
                     let b = &mut self.b;
-                    let (store, wmap, bloom, segs) = (&self.store, &self.wmap, &self.bloom, &self.segs);
+                    let (store, wmap, bloom, geom) = (&self.store, &self.wmap, &self.bloom, &self.geom);
+                    let fb = cfg.fb;
+                    let version = self.store_version;
                     let mut screened = |j: usize, why: &mut [u8], conf: &mut [[i64; 4]], stats: &mut [i64; N_STATS]| -> bool {
-                        let Some(budget) = budget else { return false };
+                        let (Some(budget), Some(g)) = (budget, geom.as_ref()) else { return false };
+                        // decision-identical shortcut: the store has not changed since this read's last screen
+                        if b.sver[j] == version {
+                            return false;
+                        }
+                        b.sver[j] = version;
                         let rd = &b.codes[b.offs[j] as usize..(b.offs[j] + b.lens[j]) as usize];
-                        let (k, hit) = strand_screen(cfg, store, wmap, bloom, segs, budget, &b.screen[j], rd, 0,
-                                                     &mut fw2, &mut obuf);
+                        let (k, hit) = strand_screen(cfg, store, wmap, bloom, g, budget, &b.screen[j], rd, 0, &mut obuf,
+                                                     &mut b.pproj[j * fb..(j + 1) * fb], &mut b.pok[j * fb..(j + 1) * fb],
+                                                     &mut b.pdone[j]);
                         stats[ST_STRAND_CHECKS] += k as i64;
                         stats[ST_STRAND_REJECTS] += (k - hit.is_some() as usize) as i64;
                         if let Some(a) = hit {
@@ -939,12 +1027,27 @@ impl<'c> Engine<'c> {
                 // random accesses into tables larger than the caches)
                 if cfg.strand {
                     let fb = cfg.fb;
+                    // a frame accepted on the clean path (no erasure, CRC verified) was never checked by the inner code,
+                    // and the CRC does not cover the parity bytes: re-check every frame before it becomes a reference
+                    let mut fresh: Vec<usize> = Vec::new();
+                    let mut seen: std::collections::HashSet<u64> = std::collections::HashSet::new();
                     for &i in todo.iter() {
                         if self.b.fate[i] == Fate::Accepted {
                             let vk = self.b.vkey[i];
-                            if self.store.get(vk).is_some() {
+                            if self.store.get(vk).is_some() || !seen.insert(vk) {
                                 self.stats[ST_REDUNDANT_ACCEPTS] += 1;
+                            } else {
+                                fresh.push(i);
                             }
+                        }
+                    }
+                    let keep = self.codeword_check(&fresh)?;
+                    if keep.iter().any(|&k| k) {
+                        self.store_version += 1;
+                    }
+                    for (&i, &kept) in fresh.iter().zip(&keep) {
+                        if kept {
+                            let vk = self.b.vkey[i];
                             self.store.insert(vk, &self.b.vframe[i * fb..(i + 1) * fb]);
                             self.bloom.insert(vk);
                             for &w in &self.b.vwin[i] {
@@ -1012,29 +1115,40 @@ impl<'c> Engine<'c> {
                         // off and attempted, whatever their header reads
                         let fb = cfg.fb;
                         let mut other: Vec<usize> = Vec::new();
-                        frame_words(&self.b.vframe[i * fb..(i + 1) * fb], &mut fw);
                         for &j in &members[a..e] {
                             if self.b.attempted[j] || self.b.why[j] != 0 {
                                 continue;
                             }
-                            let ok = match self.budget {
-                                Some(budget) => {
+                            // the reference is the STORED frame of the claim's address (re-checked as a codeword
+                            // before it was stored), not the accepted read's own frame
+                            let ok = match (self.budget, self.geom.as_ref(), self.store.get(self.b.vkey[i])) {
+                                (Some(budget), Some(g), Some(fr)) => {
                                     self.stats[ST_STRAND_CHECKS] += 1;
-                                    let rd = oriented(&self.b.codes[self.b.offs[j] as usize..(self.b.offs[j] + self.b.lens[j]) as usize],
-                                                      self.b.screen[j].rc, &mut obuf);
-                                    strand_unconfirmed(&self.segs, cfg.band, cfg.t, rd, &fw, budget) <= budget
+                                    let b = &mut self.b;
+                                    // a read identical to the verified member's read has the same projection
+                                    let (rj, ri) = (b.offs[j] as usize..(b.offs[j] + b.lens[j]) as usize,
+                                                    b.offs[i] as usize..(b.offs[i] + b.lens[i]) as usize);
+                                    let src = if b.pdone[j] == 0 && b.codes[rj] == b.codes[ri] { i } else { j };
+                                    let rd = &b.codes[b.offs[src] as usize..(b.offs[src] + b.lens[src]) as usize];
+                                    ensure_proj(cfg, g, rd, b.screen[src].rc, &mut obuf,
+                                                &mut b.pproj[src * fb..(src + 1) * fb], &mut b.pok[src * fb..(src + 1) * fb],
+                                                &mut b.pdone[src]);
+                                    strand_unconfirmed(&b.pproj[src * fb..(src + 1) * fb], &b.pok[src * fb..(src + 1) * fb],
+                                                       fr) <= budget
                                 }
-                                None => false,
+                                _ => false,
                             };
                             // not a copy of this claim's strand: maybe a copy of another verified strand (a read whose
                             // damaged header put it in this claim), checked against the stored frames
-                            let ok = ok || match self.budget {
-                                Some(budget) => {
+                            let ok = ok || match (self.budget, self.geom.as_ref()) {
+                                (Some(budget), Some(g)) => {
                                     self.stats[ST_STRAND_REJECTS] += 1;
-                                    let rd = &self.b.codes[self.b.offs[j] as usize..(self.b.offs[j] + self.b.lens[j]) as usize];
-                                    let (k, hit) = strand_screen(cfg, &self.store, &self.wmap, &self.bloom, &self.segs,
-                                                                 budget, &self.b.screen[j], rd, self.b.vkey[i], &mut fw2,
-                                                                 &mut obuf);
+                                    let b = &mut self.b;
+                                    let rd = &b.codes[b.offs[j] as usize..(b.offs[j] + b.lens[j]) as usize];
+                                    let (k, hit) = strand_screen(cfg, &self.store, &self.wmap, &self.bloom, g, budget,
+                                                                 &b.screen[j], rd, b.vkey[i], &mut obuf,
+                                                                 &mut b.pproj[j * fb..(j + 1) * fb],
+                                                                 &mut b.pok[j * fb..(j + 1) * fb], &mut b.pdone[j]);
                                     self.stats[ST_STRAND_CHECKS] += k as i64;
                                     self.stats[ST_STRAND_REJECTS] += (k - hit.is_some() as usize) as i64;
                                     if let Some(a) = hit {
@@ -1042,7 +1156,7 @@ impl<'c> Engine<'c> {
                                     }
                                     hit.is_some()
                                 }
-                                None => false,
+                                _ => false,
                             };
                             if ok {
                                 self.b.why[j] = WHY_CLAIM_STRAND;
@@ -1242,6 +1356,58 @@ impl<'c> Engine<'c> {
         }
         self.stats[ST_NS_SPILL] += ns(tw);
         Ok(())
+    }
+
+    /// Make the corrected frames of accepted reads `idx` inner-code codewords before they are stored as references: each
+    /// is decoded by the inner RS code without erasures; a codeword stays as is, a frame whose parity bytes (only) were
+    /// wrong gets the re-derived parity (`store_parity_fixed`), anything else is not stored (`store_rejected`). Returns
+    /// which frames may be stored. The accepted records themselves are unchanged.
+    fn codeword_check(&mut self, idx: &[usize]) -> Result<Vec<bool>, EngErr> {
+        let cfg = self.cfg;
+        let (fb, r, m) = (cfg.fb, cfg.r, idx.len());
+        if m == 0 {
+            return Ok(Vec::new());
+        }
+        if r == 0 {
+            return Ok(vec![true; m]);
+        }
+        let mut cw = Vec::with_capacity(m * fb);
+        for &i in idx {
+            cw.extend_from_slice(&self.b.vframe[i * fb..(i + 1) * fb]);
+        }
+        let mut out = vec![0u8; m * fb];
+        let mut ok = vec![0u8; m];
+        let mut errata = vec![0i64; m];
+        let (op, kp, ep) = (SendPtr(out.as_mut_ptr()), SendPtr(ok.as_mut_ptr()), SendPtr(errata.as_mut_ptr()));
+        let cwr = &cw;
+        let ch = 1024usize;
+        par_chunks(&self.pool, (m + ch - 1) / ch, &mut self.slots, |c, _s: &mut Slot| {
+            let (a, e) = (c * ch, ((c + 1) * ch).min(m));
+            // SAFETY: rows a..e of cw/out and entries a..e of ok/errata, disjoint per chunk; no erasure array (null).
+            let rc = unsafe {
+                ffi::vnx_rs_decode_batch((e - a) as i64, fb as i32, r as i32, cwr[a * fb..].as_ptr(), std::ptr::null(),
+                                         op.get().add(a * fb), kp.get().add(a), ep.get().add(a), cfg.rs_level)
+            };
+            if rc != 0 {
+                return Err(EngErr::Kernel(format!("inner RS kernel error {}", rc)));
+            }
+            Ok(())
+        })?;
+        let msg = fb - r;
+        let mut keep = vec![false; m];
+        for (k, &i) in idx.iter().enumerate() {
+            let (a, b) = (&cw[k * fb..(k + 1) * fb], &out[k * fb..(k + 1) * fb]);
+            if ok[k] == 0 || a[..msg] != b[..msg] {
+                self.stats[ST_STORE_REJECTED] += 1;
+            } else {
+                if a != b {
+                    self.stats[ST_STORE_PARITY_FIXED] += 1;
+                    self.b.vframe[i * fb..(i + 1) * fb].copy_from_slice(b);
+                }
+                keep[k] = true;
+            }
+        }
+        Ok(keep)
     }
 
     /// Orient and run the per-read function on reads `todo` (ascending) of the batch, in parallel chunks. Each chunk

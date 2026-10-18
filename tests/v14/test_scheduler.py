@@ -302,3 +302,37 @@ def test_cli_engine_scheduler_flag(pools, tmp_path):
     eng = json.loads(rep.read_text())["result"]["engine"]
     assert eng["scheduler"] == "corroborated" and eng["pass1"]["skip_claim_header"] > 0
     assert (tmp_path / "o.vnx").read_bytes() == pool["archive"].read_bytes()
+
+
+def test_a_reading_with_a_parity_error_does_not_poison_the_frame_store(tmp_path):
+    """The first reading of every strand carries one substitution in an inner-parity base. Its frame passes the clean
+    path (no erasure, CRC verified: the CRC does not cover the parity), so it is accepted; the frame stored as the
+    strand's reference must still be the codeword (re-checked by the inner code before it is stored). On the
+    4-parity-byte layout (exact agreement, budget 0) the clean copies that follow are then confirmed and skipped."""
+    from vnxdna.dnaenc.constraints import iter_fasta
+    pool = _pool(tmp_path / "hd", "random", 32 * KIB, "zstd", {"profile": "v6-high-dropout"},
+                 {"sequencing.substitution.rate": 0.0, **_cov(1)}, 71950, False)
+    strands = [seq for _, seq in iter_fasta(pool["dir"] / "s.fasta")]
+    flip = {"A": "C", "C": "G", "G": "T", "T": "A"}
+    with open(tmp_path / "r.fasta", "w") as f:
+        for i, seq in enumerate(strands):
+            bad = seq[:-3] + flip[seq[-3]] + seq[-2:]           # a base of the last inner-parity byte
+            f.write(f">p{i}\n{bad}\n>c{i}a\n{seq}\n>c{i}b\n{seq}\n")
+    lay = pool["lay"]
+    d = tmp_path / "spill"
+    d.mkdir()
+    Spill(d, 2, lay.payload_bytes, lay.frame_nt).close()
+    st = re_.run_pass1(tmp_path / "r.fasta", d, lay, DecodeOptions(), 2, fmt="fasta", threads=1, batch=4096)
+    n = len(strands)
+    assert st["store_parity_fixed"] == n                         # every first reading had its parity re-derived
+    assert st["skipped"] == 2 * n and st["attempted"] == n       # the clean copies match the stored codeword exactly
+    res = de.decode_reads(tmp_path / "r.fasta", tmp_path / "o.vnx", DecodeOptions(), overwrite=True)
+    assert res.status == "SUCCESS" and (tmp_path / "o.vnx").read_bytes() == pool["archive"].read_bytes()
+
+
+def test_cli_engine_scheduler_rejects_unknown_values(pools, tmp_path):
+    from typer.testing import CliRunner
+    from vnxdna.commands.cli import app
+    pool = pools("random-ordered")
+    r = CliRunner().invoke(app, ["decode", str(pool["reads"]), "-o", str(tmp_path / "o.vnx"), "--engine-scheduler", "fast"])
+    assert r.exit_code != 0 and not (tmp_path / "o.vnx").exists()

@@ -37,7 +37,7 @@ STAT_NAMES = ("reads", "fast", "sync", "speculative", "reverse_complement", "pen
               # scheduler decisions (docs/V14_SCHEDULER.md): one skip reason per read not attempted
               "skip_screen_group", "skip_claim_header", "skip_claim_near", "skip_claim_deferred", "skip_screen_strand",
               "skip_claim_strand", "strand_checks", "strand_rejects", "redundant_accepts", "store_evictions",
-              "screen_candidates", "skip_other", "sched_rescued", "reserved45", "reserved46", "reserved47")
+              "screen_candidates", "skip_other", "sched_rescued", "store_parity_fixed", "store_rejected", "reserved47")
 #: engine address schedulers: "strand" (V14 adaptive: a read is skipped only when the strand check confirms it against a
 #: verified frame) and "corroborated" (the corrected V13 rule, kept for comparison); dedup=False attempts every read
 SCHEDULERS = ("strand", "corroborated")

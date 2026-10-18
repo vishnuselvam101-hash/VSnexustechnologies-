@@ -427,10 +427,15 @@ impl FpMap {
 
 // ------------------------------------------------------------------------------------------- strand corroboration
 // The adaptive scheduler's identity test (docs/V14_SCHEDULER.md). A read is counted as a copy of a verified strand K
-// only when the read, projected onto K's template, agrees with K's corrected frame on all but at most `budget` frame
-// bytes. The frame is an inner Reed-Solomon codeword with r parity bytes (MDS, minimum distance r + 1 bytes over the
-// whole frame, header and CRC included), so every other frame K' differs from K in at least r + 1 bytes and a reading
-// of K' can only pass when the channel turned at least margin = r + 1 - budget of those bytes into exactly K's bytes.
+// only when the read's marker-anchored projection (strand_project: one shift per marker period, set by the read's own
+// markers, never by K) agrees with K's stored frame on all but at most `budget` bytes, a Hamming count over frame bytes.
+// The stored frame is an inner Reed-Solomon codeword (re-checked before it is stored) with r parity bytes: MDS, minimum
+// distance r + 1 bytes over the whole frame, header and CRC included. Indels are allowed only as whole unconfirmed
+// segments (a shift change costs the segment holding it) and must be confirmed by two exact markers, so an error-free
+// reading of any other codeword K' is compared unshifted and leaves >= r + 1 unconfirmed bytes, whatever the payload
+// (chosen plaintexts included); with channel errors it passes only if the channel turned margin = r + 1 - budget of the
+// differing bytes into exactly K's bytes, or misplaced markers on both sides of segments (two exact false markers per
+// segment). That last part is a probability under the channel model, not a guarantee; a skip only withholds a read.
 // Payload windows, the header key and the CRC are never evidence on their own.
 
 /// Margin (bytes another codeword must lose to the channel to pass as K) when the inner code is long enough.
@@ -438,8 +443,6 @@ pub const STRAND_MARGIN: usize = 8;
 /// Smallest margin ever used: shorter inner codes (r + 1 < 8) need exact agreement on every frame byte (budget 0, margin
 /// r + 1); below this the strand check is never applied.
 pub const STRAND_MARGIN_MIN: usize = 5;
-/// Longest run of frame bytes compared at one shift (a segment between markers is split into such pieces).
-pub const SEG_MAX: usize = 6;
 
 /// Unconfirmed-byte budget of the strand check for an inner code with `r` parity bytes: r + 1 - min(STRAND_MARGIN,
 /// r + 1), or None when r + 1 < STRAND_MARGIN_MIN (the check is then never applied and every read is attempted).
@@ -450,34 +453,159 @@ pub fn strand_budget(r: usize) -> Option<usize> {
     Some(r + 1 - (r + 1).min(STRAND_MARGIN))
 }
 
-/// Segments of the strand check: (template position of the first base, first frame byte, bytes); every segment is a
-/// run of whole frame bytes whose bases are contiguous on the template (no marker inside), at most SEG_MAX bytes.
-/// Empty when a frame byte's four bases are not contiguous (the check is then never applied).
-pub fn strand_segments(fp: &[i64], fb: usize) -> Vec<(i64, usize, usize)> {
-    let mut out = Vec::new();
-    if fp.len() < 4 * fb {
-        return out;
+/// Strand-check geometry: the frame's bytes in segments (runs of whole bytes contiguous on the template, i.e. one marker
+/// period), each with the marker block just before and just after it (None = the read start / the read end), and the
+/// marker blocks as ranges of marker indices.
+pub struct StrandGeom {
+    pub segs: Vec<StrandSeg>,
+    pub blocks: Vec<(usize, usize)>,
+    pub fb: usize,
+    pub t: usize,
+    pub band: i64,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct StrandSeg {
+    pub q0: i64,
+    pub j0: usize,
+    pub nb: usize,
+    pub left: Option<usize>,
+    pub right: Option<usize>,
+}
+
+/// Geometry of the strand check, or None when a frame byte's bases are not contiguous on the template or a gap between
+/// frame runs is not a marker block (the check is then never applied).
+pub fn strand_geometry(fp: &[i64], fb: usize, mpos: &[i64], block: &[i64], t: usize, band: i64) -> Option<StrandGeom> {
+    if fp.len() < 4 * fb || block.len() != mpos.len() {
+        return None;
     }
+    let mut blocks: Vec<(usize, usize)> = Vec::new();
+    for m in 0..mpos.len() {
+        if m == 0 || block[m] != block[m - 1] {
+            blocks.push((m, m + 1));
+        } else {
+            blocks.last_mut().unwrap().1 = m + 1;
+        }
+    }
+    let block_at = |q: i64| -> Option<usize> {
+        let m = mpos.iter().position(|&p| p == q)?;
+        blocks.iter().position(|&(a, e)| a <= m && m < e)
+    };
+    let mut segs: Vec<StrandSeg> = Vec::new();
     for j in 0..fb {
         let q = fp[4 * j];
         if (1..4).any(|k| fp[4 * j + k] != q + k as i64) {
-            return Vec::new();
+            return None;
         }
-        match out.last_mut() {
-            Some((q0, _, nb)) if *nb < SEG_MAX && *q0 + 4 * *nb as i64 == q => *nb += 1,
-            _ => out.push((q, j, 1usize)),
+        match segs.last_mut() {
+            Some(sg) if sg.q0 + 4 * sg.nb as i64 == q => sg.nb += 1,
+            _ => {
+                let left = if q == 0 { None } else { Some(block_at(q - 1)?) };
+                segs.push(StrandSeg { q0: q, j0: j, nb: 1, left, right: None });
+            }
         }
     }
-    out
+    let n = segs.len();
+    for k in 0..n {
+        let end = segs[k].q0 + 4 * segs[k].nb as i64;
+        segs[k].right = if k + 1 < n {
+            segs[k + 1].left
+        } else if (end as usize) < t {
+            Some(block_at(end)?)
+        } else {
+            None
+        };
+    }
+    Some(StrandGeom { segs, blocks, fb, t, band })
 }
 
-/// The four bases of every frame byte as one little-endian word (first base in the low byte): the unit the strand
-/// check compares.
-pub fn frame_words(frame: &[u8], out: &mut Vec<u32>) {
-    out.clear();
-    out.extend(frame.iter().map(|&b| {
-        ((b >> 6) & 3) as u32 | (((b >> 4) & 3) as u32) << 8 | (((b >> 2) & 3) as u32) << 16 | ((b & 3) as u32) << 24
-    }));
+/// Marker-anchored projection of a read (`rd`, oriented) onto the frame: `proj[j]` = the read's byte at frame byte j and
+/// `ok[j]` = 1 when it was read at an anchored shift (else the byte counts as unconfirmed). Every marker block is located
+/// at the only exact match of all its bases among the shifts c, c - 1, c + 1, c - 2, c + 2 (|shift| <= band) around
+/// the previous anchored shift c; a block with no exact match, or with several (ambiguous), has no anchor. The read start (shift 0) and the read end
+/// (shift = read length - template length) anchor the first and the last segment. A segment is read at shift d when
+/// both its anchors are d, or when every anchor it has equals the established shift E (no change; E starts at 0 and
+/// becomes the shift of every segment read); otherwise (a shift change inside it, or one seen by a single marker) none of
+/// its bytes is read. So a shift change is accepted only once two exact markers agree on it, every segment holding an
+/// indel is unconfirmed as a whole (the charge for a shift change), the bytes of a segment are read at ONE shift, and the
+/// projection depends on the read alone, never on the frame it is compared with.
+pub fn strand_project(g: &StrandGeom, mpos: &[i64], want: &[u8], rd: &[u8], proj: &mut [u8], ok: &mut [u8]) {
+    let l = rd.len() as i64;
+    // Fast path, decision-identical to the general one: a read of template length whose every marker base reads at
+    // shift 0 has shift 0 in every block's candidate set, so each anchor is 0 or none (ambiguous), the end anchor is 0
+    // and the established shift stays 0: every segment is read at shift 0.
+    if l == g.t as i64 && mpos.iter().zip(want).all(|(&q, &w)| rd[q as usize] == w) {
+        for sg in &g.segs {
+            for b in 0..sg.nb {
+                let q = (sg.q0 + 4 * b as i64) as usize;
+                let w = &rd[q..q + 4];
+                let j = sg.j0 + b;
+                proj[j] = (w[0] << 6) | ((w[1] & 3) << 4) | ((w[2] & 3) << 2) | (w[3] & 3);
+                ok[j] = (w[0] | w[1] | w[2] | w[3] < 4) as u8;
+            }
+        }
+        return;
+    }
+    let mut anchor: Vec<Option<i64>> = Vec::with_capacity(g.blocks.len());
+    let mut c = 0i64;
+    for &(m0, m1) in &g.blocks {
+        let mut found = None;
+        let mut hits = 0;
+        for d in [c, c - 1, c + 1, c - 2, c + 2] {
+            if d.abs() > g.band {
+                continue;
+            }
+            if (m0..m1).all(|m| {
+                let q = mpos[m] + d;
+                q >= 0 && q < l && rd[q as usize] == want[m]
+            }) {
+                found = Some(d);
+                hits += 1;
+            }
+        }
+        if hits > 1 {
+            found = None;                                // ambiguous (the marker also reads at a neighbouring shift)
+        }
+        if let Some(d) = found {
+            c = d;
+        }
+        anchor.push(found);
+    }
+    let mut est = 0i64;
+    for sg in &g.segs {
+        let la = sg.left.map_or(Some(0), |b| anchor[b]);
+        let ra = sg.right.map_or(Some(l - g.t as i64), |b| anchor[b]);
+        let d = if la.is_some() && la == ra {
+            la
+        } else if la.map_or(true, |x| x == est) && ra.map_or(true, |x| x == est) {
+            Some(est)
+        } else {
+            None
+        };
+        for b in 0..sg.nb {
+            let j = sg.j0 + b;
+            ok[j] = 0;
+            if let Some(d) = d {
+                let q = sg.q0 + 4 * b as i64 + d;
+                if q >= 0 && q + 4 <= l {
+                    let w = &rd[q as usize..q as usize + 4];
+                    if w.iter().all(|&x| x < 4) {
+                        proj[j] = (w[0] << 6) | (w[1] << 4) | (w[2] << 2) | w[3];
+                        ok[j] = 1;
+                    }
+                }
+            }
+        }
+        if let Some(d) = d {
+            est = d;
+        }
+    }
+}
+
+/// Frame bytes a projection does not confirm against `frame`: unread, or different (a plain Hamming count over bytes).
+#[inline]
+pub fn strand_unconfirmed(proj: &[u8], ok: &[u8], frame: &[u8]) -> usize {
+    proj.iter().zip(ok).zip(frame).filter(|((&p, &o), &f)| o == 0 || p != f).count()
 }
 
 /// The read in the given orientation: the codes themselves, or their reverse complement written into `buf` (N stays a
@@ -489,71 +617,6 @@ pub fn oriented<'a>(codes: &'a [u8], rc: bool, buf: &'a mut Vec<u8>) -> &'a [u8]
     buf.clear();
     buf.extend(codes.iter().rev().map(|&c| if c < 4 { 3 - c } else { 4 }));
     &buf[..]
-}
-
-/// Strand check of one read (`rd`, oriented) against a verified frame (`fw`, from frame_words): walks the segments
-/// with a running shift d (read position = template position + d), taking for each segment the shift in d, d - 1,
-/// d + 1, d - 2, d + 2 (|d| <= band) with the most frame bytes equal (all four bases); the segment counts only when at
-/// least half its bytes agree at that shift (else every byte of it is unconfirmed and d is kept). Returns the number of
-/// unconfirmed bytes, stopping early once it exceeds `budget` (the read is then not a confirmed copy). N bases and
-/// positions outside the read never agree. A pre-check scores the last two segments first, anchored at the read's end
-/// (shift = read length - template length `t`, +-2): distinct strands with identical payloads differ there (CRC and
-/// inner parity), so they are rejected without the walk; the pre-check can only reject, never confirm.
-pub fn strand_unconfirmed(segs: &[(i64, usize, usize)], band: i64, t: usize, rd: &[u8], fw: &[u32], budget: usize)
-                          -> usize {
-    let l = rd.len() as i64;
-    #[inline(always)]
-    fn word(c: &[u8]) -> u32 {
-        u32::from_le_bytes([c[0], c[1], c[2], c[3]])
-    }
-    let count = |q0: i64, j0: usize, nb: usize, s: i64| -> usize {
-        let a = q0 + s;
-        let want = &fw[j0..j0 + nb];
-        if a >= 0 && a + 4 * nb as i64 <= l {
-            let a = a as usize;
-            rd[a..a + 4 * nb].chunks_exact(4).zip(want).filter(|(c, &w)| word(c) == w).count()
-        } else {
-            (0..nb).filter(|&b| {
-                let q = a + 4 * b as i64;
-                q >= 0 && q + 4 <= l && word(&rd[q as usize..q as usize + 4]) == want[b]
-            }).count()
-        }
-    };
-    let score = |q0: i64, j0: usize, nb: usize, d: i64| -> (usize, i64) {
-        let mut best = count(q0, j0, nb, d);
-        let mut bd = d;
-        if best + 1 < nb {
-            for s in [d - 1, d + 1, d - 2, d + 2] {
-                if s.abs() > band {
-                    continue;
-                }
-                let c = count(q0, j0, nb, s);
-                if c > best {
-                    best = c;
-                    bd = s;
-                }
-            }
-        }
-        if best > 0 && 2 * best >= nb { (nb - best, bd) } else { (nb, d) }
-    };
-    if segs.len() >= 4 {
-        let d_end = (l - t as i64).clamp(-band, band);
-        let tail: usize = segs[segs.len() - 2..].iter().map(|&(q0, j0, nb)| score(q0, j0, nb, d_end).0).sum();
-        if tail > budget {
-            return tail;
-        }
-    }
-    let mut d = 0i64;
-    let mut unconf = 0usize;
-    for &(q0, j0, nb) in segs {
-        let (u, nd) = score(q0, j0, nb, d);
-        d = nd;
-        unconf += u;
-        if unconf > budget {
-            break;
-        }
-    }
-    unconf
 }
 
 /// Fixed-size, 4-way set-associative store of verified frames keyed by the address fingerprint (lossy: an insert into
@@ -662,8 +725,15 @@ mod tests {
         (fp, q as usize)
     }
 
+    /// the format's 3-base marker table (ACG, TGC, CAT, GTA), rotating
+    const MK: [[u8; 3]; 4] = [[0, 1, 2], [3, 2, 1], [1, 0, 3], [2, 3, 0]];
+
+    fn marker_base(q: usize) -> u8 {
+        MK[(q / 27) % 4][(q - 24) % 27]
+    }
+
     fn strand(fp: &[i64], t: usize, frame: &[u8]) -> Vec<u8> {
-        let mut s = vec![1u8; t];                         // markers: any fixed bases
+        let mut s: Vec<u8> = (0..t).map(|q| if q >= 24 && (q - 24) % 27 < 3 { marker_base(q) } else { 9 }).collect();
         for (f, &q) in fp.iter().enumerate() {
             s[q as usize] = (frame[f / 4] >> (6 - 2 * (f % 4))) & 3;
         }
@@ -674,57 +744,201 @@ mod tests {
         (0..fb as u64).map(|i| (fmix(seed * 1000 + i) >> 13) as u8).collect()
     }
 
-    #[test]
-    fn segments_follow_marker_runs_and_cap_at_six_bytes() {
-        let (fp, _) = geometry(70);
-        let segs = strand_segments(&fp, 70);
-        assert_eq!(segs.iter().map(|s| s.2).sum::<usize>(), 70);
-        assert!(segs.iter().all(|s| s.2 <= SEG_MAX));
-        assert_eq!(segs[0], (0, 0, 6));
-        assert_eq!(segs[1], (27, 6, 6));               // after the first marker
-        let mut bad = fp.clone();
-        bad[2] += 1;                                     // a byte split by a gap: the check is never applied
-        assert!(strand_segments(&bad, 70).is_empty());
-        assert!(strand_segments(&fp[..10], 70).is_empty());
+    /// marker positions (3 bases after every 24 frame bases, all code 1) and their block ids, for `geometry`
+    fn markers(fb: usize) -> (Vec<i64>, Vec<u8>, Vec<i64>) {
+        let (fp, t) = geometry(fb);
+        let mut mpos = Vec::new();
+        let mut q = 0usize;
+        let mut fi = 0usize;
+        while q < t {
+            if fi < fp.len() && fp[fi] == q as i64 {
+                fi += 1;
+            } else {
+                mpos.push(q as i64);
+            }
+            q += 1;
+        }
+        let block = mpos.iter().map(|&p| p / 27).collect();
+        let want = mpos.iter().map(|&p| marker_base(p as usize)).collect();
+        (mpos, want, block)
+    }
+
+    struct Check {
+        g: StrandGeom,
+        mpos: Vec<i64>,
+        want: Vec<u8>,
+        fp: Vec<i64>,
+        t: usize,
+    }
+
+    impl Check {
+        fn new(fb: usize) -> Check {
+            let (fp, t) = geometry(fb);
+            let (mpos, want, block) = markers(fb);
+            Check { g: strand_geometry(&fp, fb, &mpos, &block, t, 8).unwrap(), mpos, want, fp, t }
+        }
+        fn unconfirmed(&self, rd: &[u8], frame: &[u8]) -> usize {
+            let (mut p, mut o) = (vec![0u8; frame.len()], vec![0u8; frame.len()]);
+            strand_project(&self.g, &self.mpos, &self.want, rd, &mut p, &mut o);
+            strand_unconfirmed(&p, &o, frame)
+        }
     }
 
     #[test]
-    fn strand_check_confirms_noisy_copies_and_rejects_other_frames() {
+    fn geometry_follows_marker_periods() {
+        let c = Check::new(70);
+        assert_eq!(c.g.segs.len(), 12);
+        assert_eq!(c.g.segs.iter().map(|s| s.nb).sum::<usize>(), 70);
+        assert_eq!(c.g.segs[0], StrandSeg { q0: 0, j0: 0, nb: 6, left: None, right: Some(0) });
+        assert_eq!(c.g.segs[1].q0, 27);
+        assert_eq!(c.g.segs[11].right, None);
+        let (fp, t) = geometry(70);
+        let (mpos, _, block) = markers(70);
+        let mut bad = fp.clone();
+        bad[2] += 1;                                     // a byte split by a gap: the check is never applied
+        assert!(strand_geometry(&bad, 70, &mpos, &block, t, 8).is_none());
+        assert!(strand_geometry(&fp[..10], 70, &mpos, &block, t, 8).is_none());
+        let flat: Vec<i64> = (0..280).collect();         // no markers: one segment anchored by the read ends
+        let g = strand_geometry(&flat, 70, &[], &[], 280, 8).unwrap();
+        assert_eq!(g.segs.len(), 1);
+    }
+
+    #[test]
+    fn strand_check_confirms_noisy_copies_and_charges_indels() {
         let fb = 70;
-        let (fp, t) = geometry(fb);
-        let segs = strand_segments(&fp, fb);
+        let c = Check::new(fb);
         let k = frame_of(1, fb);
-        let mut fw = Vec::new();
-        frame_words(&k, &mut fw);
-        let s = strand(&fp, t, &k);
-        let u = |rd: &[u8]| strand_unconfirmed(&segs, 8, t, rd, &fw, 9);
-        assert_eq!(u(&s), 0);
+        let s = strand(&c.fp, c.t, &k);
+        assert_eq!(c.unconfirmed(&s, &k), 0);
         let mut sub = s.clone();                         // three substitutions in three frame bytes
         for q in [5usize, 100, 200] {
             sub[q] = (sub[q] + 1) & 3;
         }
-        assert_eq!(u(&sub), 3);
-        let mut del = s.clone();                         // a deletion inside the header
+        assert_eq!(c.unconfirmed(&sub, &k), 3);
+        let mut mk = s.clone();                          // a substituted marker base: no shift change, nothing lost
+        mk[c.mpos[4] as usize] = (mk[c.mpos[4] as usize] + 1) & 3;
+        assert_eq!(c.unconfirmed(&mk, &k), 0);
+        let mut del = s.clone();                         // a deletion inside the header: that segment is charged
         del.remove(10);
-        assert!(u(&del) <= 4, "{}", u(&del));
-        let mut ins = s.clone();                         // an insertion in the payload and a deletion later
+        assert_eq!(c.unconfirmed(&del, &k), 6);
+        let mut ins = s.clone();                         // an insertion and a deletion: two segments charged
         ins.insert(120, 2);
         ins.remove(250);
-        assert!(u(&ins) <= 6, "{}", u(&ins));
+        assert_eq!(c.unconfirmed(&ins, &k), 12);
         let mut n = s.clone();
         n[50] = 4;                                       // an N never agrees
-        assert_eq!(u(&n), 1);
-        assert!(u(&s[..150]) > 9);                       // positions past the read end never agree
-        // a distinct frame with the same payload bytes 10..50 and a header one bit away: rejected
-        let mut other = frame_of(2, fb);
-        other[..10].copy_from_slice(&k[..10]);
-        other[9] ^= 1;
-        other[10..50].copy_from_slice(&k[10..50]);
-        assert!(u(&strand(&fp, t, &other)) > 9);
-        // the reverse complement of a copy, oriented back, is the copy
-        let rc: Vec<u8> = s.iter().rev().map(|&c| 3 - c).collect();
+        assert_eq!(c.unconfirmed(&n, &k), 1);
+        assert!(c.unconfirmed(&s[..150], &k) > 9);       // positions past the read end never agree
+        let rc: Vec<u8> = s.iter().rev().map(|&x| 3 - x).collect();
         let mut buf = Vec::new();
-        assert_eq!(u(oriented(&rc, true, &mut buf)), 0);
+        assert_eq!(c.unconfirmed(oriented(&rc, true, &mut buf), &k), 0);
+    }
+
+    #[test]
+    fn exact_length_fast_path_equals_the_general_projection() {
+        // the general path on a copy of the read with one extra base past the template end (length differs, so the fast
+        // path is not taken) must read the same bytes as the fast path on the template-length read, apart from the
+        // last segment, whose end anchor then differs
+        let fb = 70;
+        let c = Check::new(fb);
+        for seed in 0..50u64 {
+            let k = frame_of(100 + seed, fb);
+            let mut s = strand(&c.fp, c.t, &k);
+            s[(seed as usize * 37) % c.t] = ((seed as u8) * 3) & 3;      // one substitution anywhere (marker or frame)
+            if seed % 7 == 0 {
+                s[40] = 4;                                              // an N
+            }
+            let (mut p1, mut o1) = (vec![0u8; fb], vec![0u8; fb]);
+            strand_project(&c.g, &c.mpos, &c.want, &s, &mut p1, &mut o1);
+            let mut s2 = s.clone();
+            s2.push(0);
+            let (mut p2, mut o2) = (vec![0u8; fb], vec![0u8; fb]);
+            strand_project(&c.g, &c.mpos, &c.want, &s2, &mut p2, &mut o2);
+            let last = c.g.segs.last().unwrap().j0;
+            for j in 0..last {
+                assert_eq!((o1[j], o1[j] == 0 || p1[j] == p2[j]), (o2[j], true), "seed {} byte {}", seed, j);
+            }
+        }
+    }
+
+    #[test]
+    fn near_minimum_distance_pairs_need_margin_channel_errors() {
+        // K' differs from K in exactly r + 1 = 17 bytes (the MDS minimum): an error-free reading of K' leaves 17
+        // unconfirmed bytes; only after the channel turned 8 of them into K's bytes (the margin) does it pass budget 9
+        let fb = 70;
+        let c = Check::new(fb);
+        let k = frame_of(3, fb);
+        let mut k2 = k.clone();
+        let diff: Vec<usize> = (0..17).map(|i| 2 + 4 * i).collect();
+        for &j in &diff {
+            k2[j] ^= 0x41;
+        }
+        let read = strand(&c.fp, c.t, &k2);
+        assert_eq!(c.unconfirmed(&read, &k), 17);
+        let mut conv = k2.clone();
+        for &j in &diff[..7] {
+            conv[j] = k[j];
+        }
+        assert_eq!(c.unconfirmed(&strand(&c.fp, c.t, &conv), &k), 10);
+        conv[diff[7]] = k[diff[7]];
+        assert_eq!(c.unconfirmed(&strand(&c.fp, c.t, &conv), &k), 9);
+    }
+
+    fn unstrand(fp: &[i64], s: &[u8], fb: usize) -> Vec<u8> {
+        let mut fr = vec![0u8; fb];
+        for (f, &q) in fp.iter().enumerate() {
+            fr[f / 4] |= (s[q as usize] & 3) << (6 - 2 * (f % 4));
+        }
+        fr
+    }
+
+    #[test]
+    fn review_probe_shifted_frame_far_in_hamming_is_not_confirmed() {
+        // review finding: K' = K with one base inserted and one deleted inside the frame bases (the markers stay where
+        // the encoder writes them) and an address bit flipped is >= r + 1 bytes from K; a per-segment shift search
+        // confirmed an error-free reading of K' as a copy of K. Marker-anchored projection compares it unshifted.
+        let fb = 70;
+        let c = Check::new(fb);
+        let k = frame_of(1, fb);
+        let s = strand(&c.fp, c.t, &k);
+        let mut seen = 0;
+        for a in 10..60 {
+            for b in a + 2..66 {
+                let (qa, qb) = (c.fp[4 * a] as usize, c.fp[4 * b] as usize);
+                let mut s2 = s.clone();
+                s2.insert(qa, 0);
+                s2.remove(qb + 1);
+                let mut k2 = unstrand(&c.fp, &s2, fb);
+                k2[9] ^= 1;
+                let ham = k.iter().zip(&k2).filter(|(x, y)| x != y).count();
+                if ham >= 17 {
+                    seen += 1;
+                    let u = c.unconfirmed(&strand(&c.fp, c.t, &k2), &k);
+                    assert!(u >= ham, "K' ({}, {}) {} bytes away: {} unconfirmed", a, b, ham, u);
+                }
+            }
+        }
+        assert!(seen > 100);
+    }
+
+    #[test]
+    fn indel_variant_of_a_verified_frame_is_not_confirmed() {
+        // K' = K with its frame bases shifted by one base from byte 30 on (a planted shift), read with a channel
+        // insertion exactly where the shift starts: the read's content then lines up with K again, but its markers
+        // move with the insertion, so the projection reads the content at the markers' shift and K is not confirmed
+        let fb = 70;
+        let c = Check::new(fb);
+        let k = frame_of(5, fb);
+        let s = strand(&c.fp, c.t, &k);
+        let q = c.fp[4 * 30] as usize;
+        let mut s2 = s.clone();
+        s2.remove(q);
+        s2.insert(c.fp[4 * 60] as usize, 1);             // keep the length
+        let k2 = unstrand(&c.fp, &s2, fb);
+        let mut read = strand(&c.fp, c.t, &k2);
+        read.insert(q, s[q]);                            // channel insertion restores K's content after q
+        let u = c.unconfirmed(&read, &k);
+        assert!(u > 9, "{} unconfirmed", u);
     }
 
     #[test]
