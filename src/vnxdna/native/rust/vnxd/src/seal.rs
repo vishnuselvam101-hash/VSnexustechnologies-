@@ -21,15 +21,8 @@ use crate::digest::{hex, parse_hex, sha256};
 use crate::error::{err, ErrorCode, Result, VnxError};
 use crate::json::{obj, Value};
 use crate::media::{CommitReceipt, MediaAdapter, MediaInfo};
-use crate::proto::{self, Proto};
 use crate::volume::MARKER_EXTENT;
-use std::io::{BufRead, BufReader, Read, Write};
-use std::path::PathBuf;
-use std::process::{Child, ChildStdin, Command, Stdio};
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::mpsc::{channel, Receiver, RecvTimeoutError};
-use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::sync::Arc;
 
 /// Seals and opens extent generations of one device. Implementations must never return bytes that failed
 /// authentication.
@@ -119,223 +112,56 @@ impl MediaAdapter for SealedMedia {
     }
 }
 
-/// How to start the sealing workers.
-#[derive(Clone, Debug)]
-pub struct WorkerConfig {
-    /// program and arguments, e.g. ["python3", "-m", "vnxdna.device.worker", "--key-file", K, "--staging", S]
-    pub command: Vec<String>,
-    /// the staging directory the workers were given (private to the service, mode 0700; tmpfs recommended)
-    pub staging: PathBuf,
-    pub workers: usize,
-    /// longest wait for one response before the worker is killed and the request fails with TIMEOUT
-    pub timeout: Duration,
-}
+pub use crate::worker::WorkerConfig;
+use crate::worker::{unavailable, WorkerPool};
 
-struct Worker {
-    child: Child,
-    stdin: ChildStdin,
-    lines: Receiver<String>,
-}
-
-impl Drop for Worker {
-    fn drop(&mut self) {
-        let _ = self.child.kill();
-        let _ = self.child.wait();
-    }
-}
-
-/// A pool of Python sealing workers (`vnx.codec-ipc/1`). A worker that dies, hangs or breaks the protocol is killed
-/// and replaced at the next request; its request fails with BACKEND_UNAVAILABLE or TIMEOUT (retryable).
+/// A pool of Python sealing workers (`vnx.codec-ipc/1`, [`WorkerPool`]). A worker that dies, hangs or breaks the
+/// protocol is killed and replaced at the next request; its request fails with BACKEND_UNAVAILABLE or TIMEOUT
+/// (retryable). Staging files are named "seal-<pid hex>-<start ns hex>-<job>.in|out"; plaintext left behind by a
+/// process that died mid-call is swept when the sealer starts.
 pub struct WorkerSealer {
-    cfg: WorkerConfig,
-    slots: Vec<Mutex<Option<Worker>>>,
-    next: AtomicU64,
-    job: AtomicU64,
-    /// staging file names of this process: "seal-<pid>-<start ns>-<job>.in|out" (never reused across restarts)
-    prefix: String,
+    pool: WorkerPool,
 }
 
-/// Longest response line read from a worker (the protocol's document limit plus the newline).
-const MAX_LINE: usize = crate::json::MAX_DOC + 1;
-
-/// Staging files are named "seal-<pid hex>-<start ns hex>-<job>.in|out".
-/// The staging directory must be a real directory (not a symlink) with no group or other access: only this user
-/// (or root) can create, swap or read files in it.
-fn check_staging(dir: &std::path::Path) -> Result<()> {
-    use std::os::unix::fs::PermissionsExt;
-    let m = std::fs::symlink_metadata(dir).map_err(|e| VnxError::new(ErrorCode::NotFound, format!("staging {}: {e}", dir.display())))?;
-    if !m.file_type().is_dir() {
-        return err(ErrorCode::InvalidArgument, format!("staging {} is not a directory (symlinks are refused)", dir.display()));
+/// Only verdicts about the data or the key pass through; anything else the worker reports (a missing staging file,
+/// an existing output, INTERNAL, ...) is a failure of the sealing service, never "not stored" or damage.
+fn sealing_verdict(e: VnxError) -> VnxError {
+    match e.code {
+        ErrorCode::Corruption | ErrorCode::Unauthorized | ErrorCode::VersionMismatch | ErrorCode::Timeout
+        | ErrorCode::BackendUnavailable => e,
+        _ => unavailable(format!("sealing worker: {e}")),
     }
-    let mode = m.permissions().mode() & 0o777;
-    if mode & 0o077 != 0 {
-        return err(ErrorCode::Unauthorized, format!("staging {} has mode {mode:o}: group/other access is not allowed", dir.display()));
-    }
-    Ok(())
-}
-
-fn unavailable(msg: impl Into<String>) -> VnxError {
-    VnxError::new(ErrorCode::BackendUnavailable, msg)
 }
 
 impl WorkerSealer {
     pub fn new(cfg: WorkerConfig) -> Result<WorkerSealer> {
-        if cfg.command.is_empty() || cfg.workers == 0 || cfg.workers > 64 {
-            return err(ErrorCode::InvalidArgument, "sealing workers: a command and 1..=64 workers");
-        }
-        check_staging(&cfg.staging)?;
-        // plaintext left by a process that died mid-call: removed before anything else runs. Only files of dead
-        // processes: another sealer (this or another live process) may share the directory
-        if let Ok(entries) = std::fs::read_dir(&cfg.staging) {
-            for e in entries.flatten() {
-                let name = e.file_name().to_string_lossy().into_owned();
-                let Some(rest) = name.strip_prefix("seal-") else { continue };
-                let pid = rest.split('-').next().and_then(|p| u32::from_str_radix(p, 16).ok());
-                let alive = pid.map_or(false, |p| std::path::Path::new(&format!("/proc/{p}")).exists());
-                if !alive {
-                    let _ = std::fs::remove_file(e.path());
-                }
-            }
-        }
-        let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_nanos());
-        let prefix = format!("seal-{:x}-{:x}", std::process::id(), nanos);
-        let slots = (0..cfg.workers).map(|_| Mutex::new(None)).collect();
-        Ok(WorkerSealer { cfg, slots, next: AtomicU64::new(0), job: AtomicU64::new(1), prefix })
+        Ok(WorkerSealer { pool: WorkerPool::new(cfg, "seal", "sealing")? })
     }
 
-    fn spawn(&self) -> Result<Worker> {
-        let mut child = Command::new(&self.cfg.command[0])
-            .args(&self.cfg.command[1..])
-            // never the service's working directory: `python -m` imports from the current directory first
-            .current_dir(&self.cfg.staging)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::inherit())
-            .spawn()
-            .map_err(|e| unavailable(format!("cannot start the sealing worker: {e}")))?;
-        let stdin = child.stdin.take().ok_or_else(|| unavailable("worker stdin"))?;
-        let stdout = child.stdout.take().ok_or_else(|| unavailable("worker stdout"))?;
-        let (tx, lines) = channel();
-        std::thread::spawn(move || {
-            // bounded lines: a worker that writes more than one protocol document without a newline is cut off
-            // (the channel closes and the request fails BACKEND_UNAVAILABLE)
-            let mut r = BufReader::new(stdout).take(0);
-            loop {
-                let mut buf = Vec::new();
-                r.set_limit(MAX_LINE as u64 + 1);
-                match r.read_until(b'\n', &mut buf) {
-                    Ok(0) | Err(_) => return,
-                    Ok(_) if buf.last() != Some(&b'\n') => return,
-                    Ok(_) => {}
-                }
-                buf.pop();
-                let Ok(l) = String::from_utf8(buf) else { return };
-                if tx.send(l).is_err() {
-                    return;
-                }
-            }
-        });
-        let mut w = Worker { child, stdin, lines };
-        let hello = obj([("client", Value::Str(format!("{} {}", crate::NAME, crate::VERSION))), ("versions", Value::Arr(vec![Value::Int(1)]))]);
-        let r = self.exchange(&mut w, "hello", hello)?;
-        if r.as_obj().and_then(|o| o.get("version")) != Some(&Value::Int(proto::VERSION)) {
-            return Err(unavailable("the sealing worker did not negotiate vnx.codec-ipc/1"));
-        }
-        Ok(w)
-    }
-
-    /// One request/response on a worker. Transport failures are BACKEND_UNAVAILABLE / TIMEOUT; a well-formed error
-    /// response is returned with its own code.
-    fn exchange(&self, w: &mut Worker, op: &str, args: Value) -> Result<Value> {
-        let id = self.job.fetch_add(1, Ordering::Relaxed) as i64;
-        let req = proto::request(Proto::Codec, id, op, args)?;
-        let mut line = req.canonical();
-        line.push('\n');
-        w.stdin.write_all(line.as_bytes()).and_then(|_| w.stdin.flush()).map_err(|e| unavailable(format!("worker write: {e}")))?;
-        let text = match w.lines.recv_timeout(self.cfg.timeout) {
-            Ok(t) => t,
-            Err(RecvTimeoutError::Timeout) => return err(ErrorCode::Timeout, format!("sealing worker gave no answer to {op} within {:?}", self.cfg.timeout)),
-            Err(RecvTimeoutError::Disconnected) => return Err(unavailable("the sealing worker exited")),
-        };
-        let v = Value::parse(&text).map_err(|e| unavailable(format!("worker sent invalid JSON: {}", e.message)))?;
-        let resp = proto::validate_response(Proto::Codec, op, &v).map_err(|e| unavailable(format!("worker broke the protocol: {}", e.message)))?;
-        if v.as_obj().and_then(|o| o.get("id")) != Some(&Value::Int(id)) {
-            return Err(unavailable("worker answered another request"));
-        }
-        resp
-    }
-
-    /// Run `op` on some worker, (re)starting it as needed; a transport failure discards the worker.
     fn call(&self, op: &str, args: Value) -> Result<Value> {
-        let i = (self.next.fetch_add(1, Ordering::Relaxed) % self.slots.len() as u64) as usize;
-        let mut slot = self.slots[i].lock().unwrap_or_else(|p| p.into_inner());
-        if slot.is_none() {
-            *slot = Some(self.spawn()?);
-        }
-        let w = slot.as_mut().expect("just set");
-        let r = self.exchange(w, op, args);
-        if let Err(e) = &r {
-            if matches!(e.code, ErrorCode::BackendUnavailable | ErrorCode::Timeout | ErrorCode::Protocol) {
-                *slot = None; // killed on drop; the next request starts a fresh worker
-            }
-        }
-        // only verdicts about the data or the key pass through; anything else the worker reports (a missing staging
-        // file, an existing output, INTERNAL, ...) is a failure of the sealing service, never "not stored" or damage
-        r.map_err(|e| match e.code {
-            ErrorCode::Corruption | ErrorCode::Unauthorized | ErrorCode::VersionMismatch | ErrorCode::Timeout
-            | ErrorCode::BackendUnavailable => e,
-            _ => unavailable(format!("sealing worker: {e}")),
-        })
+        self.pool.call(op, args).map_err(sealing_verdict)
     }
 
     fn transform(&self, op: &str, device_id: &[u8; 16], at: GenerationRef, input: &[u8]) -> Result<Vec<u8>> {
         let extent = i64::try_from(at.extent.0).or_else(|_| err(ErrorCode::Overflow, "extent beyond the protocol range"))?;
         let generation = i64::try_from(at.generation.get()).or_else(|_| err(ErrorCode::Overflow, "generation beyond the protocol range"))?;
-        let job = self.job.fetch_add(1, Ordering::Relaxed);
-        let (iname, oname) = (format!("{}-{job}.in", self.prefix), format!("{}-{job}.out", self.prefix));
-        let (ipath, opath) = (self.cfg.staging.join(&iname), self.cfg.staging.join(&oname));
-        let cleanup = || {
-            let _ = std::fs::remove_file(&ipath);
-            let _ = std::fs::remove_file(&opath);
-        };
-        let r = (|| {
-            write_private(&ipath, input)?;
-            let args = obj([
-                ("job", Value::Int(job as i64)),
-                ("device_id", Value::Str(hex(device_id))),
-                ("extent", Value::Int(extent)),
-                ("generation", Value::Int(generation)),
-                ("input", Value::Str(iname.clone())),
-                ("input_sha256", Value::Str(hex(&sha256(input)))),
-                ("output", Value::Str(oname.clone())),
-            ]);
-            let res = self.call(op, args)?;
-            let o = res.as_obj().expect("validated");
-            let meta = std::fs::symlink_metadata(&opath).map_err(|e| unavailable(format!("sealing output {}: {e}", opath.display())))?;
-            if !meta.file_type().is_file() {
-                return err(ErrorCode::Corruption, "the sealing output is not a regular file");
-            }
-            let out = std::fs::read(&opath).map_err(|e| unavailable(format!("sealing output {}: {e}", opath.display())))?;
-            let want = o["output_sha256"].as_str().and_then(parse_hex::<32>);
-            if want != Some(sha256(&out)) || o["output_bytes"] != Value::Int(out.len() as i64) {
-                return err(ErrorCode::Corruption, "the sealing worker's output does not match its report");
-            }
-            Ok(out)
-        })();
-        cleanup();
-        r
+        self.pool.file_job(
+            op,
+            input,
+            |job, iname, isha, oname| {
+                obj([
+                    ("job", Value::Int(job as i64)),
+                    ("device_id", Value::Str(hex(device_id))),
+                    ("extent", Value::Int(extent)),
+                    ("generation", Value::Int(generation)),
+                    ("input", Value::Str(iname.into())),
+                    ("input_sha256", Value::Str(isha.into())),
+                    ("output", Value::Str(oname.into())),
+                ])
+            },
+            sealing_verdict,
+        )
     }
-}
-
-fn write_private(path: &std::path::Path, data: &[u8]) -> Result<()> {
-    use std::os::unix::fs::OpenOptionsExt;
-    let mut f = std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .mode(0o600)
-        .open(path)
-        .map_err(|e| unavailable(format!("staging {}: {e}", path.display())))?;
-    f.write_all(data).map_err(|e| unavailable(format!("staging {}: {e}", path.display())))
 }
 
 impl Sealer for WorkerSealer {

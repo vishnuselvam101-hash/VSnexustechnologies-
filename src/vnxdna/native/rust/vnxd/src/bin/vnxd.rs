@@ -1,4 +1,5 @@
-//! `vnxd` command line (Phase 1): contract inspection tools. The block-device service is added in Phase 8.
+//! `vnxd` command line: contract inspection tools (Phase 1) and the block-device service (`vnxd nbd ...`, Phase 8;
+//! docs/V14_DEVICE_INTERFACE.md).
 //!
 //! * `vnxd version`: name, version, record format and protocol versions as canonical JSON;
 //! * `vnxd inspect-journal <file>`: decode a volume journal (mirrored record pairs) or a plain record file and print
@@ -12,12 +13,15 @@ use vnxd::error::{ErrorCode, VnxError};
 use vnxd::{journal, proto, record};
 
 fn usage() -> ExitCode {
-    eprintln!("usage: vnxd version | vnxd inspect-journal <file>");
+    eprintln!("usage: vnxd version | vnxd inspect-journal <file> | vnxd nbd <create|attach|serve> ...");
     ExitCode::from(2)
 }
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
+    if args.first().map(String::as_str) == Some("nbd") {
+        return ExitCode::from(vnxd::nbdctl::main(&args[1..]) as u8);
+    }
     match args.iter().map(String::as_str).collect::<Vec<_>>().as_slice() {
         ["version"] => {
             let protocols = [proto::Proto::Mgmt, proto::Proto::Codec]

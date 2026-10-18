@@ -134,7 +134,15 @@ def test_torn_journal_tail_is_ignored_and_cut(tmp_path):
         v.flush()
     j = tmp_path / "v" / "journal.log"
     good = j.read_bytes()
-    j.write_bytes(good + b'{"op":"commit","extent":9,"seq":3,"crc":"deadbeef"}\n{"op":"commit","ext')
+    # a complete record that does not verify, followed by more bytes, is not what one torn append leaves: refused
+    # (V14 workstream D; before V14 this shape was ignored as a torn tail)
+    from vnxdna.core.errors import VNXIntegrityError
+    damaged = good + b'{"op":"commit","extent":9,"seq":3,"crc":"deadbeef"}\n{"op":"commit","ext'
+    j.write_bytes(damaged)
+    with pytest.raises(VNXIntegrityError):
+        Volume.open(tmp_path / "v")
+    assert j.read_bytes() == damaged
+    j.write_bytes(good + b'{"op":"commit","extent":9,"seq":3,"crc":"deadbe')      # a torn (unterminated) last append
     with Volume.open(tmp_path / "v") as v:
         assert v.stat()["journal"]["bad_tail_bytes"] > 0 and sorted(v.committed) == [0, 1]
         assert v.read_at(0, len(data)) == data
