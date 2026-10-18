@@ -1,6 +1,9 @@
 //! Compiles the reused C11 kernels (v6/native/rs.c, v5/native/align.c, native/c/orient.c) into a static archive that
 //! is linked into the engine library. Standard library only: the system C compiler is invoked directly (CC, else cc).
 //! VNX_ENGINE_CFLAGS adds flags (sanitizer builds).
+//! Cross builds (docs/V14_BUILD_AND_DEPLOYMENT.md): the compiler and archiver for the target come from
+//! CC_<target> / AR_<target> (e.g. CC_aarch64_unknown_linux_gnu), then CC / AR, then cc / ar, so that
+//! aarch64 objects are never archived by the host `ar` (whose symbol index does not understand them).
 use std::env;
 use std::path::PathBuf;
 use std::process::Command;
@@ -14,7 +17,14 @@ fn main() {
         pkg.join("native/c/orient.c"),
     ];
     let out = PathBuf::from(env::var("OUT_DIR").unwrap());
-    let cc = env::var("CC").unwrap_or_else(|_| "cc".to_string());
+    let target = env::var("TARGET").unwrap_or_default().replace('-', "_");
+    let tool = |name: &str, default: &str| -> String {
+        env::var(format!("{}_{}", name, target))
+            .or_else(|_| env::var(name))
+            .unwrap_or_else(|_| default.to_string())
+    };
+    let cc = tool("CC", "cc");
+    let ar = tool("AR", "ar");
     let extra: Vec<String> = env::var("VNX_ENGINE_CFLAGS")
         .unwrap_or_default()
         .split_whitespace()
@@ -34,9 +44,12 @@ fn main() {
     println!("cargo:rerun-if-changed={}", pkg.join("v5/native/align_dp.inc").display());
     println!("cargo:rerun-if-env-changed=VNX_ENGINE_CFLAGS");
     println!("cargo:rerun-if-env-changed=CC");
+    println!("cargo:rerun-if-env-changed=AR");
+    println!("cargo:rerun-if-env-changed=CC_{}", target);
+    println!("cargo:rerun-if-env-changed=AR_{}", target);
     let lib = out.join("libvnxkern.a");
     let _ = std::fs::remove_file(&lib);
-    let st = Command::new("ar").arg("crs").arg(&lib).args(&objs).status().expect("ar");
+    let st = Command::new(&ar).arg("crs").arg(&lib).args(&objs).status().expect("ar");
     assert!(st.success(), "ar failed");
     println!("cargo:rustc-link-search=native={}", out.display());
     println!("cargo:rustc-link-lib=static=vnxkern");

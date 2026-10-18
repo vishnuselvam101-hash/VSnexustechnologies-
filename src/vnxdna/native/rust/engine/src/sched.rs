@@ -466,7 +466,7 @@ mod tests {
 
     #[test]
     fn windows_forward_and_reverse_complement_agree() {
-        let codes: Vec<u8> = (0..64u8).map(|i| (i * 7 + 3) % 4).collect();
+        let codes: Vec<u8> = (0..64u32).map(|i| ((i * 7 + 3) % 4) as u8).collect(); // u8 arithmetic overflowed in debug builds
         let rc: Vec<u8> = codes.iter().rev().map(|&c| 3 - c).collect();
         for a in [0i64, 5, 40] {
             assert_eq!(win_rc(&codes, a), win_fwd(&rc, a));
