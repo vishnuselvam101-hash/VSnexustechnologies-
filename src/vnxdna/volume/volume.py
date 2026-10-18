@@ -71,6 +71,53 @@ class VolumeOptions:
         self.decode.validate()
 
 
+def _checked_commit(rec: dict, extent_bytes: int) -> int:
+    """V14 F (H-5): a journal commit record's fields, type- and range-checked before anything uses them (a malformed
+    record was a raw KeyError/TypeError, and a ``file`` naming an absolute path was read outside the volume)."""
+    def bad(msg: str) -> VNXFormatError:
+        return VNXFormatError(f"volume journal record {rec.get('seq')}: {msg}", stage="volume")
+
+    def integer(k: str, lo: int, hi: int) -> int:
+        v = rec.get(k)
+        if isinstance(v, bool) or not isinstance(v, int) or not lo <= v <= hi:
+            raise bad(f"{k!r} must be an integer in {lo}..{hi}")
+        return v
+
+    def hexstr(k: str, digits: int) -> None:
+        v = rec.get(k)
+        if not isinstance(v, str) or len(v) != digits or any(c not in "0123456789abcdef" for c in v):
+            raise bad(f"{k!r} must be {digits} lowercase hex digits")
+
+    i = integer("extent", 0, (1 << 62) // max(1, extent_bytes))
+    version = integer("version", 1, 1 << 62)
+    integer("length", 0, extent_bytes)
+    f = rec.get("file")
+    m = _EXTENT_FILE.match(f) if isinstance(f, str) else None
+    if m is None or int(m.group(1)) != i or int(m.group(2)) != version:
+        raise bad(f"'file' must be e{i}-v{version}.fasta|fastq")
+    hexstr("sha256", 64)
+    hexstr("strands_sha256", 64)
+    hexstr("archive_tag", 4)
+    if not isinstance(rec.get("archive_id"), str) or not rec["archive_id"]:
+        raise bad("'archive_id' must be a non-empty string")
+    return i
+
+
+def _check_extent_map(committed: dict[int, dict], extent_bytes: int) -> None:
+    """V14 F (H-5): a volume's committed extents are 0..n-1 and only the last may be shorter than an extent (writes
+    zero-fill gaps and flush in ascending order, so every crash point keeps this). A hole made extent n+1's bytes
+    appear at extent n's offset with SUCCESS, and a far extent id made reads loop over millions of empty extents."""
+    n = len(committed)
+    if committed and max(committed) != n - 1:
+        missing = sorted(set(range(max(committed) + 1)) - set(committed))[:8]
+        raise VNXFormatError(f"volume journal: committed extents are not contiguous from 0 (missing {missing})",
+                             stage="volume")
+    for i, rec in committed.items():
+        if i < n - 1 and rec["length"] != extent_bytes:
+            raise VNXFormatError(f"volume journal: extent {i} is shorter ({rec['length']} bytes) than an extent but is "
+                                 "not the last one", stage="volume")
+
+
 class Volume:
     """Open with :meth:`create` or :meth:`open`; use as a context manager (``close`` flushes)."""
 
@@ -84,8 +131,9 @@ class Volume:
         self.versions = 0
         for rec in journal.records:
             if rec.get("op") == "commit":
-                self.committed[int(rec["extent"])] = rec
+                self.committed[_checked_commit(rec, self.extent_bytes)] = rec
                 self.versions += 1
+        _check_extent_map(self.committed, self.extent_bytes)
         self._dirty: dict[int, bytearray] = {}
         self._cache: OrderedDict[int, bytes] = OrderedDict()
         self._cache_bytes = 0

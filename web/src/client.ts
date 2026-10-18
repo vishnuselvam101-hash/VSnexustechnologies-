@@ -5,7 +5,7 @@
  * the command line by this client (use the CLI's --key-file / --passphrase-env options).
  */
 import { spawn } from "node:child_process";
-import { checkNativeStatus, checkResult, type NativeStatus, type VnxError, type VnxResult } from "./contracts.ts";
+import { checkError, checkNativeStatus, checkResult, type NativeStatus, type VnxError, type VnxResult } from "./contracts.ts";
 
 export interface RunOptions {
   /** executable and leading arguments, default ["vnx"] (e.g. ["python", "-m", "vnxdna"]) */
@@ -83,6 +83,9 @@ export async function vnx(args: string[], opts: RunOptions = {}): Promise<VnxRes
   const doc = lastJson(raw.stdout);
   const checked = checkResult(doc);
   if (!checked.ok) {
+    // a failing command without a result envelope writes its vnx.error/1 object to stderr
+    const err = raw.code !== 0 ? checkError(lastJson(raw.stderr)) : null;
+    if (err?.ok) throw new VnxCommandError(`${err.value.code}: ${err.value.message}`, raw.code, err.value, raw.stderr);
     throw new VnxCommandError(`vnx ${args[0] ?? ""}: ${checked.error}`, raw.code, null, raw.stderr);
   }
   if (raw.code !== 0 || checked.value.error !== null) {
