@@ -288,7 +288,10 @@ fn volume_and_block_io_never_return_wrong_bytes_under_lying_faults() {
 fn an_offline_medium_turns_the_device_read_only_and_it_recovers() {
     let d = Dir::new("off");
     let fm = Arc::new(FaultMedia::over(Arc::new(ImageMedia::create(&d.0.join("i")).unwrap())));
-    let health = HealthConfig { degrade_after: 1, unavailable_after: 2, probe_interval: Duration::from_millis(1), score_alpha: 0.2 };
+    // the probe interval must outlast the four refused writes below: with 1 ms, a slow host (qemu-user emulation)
+    // made every write a due probe, so none was refused READ_ONLY
+    let probe = Duration::from_millis(500);
+    let health = HealthConfig { degrade_after: 1, unavailable_after: 2, probe_interval: probe, score_alpha: 0.2 };
     let retry = RetryPolicy { max_attempts: 2, base_delay: Duration::ZERO, max_delay: Duration::ZERO };
     let rm = Arc::new(ResilientMedia::new(fm.clone(), retry, health).unwrap());
     let v = Volume::create(&d.0.join("v"), geo(), [3; 16], 0, rm.clone(), VolumeConfig::default()).unwrap();
@@ -302,7 +305,7 @@ fn an_offline_medium_turns_the_device_read_only_and_it_recovers() {
     assert!(codes.contains(&ErrorCode::ReadOnly), "{codes:?}");
     assert_eq!(v.read_extent(ExtentId(0)).unwrap_err().code, ErrorCode::BackendUnavailable, "offline: reads fail, typed");
     fm.set_offline(false);
-    std::thread::sleep(Duration::from_millis(5));
+    std::thread::sleep(probe + Duration::from_millis(5));
     let mut recovered = false;
     for _ in 0..10 {
         if v.write_extent(ExtentId(0), &data(3, 2048)).is_ok() {

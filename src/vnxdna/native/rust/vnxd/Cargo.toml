@@ -2,7 +2,7 @@
 name = "vnxd"
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.63"   # std::thread::scope
+rust-version = "1.75"   # the toolchain it is built and tested with (OnceLock and div_ceil need >= 1.73; Debian 12 ships 1.63)
 publish = false
 description = "VNX storage service (V14): storage contracts, persisted record formats, protocol schemas and the media-adapter contract"
 license = "MIT"

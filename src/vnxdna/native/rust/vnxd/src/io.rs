@@ -833,14 +833,25 @@ mod tests {
         inner: MemoryMedia,
         open: Mutex<bool>,
         cv: Condvar,
+        /// puts currently blocked at the gate
+        blocked: AtomicU64,
     }
     impl Gate {
         fn new() -> Gate {
-            Gate { inner: MemoryMedia::new(), open: Mutex::new(false), cv: Condvar::new() }
+            Gate { inner: MemoryMedia::new(), open: Mutex::new(false), cv: Condvar::new(), blocked: AtomicU64::new(0) }
         }
         fn release(&self) {
             *self.open.lock().unwrap() = true;
             self.cv.notify_all();
+        }
+        /// Wait until `n` puts are blocked at the gate (an event, not a fixed sleep: the tests also run under
+        /// qemu-user emulation, where a thread can take far longer than a few milliseconds to start).
+        fn wait_blocked(&self, n: u64) {
+            let end = Instant::now() + Duration::from_secs(60);
+            while self.blocked.load(Ordering::SeqCst) < n {
+                assert!(Instant::now() < end, "{n} writes did not reach the backend");
+                std::thread::sleep(Duration::from_millis(1));
+            }
         }
     }
     impl MediaAdapter for Gate {
@@ -849,8 +860,12 @@ mod tests {
         }
         fn put(&self, at: GenerationRef, d: &[u8]) -> Result<CommitReceipt> {
             let mut o = self.open.lock().unwrap();
-            while !*o && at.extent != crate::volume::MARKER_EXTENT {
-                o = self.cv.wait(o).unwrap();
+            if !*o && at.extent != crate::volume::MARKER_EXTENT {
+                self.blocked.fetch_add(1, Ordering::SeqCst);
+                while !*o {
+                    o = self.cv.wait(o).unwrap();
+                }
+                self.blocked.fetch_sub(1, Ordering::SeqCst);
             }
             drop(o);
             self.inner.put(at, d)
@@ -878,22 +893,29 @@ mod tests {
         // two writes to extent 0 and 1 start and block in the backend
         let w0 = q.submit(Op::Write { offset: 0, data: vec![1; 2048] }, None).unwrap();
         let w1 = q.submit(Op::Write { offset: 2048, data: vec![2; 2048] }, None).unwrap();
-        std::thread::sleep(Duration::from_millis(50));
-        // a flush (barrier), a write that will be cancelled, and a write with an expired deadline fill the queue
+        gate.wait_blocked(2);
+        // a flush (barrier), a write that will be cancelled and a plain write fill the queue. (No request with an
+        // expired deadline is used to fill it: the reaper may resolve that one before the next submission, which
+        // made the fullness check depend on thread timing; it failed under qemu-user emulation.)
         let fl = q.submit(Op::Flush, None).unwrap();
         let wc = q.submit(Op::Write { offset: 4096, data: vec![3; 10] }, None).unwrap();
-        let wt = q.submit(Op::Write { offset: 6144, data: vec![4; 10] }, Some(Instant::now())).unwrap();
+        let wx = q.submit(Op::Write { offset: 8192, data: vec![5; 10] }, None).unwrap();
         assert_eq!(q.try_submit(Op::Read { offset: 0, len: 1 }, None).err().unwrap().code, ErrorCode::ResourceExhausted);
         assert!(fl.wait_timeout(Duration::from_millis(50)).is_none(), "the barrier waits for earlier writes");
+        // cancelling frees a slot (resolved by the reaper while every worker is blocked); a write whose deadline has
+        // already passed takes it and times out without running
         wc.cancel();
+        let wt = q.submit(Op::Write { offset: 6144, data: vec![4; 10] }, Some(Instant::now())).unwrap();
+        assert_eq!(wc.wait_timeout(Duration::from_secs(30)).unwrap().unwrap_err().code, ErrorCode::Cancelled);
+        assert_eq!(wt.wait_timeout(Duration::from_secs(30)).unwrap().unwrap_err().code, ErrorCode::Timeout);
         gate.release();
         assert!(matches!(w0.wait().unwrap(), Reply::Written(WriteState::Verified)));
         assert!(matches!(w1.wait().unwrap(), Reply::Written(_)));
-        assert_eq!(fl.wait_timeout(Duration::from_secs(5)).unwrap().unwrap(), Reply::Flushed);
-        assert_eq!(wc.wait().unwrap_err().code, ErrorCode::Cancelled);
-        assert_eq!(wt.wait().unwrap_err().code, ErrorCode::Timeout);
+        assert_eq!(fl.wait_timeout(Duration::from_secs(30)).unwrap().unwrap(), Reply::Flushed);
+        assert!(matches!(wx.wait().unwrap(), Reply::Written(_)));
         assert_eq!(io.read(4096, 10).unwrap(), vec![0; 10], "a cancelled write has no effect");
         assert_eq!(io.read(6144, 10).unwrap(), vec![0; 10], "a timed-out write has no effect");
+        assert_eq!(io.read(8192, 10).unwrap(), vec![5; 10]);
         let m = q.metrics();
         assert_eq!((m.cancelled.load(Ordering::Relaxed), m.timed_out.load(Ordering::Relaxed)), (1, 1));
         assert_eq!(m.rejected_full.load(Ordering::Relaxed), 1);
@@ -908,12 +930,16 @@ mod tests {
         let io = setup(&d, gate.clone());
         let q = IoQueue::start(io.clone(), QueueConfig { workers: 1, depth: 8 }).unwrap();
         let running = q.submit(Op::Write { offset: 0, data: vec![5; 100] }, None).unwrap();
-        std::thread::sleep(Duration::from_millis(30));
+        gate.wait_blocked(1);
         let queued: Vec<Ticket> =
             (0..4).map(|i| q.submit(Op::Write { offset: 2048 * (i + 1), data: vec![6; 100] }, None).unwrap()).collect();
         let shared = q.shared.clone();
         let stopper = std::thread::spawn(move || q.shutdown(false));
-        std::thread::sleep(Duration::from_millis(30));
+        let end = Instant::now() + Duration::from_secs(60);
+        while !shared.sched.lock().unwrap().shutting {
+            assert!(Instant::now() < end, "shutdown did not start");
+            std::thread::sleep(Duration::from_millis(1));
+        }
         gate.release();
         stopper.join().unwrap().unwrap();
         assert!(matches!(running.wait().unwrap(), Reply::Written(_)), "a started request completes");
@@ -932,7 +958,7 @@ mod tests {
         let io = setup(&d, gate.clone());
         let q = IoQueue::start(io.clone(), QueueConfig { workers: 1, depth: 8 }).unwrap(); // the only worker is stuck
         let stuck = q.submit(Op::Write { offset: 0, data: vec![1; 100] }, None).unwrap();
-        std::thread::sleep(Duration::from_millis(30));
+        gate.wait_blocked(1);
         let c = q.submit(Op::Write { offset: 10, data: vec![2; 10] }, None).unwrap();
         let t = q.submit(Op::Read { offset: 0, len: 10 }, Some(Instant::now() + Duration::from_millis(40))).unwrap();
         c.cancel();
