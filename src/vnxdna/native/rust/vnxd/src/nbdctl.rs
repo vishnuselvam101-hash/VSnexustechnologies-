@@ -38,7 +38,14 @@ pub fn log(event: &str, fields: Vec<(&str, Value)>) {
     let mut m: std::collections::BTreeMap<String, Value> = fields.into_iter().map(|(k, v)| (k.to_string(), v)).collect();
     m.insert("event".into(), Value::Str(event.into()));
     m.insert("pid".into(), Value::Int(i64::from(std::process::id())));
-    eprintln!("{}", Value::Obj(m).canonical());
+    emit_err(&Value::Obj(m).canonical());
+}
+
+/// Write one line to stderr; a failure (EPIPE, a full disk) is ignored: logging never panics and never stops the
+/// service's control paths (`eprintln!` panics when stderr is gone).
+fn emit_err(line: &str) {
+    let mut e = std::io::stderr().lock();
+    let _ = writeln!(e, "{line}");
 }
 
 fn announce(event: &str, fields: Vec<(&str, Value)>) {
@@ -46,7 +53,7 @@ fn announce(event: &str, fields: Vec<(&str, Value)>) {
     m.insert("event".into(), Value::Str(event.into()));
     m.insert("pid".into(), Value::Int(i64::from(std::process::id())));
     let line = Value::Obj(m).canonical();
-    eprintln!("{line}");
+    emit_err(&line);
     let mut out = std::io::stdout().lock();
     let _ = writeln!(out, "{line}");
     let _ = out.flush();
@@ -91,6 +98,8 @@ impl Stop {
 pub struct Opts {
     pub volume: PathBuf,
     pub backend: PathBuf,
+    /// backend adapter: `image` (P7 ImageMedia, integrity-checked objects; default) or `dir` (DirMedia)
+    pub media: String,
     pub device: Option<PathBuf>,
     pub socket: Option<PathBuf>,
     pub mgmt: Option<PathBuf>,
@@ -118,6 +127,7 @@ pub fn parse_opts(args: &[String]) -> Result<Opts> {
     let mut o = Opts {
         volume: PathBuf::new(),
         backend: PathBuf::new(),
+        media: "image".into(),
         device: None,
         socket: None,
         mgmt: None,
@@ -135,6 +145,7 @@ pub fn parse_opts(args: &[String]) -> Result<Opts> {
         match k.as_str() {
             "--volume" => o.volume = PathBuf::from(val()?),
             "--backend" => o.backend = PathBuf::from(val()?),
+            "--media" => o.media = val()?,
             "--device" => {
                 let v = val()?;
                 o.device = if v == "auto" { None } else { Some(PathBuf::from(v)) };
@@ -165,8 +176,10 @@ pub fn parse_opts(args: &[String]) -> Result<Opts> {
     if o.volume.as_os_str().is_empty() || o.backend.as_os_str().is_empty() {
         return Err(bad("--volume DIR and --backend DIR are required".into()));
     }
-    if o.dev.request_timeout.is_zero() || (o.kernel_timeout_s != 0 && u64::from(o.kernel_timeout_s) <= o.dev.request_timeout.as_secs()) {
-        return Err(bad("the request timeout must be > 0 and below the kernel timeout".into()));
+    // every request is answered within its deadline (start) plus its own run and a FUA flush: the kernel timeout
+    // must leave that margin, and 0 (no kernel timeout) is refused (a dead server would hang the host's I/O)
+    if o.dev.request_timeout.is_zero() || u64::from(o.kernel_timeout_s) < 2 * o.dev.request_timeout.as_secs() + 10 {
+        return Err(bad("need --request-timeout-s > 0 and --kernel-timeout-s >= 2 x request timeout + 10".into()));
     }
     Ok(o)
 }
@@ -174,13 +187,16 @@ pub fn parse_opts(args: &[String]) -> Result<Opts> {
 /// A volume's backend is never placed on a block device this service exports (it would deadlock under memory
 /// pressure and loop on itself): refuse a volume or backend directory on an NBD-backed filesystem.
 fn check_not_on_nbd(p: &Path) -> Result<()> {
-    let canon = std::fs::canonicalize(p).unwrap_or_else(|_| p.to_path_buf());
+    // the nearest existing ancestor (the directory may not exist yet), made absolute
+    let abs = if p.is_absolute() { p.to_path_buf() } else { std::env::current_dir().unwrap_or_default().join(p) };
+    let canon = abs.ancestors().find_map(|a| std::fs::canonicalize(a).ok()).unwrap_or(abs);
     let mounts = std::fs::read_to_string("/proc/self/mounts").unwrap_or_default();
-    let mut best: Option<(&str, &str)> = None;
+    let mut best: Option<(String, String)> = None;
     for l in mounts.lines() {
         let mut f = l.split_whitespace();
         let (Some(src), Some(mp)) = (f.next(), f.next()) else { continue };
-        if canon.starts_with(mp) && best.map_or(true, |(_, b)| mp.len() >= b.len()) {
+        let (src, mp) = (unescape_mount(src), unescape_mount(mp));
+        if canon.starts_with(&mp) && best.as_ref().map_or(true, |(_, b)| mp.len() >= b.len()) {
             best = Some((src, mp));
         }
     }
@@ -192,10 +208,31 @@ fn check_not_on_nbd(p: &Path) -> Result<()> {
     Ok(())
 }
 
+/// /proc/self/mounts escapes space, tab, newline and backslash as \ooo octal.
+fn unescape_mount(s: &str) -> String {
+    let b = s.as_bytes();
+    let mut out = Vec::with_capacity(b.len());
+    let mut i = 0;
+    while i < b.len() {
+        if b[i] == b'\\' && i + 4 <= b.len() && b[i + 1..i + 4].iter().all(|c| (b'0'..=b'7').contains(c)) {
+            out.push((b[i + 1] - b'0') * 64 + (b[i + 2] - b'0') * 8 + (b[i + 3] - b'0'));
+            i += 4;
+        } else {
+            out.push(b[i]);
+            i += 1;
+        }
+    }
+    String::from_utf8_lossy(&out).into_owned()
+}
+
 fn open_media(o: &Opts) -> Result<Arc<dyn MediaAdapter>> {
     check_not_on_nbd(&o.backend)?;
     check_not_on_nbd(&o.volume)?;
-    Ok(Arc::new(crate::dirmedia::DirMedia::open(&o.backend)?))
+    match o.media.as_str() {
+        "image" => Ok(Arc::new(crate::image::ImageMedia::open_or_create(&o.backend)?)),
+        "dir" => Ok(Arc::new(crate::dirmedia::DirMedia::open(&o.backend)?)),
+        m => err(ErrorCode::InvalidArgument, format!("--media {m}: image | dir")),
+    }
 }
 
 fn random_id() -> [u8; 16] {
@@ -337,6 +374,8 @@ fn mgmt_loop(dev: &Device, policy: &Policy, stop: &Stop, l: &UnixListener) {
 struct Claim {
     nbd: NbdDevice,
     attached: Mutex<bool>,
+    /// what went wrong on the device's way down (makes `attach` fail)
+    failures: Mutex<Vec<String>>,
 }
 
 impl Claim {
@@ -360,6 +399,7 @@ impl Claim {
             log("detach_while_mounted", vec![("device", Value::Str(self.nbd.path().display().to_string()))]);
         }
         if let Err(e) = self.nbd.sync() {
+            self.failures.lock().unwrap_or_else(|p| p.into_inner()).push(format!("device fsync at detach: {e}"));
             log("device_sync_failed", vec![("error", Value::Str(e.to_string()))]);
         }
         if let Err(e) = self.nbd.disconnect() {
@@ -427,24 +467,32 @@ pub fn attach(o: &Opts, stop: Arc<Stop>) -> Result<()> {
     let pid = std::process::id();
     // values the scoped threads borrow live outside the scope
     let claim_cell: std::sync::OnceLock<Claim> = std::sync::OnceLock::new();
+    let server_trouble: Mutex<Option<String>> = Mutex::new(None);
     let running = AtomicBool::new(true);
-    let outcome: Result<()> = std::thread::scope(|sc| {
+    let outcome: Result<Vec<String>> = std::thread::scope(|sc| {
         let _guard = ScopeGuard { stop: &stop, server_end: &server_shut };
         let dev = &dev;
         let export = &export;
         let stop_ref = &*stop;
+        let (shut_ref, trouble_ref) = (&server_shut, &server_trouble);
         let server = sc.spawn(move || {
             let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| dev.serve(server_end, export, true)));
-            let why = match r {
-                Ok(Ok(end)) => format!("connection ended: {end:?}"),
-                Ok(Err(e)) => format!("server error: {e}"),
+            // whatever happened, the kernel must see the connection end (never a FLUSH waiting for a dead server)
+            let _ = shut_ref.shutdown(std::net::Shutdown::Both);
+            let (why, bad) = match r {
+                Ok(Ok(ConnEnd::Disconnected)) => ("connection ended: Disconnected".to_string(), false),
+                Ok(Ok(end)) => (format!("connection ended: {end:?}"), true),
+                Ok(Err(e)) => (format!("server error: {e}"), true),
                 Err(_) => {
                     dev.mark_failed("the NBD server thread panicked");
-                    "server panicked".to_string()
+                    ("server panicked".to_string(), true)
                 }
             };
-            log("server_ended", vec![("why", Value::Str(why.clone()))]);
             stop_ref.request(&why);
+            if bad {
+                *trouble_ref.lock().unwrap_or_else(|p| p.into_inner()) = Some(why.clone());
+            }
+            log("server_ended", vec![("why", Value::Str(why))]);
         });
         if let (Some(l), Some(p)) = (&mgmt, &policy) {
             sc.spawn(move || mgmt_loop(dev, p, stop_ref, l));
@@ -454,7 +502,7 @@ pub fn attach(o: &Opts, stop: Arc<Stop>) -> Result<()> {
             return err(ErrorCode::Protocol, format!("negotiated {info:?}, expected {export:?}"));
         }
         let nbd_dev = claim(o, &client_end)?;
-        if claim_cell.set(Claim { nbd: nbd_dev, attached: Mutex::new(true) }).is_err() {
+        if claim_cell.set(Claim { nbd: nbd_dev, attached: Mutex::new(true), failures: Mutex::new(Vec::new()) }).is_err() {
             return err(ErrorCode::Internal, "device claimed twice");
         }
         let claim: &Claim = claim_cell.get().expect("just set");
@@ -492,18 +540,42 @@ pub fn attach(o: &Opts, stop: Arc<Stop>) -> Result<()> {
         sc.spawn(move || {
             let why = stop_ref.wait();
             if running_ref.load(Ordering::SeqCst) {
+                claim_ref.stop(); // before logging: a failed log write must never skip the detach
                 log("detaching", vec![("why", Value::Str(why)), ("device", Value::Str(claim_ref.nbd.path().display().to_string()))]);
-                claim_ref.stop();
             }
         });
         let ran = claim.nbd.do_it();
         running.store(false, Ordering::SeqCst);
-        log("device_stopped", vec![("result", Value::Str(ran.as_ref().map_or_else(|e| e.to_string(), |_| "ok".into())))]);
-        claim.release();
+        // a detach nobody asked for (kernel timeout, server failure) is a failure of the device
+        let requested = stop.requested().map_or(false, |w| w.starts_with("signal") || w.starts_with("management"));
         stop.request("device stopped");
+        claim.release();
+        log("device_stopped", vec![("result", Value::Str(ran.as_ref().map_or_else(|e| e.to_string(), |_| "ok".into())))]);
         drop(server); // joined by the scope
-        Ok(())
+        let mut failures = std::mem::take(&mut *claim.failures.lock().unwrap_or_else(|p| p.into_inner()));
+        if let Err(e) = ran {
+            failures.push(format!("NBD_DO_IT: {e}"));
+        } else if !requested {
+            failures.push(format!("the device stopped without a requested detach ({})", stop.requested().unwrap_or_default()));
+        }
+        Ok(failures)
     });
+    let outcome: Result<()> = outcome.and_then(|mut failures| {
+        if let Some(t) = server_trouble.lock().unwrap_or_else(|p| p.into_inner()).take() {
+            failures.push(t);
+        }
+        if dev.health_state() == "failed" {
+            failures.push("the device health is failed".into());
+        }
+        if failures.is_empty() {
+            Ok(())
+        } else {
+            err(ErrorCode::BackendUnavailable, failures.join("; "))
+        }
+    });
+    if let Some(p) = &o.mgmt {
+        let _ = std::fs::remove_file(p);
+    }
     let health = dev.health_json();
     let stats = dev.stats_json();
     let closed = dev.close();
@@ -531,7 +603,8 @@ pub fn serve(o: &Opts, stop: Arc<Stop>) -> Result<()> {
     };
     let listener = bind_private(&sock, 0o600)?;
     let export = dev.export(EXPORT_NAME);
-    let conns: Mutex<Vec<UnixStream>> = Mutex::new(Vec::new());
+    let conns: Mutex<std::collections::BTreeMap<u64, UnixStream>> = Mutex::new(std::collections::BTreeMap::new());
+    let mut next_id = 0u64;
     let active = AtomicUsize::new(0);
     std::thread::scope(|sc| {
         let (dev, export, stop_ref, conns, active) = (&dev, &export, &*stop, &conns, &active);
@@ -546,8 +619,10 @@ pub fn serve(o: &Opts, stop: Arc<Stop>) -> Result<()> {
                     if active.load(Ordering::SeqCst) >= MAX_SERVE_CONNECTIONS {
                         continue;
                     }
+                    next_id += 1;
+                    let id = next_id;
                     if let Ok(c) = s.try_clone() {
-                        conns.lock().unwrap_or_else(|p| p.into_inner()).push(c);
+                        conns.lock().unwrap_or_else(|p| p.into_inner()).insert(id, c);
                     }
                     active.fetch_add(1, Ordering::SeqCst);
                     sc.spawn(move || {
@@ -558,6 +633,7 @@ pub fn serve(o: &Opts, stop: Arc<Stop>) -> Result<()> {
                             Ok(Err(e)) => log("connection_error", vec![("error", Value::Str(e.to_string()))]),
                             Err(_) => dev.mark_failed("an NBD connection thread panicked"),
                         }
+                        conns.lock().unwrap_or_else(|p| p.into_inner()).remove(&id); // its descriptor is closed now
                         active.fetch_sub(1, Ordering::SeqCst);
                     });
                 }
@@ -566,7 +642,7 @@ pub fn serve(o: &Opts, stop: Arc<Stop>) -> Result<()> {
             }
         }
         // stop: end every connection (requests already started complete; the store is flushed by close)
-        for c in conns.lock().unwrap_or_else(|p| p.into_inner()).iter() {
+        for c in conns.lock().unwrap_or_else(|p| p.into_inner()).values() {
             let _ = c.shutdown(std::net::Shutdown::Both);
         }
     });
@@ -589,7 +665,7 @@ pub fn main(args: &[String]) -> i32 {
     let usage = "usage: vnxd nbd create --volume DIR --backend DIR --size N [--block-size 4096] [--extent-blocks 16]\n\
                  \x20      vnxd nbd attach --volume DIR --backend DIR [--device /dev/nbdN|auto] [options]\n\
                  \x20      vnxd nbd serve  --volume DIR --backend DIR --socket PATH [options]\n\
-                 options: --cache none|write-through|write-back  --ram N  --read-only  --request-timeout-s N\n\
+                 options: --media image|dir  --cache none|write-through|write-back  --ram N  --read-only  --request-timeout-s N\n\
                  \x20        --kernel-timeout-s N  --mgmt SOCKET --policy FILE  --fault-control FILE  --no-readback";
     let (cmd, rest) = match args.split_first() {
         Some((c, r)) => (c.as_str(), r),
@@ -616,9 +692,12 @@ pub fn main(args: &[String]) -> i32 {
             let stop = Arc::new(Stop::default());
             let s2 = stop.clone();
             let _ = std::thread::Builder::new().name("vnxd-signals".into()).spawn(move || {
-                if let Ok(sig) = nbdsys::wait_signal() {
-                    log("signal", vec![("signal", Value::Int(i64::from(sig)))]);
-                    s2.request(&format!("signal {sig}"));
+                // SIGHUP (a dropped terminal) never detaches a device a filesystem may be using: it is logged only
+                while let Ok(sig) = nbdsys::wait_signal() {
+                    if sig != nbdsys::SIGHUP {
+                        s2.request(&format!("signal {sig}")); // first: a failed log write must not lose the stop
+                    }
+                    log("signal", vec![("signal", Value::Int(i64::from(sig))), ("stops", Value::Bool(sig != nbdsys::SIGHUP))]);
                 }
             });
             if cmd == "attach" {
@@ -660,6 +739,9 @@ mod tests {
         assert!(parse_opts(&args("--volume v --backend b --cache maybe")).is_err());
         assert!(parse_opts(&args("--volume v --backend b --bogus")).is_err());
         assert!(parse_opts(&args("--volume v --backend b --request-timeout-s 200 --kernel-timeout-s 100")).is_err());
+        assert!(parse_opts(&args("--volume v --backend b --kernel-timeout-s 0")).is_err(), "no kernel timeout is refused");
+        assert!(parse_opts(&args("--volume v --backend b --request-timeout-s 30 --kernel-timeout-s 60")).is_err(), "margin");
+        assert_eq!(parse_opts(&args("--volume v --backend b")).unwrap().media, "image");
         assert_eq!(parse_opts(&args("--volume v --backend b --device auto")).unwrap().device, None);
     }
 
@@ -714,5 +796,8 @@ mod tests {
     #[test]
     fn backend_on_an_exported_device_is_refused_and_others_pass() {
         assert!(check_not_on_nbd(Path::new("/tmp")).is_ok());
+        assert!(check_not_on_nbd(Path::new("relative/not/yet/created")).is_ok());
+        assert_eq!(unescape_mount("/mnt/a\\040b"), "/mnt/a b");
+        assert_eq!(unescape_mount("/plain\\0"), "/plain\\0");
     }
 }

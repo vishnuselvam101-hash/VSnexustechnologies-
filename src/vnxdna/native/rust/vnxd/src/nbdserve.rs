@@ -42,6 +42,8 @@ use std::time::{Duration, Instant};
 
 /// Largest request payload accepted (the Linux NBD driver sends at most 32 MiB: max_hw_sectors 65536).
 pub const MAX_PAYLOAD: u32 = 32 << 20;
+/// Time a client has to finish the negotiation.
+pub const NEGOTIATION_TIMEOUT: Duration = Duration::from_secs(10);
 
 // ---------------------------------------------------------------------------------------------------------------
 // fault injection (tests and drills only; enabled by an explicit option)
@@ -463,7 +465,8 @@ impl Drop for Grant {
 }
 
 enum Work {
-    Io { ticket: Ticket, fua: bool },
+    /// `deadline`: the request's one deadline, which also bounds the flush of a FUA write
+    Io { ticket: Ticket, fua: bool, deadline: Option<Instant> },
     Done(u32),
 }
 
@@ -519,9 +522,22 @@ impl Device {
     /// Serve one NBD connection until DISC, close or a protocol error. With `negotiate`, run the server side of
     /// the handshake first (the kernel attach path negotiates on the same socket pair before the ioctls).
     pub fn serve(&self, stream: UnixStream, export: &ExportInfo, negotiate: bool) -> Result<ConnEnd> {
+        // the connection is shut down on every way out of here (return, `?`, panic): a peer never waits on a
+        // connection nobody serves
+        struct Shut(UnixStream);
+        impl Drop for Shut {
+            fn drop(&mut self) {
+                let _ = self.0.shutdown(std::net::Shutdown::Both);
+            }
+        }
+        let _shut = Shut(stream.try_clone().map_err(|e| nbd::io_err("clone socket", e))?);
         let mut rd = stream;
         if negotiate {
-            match nbd::server_negotiate(&mut rd, export) {
+            // a client that never negotiates does not hold a connection slot forever
+            let _ = rd.set_read_timeout(Some(NEGOTIATION_TIMEOUT));
+            let negotiated = nbd::server_negotiate(&mut rd, export);
+            let _ = rd.set_read_timeout(None);
+            match negotiated {
                 Ok(Negotiated::Transmission) => {}
                 Ok(Negotiated::Closed) => return Ok(ConnEnd::NegotiationClosed),
                 Err(e) => {
@@ -593,13 +609,14 @@ impl Device {
             let len = u64::from(req.len);
             let in_range = req.offset.checked_add(len).map_or(false, |end| end <= size);
             let fua = req.flags & nbd::CMD_FLAG_FUA != 0;
+            let bad_flags = req.flags & !nbd::CMD_FLAG_FUA != 0; // no other command flag was negotiated
+            let deadline = deadline();
             let work_bytes = if matches!(req.kind, nbd::CMD_READ | nbd::CMD_WRITE) { len.min(u64::from(MAX_PAYLOAD)) } else { 0 };
             let grant = budget.acquire(work_bytes);
-            let n = budget.used.lock().unwrap_or_else(|p| p.into_inner()).1 as u64;
-            self.stats.inflight.store(n, Ordering::Relaxed);
+            let n = self.stats.inflight.fetch_add(1, Ordering::Relaxed) + 1; // decremented once the reply is sent
             self.stats.max_inflight_seen.fetch_max(n, Ordering::Relaxed);
-            let submit = |op: Op| match self.queue.submit(op, deadline()) {
-                Ok(t) => Work::Io { ticket: t, fua: false },
+            let submit = |op: Op| match self.queue.submit(op, deadline) {
+                Ok(t) => Work::Io { ticket: t, fua: false, deadline },
                 Err(e) => {
                     self.note_error(&e.to_string());
                     Work::Done(errno_of(&e).max(1))
@@ -608,7 +625,7 @@ impl Device {
             let work = match req.kind {
                 nbd::CMD_READ => {
                     self.stats.reads.fetch_add(1, Ordering::Relaxed);
-                    if req.len == 0 || !in_range {
+                    if req.len == 0 || !in_range || bad_flags {
                         Work::Done(crate::error::EINVAL)
                     } else if req.len > MAX_PAYLOAD {
                         Work::Done(crate::error::EOVERFLOW)
@@ -631,7 +648,9 @@ impl Device {
                             dead.store(true, Ordering::SeqCst);
                             return ConnEnd::Closed;
                         }
-                        if self.cfg.read_only {
+                        if bad_flags {
+                            Work::Done(crate::error::EINVAL)
+                        } else if self.cfg.read_only {
                             Work::Done(crate::error::EPERM)
                         } else if req.len == 0 {
                             Work::Done(crate::error::EINVAL)
@@ -642,7 +661,7 @@ impl Device {
                                 self.stats.fua_writes.fetch_add(1, Ordering::Relaxed);
                             }
                             match submit(Op::Write { offset: req.offset, data }) {
-                                Work::Io { ticket, .. } => Work::Io { ticket, fua },
+                                Work::Io { ticket, deadline, .. } => Work::Io { ticket, fua, deadline },
                                 w => w,
                             }
                         }
@@ -650,11 +669,17 @@ impl Device {
                 }
                 nbd::CMD_FLUSH => {
                     self.stats.flushes.fetch_add(1, Ordering::Relaxed);
-                    submit(Op::Flush)
+                    if bad_flags {
+                        Work::Done(crate::error::EINVAL)
+                    } else {
+                        submit(Op::Flush)
+                    }
                 }
                 nbd::CMD_TRIM => {
                     self.stats.trims.fetch_add(1, Ordering::Relaxed);
-                    if self.cfg.read_only {
+                    if bad_flags {
+                        Work::Done(crate::error::EINVAL)
+                    } else if self.cfg.read_only {
                         Work::Done(crate::error::EPERM)
                     } else if !in_range {
                         Work::Done(crate::error::EINVAL)
@@ -664,6 +689,7 @@ impl Device {
                 }
                 nbd::CMD_DISC => {
                     drop(grant);
+                    self.stats.inflight.fetch_sub(1, Ordering::Relaxed);
                     return ConnEnd::Disconnected;
                 }
                 _ => Work::Done(crate::error::EINVAL), // not advertised: WRITE_ZEROES, CACHE, BLOCK_STATUS, ...
@@ -681,7 +707,7 @@ impl Device {
                 Ok(p) => p,
                 Err(_) => return,
             };
-            let (errno, data) = self.complete(&p.work, dead);
+            let (errno, data) = self.complete(&p.work, p.req, dead);
             if errno != 0 {
                 self.stats.errors.fetch_add(1, Ordering::Relaxed);
                 if errno == crate::error::EIO {
@@ -702,14 +728,15 @@ impl Device {
             }
             drop(w);
             drop(p);
+            self.stats.inflight.fetch_sub(1, Ordering::Relaxed);
         }
     }
 
     /// Wait for a request's outcome: (errno, read data).
-    fn complete(&self, w: &Work, dead: &AtomicBool) -> (u32, Option<Vec<u8>>) {
-        let (ticket, fua) = match w {
+    fn complete(&self, w: &Work, req: Request, dead: &AtomicBool) -> (u32, Option<Vec<u8>>) {
+        let (ticket, fua, deadline) = match w {
             Work::Done(e) => return (*e, None),
-            Work::Io { ticket, fua } => (ticket, *fua),
+            Work::Io { ticket, fua, deadline } => (ticket, *fua, *deadline),
         };
         let wait = |t: &Ticket| loop {
             if dead.load(Ordering::SeqCst) {
@@ -727,11 +754,13 @@ impl Device {
             (errno_of(&e).max(1), None)
         };
         match wait(ticket) {
-            Ok(Reply::Data(d)) => (0, Some(d)),
+            // a reply's data is exactly the length asked for, or the reply stream would be out of step
+            Ok(Reply::Data(d)) if d.len() == req.len as usize => (0, Some(d)),
+            Ok(Reply::Data(d)) => fail(VnxError::new(ErrorCode::Internal, format!("read returned {} of {} bytes", d.len(), req.len))),
             Ok(Reply::Written(_)) if fua => {
                 let flushed = self
                     .queue
-                    .submit(Op::Flush, Some(Instant::now() + self.cfg.request_timeout))
+                    .submit(Op::Flush, deadline)
                     .and_then(|t| wait(&t));
                 match flushed {
                     Ok(_) => (0, None),
@@ -999,6 +1028,36 @@ mod tests {
         let ((), _) = with_conn(&dev, |c| {
             assert_eq!(c.call(CMD_READ, 0, 8192, 4096, &[], 4096), (0, vec![0x5a; 4096]));
         });
+        dev.close().unwrap();
+    }
+
+    #[test]
+    fn unknown_flags_are_refused_and_the_inflight_gauge_returns_to_zero() {
+        let t = TempDir::new("nbd-flags");
+        let dev = make(&t, DeviceConfig::default(), Arc::new(MemoryMedia::new()));
+        let ((), _) = with_conn(&dev, |c| {
+            assert_eq!(c.call(CMD_WRITE, 1 << 1, 0, 512, &[1u8; 512], 0).0, crate::error::EINVAL, "NO_HOLE not negotiated");
+            assert_eq!(c.call(CMD_READ, 1 << 2, 0, 512, &[], 0).0, crate::error::EINVAL);
+            assert_eq!(c.call(CMD_FLUSH, 1 << 3, 0, 0, &[], 0).0, crate::error::EINVAL);
+            // the refused write's payload was consumed: the stream is still in step
+            assert_eq!(c.call(CMD_READ, 0, 0, 512, &[], 512), (0, vec![0u8; 512]));
+            c.send(CMD_DISC, 0, 0, 0, &[]);
+        });
+        assert_eq!(dev.stats.inflight.load(Ordering::Relaxed), 0);
+        assert!(dev.stats.max_inflight_seen.load(Ordering::Relaxed) >= 1);
+        dev.close().unwrap();
+    }
+
+    #[test]
+    fn a_client_that_never_negotiates_is_dropped() {
+        let t = TempDir::new("nbd-idle");
+        let dev = make(&t, DeviceConfig::default(), Arc::new(MemoryMedia::new()));
+        let (a, b) = UnixStream::pair().unwrap();
+        let t0 = Instant::now();
+        let end = dev.serve(a, &dev.export("vnx"), true).unwrap();
+        assert!(matches!(end, ConnEnd::ProtocolError(_) | ConnEnd::NegotiationClosed), "{end:?}");
+        assert!(t0.elapsed() >= NEGOTIATION_TIMEOUT && t0.elapsed() < NEGOTIATION_TIMEOUT * 3);
+        drop(b);
         dev.close().unwrap();
     }
 

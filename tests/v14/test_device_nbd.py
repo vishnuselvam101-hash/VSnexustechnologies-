@@ -77,6 +77,10 @@ def _serve(sockdir: Path, vol: Path, be: Path, *extra: str) -> tuple[ns.Service,
 
 
 def test_cli_refuses_bad_usage(vnxd: Path, tmp_path: Path) -> None:
+    with pytest.raises(ns.UnsafeDeviceError):
+        ns.assert_own_device("/dev/vda", os.getpid())
+    with pytest.raises(ns.UnsafeDeviceError):
+        ns.run_tool(["true", "/dev/nbd9999"], "/dev/nbd9999", os.getpid())
     for argv in (["nbd"], ["nbd", "attach"], ["nbd", "create", "--volume", "v"], ["nbd", "frobnicate", "--volume", "v", "--backend", "b"],
                  ["nbd", "serve", "--volume", "v", "--backend", "b", "--cache", "sometimes"]):
         r = subprocess.run([str(vnxd), *argv], capture_output=True, text=True, timeout=60, cwd=tmp_path)
@@ -231,6 +235,8 @@ def test_serve_kill_and_recover(vnxd: Path, tmp_path: Path, sockdir: Path) -> No
             assert d in (flushed[i], later[i]), f"block {i}: neither the flushed nor the later bytes"
             new += d == later[i]
         c.disconnect()
+        # unflushed pipelined writes may or may not have landed: both counts are legal, the bound only documents it
+        assert 0 <= new <= blocks
     finally:
         assert svc2.stop() == 0
 
@@ -412,3 +418,82 @@ def test_kernel_kill_server_and_recover(kernel: Path, tmp_path: Path) -> None:
 def _verify_subset(root: Path, want: dict[str, str]) -> None:
     for rel, h in want.items():
         assert ns.sha256_file(root / rel) == h, rel
+
+
+# --------------------------------------------------------------------------------------------------------------
+# P8 review regressions
+
+
+def test_stop_signal_works_when_stderr_is_gone(vnxd: Path, tmp_path: Path, sockdir: Path) -> None:
+    """B1: a failed log write (stderr pipe closed) must never kill the signal handling: SIGTERM still stops."""
+    vol, be = _volume(tmp_path)
+    sock = sockdir / "nbd.sock"
+    p = subprocess.Popen([str(vnxd), "nbd", "serve", "--volume", str(vol), "--backend", str(be), "--socket", str(sock)],
+                         stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+    try:
+        ns.wait_for_socket(sock)
+        assert p.stderr is not None
+        p.stderr.close()  # every later log line fails with EPIPE
+        os.kill(p.pid, 15)
+        p.wait(timeout=20)
+        assert p.returncode in (0, 1)
+    finally:
+        if p.poll() is None:
+            os.kill(p.pid, 9)
+            p.wait(timeout=30)
+
+
+def test_serve_does_not_leak_descriptors_per_connection(vnxd: Path, tmp_path: Path, sockdir: Path) -> None:
+    """B2: every connection's descriptors are released when it ends."""
+    vol, be = _volume(tmp_path)
+    svc, sock = _serve(sockdir, vol, be)
+    try:
+        fds = Path(f"/proc/{svc.pid}/fd")
+        ns.NbdClient(sock).disconnect()
+        time.sleep(0.2)
+        before = len(list(fds.iterdir()))
+        for _ in range(60):
+            ns.NbdClient(sock).disconnect()
+        time.sleep(0.5)
+        assert len(list(fds.iterdir())) <= before + 2
+    finally:
+        assert svc.stop() == 0
+
+
+def test_failed_final_flush_is_a_failed_exit(vnxd: Path, tmp_path: Path, sockdir: Path) -> None:
+    """B3 (serve): a stop whose final flush fails exits non-zero, never 0."""
+    vol, be = _volume(tmp_path)
+    ctl = tmp_path / "faults"
+    svc, sock = _serve(sockdir, vol, be, "--fault-control", str(ctl), "--cache", "write-back")
+    try:
+        c = ns.NbdClient(sock)
+        assert c.write(0, b"\x01" * 4096) == 0  # write-back: dirty in the cache
+        ctl.write_text("put sync")
+        c.s.close()
+    finally:
+        rc = svc.stop()
+    assert rc == 1, svc.log()[-2000:]
+
+
+def test_kernel_failed_detach_is_a_failed_exit(kernel: Path, tmp_path: Path) -> None:
+    """B3 (attach): when the kernel cannot write its dirty buffers at detach, attach exits non-zero."""
+    vol, be = _volume(tmp_path, "16M")
+    ctl = tmp_path / "faults"
+    svc = ns.Service("attach", vol, be, "--fault-control", str(ctl), "--cache", "none")
+    dev = svc.device
+    try:
+        ns.assert_own_device(dev, svc.pid)
+        ctl.write_text("put sync")
+        fd = os.open(dev, os.O_WRONLY)
+        try:
+            os.write(fd, b"\x02" * 65536)  # buffered: written back only by the detach's fsync
+        finally:
+            os.close(fd)
+        rc = svc.stop()
+        assert rc == 1, svc.log()[-2000:]
+        assert "device_sync_failed" in [e["event"] for e in svc.events()]
+        ns.wait_device_free(dev)
+    finally:
+        if ctl.exists():
+            ctl.unlink()
+        svc.stop()

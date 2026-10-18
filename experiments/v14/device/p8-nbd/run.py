@@ -59,7 +59,7 @@ def acceptance(work: Path) -> dict:
         ns.reread_partitions(dev, svc.pid)
         part = dev + "p1"
         ns.wait_partition(part)
-        out["partition_table"] = sh("sfdisk", "--dump", dev).splitlines()[-1]
+        out["partition_table"] = ns.run_tool(["sfdisk", "--dump", dev], dev, svc.pid).stdout.strip().splitlines()[-1]
         t0 = time.monotonic()
         ns.run_tool(["mkfs.ext4", "-q", "-F", "-L", "vnxp8", part], part, svc.pid)
         t["mkfs_s"] = time.monotonic() - t0

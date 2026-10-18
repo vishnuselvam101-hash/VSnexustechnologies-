@@ -7,8 +7,9 @@
 //! fsyncs the directory; `remove` unlinks and fsyncs the directory; `sync` fsyncs the directory. Temporary files
 //! left by a crash are deleted when the adapter is opened. Names that do not parse are refused by `list` (an
 //! unknown file in a backend directory is CORRUPTION, never silently ignored). An exclusive lock file
-//! (`<dir>/.lock`, created with O_EXCL and holding the owner's pid) keeps two services off one backend; a lock
-//! whose owner no longer runs is taken over.
+//! (`<dir>/.lock`, linked into place already holding the owner's pid) keeps two services off one backend; a lock
+//! whose owner no longer runs is taken over (two openers taking over the same stale lock at the same instant, or a
+//! pid seen from another pid namespace, are not covered; the device's default backend is ImageMedia).
 
 use crate::addr::{ExtentId, Generation, GenerationRef};
 use crate::digest::sha256;
@@ -61,9 +62,23 @@ impl DirMedia {
         std::fs::create_dir_all(dir).map_err(|e| unavailable(&format!("create {}", dir.display()), e))?;
         let lock = dir.join(LOCK);
         for _ in 0..2 {
-            match OpenOptions::new().write(true).create_new(true).open(&lock) {
-                Ok(mut f) => {
-                    f.write_all(std::process::id().to_string().as_bytes()).and_then(|_| f.sync_all()).map_err(|e| unavailable("write lock", e))?;
+            // the lock appears with its owner's pid already in it (written to a private name, then linked): no
+            // opener can ever read an empty lock and take it for a stale one
+            let tmp = dir.join(format!("{TMP_PREFIX}lock-{}", std::process::id()));
+            let _ = std::fs::remove_file(&tmp);
+            let staged = OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(&tmp)
+                .and_then(|mut f| f.write_all(std::process::id().to_string().as_bytes()).and_then(|_| f.sync_all()));
+            if let Err(e) = staged {
+                let _ = std::fs::remove_file(&tmp);
+                return Err(unavailable("write lock", e));
+            }
+            let linked = std::fs::hard_link(&tmp, &lock);
+            let _ = std::fs::remove_file(&tmp);
+            match linked {
+                Ok(()) => {
                     let m = DirMedia { dir: dir.to_path_buf(), tmp_seq: AtomicU64::new(0) };
                     m.sweep_tmp()?;
                     m.sync_dir()?;

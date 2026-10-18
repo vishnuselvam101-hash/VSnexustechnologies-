@@ -42,6 +42,16 @@ EPERM, EIO, EINVAL, ENOSPC = 1, 5, 22, 28
 _DEV_RE = re.compile(r"^/dev/nbd(\d{1,4})(p\d{1,3})?$")
 
 
+class UnsafeDeviceError(RuntimeError):
+    """A destructive operation was refused: the target is not a device this run attached (never an assert, so the
+    checks survive ``python -O``)."""
+
+
+def _require(ok: bool, msg: str) -> None:
+    if not ok:
+        raise UnsafeDeviceError(msg)
+
+
 def build_vnxd() -> Path | None:
     """Build the release binary once; None when cargo is not installed."""
     cargo = shutil.which("cargo")
@@ -78,20 +88,21 @@ def mounted_sources() -> set[str]:
 def assert_own_device(dev: str, pid: int, *, may_be_mounted: bool = False) -> None:
     """Refuse anything but an NBD device (or one of its partitions) served by process ``pid`` and not mounted."""
     m = _DEV_RE.match(dev)
-    assert m is not None, f"refusing {dev!r}: not an /dev/nbdN[pM] path"
+    if m is None:
+        raise UnsafeDeviceError(f"refusing {dev!r}: not an /dev/nbdN[pM] path")
     whole = f"nbd{m.group(1)}"
     pid_file = Path(f"/sys/block/{whole}/pid")
     owner = pid_file.read_text().strip() if pid_file.exists() else None
-    assert owner == str(pid), f"refusing {dev}: served by {owner!r}, not by our vnxd process {pid}"
+    _require(owner == str(pid), f"refusing {dev}: served by {owner!r}, not by our vnxd process {pid}")
     if not may_be_mounted:
         mounted = {s for s in mounted_sources() if s == f"/dev/{whole}" or s.startswith(f"/dev/{whole}p")}
-        assert not mounted, f"refusing {dev}: {sorted(mounted)} mounted"
+        _require(not mounted, f"refusing {dev}: {sorted(mounted)} mounted")
 
 
 def run_tool(argv: list[str], dev: str, pid: int, *, timeout: float = 300, check: bool = True,
              may_be_mounted: bool = False, input: str | None = None) -> subprocess.CompletedProcess[str]:
     """Run a destructive tool on ``dev`` after the ownership check (``dev`` must be an argument of ``argv``)."""
-    assert dev in argv, "the checked device must be the tool's target"
+    _require(dev in argv, "the checked device must be the tool's target")
     assert_own_device(dev, pid, may_be_mounted=may_be_mounted)
     r = subprocess.run(argv, capture_output=True, text=True, timeout=timeout, input=input)
     if check and r.returncode != 0:
@@ -102,7 +113,7 @@ def run_tool(argv: list[str], dev: str, pid: int, *, timeout: float = 300, check
 @contextmanager
 def mounted(dev: str, pid: int, mountpoint: Path, *opts: str) -> Iterator[Path]:
     mountpoint.mkdir(parents=True, exist_ok=True)
-    assert mountpoint.is_dir() and not any(mountpoint.iterdir()), "mount point must be an empty directory we own"
+    _require(mountpoint.is_dir() and not any(mountpoint.iterdir()), "mount point must be an empty directory we own")
     args = ["mount"] + (["-o", ",".join(opts)] if opts else []) + [dev, str(mountpoint)]
     run_tool(args, dev, pid)
     try:

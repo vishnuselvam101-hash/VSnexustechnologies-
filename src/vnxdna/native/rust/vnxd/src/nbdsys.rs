@@ -61,7 +61,8 @@ fn os_err(what: &str, e: std::io::Error) -> VnxError {
     VnxError::new(code, format!("{what}: {e}"))
 }
 
-/// The signals that stop the service (SIGINT, SIGTERM, SIGHUP).
+/// The signals the service handles itself: SIGINT and SIGTERM stop it; SIGHUP is blocked and only logged (a dropped
+/// terminal must not detach a device a filesystem is using).
 pub fn stop_signals() -> SigSet {
     let mut s = SigSet([0; 16]);
     // SAFETY: `s` is an owned, properly sized and aligned sigset; sigemptyset/sigaddset only write inside it and
@@ -143,7 +144,7 @@ pub fn free_devices() -> Vec<u32> {
     v
 }
 
-/// Is `dev` (or one of its partitions) mounted, according to /proc/self/mountinfo's source field?
+/// Is `dev` (or one of its partitions) mounted, according to the source field of /proc/self/mounts?
 pub fn is_mounted(dev: &Path) -> bool {
     let Some(d) = dev.to_str() else { return false };
     let Ok(text) = std::fs::read_to_string("/proc/self/mounts") else { return false };

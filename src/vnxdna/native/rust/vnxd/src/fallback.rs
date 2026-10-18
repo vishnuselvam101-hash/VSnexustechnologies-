@@ -506,14 +506,14 @@ mod tests {
     fn steady_reads_never_postpone_the_write_probe() {
         // regression (P8): a block device reads all the time; a successful read while the backend is UNAVAILABLE
         // used to restart the probe interval, so writes were never probed again and the device stayed read-only
-        let r = rig(HealthConfig { degrade_after: 1, unavailable_after: 1, probe_interval: Duration::from_millis(60), score_alpha: 0.5 });
+        let r = rig(HealthConfig { degrade_after: 1, unavailable_after: 1, probe_interval: Duration::from_millis(200), score_alpha: 0.5 });
         r.rm.put(at(0, 1), b"kept").unwrap();
         r.fm.add(Rule::always(MediaOp::Put, Fault::Unavailable));
         assert_eq!(r.rm.put(at(1, 1), b"x").unwrap_err().code, ErrorCode::BackendUnavailable);
         assert_eq!(r.rm.health().state, BackendState::Unavailable);
         r.fm.clear();
         let t0 = std::time::Instant::now();
-        while t0.elapsed() < Duration::from_millis(90) {
+        while t0.elapsed() < Duration::from_millis(260) {
             assert_eq!(r.rm.get(at(0, 1)).unwrap(), b"kept"); // reads are served throughout
             std::thread::sleep(Duration::from_millis(5));
         }
@@ -523,10 +523,10 @@ mod tests {
         r.fm.add(Rule::always(MediaOp::Put, Fault::Unavailable));
         assert_eq!(r.rm.put(at(2, 1), b"y").unwrap_err().code, ErrorCode::BackendUnavailable);
         r.fm.clear();
-        std::thread::sleep(Duration::from_millis(40));
+        std::thread::sleep(Duration::from_millis(120));
         r.fm.add(Rule::once(MediaOp::Get, Fault::Unavailable));
         assert_eq!(r.rm.get(at(0, 1)).unwrap_err().code, ErrorCode::BackendUnavailable);
-        std::thread::sleep(Duration::from_millis(30)); // 70 ms after the put failure, 30 ms after the read failure
+        std::thread::sleep(Duration::from_millis(100)); // 220 ms after the put failure, 100 ms after the read failure
         assert_eq!(r.rm.put(at(2, 1), b"y").unwrap_err().code, ErrorCode::ReadOnly);
     }
 
