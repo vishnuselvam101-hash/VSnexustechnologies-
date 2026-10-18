@@ -45,7 +45,10 @@ against the backend.
 
 Every `probe_interval` (default 5 s) one write-side operation is let through as a probe. If it succeeds, every
 write-side kind (put, remove, sync) starts afresh, so the device leaves read-only mode whichever write-side kind
-failed; it is healthy again unless reads are still failing. A failed probe keeps it read-only for another interval;
+failed; it is healthy again unless reads are still failing. The interval runs from the last *failure* that counts
+against the backend: operations that succeed while it is unavailable (the steady reads of a mounted filesystem) never
+postpone the next probe (P8 fix; before it, a device under constant reads stayed read-only for good). A failed probe
+keeps it read-only for another interval;
 a probe that panics releases its slot. A successful read clears only the read kind's own streak: when writes caused
 the read-only mode, reads never end it (a backend may answer reads and still fail writes), and successful removes
 never hide failing puts. Every transition is audited (`backend_state`). The management `health` result reports the state,
