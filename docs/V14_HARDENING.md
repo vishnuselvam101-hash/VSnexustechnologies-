@@ -49,7 +49,7 @@ L = needs local write access to the volume/cache/input, I = internal callers onl
 | O-7 | INFO | I | cluster.c `verify`: `malloc(chunk * 8)` can wrap for chunk ≥ 2^61; safe today only because the `malloc(chunk)` beside it fails first | OPEN | — |
 | O-8 | INFO | U | `VNXDNA_CLUSTER_THREADS=abc` silently means 1 thread (results do not depend on the thread count) | OPEN | — |
 | O-9 | INFO | U | Stream manifest extent `index: true` is accepted for extent 1 (`True == 1`) | OPEN | — |
-| O-10 | INFO | — | `tests/arch/test_native_strand.py::test_thread_count_does_not_change_the_result` failed once in a 3-worker run while the host was shared with three other agents; not reproduced in 3 reruns of the file and 60 direct loops (the strand kernel is not touched here) | WATCH | — |
+| O-10 | INFO | — | Environment, not code: the governed `vnxdna.slice` has `TasksMax=256` shared by every agent's run; with four agents on the host, thread/process creation failed with EAGAIN (`BlockingIOError: [Errno 11]`, slice `pids.events` max > 0). A full run inside the slice (a3c70f1, 21m46s) had 13 such failures (strand `nthreads=1000`, V12 parallel pass 2, the seal worker, two subprocess tests here); all 210 pass serially and the run outside the slice is clean (§5). Other agents' runs of b69e70f/c2ae79e show the same class of failures | ENVIRONMENT | — |
 | O-11 | INFO | — | The lab venv carries stale `vnx-dna 5.0.0` distribution metadata (pip's resolver warns about it); every run here uses `PYTHONPATH=<worktree>/src` | OPEN | — |
 
 Checked and clean: every ctypes symbol declares argtypes/restype, ABIs are checked before binding, library paths are
@@ -117,7 +117,14 @@ deployment also uses `cryptography` for TLS/X.509 in the same environment. Risk:
 (x86_64 macOS, 32-bit Windows) would need a source build or a `<49` cap there; Linux x86_64/aarch64 (the lab, the Pi
 target) are unaffected.
 
-## 5. Reproduction
+## 5. Full suite
+
+Commit a3c70f1, alone on the host, `systemd-run --scope -p MemoryMax=12G -p CPUQuota=600% -p TasksMax=4096`, 6 xdist
+workers, lab venv on PATH (as `tools/vnx-lab full`): **4,666 passed / 4 skipped / 0 failed** in 411 s (gate before this
+work: 4,584 / 4 / 0; +82 tests in `tests/v14/test_hardening_f.py`). Lab log:
+`results/full-suite-a3c70f1-scope-path-20261018-1935.txt`.
+
+## 6. Reproduction
 
 ```
 cd <worktree>/web && rm -rf node_modules && npm ci --ignore-scripts && VNX_TEST_PYTHON=<venv>/bin/python npm test
