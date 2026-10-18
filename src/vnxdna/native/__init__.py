@@ -45,6 +45,24 @@ _REFERENCE = {"align": "vnxdna.v4.sync", "reads": "vnxdna.v4.reads", "rs": "vnxd
               "cluster": "vnxdna.recovery.cluster", "strand": "vnxdna.dnaenc.frame4", "orient": "vnxdna.recovery.pass1",
               "integrity": "vnxdna.core.crc", "outerlist": "vnxdna.recovery.outer_list",
               "engine": "vnxdna.recovery.pass1"}   # reported names: the stable (old) paths
+#: V14 F (H-9): the values each kernel's VNXDNA_<KERNEL>_BACKEND variable accepts (the kernels' BACKENDS tuples)
+_SIMD_BACKENDS = ("auto", "native", "avx512", "avx2", "scalar", "reference")
+_PLAIN_BACKENDS = ("auto", "native", "reference")
+BACKEND_ENV = {f"VNXDNA_{k.upper()}_BACKEND": (_SIMD_BACKENDS if k in ("align", "rs") else _PLAIN_BACKENDS)
+               for k in KERNELS}
+
+
+def check_backend_env() -> None:
+    """Refuse a misspelled kernel backend variable before any work starts (VNXConfigurationError, exit 2): the
+    kernels raised a raw ValueError at first use, inside a worker for the aligner, and the engine rung swallowed it
+    and fell back to the V13 path."""
+    from vnxdna.core.errors import VNXConfigurationError
+    for var, allowed in BACKEND_ENV.items():
+        raw = os.environ.get(var)
+        if raw and raw.strip().lower() not in allowed:
+            raise VNXConfigurationError(f"{var} must be one of {', '.join(allowed)}, got {raw!r}")
+
+
 _CODECS = "vnxdna.codec.codecs"      # InnerRS; its VNX_RS_REFERENCE switch (read at import) bypasses the RS kernel
 
 

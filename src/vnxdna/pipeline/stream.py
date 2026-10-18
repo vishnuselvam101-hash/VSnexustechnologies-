@@ -196,8 +196,13 @@ def encode_stream(source, sink: str | os.PathLike, *, options: StreamOptions | N
     fmt = "fasta"
     if sink_path is not None and sink_path.suffix.lower() in (".fq", ".fastq"):
         fmt = "fastq"
-    work = Path(tempfile.mkdtemp(prefix="vnx-stream-", dir=workdir))
-    src, close = _open_source(source)
+    src, close = _open_source(source)           # V14 F (H-7): before the work directory, so a missing source leaks none
+    try:
+        work = Path(tempfile.mkdtemp(prefix="vnx-stream-", dir=workdir))
+    except BaseException:
+        if close and hasattr(src, "close"):
+            src.close()
+        raise
     pool = None
     records: list[dict] = []
     total = hashlib.sha256()
@@ -280,6 +285,9 @@ class _stdout:
 
 
 # ============================================================================ decode
+_MAX_RANGE = 1 << 62                         # strands_offset + strands_bytes (an off_t holds 2^63 - 1)
+
+
 def load_manifest(path: str | os.PathLike) -> dict:
     try:
         doc = parse_canonical_json(Path(path).read_bytes().rstrip(b"\n"), "stream manifest")
@@ -313,8 +321,9 @@ def load_manifest(path: str | os.PathLike) -> dict:
         if rec["index"] != i:
             raise bad("extents out of order")
         total += count(rec, "length", i)
-        count(rec, "strands_offset", i)
-        count(rec, "strands_bytes", i)
+        # V14 F (H-6): a range beyond any file is a format error, not a raw ValueError from seek()
+        if count(rec, "strands_offset", i) + count(rec, "strands_bytes", i) > _MAX_RANGE:
+            raise bad(f"extent {i}: strand byte range beyond {_MAX_RANGE}")
         hexstr(rec, "sha256", i, 64)
         hexstr(rec, "strands_sha256", i, 64)
         hexstr(rec, "archive_tag", i, 4)
@@ -324,6 +333,8 @@ def load_manifest(path: str | os.PathLike) -> dict:
         raise bad(f"'total_bytes' must equal the sum of the extent lengths ({total})")
     if not isinstance(doc.get("sha256"), str) or len(doc["sha256"]) != 64:
         raise bad("'sha256' must be the 64-hex-digit hash of the stream")
+    if doc.get("strands_format", "fasta") not in ("fasta", "fastq"):        # V14 F (H-6): it names work files
+        raise bad("'strands_format' must be 'fasta' or 'fastq'")
     return doc
 
 
@@ -381,7 +392,7 @@ def decode_stream(strands: str | os.PathLike, manifest: str | os.PathLike, outpu
         check_tags()
     to_stdout = output == "-"
     out_path = None if to_stdout else Path(output)
-    work = Path(tempfile.mkdtemp(prefix="vnx-stream-", dir=workdir))
+    work: Path | None = None                    # V14 F (H-7): created inside the try below, so nothing leaks before it
     fmt = doc.get("strands_format", "fasta")
     total = hashlib.sha256()
     done = 0
@@ -402,6 +413,7 @@ def decode_stream(strands: str | os.PathLike, manifest: str | os.PathLike, outpu
             except Exception:  # noqa: BLE001 - any pass-1/partition failure falls back to the per-extent path
                 pool_decoder = None
     try:
+        work = Path(tempfile.mkdtemp(prefix="vnx-stream-", dir=workdir))
         with (atomic_output(out_path, overwrite=overwrite) if out_path else _stdout()) as tmp_out:
             out = sys.stdout.buffer if tmp_out is None else open(tmp_out, "wb")
             try:
@@ -464,7 +476,8 @@ def decode_stream(strands: str | os.PathLike, manifest: str | os.PathLike, outpu
     finally:
         if pool_decoder is not None:
             pool_decoder.close()
-        shutil.rmtree(work, ignore_errors=True)
+        if work is not None:
+            shutil.rmtree(work, ignore_errors=True)
 
 
 __all__ = ["STREAM_FORMAT", "EXTENT_NAME", "StreamOptions", "encode_extent", "decode_extent", "encode_stream", "decode_stream",

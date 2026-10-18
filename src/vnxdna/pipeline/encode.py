@@ -63,6 +63,8 @@ class DNAOptions:
                     or self.outer_plan != "fixed")
 
     def resolve(self) -> tuple[Layout, int, int]:
+        from vnxdna.native import check_backend_env
+        check_backend_env()                     # V14 F (H-9): a misspelled VNXDNA_*_BACKEND is a configuration error
         if self.profile not in PROFILES:
             raise VNXConfigurationError(f"unknown profile {self.profile!r}; available: {sorted(PROFILES)}")
         lay, k, m = PROFILES[self.profile]

@@ -29,6 +29,17 @@ test("a failing command raises VnxCommandError carrying the vnx.error/1 object",
   });
 });
 
+test("the vnx.error/1 object the CLI writes to stderr reaches VnxCommandError.vnxError", async () => {
+  await assert.rejects(vnx(["decode", "/nonexistent/reads.fastq", "-o", "/nonexistent/out.vnx"], { command: VNX, env,
+    timeoutMs: 120_000 }), (e: unknown) => {
+    assert.ok(e instanceof VnxCommandError);
+    assert.equal(e.exitCode, 3, e.stderr);
+    assert.equal(e.vnxError?.code, "FORMAT_ERROR");
+    assert.equal(e.vnxError?.exit_code, 3);
+    return true;
+  });
+});
+
 test("a missing executable is a typed error, not a crash", async () => {
   await assert.rejects(vnx(["native"], { command: ["/nonexistent/vnx"] }), VnxCommandError);
 });
