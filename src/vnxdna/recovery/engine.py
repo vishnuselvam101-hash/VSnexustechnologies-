@@ -48,7 +48,14 @@ def params_for(lay: Layout, opt: DecodeOptions) -> EngineParams:
 
 
 def run_pass1(reads_path: str | os.PathLike, spill_dir: str | os.PathLike, lay: Layout, opt: DecodeOptions, buckets: int, *,
-              fmt: str, threads: int, dedup: bool = True, batch: int | None = None, cancel: Cancel | None = None) -> dict:
-    """Pass 1 of a decode in the engine (see :func:`vnxdna.native.engine.run_pass1`)."""
+              fmt: str, threads: int, dedup: bool = True, batch: int | None = None, cancel: Cancel | None = None,
+              scheduler: str | None = None) -> dict:
+    """Pass 1 of a decode in the engine (see :func:`vnxdna.native.engine.run_pass1`); ``scheduler`` None = the
+    option's ``engine_scheduler`` ("auto" runs the V13 rule; the strand retry is the ladder's, pipeline.decode)."""
     return _ne.run_pass1(reads_path, spill_dir, params_for(lay, opt), buckets, fmt=fmt, threads=threads, dedup=dedup,
-                         batch=batch, cancel=cancel)
+                         batch=batch, cancel=cancel, scheduler=scheduler_of(scheduler or opt.engine_scheduler))
+
+
+def scheduler_of(name: str) -> str:
+    """The engine scheduler an option value runs: "auto" -> "corroborated"."""
+    return "corroborated" if name == "auto" else name

@@ -4,7 +4,8 @@
 
 Reads one request per line on stdin and writes one response per line on stdout. Phase 4 serves ``hello``,
 ``key_check``, ``seal_extent`` and ``open_extent`` (sealing with :mod:`vnxdna.device.seal`); the codec operations
-``encode_extent``/``decode_extent`` arrive with Phase 6 and are refused until then (PROTOCOL).
+``encode_extent``/``decode_extent`` are served by the key-less codec worker :mod:`vnxdna.device.dnasim` (Phase 7) and
+refused here (PROTOCOL).
 
 * the key file is opened once without following symlinks; it must be a regular file owned by this user, not
   accessible by group or others, and hold 64 hex or 44 base64 characters (a generated key, never a passphrase);
@@ -135,7 +136,7 @@ class Worker:
             if not out:
                 raise DeviceError("CORRUPTION", "an empty extent cannot be reported (output_bytes >= 1)")
             return {"job": a["job"], **self._write_output(a["output"], out)}
-        raise DeviceError("PROTOCOL", f"operation {op} is not served by this worker (codec operations: Phase 6)")
+        raise DeviceError("PROTOCOL", f"operation {op} is not served by this worker (codec operations: vnxdna.device.dnasim)")
 
     def handle(self, line: str) -> str:
         rid = 0

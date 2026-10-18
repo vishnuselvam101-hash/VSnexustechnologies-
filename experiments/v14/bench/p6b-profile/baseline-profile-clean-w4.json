@@ -1,0 +1,100 @@
+{
+ "label": "SIMULATED",
+ "mode": "single",
+ "workers": 4,
+ "wall_s": 0.6876,
+ "profiled": true,
+ "output_sha256": "c15cf62c9432be3d2eb9a842cd2fba56e3d6ff58e39c2de8f2fde5a0eabaf181",
+ "matches": true,
+ "report": {
+  "status": "SUCCESS",
+  "stage_seconds": {
+   "pass1_reads": 0.3225270558614284,
+   "pass1_worker_cpu": 0.317046677,
+   "pass2_decode": 0.12077452382072806,
+   "verify": 0.02648453484289348
+  }
+ },
+ "stages": {
+  "resolve_vectorised": {
+   "calls": 3,
+   "cum_s": 0.0171,
+   "own_s": 0.0119
+  },
+  "pass2": {
+   "calls": 1,
+   "cum_s": 0.1564,
+   "own_s": 0.0005
+  },
+  "resolve_duplicates": {
+   "calls": 1,
+   "cum_s": 0.0003,
+   "own_s": 0.0002
+  },
+  "consensus_symbols": {
+   "calls": 3,
+   "cum_s": 0.0,
+   "own_s": 0.0
+  },
+  "superblock": {
+   "calls": 1,
+   "cum_s": 0.0031,
+   "own_s": 0.0004
+  },
+  "pass1_engine": {
+   "calls": 2,
+   "cum_s": 0.6409,
+   "own_s": 0.3198
+  },
+  "spill_load": {
+   "calls": 4,
+   "cum_s": 0.0041,
+   "own_s": 0.0001
+  },
+  "layout_probe": {
+   "calls": 1,
+   "cum_s": 0.1102,
+   "own_s": 0.0017
+  },
+  "np_fromfile": {
+   "calls": 8,
+   "cum_s": 0.0038,
+   "own_s": 0.0035
+  },
+  "sha256_update": {
+   "calls": 5,
+   "cum_s": 0.0102,
+   "own_s": 0.0102
+  }
+ },
+ "top_own": [
+  "   ncalls  tottime  percall  cumtime  percall filename:lineno(function)",
+  "        1    0.320    0.320    0.320    0.320 /root/vnx-dna-lab/v14/src/vnxdna/native/engine.py:200(run_pass1)",
+  "        3    0.044    0.015    0.098    0.033 /root/vnx-dna-lab/v14/src/vnxdna/recovery/outer.py:239(_fast_bucket)",
+  "        1    0.019    0.019    0.117    0.117 /root/vnx-dna-lab/v14/src/vnxdna/recovery/outer.py:281(run)",
+  "        6    0.015    0.002    0.023    0.004 /root/vnx-dna-lab/v14/src/vnxdna/native/reads.py:242(iter_reads_native)",
+  "        1    0.014    0.014    0.109    0.109 /root/vnx-dna-lab/v14/src/vnxdna/recovery/probe.py:128(probe_reads)",
+  "   162/14    0.013    0.000    0.090    0.006 {built-in method builtins.exec}",
+  "        3    0.013    0.004    0.013    0.004 /root/vnx-dna-lab/v14/src/vnxdna/native/rs.py:235(_run)",
+  "        3    0.012    0.004    0.017    0.006 /root/vnx-dna-lab/v14/src/vnxdna/recovery/outer.py:87(_resolve_vectorised)",
+  "    20485    0.012    0.000    0.012    0.000 /root/vnx-dna-lab/v14/src/vnxdna/recovery/probe.py:94(<genexpr>)",
+  "        1    0.011    0.011    0.018    0.018 /root/vnx-dna-lab/v14/src/vnxdna/recovery/probe.py:101(frame_heads)",
+  "        5    0.010    0.002    0.010    0.002 {method 'update' of '_hashlib.HASH' objects}",
+  "       93    0.010    0.000    0.010    0.000 {built-in method marshal.loads}",
+  "     1640    0.007    0.000    0.007    0.000 {built-in method posix.pwrite}",
+  "        2    0.006    0.003    0.006    0.003 {method 'readinto' of '_io.BufferedReader' objects}",
+  "     1676    0.006    0.000    0.006    0.000 {method 'reduce' of 'numpy.ufunc' objects}",
+  "        4    0.005    0.001    0.006    0.001 /root/vnx-dna-lab/.venv/lib/python3.12/site-packages/numpy/_core/shape_base.py:378(stack)",
+  "        4    0.005    0.001    0.006    0.002 /root/vnx-dna-lab/v14/src/vnxdna/sync/template.py:315(strip_markers_exact)",
+  "      7/6    0.004    0.001    0.005    0.001 {built-in method _imp.create_dynamic}",
+  "       32    0.004    0.000    0.004    0.000 {method 'tolist' of 'numpy.ndarray' objects}",
+  "     1640    0.004    0.000    0.010    0.000 /root/vnx-dna-lab/.venv/lib/python3.12/site-packages/numpy/_core/numeric.py:2471(array_equal)",
+  "     1640    0.004    0.000    0.016    0.000 /root/vnx-dna-lab/v14/src/vnxdna/recovery/outer.py:215(row_decoded)",
+  "        1    0.004    0.004    0.004    0.004 {built-in method posix.fsync}",
+  "        8    0.003    0.000    0.004    0.000 {built-in method numpy.fromfile}",
+  "       93    0.003    0.000    0.013    0.000 <frozen importlib._bootstrap_external>:751(_compile_bytecode)",
+  "        2    0.003    0.002    0.003    0.002 {built-in method posix.sendfile}"
+ ],
+ "reference": "the encoded container (decode_reads output)",
+ "host_load1_note": "lab host idle (load ~0.1) when these were taken"
+}

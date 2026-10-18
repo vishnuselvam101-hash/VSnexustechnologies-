@@ -38,7 +38,7 @@ DECODE_KEYS = {"profile", "band", "retry_band", "min_quality", "reverse_compleme
                "archive_tag", "batch_reads", "workers", "indel_recovery", "soft_decoding",
                "recovery_schedule", "max_container_bytes", "consensus_weighting",
                "expect_archive_id", "expect_sha256", "read_clustering", "orientation_retry", "sync_speculation",
-               "engine", "engine_dedup", "engine_threads"}
+               "engine", "engine_dedup", "engine_scheduler", "engine_threads"}
 ARCHIVE_KEYS = {"chunk_size", "compression", "level", "workers", "preserve_metadata", "dedup", "archive_id"}
 
 
@@ -137,12 +137,24 @@ def encode_options(config_path=None, performance_name: str | None = None, *, red
 
 def decode_options_for(config_path=None, performance_name: str | None = None, *, workers: int = 0,
                        archive_tag: str | None = None, budget: dict | None = None, **explicit):
-    """DecodeOptions from a config file, a performance profile and explicit options (``None`` = not given)."""
+    """DecodeOptions from a config file, a performance profile and explicit options (``None`` = not given).
+    Precedence: explicit > the config file's ``decode`` section > performance profile > defaults (V14 F, H-3: the
+    profile's workers/batch_reads used to replace the file's values silently)."""
     from vnxdna.recovery.planner import RecoveryBudget
     cfg = load_config(config_path)
     p = performance(performance_name or cfg.get("performance"))
-    opts = decode_options(cfg, workers=workers or p["workers"], batch_reads=p["batch_reads"],
-                          archive_tag=int(archive_tag, 16) if archive_tag else None, **explicit)
+    sec = cfg.get("decode", {})
+    tag = None
+    if archive_tag:
+        # V14 F (H-2): a non-hex tag is a configuration error (it was an INTERNAL_ERROR from int())
+        try:
+            tag = int(archive_tag, 16)
+        except (TypeError, ValueError):
+            raise VNXConfigurationError(f"archive tag must be 1-4 hexadecimal digits, not {archive_tag!r}") from None
+        if not 0 <= tag <= 0xFFFF or archive_tag.strip().startswith(("-", "+")):
+            raise VNXConfigurationError(f"archive tag must be 1-4 hexadecimal digits, not {archive_tag!r}")
+    opts = decode_options(cfg, workers=workers or sec.get("workers", p["workers"]),
+                          batch_reads=sec.get("batch_reads", p["batch_reads"]), archive_tag=tag, **explicit)
     if budget:
         opts.recovery_budget = RecoveryBudget(**budget)
     return opts

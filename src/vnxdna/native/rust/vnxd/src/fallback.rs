@@ -275,6 +275,9 @@ impl ResilientMedia {
             t.probing = false;
         }
         let a = self.cfg.score_alpha;
+        // only a failure that counts against the backend proves it is still down; successful (or request-level
+        // failing) operations served while it is UNAVAILABLE never postpone the next write probe
+        let counted_failure = matches!(r, Err(e) if counts_against_backend(e.code));
         let failed_probe = match r {
             Ok(_) => {
                 t.h.score = t.h.score * (1.0 - a) + a;
@@ -309,7 +312,7 @@ impl ResilientMedia {
         let (worst, n) = t.streak.iter().max_by_key(|(_, n)| **n).map_or(("", 0), |(k, n)| (*k, *n));
         t.h.consecutive_failures = n;
         if failed_probe || n >= self.cfg.unavailable_after {
-            if t.h.state == BackendState::Unavailable {
+            if t.h.state == BackendState::Unavailable && counted_failure {
                 t.since = Some(Instant::now()); // still down: the next probe waits another interval
             }
             self.set_state(&mut t, BackendState::Unavailable, &format!("{n} consecutive failed {worst} operations"));
@@ -497,6 +500,34 @@ mod tests {
         let states: Vec<String> = r.audit.events().into_iter().filter(|(n, _)| n == "backend_state")
             .map(|(_, d)| d.as_obj().unwrap()["to"].as_str().unwrap().to_string()).collect();
         assert_eq!(states, ["degraded", "unavailable", "healthy"]);
+    }
+
+    #[test]
+    fn steady_reads_never_postpone_the_write_probe() {
+        // regression (P8): a block device reads all the time; a successful read while the backend is UNAVAILABLE
+        // used to restart the probe interval, so writes were never probed again and the device stayed read-only
+        let r = rig(HealthConfig { degrade_after: 1, unavailable_after: 1, probe_interval: Duration::from_millis(200), score_alpha: 0.5 });
+        r.rm.put(at(0, 1), b"kept").unwrap();
+        r.fm.add(Rule::always(MediaOp::Put, Fault::Unavailable));
+        assert_eq!(r.rm.put(at(1, 1), b"x").unwrap_err().code, ErrorCode::BackendUnavailable);
+        assert_eq!(r.rm.health().state, BackendState::Unavailable);
+        r.fm.clear();
+        let t0 = std::time::Instant::now();
+        while t0.elapsed() < Duration::from_millis(260) {
+            assert_eq!(r.rm.get(at(0, 1)).unwrap(), b"kept"); // reads are served throughout
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        r.rm.put(at(1, 1), b"x").expect("the write probe is due one interval after the last FAILURE, whatever the reads did");
+        assert_eq!(r.rm.health().state, BackendState::Healthy);
+        // a FAILED read while unavailable still postpones the probe (the backend is still misbehaving)
+        r.fm.add(Rule::always(MediaOp::Put, Fault::Unavailable));
+        assert_eq!(r.rm.put(at(2, 1), b"y").unwrap_err().code, ErrorCode::BackendUnavailable);
+        r.fm.clear();
+        std::thread::sleep(Duration::from_millis(120));
+        r.fm.add(Rule::once(MediaOp::Get, Fault::Unavailable));
+        assert_eq!(r.rm.get(at(0, 1)).unwrap_err().code, ErrorCode::BackendUnavailable);
+        std::thread::sleep(Duration::from_millis(100)); // 220 ms after the put failure, 100 ms after the read failure
+        assert_eq!(r.rm.put(at(2, 1), b"y").unwrap_err().code, ErrorCode::ReadOnly);
     }
 
     #[test]

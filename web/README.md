@@ -19,6 +19,10 @@ npm run build          # dashboard/dist/*.js for dashboard/index.html
 VNX_TEST_PYTHON=python npm test     # node:test; the client tests run this repository's CLI (PYTHONPATH=../src)
 ```
 
+`VNX_TEST_PYTHON` must name a Python that can import the package's dependencies (e.g. the project venv); with a bare
+system `python3` the CLI-integration tests fail with `ModuleNotFoundError`. A failing command's `vnx.error/1` object
+(written to stderr) is available as `VnxCommandError.vnxError` (V14 F, docs/V14_HARDENING.md H-10).
+
 Not implemented: a network service (HTTP/WebSocket) for live progress. VNX-DNA has no server today; adding one is a
 security-relevant change (VNX-Secure deny-by-default) and needs its own design and review. Until then, live progress
 comes from following the `--events` file.
