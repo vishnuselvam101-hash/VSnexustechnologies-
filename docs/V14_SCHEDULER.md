@@ -1,7 +1,7 @@
 # V14 adaptive recovery scheduler (Phase 6, workstream C)
 
 Status: implemented in the streaming engine (`src/vnxdna/native/rust/engine/src/{engine,sched}.rs`), default
-`engine_scheduler="strand"` (performance against the V13 rule: §9.2; default open, §9.4). Every number in this document is SIMULATED (channel simulator, evidence category D) and
+`engine_scheduler="auto"` = the V13 rule with one strand retry rung (decision and numbers: §9.4). Every number in this document is SIMULATED (channel simulator, evidence category D) and
 comes from a committed results file under `experiments/v14/bench/p6c-scheduler/`. Timings are PROVISIONAL: the lab host
 was shared with three other agents while they were taken.
 
@@ -17,8 +17,9 @@ Modes (`DecodeOptions.engine_dedup`, `DecodeOptions.engine_scheduler`, CLI `--en
 | mode | how | what it skips |
 |---|---|---|
 | diagnostic | `engine_dedup=False` | nothing: every read is attempted (pass-1 records equal the V13 path's, record for record) |
-| `strand` (default) | V14 adaptive scheduler | a read only when the strand check (§3) confirms it as a copy of a verified frame |
-| `corroborated` | the corrected V13 rule (f7586b9), kept unchanged for comparison | see §5: it can skip distinct strands |
+| `auto` (default) | the V13 rule, re-run once with `strand` when it does not succeed (§9.4) | as `corroborated`; on the retry as `strand` |
+| `strand` | V14 adaptive scheduler | a read only when the strand check (§3) confirms it as a copy of a verified frame |
+| `corroborated` | the corrected V13 rule (f7586b9), unchanged | see §5: it can skip distinct strands |
 
 ## 2. Invariants the skip conditions rely on (code and format)
 
@@ -166,7 +167,7 @@ fail (counted in `strand_rejects`).
   frame it was confirmed against, or −1 when the rule records none). The campaign joins it with the simulator's
   ground truth.
 - Diagnostic mode: `engine_dedup=False` / `--no-engine-dedup` attempts every read (unchanged from V13).
-- Selection: `DecodeOptions.engine_scheduler` / SDK config key / CLI `--engine-scheduler {strand,corroborated}`; there is
+- Selection: `DecodeOptions.engine_scheduler` / SDK config key / CLI `--engine-scheduler {auto,strand,corroborated}`; there is
   no environment-variable override.
 - Overhead cuts that cannot change a decision: the exact-length projection fast path; a read's projection is computed
   once (it depends on the read alone) and, before the rounds, in the thread pool; a read identical to the claim's
@@ -284,11 +285,66 @@ Before = build/v14 423efa0 (V13 rule); after = this branch.
 | zeros 1 MiB smoke, w1, seed 98085 | stream FAILURE → v13 fallback, 1.77 s, 120.6 MiB | stream, 1.12 s, 107.2 MiB | stream, no fallback, SUCCESS, 1.50 s, 110.0 MiB |
 | zeros 4 MiB, w4, seed 98080 | stream FAILURE → v13 fallback, 2.85 s, 489.8 MiB | stream, 2.21 s, 111.1 MiB | stream, no fallback, SUCCESS, 2.82 s, 114.2 MiB |
 
-### 9.4 Limits and the open decision
+### 9.4 Decision (lead, delegated by the founder) and the retry rung
+
+**Decision.** `strand` misses the preregistered endpoint by a wide margin (0.70× on indel-w1, §9.2), so it does not
+become the default. Reasons:
+- At this channel it is slower than the V13 rule, and also slower than attempting every read (exploratory: 3.89 s
+  against 3.53 s at 1 thread, 1.95 s against 1.27 s at 4).
+- It is safe: 0 false skips in the campaign.
+
+This is recorded as a negative result. `strand` is kept as an explicit option and as the retry rung below.
+
+**Default `engine_scheduler="auto"`.** The engine runs the V13 rule (`corroborated`, as shipped in 13.0.0). If that
+stream run ends without SUCCESS for a reason the scheduler can cause, the engine is re-run ONCE with `strand` before
+the ladder falls back to the V13 path. Those reasons are a non-SUCCESS status, or a decode error that is not a
+request/environment error (`_NO_FALLBACK`), such as no superblock. If the strand run also fails, the existing ladder
+continues unchanged.
+- *Recording.* The first attempt is recorded in `report["engine"]["fallbacks"]` as
+  `{"rung": "stream", "reason": "sched_retry: corroborated->strand (<cause>)", "seconds", "pass1": <the first attempt's
+  counters>}`, plus `report["engine"]["sched_retry"]` and an `engine_fallback` observer event with `rung="stream"`.
+- *No retry.* Engine refusals and engine errors are not retried. An explicit `engine_scheduler` ("strand" or
+  "corroborated") and `engine_dedup=False` are honoured without a retry. The V13 rule's false skips never yield wrong
+  bytes: every output is verified, and the ladder re-decodes.
+- *Implementation.* `pipeline/decode.py::_decode_ladder`. Tests in `tests/v14/test_scheduler.py`: the retry decodes the
+  zero-run pool on the stream rung; random pools never retry; explicit choices are never retried; report and event
+  fields; determinism across thread counts.
+
+**New default vs build/v14 a32cbf5 (the V13 rule)** (`ab-default.jsonl`, `ab-default-summary.json`; idle host, load
+0.86–2.24, 5 seeds, ratio = build / auto, CI = min–max, all rows SUCCESS with identical outputs, no retries, no
+fallbacks). PROVISIONAL.
+
+| scenario | auto s | build s | ratio [CI] | A/A build/build2 [CI] |
+|---|---|---|---|---|
+| indel-w1 | 3.177 | 3.105 | 0.977 [0.893, 0.988] | 0.981 [0.971, 1.006] |
+| indel-w4 | 1.644 | 1.625 | 1.002 [0.963, 1.015] | 0.993 [0.989, 1.031] |
+| indel-rc-w4 | 1.752 | 1.723 | 0.986 [0.964, 0.997] | 1.016 [1.002, 1.059] |
+| clean-w4 | 0.579 | 0.566 | 0.979 [0.973, 1.007] | 0.991 [0.959, 1.019] |
+| substitution-w4 | 1.346 | 1.300 | 0.965 [0.937, 1.013] | 0.988 [0.961, 1.064] |
+| indel-shuffled-w1 | 3.511 | 3.470 | 0.982 [0.969, 1.009] | 0.993 [0.950, 1.032] |
+
+The medians lie between 0.965 and 1.002. On indel-w1 and indel-rc-w4 the CI upper bound is below 1.0: a small cost of the
+V14 bookkeeping on the V13 rule's path (skip reasons, confirming addresses, the redundant-accept counter, the frame copy
+of accepted reads), reported as such. On the other scenarios the CI overlaps the A/A band.
+
+**Zero-run payloads** (E's `payload-zeros-4m-w{1,4}`, zero-heavy, compression none, archive dedup off, indel channel;
+`zero-payload/zero-default.jsonl`; median of 3 interleaved runs after a warm-up; process peak RSS, plus the largest
+worker process of the V13 path).
+
+| workload | build/v14 (V13 rule) | new default (`auto`) | `strand` only |
+|---|---|---|---|
+| 1 MiB smoke, w1, seed 98085 | stream FAILURE → V13 path: 1.868 s, 148.8 MiB | stream FAILURE → strand retry, stream rung: 2.006 s, 148.8 MiB | stream: 1.542 s, 148.8 MiB |
+| 4 MiB, w4, seed 98080 | stream FAILURE → V13 path: 2.813 s, 152.6 MiB + 4 worker processes of up to 84.0 MiB each | stream FAILURE → strand retry: 3.856 s, 148.9 MiB, no worker processes | stream: 2.785 s, 148.9 MiB |
+
+The wasted first attempt (the V13 rule's failed stream run) costs 0.53 s at 1 MiB and 1.07 s at 4 MiB (its `seconds`
+in the fallback record). The new default is therefore 7 % (1 MiB) and 37 % (4 MiB w4) slower than build/v14 on these
+pools. In exchange it stays on the engine: one process, no V13 worker pool (its four workers of up to 84 MiB plus the parent
+are consistent with the ~490 MiB of process-tree RSS that E measured). `strand` alone is the fastest of the three here.
+
+### 9.5 Limits
 
 - The safety argument (§3) is deterministic for error-free readings and a probability under the simulated channel
   otherwise. A channel indel absorbs at most its own segment. The campaign found no false skip.
-- Default: `strand` stays the default in this branch because it is the only rule that never loses a strand. It is,
-  however, slower than both the V13 rule and the diagnostic mode on random indel pools. Choosing the default (strand,
-  the diagnostic mode, or the V13 rule with its documented loss on structured data) is left to the lead and founder.
-- Layouts with r ≤ 3 attempt every read; r = 4 needs exact agreement.
+- The default still runs the V13 rule, with its documented false skips. They cost redundancy, and on structured data a
+  failed first run (now recovered by the strand retry instead of the V13 path); they never cost correctness.
+- Layouts with r ≤ 3 attempt every read under `strand`; r = 4 needs exact agreement.
