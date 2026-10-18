@@ -23,7 +23,7 @@ import numpy as np
 from vnxdna.native._loader import NativeKernelError, RustKernel, module_contract
 
 ABI_VERSION = 1
-N_STATS = 32
+N_STATS = 48
 IO_BLOCK = 8 << 20
 TABLE_BITS = 21     # scheduler fingerprint tables: 2^21 window + 2^20 address slots (24 MiB, fixed)
 
@@ -33,7 +33,14 @@ _ERRORS = {-1: "invalid argument", -2: "IO error", -3: "kernel error", -4: "pani
 STAT_NAMES = ("reads", "fast", "sync", "speculative", "reverse_complement", "pending", "orphans", "unaligned",
               "rc_retry_skipped", "attempted", "skipped", "input_bytes", "batches", "rounds", "ns_io", "ns_scan",
               "ns_prep", "ns_attempt", "ns_spill", "ns_total", "acc_records", "max_batch", "table_evictions", "table_bytes", "cheap_attempts", "full_attempts",
-              "ns_cheap", "ns_full", "ns_group", "split_groups", "reserved30", "reserved31")
+              "ns_cheap", "ns_full", "ns_group", "split_groups", "reserved30", "reserved31",
+              # scheduler decisions (docs/V14_SCHEDULER.md): one skip reason per read not attempted
+              "skip_screen_group", "skip_claim_header", "skip_claim_near", "skip_claim_deferred", "skip_screen_strand",
+              "skip_claim_strand", "strand_checks", "strand_rejects", "redundant_accepts", "store_evictions",
+              "screen_candidates", "skip_other", "sched_rescued", "store_parity_fixed", "store_rejected", "reserved47")
+#: engine address schedulers: "strand" (V14 adaptive: a read is skipped only when the strand check confirms it against a
+#: verified frame) and "corroborated" (the corrected V13 rule, kept for comparison); dedup=False attempts every read
+SCHEDULERS = ("strand", "corroborated")
 
 
 class EngineUnsupported(RuntimeError):
@@ -198,12 +205,15 @@ def _checked_arrays(q: EngineParams) -> dict[str, np.ndarray]:
 
 
 def run_pass1(reads_path: str | os.PathLike, spill_dir: str | os.PathLike, params: EngineParams, buckets: int, *, fmt: str,
-              threads: int, dedup: bool = True, batch: int | None = None, cancel: Cancel | None = None) -> dict:
+              threads: int, dedup: bool = True, batch: int | None = None, cancel: Cancel | None = None,
+              scheduler: str = "strand") -> dict:
     """Pass 1 of a decode of ``reads_path`` into the spill bucket files of ``spill_dir`` (record format of
     :class:`vnxdna.recovery.spill.Spill`, appended). Returns the statistics (``STAT_NAMES``). Raises EngineUnsupported
     (outside the exact domain: fall back), EngineCancelled or EngineError."""
     if fmt not in ("fastq", "fasta"):
         raise EngineUnsupported(f"input format {fmt!r}")
+    if scheduler not in SCHEDULERS:
+        raise ValueError(f"scheduler must be one of {', '.join(SCHEDULERS)}")
     lib = KERNEL.lib()
     lanes, rs_level = kernel_levels()
     q = params
@@ -219,7 +229,7 @@ def run_pass1(reads_path: str | os.PathLike, spill_dir: str | os.PathLike, param
                rc_bounded=int(bool(q.rc_bounded)), spec=int(bool(q.spec)), orient_margin=int(q.orient_margin),
                orient_shift=int(q.orient_shift), ks=_ptr(arrays["ks"]), span=int(q.span), threads=int(threads),
                batch=int(batch or 16384), buckets=int(buckets), align_lanes=lanes, rs_level=rs_level,
-               max_reads=int(q.max_reads), fmt=1 if fmt == "fastq" else 2, dedup=int(bool(dedup)),
+               max_reads=int(q.max_reads), fmt=1 if fmt == "fastq" else 2, dedup=(2 if scheduler == "strand" else 1) if dedup else 0,
                frame_version=int(q.frame_version), cancel=cancel.address(), io_block=IO_BLOCK, table_bits=TABLE_BITS)
     stats = np.zeros(int(lib.vnx_eng_n_stats()), dtype=np.int64)
     err = ctypes.create_string_buffer(512)
