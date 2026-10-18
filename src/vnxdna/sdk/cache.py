@@ -100,7 +100,10 @@ class ResultCache:
             if m.get("container_sha256") != sha256_file(container):
                 raise ValueError("container does not hash as recorded")
             report = json.loads((e / "report.json").read_text())
-        except (OSError, ValueError):
+            # V14 F (H-4): the report must describe this container (a report from another decode is never served)
+            if not isinstance(report, dict) or report.get("container_sha256", m["container_sha256"]) != m["container_sha256"]:
+                raise ValueError("report does not match the container")
+        except (OSError, ValueError, KeyError, TypeError):
             shutil.rmtree(e, ignore_errors=True)
             return None
         os.utime(e, None)

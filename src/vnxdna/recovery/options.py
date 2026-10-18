@@ -4,6 +4,8 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass, field
 
+import numpy as np
+
 from vnxdna.core.errors import VNXConfigurationError
 from vnxdna.dnaenc.layout import Layout
 from vnxdna.sync.template import SyncCosts
@@ -19,6 +21,13 @@ ENGINES = ("auto", "stream", "v13", "reference")
 #: V13 configuration surface (docs/V13_ENGINE_ARCHITECTURE.md §6): the environment sets the *defaults* of the engine
 #: options; an explicit option or CLI flag always wins.
 ENV_ENGINE, ENV_ENGINE_THREADS = "VNXDNA_ENGINE", "VNXDNA_ENGINE_THREADS"
+
+
+def _integer(name: str, value, lo: int, hi: int) -> int:
+    """``value`` as an int in ``lo..hi`` (Python or NumPy integers; bools, floats and strings are refused)."""
+    if isinstance(value, (bool, np.bool_)) or not isinstance(value, (int, np.integer)) or not lo <= int(value) <= hi:
+        raise VNXConfigurationError(f"{name} must be an integer in {lo}..{hi}")
+    return int(value)
 
 
 def _env_engine() -> str:
@@ -127,6 +136,20 @@ class DecodeOptions:
     def validate(self) -> None:
         if not isinstance(self.stage_counters, bool):
             raise VNXConfigurationError("stage_counters must be True or False")
+        # V14 F (H-1): types and ranges first, so a JSON string or a float never reaches a comparison, a slice or a
+        # native call (a raw TypeError, or the string "false" read as True)
+        from vnxdna.native import check_backend_env
+        check_backend_env()                     # V14 F (H-9)
+        if not isinstance(self.reverse_complement, (bool, np.bool_)):
+            raise VNXConfigurationError("reverse_complement must be True or False")
+        for name, lo, hi in (("workers", 1, 256), ("band", 1, 64), ("retry_band", 0, 64), ("min_quality", 0, 93),
+                             ("batch_reads", 1, 1 << 24), ("max_pending_per_address", 1, 1 << 16),
+                             ("max_reads", 1, 1 << 62)):
+            _integer(name, getattr(self, name), lo, hi)
+        if self.archive_tag is not None:
+            _integer("archive_tag", self.archive_tag, 0, 0xFFFF)
+        if isinstance(self.consensus_threshold, (bool, str)) or not isinstance(self.consensus_threshold, (int, float, np.number)):
+            raise VNXConfigurationError("consensus_threshold must be a number in [0.25, 1]")
         from vnxdna.recovery.cluster import validate_mode
         self.cluster_config = validate_mode(self.read_clustering, self.cluster_config)
         if not 1 <= self.workers <= 256:

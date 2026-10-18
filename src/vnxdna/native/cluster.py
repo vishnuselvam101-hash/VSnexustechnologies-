@@ -516,8 +516,9 @@ def polish_deltas(tpls: np.ndarray, mc: np.ndarray, buf: np.ndarray, off: np.nda
     buf, off, lens = _seqs(buf, off, lens)
     n = off.size
     if (mc.shape != (T,) or read_start.shape != (ncand + 1,) or band.shape != (n,) or dip.shape != (n,)
-            or (ncand and (read_start[0] != 0 or read_start[-1] != n))):
-        raise ValueError("mc must be (T,), read_start (ncand + 1,) from 0 to n, band and dip (n,)")
+            or (ncand and (read_start[0] != 0 or read_start[-1] != n))
+            or bool(np.any(np.diff(read_start) < 0))):         # V14 F (H-8): C indexes reads by read_start[k + 1]
+        raise ValueError("mc must be (T,), read_start (ncand + 1,) non-decreasing from 0 to n, band and dip (n,)")
     dsub = np.empty((ncand, T, 4), dtype=np.int64)
     ddel = np.empty((ncand, T), dtype=np.int64)
     dins = np.empty((ncand, T, 4), dtype=np.int64)
