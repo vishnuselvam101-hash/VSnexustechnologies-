@@ -911,6 +911,12 @@ mod tests {
         b.submit(Class::Verify, None, None, || -> Result<()> { panic!("y") }).unwrap().wait().unwrap_err();
         b.submit(Class::Verify, None, None, || Ok(())).unwrap().wait().unwrap();
         let m = b.metrics(Class::Verify);
+        // a worker counts a task after it has sent the task's result, so the waiter can see the result first: poll
+        // (this assertion read the counters at once and failed about once in 30 runs on a loaded host)
+        let t0 = Instant::now();
+        while (m.completed.load(Ordering::SeqCst), m.failed.load(Ordering::SeqCst)) != (1, 2) && t0.elapsed() < Duration::from_secs(10) {
+            std::thread::sleep(Duration::from_millis(1));
+        }
         assert_eq!((m.completed.load(Ordering::Relaxed), m.failed.load(Ordering::Relaxed)), (1, 2));
         let b2 = b.clone();
         let t = b.submit(Class::Maintenance, None, None, move || {
