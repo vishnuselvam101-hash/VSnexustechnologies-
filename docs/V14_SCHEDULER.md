@@ -160,7 +160,8 @@ Exploration (to find defects and tune the design) used seeds 61901–61902, 7100
 seed 95500; none of them is reused below.
 
 **Safety campaign** (`experiments/v14/bench/p6c-scheduler/campaign.py`, pools and parameters in its `POOLS`, seeds
-61001 and 61002, one worker): 12 pools × 2 seeds = 24 runs: random data ordered and shuffled with indels; zero runs with
+61001 and 61002, one worker): 14 pools × 2 seeds = 28 runs (the `POOLS` dict as committed in f1e7c67; this
+sentence first said 12 × 2, a counting slip): random data ordered and shuffled with indels; zero runs with
 stripes and column parity; zero-heavy shuffled; repeated pattern; binary records with stripes and substitutions;
 reverse complements; dropout with uneven coverage; noisy headers; neighbouring strands at coverage 1; duplicates;
 zero-heavy with reverse complements; a markerless dense layout; the 4-parity-byte layout. Each run decodes in the
@@ -190,4 +191,60 @@ co-tenants disturb less than wall time at 1 worker. Wall time stays the primary 
 
 ## 9. Results
 
-Filled in from the committed result files after the campaign and the A/B runs (next commit).
+All SIMULATED. Files: `experiments/v14/bench/p6c-scheduler/{campaign.jsonl, campaign-summary.json, ab.jsonl,
+ab-summary.json, zero-payload/}`.
+
+### 9.1 Safety campaign (28 runs, 3,391,358 reads per mode)
+
+| mode | false skips | skips without evidence address | lost verified addresses | payload disagreements | decodes identical to reference | outer records identical | false successes | ladder fallbacks |
+|---|---|---|---|---|---|---|---|---|
+| `strand` | **0** | 0 | **0** | 0 | 28/28 | 28/28 | 0 | 2 (as the reference) |
+| `corroborated` (V13 rule) | 30,698 | 1,941,993 | 227,404 | 0 | 28/28 (only through the ladder) | 26/28 | 0 | 14 (12 on six structured pools, 2 as the reference) |
+
+`strand` attempted 1,611,002 reads (47.5 %), with 545,178 DP attempts against 3,391,358 in the diagnostic mode. Every
+acceptance criterion of §8 holds on every run; `skip_other` = `sched_rescued` = 0. Two preregistered pools cannot be
+decoded in any mode (random-dropout-uneven: FAILURE; zeros-noisy-headers at 3 %/1 %/1 %: no superblock). All three modes
+end in the same status there, and the pass-1 criteria still hold. On zeros-noisy-headers the strand scheduler skips only
+19 and 27 reads: copies that noisy are attempted (the conservative cost).
+
+### 9.2 End-to-end A/B (PROVISIONAL; idle host, load 1.0–1.9, `ab-summary.json`)
+
+The first two indel-w1 passes were taken at host load 15–31 and are discarded (not committed). The run below uses the
+amended order. Ratio = corroborated / strand seconds (> 1 = strand faster), n = 5 seeds, 95 % CI = min–max.
+
+| scenario | strand s | corroborated s | ratio [CI] | A/A [CI] | CPU-time ratio [CI] | reads attempted strand / corroborated |
+|---|---|---|---|---|---|---|
+| indel-w1 (primary) | 2.491 | 3.161 | **1.222 [1.167, 1.367]** | 1.015 [0.983, 1.119] | 1.171 [1.117, 1.272] | 177,689 / 323,341 |
+| indel-w4 | 1.615 | 1.619 | 1.004 [0.960, 1.024] | 0.993 [0.972, 1.022] | 1.164 [1.126, 1.171] | 177,438 / 323,485 |
+| indel-rc-w4 | 1.693 | 1.741 | 1.016 [1.000, 1.033] | 1.011 [0.979, 1.038] | 1.184 [1.157, 1.207] | 181,806 / 325,237 |
+| clean-w4 | 0.661 | 0.578 | **0.883 [0.874, 0.943]** (regression) | 1.007 [0.960, 1.028] | 0.949 [0.944, 1.005] | 131,151 / 131,151 |
+| substitution-w4 | 1.319 | 1.374 | 1.034 [1.003, 1.066] | 0.977 [0.931, 1.041] | 1.114 [1.107, 1.163] | 172,666 / 365,019 |
+| indel-shuffled-w1 | 3.130 | 3.465 | 1.107 [1.069, 1.131] | 1.006 [0.987, 1.027] | 1.080 [1.049, 1.103] | 213,152 / 329,373 |
+
+Primary endpoint met: the indel-w1 CI lower bound (1.167) is above 1.0 and above the A/A upper bound (1.119). At 4
+workers the attempts move to the thread pool, so CPU time drops 11–18 % but wall time does not (the serial grouping,
+pass 2 and the strand checks in the rounds dominate). clean-w4 regresses by 12 % (median wall): every copy of a clean
+pool verifies on the fast path, both schedulers attempt the same 131,151 reads, and the strand checks are pure
+overhead. All 180 timed rows are SUCCESS with identical outputs: 0 false successes, 0 fallbacks. Peak process RSS is
+the same for both modes (e.g. 151.6 MiB at indel-w1; 103.2 vs 101.8 MiB at clean-w4).
+
+### 9.3 Zero-run payloads (workstream E's finding, `zero-payload/`)
+
+E's `payload-zeros-4m-w{1,4}` workloads (zero-heavy, compression none, archive dedup off, indel channel) run with the
+`suite.py repro` harness. Before = build/v14 423efa0 (V13 rule); after = this branch (strand):
+
+| workload | before: rung, status, seconds, tree RSS | after |
+|---|---|---|
+| 1 MiB smoke, w1, seed 98085 | stream FAILURE → fallback to v13, SUCCESS, 1.77 s, 120.6 MiB | stream, no fallback, SUCCESS, 1.12 s, 107.2 MiB |
+| 4 MiB, w4, seed 98080 | stream FAILURE → fallback to v13, SUCCESS, 2.85 s, 489.8 MiB | stream, no fallback, SUCCESS, 2.21 s, 111.1 MiB |
+
+Before, the V13 rule attempted 37,702 of 655,750 reads at 4 MiB and lost most addresses. The strand scheduler attempts
+374,967 of them and decodes on the engine rung.
+
+### 9.4 Limits
+
+- The safety argument (§3) is a probability bound under the simulated channel, not a proof for any channel. The
+  campaign found no false skip in 1.78 M skips, which bounds rates far above the analytic estimate only.
+- No gain at 4 workers in wall time, and a 12 % loss on clean pools. A cheaper strand screen (parallel close checks,
+  skipping the screen when the read's own header key already names a verified frame) is the next lever.
+- Layouts with r ≤ 3 attempt every read; r = 4 needs exact agreement.
