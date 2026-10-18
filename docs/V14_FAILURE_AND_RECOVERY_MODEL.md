@@ -95,6 +95,11 @@ tampered sealed objects (CORRUPTION), a sealing worker that cannot start (BACKEN
 crash workloads (all-or-nothing requests), damage inside the journal, foreign backend objects, another device's
 backend, cache checksum failures and interrupted writebacks.
 
+Phase 7 ([V14_MEDIA_ADAPTERS.md](V14_MEDIA_ADAPTERS.md) §4) extends `FaultMedia` to wrap any adapter, with seeded
+random fault plans (honest and lying; same seed and call sequence = same faults), delays and whole-medium outages
+with recovery; `tests/media_adapters.rs` drives the volume, `BlockIo` and `ResilientMedia` through them and checks
+that no read ever returns bytes other than the last completed write.
+
 ## 7. What is not handled in V14
 
 A backend cannot serve stale content as current: a generation is immutable once mapped, and every read is checked
