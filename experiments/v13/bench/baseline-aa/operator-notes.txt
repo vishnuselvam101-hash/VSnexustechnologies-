@@ -1,0 +1,8 @@
+Operator notes, A/A bench baseline-aa (6bf7749 in /root/vnx-dna-lab/v13-base vs the same commit in v13-base2), host clock
+
+2026-10-18 07:01  part 1 (indel-w1, indel-w4, clean-w4, substitution-w4) via `vnx-lab exp` (systemd scope, vnxdna.slice,
+                  MemoryMax 8G, no CPU quota; governor admission not used: DANGER on stale swap with 26 GB RAM free).
+                  Host quiet before the start (load1 0.2 after the A/B tail-off), nothing else scheduled. AA-DONE 07:10.
+2026-10-18 07:11  part 2 (indel-w2, indel-w8, indel-rc-w4, indel-dropout-w4, indel-64k-w1, indel-16m-w4, encode-1m-w1,
+                  encode-4m-w1, encode-4m-w4), same settings, same output file. AA2-DONE 07:26.
+Both trees: every kernel native, no stale library (6bf7749 has no engine).
