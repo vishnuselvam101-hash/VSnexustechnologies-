@@ -79,7 +79,9 @@ pytest_aarch64() {
     export VNXDNA_ENGINE_LIB="$L/libvnx_engine.so" VNXDNA_INTEGRITY_LIB="$L/libvnx_integrity.so"
     export CC=aarch64-linux-gnu-gcc CXX=aarch64-linux-gnu-g++     # any build a test triggers targets aarch64 too
     export QEMU_LD_PREFIX="$PYROOT/sysroot" PYTHONNOUSERSITE=1 PYTHONDONTWRITEBYTECODE=1
-    export PYTHONPATH="$ROOT/src:$ROOT/tests:$PYROOT/site"
+    # the wheels are found as the sysroot's dist-packages (a symlink to $PYROOT/site), so tests that set their own
+    # PYTHONPATH for a subprocess still import them
+    export PYTHONPATH="$ROOT/src:$ROOT/tests"
     cd "$ROOT"
     "$QEMU" -L "$PYROOT/sysroot" "$PYROOT/sysroot/usr/bin/python3.12" -m pytest -p no:cacheprovider "$@"
 }
