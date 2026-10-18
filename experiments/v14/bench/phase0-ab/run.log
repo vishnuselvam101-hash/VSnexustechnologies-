@@ -13,3 +13,10 @@ indel-w4 seed 95304: v12 2.85s SUCCESS | v13 1.66s SUCCESS | v14 1.64s SUCCESS |
 clean-w4 seed 95100: v12 1.37s SUCCESS | v13 0.62s SUCCESS | v14 0.60s SUCCESS | identical=True
 clean-w4 seed 95101: v14 0.64s SUCCESS | v13 0.63s SUCCESS | v12 1.27s SUCCESS | identical=True
 clean-w4 seed 95102: v12 1.28s SUCCESS | v13 0.57s SUCCESS | v14 0.58s SUCCESS | identical=True
+clean-w4 seed 95103: v14 0.59s SUCCESS | v13 0.58s SUCCESS | v12 1.41s SUCCESS | identical=True
+clean-w4 seed 95104: v12 1.30s SUCCESS | v13 0.57s SUCCESS | v14 0.57s SUCCESS | identical=True
+AB-DONE rc=0
+indel-w1           v12   8.921s  v13   3.174s  v14   3.122s  v12_over_v14 2.863 [2.723, 2.946]  v13_over_v14 0.994 [0.969, 1.034]  v12_over_v13 2.811 [2.769, 2.968]  identical=True  false_success={'v12': 0, 'v13': 0, 'v14': 0}
+indel-w4           v12   2.847s  v13   1.659s  v14   1.635s  v12_over_v14 1.741 [1.667, 2.14]  v13_over_v14 1.012 [0.949, 1.022]  v12_over_v13 1.741 [1.688, 2.115]  identical=True  false_success={'v12': 0, 'v13': 0, 'v14': 0}
+clean-w4           v12   1.301s  v13   0.582s  v14   0.586s  v12_over_v14 2.265 [1.991, 2.412]  v13_over_v14 0.994 [0.971, 1.03]  v12_over_v13 2.257 [2.01, 2.427]  identical=True  false_success={'v12': 0, 'v13': 0, 'v14': 0}
+scaling vs w1: {"v12": {"indel-w1": 1.0, "indel-w4": 3.133}, "v13": {"indel-w1": 1.0, "indel-w4": 1.913}, "v14": {"indel-w1": 1.0, "indel-w4": 1.909}}

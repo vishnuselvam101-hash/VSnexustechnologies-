@@ -42,12 +42,15 @@ initial docs) is IN PROGRESS; nothing after Phase 0 has started. No code of the 
 2. Baseline full suite at 58171b8 on the old host: **4,454 passed / 4 skipped / 0 failed, 434.5 s** (`vnx-lab full`,
    6 workers, systemd scope; lab log `results/full-suite-58171b8-20261018-1021.txt`, not in the repo).
 3. Phase 0 A/B reproduction (V12 6bf7749 vs V13 58171b8 pristine vs the build/v14 tree, same code at this point):
-   `experiments/v14/bench/phase0-ab/e2e.jsonl` (+ `run.log`). Rows present at the checkpoint: indel-w1 complete
-   (5 seeds: v12 ~8.9 s, v13 ~3.0–3.2 s, v14 ~3.0–3.3 s, all SUCCESS, identical=True — consistent with the V13 report's
-   2.885x), indel-w4 partial (v12 2.8–3.4 s, v13/v14 ~1.6 s). clean-w4 and the summary were still running when the
-   host had to be abandoned; the committed jsonl may be incomplete — run `bench.py summary` on whatever is there and
-   label it "partial, old host" or re-run on the new machine. The pool-scaling reference (`pool_bench.py`, V13 at
-   E = 4, 8, 16) did NOT run yet (`experiments/v14/bench/phase0-pool/` is empty or partial).
+   `experiments/v14/bench/phase0-ab/{e2e.jsonl, e2e-summary.json, summary.txt, run.log}` — COMPLETE (45 rows, 3
+   scenarios x 5 seeds x 3 trees, all SUCCESS, identical outputs, 0 false successes; old host, systemd scope, load ~1.5–2.6):
+   indel-w1 v12 8.921 s / v13 3.174 / v14 3.122, v12/v14 2.863 [2.723, 2.946], v12/v13 2.811 [2.769, 2.968]
+   (V13 report: 2.885 [2.732, 2.989] -> reproduced); indel-w4 2.847 / 1.659 / 1.635, v12/v14 1.741 [1.667, 2.140]
+   (report 1.704 -> reproduced); clean-w4 1.301 / 0.582 / 0.586, v12/v14 2.265 [1.991, 2.412] (report 2.200 ->
+   reproduced); v13/v14 = 0.994–1.012 on all three (same code: an A/A band of this host for the 58171b8 engine).
+   The pool-scaling reference (`pool_bench.py`, V13 tree at E = 4, 8, 16, 3 reps) was STOPPED after its first row
+   (E=4 rep 0: 4.41 s SUCCESS; V13 report: 6.06 s for the same 4 MiB/4-extent pool) when the host had to be abandoned:
+   `experiments/v14/bench/phase0-pool/pool.jsonl` is PARTIAL (1 row) and must be re-run on the new machine.
 4. Harness: `experiments/v14/bench/bench.py` (three trees v12/v13/v14, ratios v12/v14, v13/v14, v12/v13 with
    bootstrap CIs) and `experiments/v14/bench/pool_bench.py` (pool decode scaling with extent count E; `one`
    subcommand runs in a tree's PYTHONPATH). Both ruff-clean; `pool_bench.py` has never been executed end to end.
