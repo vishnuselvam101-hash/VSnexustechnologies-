@@ -1,14 +1,16 @@
-# V14 state — RESUME FILE (last checkpoint 2026-10-18 ~12:00 IST: Phase 1 COMPLETE, P2 next; lab host still in use)
+# V14 state — RESUME FILE (last checkpoint 2026-10-18 ~12:00 IST: Phase 2 COMPLETE, P3 next; lab host still in use)
 
 Governing scope: the founder's V14 MASTER DIRECTIVE (copy: `docs/V14_MASTER_DIRECTIVE_2026-10-18.md`) — the complete
 storage platform (Rust control plane, real Linux block device, media adapters, Pi portability, P0–P13). The earlier
 V14 brief (copy: `docs/V14_BRIEF_2026-10-18.md`) is the detailed spec for Phase 6 (codec: linear pool decode, native
 pass 2, safe scheduler, bench suite, config/security) and for the volume hardening. Phase 0 (audit + baseline +
 initial docs) and Phase 1 (contracts: Rust crate `vnxd`, Python `vnxdna.device`, docs/V14_CONTRACTS.md) are COMPLETE
-(docs/V14_PHASE0_REPORT.md, docs/V14_PHASE1_REPORT.md); P2 is next.
+(docs/V14_PHASE0_REPORT.md, docs/V14_PHASE1_REPORT.md), and Phase 2 (block volume + VNX-IO in `vnxd`:
+journal, volume, io; docs/V14_VOLUME_AND_IO.md, docs/V14_PHASE2_REPORT.md) are COMPLETE; P3 is next.
 
 ## Non-negotiable rules (founder)
-- NO tag, NO merge to main, NO push by the agent (the founder transfers/pushes). Work on branch `build/v14`.
+- Founder 2026-10-18: push `build/v14` and a milestone tag `v14-p<k>` after each phase (done for p1, p2). Still NO
+  merge to main and NO release tag `v14.0.0` before the P12 acceptance review.
 - Commit author `vishnuselvam101-hash <vishnuselvam101@gmail.com>`; no AI attribution trailers, no AI-tool names,
   no AI-tool scratch paths in committed files.
 - Tests never drop, never weakened (gate: 4,534 passed / 4 skipped / 0 failed after P1; 4,454 at 58171b8).
@@ -72,15 +74,14 @@ initial docs) and Phase 1 (contracts: Rust crate `vnxd`, Python `vnxdna.device`,
 Lab host (this machine): worktrees `/root/vnx-dna-lab/v14` (build/v14), `v14-base` (58171b8), `v13-base` (6bf7749),
 venv `/root/vnx-dna-lab/.venv`, every kernel + engine built (`python -m vnxdna.native` -> all_native true).
 On a new machine, follow the clone/build block of git history (this file at 9bd0149) and re-measure the baseline first.
-Phase 1 DONE (contracts; see docs/V14_CONTRACTS.md, golden files tests/v14/golden/contracts, `cargo test` in
-src/vnxdna/native/rust/vnxd). Next, in order:
-1. P2 Volume + VNX-IO in `vnxd` on the P1 contracts: block map (extent -> generation), extent allocation, journal of
-   `vnx.record/1` records with fsync and torn-tail truncation, transactions (new generation -> commit -> map record),
-   crash recovery, GC via generation_released; VNX-IO: spans, read-modify-write, bounded queues, ordering/barriers,
-   flush, cancellation, timeouts. Tests: unaligned/overlapping/concurrent/cancelled I/O, crash before/during/after each
-   commit stage (fault points), random workload vs a byte model, NO_SPACE. Media for P2 tests: MemoryMedia (+ the
-   image backend if P7 work is pulled forward).
-2. P2 Volume + VNX-IO -> P3 VNX-RAM + Cache -> P4 Fallback + Secure -> P5 Load balancer -> P6 codec (workstreams A–C,
+Phase 1 DONE (contracts), Phase 2 DONE (volume + IO; cargo test 65 in src/vnxdna/native/rust/vnxd). Next, in order:
+1. P3 VNX-RAM + Cache in `vnxd`: memory budget with per-subsystem quotas (io, cache, staging, codec, metadata),
+   buffer pools with reuse + zeroing across security contexts, backpressure (block or RESOURCE_EXHAUSTED), accounting
+   + leak detection, metrics; read-through extent cache over Volume (LRU, checksums, invalidation on write,
+   write-through default, optional write-back with dirty tracking, flush/eviction writeback, interrupted writeback
+   recovery); molecular-memory research interface in Python (region/capability/health protocol + simulator +
+   conformance, never called electronic RAM). Tests per V14_MASTER_PLAN P3.
+2. P4 Fallback + Secure -> P5 Load balancer -> P6 codec (workstreams A–C,
    E–F; A design above) -> P7 media adapters -> P8 NBD block device (this host has nbd + ublk_drv, root) -> P9
    integrated validation -> P10 ARM64 cross-build + qemu (Pi acceptance stays INCOMPLETE) -> P11 hardware + boot
    docs -> P12 acceptance review -> P13 V15 plan. One phase report + one Telegram note per phase; keep this file current.

@@ -1,0 +1,809 @@
+//! VNX-IO: logical block requests over a [`Volume`] (master directive §7; docs/V14_VOLUME_AND_IO.md §5–§6).
+//!
+//! [`BlockIo`] turns byte-range requests into extent operations: a request is split into extent spans; a span that
+//! covers its whole extent is written directly, a partial span is a read-modify-write under the extent's lock. A
+//! write is atomic per extent (each extent is one transaction), not across extents — the same guarantee a disk
+//! gives per sector. Reads of unwritten ranges return zeros; every other byte returned was verified by the volume.
+//!
+//! [`IoQueue`] runs requests on a fixed set of worker threads behind a bounded queue:
+//! * **backpressure**: `submit` blocks while the queue is full; `try_submit` returns RESOURCE_EXHAUSTED instead;
+//! * **ordering**: a request never starts before an earlier-submitted request it conflicts with has completed
+//!   (two requests conflict when their extent ranges overlap and at least one writes); non-conflicting requests run
+//!   in parallel. Overlapping writes are therefore applied in submission order;
+//! * **barriers**: `flush` waits for every earlier request, then syncs the backend; later requests wait for it;
+//! * **cancellation / timeouts**: a request cancelled or past its deadline before it starts completes with
+//!   CANCELLED / TIMEOUT at once (even while it waits behind a conflicting request) and has no effect; once started,
+//!   a request runs to completion (each extent commit is atomic);
+//! * **size**: a request larger than [`MAX_REQUEST_BYTES`] is INVALID_ARGUMENT (no unbounded allocation);
+//! * **panics**: a request whose execution panics completes with INTERNAL and frees its place; the queue keeps going;
+//! * **shutdown**: new submissions fail with SHUTTING_DOWN; queued requests are drained (or failed with
+//!   SHUTTING_DOWN when not draining); workers are joined.
+//!
+//! The scheduler keeps one lock over the queue and the set of pending requests; the earliest pending request never
+//! has an earlier conflict, so the queue always makes progress.
+
+use crate::error::{err, ErrorCode, Result};
+use crate::state::WriteState;
+use crate::volume::Volume;
+use std::collections::{BTreeMap, VecDeque};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::mpsc::{sync_channel, Receiver, RecvTimeoutError, SyncSender};
+use std::sync::{Arc, Condvar, Mutex};
+use std::thread::JoinHandle;
+use std::time::{Duration, Instant};
+
+/// Largest single read or write (the host block layer splits larger I/O; NBD clients use at most 32 MiB).
+pub const MAX_REQUEST_BYTES: u64 = 64 << 20;
+pub const MAX_QUEUE_DEPTH: usize = 4096;
+
+fn check_size(len: u64) -> Result<()> {
+    if len > MAX_REQUEST_BYTES {
+        return err(ErrorCode::InvalidArgument, format!("request of {len} bytes exceeds {MAX_REQUEST_BYTES}"));
+    }
+    Ok(())
+}
+
+/// Synchronous byte-range I/O over a volume.
+#[derive(Clone)]
+pub struct BlockIo {
+    vol: Arc<Volume>,
+}
+
+impl BlockIo {
+    pub fn new(vol: Arc<Volume>) -> BlockIo {
+        BlockIo { vol }
+    }
+
+    pub fn volume(&self) -> &Arc<Volume> {
+        &self.vol
+    }
+
+    pub fn read(&self, offset: u64, len: u64) -> Result<Vec<u8>> {
+        check_size(len)?;
+        let spans = self.vol.geometry().spans(offset, len)?;
+        let len = usize::try_from(len).or_else(|_| err(ErrorCode::Overflow, "read length exceeds the address space"))?;
+        let mut out = vec![0u8; len];
+        for s in spans {
+            let data = self.vol.read_extent(s.extent)?;
+            let (a, b) = (s.offset as usize, (s.offset + s.len) as usize);
+            out[s.buf_offset as usize..(s.buf_offset + s.len) as usize].copy_from_slice(&data[a..b]);
+        }
+        Ok(out)
+    }
+
+    /// Write `data` at `offset`; returns the weakest write state reached by the extents written.
+    pub fn write(&self, offset: u64, data: &[u8]) -> Result<WriteState> {
+        check_size(data.len() as u64)?;
+        let spans = self.vol.geometry().spans(offset, data.len() as u64)?;
+        let mut weakest = WriteState::Verified;
+        for s in spans {
+            let src = &data[s.buf_offset as usize..(s.buf_offset + s.len) as usize];
+            let whole = s.offset == 0 && s.len == self.vol.geometry().extent_len(s.extent)?;
+            let o = if whole {
+                self.vol.write_extent(s.extent, src)?
+            } else {
+                let at = s.offset as usize;
+                self.vol.modify_extent(s.extent, |buf| buf[at..at + src.len()].copy_from_slice(src))?
+            };
+            weakest = weakest.min(o.state);
+        }
+        Ok(weakest)
+    }
+
+    pub fn flush(&self) -> Result<()> {
+        self.vol.flush()
+    }
+}
+
+/// A request for the queue.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Op {
+    Read { offset: u64, len: u64 },
+    Write { offset: u64, data: Vec<u8> },
+    Flush,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Reply {
+    Data(Vec<u8>),
+    Written(WriteState),
+    Flushed,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Footprint {
+    Barrier,
+    Extents { first: u64, last: u64, write: bool },
+}
+
+impl Footprint {
+    fn conflicts(&self, other: &Footprint) -> bool {
+        match (self, other) {
+            (Footprint::Barrier, _) | (_, Footprint::Barrier) => true,
+            (Footprint::Extents { first: a, last: b, write: w1 }, Footprint::Extents { first: c, last: d, write: w2 }) => {
+                (*w1 || *w2) && a <= d && c <= b
+            }
+        }
+    }
+}
+
+struct Job {
+    seq: u64,
+    op: Op,
+    cancel: Arc<AtomicBool>,
+    deadline: Option<Instant>,
+    reply: SyncSender<Result<Reply>>,
+    submitted: Instant,
+}
+
+struct Sched {
+    queue: VecDeque<Job>,
+    /// queued and running requests by sequence number
+    pending: BTreeMap<u64, Footprint>,
+    next_seq: u64,
+    shutting: bool,
+    drain: bool,
+}
+
+#[derive(Debug, Default)]
+pub struct IoMetrics {
+    pub submitted: AtomicU64,
+    pub completed: AtomicU64,
+    pub failed: AtomicU64,
+    pub cancelled: AtomicU64,
+    pub timed_out: AtomicU64,
+    pub rejected_full: AtomicU64,
+    pub max_queue_depth: AtomicU64,
+    /// sum of the time requests waited before a worker started them, in microseconds
+    pub queue_wait_us: AtomicU64,
+}
+
+struct Shared {
+    io: BlockIo,
+    depth: usize,
+    sched: Mutex<Sched>,
+    /// signalled when a request is queued or completes, and on shutdown
+    work: Condvar,
+    /// signalled when the queue has room
+    room: Condvar,
+    metrics: IoMetrics,
+}
+
+/// Handle of a submitted request.
+pub struct Ticket {
+    pub seq: u64,
+    cancel: Arc<AtomicBool>,
+    rx: Receiver<Result<Reply>>,
+    shared: Arc<Shared>,
+}
+
+impl Ticket {
+    /// Ask for the request not to run; it has no effect on a request that already started.
+    pub fn cancel(&self) {
+        self.cancel.store(true, Ordering::SeqCst);
+        self.shared.work.notify_all(); // a waiting worker resolves it now
+    }
+
+    pub fn wait(self) -> Result<Reply> {
+        self.rx.recv().unwrap_or_else(|_| err(ErrorCode::Internal, "the I/O worker dropped the request"))
+    }
+
+    pub fn wait_timeout(&self, t: Duration) -> Option<Result<Reply>> {
+        match self.rx.recv_timeout(t) {
+            Ok(r) => Some(r),
+            Err(RecvTimeoutError::Timeout) => None,
+            Err(RecvTimeoutError::Disconnected) => Some(err(ErrorCode::Internal, "the I/O worker dropped the request")),
+        }
+    }
+}
+
+pub struct IoQueue {
+    shared: Arc<Shared>,
+    workers: Vec<JoinHandle<()>>,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct QueueConfig {
+    pub workers: usize,
+    /// maximum queued (not yet started) requests
+    pub depth: usize,
+}
+
+impl Default for QueueConfig {
+    fn default() -> Self {
+        QueueConfig { workers: 4, depth: 64 }
+    }
+}
+
+impl IoQueue {
+    pub fn start(io: BlockIo, cfg: QueueConfig) -> Result<IoQueue> {
+        if cfg.workers == 0 || cfg.workers > 256 || cfg.depth == 0 || cfg.depth > MAX_QUEUE_DEPTH {
+            return err(ErrorCode::InvalidArgument, format!("queue config {cfg:?}: workers 1..=256, depth 1..={MAX_QUEUE_DEPTH}"));
+        }
+        let shared = Arc::new(Shared {
+            io,
+            depth: cfg.depth,
+            sched: Mutex::new(Sched { queue: VecDeque::new(), pending: BTreeMap::new(), next_seq: 0, shutting: false, drain: true }),
+            work: Condvar::new(),
+            room: Condvar::new(),
+            metrics: IoMetrics::default(),
+        });
+        let workers = (0..cfg.workers)
+            .map(|i| {
+                let s = shared.clone();
+                std::thread::Builder::new()
+                    .name(format!("vnxd-io-{i}"))
+                    .spawn(move || worker(&s))
+                    .or_else(|e| err(ErrorCode::ResourceExhausted, format!("spawn I/O worker: {e}")))
+            })
+            .collect::<Result<Vec<_>>>()?;
+        Ok(IoQueue { shared, workers })
+    }
+
+    pub fn metrics(&self) -> &IoMetrics {
+        &self.shared.metrics
+    }
+
+    fn footprint(&self, op: &Op) -> Result<Footprint> {
+        let g = self.shared.io.vol.geometry();
+        let (offset, len, write) = match op {
+            Op::Flush => return Ok(Footprint::Barrier),
+            Op::Read { offset, len } => (*offset, *len, false),
+            Op::Write { offset, data } => (*offset, data.len() as u64, true),
+        };
+        check_size(len)?;
+        g.check_range(offset, len)?;
+        let eb = g.extent_bytes();
+        Ok(Footprint::Extents { first: offset / eb, last: (offset + len - 1) / eb, write })
+    }
+
+    /// Submit a request; blocks while the queue is full.
+    pub fn submit(&self, op: Op, deadline: Option<Instant>) -> Result<Ticket> {
+        self.enqueue(op, deadline, true)
+    }
+
+    /// Submit a request; RESOURCE_EXHAUSTED (retryable) when the queue is full.
+    pub fn try_submit(&self, op: Op, deadline: Option<Instant>) -> Result<Ticket> {
+        self.enqueue(op, deadline, false)
+    }
+
+    fn enqueue(&self, op: Op, deadline: Option<Instant>, block: bool) -> Result<Ticket> {
+        let fp = self.footprint(&op)?; // invalid requests fail at submission, never enter the queue
+        let sh = &self.shared;
+        let mut s = sh.sched.lock().or_else(|_| err(ErrorCode::Internal, "I/O scheduler lock poisoned"))?;
+        loop {
+            if s.shutting {
+                return err(ErrorCode::ShuttingDown, "the I/O queue is shutting down");
+            }
+            if s.queue.len() < sh.depth {
+                break;
+            }
+            if !block {
+                sh.metrics.rejected_full.fetch_add(1, Ordering::Relaxed);
+                return err(ErrorCode::ResourceExhausted, format!("I/O queue full ({} requests)", sh.depth));
+            }
+            s = sh.room.wait(s).or_else(|_| err(ErrorCode::Internal, "I/O scheduler lock poisoned"))?;
+        }
+        let seq = s.next_seq;
+        s.next_seq += 1;
+        let cancel = Arc::new(AtomicBool::new(false));
+        let (tx, rx) = sync_channel(1);
+        s.pending.insert(seq, fp);
+        s.queue.push_back(Job { seq, op, cancel: cancel.clone(), deadline, reply: tx, submitted: Instant::now() });
+        sh.metrics.submitted.fetch_add(1, Ordering::Relaxed);
+        sh.metrics.max_queue_depth.fetch_max(s.queue.len() as u64, Ordering::Relaxed);
+        drop(s);
+        sh.work.notify_all();
+        Ok(Ticket { seq, cancel, rx, shared: sh.clone() })
+    }
+
+    /// Stop accepting requests; with `drain`, run every queued request first, otherwise fail them with
+    /// SHUTTING_DOWN. Returns after every worker has exited.
+    pub fn shutdown(mut self, drain: bool) -> Result<()> {
+        self.stop(drain);
+        let mut panicked = 0;
+        for w in self.workers.drain(..) {
+            if w.join().is_err() {
+                panicked += 1;
+            }
+        }
+        if panicked > 0 {
+            return err(ErrorCode::Internal, format!("{panicked} I/O workers panicked"));
+        }
+        Ok(())
+    }
+
+    fn stop(&self, drain: bool) {
+        let mut s = self.shared.sched.lock().unwrap_or_else(|p| p.into_inner());
+        s.shutting = true;
+        s.drain = drain;
+        drop(s);
+        self.shared.work.notify_all();
+        self.shared.room.notify_all();
+    }
+}
+
+impl Drop for IoQueue {
+    fn drop(&mut self) {
+        if !self.workers.is_empty() {
+            self.stop(true);
+            for w in self.workers.drain(..) {
+                let _ = w.join();
+            }
+        }
+    }
+}
+
+/// Index in the queue of the first request whose earlier pending requests do not conflict with it.
+fn runnable(s: &Sched) -> Option<usize> {
+    s.queue.iter().position(|job| {
+        let fp = s.pending[&job.seq];
+        !s.pending.range(..job.seq).any(|(_, earlier)| earlier.conflicts(&fp))
+    })
+}
+
+fn worker(sh: &Shared) {
+    loop {
+        let job = {
+            let mut s = match sh.sched.lock() {
+                Ok(s) => s,
+                Err(_) => return,
+            };
+            loop {
+                sweep(&mut s, sh);
+                if s.shutting && !s.drain {
+                    // fail everything still queued
+                    while let Some(job) = s.queue.pop_front() {
+                        s.pending.remove(&job.seq);
+                        let _ = job.reply.send(err(ErrorCode::ShuttingDown, "the I/O queue shut down before the request ran"));
+                        sh.metrics.failed.fetch_add(1, Ordering::Relaxed);
+                    }
+                }
+                if let Some(i) = runnable(&s) {
+                    let job = s.queue.remove(i).expect("index from position");
+                    sh.room.notify_one();
+                    break job;
+                }
+                if s.shutting && s.queue.is_empty() {
+                    sh.work.notify_all();
+                    return;
+                }
+                // sleep until new work, a completion, a cancel, or the nearest deadline of a queued request
+                let next = s.queue.iter().filter_map(|j| j.deadline).min();
+                s = match next {
+                    Some(d) => match sh.work.wait_timeout(s, d.saturating_duration_since(Instant::now()) + Duration::from_millis(1)) {
+                        Ok((s, _)) => s,
+                        Err(_) => return,
+                    },
+                    None => match sh.work.wait(s) {
+                        Ok(s) => s,
+                        Err(_) => return,
+                    },
+                };
+            }
+        };
+        let waited = job.submitted.elapsed();
+        sh.metrics.queue_wait_us.fetch_add(waited.as_micros().min(u64::MAX as u128) as u64, Ordering::Relaxed);
+        let result = if let Some(r) = expired(&job, sh) {
+            r
+        } else {
+            let run = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| match job.op {
+                Op::Read { offset, len } => sh.io.read(offset, len).map(Reply::Data),
+                Op::Write { offset, ref data } => sh.io.write(offset, data).map(Reply::Written),
+                Op::Flush => sh.io.flush().map(|_| Reply::Flushed),
+            }));
+            let r = run.unwrap_or_else(|_| err(ErrorCode::Internal, format!("request {} panicked", job.seq)));
+            if r.is_ok() {
+                sh.metrics.completed.fetch_add(1, Ordering::Relaxed);
+            } else {
+                sh.metrics.failed.fetch_add(1, Ordering::Relaxed);
+            }
+            r
+        };
+        let _ = job.reply.send(result);
+        sh.sched.lock().unwrap_or_else(|p| p.into_inner()).pending.remove(&job.seq);
+        sh.work.notify_all();
+    }
+}
+
+/// The CANCELLED / TIMEOUT completion of a request that must not run, if it must not.
+fn expired(job: &Job, sh: &Shared) -> Option<Result<Reply>> {
+    if job.cancel.load(Ordering::SeqCst) {
+        sh.metrics.cancelled.fetch_add(1, Ordering::Relaxed);
+        return Some(err(ErrorCode::Cancelled, format!("request {} cancelled before it started", job.seq)));
+    }
+    if job.deadline.map_or(false, |d| Instant::now() > d) {
+        sh.metrics.timed_out.fetch_add(1, Ordering::Relaxed);
+        return Some(err(ErrorCode::Timeout, format!("request {} passed its deadline before it started", job.seq)));
+    }
+    None
+}
+
+/// Resolve every queued request that was cancelled or expired, wherever it waits in the queue.
+fn sweep(s: &mut Sched, sh: &Shared) {
+    let mut i = 0;
+    while i < s.queue.len() {
+        if let Some(r) = expired(&s.queue[i], sh) {
+            let job = s.queue.remove(i).expect("index in range");
+            s.pending.remove(&job.seq);
+            let _ = job.reply.send(r);
+            sh.room.notify_one();
+        } else {
+            i += 1;
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::addr::{Geometry, GenerationRef};
+    use crate::journal::tests::TempDir;
+    use crate::media::{CommitReceipt, MediaAdapter, MediaInfo, MemoryMedia};
+    use crate::volume::VolumeConfig;
+
+    /// Deterministic xorshift generator (no external crates).
+    struct Rng(u64);
+    impl Rng {
+        fn next(&mut self) -> u64 {
+            self.0 ^= self.0 << 13;
+            self.0 ^= self.0 >> 7;
+            self.0 ^= self.0 << 17;
+            self.0
+        }
+        fn below(&mut self, n: u64) -> u64 {
+            self.next() % n
+        }
+    }
+
+    fn setup(d: &TempDir, media: Arc<dyn MediaAdapter>) -> BlockIo {
+        // 512-byte blocks, 4 blocks per extent, 23 blocks: 6 extents, the last one 1536 bytes
+        let g = Geometry::new(512, 4, 23).unwrap();
+        let v = Volume::create(&d.0, g, [2; 16], 0, media, VolumeConfig::default()).unwrap();
+        BlockIo::new(Arc::new(v))
+    }
+
+    #[test]
+    fn random_unaligned_workload_matches_a_byte_model_across_reopen() {
+        let d = TempDir::new("io");
+        let m: Arc<dyn MediaAdapter> = Arc::new(MemoryMedia::new());
+        let io = setup(&d, m.clone());
+        let cap = io.volume().geometry().capacity_bytes();
+        let mut model = vec![0u8; cap as usize];
+        let mut rng = Rng(0x9E37_79B9_7F4A_7C15);
+        for step in 0..400u64 {
+            let off = rng.below(cap);
+            let len = 1 + rng.below((cap - off).min(5000));
+            if rng.below(3) == 0 {
+                assert_eq!(io.read(off, len).unwrap(), &model[off as usize..(off + len) as usize], "step {step}");
+            } else {
+                let data: Vec<u8> = (0..len).map(|i| (step * 31 + i * 7) as u8).collect();
+                assert_eq!(io.write(off, &data).unwrap(), WriteState::Verified);
+                model[off as usize..(off + len) as usize].copy_from_slice(&data);
+            }
+        }
+        assert_eq!(io.read(0, cap).unwrap(), model);
+        drop(io);
+        let (v, r) = Volume::open(&d.0, m.clone(), VolumeConfig::default()).unwrap();
+        assert!(r.orphans_removed.is_empty() && r.damaged.is_empty());
+        assert_eq!(BlockIo::new(Arc::new(v)).read(0, cap).unwrap(), model);
+        assert!(m.list().unwrap().len() <= 6 + 1, "one live generation per extent at most (+ the marker)");
+    }
+
+    #[test]
+    fn random_crashes_never_lose_committed_extents_or_mix_contents() {
+        use crate::volume::{FaultHook, Stage};
+        let stages = [Stage::AfterPut, Stage::BeforeMapRecord, Stage::TornMapRecord, Stage::AfterMapRecord, Stage::AfterRemove];
+        let d = TempDir::new("io-crash");
+        let m: Arc<dyn MediaAdapter> = Arc::new(MemoryMedia::new());
+        let g = setup(&d, m.clone()).volume().geometry();
+        let eb = g.extent_bytes();
+        let cap = g.capacity_bytes();
+        let mut model = vec![0u8; cap as usize];
+        let mut rng = Rng(0xDEAD_BEEF);
+        let mut crashes = 0;
+        for round in 0..60u64 {
+            // crash at a random stage of the k-th extent commit of this round (or not at all)
+            let crash_after = rng.below(6);
+            let stage = stages[rng.below(5) as usize];
+            let counter = Arc::new(AtomicU64::new(0));
+            let c = counter.clone();
+            let hook: FaultHook = Arc::new(move |s, _| {
+                if s == stage && c.fetch_add(1, Ordering::SeqCst) == crash_after {
+                    return err(ErrorCode::Internal, "injected crash");
+                }
+                Ok(())
+            });
+            let (v, r) = Volume::open(&d.0, m.clone(), VolumeConfig::default()).unwrap();
+            assert!(r.damaged.is_empty(), "round {round}");
+            let io = BlockIo::new(Arc::new(v.with_fault_hook(hook)));
+            assert_eq!(io.read(0, cap).unwrap(), model, "round {round}: state after recovery");
+            for _ in 0..4 {
+                let off = rng.below(cap);
+                let len = 1 + rng.below((cap - off).min(3 * eb));
+                let data = vec![(round as u8).wrapping_mul(7).wrapping_add(1); len as usize];
+                match io.write(off, &data) {
+                    Ok(_) => model[off as usize..(off + len) as usize].copy_from_slice(&data),
+                    Err(_) => {
+                        crashes += 1;
+                        // extents before the crashed one committed; the crashed extent is old or new; the rest untouched
+                        drop(io);
+                        let (v, _) = Volume::open(&d.0, m.clone(), VolumeConfig::default()).unwrap();
+                        let after = BlockIo::new(Arc::new(v)).read(0, cap).unwrap();
+                        let mut new_model = model.clone();
+                        new_model[off as usize..(off + len) as usize].copy_from_slice(&data);
+                        for e in 0..g.extent_count() {
+                            let a = (e * eb) as usize;
+                            let b = ((e + 1) * eb).min(cap) as usize;
+                            let got = &after[a..b];
+                            assert!(got == &model[a..b] || got == &new_model[a..b], "round {round} extent {e}: mixed content");
+                            model[a..b].copy_from_slice(got);
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        assert!(crashes >= 15, "only {crashes} crashes were injected");
+    }
+
+    #[test]
+    fn invalid_requests_fail_before_any_effect() {
+        let d = TempDir::new("io");
+        let io = setup(&d, Arc::new(MemoryMedia::new()));
+        let cap = io.volume().geometry().capacity_bytes();
+        assert_eq!(io.read(cap - 1, 2).unwrap_err().code, ErrorCode::OutOfRange);
+        assert_eq!(io.write(cap, &[1]).unwrap_err().code, ErrorCode::OutOfRange);
+        assert_eq!(io.write(0, &[]).unwrap_err().code, ErrorCode::InvalidArgument);
+        assert_eq!(io.read(u64::MAX, 1).unwrap_err().code, ErrorCode::OutOfRange);
+        assert_eq!(io.volume().stats.commits.load(Ordering::Relaxed), 0);
+    }
+
+    #[test]
+    fn concurrent_writers_on_disjoint_ranges_and_readers() {
+        let d = TempDir::new("io");
+        let io = setup(&d, Arc::new(MemoryMedia::new()));
+        let cap = io.volume().geometry().capacity_bytes();
+        // 6 writers, each owning a 1000-byte range that straddles extent boundaries
+        std::thread::scope(|sc| {
+            for w in 0..6u64 {
+                let io = io.clone();
+                sc.spawn(move || {
+                    for round in 0..30u64 {
+                        let data = vec![(w * 40 + round) as u8; 1000];
+                        io.write(w * 1900 + 300, &data).unwrap();
+                        assert_eq!(io.read(w * 1900 + 300, 1000).unwrap(), data);
+                    }
+                });
+            }
+            let io = io.clone();
+            sc.spawn(move || {
+                for _ in 0..50 {
+                    assert_eq!(io.read(0, cap).unwrap().len() as u64, cap);
+                }
+            });
+        });
+        for w in 0..6u64 {
+            assert_eq!(io.read(w * 1900 + 300, 1000).unwrap(), vec![(w * 40 + 29) as u8; 1000]);
+        }
+    }
+
+    #[test]
+    fn queued_overlapping_writes_apply_in_submission_order() {
+        let d = TempDir::new("io");
+        let io = setup(&d, Arc::new(MemoryMedia::new()));
+        let cap = io.volume().geometry().capacity_bytes();
+        let q = IoQueue::start(io.clone(), QueueConfig { workers: 8, depth: 16 }).unwrap();
+        let mut model = vec![0u8; cap as usize];
+        let mut rng = Rng(7);
+        let mut tickets = Vec::new();
+        for i in 0..300u64 {
+            let off = rng.below(cap - 1);
+            let len = 1 + rng.below((cap - off).min(3000));
+            let data = vec![(i % 251) as u8 + 1; len as usize];
+            model[off as usize..(off + len) as usize].copy_from_slice(&data);
+            tickets.push(q.submit(Op::Write { offset: off, data }, None).unwrap());
+            if i % 50 == 49 {
+                // a read in the stream sees exactly the writes submitted before it
+                let snapshot = model.clone();
+                let t = q.submit(Op::Read { offset: 0, len: cap }, None).unwrap();
+                tickets.push(t);
+                let r = tickets.pop().unwrap().wait().unwrap();
+                assert_eq!(r, Reply::Data(snapshot), "read after write {i}");
+            }
+        }
+        for t in tickets {
+            assert!(matches!(t.wait().unwrap(), Reply::Written(_)));
+        }
+        assert_eq!(q.submit(Op::Flush, None).unwrap().wait().unwrap(), Reply::Flushed);
+        q.shutdown(true).unwrap();
+        assert_eq!(io.read(0, cap).unwrap(), model);
+    }
+
+    /// Media whose put blocks until released (to hold requests in flight).
+    struct Gate {
+        inner: MemoryMedia,
+        open: Mutex<bool>,
+        cv: Condvar,
+    }
+    impl Gate {
+        fn new() -> Gate {
+            Gate { inner: MemoryMedia::new(), open: Mutex::new(false), cv: Condvar::new() }
+        }
+        fn release(&self) {
+            *self.open.lock().unwrap() = true;
+            self.cv.notify_all();
+        }
+    }
+    impl MediaAdapter for Gate {
+        fn info(&self) -> MediaInfo {
+            self.inner.info()
+        }
+        fn put(&self, at: GenerationRef, d: &[u8]) -> Result<CommitReceipt> {
+            let mut o = self.open.lock().unwrap();
+            while !*o && at.extent != crate::volume::MARKER_EXTENT {
+                o = self.cv.wait(o).unwrap();
+            }
+            drop(o);
+            self.inner.put(at, d)
+        }
+        fn get(&self, at: GenerationRef) -> Result<Vec<u8>> {
+            self.inner.get(at)
+        }
+        fn remove(&self, at: GenerationRef) -> Result<()> {
+            self.inner.remove(at)
+        }
+        fn list(&self) -> Result<Vec<GenerationRef>> {
+            self.inner.list()
+        }
+        fn sync(&self) -> Result<()> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn backpressure_cancellation_timeout_and_barrier() {
+        let d = TempDir::new("io");
+        let gate = Arc::new(Gate::new());
+        let io = setup(&d, gate.clone());
+        let q = IoQueue::start(io.clone(), QueueConfig { workers: 2, depth: 3 }).unwrap();
+        // two writes to extent 0 and 1 start and block in the backend
+        let w0 = q.submit(Op::Write { offset: 0, data: vec![1; 2048] }, None).unwrap();
+        let w1 = q.submit(Op::Write { offset: 2048, data: vec![2; 2048] }, None).unwrap();
+        std::thread::sleep(Duration::from_millis(50));
+        // a flush (barrier), a write that will be cancelled, and a write with an expired deadline fill the queue
+        let fl = q.submit(Op::Flush, None).unwrap();
+        let wc = q.submit(Op::Write { offset: 4096, data: vec![3; 10] }, None).unwrap();
+        let wt = q.submit(Op::Write { offset: 6144, data: vec![4; 10] }, Some(Instant::now())).unwrap();
+        assert_eq!(q.try_submit(Op::Read { offset: 0, len: 1 }, None).err().unwrap().code, ErrorCode::ResourceExhausted);
+        assert!(fl.wait_timeout(Duration::from_millis(50)).is_none(), "the barrier waits for earlier writes");
+        wc.cancel();
+        gate.release();
+        assert!(matches!(w0.wait().unwrap(), Reply::Written(WriteState::Verified)));
+        assert!(matches!(w1.wait().unwrap(), Reply::Written(_)));
+        assert_eq!(fl.wait_timeout(Duration::from_secs(5)).unwrap().unwrap(), Reply::Flushed);
+        assert_eq!(wc.wait().unwrap_err().code, ErrorCode::Cancelled);
+        assert_eq!(wt.wait().unwrap_err().code, ErrorCode::Timeout);
+        assert_eq!(io.read(4096, 10).unwrap(), vec![0; 10], "a cancelled write has no effect");
+        assert_eq!(io.read(6144, 10).unwrap(), vec![0; 10], "a timed-out write has no effect");
+        let m = q.metrics();
+        assert_eq!((m.cancelled.load(Ordering::Relaxed), m.timed_out.load(Ordering::Relaxed)), (1, 1));
+        assert_eq!(m.rejected_full.load(Ordering::Relaxed), 1);
+        assert!(m.max_queue_depth.load(Ordering::Relaxed) <= 3);
+        q.shutdown(true).unwrap();
+    }
+
+    #[test]
+    fn shutdown_without_drain_fails_queued_requests_and_refuses_new_ones() {
+        let d = TempDir::new("io");
+        let gate = Arc::new(Gate::new());
+        let io = setup(&d, gate.clone());
+        let q = IoQueue::start(io.clone(), QueueConfig { workers: 1, depth: 8 }).unwrap();
+        let running = q.submit(Op::Write { offset: 0, data: vec![5; 100] }, None).unwrap();
+        std::thread::sleep(Duration::from_millis(30));
+        let queued: Vec<Ticket> =
+            (0..4).map(|i| q.submit(Op::Write { offset: 2048 * (i + 1), data: vec![6; 100] }, None).unwrap()).collect();
+        let shared = q.shared.clone();
+        let stopper = std::thread::spawn(move || q.shutdown(false));
+        std::thread::sleep(Duration::from_millis(30));
+        gate.release();
+        stopper.join().unwrap().unwrap();
+        assert!(matches!(running.wait().unwrap(), Reply::Written(_)), "a started request completes");
+        for t in queued {
+            assert_eq!(t.wait().unwrap_err().code, ErrorCode::ShuttingDown);
+        }
+        assert!(shared.sched.lock().unwrap().pending.is_empty());
+        assert_eq!(io.read(2048, 100).unwrap(), vec![0; 100]);
+        assert_eq!(io.read(0, 100).unwrap(), vec![5; 100]);
+    }
+
+    #[test]
+    fn cancel_and_deadline_resolve_while_blocked_behind_a_stuck_write() {
+        let d = TempDir::new("io");
+        let gate = Arc::new(Gate::new());
+        let io = setup(&d, gate.clone());
+        let q = IoQueue::start(io.clone(), QueueConfig { workers: 2, depth: 8 }).unwrap();
+        let stuck = q.submit(Op::Write { offset: 0, data: vec![1; 100] }, None).unwrap();
+        std::thread::sleep(Duration::from_millis(30));
+        let c = q.submit(Op::Write { offset: 10, data: vec![2; 10] }, None).unwrap();
+        let t = q.submit(Op::Read { offset: 0, len: 10 }, Some(Instant::now() + Duration::from_millis(40))).unwrap();
+        c.cancel();
+        assert_eq!(c.wait_timeout(Duration::from_secs(2)).unwrap().unwrap_err().code, ErrorCode::Cancelled);
+        assert_eq!(t.wait_timeout(Duration::from_secs(2)).unwrap().unwrap_err().code, ErrorCode::Timeout);
+        gate.release();
+        assert!(matches!(stuck.wait().unwrap(), Reply::Written(_)));
+        assert_eq!(io.read(10, 10).unwrap(), vec![1; 10], "the cancelled write had no effect");
+        q.shutdown(true).unwrap();
+    }
+
+    /// Media that panics on get of extent 1.
+    struct Bomb(MemoryMedia);
+    impl MediaAdapter for Bomb {
+        fn info(&self) -> MediaInfo {
+            self.0.info()
+        }
+        fn put(&self, at: GenerationRef, d: &[u8]) -> Result<CommitReceipt> {
+            self.0.put(at, d)
+        }
+        fn get(&self, at: GenerationRef) -> Result<Vec<u8>> {
+            if at.extent.0 == 1 {
+                panic!("adapter bug");
+            }
+            self.0.get(at)
+        }
+        fn remove(&self, at: GenerationRef) -> Result<()> {
+            self.0.remove(at)
+        }
+        fn list(&self) -> Result<Vec<GenerationRef>> {
+            self.0.list()
+        }
+        fn sync(&self) -> Result<()> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn a_panicking_request_fails_alone_and_the_queue_keeps_going() {
+        let d = TempDir::new("io");
+        let g = Geometry::new(512, 4, 23).unwrap();
+        let cfg = VolumeConfig { verify_readback: false, ..Default::default() };
+        let v = Volume::create(&d.0, g, [2; 16], 0, Arc::new(Bomb(MemoryMedia::new())), cfg).unwrap();
+        let io = BlockIo::new(Arc::new(v));
+        let q = IoQueue::start(io, QueueConfig { workers: 1, depth: 8 }).unwrap();
+        q.submit(Op::Write { offset: 2048, data: vec![1; 2048] }, None).unwrap().wait().unwrap();
+        let boom = q.submit(Op::Read { offset: 2048, len: 10 }, None).unwrap();
+        let after = q.submit(Op::Write { offset: 2048, data: vec![2; 10] }, None).unwrap(); // conflicts with the read
+        assert_eq!(boom.wait().unwrap_err().code, ErrorCode::Internal);
+        assert_eq!(after.wait().unwrap_err().code, ErrorCode::Internal, "RMW of extent 1 reads it: it panics too");
+        assert_eq!(q.submit(Op::Read { offset: 0, len: 10 }, None).unwrap().wait().unwrap(), Reply::Data(vec![0; 10]));
+        q.submit(Op::Flush, None).unwrap().wait().unwrap();
+        q.shutdown(true).unwrap();
+    }
+
+    #[test]
+    fn oversized_requests_are_refused() {
+        let d = TempDir::new("io");
+        let g = Geometry::new(4096, 256, 1 << 20).unwrap(); // 4 GiB device (sparse: nothing is written)
+        let v = Volume::create(&d.0, g, [3; 16], 0, Arc::new(MemoryMedia::new()), VolumeConfig::default()).unwrap();
+        let io = BlockIo::new(Arc::new(v));
+        assert_eq!(io.read(0, MAX_REQUEST_BYTES + 1).unwrap_err().code, ErrorCode::InvalidArgument);
+        let q = IoQueue::start(io, QueueConfig::default()).unwrap();
+        assert_eq!(q.submit(Op::Read { offset: 0, len: 1 << 32 }, None).err().unwrap().code, ErrorCode::InvalidArgument);
+        assert!(IoQueue::start(q.shared.io.clone(), QueueConfig { workers: 1, depth: MAX_QUEUE_DEPTH + 1 }).is_err());
+        q.shutdown(true).unwrap();
+    }
+
+    #[test]
+    fn submit_after_shutdown_and_bad_config() {
+        let d = TempDir::new("io");
+        let io = setup(&d, Arc::new(MemoryMedia::new()));
+        assert!(IoQueue::start(io.clone(), QueueConfig { workers: 0, depth: 1 }).is_err());
+        assert!(IoQueue::start(io.clone(), QueueConfig { workers: 1, depth: 0 }).is_err());
+        let q = IoQueue::start(io.clone(), QueueConfig::default()).unwrap();
+        q.stop(true);
+        assert_eq!(q.submit(Op::Flush, None).err().unwrap().code, ErrorCode::ShuttingDown);
+        let cap = io.volume().geometry().capacity_bytes();
+        assert_eq!(q.submit(Op::Read { offset: cap, len: 1 }, None).err().unwrap().code, ErrorCode::OutOfRange);
+        q.shutdown(true).unwrap();
+    }
+}

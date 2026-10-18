@@ -11,11 +11,14 @@
 pub mod addr;
 pub mod digest;
 pub mod error;
+pub mod io;
+pub mod journal;
 pub mod json;
 pub mod media;
 pub mod proto;
 pub mod record;
 pub mod state;
+pub mod volume;
 
 pub const NAME: &str = "vnxd";
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
