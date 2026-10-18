@@ -1,0 +1,15 @@
+# phase0 A/B at 58171b8 2026-10-18T10:30:10+05:30 load 1.67
+vnx-lab: governor CLI not used: systemd-run scope in vnxdna.slice without admission (MemoryMax=8G CPUQuota=slice)
+indel-w1 seed 95500: v12 8.92s SUCCESS | v13 3.17s SUCCESS | v14 3.28s SUCCESS | identical=True
+indel-w1 seed 95501: v14 3.05s SUCCESS | v13 3.03s SUCCESS | v12 8.98s SUCCESS | identical=True
+indel-w1 seed 95502: v12 8.91s SUCCESS | v13 3.18s SUCCESS | v14 3.16s SUCCESS | identical=True
+indel-w1 seed 95503: v14 3.04s SUCCESS | v13 3.02s SUCCESS | v12 8.89s SUCCESS | identical=True
+indel-w1 seed 95504: v12 8.94s SUCCESS | v13 3.23s SUCCESS | v14 3.12s SUCCESS | identical=True
+indel-w4 seed 95300: v12 2.89s SUCCESS | v13 1.66s SUCCESS | v14 1.63s SUCCESS | identical=True
+indel-w4 seed 95301: v14 1.60s SUCCESS | v13 1.62s SUCCESS | v12 3.43s SUCCESS | identical=True
+indel-w4 seed 95302: v12 2.78s SUCCESS | v13 1.58s SUCCESS | v14 1.67s SUCCESS | identical=True
+indel-w4 seed 95303: v14 1.69s SUCCESS | v13 1.68s SUCCESS | v12 2.83s SUCCESS | identical=True
+indel-w4 seed 95304: v12 2.85s SUCCESS | v13 1.66s SUCCESS | v14 1.64s SUCCESS | identical=True
+clean-w4 seed 95100: v12 1.37s SUCCESS | v13 0.62s SUCCESS | v14 0.60s SUCCESS | identical=True
+clean-w4 seed 95101: v14 0.64s SUCCESS | v13 0.63s SUCCESS | v12 1.27s SUCCESS | identical=True
+clean-w4 seed 95102: v12 1.28s SUCCESS | v13 0.57s SUCCESS | v14 0.58s SUCCESS | identical=True
