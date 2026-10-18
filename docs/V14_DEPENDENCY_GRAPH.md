@@ -83,8 +83,8 @@ System dependencies: Linux with glibc; gcc/g++ (C11/C++20) and rustc/cargo >= 1.
 block device (P8) the kernel modules `nbd` (Stage A) and `ublk_drv` (Stage A'), root or CAP_SYS_ADMIN to attach a
 device, and `util-linux`/`e2fsprogs` (`fdisk`, `mkfs.ext4`, `mount`) for the end-to-end tests only.
 
-## 5. Known inconsistency carried into V14
+## 5. Licence metadata of the Rust crates
 
-Both Rust crates declare `license = "Proprietary"` while the project is MIT. This is metadata only (the crates are
-not published), but it contradicts the repository licence. It is recorded here and is fixed together with the
-licence inventory of the release phase; the new `vnxd` crate declares `license = "MIT"` from its first commit.
+At 58171b8 the `integrity` and `engine` crates declared `license = "Proprietary"` while the project is MIT (metadata
+only; the crates are not published). Fixed on `build/v14` after Phase 1: all three crates (`integrity`, `engine`,
+`vnxd`) declare `license = "MIT"`.

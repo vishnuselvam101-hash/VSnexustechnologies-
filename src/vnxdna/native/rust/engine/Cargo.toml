@@ -5,7 +5,7 @@ edition = "2021"
 rust-version = "1.63"   # std::thread::scope
 publish = false
 description = "VNX-DNA V13 streaming decode engine: pass 1 end to end (IO, scan, orientation, address scheduling, decode attempts, spill) behind a C ABI"
-license = "Proprietary"
+license = "MIT"
 build = "build.rs"
 
 [lib]

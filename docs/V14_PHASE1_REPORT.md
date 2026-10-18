@@ -55,7 +55,8 @@ None: Phase 1 adds no data path. Evidence category: B (software storage device) 
 
 * The contracts are not yet used by a running service: the volume, VNX-IO, cache, backends and block device are
   P2–P8. The management client and the codec worker of `vnxdna.device` come with the phases that need them.
-* The existing `integrity` and `engine` crates still declare `license = "Proprietary"` (release-phase fix).
+* The `integrity` and `engine` crates declared `license = "Proprietary"`; fixed to MIT right after this phase
+  ([V14_DEPENDENCY_GRAPH.md](V14_DEPENDENCY_GRAPH.md) §5).
 * The branch is not pushed (the founder pushes `build/v14`).
 
 ## Acceptance (P1 criteria of V14_MASTER_PLAN)
