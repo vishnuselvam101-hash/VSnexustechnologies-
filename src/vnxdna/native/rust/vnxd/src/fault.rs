@@ -228,3 +228,45 @@ impl MediaAdapter for FaultMedia {
         self.inner.sync()
     }
 }
+
+/// Adds a fixed MODELLED latency to `put` and `get` of an adapter (benchmarks of scheduling and concurrency; the
+/// numbers are model inputs, never measurements of any physical medium). `max_in_flight` is what the modelled
+/// backend accepts at once; durability and sealing are the wrapped adapter's.
+pub struct LatencyMedia {
+    inner: std::sync::Arc<dyn MediaAdapter>,
+    pub put: std::time::Duration,
+    pub get: std::time::Duration,
+    pub max_in_flight: u32,
+}
+
+impl LatencyMedia {
+    pub fn new(inner: std::sync::Arc<dyn MediaAdapter>, put: std::time::Duration, get: std::time::Duration, max_in_flight: u32) -> LatencyMedia {
+        LatencyMedia { inner, put, get, max_in_flight }
+    }
+}
+
+impl MediaAdapter for LatencyMedia {
+    fn info(&self) -> MediaInfo {
+        MediaInfo { kind: "modelled-latency", max_in_flight: self.max_in_flight, ..self.inner.info() }
+    }
+    fn sealed(&self) -> bool {
+        self.inner.sealed()
+    }
+    fn put(&self, at: GenerationRef, data: &[u8]) -> Result<CommitReceipt> {
+        std::thread::sleep(self.put);
+        self.inner.put(at, data)
+    }
+    fn get(&self, at: GenerationRef) -> Result<Vec<u8>> {
+        std::thread::sleep(self.get);
+        self.inner.get(at)
+    }
+    fn remove(&self, at: GenerationRef) -> Result<()> {
+        self.inner.remove(at)
+    }
+    fn list(&self) -> Result<Vec<GenerationRef>> {
+        self.inner.list()
+    }
+    fn sync(&self) -> Result<()> {
+        self.inner.sync()
+    }
+}

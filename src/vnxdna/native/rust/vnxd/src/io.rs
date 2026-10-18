@@ -287,9 +287,24 @@ pub struct QueueConfig {
     pub depth: usize,
 }
 
+fn cpus() -> usize {
+    std::thread::available_parallelism().map_or(1, |n| n.get())
+}
+
+impl QueueConfig {
+    /// The measured default (docs/V14_LOAD_BALANCER.md §5): min(CPUs, 2 x the backend's `max_in_flight`) workers.
+    /// More workers than that only wait for backend slots (higher p99, no more throughput); fewer leave CPUs idle
+    /// on a fast backend.
+    pub fn for_backend(max_in_flight: u32) -> QueueConfig {
+        let w = cpus().min(2 * max_in_flight.max(1) as usize).clamp(1, 64);
+        QueueConfig { workers: w, depth: 64 }
+    }
+}
+
 impl Default for QueueConfig {
+    /// `for_backend(32)`: a fast electronic backend.
     fn default() -> Self {
-        QueueConfig { workers: 4, depth: 64 }
+        QueueConfig::for_backend(32)
     }
 }
 
@@ -315,6 +330,16 @@ impl IoQueue {
                     .or_else(|e| err(ErrorCode::ResourceExhausted, format!("spawn I/O worker: {e}")))
             })
             .collect::<Result<Vec<_>>>()?;
+        let mut workers = workers;
+        // cancellations and deadlines are resolved by their own thread, so they complete at once even while every
+        // worker is busy with a long request
+        let s = shared.clone();
+        workers.push(
+            std::thread::Builder::new()
+                .name("vnxd-io-reaper".into())
+                .spawn(move || reaper(&s))
+                .or_else(|e| err(ErrorCode::ResourceExhausted, format!("spawn I/O reaper: {e}")))?,
+        );
         Ok(IoQueue { shared, workers })
     }
 
@@ -418,6 +443,33 @@ fn runnable(s: &Sched) -> Option<usize> {
         let fp = s.pending[&job.seq];
         !s.pending.range(..job.seq).any(|(_, earlier)| earlier.conflicts(&fp))
     })
+}
+
+fn reaper(sh: &Shared) {
+    let Ok(mut s) = sh.sched.lock() else { return };
+    loop {
+        if s.shutting && !s.drain {
+            // fail the queued requests now, not when a worker becomes free
+            while let Some(job) = s.queue.pop_front() {
+                s.pending.remove(&job.seq);
+                let _ = job.reply.send(err(ErrorCode::ShuttingDown, "the I/O queue shut down before the request ran"));
+                sh.metrics.failed.fetch_add(1, Ordering::Relaxed);
+            }
+            sh.room.notify_all();
+        }
+        let before = s.queue.len();
+        sweep(&mut s, sh);
+        if s.queue.len() != before {
+            sh.work.notify_all(); // a request that conflicted only with a resolved one may run now
+        }
+        if s.shutting && s.queue.is_empty() {
+            return;
+        }
+        s = match sh.work.wait_timeout(s, Duration::from_millis(10)) {
+            Ok((s, _)) => s,
+            Err(_) => return,
+        };
+    }
 }
 
 fn worker(sh: &Shared) {
@@ -878,7 +930,7 @@ mod tests {
         let d = TempDir::new("io");
         let gate = Arc::new(Gate::new());
         let io = setup(&d, gate.clone());
-        let q = IoQueue::start(io.clone(), QueueConfig { workers: 2, depth: 8 }).unwrap();
+        let q = IoQueue::start(io.clone(), QueueConfig { workers: 1, depth: 8 }).unwrap(); // the only worker is stuck
         let stuck = q.submit(Op::Write { offset: 0, data: vec![1; 100] }, None).unwrap();
         std::thread::sleep(Duration::from_millis(30));
         let c = q.submit(Op::Write { offset: 10, data: vec![2; 10] }, None).unwrap();
@@ -947,6 +999,15 @@ mod tests {
         assert_eq!(q.submit(Op::Read { offset: 0, len: 1 << 32 }, None).err().unwrap().code, ErrorCode::InvalidArgument);
         assert!(IoQueue::start(q.shared.io.clone(), QueueConfig { workers: 1, depth: MAX_QUEUE_DEPTH + 1 }).is_err());
         q.shutdown(true).unwrap();
+    }
+
+    #[test]
+    fn the_default_worker_count_follows_cpus_and_the_backend_limit() {
+        let c = cpus();
+        assert_eq!(QueueConfig::for_backend(2).workers, c.min(4));
+        assert_eq!(QueueConfig::for_backend(32).workers, c.min(64).max(1));
+        assert_eq!(QueueConfig::for_backend(0).workers, c.min(2));
+        assert_eq!(QueueConfig::default().workers, QueueConfig::for_backend(32).workers);
     }
 
     #[test]

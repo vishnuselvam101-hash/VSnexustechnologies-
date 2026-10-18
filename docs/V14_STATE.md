@@ -1,4 +1,4 @@
-# V14 state — RESUME FILE (last checkpoint 2026-10-18 ~15:00 IST: Phase 4 COMPLETE, P5 next; lab host still in use)
+# V14 state — RESUME FILE (last checkpoint 2026-10-18 ~15:00 IST: Phase 5 COMPLETE, P6 next; lab host still in use)
 
 Governing scope: the founder's V14 MASTER DIRECTIVE (copy: `docs/V14_MASTER_DIRECTIVE_2026-10-18.md`) — the complete
 storage platform (Rust control plane, real Linux block device, media adapters, Pi portability, P0–P13). The earlier
@@ -11,10 +11,12 @@ molecular-memory interface in Python; docs/V14_RAM_AND_CACHE.md, docs/V14_MOLECU
 docs/V14_PHASE3_REPORT.md) are COMPLETE. The documented P2/P3 limits were removed (c200ea8: mirrored journal,
 atomic multi-extent writes, no generation reuse, cache lock work) and Phase 4 (fallback + security: fallback,
 fault, audit, authz, seal modules; Python seal + worker; docs/V14_SECURITY_MODEL.md,
-docs/V14_FAILURE_AND_RECOVERY_MODEL.md, docs/V14_PHASE4_REPORT.md) is COMPLETE; P5 is next.
+docs/V14_FAILURE_AND_RECOVERY_MODEL.md, docs/V14_PHASE4_REPORT.md) and Phase 5 (load balancer: balance.rs, IoQueue reaper,
+measured defaults; docs/V14_LOAD_BALANCER.md, docs/V14_PHASE5_REPORT.md, experiments/v14/bench/p5-balancer/) are
+COMPLETE; P6 is next.
 
 ## Non-negotiable rules (founder)
-- Founder 2026-10-18: push `build/v14` and a milestone tag `v14-p<k>` after each phase (done for p1..p4). Still NO
+- Founder 2026-10-18: push `build/v14` and a milestone tag `v14-p<k>` after each phase (done for p1..p5). Still NO
   merge to main and NO release tag `v14.0.0` before the P12 acceptance review.
 - Commit author `vishnuselvam101-hash <vishnuselvam101@gmail.com>`; no AI attribution trailers, no AI-tool names,
   no AI-tool scratch paths in committed files.
@@ -79,9 +81,8 @@ docs/V14_FAILURE_AND_RECOVERY_MODEL.md, docs/V14_PHASE4_REPORT.md) is COMPLETE; 
 Lab host (this machine): worktrees `/root/vnx-dna-lab/v14` (build/v14), `v14-base` (58171b8), `v13-base` (6bf7749),
 venv `/root/vnx-dna-lab/.venv`, every kernel + engine built (`python -m vnxdna.native` -> all_native true).
 On a new machine, follow the clone/build block of git history (this file at 9bd0149) and re-measure the baseline first.
-Phases 1-4 DONE (cargo test 127 + seal_worker via pytest, in src/vnxdna/native/rust/vnxd). Next:
-1. P5 Load balancer: per-backend in-flight limits (MediaInfo.max_in_flight), queue fairness, backpressure into
-   IoQueue, health-aware routing using fallback::Health; measure throughput/latency on the electronic backend (C).
+Phases 1-5 DONE (cargo test 141 + seal_worker via pytest, in src/vnxdna/native/rust/vnxd). Next:
+1. P6 codec: workstream A (linear pool decode, design below) first, then B, C, E, F (brief §4-§9).
    Founder open item from P4: `cryptography` pin >=44,<47 vs advisories fixed in 48.0.1 (decision, not changed).
 2. P6 codec (workstreams A–C,
    E–F; A design above) -> P7 media adapters -> P8 NBD block device (this host has nbd + ublk_drv, root) -> P9

@@ -11,6 +11,7 @@
 pub mod addr;
 pub mod audit;
 pub mod authz;
+pub mod balance;
 pub mod cache;
 pub mod digest;
 pub mod error;

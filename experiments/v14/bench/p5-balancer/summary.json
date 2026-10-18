@@ -1,0 +1,1018 @@
+{
+ "configs": [
+  {
+   "backend_in_flight_max": {
+    "max": 1,
+    "median": 1,
+    "min": 1
+   },
+   "backend_slot_wait_us_total": {
+    "max": 24,
+    "median": 22,
+    "min": 14
+   },
+   "cpu_tasks_per_s_milli": {
+    "max": 357021,
+    "median": 356091,
+    "min": 355991
+   },
+   "io_workers": 1,
+   "latency_us_p50": {
+    "max": 44397,
+    "median": 41871,
+    "min": 41647
+   },
+   "latency_us_p95": {
+    "max": 71644,
+    "median": 64737,
+    "min": 64005
+   },
+   "latency_us_p99": {
+    "max": 84322,
+    "median": 76630,
+    "min": 72881
+   },
+   "lb_utilisation_milli": {
+    "max": 999,
+    "median": 999,
+    "min": 999
+   },
+   "lb_workers": 2,
+   "peak_rss_kib": {
+    "max": 26016,
+    "median": 25728,
+    "min": 25596
+   },
+   "profile": "electronic",
+   "queue_wait_us_mean": {
+    "max": 43296,
+    "median": 40094,
+    "min": 39590
+   },
+   "runs": 3,
+   "sweep": "io_workers",
+   "throughput_kib_per_s": {
+    "max": 28310,
+    "median": 27479,
+    "min": 25013
+   },
+   "throughput_req_per_s_milli": {
+    "max": 377334,
+    "median": 372749,
+    "min": 344740
+   },
+   "wall_ms": {
+    "max": 9282,
+    "median": 8584,
+    "min": 8480
+   }
+  },
+  {
+   "backend_in_flight_max": {
+    "max": 2,
+    "median": 2,
+    "min": 2
+   },
+   "backend_slot_wait_us_total": {
+    "max": 33,
+    "median": 19,
+    "min": 6
+   },
+   "cpu_tasks_per_s_milli": {
+    "max": 358492,
+    "median": 357037,
+    "min": 341342
+   },
+   "io_workers": 2,
+   "latency_us_p50": {
+    "max": 26754,
+    "median": 25983,
+    "min": 24725
+   },
+   "latency_us_p95": {
+    "max": 48564,
+    "median": 44782,
+    "min": 39075
+   },
+   "latency_us_p99": {
+    "max": 59853,
+    "median": 55446,
+    "min": 45596
+   },
+   "lb_utilisation_milli": {
+    "max": 999,
+    "median": 999,
+    "min": 999
+   },
+   "lb_workers": 2,
+   "peak_rss_kib": {
+    "max": 28964,
+    "median": 28636,
+    "min": 28452
+   },
+   "profile": "electronic",
+   "queue_wait_us_mean": {
+    "max": 24709,
+    "median": 23798,
+    "min": 22142
+   },
+   "runs": 3,
+   "sweep": "io_workers",
+   "throughput_kib_per_s": {
+    "max": 46278,
+    "median": 42360,
+    "min": 42274
+   },
+   "throughput_req_per_s_milli": {
+    "max": 627757,
+    "median": 583803,
+    "min": 563446
+   },
+   "wall_ms": {
+    "max": 5679,
+    "median": 5481,
+    "min": 5097
+   }
+  },
+  {
+   "backend_in_flight_max": {
+    "max": 4,
+    "median": 4,
+    "min": 4
+   },
+   "backend_slot_wait_us_total": {
+    "max": 78,
+    "median": 22,
+    "min": 8
+   },
+   "cpu_tasks_per_s_milli": {
+    "max": 356865,
+    "median": 356819,
+    "min": 354591
+   },
+   "io_workers": 4,
+   "latency_us_p50": {
+    "max": 20316,
+    "median": 20195,
+    "min": 18635
+   },
+   "latency_us_p95": {
+    "max": 39827,
+    "median": 38690,
+    "min": 35150
+   },
+   "latency_us_p99": {
+    "max": 50631,
+    "median": 48802,
+    "min": 42597
+   },
+   "lb_utilisation_milli": {
+    "max": 999,
+    "median": 999,
+    "min": 998
+   },
+   "lb_workers": 2,
+   "peak_rss_kib": {
+    "max": 32364,
+    "median": 30668,
+    "min": 30620
+   },
+   "profile": "electronic",
+   "queue_wait_us_mean": {
+    "max": 16223,
+    "median": 16034,
+    "min": 14541
+   },
+   "runs": 3,
+   "sweep": "io_workers",
+   "throughput_kib_per_s": {
+    "max": 59749,
+    "median": 54845,
+    "min": 53320
+   },
+   "throughput_req_per_s_milli": {
+    "max": 810495,
+    "median": 734857,
+    "min": 730999
+   },
+   "wall_ms": {
+    "max": 4377,
+    "median": 4354,
+    "min": 3948
+   }
+  },
+  {
+   "backend_in_flight_max": {
+    "max": 8,
+    "median": 8,
+    "min": 8
+   },
+   "backend_slot_wait_us_total": {
+    "max": 66,
+    "median": 37,
+    "min": 28
+   },
+   "cpu_tasks_per_s_milli": {
+    "max": 355372,
+    "median": 353592,
+    "min": 347520
+   },
+   "io_workers": 8,
+   "latency_us_p50": {
+    "max": 15708,
+    "median": 15669,
+    "min": 14044
+   },
+   "latency_us_p95": {
+    "max": 40366,
+    "median": 39278,
+    "min": 36900
+   },
+   "latency_us_p99": {
+    "max": 58377,
+    "median": 54758,
+    "min": 46989
+   },
+   "lb_utilisation_milli": {
+    "max": 999,
+    "median": 999,
+    "min": 998
+   },
+   "lb_workers": 2,
+   "peak_rss_kib": {
+    "max": 34980,
+    "median": 34492,
+    "min": 33696
+   },
+   "profile": "electronic",
+   "queue_wait_us_mean": {
+    "max": 8869,
+    "median": 8843,
+    "min": 7983
+   },
+   "runs": 3,
+   "sweep": "io_workers",
+   "throughput_kib_per_s": {
+    "max": 70552,
+    "median": 65454,
+    "min": 62891
+   },
+   "throughput_req_per_s_milli": {
+    "max": 957026,
+    "median": 872395,
+    "min": 866763
+   },
+   "wall_ms": {
+    "max": 3691,
+    "median": 3668,
+    "min": 3343
+   }
+  },
+  {
+   "backend_in_flight_max": {
+    "max": 15,
+    "median": 15,
+    "min": 14
+   },
+   "backend_slot_wait_us_total": {
+    "max": 92,
+    "median": 54,
+    "min": 13
+   },
+   "cpu_tasks_per_s_milli": {
+    "max": 355579,
+    "median": 351445,
+    "min": 348037
+   },
+   "io_workers": 16,
+   "latency_us_p50": {
+    "max": 13375,
+    "median": 12728,
+    "min": 10963
+   },
+   "latency_us_p95": {
+    "max": 78102,
+    "median": 62475,
+    "min": 54354
+   },
+   "latency_us_p99": {
+    "max": 282353,
+    "median": 109719,
+    "min": 86816
+   },
+   "lb_utilisation_milli": {
+    "max": 999,
+    "median": 998,
+    "min": 998
+   },
+   "lb_workers": 2,
+   "peak_rss_kib": {
+    "max": 41844,
+    "median": 40928,
+    "min": 40084
+   },
+   "profile": "electronic",
+   "queue_wait_us_mean": {
+    "max": 3453,
+    "median": 2536,
+    "min": 2463
+   },
+   "runs": 3,
+   "sweep": "io_workers",
+   "throughput_kib_per_s": {
+    "max": 67829,
+    "median": 52990,
+    "min": 43105
+   },
+   "throughput_req_per_s_milli": {
+    "max": 904040,
+    "median": 730308,
+    "min": 584715
+   },
+   "wall_ms": {
+    "max": 5472,
+    "median": 4381,
+    "min": 3539
+   }
+  },
+  {
+   "backend_in_flight_max": {
+    "max": 1,
+    "median": 1,
+    "min": 1
+   },
+   "backend_slot_wait_us_total": {
+    "max": 1,
+    "median": 0,
+    "min": 0
+   },
+   "cpu_tasks_per_s_milli": {
+    "max": 359740,
+    "median": 356757,
+    "min": 351089
+   },
+   "io_workers": 1,
+   "latency_us_p50": {
+    "max": 506995,
+    "median": 455834,
+    "min": 404760
+   },
+   "latency_us_p95": {
+    "max": 750125,
+    "median": 706774,
+    "min": 682440
+   },
+   "latency_us_p99": {
+    "max": 838584,
+    "median": 794231,
+    "min": 728460
+   },
+   "lb_utilisation_milli": {
+    "max": 999,
+    "median": 999,
+    "min": 999
+   },
+   "lb_workers": 2,
+   "peak_rss_kib": {
+    "max": 18256,
+    "median": 16404,
+    "min": 16252
+   },
+   "profile": "dna-sim",
+   "queue_wait_us_mean": {
+    "max": 451340,
+    "median": 420183,
+    "min": 393727
+   },
+   "runs": 3,
+   "sweep": "io_workers",
+   "throughput_kib_per_s": {
+    "max": 2572,
+    "median": 2478,
+    "min": 2387
+   },
+   "throughput_req_per_s_milli": {
+    "max": 37595,
+    "median": 34689,
+    "min": 30890
+   },
+   "wall_ms": {
+    "max": 10359,
+    "median": 9224,
+    "min": 8511
+   }
+  },
+  {
+   "backend_in_flight_max": {
+    "max": 2,
+    "median": 2,
+    "min": 2
+   },
+   "backend_slot_wait_us_total": {
+    "max": 12,
+    "median": 0,
+    "min": 0
+   },
+   "cpu_tasks_per_s_milli": {
+    "max": 356651,
+    "median": 348887,
+    "min": 348801
+   },
+   "io_workers": 2,
+   "latency_us_p50": {
+    "max": 256415,
+    "median": 235033,
+    "min": 202918
+   },
+   "latency_us_p95": {
+    "max": 395064,
+    "median": 394335,
+    "min": 392034
+   },
+   "latency_us_p99": {
+    "max": 555003,
+    "median": 518372,
+    "min": 450639
+   },
+   "lb_utilisation_milli": {
+    "max": 999,
+    "median": 999,
+    "min": 999
+   },
+   "lb_workers": 2,
+   "peak_rss_kib": {
+    "max": 18324,
+    "median": 16856,
+    "min": 16792
+   },
+   "profile": "dna-sim",
+   "queue_wait_us_mean": {
+    "max": 221687,
+    "median": 203143,
+    "min": 191993
+   },
+   "runs": 3,
+   "sweep": "io_workers",
+   "throughput_kib_per_s": {
+    "max": 4709,
+    "median": 4612,
+    "min": 4375
+   },
+   "throughput_req_per_s_milli": {
+    "max": 68898,
+    "median": 64552,
+    "min": 56557
+   },
+   "wall_ms": {
+    "max": 5657,
+    "median": 4957,
+    "min": 4644
+   }
+  },
+  {
+   "backend_in_flight_max": {
+    "max": 2,
+    "median": 2,
+    "min": 2
+   },
+   "backend_slot_wait_us_total": {
+    "max": 6069783,
+    "median": 5738154,
+    "min": 5499455
+   },
+   "cpu_tasks_per_s_milli": {
+    "max": 360403,
+    "median": 359586,
+    "min": 349592
+   },
+   "io_workers": 4,
+   "latency_us_p50": {
+    "max": 225212,
+    "median": 200440,
+    "min": 194400
+   },
+   "latency_us_p95": {
+    "max": 395615,
+    "median": 386122,
+    "min": 383085
+   },
+   "latency_us_p99": {
+    "max": 500275,
+    "median": 497182,
+    "min": 488668
+   },
+   "lb_utilisation_milli": {
+    "max": 999,
+    "median": 999,
+    "min": 999
+   },
+   "lb_workers": 2,
+   "peak_rss_kib": {
+    "max": 19388,
+    "median": 17876,
+    "min": 17780
+   },
+   "profile": "dna-sim",
+   "queue_wait_us_mean": {
+    "max": 164722,
+    "median": 156523,
+    "min": 144514
+   },
+   "runs": 3,
+   "sweep": "io_workers",
+   "throughput_kib_per_s": {
+    "max": 5198,
+    "median": 4929,
+    "min": 4562
+   },
+   "throughput_req_per_s_milli": {
+    "max": 71856,
+    "median": 68985,
+    "min": 62427
+   },
+   "wall_ms": {
+    "max": 5125,
+    "median": 4638,
+    "min": 4453
+   }
+  },
+  {
+   "backend_in_flight_max": {
+    "max": 2,
+    "median": 2,
+    "min": 2
+   },
+   "backend_slot_wait_us_total": {
+    "max": 16184985,
+    "median": 16037680,
+    "min": 15348841
+   },
+   "cpu_tasks_per_s_milli": {
+    "max": 359364,
+    "median": 357735,
+    "min": 357345
+   },
+   "io_workers": 8,
+   "latency_us_p50": {
+    "max": 172322,
+    "median": 142613,
+    "min": 132203
+   },
+   "latency_us_p95": {
+    "max": 563756,
+    "median": 520438,
+    "min": 489082
+   },
+   "latency_us_p99": {
+    "max": 816458,
+    "median": 811159,
+    "min": 710278
+   },
+   "lb_utilisation_milli": {
+    "max": 999,
+    "median": 999,
+    "min": 998
+   },
+   "lb_workers": 2,
+   "peak_rss_kib": {
+    "max": 21524,
+    "median": 20012,
+    "min": 19368
+   },
+   "profile": "dna-sim",
+   "queue_wait_us_mean": {
+    "max": 98791,
+    "median": 79506,
+    "min": 75889
+   },
+   "runs": 3,
+   "sweep": "io_workers",
+   "throughput_kib_per_s": {
+    "max": 5322,
+    "median": 5036,
+    "min": 4816
+   },
+   "throughput_req_per_s_milli": {
+    "max": 75855,
+    "median": 70489,
+    "min": 63918
+   },
+   "wall_ms": {
+    "max": 5006,
+    "median": 4539,
+    "min": 4218
+   }
+  },
+  {
+   "backend_in_flight_max": {
+    "max": 2,
+    "median": 2,
+    "min": 2
+   },
+   "backend_slot_wait_us_total": {
+    "max": 24471158,
+    "median": 23997625,
+    "min": 19008778
+   },
+   "cpu_tasks_per_s_milli": {
+    "max": 362181,
+    "median": 352181,
+    "min": 347109
+   },
+   "io_workers": 16,
+   "latency_us_p50": {
+    "max": 121777,
+    "median": 90783,
+    "min": 80551
+   },
+   "latency_us_p95": {
+    "max": 683945,
+    "median": 626093,
+    "min": 580562
+   },
+   "latency_us_p99": {
+    "max": 1171147,
+    "median": 1128245,
+    "min": 967103
+   },
+   "lb_utilisation_milli": {
+    "max": 999,
+    "median": 999,
+    "min": 998
+   },
+   "lb_workers": 2,
+   "peak_rss_kib": {
+    "max": 25756,
+    "median": 23552,
+    "min": 22228
+   },
+   "profile": "dna-sim",
+   "queue_wait_us_mean": {
+    "max": 30529,
+    "median": 29514,
+    "min": 25617
+   },
+   "runs": 3,
+   "sweep": "io_workers",
+   "throughput_kib_per_s": {
+    "max": 5249,
+    "median": 4970,
+    "min": 4807
+   },
+   "throughput_req_per_s_milli": {
+    "max": 75700,
+    "median": 69566,
+    "min": 63039
+   },
+   "wall_ms": {
+    "max": 5076,
+    "median": 4599,
+    "min": 4227
+   }
+  },
+  {
+   "backend_in_flight_max": {
+    "max": 8,
+    "median": 8,
+    "min": 8
+   },
+   "backend_slot_wait_us_total": {
+    "max": 26,
+    "median": 25,
+    "min": 20
+   },
+   "cpu_tasks_per_s_milli": {
+    "max": 179525,
+    "median": 177976,
+    "min": 165379
+   },
+   "io_workers": 8,
+   "latency_us_p50": {
+    "max": 13238,
+    "median": 12493,
+    "min": 12023
+   },
+   "latency_us_p95": {
+    "max": 34799,
+    "median": 31950,
+    "min": 31103
+   },
+   "latency_us_p99": {
+    "max": 47650,
+    "median": 43672,
+    "min": 41151
+   },
+   "lb_utilisation_milli": {
+    "max": 999,
+    "median": 999,
+    "min": 999
+   },
+   "lb_workers": 1,
+   "peak_rss_kib": {
+    "max": 35540,
+    "median": 34808,
+    "min": 34296
+   },
+   "profile": "electronic",
+   "queue_wait_us_mean": {
+    "max": 7608,
+    "median": 7106,
+    "min": 6814
+   },
+   "runs": 3,
+   "sweep": "lb_workers",
+   "throughput_kib_per_s": {
+    "max": 83362,
+    "median": 78413,
+    "min": 76018
+   },
+   "throughput_req_per_s_milli": {
+    "max": 1130797,
+    "median": 1080691,
+    "min": 1013194
+   },
+   "wall_ms": {
+    "max": 3158,
+    "median": 2961,
+    "min": 2829
+   }
+  },
+  {
+   "backend_in_flight_max": {
+    "max": 8,
+    "median": 8,
+    "min": 8
+   },
+   "backend_slot_wait_us_total": {
+    "max": 55,
+    "median": 31,
+    "min": 10
+   },
+   "cpu_tasks_per_s_milli": {
+    "max": 360151,
+    "median": 359366,
+    "min": 344843
+   },
+   "io_workers": 8,
+   "latency_us_p50": {
+    "max": 13550,
+    "median": 13214,
+    "min": 12389
+   },
+   "latency_us_p95": {
+    "max": 34757,
+    "median": 32954,
+    "min": 32248
+   },
+   "latency_us_p99": {
+    "max": 46694,
+    "median": 45303,
+    "min": 42411
+   },
+   "lb_utilisation_milli": {
+    "max": 999,
+    "median": 998,
+    "min": 998
+   },
+   "lb_workers": 2,
+   "peak_rss_kib": {
+    "max": 34408,
+    "median": 34372,
+    "min": 33888
+   },
+   "profile": "electronic",
+   "queue_wait_us_mean": {
+    "max": 7658,
+    "median": 7377,
+    "min": 7068
+   },
+   "runs": 3,
+   "sweep": "lb_workers",
+   "throughput_kib_per_s": {
+    "max": 79452,
+    "median": 76184,
+    "min": 74621
+   },
+   "throughput_req_per_s_milli": {
+    "max": 1077763,
+    "median": 1028424,
+    "min": 1015406
+   },
+   "wall_ms": {
+    "max": 3151,
+    "median": 3111,
+    "min": 2969
+   }
+  },
+  {
+   "backend_in_flight_max": {
+    "max": 8,
+    "median": 8,
+    "min": 8
+   },
+   "backend_slot_wait_us_total": {
+    "max": 31,
+    "median": 21,
+    "min": 9
+   },
+   "cpu_tasks_per_s_milli": {
+    "max": 711083,
+    "median": 705921,
+    "min": 697822
+   },
+   "io_workers": 8,
+   "latency_us_p50": {
+    "max": 18446,
+    "median": 16582,
+    "min": 14456
+   },
+   "latency_us_p95": {
+    "max": 48173,
+    "median": 45293,
+    "min": 37372
+   },
+   "latency_us_p99": {
+    "max": 76994,
+    "median": 66438,
+    "min": 50228
+   },
+   "lb_utilisation_milli": {
+    "max": 998,
+    "median": 998,
+    "min": 998
+   },
+   "lb_workers": 4,
+   "peak_rss_kib": {
+    "max": 36644,
+    "median": 34872,
+    "min": 34088
+   },
+   "profile": "electronic",
+   "queue_wait_us_mean": {
+    "max": 12001,
+    "median": 10345,
+    "min": 8196
+   },
+   "runs": 3,
+   "sweep": "lb_workers",
+   "throughput_kib_per_s": {
+    "max": 68390,
+    "median": 55829,
+    "min": 46332
+   },
+   "throughput_req_per_s_milli": {
+    "max": 927699,
+    "median": 744102,
+    "min": 638556
+   },
+   "wall_ms": {
+    "max": 5011,
+    "median": 4300,
+    "min": 3449
+   }
+  },
+  {
+   "backend_in_flight_max": {
+    "max": 8,
+    "median": 8,
+    "min": 8
+   },
+   "backend_slot_wait_us_total": {
+    "max": 451,
+    "median": 322,
+    "min": 71
+   },
+   "cpu_tasks_per_s_milli": {
+    "max": 1239254,
+    "median": 1239132,
+    "min": 1226092
+   },
+   "io_workers": 8,
+   "latency_us_p50": {
+    "max": 21196,
+    "median": 20618,
+    "min": 19943
+   },
+   "latency_us_p95": {
+    "max": 54874,
+    "median": 51531,
+    "min": 51412
+   },
+   "latency_us_p99": {
+    "max": 77270,
+    "median": 75575,
+    "min": 73330
+   },
+   "lb_utilisation_milli": {
+    "max": 992,
+    "median": 987,
+    "min": 986
+   },
+   "lb_workers": 8,
+   "peak_rss_kib": {
+    "max": 36848,
+    "median": 35364,
+    "min": 34748
+   },
+   "profile": "electronic",
+   "queue_wait_us_mean": {
+    "max": 12064,
+    "median": 11718,
+    "min": 11390
+   },
+   "runs": 3,
+   "sweep": "lb_workers",
+   "throughput_kib_per_s": {
+    "max": 50346,
+    "median": 47131,
+    "min": 46981
+   },
+   "throughput_req_per_s_milli": {
+    "max": 671027,
+    "median": 649568,
+    "min": 637290
+   },
+   "wall_ms": {
+    "max": 5021,
+    "median": 4926,
+    "min": 4768
+   }
+  },
+  {
+   "backend_in_flight_max": {
+    "max": 8,
+    "median": 8,
+    "min": 8
+   },
+   "backend_slot_wait_us_total": {
+    "max": 53,
+    "median": 29,
+    "min": 21
+   },
+   "cpu_tasks_per_s_milli": {
+    "max": 1260585,
+    "median": 1257938,
+    "min": 1249226
+   },
+   "io_workers": 8,
+   "latency_us_p50": {
+    "max": 24775,
+    "median": 24737,
+    "min": 24644
+   },
+   "latency_us_p95": {
+    "max": 66464,
+    "median": 64625,
+    "min": 64215
+   },
+   "latency_us_p99": {
+    "max": 101199,
+    "median": 94352,
+    "min": 91265
+   },
+   "lb_utilisation_milli": {
+    "max": 967,
+    "median": 960,
+    "min": 960
+   },
+   "lb_workers": 16,
+   "peak_rss_kib": {
+    "max": 37404,
+    "median": 37144,
+    "min": 36956
+   },
+   "profile": "electronic",
+   "queue_wait_us_mean": {
+    "max": 14115,
+    "median": 13918,
+    "min": 13616
+   },
+   "runs": 3,
+   "sweep": "lb_workers",
+   "throughput_kib_per_s": {
+    "max": 40614,
+    "median": 40393,
+    "min": 37879
+   },
+   "throughput_req_per_s_milli": {
+    "max": 550926,
+    "median": 538371,
+    "min": 522049
+   },
+   "wall_ms": {
+    "max": 6129,
+    "median": 5943,
+    "min": 5808
+   }
+  }
+ ],
+ "provenance": {
+  "commit": "4578db4a8ad8e6b803d4097f9bbac1dd8f4ac480",
+  "cpus": 8,
+  "date": "2026-10-18T15:33:08+0530",
+  "dirty_tree": false,
+  "host": "server.vsnexustechnologies.com",
+  "kernel": "6.8.0-146-generic",
+  "machine": "x86_64"
+ }
+}
