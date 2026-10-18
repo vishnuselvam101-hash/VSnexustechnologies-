@@ -488,6 +488,10 @@ def pool_decode_refusal(opt: DecodeOptions) -> str | None:
         return "read clustering adds per-decode state"
     if opt.stage_counters:
         return "stage counters add per-decode state"
+    if getattr(opt.recovery_budget, "max_wall_seconds", None) is not None:
+        # the single pass 1 and the per-extent planners do not share one wall-clock; the legacy single-planner path
+        # enforces max_wall_seconds exactly, so defer to it rather than weaken the budget
+        return "a wall-time recovery budget is enforced on the single-planner path"
     return None
 
 

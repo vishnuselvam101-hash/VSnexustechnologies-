@@ -22,3 +22,6 @@ RSS stays ~100 MiB and does not grow with the extent count.
 
 Rows: `pool.jsonl`; medians and ranges: `pool-summary.json`. SIMULATED (software codec rates on this host; the pool is
 produced by the channel simulator).
+
+Provenance: the v14 rows in `pool.jsonl` record the parent commit SHA because the benchmark ran against the
+working tree just before it was committed as 2dc694c; the measured code is that of 2dc694c. SIMULATED channel.

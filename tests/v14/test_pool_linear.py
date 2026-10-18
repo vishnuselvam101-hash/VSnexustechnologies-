@@ -86,6 +86,36 @@ def test_linear_matches_legacy_output(tmp_path, monkeypatch, extents):
     assert {k: v for k, v in rep.items() if k not in drop} == {k: v for k, v in rep_l.items() if k not in drop}
 
 
+def test_quality_weighting_matches_legacy(tmp_path):
+    # consensus_weighting="quality" is allowed through the linear pool path; it must still equal the legacy path
+    data = _data(4 * 8 * KIB - 7, 909)
+    cfg = ch.ChannelConfig(seed=23, coverage=5, substitution_rate=0.02, insertion_rate=0.003, deletion_rate=0.003,
+                           reverse_complement_rate=0.3, shuffle_window=100_000)
+    reads, man = _pool(tmp_path, data, 8 * KIB, cfg)
+    opt = DecodeOptions(consensus_weighting="quality")
+    lin = tmp_path / "lin.bin"
+    rep = st.decode_stream(reads, man, lin, options=opt)
+    assert rep["by_pool_linear"] == rep["by_pool"] and rep["by_pool_fallback"] == 0
+    leg = tmp_path / "leg.bin"
+    with pytest.MonkeyPatch.context() as mp:
+        _decode_legacy(mp, reads, man, leg, options=DecodeOptions(consensus_weighting="quality"))
+    assert lin.read_bytes() == data == leg.read_bytes()
+
+
+def test_a_wall_time_budget_uses_the_legacy_path(tmp_path):
+    # a finite recovery wall-time budget must be honoured, so the pool path defers to the single-planner legacy path
+    from vnxdna.recovery.planner import RecoveryBudget
+    data = _data(3 * 8 * KIB, 51)
+    cfg = ch.ChannelConfig(seed=5, coverage=4, substitution_rate=0.01, shuffle_window=100_000)
+    reads, man = _pool(tmp_path, data, 8 * KIB, cfg)
+    opt = DecodeOptions(recovery_budget=RecoveryBudget(max_wall_seconds=600.0))
+    assert dc.pool_decode_refusal(opt) is not None
+    out = tmp_path / "o.bin"
+    rep = st.decode_stream(reads, man, out, options=opt)
+    assert out.read_bytes() == data
+    assert rep["by_pool_fallback"] == rep["by_pool"] and rep["by_pool_linear"] == 0
+
+
 def test_determinism_across_workers(tmp_path):
     data = _data(6 * 8 * KIB + 9, 44)
     cfg = ch.ChannelConfig(seed=11, coverage=4, substitution_rate=0.015, insertion_rate=0.003, deletion_rate=0.003,
