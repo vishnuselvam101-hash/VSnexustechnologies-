@@ -24,14 +24,16 @@ Formerly ``vnxdna.v4.decoder`` (V6 Phase 2, M4)."""
 from __future__ import annotations
 
 import os
+import queue
 import shutil
 import tempfile
+import threading
 import time
 from collections import Counter, deque
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
-from vnxdna.core.errors import VNXFormatError
+from vnxdna.core.errors import VNXConfigurationError, VNXFormatError
 from vnxdna.native.heap import trim_heap
 from vnxdna.native.reads import iter_reads
 from vnxdna.recovery.options import DecodeOptions, DecodeResult
@@ -54,7 +56,6 @@ def decode_reads(reads_path: str | os.PathLike, output: str | os.PathLike | None
     opt.validate()
     t0 = time.perf_counter()
     from vnxdna.core.observe import Events
-    from vnxdna.recovery.planner import RecoveryPlanner
     from vnxdna.native import backend_summary
     from vnxdna.dispatch import path_report
     # path selection (and the opt-in differential self-check / quarantine) BEFORE any kernel runs or worker starts,
@@ -68,10 +69,10 @@ def decode_reads(reads_path: str | os.PathLike, output: str | os.PathLike | None
         from vnxdna.recovery.stagecount import StageCounters
         sc = StageCounters()
     try:
-        res = _decode_reads(reads_path, output, opt, t0, ev, RecoveryPlanner(opt.recovery_budget, t0), overwrite=overwrite,
-                            partial_dir=partial_dir, select=select, select_dir=select_dir, key=key, passphrase=passphrase,
-                            progress=progress, workdir=workdir, allow_unencrypted=allow_unencrypted, backends=backends,
-                            stage_counters=sc, cluster_box=cluster_box)
+        res = _decode_ladder(reads_path, output, opt, t0, ev, overwrite=overwrite, partial_dir=partial_dir, select=select,
+                             select_dir=select_dir, key=key, passphrase=passphrase, progress=progress, workdir=workdir,
+                             allow_unencrypted=allow_unencrypted, backends=backends, stage_counters=sc,
+                             cluster_box=cluster_box)
     except Exception as error:
         if "stage" in cluster_box and isinstance(getattr(error, "details", None), dict):
             error.details["clustering"] = cluster_box["stage"].report()
@@ -92,9 +93,195 @@ def decode_reads(reads_path: str | os.PathLike, output: str | os.PathLike | None
     return res
 
 
+# ============================================================================ V13 engine ladder
+#: errors that are about the request or the environment, not about what pass 1 recovered: never retried on a lower rung
+_NO_FALLBACK = ("VNXKeyError", "VNXConfigurationError", "VNXOutputError")
+#: kernel backend variables the reference rung pins to the Python references
+_REFERENCE_ENV = ("VNXDNA_ALIGN_BACKEND", "VNXDNA_RS_BACKEND", "VNXDNA_READS_BACKEND", "VNXDNA_ORIENT_BACKEND",
+                  "VNXDNA_INTEGRITY_BACKEND", "VNXDNA_CLUSTER_BACKEND", "VNXDNA_STRAND_BACKEND",
+                  "VNXDNA_OUTERLIST_BACKEND")
+
+
+def stream_refusal(opt: DecodeOptions, reads_path, select=None) -> str | None:
+    """Why the streaming engine cannot run this decode (None = it can): the engine reproduces the default recovery
+    configuration of pass 1 on FASTQ/FASTA input."""
+    if opt.indel_recovery != "segment" or opt.soft_decoding != "off":
+        return "smart indel recovery / soft decoding run on the V13 path"
+    if opt.consensus_weighting != "count":
+        return "quality-weighted consensus runs on the V13 path"
+    if opt.read_clustering != "off":
+        return "read clustering runs on the V13 path"
+    if opt.stage_counters:
+        return "stage counters are produced by the V13 path"
+    if opt.retry_band:
+        return "the retry band runs on the V13 path"
+    try:
+        from vnxdna.dnaenc.reads import detect
+        fmt = detect(reads_path)
+    except Exception as error:  # noqa: BLE001 - the V13 path raises the proper error
+        return f"input not detected ({type(error).__name__})"
+    if fmt not in ("fastq", "fasta"):
+        return f"{fmt} input runs on the V13 path"
+    from vnxdna.recovery import engine as ne
+    try:
+        if ne.resolve_backend() != "native":
+            return "VNXDNA_ENGINE_BACKEND=reference"
+        ne.kernel_levels()
+    except Exception as error:  # noqa: BLE001 - unavailable library, reference backends: the V13 path runs
+        return f"engine unavailable: {error}"
+    return None
+
+
+class _reference_backends:
+    """Pin every kernel to its Python reference for the duration (environment, inherited by worker processes)."""
+
+    def __enter__(self):
+        self.saved = {k: os.environ.get(k) for k in _REFERENCE_ENV}
+        for k in _REFERENCE_ENV:
+            os.environ[k] = "reference"
+        return self
+
+    def __exit__(self, *exc):
+        for k, v in self.saved.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+        return False
+
+
+def _decode_ladder(reads_path, output, opt: DecodeOptions, t0: float, ev, **kw) -> DecodeResult:
+    """The fallback ladder: stream engine -> V13 path -> Python references (docs/V13_ENGINE_ARCHITECTURE.md)."""
+    from vnxdna.core.errors import VNXError
+    from vnxdna.recovery import engine as ne
+    from vnxdna.recovery.planner import RecoveryPlanner, VNXBudgetExceeded
+    info: dict = {"requested": opt.engine, "rung": None, "fallbacks": []}
+    rung = {"auto": "stream", "stream": "stream", "v13": "v13", "reference": "reference"}[opt.engine]
+    if rung == "stream":
+        why = stream_refusal(opt, reads_path, kw.get("select"))
+        if why is not None:
+            if opt.engine == "stream":
+                raise VNXConfigurationError(f"engine='stream' cannot run this decode: {why}")
+            info["fallbacks"].append({"rung": "stream", "reason": why})
+            rung = "v13"
+    # the hard wall-time budget (RecoveryBudget.max_wall_seconds) also stops the engine, at its next block or batch
+    cancel = ne.Cancel()
+    timer = None
+    limit = getattr(opt.recovery_budget, "max_wall_seconds", None)
+    if limit is not None:
+        timer = threading.Timer(max(0.0, float(limit) - (time.perf_counter() - t0)), cancel.set)
+        timer.daemon = True
+        timer.start()
+
+    planner = RecoveryPlanner(opt.recovery_budget, t0)
+
+    def over_budget():
+        # the planner records the exhaustion and raises with its plan (the same error and details as the V13 path);
+        # the fallback below is for a cancel that lands exactly at the limit (the timer fired, the clock disagrees)
+        try:
+            planner.checkpoint("pass 1 (engine stopped)")
+        except VNXBudgetExceeded as error:
+            return error
+        planner.exhausted.append({"limit": "max_wall_seconds", "at": "pass 1 (engine stopped)", "used": None,
+                                  "allowed": limit, "effect": "decode stopped"})
+        return VNXBudgetExceeded(f"wall-time budget of {limit} s exceeded in pass 1 (engine stopped)",
+                                 details={"recovery_plan": planner.report()},
+                                 hint="raise the budget, or decode on a larger machine")
+    try:
+        if rung == "stream":
+            t = time.perf_counter()
+            try:
+                res = _decode_reads(reads_path, output, opt, t0, ev, planner,
+                                    **({**kw, "partial_dir": None} if opt.engine == "auto" else kw), stream=cancel,
+                                    engine_info=info)
+            except ne.EngineCancelled:
+                raise over_budget() from None
+            except (ne.EngineUnsupported, ne.EngineError) as error:
+                if opt.engine == "stream":
+                    raise
+                info["fallbacks"].append({"rung": "stream", "reason": f"{type(error).__name__}: {error}"[:300],
+                                          "seconds": round(time.perf_counter() - t, 4)})
+                res = None
+            except VNXError as error:
+                if type(error).__name__ in _NO_FALLBACK or opt.engine == "stream":
+                    raise
+                info["fallbacks"].append({"rung": "stream", "reason": f"{type(error).__name__}: {error}"[:300],
+                                          "seconds": round(time.perf_counter() - t, 4)})
+                res = None
+            if res is not None:
+                if res.status == "SUCCESS" or opt.engine == "stream":
+                    info["rung"] = "stream"
+                    res.report["engine"] = info
+                    return res
+                info["fallbacks"].append({"rung": "stream", "reason": f"status {res.status}",
+                                          "seconds": round(time.perf_counter() - t, 4)})
+            rung = "v13"
+            if ev:
+                ev.emit("engine_fallback", "pass1", rung="v13", reason=info["fallbacks"][-1]["reason"])
+        if cancel.is_set:
+            raise over_budget()
+        planner = RecoveryPlanner(opt.recovery_budget, t0)
+        if rung == "reference":
+            with _reference_backends():
+                res = _decode_reads(reads_path, output, opt, t0, ev, planner, **kw)
+        else:
+            res = _decode_reads(reads_path, output, opt, t0, ev, planner, **kw)
+        info["rung"] = rung
+        res.report["engine"] = info
+        return res
+    finally:
+        if timer is not None:
+            timer.cancel()
+
+
+_PREFETCH = 2       # V13 S4: batches the parser thread runs ahead of pass 1 (bounded: that many extra batches in memory)
+
+
+def _prefetch(gen, depth: int = _PREFETCH):
+    """Yield the items of ``gen`` produced by a background thread, ``depth`` items ahead at most.
+
+    The native parser and the file reads release the GIL, so parsing overlaps the pass-1 work of the consumer; the
+    items, their order and any exception (raised at the consumer's position in the stream, after the items parsed
+    before it) are those of ``gen`` itself. Closing the generator early stops the thread."""
+    q: queue.Queue = queue.Queue(depth)
+    stop = threading.Event()
+    done = object()
+
+    def run() -> None:
+        try:
+            for item in gen:
+                while not stop.is_set():
+                    try:
+                        q.put(item, timeout=0.05)
+                        break
+                    except queue.Full:
+                        continue
+                if stop.is_set():
+                    return
+            q.put(done)
+        except BaseException as error:  # noqa: BLE001 - re-raised in the consumer
+            q.put(error)
+
+    t = threading.Thread(target=run, name="vnx-reads-prefetch", daemon=True)
+    t.start()
+    try:
+        while True:
+            item = q.get()
+            if item is done:
+                return
+            if isinstance(item, BaseException):
+                raise item
+            yield item
+    finally:
+        stop.set()
+        t.join()
+
+
 def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner, *, overwrite, partial_dir, select,
                   select_dir, key, passphrase, progress, workdir, allow_unencrypted=False, backends=None,
-                  stage_counters=None, cluster_box=None) -> DecodeResult:
+                  stage_counters=None, cluster_box=None, stream=None, engine_info=None) -> DecodeResult:
+    """``stream``: a :class:`vnxdna.native.engine.Cancel` = run pass 1 in the streaming engine (V13); ``engine_info``
+    receives its statistics."""
     cluster_box = {} if cluster_box is None else cluster_box
     stage: dict = {}
     reads_path = Path(reads_path)
@@ -127,7 +314,8 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
         base_args = (lay, opt.band, opt.sync_costs, opt.min_quality, opt.reverse_complement, opt.indel_config if smart else None,
                      opt.soft_config if softm else None)
         clustering = opt.read_clustering != "off"
-        initargs = base_args + (deferred, qw, opt.retry_band, stage_counters is not None) + ((True,) if clustering else ())
+        initargs = base_args + (deferred, qw, opt.retry_band, stage_counters is not None, clustering, opt.orientation_retry,
+                                opt.sync_speculation)
         if clustering:
             # V7 item A (opt-in): unplaced-read store in pass 1; the stage itself runs lazily in pass 2 (fill-only)
             from vnxdna.recovery.cluster.stage import ClusterStage
@@ -166,15 +354,36 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
                 q = batch.quals if (opt.min_quality or smart or softm or qw) else None
                 yield batch.codes, batch.lengths, q
 
-        if opt.workers == 1:
+        if stream is not None:
+            # V13 engine: pass 1 in one native call that writes the spill bucket files itself
+            from vnxdna.dnaenc.reads import detect
+            from vnxdna.recovery import engine as ne
+            spill.close()
+            es = ne.run_pass1(reads_path, tmp_root, lay, opt, buckets, fmt=detect(reads_path), threads=opt.threads,
+                              dedup=opt.engine_dedup, cancel=stream)
+            for k in ("reads", "fast", "sync", "speculative", "reverse_complement", "pending", "orphans", "unaligned",
+                      "rc_retry_skipped"):
+                stats[k] += es[k]
+            if es["skipped"]:
+                stats["skipped_redundant"] += es["skipped"]
+            cpu["seconds"] = es["ns_total"] / 1e9
+            cpu["batches"] = es["batches"]
+            if engine_info is not None:
+                engine_info["threads"] = opt.threads
+                engine_info["dedup"] = opt.engine_dedup
+                engine_info["pass1"] = {k: (round(v / 1e9, 4) if k.startswith("ns_") else v) for k, v in es.items()
+                                        if not k.startswith("reserved")}
+            if progress:
+                progress({"stage": "pass1", "reads": stats["reads"], "elapsed": time.perf_counter() - t0})
+        elif opt.workers == 1:
             _p_init(*initargs)
-            for b in batches():
+            for b in _prefetch(batches()):
                 take(_process(*b))
         else:
             # the pool outlives pass 1: V12 parallel pass 2 runs bucket consensus on the same workers (shut down below)
             pool = ProcessPoolExecutor(max_workers=opt.workers, initializer=_p_init, initargs=initargs)
             window: deque = deque()
-            for b in batches():
+            for b in _prefetch(batches()):
                 window.append(pool.submit(_process, *b))
                 if len(window) >= 2 * opt.workers:
                     take(window.popleft().result(), len(window))

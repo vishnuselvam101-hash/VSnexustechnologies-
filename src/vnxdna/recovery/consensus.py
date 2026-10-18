@@ -142,6 +142,24 @@ def _drop_keys(rows: np.ndarray) -> np.ndarray:
     return out
 
 
+def _row_ids(rows: np.ndarray) -> np.ndarray:
+    """Dense ids of the rows of an (n, k) integer matrix: equal rows share an id, ids are 0..u-1 for u distinct rows
+    (the same partition as ``np.unique(rows, axis=0, return_inverse=True)``, through one lexsort of the columns
+    instead of the void-dtype sort, V13 E1; tests/v13/test_row_ids.py)."""
+    n = rows.shape[0]
+    if n == 0:
+        return np.zeros(0, dtype=np.int64)
+    order = np.lexsort(rows.T[::-1])
+    srt = rows[order]
+    new = np.empty(n, dtype=bool)
+    new[0] = True
+    np.any(srt[1:] != srt[:-1], axis=1, out=new[1:])
+    ids = np.cumsum(new, dtype=np.int64) - 1
+    inv = np.empty(n, dtype=np.int64)
+    inv[order] = ids
+    return inv
+
+
 def snap_addresses(keys: np.ndarray, missing: set, alt: np.ndarray | None = None) -> tuple[np.ndarray, int]:
     """Vectorised :func:`snap_addresses_reference` (same result for every input; tests/arch/test_snap_addresses.py).
 
@@ -160,9 +178,8 @@ def snap_addresses(keys: np.ndarray, missing: set, alt: np.ndarray | None = None
     if not all(_in_address_range(x) for x in (marr, k64, a64)):
         return snap_addresses_reference(keys, missing, alt)        # the reference's own error/edge behaviour
     # exact membership of the raw (kind, tag, group, symbol) tuples
-    _, inv = np.unique(np.concatenate([marr, k64, a64]), axis=0, return_inverse=True)
-    inv = inv.ravel()
-    is_missing = np.zeros(inv.max() + 1, dtype=bool)
+    inv = _row_ids(np.concatenate([marr, k64, a64]))
+    is_missing = np.zeros(int(inv.max()) + 1, dtype=bool)
     is_missing[inv[: len(marr)]] = True
     n = len(keys)
     key_in = is_missing[inv[len(marr): len(marr) + n]]

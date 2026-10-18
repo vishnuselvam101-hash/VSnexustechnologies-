@@ -12,6 +12,10 @@
     vnx experiment reproduce manifest.json       re-run a vnx.experiment/1 manifest; exit 0 iff result_hash matches
     vnx conformance                              run the conformance vectors (spec §6)
     vnx experimental ...                         experimental features (clearly separated)
+    vnx stream encode FILE strands.fasta         V13: a byte stream of any length -> strands with bounded memory
+    vnx stream decode strands.fasta strands.fasta.stream.json out.bin
+    vnx volume init|write|read|stat|scrub DIR    V13: a disk-like volume (write/append/read/flush/scrub) on the codec
+    vnx cache stats|clear                        V13: the decode result cache (VNXDNA_CACHE_DIR)
 
 Each command parses its arguments, makes one SDK call and prints JSON: the ``vnx.result/1`` envelope with the command's
 5.x top-level fields mirrored next to it (``vnx version`` prints ``vnx.version/1``). Errors go to stderr as
@@ -44,6 +48,12 @@ security_app = typer.Typer(no_args_is_help=True, help="VNX-Secure: defensive sec
 security_audit_app = typer.Typer(no_args_is_help=True, help="The HMAC-chained security audit log.")
 app.add_typer(security_app, name="security")
 security_app.add_typer(security_audit_app, name="audit")
+stream_app = typer.Typer(no_args_is_help=True, help="V13: encode/decode a byte stream of any length with bounded memory.")
+volume_app = typer.Typer(no_args_is_help=True, help="V13: a disk-like volume (write/append/read/flush/scrub) on top of the codec.")
+cache_app = typer.Typer(no_args_is_help=True, help="V13: the decode result cache (VNXDNA_CACHE_DIR).")
+app.add_typer(stream_app, name="stream")
+app.add_typer(volume_app, name="volume")
+app.add_typer(cache_app, name="cache")
 
 EXIT_PARTIAL = 9
 STATE = {"verbose": False, "progress": False}
@@ -330,7 +340,7 @@ def _check_side_files(reads, key_file, output, report, events, force) -> None:
 
 
 def _decode(reads, output, extract_dir, partial_dir, select, opts, force, key_file, passphrase_env, report, events, task_id,
-            allow_unencrypted, input_hash):
+            allow_unencrypted, input_hash, cache_dir=None):
     _check_side_files(reads, key_file, output, report, events, force)
     key, pw = sdk.load_keys(key_file, passphrase_env)
     if output is None and extract_dir is None and not select:
@@ -355,7 +365,7 @@ def _decode(reads, output, extract_dir, partial_dir, select, opts, force, key_fi
     try:
         res = sdk.decode(reads, output, options=opts, select=select or None, extract_to=extract_dir, partial_dir=partial_dir,
                          key=key, passphrase=pw, allow_unencrypted=allow_unencrypted, overwrite=force, observer=observer,
-                         task_id=task_id, progress=_progress_cb(), input_hash=input_hash)
+                         task_id=task_id, progress=_progress_cb(), input_hash=input_hash, cache_dir=cache_dir)
         report_sha = None
         if report:
             from vnxdna.core.util import atomic_output
@@ -408,6 +418,14 @@ def decode(reads: Path, output: Optional[Path] = typer.Option(None, "--output", 
            consensus_weighting: Optional[str] = typer.Option(
                None, "--consensus-weighting",
                help="count (V4 vote, default) or quality: pass-2 consensus weighted by Phred quality (opt-in)."),
+           orientation_retry: Optional[str] = typer.Option(
+               None, "--orientation-retry",
+               help="bounded (default): skip the reverse-complement retry where its cost bound reaches the forward cost; "
+                    "always: retry every failed read."),
+           sync_speculation: Optional[str] = typer.Option(
+               None, "--sync-speculation",
+               help="markers (default): project reads from their marker-block shifts and align by the DP only those "
+                    "that do not verify; off: align every read by the DP."),
            read_clustering: Optional[str] = typer.Option(
                None, "--read-clustering",
                help="off (default) or fallback: V7 header-independent read clustering + per-cluster consensus whose "
@@ -429,7 +447,18 @@ def decode(reads: Path, output: Optional[Path] = typer.Option(None, "--output", 
                None, "--max-container-bytes",
                help="Refuse a superblock claiming a larger container (default 4 GiB; exit 3 RESOURCE_LIMIT)."),
            expect_archive_id: Optional[str] = EXPECT_ID_OPT, expect_sha256: Optional[str] = EXPECT_SHA_OPT,
-           no_input_hash: bool = typer.Option(False, "--no-input-hash", help="Do not compute the SHA-256 of the read file.")
+           no_input_hash: bool = typer.Option(False, "--no-input-hash", help="Do not compute the SHA-256 of the read file."),
+           engine: Optional[str] = typer.Option(
+               None, "--engine",
+               help="V13 engine ladder: auto (default; the streaming engine when built and applicable, else the V13 path), "
+                    "stream (the engine or an error), v13 (the Python-orchestrated path) or reference (every kernel on its "
+                    "Python reference). Default from VNXDNA_ENGINE."),
+           engine_dedup: Optional[bool] = typer.Option(
+               None, "--engine-dedup/--no-engine-dedup",
+               help="V13 engine: attempt only reads whose address is not verified yet (default) or every read."),
+           engine_threads: Optional[int] = typer.Option(
+               None, "--engine-threads", help="V13 engine threads (default: --workers; VNXDNA_ENGINE_THREADS)."),
+           cache_dir: Optional[Path] = typer.Option(None, "--cache-dir", help="V13 result cache directory (or VNXDNA_CACHE_DIR).")
            ) -> None:
     """Reconstruct a verified VNX4 container from DNA reads (FASTA/FASTQ)."""
     budget = {k: v for k, v in (("max_reads_examined", max_recovery_reads), ("max_round_b_reads", max_round_b_reads),
@@ -442,9 +471,11 @@ def decode(reads: Path, output: Optional[Path] = typer.Option(None, "--output", 
                                   profile=profile, band=band, retry_band=retry_band, min_quality=min_quality, indel_recovery=indel_recovery,
                                   soft_decoding=soft_decoding, recovery_schedule=recovery_schedule,
                                   consensus_weighting=consensus_weighting, max_container_bytes=max_container_bytes, expect_archive_id=expect_archive_id,
-                                  expect_sha256=expect_sha256, read_clustering=read_clustering)
+                                  expect_sha256=expect_sha256, read_clustering=read_clustering,
+                                  orientation_retry=orientation_retry, sync_speculation=sync_speculation,
+                                  engine=engine, engine_dedup=engine_dedup, engine_threads=engine_threads)
         return _decode(reads, output, extract_dir, partial_dir, select, opts, force, key_file, passphrase_env, report, events,
-                       task_id, allow_unencrypted, not no_input_hash)
+                       task_id, allow_unencrypted, not no_input_hash, cache_dir)
     _run(go)
 
 
@@ -639,6 +670,129 @@ def experimental_codec_compare(trials: int = typer.Option(100), output: Optional
             output.write_text(json.dumps(res.body, indent=2) + "\n")
         typer.echo(sdk.benchmark_markdown(res.body))
     _run(go)
+
+
+# ============================================================================ vnx stream / volume / cache (V13)
+EXTENT_OPT = typer.Option(None, "--extent-bytes", help="Extent size in bytes (default 1 MiB; fixed at volume creation).")
+WORKERS_OPT = typer.Option(1, "--workers", "-w", help="Worker processes / engine threads.")
+
+
+@stream_app.command("encode")
+def stream_encode_cmd(source: Path = typer.Argument(..., help="Input file, or - for stdin."),
+                      sink: Path = typer.Argument(..., help="Strand file (.fasta), or - for stdout (needs --manifest)."),
+                      extent_bytes: Optional[int] = EXTENT_OPT, workers: int = WORKERS_OPT,
+                      manifest: Optional[Path] = typer.Option(None, "--manifest", help="Manifest path (default <sink>.stream.json)."),
+                      profile: Optional[str] = typer.Option(None, help="Strand layout profile (default v4-balanced)."),
+                      key_file: Optional[Path] = KEY_OPT, passphrase_env: Optional[str] = PW_OPT, force: bool = FORCE_OPT) -> None:
+    """Encode a byte stream of any length into strands with bounded memory (vnx.stream/1 manifest)."""
+    def go():
+        key, pw = sdk.load_keys(key_file, passphrase_env)
+        dna = sdk.DNAOptions(profile=profile) if profile else None
+        res = sdk.stream_encode("-" if str(source) == "-" else source, "-" if str(sink) == "-" else sink,
+                                extent_bytes=extent_bytes or (1 << 20), workers=workers, dna=dna, key=key, passphrase=pw,
+                                manifest=manifest, overwrite=force, progress=_progress_cb())
+        if str(sink) == "-":
+            typer.echo(json.dumps(res.to_cli(), indent=2, default=str), err=True)
+        else:
+            _out(res)
+    _run(go)
+
+
+@stream_app.command("decode")
+def stream_decode_cmd(strands: Path = typer.Argument(..., help="Strand file, or a read pool of it (FASTA/FASTQ)."),
+                      manifest: Path = typer.Argument(..., help="The vnx.stream/1 manifest."),
+                      output: Path = typer.Argument(..., help="Rebuilt stream, or - for stdout."),
+                      workers: int = WORKERS_OPT, engine: Optional[str] = typer.Option(None, "--engine"),
+                      by_range: Optional[bool] = typer.Option(None, "--by-range/--by-pool",
+                                                              help="Force the strand-range or the whole-pool path (default: automatic)."),
+                      key_file: Optional[Path] = KEY_OPT, passphrase_env: Optional[str] = PW_OPT, force: bool = FORCE_OPT) -> None:
+    """Rebuild a streamed byte stream from its strands (or a SIMULATED read pool) and manifest; fails closed."""
+    def go():
+        key, pw = sdk.load_keys(key_file, passphrase_env)
+        opts = sdk.DecodeOptions(workers=workers, **({"engine": engine} if engine else {}))
+        res = sdk.stream_decode(strands, manifest, "-" if str(output) == "-" else output, options=opts, key=key, passphrase=pw,
+                                overwrite=force, progress=_progress_cb(), by_range=by_range)
+        if str(output) == "-":
+            typer.echo(json.dumps(res.to_cli(), indent=2, default=str), err=True)
+        else:
+            _out(res)
+    _run(go)
+
+
+@volume_app.command("init")
+def volume_init_cmd(path: Path, extent_bytes: Optional[int] = EXTENT_OPT, workers: int = WORKERS_OPT,
+                    profile: Optional[str] = typer.Option(None, help="Strand layout profile (default v4-balanced)."),
+                    key_file: Optional[Path] = KEY_OPT, passphrase_env: Optional[str] = PW_OPT, force: bool = FORCE_OPT) -> None:
+    """Create an empty volume directory (vnx.volume/1)."""
+    def go():
+        key, pw = sdk.load_keys(key_file, passphrase_env)
+        _out(sdk.volume_create(path, extent_bytes=extent_bytes or (1 << 20), workers=workers,
+                               dna=sdk.DNAOptions(profile=profile) if profile else None, key=key, passphrase=pw, overwrite=force))
+    _run(go)
+
+
+@volume_app.command("write")
+def volume_write_cmd(path: Path, source: Path = typer.Argument(..., help="Input file, or - for stdin."),
+                     offset: Optional[int] = typer.Option(None, "--offset", help="Byte offset (default: append at the end)."),
+                     workers: int = WORKERS_OPT, key_file: Optional[Path] = KEY_OPT, passphrase_env: Optional[str] = PW_OPT) -> None:
+    """Write a file into the volume (append by default) and flush it to strands."""
+    def go():
+        key, pw = sdk.load_keys(key_file, passphrase_env)
+        _out(sdk.volume_write(path, "-" if str(source) == "-" else source, offset=offset, workers=workers, key=key, passphrase=pw,
+                              progress=_progress_cb()))
+    _run(go)
+
+
+@volume_app.command("read")
+def volume_read_cmd(path: Path, offset: int = typer.Option(..., "--offset"), length: int = typer.Option(..., "--length"),
+                    output: Optional[Path] = typer.Option(None, "--output", "-o", help="Output file, or - for stdout."),
+                    workers: int = WORKERS_OPT, key_file: Optional[Path] = KEY_OPT, passphrase_env: Optional[str] = PW_OPT,
+                    force: bool = FORCE_OPT) -> None:
+    """Read a byte range: only the extents it lies in are decoded."""
+    def go():
+        key, pw = sdk.load_keys(key_file, passphrase_env)
+        out = "-" if output is not None and str(output) == "-" else output
+        if out is None:
+            raise VNXConfigurationError("give --output FILE or --output -")
+        res = sdk.volume_read(path, offset, length, out, workers=workers, key=key, passphrase=pw, overwrite=force)
+        if out == "-":
+            typer.echo(json.dumps(res.to_cli(), indent=2, default=str), err=True)
+        else:
+            _out(res)
+    _run(go)
+
+
+@volume_app.command("stat")
+def volume_stat_cmd(path: Path, key_file: Optional[Path] = KEY_OPT, passphrase_env: Optional[str] = PW_OPT) -> None:
+    """Size, extents, versions, cache and journal state, IO metrics (software codec rates, SIMULATED strands)."""
+    def go():
+        key, pw = sdk.load_keys(key_file, passphrase_env)
+        _out(sdk.volume_stat(path, key=key, passphrase=pw))
+    _run(go)
+
+
+@volume_app.command("scrub")
+def volume_scrub_cmd(path: Path, workers: int = WORKERS_OPT, key_file: Optional[Path] = KEY_OPT,
+                     passphrase_env: Optional[str] = PW_OPT) -> None:
+    """Re-verify every committed extent (never repairs). Exit 1 unless VERIFIED."""
+    def go():
+        key, pw = sdk.load_keys(key_file, passphrase_env)
+        res = sdk.volume_scrub(path, workers=workers, key=key, passphrase=pw)
+        _out(res)
+        return 0 if res.status == "VERIFIED" else 1
+    _run(go)
+
+
+@cache_app.command("stats")
+def cache_stats_cmd(cache_dir: Optional[Path] = typer.Option(None, "--dir", help="Cache directory (default VNXDNA_CACHE_DIR).")) -> None:
+    """Entries and bytes of the decode result cache."""
+    _run(lambda: _out(sdk.cache_stats(cache_dir)))
+
+
+@cache_app.command("clear")
+def cache_clear_cmd(cache_dir: Optional[Path] = typer.Option(None, "--dir", help="Cache directory (default VNXDNA_CACHE_DIR).")) -> None:
+    """Remove every entry of the decode result cache."""
+    _run(lambda: _out(sdk.cache_clear(cache_dir)))
 
 
 # ============================================================================ vnx security (VNX-Secure)

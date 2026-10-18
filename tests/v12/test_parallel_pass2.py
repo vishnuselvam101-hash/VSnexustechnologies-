@@ -16,7 +16,8 @@ from vnxdna.v4 import datagen
 from vnxdna.v4 import decoder as de
 from vnxdna.v4 import encoder as en
 
-VOLATILE = ("stage_seconds", "seconds", "peak_rss_bytes", "output")
+VOLATILE = ("stage_seconds", "seconds", "peak_rss_bytes", "output",
+            "ns_io", "ns_scan", "ns_prep", "ns_attempt", "ns_spill", "ns_total", "ns_cheap", "ns_full", "ns_group")   # V13 engine timings
 CHANNELS = {
     "clean": {"coverage": 2},
     "indel": {"substitution_rate": 0.01, "insertion_rate": 0.002, "deletion_rate": 0.002, "coverage": 4},
@@ -44,7 +45,8 @@ def _decode(arc, reads: str, workers: int, **kw):
     out = arc["dir"] / f"o-{reads}-{workers}.vnx"
     out.unlink(missing_ok=True)
     try:
-        res = de.decode_reads(arc["dir"] / f"{reads}.fastq", out, de.DecodeOptions(workers=workers, **kw), overwrite=True)
+        res = de.decode_reads(arc["dir"] / f"{reads}.fastq", out, de.DecodeOptions(workers=workers, engine="v13", **kw),
+                              overwrite=True)      # V13: the parallel pass 2 belongs to this path
     except Exception as error:  # noqa: BLE001 - a typed refusal is an outcome; compared across worker counts
         return ("ERROR", type(error).__name__, getattr(error, "code", None)), None, None
     sha = hashlib.sha256(out.read_bytes()).hexdigest() if out.exists() else None
@@ -108,7 +110,7 @@ def test_stop_in_parallel_pass2_releases_workers_and_spill(arc, monkeypatch, tmp
     work = tmp_path / "work"
     work.mkdir()
     with pytest.raises(VNXBudgetExceeded):
-        de.decode_reads(arc["dir"] / "indel.fastq", tmp_path / "o.vnx", de.DecodeOptions(workers=2), overwrite=True,
+        de.decode_reads(arc["dir"] / "indel.fastq", tmp_path / "o.vnx", de.DecodeOptions(workers=2, engine="v13"), overwrite=True,
                         workdir=work)
     assert len(seen) == 2
     assert not any(work.iterdir()), "spill directory must be removed"

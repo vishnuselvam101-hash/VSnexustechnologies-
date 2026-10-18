@@ -6,8 +6,9 @@ can depend on this call. A no-op where the C library has no ``malloc_trim`` (not
 from __future__ import annotations
 
 import ctypes
+from typing import Any
 
-_TRIM = None
+_TRIM: Any = None       # the bound malloc_trim, False where it does not exist, None until first use
 
 
 def trim_heap() -> bool:

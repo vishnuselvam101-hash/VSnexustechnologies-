@@ -19,6 +19,7 @@ import vnxdna
 from vnxdna import _native_build as nb
 from vnxdna import native
 from vnxdna.native import cluster as ncl
+from vnxdna.native import engine as nen
 from vnxdna.native import integrity as nin
 from vnxdna.native import orient as nor
 from vnxdna.native import outerlist as nol
@@ -32,9 +33,10 @@ MODULES = {"align": (na, "VNXDNA_NATIVE_LIB", "libvnx_align.so"), "reads": (nr, 
            "rs": (nrs, "VNXDNA_RS_LIB", "libvnx_rs.so"), "cluster": (ncl, "VNXDNA_CLUSTER_LIB", "libvnx_cluster.so"),
            "strand": (nst, "VNXDNA_STRAND_LIB", "libvnx_strand.so"), "orient": (nor, "VNXDNA_ORIENT_LIB", "libvnx_orient.so"),
            "integrity": (nin, "VNXDNA_INTEGRITY_LIB", "libvnx_integrity.so"),
-           "outerlist": (nol, "VNXDNA_OUTERLIST_LIB", "libvnx_outerlist.so")}
+           "outerlist": (nol, "VNXDNA_OUTERLIST_LIB", "libvnx_outerlist.so"),
+           "engine": (nen, "VNXDNA_ENGINE_LIB", "libvnx_engine.so")}
 BACKEND_ENV = ("VNXDNA_ALIGN_BACKEND", "VNXDNA_READS_BACKEND", "VNXDNA_RS_BACKEND", "VNXDNA_CLUSTER_BACKEND", "VNXDNA_STRAND_BACKEND",
-               "VNXDNA_ORIENT_BACKEND", "VNXDNA_INTEGRITY_BACKEND", "VNXDNA_OUTERLIST_BACKEND")
+               "VNXDNA_ORIENT_BACKEND", "VNXDNA_INTEGRITY_BACKEND", "VNXDNA_OUTERLIST_BACKEND", "VNXDNA_ENGINE_BACKEND")
 
 
 def _reset() -> None:
@@ -75,7 +77,7 @@ def _clean_backend_env(monkeypatch):
 def test_all_kernels_native_when_libraries_load():
     st = vnxdna.native_status()
     assert st["all_native"] is True and set(st["kernels"]) == {"align", "reads", "rs", "cluster", "strand",
-                                                          "orient", "integrity", "outerlist"}
+                                                          "orient", "integrity", "outerlist", "engine"}
     for kernel, (m, _, _) in MODULES.items():
         k = st["kernels"][kernel]
         assert k["backend"] == "native" and k["library"] and Path(k["library"]).is_file(), k
@@ -233,7 +235,8 @@ def test_loaders_find_the_packaged_extension_name(kernel, monkeypatch, tmp_path)
     m, env, _ = MODULES[kernel]
     ext_name = {"align": "vnxdna.v5._vnx_align", "reads": "vnxdna.v6._vnx_reads", "rs": "vnxdna.v6._vnx_rs",
                 "cluster": "vnxdna._vnx_cluster", "strand": "vnxdna._vnx_strand", "orient": "vnxdna._vnx_orient",
-                "integrity": "vnxdna._vnx_integrity", "outerlist": "vnxdna._vnx_outerlist"}[kernel]
+                "integrity": "vnxdna._vnx_integrity", "outerlist": "vnxdna._vnx_outerlist",
+                "engine": "vnxdna._vnx_engine"}[kernel]
     assert ext_name in {**nb.KERNELS, **nb.RUST_KERNELS, **nb.CXX_KERNELS}
     # the loader searches the directory setup.py builds the extension into (since V6 Phase 2 the loader module itself
     # lives in vnxdna.native, while the C source, library and extension stay in vnxdna/v5 and vnxdna/v6)

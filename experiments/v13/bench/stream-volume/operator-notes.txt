@@ -1,0 +1,4 @@
+2026-10-18 07:27  start via `vnx-lab exp` (systemd scope, vnxdna.slice, MemoryMax 8G, no CPU quota) right after the A/A
+                  bench ended at 07:26: load1 2.27 at the start is the decaying average of the finished A/A processes
+                  (no other process was running; load1_start/load1_end are in the JSON per size). Host 4C/8T, 26 GB free.
+2026-10-18 07:37  SV-DONE rc=0.

@@ -47,12 +47,21 @@
     "profiles",
     "native",
     "channel-model",
-    "channel-sweep"
+    "channel-sweep",
+    "stream-encode",
+    "stream-decode",
+    "volume-create",
+    "volume-write",
+    "volume-read",
+    "volume-stat",
+    "volume-scrub",
+    "cache-stats",
+    "cache-clear"
    ]
   },
   "status": {
    "type": "string",
-   "description": "SUCCESS | PARTIAL | FAILURE (decode); SUCCESS | FAILURE (other kinds). 6.x keeps the 5.x value of commands that had one: VERIFIED (verify), EXTRACTED (extract), OK (keygen), DONE (experiment run), CONFORMANT/NONCONFORMANT is inside result for conformance",
+   "description": "SUCCESS | PARTIAL | FAILURE (decode); SUCCESS | FAILURE (other kinds). 6.x keeps the 5.x value of commands that had one: VERIFIED (verify), EXTRACTED (extract), OK (keygen), DONE (experiment run), CONFORMANT/NONCONFORMANT is inside result for conformance; VERIFIED | DAMAGED (volume-scrub, 13.x)",
    "enum": [
     "SUCCESS",
     "PARTIAL",
@@ -60,7 +69,8 @@
     "VERIFIED",
     "EXTRACTED",
     "OK",
-    "DONE"
+    "DONE",
+    "DAMAGED"
    ]
   },
   "software": {

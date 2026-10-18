@@ -82,11 +82,29 @@ def main() -> int:
             quals = [rng.integers(0, 60, r.size).astype(np.uint8) if rng.random() < 0.9 else None for r in reads]
         minq = int(rng.integers(-5, 60))
         ref = TemplateAligner(layout, band, costs, backend="reference").project(reads, quals, minq)
-        nat = TemplateAligner(layout, band, costs, backend=a.backend).project(reads, quals, minq)
+        nat_al = TemplateAligner(layout, band, costs, backend=a.backend)
+        nat = nat_al.project(reads, quals, minq)
+        # V13 C1: the flat form (ABI 4 selected-reads entry) on the same reads, in a shuffled order, when every read
+        # has qualities or none has (the flat form's quality model)
+        flat = None
+        if quals is None or all(q is not None for q in quals):
+            lengths = np.fromiter((r.size for r in reads), dtype=np.int64, count=len(reads))
+            offs = np.zeros(len(reads) + 1, dtype=np.int64)
+            np.cumsum(lengths, out=offs[1:])
+            codes = np.concatenate(reads) if reads else np.zeros(0, dtype=np.uint8)
+            qflat = None if quals is None else (np.concatenate(quals) if quals else np.zeros(0, dtype=np.uint8))
+            order = rng.permutation(len(reads))
+            back = np.argsort(order)
+            pf = nat_al.project_flat(codes, offs, lengths, order, qflat, minq)
+            flat = {f: getattr(pf, f)[back] for f in FIELDS}
         for f in FIELDS:
             x, y = getattr(ref, f), getattr(nat, f)
             if x.dtype != y.dtype or not np.array_equal(x, y):
                 print(json.dumps({"MISMATCH": f, "round": rnd, "layout": name, "band": band, "costs": str(costs), "min_quality": minq}))
+                return 1
+            if flat is not None and (x.dtype != flat[f].dtype or not np.array_equal(x, flat[f])):
+                print(json.dumps({"MISMATCH": f"flat:{f}", "round": rnd, "layout": name, "band": band, "costs": str(costs),
+                                  "min_quality": minq}))
                 return 1
         total += len(reads)
     print(json.dumps({"rounds": a.rounds, "reads": total, "mismatches": 0, "library": na.status()["library"],

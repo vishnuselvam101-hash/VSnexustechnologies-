@@ -24,6 +24,7 @@ Kernels::
     orient  V12 pass-1 orientation scan    vnxdna.native.orient                                          reference: vnxdna.recovery.pass1 (NumPy)
     integrity batched frame CRC-32 (Rust)  vnxdna.native.integrity                                       reference: vnxdna.core.crc (NumPy)
     outerlist outer-code list decoding (C++) vnxdna.native.outerlist                                     reference: vnxdna.recovery.outer_list
+    engine  V13 streaming pass-1 engine (Rust) vnxdna.native.engine                                      reference: vnxdna.recovery.pass1 (the V13 path)
 
 Backend environment variables are documented in docs/NATIVE_KERNELS.md. Nothing here raises: an invalid backend
 variable is reported in ``error`` (the decode itself would raise it).
@@ -36,13 +37,14 @@ from pathlib import Path
 
 from ..core._alias import lazy_module
 
-KERNELS = ("align", "reads", "rs", "cluster", "strand", "orient", "integrity", "outerlist")
+KERNELS = ("align", "reads", "rs", "cluster", "strand", "orient", "integrity", "outerlist", "engine")
 _ENV_LIB = {"align": "VNXDNA_NATIVE_LIB", "reads": "VNXDNA_READS_LIB", "rs": "VNXDNA_RS_LIB", "cluster": "VNXDNA_CLUSTER_LIB",
             "strand": "VNXDNA_STRAND_LIB", "orient": "VNXDNA_ORIENT_LIB", "integrity": "VNXDNA_INTEGRITY_LIB",
-            "outerlist": "VNXDNA_OUTERLIST_LIB"}
+            "outerlist": "VNXDNA_OUTERLIST_LIB", "engine": "VNXDNA_ENGINE_LIB"}
 _REFERENCE = {"align": "vnxdna.v4.sync", "reads": "vnxdna.v4.reads", "rs": "vnxdna.v4.rs_fast",
               "cluster": "vnxdna.recovery.cluster", "strand": "vnxdna.dnaenc.frame4", "orient": "vnxdna.recovery.pass1",
-              "integrity": "vnxdna.core.crc", "outerlist": "vnxdna.recovery.outer_list"}   # reported names: the stable (old) paths
+              "integrity": "vnxdna.core.crc", "outerlist": "vnxdna.recovery.outer_list",
+              "engine": "vnxdna.recovery.pass1"}   # reported names: the stable (old) paths
 _CODECS = "vnxdna.codec.codecs"      # InnerRS; its VNX_RS_REFERENCE switch (read at import) bypasses the RS kernel
 
 
@@ -68,7 +70,9 @@ def _stale(module, origin: str | None, library: str | None) -> bool:
     if origin != "in-place" or library is None:
         return False
     try:
-        newest = max(f.stat().st_mtime for f in (module._SOURCE, *module._SOURCE.parent.glob("*.inc")))
+        src = module._SOURCE
+        extra = src.parent.glob("*.rs") if src.suffix == ".rs" else src.parent.glob("*.inc")   # a Rust crate: every module
+        newest = max(f.stat().st_mtime for f in (src, *extra))
         return Path(library).stat().st_mtime < newest
     except OSError:
         return False

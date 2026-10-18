@@ -1,4 +1,4 @@
-"""V11 WP1: runtime-dispatched SIMD levels of the native aligner (4 / 8 / 16 lanes in one library, ABI 3).
+"""V11 WP1: runtime-dispatched SIMD levels of the native aligner (4 / 8 / 16 lanes in one library, ABI 3; ABI 4 since V13 adds the selected-reads entry).
 
 Every level must be bit-exact with the V4 NumPy reference (TemplateAligner._align); a level the CPU/OS cannot run is
 refused by the library (VNX_E_UNSUPPORTED); forced levels degrade and record why; a stale ABI-2 library is rejected;
@@ -64,7 +64,7 @@ def test_levels_reported_and_portable_level_always_present():
     assert "scalar" in sup and set(sup) <= set(LEVELS)
     mask = na._load().vnx_align_levels()
     assert mask & (1 << 4) and not mask & ~((1 << 4) | (1 << 8) | (1 << 16))
-    assert na._load().vnx_align_abi_version() == 3 == na.ABI_VERSION
+    assert na._load().vnx_align_abi_version() == 4 == na.ABI_VERSION
     assert na._load().vnx_align_lanes() == 4                   # ABI-2 entry points keep 4 lanes
 
 
@@ -169,7 +169,7 @@ def test_abi2_library_rejected(tmp_path, monkeypatch):
     na._reset_for_tests()
     try:
         assert not na.available()
-        assert "ABI 2 != 3" in na.status()["load_error"]
+        assert "ABI 2 != 4" in na.status()["load_error"]
         assert na.resolve_backend() == "reference"
         with pytest.raises(na.NativeAlignmentError):
             na.resolve_backend("native")

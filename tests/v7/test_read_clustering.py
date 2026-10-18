@@ -31,7 +31,8 @@ FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 HERE = Path(__file__).resolve().parent
 GOLDEN = HERE / "read_clustering_golden.json"
 PASSPHRASE = "vnx-test-passphrase-NOT-A-SECRET"
-VOLATILE = {"seconds", "stage_seconds", "peak_rss_bytes", "elapsed", "elapsed_seconds", "wall_seconds"}
+VOLATILE = {"seconds", "stage_seconds", "peak_rss_bytes", "elapsed", "elapsed_seconds", "wall_seconds",
+            "ns_io", "ns_scan", "ns_prep", "ns_attempt", "ns_spill", "ns_total", "ns_cheap", "ns_full", "ns_group"}   # V13 engine stage timings
 GOLDEN_SETS = [(s, c) for s in ("v4_0", "v5_0") for c in ("balanced", "archival", "encrypted", "multifile")] + \
     [("v6_0", c) for c in sorted(json.loads((FIXTURES / "v6_0" / "manifest.json").read_text())["cases"])]
 
@@ -42,6 +43,13 @@ def _strip(x):
     if isinstance(x, list):
         return [_strip(v) for v in x]
     return x
+
+
+def _same_rung(r0: dict, r1: dict) -> None:
+    """Both decodes ran on the same engine rung (V13: the engine block records the rung and its fallbacks, whose
+    refusal reasons name the option that forced the V13 path); the block is removed so the rest compares key by key."""
+    e0, e1 = r0.pop("engine", None), r1.pop("engine", None)
+    assert (e0 or {}).get("rung") == (e1 or {}).get("rung"), (e0, e1)
 
 
 def _run(reads: Path, out: Path, **kw) -> tuple:
@@ -113,12 +121,14 @@ def test_off_is_the_default_and_the_6_0_path(pool, pools, tmp_path):
 @pytest.mark.parametrize("s,c", GOLDEN_SETS, ids=[f"{s}-{c}" for s, c in GOLDEN_SETS])
 def test_golden_fixtures_decode_bit_exactly_with_clustering_on(s, c, golden_reads, tmp_path):
     kw = {"passphrase": PASSPHRASE} if _encrypted(s, c) else {}
-    off = _run(golden_reads[(s, c)], tmp_path / "off.vnx", **kw)
+    default = _run(golden_reads[(s, c)], tmp_path / "default.vnx", **kw)
+    off = _run(golden_reads[(s, c)], tmp_path / "off.vnx", engine="v13", **kw)   # clustering runs on the V13 path
     on = _run(golden_reads[(s, c)], tmp_path / "on.vnx", read_clustering="fallback", **kw)
-    assert off[0] == on[0] == "SUCCESS"
-    assert on[1] == off[1] == (FIXTURES / s / f"{c}.vnx").read_bytes()
+    assert default[0] == off[0] == on[0] == "SUCCESS"
+    assert default[1] == on[1] == off[1] == (FIXTURES / s / f"{c}.vnx").read_bytes()
     block = on[2].pop("clustering")
     assert block["status"] == "not_run"                    # 6.0 decodes these pools: the stage never runs
+    _same_rung(off[2], on[2])
     assert on[2] == off[2]                                  # every other report key and value unchanged
 
 
@@ -130,6 +140,7 @@ def test_clean_pool_identical_with_clustering_on(pools, tmp_path):
     sc_on = on[2].pop("stage_counters")
     sc_off = off[2].pop("stage_counters")
     on[2].pop("clustering")
+    _same_rung(off[2], on[2])
     assert on[2] == off[2]
     assert sc_off["stages"]["clustering"] == {"applicable": 0}
     assert sc_on["stages"]["clustering"]["applicable"] == 1 and sc_on["stages"]["clustering"]["stage_run"] == 0

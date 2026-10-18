@@ -164,12 +164,39 @@ def test_security_commands_print_json(tmp_path):
     assert e["error"] == "FileNotFoundError" and e["message"]
 
 
+def test_v13_stream_volume_cache_commands_print_json(ws, tmp_path):
+    """vnx stream encode/decode, vnx volume init/write/read/stat/scrub and vnx cache stats/clear print vnx.result/1."""
+    doc = out_json(cli("stream", "encode", ws / "ds" / "a.bin", tmp_path / "st.fasta", "--extent-bytes", "8192"))
+    assert doc["kind"] == "stream-encode" and doc["formats"]["stream"] == "vnx.stream/1" and len(doc["result"]["extents"]) == 4
+    doc = out_json(cli("stream", "decode", tmp_path / "st.fasta", tmp_path / "st.fasta.stream.json", tmp_path / "st.bin"))
+    assert doc["kind"] == "stream-decode" and (tmp_path / "st.bin").read_bytes() == (ws / "ds" / "a.bin").read_bytes()
+    e = err_json(cli("stream", "decode", tmp_path / "st.fasta", tmp_path / "none.json", tmp_path / "x.bin", code=3))
+    assert e["code"] == "FORMAT_ERROR" and e["category"] == "INVALID_INPUT" and not (tmp_path / "x.bin").exists()
+    v = tmp_path / "vol"
+    assert out_json(cli("volume", "init", v, "--extent-bytes", "8192"))["kind"] == "volume-create"
+    doc = out_json(cli("volume", "write", v, ws / "ds" / "b.txt"))
+    assert doc["kind"] == "volume-write" and doc["result"]["bytes"] == (ws / "ds" / "b.txt").stat().st_size
+    doc = out_json(cli("volume", "read", v, "--offset", "10", "--length", "20", "-o", tmp_path / "part.bin"))
+    assert doc["kind"] == "volume-read" and (tmp_path / "part.bin").read_bytes() == (ws / "ds" / "b.txt").read_bytes()[10:30]
+    assert out_json(cli("volume", "stat", v))["result"]["extents"] == 1
+    assert out_json(cli("volume", "scrub", v))["status"] == "VERIFIED"
+    e = err_json(cli("volume", "stat", tmp_path / "nowhere", code=3))
+    assert e["code"] == "FORMAT_ERROR" and e["category"] == "INVALID_INPUT"
+    cdir = tmp_path / "cache"
+    assert out_json(cli("decode", ws / "r.fastq", "-o", tmp_path / "c1.vnx", "--cache-dir", cdir))["result"]["cache"]["hit"] is False
+    assert out_json(cli("decode", ws / "r.fastq", "-o", tmp_path / "c2.vnx", "--cache-dir", cdir))["result"]["cache"]["hit"] is True
+    assert out_json(cli("cache", "stats", "--dir", cdir))["result"]["entries"] == 1
+    assert out_json(cli("cache", "clear", "--dir", cdir))["result"]["removed"] == 1
+    err_json(cli("cache", "clear", code=7))                                            # no cache configured
+
+
 def test_every_command_is_covered():
     """A new command must get a JSON-validation case here (sweep, codec-compare and benchmark --human print tables)."""
     covered = {"version", "native", "keygen", "archive", "inspect", "list", "verify", "locate", "extract", "encode", "decode",
                "validate", "simulate", "benchmark", "sweep", "run", "reproduce", "generate", "profiles", "conformance",
                "codec-compare", "models", "show", "convert",
-               "init", "status", "integrity", "sessions", "policy", "recover", "crypto"}  # vnx security (own JSON shapes)
+               "init", "status", "integrity", "sessions", "policy", "recover", "crypto",  # vnx security (own JSON shapes)
+               "write", "read", "stat", "scrub", "stats", "clear"}                      # vnx stream/volume/cache (V13)
     names = set()
     for group in [app] + [g.typer_instance for g in app.registered_groups]:
         for c in group.registered_commands:

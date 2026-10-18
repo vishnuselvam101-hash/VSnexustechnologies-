@@ -7,7 +7,7 @@
  },
  "container_sha256": "9bee1a74decf37dece6a2f64d7cf5eb097d92cd0df871cbeb89647948314627f",
  "frames": {
-  "data_recovered": 500,
+  "data_recovered": 501,
   "data_total": 679,
   "false_frames": 0,
   "superblock_needed": 3,
@@ -18,11 +18,11 @@
   "clustered": 655,
   "observed": 674,
   "oriented": 655,
-  "rs_recoverable": 500,
+  "rs_recoverable": 501,
   "stored": 659,
   "total": 679,
   "two_reads": 659,
-  "valid_frame": 500
+  "valid_frame": 501
  },
  "id": "nanopore-cov10-s82045",
  "loss_reasons": {
@@ -30,14 +30,14 @@
   "clustered: unassigned": 4,
   "observed: no read in the pool": 5,
   "rs_recoverable: errors/erasures": 63,
-  "rs_recoverable: shifted segment (indel placed wrong)": 92,
+  "rs_recoverable: shifted segment (indel placed wrong)": 91,
   "two_reads: one read only (consensus needs 2)": 15
  },
  "oracle": {
   "archive_outcome": "EXPLICIT_FAILURE",
   "classes_failed_strands": {
    "ADDRESS-CAUSED": 0,
-   "BOUNDARY-CAUSED": 96,
+   "BOUNDARY-CAUSED": 95,
    "CLUSTERING-CAUSED": 4,
    "PAYLOAD-CAUSED": 60,
    "STRUCTURAL": 20

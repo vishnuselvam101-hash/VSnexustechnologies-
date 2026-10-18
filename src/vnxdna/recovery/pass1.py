@@ -17,19 +17,27 @@ from vnxdna.sync.template import SyncCosts, TemplateAligner, frame_erasures_to_b
 
 _RC = np.array([3, 2, 1, 0, 4], dtype=np.uint8)
 _ORIENT_SHIFT = 2       # orientation pre-pass: marker blocks also match up to this many nt left or right (V12)
+_FLAT_PATH = True       # V13 C1/C2: the default configuration works on flat buffers; False = the V12 per-read view lists
+#                         (the specification the flat path is pinned to, tests/v13/test_pass1_flat.py)
 # ============================================================================ pass 1 worker
 _P: dict = {}
 
 
 def _p_init(layout: Layout, band: int, costs: SyncCosts, min_q: int, rc: bool, smart_cfg=None, soft_cfg=None,
-            defer: bool = False, qw: bool = False, retry_band: int = 0, diag: bool = False, unplaced: bool = False) -> None:
+            defer: bool = False, qw: bool = False, retry_band: int = 0, diag: bool = False, unplaced: bool = False,
+            rc_retry: str = "bounded", spec: str = "markers") -> None:
     # defer: pass 1 of the deferred schedule — the cheap V4 paths only; smart/soft run later on the pending reads
     # qw: V6 Phase 4 quality-weighted consensus — keep the Phred quality of every projected frame base of pending reads
     # retry_band: V6 opt-in second, wider band for reads beyond ``band`` (0 = off, the V4 behaviour)
     # diag: V7 opt-in stage counters (recovery.stagecount); observability only, never changes a decision
     # unplaced: V7 opt-in read clustering — also return every unverified read, raw, for the unplaced-read store
+    # rc_retry: V13 D1 — "bounded" skips the reverse-complement retry of a failed read when a lower bound on its
+    # reverse-complement alignment cost already reaches the forward cost (the retry could then only be adopted
+    # through a verified reverse-complement frame, see _process); "always" = the V12 retry of every failed read
+    # spec: V13 B1 — "markers" projects the reads of the sync path from their marker-block shifts first and runs the
+    # DP only for those whose speculative frame does not verify (_spec_project); "off" = the DP for every read
     _P.update(lay=layout, al=TemplateAligner(layout, band, costs, retry_band=retry_band), min_q=min_q, rc=rc, smart=smart_cfg, soft=soft_cfg,
-              defer=defer, qw=qw, diag=diag, unpl=unplaced)
+              defer=defer, qw=qw, diag=diag, unpl=unplaced, rc_retry=rc_retry, spec=spec)
     if smart_cfg is not None or soft_cfg is not None:
         from vnxdna.sync.smart.recovery import Geometry
         _P["geom"] = Geometry(layout)
@@ -45,7 +53,16 @@ def _try(reads: list[np.ndarray], quals: list | None, with_quality: bool = False
     ``quals``) are consecutive views into flat buffers: the exact-length reads are then gathered from the buffers
     instead of stacked view by view (V12 pass-1 bookkeeping; same values)."""
     lay: Layout = _P["lay"]
-    n = len(reads)
+    if flat is not None:
+        lengths = flat[3]
+        n = int(lengths.size)
+    else:
+        n = len(reads)
+        lengths = np.fromiter((r.size for r in reads), dtype=np.int64, count=n)
+    qsrc = flat[1] if flat is not None else quals          # the batch's qualities, flat or as views
+    if reads is None and (_P.get("smart") is not None or _P.get("soft") is not None or _P.get("qw")):
+        raise ValueError("flat-only reads need the default recovery configuration (no smart/soft recovery, no "
+                         "quality-weighted consensus)")
     if diag is not None:
         diag.update(erased_bytes=np.full(n, lay.frame_bytes, dtype=np.int64), rs_ok=np.zeros(n, dtype=bool),
                     crc_ok=np.zeros(n, dtype=bool), marker_mm=np.zeros(n, dtype=np.int64),
@@ -56,29 +73,31 @@ def _try(reads: list[np.ndarray], quals: list | None, with_quality: bool = False
     cost = np.full(n, 1 << 28, dtype=np.int64)
     parsed_fields = np.zeros((n, 4), dtype=np.int64)
     payload = np.zeros((n, lay.payload_bytes), dtype=np.uint8)
-    path = np.zeros(n, dtype=np.int8)          # 1 fast, 2 sync
+    path = np.zeros(n, dtype=np.int8)          # 1 fast, 2 sync, 3 smart, 4 soft, 5 speculative sync (V13 B1)
     # quality of each projected frame base (V6 Phase 4 weighted consensus; 0 where no read base or no qualities)
     proj_q = np.zeros((n, lay.frame_nt), dtype=np.uint8) if _P.get("qw") else None
-    lengths = flat[3] if flat is not None else np.fromiter((r.size for r in reads), dtype=np.int64, count=n)
     exact = np.flatnonzero(lengths == lay.strand_nt)
     if exact.size:
-        if flat is not None:
-            estart = flat[2][exact]
-            mat = _gather_exact(flat[0], estart, lay.strand_nt)
+        if flat is not None and proj_q is None:
+            # V13 S3: gather, marker check, quality erasures and byte packing in one native pass over the reads
+            hard, pb, frames, erb, mism = _pack_exact(flat[0], flat[2][exact], qsrc, _P["min_q"])
         else:
-            mat = np.stack([reads[i] for i in exact])
-        fb, mism = strip_markers_exact(lay, mat)
-        er = fb > 3
-        if quals is not None and (_P["min_q"] or proj_q is not None):
-            qm = _gather_exact(flat[1], estart, lay.strand_nt) if flat is not None else np.stack([quals[i] for i in exact])
-            tpl, pos = lay.template()
-            if _P["min_q"]:
-                er |= qm[:, pos] < _P["min_q"]
-            if proj_q is not None:
-                proj_q[exact] = qm[:, pos]
-        hard = np.minimum(fb, 3)            # computed once: the frame bytes and the hard bases below (V12 session 5)
-        frames = nt_to_bytes(hard)
-        P = decode_frames(lay, frames, frame_erasures_to_bytes(er))
+            if flat is not None:
+                estart = flat[2][exact]
+                mat = _gather_exact(flat[0], estart, lay.strand_nt)
+            else:
+                mat = np.stack([reads[i] for i in exact])
+            fb, mism = strip_markers_exact(lay, mat)
+            er = fb > 3
+            if qsrc is not None and (_P["min_q"] or proj_q is not None):
+                qm = _gather_exact(flat[1], estart, lay.strand_nt) if flat is not None else np.stack([quals[i] for i in exact])
+                tpl, pos = lay.template()
+                if _P["min_q"]:
+                    er |= qm[:, pos] < _P["min_q"]
+                if proj_q is not None:
+                    proj_q[exact] = qm[:, pos]
+            hard, pb, frames, erb = _pack_projection(fb, er)
+        P = decode_frames(lay, frames, erb)
         ok = P.ok
         idx = exact[ok]
         acc[idx] = True
@@ -87,12 +106,10 @@ def _try(reads: list[np.ndarray], quals: list | None, with_quality: bool = False
         payload[idx] = P.payload[ok]
         cost[exact] = mism * _P["al"].costs.marker_mismatch
         if diag is not None:
-            diag["erased_bytes"][exact] = frame_erasures_to_bytes(er).sum(axis=1)
+            diag["erased_bytes"][exact] = erb.sum(axis=1)
             diag["rs_ok"][exact], diag["crc_ok"][exact] = P.rs_ok, P.crc_ok
             diag["marker_mm"][exact], diag["errata"][exact] = mism, P.errata
         hard_bases[exact] = hard
-        pb = fb.copy()
-        pb[er] = 4
         proj_bases[exact] = pb
     # exact-length reads whose markers all match gain nothing from re-alignment (same frame, same RS failure)
     hopeless = np.zeros(n, dtype=bool)
@@ -104,17 +121,49 @@ def _try(reads: list[np.ndarray], quals: list | None, with_quality: bool = False
     soft = None if defer else _P.get("soft")
     sstats: Counter = Counter()
     soft_jobs: list = []                   # (read index, evidence) for the V5 Phase 4 soft stage
+    if rest.size and reads is None and _P.get("spec", "markers") == "markers" and lay.markers:
+        # V13 B1: marker-anchored speculative projection. A read whose frame verifies (inner RS + CRC) from the
+        # projection implied by its marker-block shifts is accepted without the DP; every other read of ``rest``
+        # takes the DP below, unchanged. Acceptances can only be added by this step, never removed.
+        sok, sbases, serased, smm, sind = _spec_project(flat[0], flat[2][rest], lengths[rest], flat[1], _P["min_q"])
+        sidx = np.flatnonzero(sok)
+        if sidx.size:
+            hard_s, pb_s, frames_s, er_s = _pack_projection(sbases[sidx], serased[sidx])
+            Ps = decode_frames(lay, frames_s, er_s, errors_only_retry=False)
+            hit = Ps.ok
+            if hit.any():
+                ridx = rest[sidx[hit]]
+                c = _P["al"].costs
+                acc[ridx] = True
+                path[ridx] = 5
+                parsed_fields[ridx] = np.stack([Ps.kind, Ps.tag, Ps.group, Ps.symbol], axis=1)[hit]
+                payload[ridx] = Ps.payload[hit]
+                # nominal cost of the speculative alignment (marker mismatches + one indel per unit of shift change);
+                # no decision depends on the cost of an accepted read
+                cost[ridx] = smm[sidx[hit]] * c.marker_mismatch + sind[sidx[hit]] * min(c.insertion, c.deletion)
+                hard_bases[ridx] = hard_s[hit]
+                proj_bases[ridx] = pb_s[hit]
+                if diag is not None:
+                    diag["erased_bytes"][ridx] = er_s[hit].sum(axis=1)
+                    diag["rs_ok"][ridx], diag["crc_ok"][ridx] = Ps.rs_ok[hit], Ps.crc_ok[hit]
+                    diag["marker_mm"][ridx], diag["errata"][ridx] = smm[sidx[hit]], Ps.errata[hit]
+                rest = rest[~acc[rest]]
     if rest.size:
-        rreads = [reads[i] for i in rest]
-        rquals = None if quals is None else [quals[i] for i in rest]
-        if smart is None and soft is None and not (proj_q is not None and rquals is not None):
+        if reads is None:
+            # V13 C1: the sync path on the flat batch, no per-read views (same Projection as the list form)
+            rreads = rquals = None
+            pr = _P["al"].project_flat(flat[0], flat[2], lengths, rest, flat[1], _P["min_q"])
+        else:
+            rreads = [reads[i] for i in rest]
+            rquals = None if quals is None else [quals[i] for i in rest]
+        if reads is None:
+            pass
+        elif smart is None and soft is None and not (proj_q is not None and rquals is not None):
             pr = _P["al"].project(rreads, rquals, _P["min_q"])
         else:
             from vnxdna.sync.smart.path import align_with_path
             pr, rpos = align_with_path(_P["al"], rreads, rquals, _P["min_q"])   # identical projection + the path
-        hard = np.minimum(pr.bases, 3)
-        frames = nt_to_bytes(hard)
-        er = frame_erasures_to_bytes(pr.erased)
+        hard, pb, frames, er = _pack_projection(pr.bases, pr.erased)
         P = decode_frames(lay, frames, er, errors_only_retry=False)   # sync erasures come from detected indels
         ok = P.ok & pr.ok
         if diag is not None:
@@ -160,8 +209,6 @@ def _try(reads: list[np.ndarray], quals: list | None, with_quality: bool = False
             proj_q[rest] = np.where(ri >= 0, np.take_along_axis(qmat, np.maximum(ri, 0), axis=1), 0)
         cost[rest] = np.where(pr.ok, pr.cost, 1 << 28)
         hard_bases[rest] = hard
-        pb = pr.bases.copy()
-        pb[pr.erased] = 4
         proj_bases[rest] = pb
     if soft is not None:
         # exact-length reads whose markers all match skipped re-alignment: their frame is the read itself
@@ -268,6 +315,199 @@ def _orientation_reference(codes: np.ndarray, lengths: np.ndarray, mpos: np.ndar
     return sr.sum(axis=1) > sf.sum(axis=1) + margin
 
 
+_RC256 = np.full(256, 255, dtype=np.uint8)      # complement table over every byte value: codes above 4 never match
+_RC256[:5] = _RC
+
+
+def _rc_bound_reference(codes: np.ndarray, lengths: np.ndarray, offs: np.ndarray, mpos: np.ndarray, want: np.ndarray,
+                        starts: np.ndarray, band: int, c_mm: int, c_ins: int, c_del: int) -> np.ndarray:
+    """Lower bound on the band-``band`` marker-template alignment cost of each selected read as a reverse complement
+    (the specification of ``native.orient.rc_bound``, V13 D1).
+
+    Any alignment within the band either keeps one shift ``s`` (|s| <= band) for all the markers of a block, paying
+    ``c_mm`` per mismatching marker, or places an insertion or deletion inside that block, paying at least
+    ``min(c_ins, c_del)``; blocks and the operations inside them are disjoint, so the sum over blocks of
+    ``min(c_mm * (block size - best hits over the shifts), c_ins, c_del)`` is at most the cost of every alignment the
+    DP can return (tests/v13/test_rc_retry_bound.py checks it against the DP on random reads)."""
+    n = lengths.size
+    out = np.zeros(n, dtype=np.int64)
+    if n == 0 or mpos.size == 0:
+        return out
+    offs = offs.astype(np.int64, copy=False)
+    lengths = lengths.astype(np.int64, copy=False)
+    sizes = np.diff(np.append(starts, mpos.size)).astype(np.int64)
+    best = np.zeros((n, starts.size), dtype=np.int64)
+    top = max(0, codes.size - 1)
+    ln = lengths[:, None]
+    for s in range(-int(band), int(band) + 1):
+        p = mpos[None, :] + s
+        inside = (p >= 0) & (p < ln)
+        idx = np.clip(offs[:, None] + ln - 1 - p, 0, top)
+        hit = (_RC256[codes[idx]] == want[None, :]) & inside
+        np.maximum(best, np.add.reduceat(hit, starts, axis=1, dtype=np.int64), out=best)
+    return np.minimum(int(c_mm) * (sizes[None, :] - best), min(int(c_ins), int(c_del))).sum(axis=1)
+
+
+def _rc_bound(codes: np.ndarray, offs: np.ndarray, lengths: np.ndarray) -> np.ndarray:
+    """The reverse-complement cost bound of the selected reads with the worker's layout, band and costs (native kernel
+    when it loads, else the reference)."""
+    lay: Layout = _P["lay"]
+    al = _P["al"]
+    tpl, _ = lay.template()
+    mpos = np.flatnonzero(tpl >= 0)
+    want = tpl[mpos].astype(np.uint8)
+    starts = np.flatnonzero(np.diff(mpos, prepend=-2) > 1)
+    band = max(al.band, al.retry_band)
+    c = al.costs
+    if native_orient.resolve_backend() == "native":
+        return native_orient.rc_bound(codes, lengths, offs, mpos, want, starts, band, c.marker_mismatch, c.insertion,
+                                      c.deletion)
+    return _rc_bound_reference(codes, lengths, offs, mpos, want, starts, band, c.marker_mismatch, c.insertion, c.deletion)
+
+
+def _spec_project_reference(codes: np.ndarray, lengths: np.ndarray, offs: np.ndarray, qflat: np.ndarray | None,
+                            min_q: int, T: int, mpos: np.ndarray, want: np.ndarray, starts: np.ndarray,
+                            frame_pos: np.ndarray, band: int) -> tuple:
+    """Marker-anchored speculative projection of the selected reads onto frame coordinates, without the DP (the
+    specification of ``native.orient.spec_project``, V13 B1). Returns (ok, bases, erased, mm, indels).
+
+    For a read of length ``L`` (``delta = L - T``, ``|delta| <= band`` or the read is not projected) the marker blocks
+    (``starts`` indexes the first marker of each block in ``mpos``) are visited left to right with a running shift
+    ``s_prev`` (0 at the start). A block takes the first shift of the sequence ``s_prev, s_prev - 1, s_prev + 1,
+    s_prev - 2, ...`` (``|s| <= band``, the whole block inside the read) at which every marker matches; if none does,
+    it keeps ``s_prev`` when at most one marker mismatches there (counted in ``mm``), otherwise the read is not
+    projected. ``indels`` is the sum of the shift changes, including the final change to ``delta``. A template position
+    ``p`` lies in region ``r`` = the number of blocks whose first marker is ``<= p``; its left shift is that of block
+    ``r - 1`` (0 for the first region) and its right shift that of block ``r`` (``delta`` after the last block). Its
+    base is the read base at ``p + left shift`` (4 outside the read) and it is erased when that base is not A/C/G/T,
+    when its quality is below ``min_q`` (``qflat`` given) or when the two shifts differ (the region holds an indel).
+    Only frame positions are returned. A read that is not projected has bases 4, every position erased, mm and indels 0.
+
+    Unlike the DP (``TemplateAligner``) this projection does not minimise a cost: it is only ever used behind the inner
+    RS + CRC verification of the frame it yields."""
+    n = int(lengths.size)
+    F = int(frame_pos.size)
+    L = lengths.astype(np.int64, copy=False)
+    offs = offs.astype(np.int64, copy=False)
+    bases = np.full((n, F), 4, dtype=np.uint8)
+    erased = np.ones((n, F), dtype=bool)
+    mm = np.zeros(n, dtype=np.int64)
+    indels = np.zeros(n, dtype=np.int64)
+    alive = np.abs(L - T) <= band
+    if n == 0:
+        return alive, bases, erased, mm, indels
+    nb = int(starts.size) if mpos.size else 0
+    blocks = [mpos[a:b].astype(np.int64) for a, b in zip(starts, np.append(starts[1:], mpos.size))] if nb else []
+    s_prev = np.zeros(n, dtype=np.int64)
+    shifts = np.zeros((n, nb), dtype=np.int64)
+    for b, bl in enumerate(blocks):
+        wb = want[starts[b]:starts[b] + bl.size]
+        found = np.zeros(n, dtype=bool)
+        for d in range(2 * band + 1):
+            k = (d + 1) // 2
+            s = s_prev - k if d % 2 else s_prev + k
+            rows = np.flatnonzero(alive & ~found & (s >= -band) & (s <= band) & (bl[0] + s >= 0) & (bl[-1] + s < L))
+            if rows.size == 0:
+                continue
+            hit = (codes[offs[rows, None] + bl[None, :] + s[rows, None]] == wb[None, :]).all(axis=1)
+            r2 = rows[hit]
+            indels[r2] += np.abs(s[r2] - s_prev[r2])
+            s_prev[r2] = s[r2]
+            found[r2] = True
+        rows = np.flatnonzero(alive & ~found)
+        if rows.size:
+            s = s_prev[rows]
+            inside = (bl[0] + s >= 0) & (bl[-1] + s < L[rows])
+            bad = np.full(rows.size, bl.size + 1, dtype=np.int64)
+            r_in = rows[inside]
+            if r_in.size:
+                bad[inside] = (codes[offs[r_in, None] + bl[None, :] + s_prev[r_in, None]] != wb[None, :]).sum(axis=1)
+            keep = bad <= 1
+            mm[rows[keep]] += bad[keep]
+            alive[rows[~keep]] = False
+        shifts[:, b] = s_prev
+    ok = alive
+    delta = L - T
+    indels += np.abs(delta - s_prev)
+    mm[~ok] = 0
+    indels[~ok] = 0
+    if F == 0 or not ok.any():
+        return ok, bases, erased, mm, indels
+    rows = np.flatnonzero(ok)
+    if nb:
+        region = np.searchsorted(mpos[starts], frame_pos, side="right")
+        sl = np.where(region[None, :] == 0, 0, shifts[rows][:, np.maximum(region - 1, 0)])
+        sr = np.where(region[None, :] == nb, delta[rows, None], shifts[rows][:, np.minimum(region, nb - 1)])
+    else:
+        sl = np.zeros((rows.size, F), dtype=np.int64)
+        sr = np.broadcast_to(delta[rows, None], (rows.size, F))
+    j = frame_pos[None, :].astype(np.int64) + sl
+    inside = (j >= 0) & (j < L[rows, None])
+    idx = np.clip(offs[rows, None] + j, 0, max(0, codes.size - 1))
+    base = np.where(inside, np.minimum(codes[idx], 4), 4).astype(np.uint8)
+    er = (sl != sr) | (base > 3)
+    if qflat is not None:
+        er |= inside & (qflat[idx] < min_q)
+    bases[rows] = base
+    erased[rows] = er
+    return ok, bases, erased, mm, indels
+
+
+def _spec_project(codes: np.ndarray, offs: np.ndarray, lengths: np.ndarray, qflat: np.ndarray | None,
+                  min_q: int) -> tuple:
+    """The speculative projection of the selected reads with the worker's layout and band (native kernel when it
+    loads, else the reference)."""
+    lay: Layout = _P["lay"]
+    al = _P["al"]
+    tpl, fpos = lay.template()
+    mpos = np.flatnonzero(tpl >= 0)
+    want = tpl[mpos].astype(np.uint8)
+    starts = np.flatnonzero(np.diff(mpos, prepend=-2) > 1)
+    band = al.band          # reads of the opt-in retry window (band < |len - T| <= retry_band) take the DP as before
+    if native_orient.resolve_backend() == "native":
+        return native_orient.spec_project(codes, lengths, offs, qflat, min_q, tpl.size, mpos, want, starts, fpos, band)
+    return _spec_project_reference(codes, lengths, offs, qflat, min_q, tpl.size, mpos, want, starts, fpos, band)
+
+
+def _pack_projection_reference(bases: np.ndarray, erased: np.ndarray) -> tuple:
+    """NumPy form of the frame packing of (n, F) projected bases and erasure flags (the specification of
+    ``vnx_or_pack_projection``): (hard bases, projection with erased bases = 4, frame bytes, erased bytes)."""
+    hard = np.minimum(bases, 3).astype(np.uint8, copy=False)
+    proj = np.array(bases, dtype=np.uint8, copy=True)
+    proj[erased.astype(bool, copy=False)] = 4
+    return hard, proj, nt_to_bytes(hard), frame_erasures_to_bytes(np.ascontiguousarray(erased, dtype=np.uint8))
+
+
+def _pack_exact_reference(lay: Layout, codes: np.ndarray, offs: np.ndarray, qflat: np.ndarray | None, min_q: int) -> tuple:
+    """NumPy form of the exact-length path's frame packing (the specification of ``vnx_or_pack_exact``): the reads of
+    ``lay.strand_nt`` bases at ``offs`` → (hard, proj, frames, erased bytes, marker mismatches); a base is erased when
+    it is not A/C/G/T or (with qualities and ``min_q`` > 0) its quality is below ``min_q``."""
+    mat = _gather_exact(codes, offs, lay.strand_nt)
+    fb, mism = strip_markers_exact(lay, mat)
+    er = fb > 3
+    if qflat is not None and min_q:
+        er |= _gather_exact(qflat, offs, lay.strand_nt)[:, lay.template()[1]] < min_q
+    return (*_pack_projection_reference(fb, er), mism)
+
+
+def _pack_projection(bases: np.ndarray, erased: np.ndarray) -> tuple:
+    """Frame packing of projected bases (native kernel when it loads and the frame has 4k bases, else the reference)."""
+    if bases.shape[1] % 4 == 0 and native_orient.resolve_backend() == "native":
+        return native_orient.pack_projection(bases, erased)
+    return _pack_projection_reference(bases, erased)
+
+
+def _pack_exact(codes: np.ndarray, offs: np.ndarray, qflat: np.ndarray | None, min_q: int) -> tuple:
+    """Frame packing of the exact-length reads at ``offs`` with the worker's layout (native kernel or reference)."""
+    lay: Layout = _P["lay"]
+    if lay.frame_nt % 4 == 0 and native_orient.resolve_backend() == "native":
+        tpl, fpos = lay.template()
+        mpos = np.flatnonzero(tpl >= 0)
+        return native_orient.pack_exact(codes, offs, qflat if min_q else None, min_q, tpl.size, mpos,
+                                        tpl[mpos].astype(np.uint8), fpos)
+    return _pack_exact_reference(lay, codes, offs, qflat, min_q)
+
+
 _GATHER_ROWS = 512      # rows per gather chunk (V12 session 5): the int64 index matrix of one chunk is 512 x strand_nt
 #                         x 8 B (1.3 MiB at 313 nt); one index for the whole 8192-read batch was 20 MiB per worker, and
 #                         the freed arena stayed resident, raising the peak RSS of every pass-1 worker by that much
@@ -304,6 +544,22 @@ def _gather_rows(flat: np.ndarray, offs: np.ndarray, lengths: np.ndarray, sel: n
     return out, valid
 
 
+def _rc_flat(codes: np.ndarray, qflat: np.ndarray | None, offs: np.ndarray, lengths: np.ndarray,
+             sel: np.ndarray) -> tuple:
+    """Reads ``sel`` of a flat batch, each reversed and complemented, as a new flat batch (codes, quals or None,
+    offsets, lengths) in the order of ``sel``: one gather instead of a per-read loop (V13 C2; the loop form it
+    replaces is in tests/v13/test_pass1_flat.py). Code 4 (N) stays 4."""
+    L = lengths[sel].astype(np.int64, copy=False)
+    roffs = np.zeros(L.size + 1, dtype=np.int64)
+    np.cumsum(L, out=roffs[1:])
+    total = int(roffs[-1])
+    # output position p of read j reads source position offs[sel[j]] + L[j] - 1 - (p - roffs[j])
+    src = np.repeat(offs[sel].astype(np.int64, copy=False) + L - 1 + roffs[:-1], L) - np.arange(total, dtype=np.int64)
+    rcodes = _RC[codes[src]]
+    rq = None if qflat is None else qflat[src]
+    return rcodes, rq, roffs, L
+
+
 def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | None) -> dict:
     cpu0 = time.process_time()
     lay: Layout = _P["lay"]
@@ -326,8 +582,11 @@ def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | N
                 if qflat is not None:
                     qflat[a:b] = quals[a:b][::-1]
         rc_used |= flip
-    reads = [codes[offs[i]:offs[i + 1]] for i in range(lengths.size)]
-    ql = None if qflat is None else [qflat[offs[i]:offs[i + 1]] for i in range(lengths.size)]
+    if _FLAT_PATH and _P.get("smart") is None and _P.get("soft") is None and not _P.get("qw"):
+        reads = ql = None       # V13 C1: the default configuration works on the flat buffers only (no view lists)
+    else:
+        reads = [codes[offs[i]:offs[i + 1]] for i in range(lengths.size)]
+        ql = None if qflat is None else [qflat[offs[i]:offs[i + 1]] for i in range(lengths.size)]
     acc, fields, payload, proj, cost, path, hard, sstats, pq = _try(reads, ql, with_quality=True, diag=d,
                                                                    flat=(codes, qflat, offs, lengths))
     if d is not None:
@@ -335,13 +594,26 @@ def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | N
         d["rc_tried"] = np.zeros(lengths.size, dtype=bool)
         d["rc_adopted"] = np.zeros(lengths.size, dtype=bool)
     ocodes, oq = codes, qflat              # the orientation each read's projection refers to (pending raw reads)
+    rc_skipped = 0
     if _P["rc"]:
         bad = np.flatnonzero(~acc & (cost > 2 * _P["al"].costs.insertion))
+        if bad.size and reads is None and _P.get("rc_retry", "bounded") == "bounded":
+            # V13 D1: the retry is adopted when its frame verifies or its alignment cost is below the forward cost.
+            # Where the bound on the reverse-complement cost already reaches the forward cost, only a verified
+            # reverse-complement frame could still adopt it; such reads are not retried (counted in the stats).
+            keep = _rc_bound(codes, offs[bad], lengths[bad]) < cost[bad]
+            rc_skipped = int(bad.size - keep.sum())
+            bad = bad[keep]
         if bad.size:
-            rreads = [_RC[reads[i][::-1]] for i in bad]
-            rq = None if ql is None else [ql[i][::-1] for i in bad]
             d2 = {} if d is not None else None
-            a2, f2, p2, pr2, c2, path2, h2, s2, q2 = _try(rreads, rq, with_quality=True, diag=d2)
+            if reads is None:
+                # V13 C2: the retried reads reversed and complemented by one gather into a flat buffer
+                a2, f2, p2, pr2, c2, path2, h2, s2, q2 = _try(None, None, with_quality=True, diag=d2,
+                                                             flat=_rc_flat(codes, qflat, offs, lengths, bad))
+            else:
+                rreads = [_RC[reads[i][::-1]] for i in bad]
+                rq = None if ql is None else [ql[i][::-1] for i in bad]
+                a2, f2, p2, pr2, c2, path2, h2, s2, q2 = _try(rreads, rq, with_quality=True, diag=d2)
             sstats.update(s2)
             better = a2 | (c2 < cost[bad])
             sel = bad[better]
@@ -396,9 +668,10 @@ def _process(batch_codes: np.ndarray, lengths: np.ndarray, quals: np.ndarray | N
            "pend_fields": pend_fields, "pend_bases": pend_bases, "pend_alt": pend_alt,
            **({} if pq is None else {"pend_pq": out_pq,
                                      "pend_pqok": np.full(out_pq.shape[0], int(ql is not None), dtype=np.uint8)}),
-           "stats": {"reads": int(lengths.size), "fast": int((path == 1).sum()), "sync": int((path == 2).sum()),
+           "stats": {"reads": int(lengths.size), "fast": int((path == 1).sum()),
+                     "sync": int(((path == 2) | (path == 5)).sum()), "speculative": int((path == 5).sum()),
                      "reverse_complement": int((rc_used & acc).sum()), "pending": int(pend_fields.shape[0]), "orphans": orphans,
-                     "unaligned": int((~acc).sum()) - int(pend.size)}}
+                     "unaligned": int((~acc).sum()) - int(pend.size), "rc_retry_skipped": rc_skipped}}
     al = _P["al"]
     if al.retry_band:
         # V6 opt-in retry band: reads beyond the band that the wider band aligned (stat absent when the option is off)

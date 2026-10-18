@@ -1,0 +1,14 @@
+indel-w1           v12   8.899s  v13   3.121s  ratio 2.885 [2.732, 2.989]  identical=True  outcomes=['SUCCESS']  false_success={'v12': 0, 'v13': 0}
+indel-w2           v12   5.028s  v13   2.336s  ratio 2.113 [1.991, 2.313]  identical=True  outcomes=['SUCCESS']  false_success={'v12': 0, 'v13': 0}
+indel-w4           v12   3.169s  v13   1.855s  ratio 1.704 [1.644, 1.77]  identical=True  outcomes=['SUCCESS']  false_success={'v12': 0, 'v13': 0}
+indel-w8           v12   2.636s  v13   1.908s  ratio 1.374 [1.197, 1.621]  identical=True  outcomes=['SUCCESS']  false_success={'v12': 0, 'v13': 0}
+indel-rc-w4        v12   3.306s  v13   1.881s  ratio 1.758 [1.606, 1.838]  identical=True  outcomes=['SUCCESS']  false_success={'v12': 0, 'v13': 0}
+indel-dropout-w4   v12   3.326s  v13   2.421s  ratio 1.374 [1.259, 1.433]  identical=True  outcomes=['SUCCESS']  false_success={'v12': 0, 'v13': 0}
+clean-w4           v12   1.321s  v13   0.600s  ratio 2.200 [2.095, 2.372]  identical=True  outcomes=['SUCCESS']  false_success={'v12': 0, 'v13': 0}
+substitution-w4    v12   2.063s  v13   1.397s  ratio 1.476 [1.173, 1.576]  identical=True  outcomes=['SUCCESS']  false_success={'v12': 0, 'v13': 0}
+indel-64k-w1       v12   0.285s  v13   0.185s  ratio 1.552 [1.529, 1.639]  identical=True  outcomes=['SUCCESS']  false_success={'v12': 0, 'v13': 0}
+indel-16m-w4       v12  10.269s  v13   6.214s  ratio 1.723 [1.593, 1.755]  identical=True  outcomes=['SUCCESS']  false_success={'v12': 0, 'v13': 0}
+encode-1m-w1       v12   0.332s  v13   0.335s  ratio 0.998 [0.916, 1.014]  identical=True  outcomes=['ENCODED']  false_success={'v12': 0, 'v13': 0}
+encode-4m-w1       v12   1.284s  v13   1.272s  ratio 1.010 [1.005, 1.021]  identical=True  outcomes=['ENCODED']  false_success={'v12': 0, 'v13': 0}
+encode-4m-w4       v12   0.469s  v13   0.461s  ratio 0.920 [0.91, 1.169]  identical=True  outcomes=['ENCODED']  false_success={'v12': 0, 'v13': 0}
+scaling vs w1: {"v12": {"indel-w1": 1.0, "indel-w2": 1.77, "indel-w4": 2.808, "indel-w8": 3.376}, "v13": {"indel-w1": 1.0, "indel-w2": 1.336, "indel-w4": 1.682, "indel-w8": 1.636}}

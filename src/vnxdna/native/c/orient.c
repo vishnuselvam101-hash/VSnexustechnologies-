@@ -23,7 +23,7 @@
 #include <stdlib.h>
 
 #ifndef VNX_OR_ABI /* overridable only so that the tests can build a mismatching library */
-#define VNX_OR_ABI 1
+#define VNX_OR_ABI 4
 #endif
 
 enum { OR_OK = 0, OR_EARG = -1, OR_ENOMEM = -2 };
@@ -104,5 +104,251 @@ int vnx_or_scan(int64_t n, const uint8_t *codes, int64_t ncodes, const int64_t *
         flip[i] = sr > sf + margin;
     }
     free(buf);
+    return OR_OK;
+}
+
+/* ABI 2 (V13 D1): lower bound on the marker-template alignment cost of each read taken as a reverse complement.
+ * For every marker block (consecutive marker positions) any alignment of band B either keeps one shift s, |s| <= B,
+ * for the whole block (cost >= c_mm * mismatches at that shift) or places an insertion or deletion inside the block
+ * (cost >= min(c_ins, c_del)); blocks and the ops inside them are disjoint, so
+ *   out[i] = sum over blocks b of min(c_mm * (size_b - max_{|s|<=B} hits_b(s)), c_ins, c_del)
+ * never exceeds the cost of any alignment the DP of vnxdna.sync.template can return for the reverse complement.
+ * Same arguments as vnx_or_scan (offs may select any reads of the buffer); band, c_mm, c_ins, c_del >= 0.
+ * Reference: vnxdna.recovery.pass1._rc_bound_reference. */
+int vnx_or_rc_bound(int64_t n, const uint8_t *codes, int64_t ncodes, const int64_t *lengths, const int64_t *offs,
+                    int64_t nm, const int64_t *mpos, const uint8_t *want, const int64_t *block, int64_t nblocks,
+                    int64_t band, int64_t c_mm, int64_t c_ins, int64_t c_del, int64_t *out)
+{
+    if (n < 0 || ncodes < 0 || nm < 0 || nblocks < 0 || nblocks > nm || band < 0 || band > INT32_MAX) return OR_EARG;
+    if (c_mm < 0 || c_ins < 0 || c_del < 0 || c_mm > INT32_MAX || c_ins > INT32_MAX || c_del > INT32_MAX) return OR_EARG;
+    if ((n > 0 && (!lengths || !offs || !out)) || (ncodes > 0 && !codes)) return OR_EARG;
+    if (nm > 0 && (!mpos || !want || !block)) return OR_EARG;
+    for (int64_t m = 0; m < nm; m++) {
+        if (block[m] < 0 || block[m] >= nblocks || (m > 0 && block[m] < block[m - 1])) return OR_EARG;
+        if (mpos[m] < 0 || mpos[m] > INT32_MAX || (m > 0 && mpos[m] <= mpos[m - 1])) return OR_EARG;
+    }
+    for (int64_t i = 0; i < n; i++)
+        if (lengths[i] < 0 || offs[i] < 0 || offs[i] > ncodes - lengths[i]) return OR_EARG;
+    if (n == 0) return OR_OK;
+    if (nm == 0) {
+        for (int64_t i = 0; i < n; i++) out[i] = 0;
+        return OR_OK;
+    }
+    const int64_t c_indel = c_ins < c_del ? c_ins : c_del;
+    int64_t *buf = (int64_t *)malloc((size_t)(3 * nblocks) * sizeof(int64_t));
+    if (!buf) return OR_ENOMEM;
+    int64_t *best = buf, *tmp = buf + nblocks, *size = buf + 2 * nblocks;
+    for (int64_t b = 0; b < nblocks; b++) size[b] = 0;
+    for (int64_t m = 0; m < nm; m++) size[block[m]]++;
+    for (int64_t i = 0; i < n; i++) {
+        const uint8_t *r = codes + offs[i];
+        int64_t len = lengths[i];
+        for (int64_t b = 0; b < nblocks; b++) best[b] = 0;
+        for (int64_t s = -band; s <= band; s++) {
+            score(r, len, nm, mpos, want, block, nblocks, s, 1, tmp);
+            for (int64_t b = 0; b < nblocks; b++) if (tmp[b] > best[b]) best[b] = tmp[b];
+        }
+        int64_t total = 0;
+        for (int64_t b = 0; b < nblocks; b++) {
+            int64_t mm = c_mm * (size[b] - best[b]);
+            total += mm < c_indel ? mm : c_indel;
+        }
+        out[i] = total;
+    }
+    free(buf);
+    return OR_OK;
+}
+
+/* ABI 3 (V13 B1): marker-anchored speculative projection of selected reads onto frame coordinates, without the DP.
+ * Reference: vnxdna.recovery.pass1._spec_project_reference (the specification; this kernel is bit-exact with it).
+ *
+ * For read i of length L (delta = L - T) the marker blocks are visited left to right with a running shift s_prev
+ * (0 at the start). Block b takes the first shift s of the sequence s_prev, s_prev - 1, s_prev + 1, s_prev - 2, ...
+ * (|s| <= band, the whole block inside the read) at which every marker of the block matches; if no shift matches
+ * exactly, it keeps s_prev when the block has at most one mismatch there (counted in mm); otherwise the read is not
+ * projected (ok = 0, outputs 4 / erased / 0). Template position p lies in region r = number of blocks whose first
+ * marker is <= p; its left shift is the shift of block r - 1 (0 for r = 0) and its right shift the shift of block r
+ * (delta after the last block). The base at p is codes[p + left shift] (4 when outside the read); it is erased when it
+ * is not A/C/G/T, when its quality is below min_q (quals given), or when the two shifts differ (an indel lies in the
+ * region). indels = sum of |shift changes| including the final step to delta. Only frame positions are written.
+ *   quals: NULL or a buffer of ncodes entries; T >= 1; mpos ascending in [0, T); frame_pos in [0, T).
+ *   out_ok[n], out_bases/out_erased[n * frame_nt], out_mm[n], out_indels[n]. */
+int vnx_or_spec_project(int64_t n, const uint8_t *codes, int64_t ncodes, const int64_t *lengths, const int64_t *offs,
+                        const uint8_t *quals, int64_t min_q, int64_t T, int64_t nm, const int64_t *mpos,
+                        const uint8_t *want, const int64_t *block, int64_t nblocks, int64_t frame_nt,
+                        const int64_t *frame_pos, int64_t band, uint8_t *out_ok, uint8_t *out_bases,
+                        uint8_t *out_erased, int64_t *out_mm, int64_t *out_indels)
+{
+    if (n < 0 || ncodes < 0 || nm < 0 || nblocks < 0 || nblocks > nm || band < 0 || band > INT32_MAX) return OR_EARG;
+    if (T < 1 || T > INT32_MAX || frame_nt < 0 || frame_nt > T) return OR_EARG;
+    if ((n > 0 && (!lengths || !offs || !out_ok || !out_mm || !out_indels)) || (ncodes > 0 && !codes)) return OR_EARG;
+    if (n > 0 && frame_nt > 0 && (!out_bases || !out_erased || !frame_pos)) return OR_EARG;
+    if (nm > 0 && (!mpos || !want || !block)) return OR_EARG;
+    for (int64_t m = 0; m < nm; m++) {
+        if (block[m] < 0 || block[m] >= nblocks || (m > 0 && block[m] < block[m - 1])) return OR_EARG;
+        if (mpos[m] < 0 || mpos[m] >= T || (m > 0 && mpos[m] <= mpos[m - 1])) return OR_EARG;
+    }
+    if (nm > 0 && (block[0] != 0 || block[nm - 1] != nblocks - 1)) return OR_EARG;   /* every block has a marker */
+    for (int64_t f = 0; f < frame_nt; f++)
+        if (frame_pos[f] < 0 || frame_pos[f] >= T) return OR_EARG;
+    for (int64_t i = 0; i < n; i++)
+        if (lengths[i] < 0 || offs[i] < 0 || offs[i] > ncodes - lengths[i]) return OR_EARG;
+    if (n == 0) return OR_OK;
+    if ((uint64_t)n > SIZE_MAX / (size_t)(frame_nt > 0 ? frame_nt : 1)) return OR_EARG;
+    /* first marker index and size of every block, the chosen shift per block */
+    if ((uint64_t)(3 * nblocks) > SIZE_MAX / sizeof(int64_t) - (uint64_t)T) return OR_EARG;
+    int64_t *buf = (int64_t *)malloc((size_t)(3 * nblocks + T) * sizeof(int64_t));
+    if (!buf) return OR_ENOMEM;
+    int64_t *first = buf, *size = buf + nblocks, *shift = buf + 2 * nblocks, *region = buf + 3 * nblocks;
+    for (int64_t b = 0; b < nblocks; b++) size[b] = 0;
+    for (int64_t m = 0; m < nm; m++) {
+        if (size[block[m]] == 0) first[block[m]] = m;
+        size[block[m]]++;
+    }
+    /* region of every template position: the number of blocks whose first marker is <= p */
+    for (int64_t p = 0, reg = 0; p < T; p++) {
+        while (reg < nblocks && mpos[first[reg]] <= p) reg++;
+        region[p] = reg;
+    }
+    for (int64_t i = 0; i < n; i++) {
+        const uint8_t *r = codes + offs[i];
+        const uint8_t *q = quals ? quals + offs[i] : NULL;
+        const int64_t L = lengths[i];
+        const int64_t delta = L - T;
+        uint8_t *ob = out_bases + (size_t)i * (size_t)frame_nt;
+        uint8_t *oe = out_erased + (size_t)i * (size_t)frame_nt;
+        int ok = delta >= -band && delta <= band;
+        int64_t mm = 0, indels = 0, s_prev = 0;
+        for (int64_t b = 0; ok && b < nblocks; b++) {
+            const int64_t m0 = first[b], sz = size[b];
+            const int64_t lo = mpos[m0], hi = mpos[m0 + sz - 1];
+            int found = 0;
+            for (int64_t d = 0; d <= 2 * band && !found; d++) {
+                /* candidate order: s_prev, s_prev - 1, s_prev + 1, s_prev - 2, s_prev + 2, ... */
+                const int64_t k = (d + 1) / 2;
+                const int64_t s = (d & 1) ? s_prev - k : s_prev + k;
+                if (s < -band || s > band || lo + s < 0 || hi + s >= L) continue;
+                int all = 1;
+                for (int64_t m = m0; m < m0 + sz && all; m++) all = r[mpos[m] + s] == want[m];
+                if (all) {
+                    indels += s >= s_prev ? s - s_prev : s_prev - s;
+                    s_prev = s;
+                    found = 1;
+                }
+            }
+            if (!found) {
+                int64_t bad = 0;
+                if (lo + s_prev >= 0 && hi + s_prev < L)
+                    for (int64_t m = m0; m < m0 + sz; m++) bad += r[mpos[m] + s_prev] != want[m];
+                else
+                    bad = sz + 1;
+                if (bad <= 1) mm += bad;
+                else ok = 0;
+            }
+            shift[b] = s_prev;
+        }
+        if (ok) indels += delta >= s_prev ? delta - s_prev : s_prev - delta;
+        out_ok[i] = (uint8_t)ok;
+        out_mm[i] = ok ? mm : 0;
+        out_indels[i] = ok ? indels : 0;
+        if (!ok) {
+            for (int64_t f = 0; f < frame_nt; f++) { ob[f] = 4; oe[f] = 1; }
+            continue;
+        }
+        for (int64_t f = 0; f < frame_nt; f++) {
+            const int64_t p = frame_pos[f];
+            const int64_t reg = region[p];
+            const int64_t sl = reg == 0 ? 0 : shift[reg - 1];
+            const int64_t sr = reg == nblocks ? delta : shift[reg];
+            const int64_t j = p + sl;
+            uint8_t base = 4;
+            int er = sl != sr;
+            if (j >= 0 && j < L) {
+                base = r[j] < 4 ? r[j] : (uint8_t)4;
+                if (q && (int64_t)q[j] < min_q) er = 1;
+            }
+            if (base > 3) er = 1;
+            ob[f] = base;
+            oe[f] = (uint8_t)er;
+        }
+    }
+    free(buf);
+    return OR_OK;
+}
+
+/* ABI 4 (V13 S3): frame packing of the pass-1 paths, one pass per read instead of six NumPy passes over the batch.
+ * References: vnxdna.recovery.pass1._pack_exact_reference and ._pack_projection_reference (the specifications).
+ *
+ * pack_frames: for F = frame_nt projected bases b[f] with erasure flags e[f] (F a multiple of 4):
+ *   hard[f]   = min(b[f], 3)                       the frame bases the inner code sees
+ *   proj[f]   = e[f] ? 4 : b[f]                    the projection kept for pass 2 (4 = erased)
+ *   frames[k] = hard[4k] << 6 | hard[4k+1] << 4 | hard[4k+2] << 2 | hard[4k+3]       (dnaenc.mapping.nt_to_bytes)
+ *   erased_bytes[k] = e[4k] | e[4k+1] | e[4k+2] | e[4k+3]                             (sync.template.frame_erasures_to_bytes)
+ * In the exact path (vnx_or_pack_exact) read i has exactly T bases at codes + offs[i]; b[f] = codes[offs[i] + frame_pos[f]],
+ * e[f] = b[f] > 3 || (quals && quals[offs[i] + frame_pos[f]] < min_q), and mm[i] counts the markers m with
+ * codes[offs[i] + mpos[m]] != want[m] (sync.template.strip_markers_exact). A flag value other than 0 counts as set. */
+static inline void pack_row(const uint8_t *b, const uint8_t *e, int64_t F, uint8_t *hard, uint8_t *proj,
+                            uint8_t *frames, uint8_t *ebytes)
+{
+    for (int64_t f = 0; f < F; f++) {
+        hard[f] = b[f] < 3 ? b[f] : (uint8_t)3;
+        proj[f] = e[f] ? (uint8_t)4 : b[f];
+    }
+    for (int64_t k = 0; k < F / 4; k++) {
+        const uint8_t *h = hard + 4 * k;
+        frames[k] = (uint8_t)((h[0] << 6) | (h[1] << 4) | (h[2] << 2) | h[3]);
+        const uint8_t *q = e + 4 * k;
+        ebytes[k] = (uint8_t)((q[0] | q[1] | q[2] | q[3]) != 0);
+    }
+}
+
+int vnx_or_pack_projection(int64_t n, const uint8_t *bases, const uint8_t *erased, int64_t F, uint8_t *out_hard,
+                           uint8_t *out_proj, uint8_t *out_frames, uint8_t *out_erased_bytes)
+{
+    if (n < 0 || F < 0 || F % 4 != 0 || F > INT32_MAX) return OR_EARG;
+    if (n > 0 && F > 0 && (!bases || !erased || !out_hard || !out_proj || !out_frames || !out_erased_bytes)) return OR_EARG;
+    if (F > 0 && (uint64_t)n > SIZE_MAX / (size_t)F) return OR_EARG;
+    for (int64_t i = 0; i < n; i++)
+        pack_row(bases + (size_t)i * (size_t)F, erased + (size_t)i * (size_t)F, F, out_hard + (size_t)i * (size_t)F,
+                 out_proj + (size_t)i * (size_t)F, out_frames + (size_t)i * (size_t)(F / 4),
+                 out_erased_bytes + (size_t)i * (size_t)(F / 4));
+    return OR_OK;
+}
+
+int vnx_or_pack_exact(int64_t n, const uint8_t *codes, int64_t ncodes, const int64_t *offs, const uint8_t *quals,
+                      int64_t min_q, int64_t T, int64_t nm, const int64_t *mpos, const uint8_t *want, int64_t F,
+                      const int64_t *frame_pos, uint8_t *out_hard, uint8_t *out_proj, uint8_t *out_frames,
+                      uint8_t *out_erased_bytes, int64_t *out_mm)
+{
+    if (n < 0 || ncodes < 0 || nm < 0 || T < 1 || T > INT32_MAX || F < 0 || F % 4 != 0 || F > T) return OR_EARG;
+    if (n > 0 && (!offs || !out_mm || (ncodes > 0 && !codes))) return OR_EARG;
+    if (n > 0 && F > 0 && (!frame_pos || !out_hard || !out_proj || !out_frames || !out_erased_bytes)) return OR_EARG;
+    if (nm > 0 && (!mpos || !want)) return OR_EARG;
+    if (F > 0 && (uint64_t)n > SIZE_MAX / (size_t)F) return OR_EARG;
+    for (int64_t m = 0; m < nm; m++)
+        if (mpos[m] < 0 || mpos[m] >= T) return OR_EARG;
+    for (int64_t f = 0; f < F; f++)
+        if (frame_pos[f] < 0 || frame_pos[f] >= T) return OR_EARG;
+    for (int64_t i = 0; i < n; i++)
+        if (offs[i] < 0 || offs[i] > ncodes - T) return OR_EARG;
+    if (n == 0) return OR_OK;
+    uint8_t *b = (uint8_t *)malloc((size_t)(2 * F + 2));      /* per-row scratch: the gathered bases and flags */
+    if (!b) return OR_ENOMEM;
+    uint8_t *e = b + F + 1;
+    for (int64_t i = 0; i < n; i++) {
+        const uint8_t *r = codes + offs[i];
+        const uint8_t *q = quals ? quals + offs[i] : NULL;
+        int64_t mm = 0;
+        for (int64_t m = 0; m < nm; m++) mm += r[mpos[m]] != want[m];
+        out_mm[i] = mm;
+        for (int64_t f = 0; f < F; f++) {
+            const int64_t p = frame_pos[f];
+            b[f] = r[p];
+            e[f] = (uint8_t)(r[p] > 3 || (q && (int64_t)q[p] < min_q));
+        }
+        pack_row(b, e, F, out_hard + (size_t)i * (size_t)F, out_proj + (size_t)i * (size_t)F,
+                 out_frames + (size_t)i * (size_t)(F / 4), out_erased_bytes + (size_t)i * (size_t)(F / 4));
+    }
+    free(b);
     return OR_OK;
 }

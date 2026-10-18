@@ -1,8 +1,10 @@
 """Differential stress fuzz of the native orientation scan against the NumPy reference (SIMULATED reads).
 
 Every round draws a layout (every profile's layout plus two synthetic ones), a channel (substitution rate, indel rate,
-reverse-complement rate, junk share) and a batch of reads, then compares ``pass1._orientation`` under
-``VNXDNA_ORIENT_BACKEND=native`` and ``=reference`` read by read. A case is one read.
+reverse-complement rate, junk share) and a batch of reads, then compares ``pass1._orientation``, ``pass1._rc_bound``
+(ABI 2), ``pass1._spec_project`` (ABI 3) and the frame packing ``pass1._pack_exact`` / ``_pack_projection``
+(ABI 4) under ``VNXDNA_ORIENT_BACKEND=native`` and ``=reference`` read by read.
+A case is one read.
 
 usage: PYTHONPATH=src python benchmarks/v12/native_orient/stress_fuzz.py [rounds] [reads-per-round] [seed]
 exit 1 on the first mismatch (printed with the layout, channel and read index).
@@ -70,6 +72,43 @@ def main(argv: list[str]) -> int:
             bad = np.flatnonzero(nat != ref)
             print(f"MISMATCH round {k} layout {lay!r} channel {chan} reads {bad.tolist()[:10]}")
             return 1
+        # V13 D1: the reverse-complement cost bound (ABI 2) on a random selection of the batch, native vs reference
+        sel = rng.permutation(n)[: int(rng.integers(0, n + 1))] if n else np.zeros(0, dtype=np.int64)
+        offs = np.concatenate([[0], np.cumsum(lengths)])[:-1].astype(np.int64)
+        os.environ["VNXDNA_ORIENT_BACKEND"] = "native"
+        nb = pass1._rc_bound(codes, offs[sel], lengths[sel])
+        os.environ["VNXDNA_ORIENT_BACKEND"] = "reference"
+        rb = pass1._rc_bound(codes, offs[sel], lengths[sel])
+        if nb.shape != rb.shape or nb.dtype != rb.dtype or not np.array_equal(nb, rb):
+            print(f"MISMATCH rc_bound round {k} layout {lay!r} channel {chan} reads {np.flatnonzero(nb != rb).tolist()[:10]}")
+            return 1
+        # V13 B1: the speculative projection (ABI 3) of the same selection, with and without qualities, native vs reference
+        q = rng.integers(0, 60, codes.size).astype(np.uint8) if rng.random() < 0.5 else None
+        mq = int(rng.integers(0, 40)) if q is not None else 0
+        os.environ["VNXDNA_ORIENT_BACKEND"] = "native"
+        ns = pass1._spec_project(codes, offs[sel], lengths[sel], q, mq)
+        os.environ["VNXDNA_ORIENT_BACKEND"] = "reference"
+        rs = pass1._spec_project(codes, offs[sel], lengths[sel], q, mq)
+        for name, a, b in zip(("ok", "bases", "erased", "mm", "indels"), ns, rs):
+            if a.shape != b.shape or a.dtype != b.dtype or not np.array_equal(a, b):
+                print(f"MISMATCH spec_project {name} round {k} layout {lay!r} channel {chan}")
+                return 1
+        # V13 S3: frame packing (ABI 4) of the exact-length reads and of the speculative projection, native vs reference
+        ex = np.flatnonzero(lengths == lay.strand_nt)
+        for backend in ("native", "reference"):
+            os.environ["VNXDNA_ORIENT_BACKEND"] = backend
+            pk = pass1._pack_exact(codes, offs[ex], q, mq)
+            pp = pass1._pack_projection(rs[1], rs[2])
+            if backend == "native":
+                np_, pp_n = pk, pp
+        for name, a, b in zip(("hard", "proj", "frames", "erased_bytes", "mm"), np_, pk):
+            if a.shape != b.shape or a.dtype != b.dtype or not np.array_equal(a, b):
+                print(f"MISMATCH pack_exact {name} round {k} layout {lay!r} channel {chan}")
+                return 1
+        for name, a, b in zip(("hard", "proj", "frames", "erased_bytes"), pp_n, pp):
+            if a.shape != b.shape or a.dtype != b.dtype or not np.array_equal(a, b):
+                print(f"MISMATCH pack_projection {name} round {k} layout {lay!r} channel {chan}")
+                return 1
         cases += n
         flipped += int(ref.sum())
     print(f"orient stress fuzz: rounds={rounds} cases={cases} flipped={flipped} mismatches=0 "

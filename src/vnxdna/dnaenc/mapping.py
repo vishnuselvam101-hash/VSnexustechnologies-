@@ -31,7 +31,27 @@ def bytes_to_nt(frames: np.ndarray) -> np.ndarray:
     return out.reshape(f.shape[0], -1)
 
 
+_NT_FIELDS = np.uint32(0x03030303)      # the four 2-bit codes of one output byte inside its little-endian uint32
+_NT_MUL = np.uint32(0x40100401)         # 1 + 2^10 + 2^20 + 2^30: lands code k of the uint32 at bits 30 - 2k .. 31 - 2k
+
+
 def nt_to_bytes(nt: np.ndarray) -> np.ndarray:
     """(N, 4B) base codes (0..3) → (N, B) bytes."""
+    if nt.dtype == np.uint8 and nt.ndim == 2 and nt.shape[1] % 4 == 0 and nt.shape[1]:
+        if not (nt.flags.c_contiguous and nt.flags.aligned):
+            nt = np.ascontiguousarray(nt)        # one copy (a fancy-indexed column gather arrives Fortran-ordered)
+        # V13 C3: one uint32 per output byte. With the codes masked to 2 bits, x * _NT_MUL puts code 0 at bits 30-31,
+        # code 1 at 28-29, code 2 at 26-27 and code 3 at 24-25 (the other partial products occupy disjoint 2-bit
+        # slots below bit 24, so nothing carries); the top byte is the result. Same bytes as the reference form below
+        # on every input (tests/v13/test_nt_to_bytes.py).
+        x = nt.view("<u4") & _NT_FIELDS
+        x *= _NT_MUL
+        x >>= 24
+        return x.astype(np.uint8)
+    return nt_to_bytes_reference(nt)
+
+
+def nt_to_bytes_reference(nt: np.ndarray) -> np.ndarray:
+    """The shift-and-or form of :func:`nt_to_bytes` (the specification; any shape, dtype or memory layout)."""
     q = nt.reshape(nt.shape[0], -1, 4).astype(np.uint8) & 3
     return (q[..., 0] << 6) | (q[..., 1] << 4) | (q[..., 2] << 2) | q[..., 3]

@@ -30,6 +30,7 @@ KERNELS = {
 #: extension module name -> crate directory relative to the repository root
 RUST_KERNELS = {
     "vnxdna._vnx_integrity": "src/vnxdna/native/rust/integrity",
+    "vnxdna._vnx_engine": "src/vnxdna/native/rust/engine",       # V13 streaming decode engine (links the C kernels)
 }
 
 #: C++ kernels (optional extensions compiled as C++; same C ABI contract): extension module name -> source

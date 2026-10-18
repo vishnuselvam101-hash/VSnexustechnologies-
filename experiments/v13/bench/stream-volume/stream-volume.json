@@ -1,0 +1,173 @@
+{
+  "label": "SIMULATED (software codec rates on this host; strands are files)",
+  "commit": "6117262186f11eb8584eb86a413b8821b8bfe1e4",
+  "vnxdna": "13.0.0",
+  "python": "3.12.3",
+  "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+  "cpu_count": 8,
+  "native": {
+    "align": "native",
+    "reads": "native",
+    "rs": "native",
+    "cluster": "native",
+    "strand": "native",
+    "orient": "native",
+    "integrity": "native",
+    "outerlist": "native",
+    "engine": "native"
+  },
+  "extent_mib": 1,
+  "reps": 3,
+  "sizes": {
+    "4MiB": {
+      "size_bytes": 4194304,
+      "extent_bytes": 1048576,
+      "load1_start": 2.27,
+      "stream_encode_w1": {
+        "seconds": 1.4672,
+        "mb_s": 2.859,
+        "reps": 3,
+        "peak_rss_mb": 66.9
+      },
+      "stream_encode_w4": {
+        "seconds": 0.5481,
+        "mb_s": 7.652,
+        "reps": 3,
+        "peak_rss_mb": 66.9
+      },
+      "stream_decode_range_w1": {
+        "seconds": 1.2463,
+        "mb_s": 3.365,
+        "reps": 3,
+        "by_range": 4,
+        "by_pool": 0,
+        "peak_rss_mb": 116.1
+      },
+      "stream_decode_range_w4": {
+        "seconds": 1.0271,
+        "mb_s": 4.084,
+        "reps": 3,
+        "by_range": 4,
+        "by_pool": 0,
+        "peak_rss_mb": 121.9
+      },
+      "stream_decode_pool_w1": {
+        "seconds": 6.0598,
+        "mb_s": 0.692,
+        "reps": 3,
+        "by_range": 0,
+        "by_pool": 4,
+        "peak_rss_mb": 133.0
+      },
+      "stream_decode_pool_w4": {
+        "seconds": 4.6344,
+        "mb_s": 0.905,
+        "reps": 3,
+        "by_range": 0,
+        "by_pool": 4,
+        "peak_rss_mb": 171.9
+      },
+      "volume_write": {
+        "seconds": 1.3604,
+        "mb_s": 3.083,
+        "reps": 3,
+        "peak_rss_mb": 171.9
+      },
+      "volume_read_cold": {
+        "seconds": 0.9981,
+        "mb_s": 4.202,
+        "reps": 3,
+        "extents_decoded": 4
+      },
+      "volume_read_hot": {
+        "seconds": 0.0024,
+        "mb_s": 1747.627,
+        "reps": 3,
+        "cache_hits": 4
+      },
+      "random_read_4k": {
+        "n": 16,
+        "cold_ms_median": 246.3851,
+        "cold_ms_p95": 265.349,
+        "hot_ms_median": 0.014,
+        "hot_ms_p95": 0.016
+      },
+      "load1_end": 5.25
+    },
+    "16MiB": {
+      "size_bytes": 16777216,
+      "extent_bytes": 1048576,
+      "load1_start": 5.25,
+      "stream_encode_w1": {
+        "seconds": 6.4531,
+        "mb_s": 2.6,
+        "reps": 3,
+        "peak_rss_mb": 171.9
+      },
+      "stream_encode_w4": {
+        "seconds": 1.8309,
+        "mb_s": 9.163,
+        "reps": 3,
+        "peak_rss_mb": 171.9
+      },
+      "stream_decode_range_w1": {
+        "seconds": 4.7415,
+        "mb_s": 3.538,
+        "reps": 3,
+        "by_range": 16,
+        "by_pool": 0,
+        "peak_rss_mb": 171.9
+      },
+      "stream_decode_range_w4": {
+        "seconds": 4.5268,
+        "mb_s": 3.706,
+        "reps": 3,
+        "by_range": 16,
+        "by_pool": 0,
+        "peak_rss_mb": 171.9
+      },
+      "stream_decode_pool_w1": {
+        "seconds": 98.14,
+        "mb_s": 0.171,
+        "reps": 3,
+        "by_range": 0,
+        "by_pool": 16,
+        "peak_rss_mb": 171.9
+      },
+      "stream_decode_pool_w4": {
+        "seconds": 44.6619,
+        "mb_s": 0.376,
+        "reps": 3,
+        "by_range": 0,
+        "by_pool": 16,
+        "peak_rss_mb": 180.9
+      },
+      "volume_write": {
+        "seconds": 5.3223,
+        "mb_s": 3.152,
+        "reps": 3,
+        "peak_rss_mb": 180.9
+      },
+      "volume_read_cold": {
+        "seconds": 3.9311,
+        "mb_s": 4.268,
+        "reps": 3,
+        "extents_decoded": 16
+      },
+      "volume_read_hot": {
+        "seconds": 0.0107,
+        "mb_s": 1567.964,
+        "reps": 3,
+        "cache_hits": 16
+      },
+      "random_read_4k": {
+        "n": 16,
+        "cold_ms_median": 249.1587,
+        "cold_ms_p95": 267.188,
+        "hot_ms_median": 0.0235,
+        "hot_ms_p95": 0.028
+      },
+      "load1_end": 2.45
+    }
+  }
+}

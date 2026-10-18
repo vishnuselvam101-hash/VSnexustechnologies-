@@ -41,12 +41,12 @@
  "container_sha256": "9bee1a74decf37dece6a2f64d7cf5eb097d92cd0df871cbeb89647948314627f",
  "decode": {
   "cluster_consensus": {
-   "ambiguous_columns": 14731,
+   "ambiguous_columns": 14755,
    "consensus_attempted": 667,
    "decode_failed": 156,
    "duplicate_reads": 0,
-   "empty_columns": 5717,
-   "erased_bytes": 6034,
+   "empty_columns": 5741,
+   "erased_bytes": 6047,
    "erasures_exceed_parity": 115,
    "frames_verified": 511,
    "frames_verified_gmd": 6,
@@ -66,21 +66,21 @@
   },
   "cluster_status": "ran",
   "cluster_trigger": "superblock",
-  "decode_seconds": 3.493,
+  "decode_seconds": 2.398,
   "error_code": null,
   "groups_failed": 7,
   "outcome": "EXPLICIT_FAILURE",
-  "peak_rss_bytes": 182976512,
+  "peak_rss_bytes": 178237440,
   "reason": "status FAILURE",
   "status": "FAILURE",
   "terminal_stage": "outer_ecc"
  },
  "first_large_drop": {
   "stage": "rs_recoverable",
-  "strands_lost": 155
+  "strands_lost": 154
  },
  "frames": {
-  "data_recovered": 500,
+  "data_recovered": 501,
   "data_total": 679,
   "false_frames": 0,
   "superblock_needed": 3,
@@ -91,11 +91,11 @@
   "clustered": 655,
   "observed": 674,
   "oriented": 655,
-  "rs_recoverable": 500,
+  "rs_recoverable": 501,
   "stored": 659,
   "total": 679,
   "two_reads": 659,
-  "valid_frame": 500
+  "valid_frame": 501
  },
  "label": "DIAGNOSTIC / SIMULATED (oracle results are ORACLE / DIAGNOSTIC, never decoding or acceptance results)",
  "loss_reasons": {
@@ -103,7 +103,7 @@
   "clustered: unassigned": 4,
   "observed: no read in the pool": 5,
   "rs_recoverable: errors/erasures": 63,
-  "rs_recoverable: shifted segment (indel placed wrong)": 92,
+  "rs_recoverable: shifted segment (indel placed wrong)": 91,
   "two_reads: one read only (consensus needs 2)": 15
  },
  "oracle": {
@@ -111,14 +111,14 @@
   "archive_sha_match": false,
   "classes_failed_strands": {
    "ADDRESS-CAUSED": 0,
-   "BOUNDARY-CAUSED": 96,
+   "BOUNDARY-CAUSED": 95,
    "CLUSTERING-CAUSED": 4,
    "PAYLOAD-CAUSED": 60,
    "STRUCTURAL": 20
   },
   "failed_reads_by_class": {
    "ADDRESS-CAUSED": 0,
-   "BOUNDARY-CAUSED": 475,
+   "BOUNDARY-CAUSED": 471,
    "CLUSTERING-CAUSED": 23,
    "PAYLOAD-CAUSED": 183,
    "STRUCTURAL": 15
@@ -137,7 +137,7 @@
   "total": 9
  },
  "schema": "vnx.nanopore-funnel/1",
- "seconds": 8.85,
+ "seconds": 5.53,
  "strands_total": 691,
  "lost_strands": [
   {"clustered_reads":5,"clusters":1,"group":0,"home_cluster_reads":12,"home_purity":0.4167,"kind":"superblock","lost_at":"clustered","oracle_class":"CLUSTERING-CAUSED","reads":5,"reason":"merged: its home cluster is dominated by another strand","stored":5,"strand":2,"symbol":2},
@@ -177,7 +177,6 @@
   {"address_assigned":[],"candidate":{"e":1,"e_star":23,"f":44,"reads":3,"recoverable":false,"shifted_nt":2,"wrong_nt":2},"clustered_reads":3,"clusters":1,"group":1,"home_cluster_reads":3,"home_purity":1.0,"kind":"data","lost_at":"rs_recoverable","oracle_class":"PAYLOAD-CAUSED","orientation_ok":true,"reads":3,"reason":"errors/erasures: e=1 f=44 > r=16 (erasures exceed parity)","stored":3,"strand":144,"symbol":52},
   {"address_assigned":[],"candidate":{"e":1,"e_star":12,"f":27,"reads":5,"recoverable":false,"shifted_nt":5,"wrong_nt":5},"clustered_reads":5,"clusters":1,"group":1,"home_cluster_reads":5,"home_purity":1.0,"kind":"data","lost_at":"rs_recoverable","oracle_class":"BOUNDARY-CAUSED","orientation_ok":true,"reads":5,"reason":"shifted segment (indel placed wrong): e=1 f=27 > r=16 (erasures exceed parity)","stored":5,"strand":145,"symbol":53},
   {"address_assigned":[],"candidate":{"e":1,"e_star":26,"f":34,"reads":4,"recoverable":false,"shifted_nt":3,"wrong_nt":4},"clustered_reads":4,"clusters":1,"group":1,"home_cluster_reads":4,"home_purity":1.0,"kind":"data","lost_at":"rs_recoverable","oracle_class":"BOUNDARY-CAUSED","orientation_ok":true,"reads":4,"reason":"shifted segment (indel placed wrong): e=1 f=34 > r=16 (erasures exceed parity)","stored":4,"strand":148,"symbol":56},
-  {"address_assigned":[],"candidate":{"e":3,"e_star":15,"f":25,"reads":4,"recoverable":false,"shifted_nt":15,"wrong_nt":15},"clustered_reads":4,"clusters":1,"group":1,"home_cluster_reads":4,"home_purity":1.0,"kind":"data","lost_at":"rs_recoverable","oracle_class":"BOUNDARY-CAUSED","orientation_ok":true,"reads":4,"reason":"shifted segment (indel placed wrong): e=3 f=25 > r=16 (erasures exceed parity)","stored":4,"strand":159,"symbol":67},
   {"address_assigned":[],"candidate":{"e":0,"e_star":38,"f":59,"reads":2,"recoverable":false,"shifted_nt":2,"wrong_nt":2},"clustered_reads":2,"clusters":1,"group":2,"home_cluster_reads":2,"home_purity":1.0,"kind":"data","lost_at":"rs_recoverable","oracle_class":"PAYLOAD-CAUSED","orientation_ok":true,"reads":2,"reason":"errors/erasures: e=0 f=59 > r=16 (erasures exceed parity)","stored":2,"strand":178,"symbol":6},
   {"address_assigned":[],"candidate":{"e":0,"e_star":51,"f":70,"reads":2,"recoverable":false,"shifted_nt":0,"wrong_nt":0},"clustered_reads":2,"clusters":1,"group":2,"home_cluster_reads":2,"home_purity":1.0,"kind":"data","lost_at":"rs_recoverable","oracle_class":"PAYLOAD-CAUSED","orientation_ok":true,"reads":2,"reason":"errors/erasures: e=0 f=70 > r=16 (erasures exceed parity)","stored":2,"strand":180,"symbol":8},
   {"address_assigned":[],"candidate":{"e":10,"e_star":16,"f":7,"reads":6,"recoverable":false,"shifted_nt":29,"wrong_nt":30},"clustered_reads":6,"clusters":1,"group":2,"home_cluster_reads":6,"home_purity":1.0,"kind":"data","lost_at":"rs_recoverable","oracle_class":"BOUNDARY-CAUSED","orientation_ok":true,"reads":6,"reason":"shifted segment (indel placed wrong): e=10 f=7 > r=16 (2e+f > r)","stored":6,"strand":186,"symbol":14},

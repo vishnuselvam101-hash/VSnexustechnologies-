@@ -15,7 +15,8 @@ from vnxdna.v4 import encoder as en
 from vnxdna.v4.cli import app
 from vnxdna.v6.observe import Events, JsonlObserver
 
-VOLATILE = ("stage_seconds", "seconds", "peak_rss_bytes", "output")
+VOLATILE = ("stage_seconds", "seconds", "peak_rss_bytes", "output",
+            "ns_io", "ns_scan", "ns_prep", "ns_attempt", "ns_spill", "ns_total", "ns_cheap", "ns_full", "ns_group")   # V13 engine timings
 
 
 @pytest.fixture(scope="module")
@@ -31,7 +32,7 @@ def arc(tmp_path_factory):
 
 def _events(arc, workers=1, **kw):
     got = []
-    res = de.decode_reads(arc / "r.fastq", arc / f"o{workers}.vnx", de.DecodeOptions(workers=workers, batch_reads=256, **kw),
+    res = de.decode_reads(arc / "r.fastq", arc / f"o{workers}.vnx", de.DecodeOptions(workers=workers, batch_reads=256, engine="v13", **kw),   # V13: pass-1 progress events
                           overwrite=True, observer=got.append, task_id="t-1")
     return res, got
 
@@ -58,7 +59,7 @@ def test_event_sequence_and_fields(arc, workers):
 
 
 def test_observer_does_not_change_the_report(arc):
-    a = de.decode_reads(arc / "r.fastq", arc / "x.vnx", de.DecodeOptions(batch_reads=256), overwrite=True)
+    a = de.decode_reads(arc / "r.fastq", arc / "x.vnx", de.DecodeOptions(batch_reads=256, engine="v13"), overwrite=True)
     b, _ = _events(arc)
     strip = lambda r: {k: v for k, v in r.items() if k not in VOLATILE}   # noqa: E731
     assert strip(a.report) == strip(b.report)

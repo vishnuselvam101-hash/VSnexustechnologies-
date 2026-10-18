@@ -1,6 +1,7 @@
 """Decode options and the decode result (formerly in ``vnxdna.v4.decoder``; V6 Phase 2, M4)."""
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field
 
 from vnxdna.core.errors import VNXConfigurationError
@@ -12,6 +13,26 @@ from vnxdna.sync.template import SyncCosts
 #: it. 4 GiB leaves room for the 1 GiB inputs of EXP-0012 (and their container overhead); larger archives pass a
 #: larger ``max_container_bytes`` (``vnx decode --max-container-bytes``).
 DEFAULT_MAX_CONTAINER_BYTES = 4 << 30
+
+
+ENGINES = ("auto", "stream", "v13", "reference")
+#: V13 configuration surface (docs/V13_ENGINE_ARCHITECTURE.md §6): the environment sets the *defaults* of the engine
+#: options; an explicit option or CLI flag always wins.
+ENV_ENGINE, ENV_ENGINE_THREADS = "VNXDNA_ENGINE", "VNXDNA_ENGINE_THREADS"
+
+
+def _env_engine() -> str:
+    return (os.environ.get(ENV_ENGINE) or "auto").strip().lower()
+
+
+def _env_engine_threads() -> int | None:
+    v = os.environ.get(ENV_ENGINE_THREADS)
+    if v is None or not v.strip():
+        return None
+    try:
+        return int(v)
+    except ValueError:
+        return -1                           # reported by validate() as a configuration error
 
 
 @dataclass
@@ -26,6 +47,19 @@ class DecodeOptions:
     retry_band: int = 0
     min_quality: int = 0                # bases below this Phred score become erasures (soft-information hook)
     reverse_complement: bool = True
+    # V13 D1: "bounded" (default) skips the reverse-complement retry of a failed read when a lower bound on its
+    # reverse-complement alignment cost already reaches its forward cost (only a verified reverse-complement frame
+    # could then adopt the retry; report["reads"]["rc_retry_skipped"] counts them); "always" retries every failed
+    # read as V12 did. Only the default recovery configuration (no smart/soft recovery, no quality-weighted
+    # consensus) applies the bound.
+    orientation_retry: str = "bounded"
+    # V13 B1: "markers" (default) projects a read whose length differs from the strand length (or whose exact-length
+    # frame failed) from its marker-block shifts first and accepts it when the inner RS and CRC verify; the
+    # marker-template DP runs only for the reads that do not verify. "off" aligns every such read by the DP (the V12
+    # path). Verified frames are accepted either way; the speculative path can only add acceptances
+    # (report["reads"]["speculative"] counts them). Only the default recovery configuration (no smart/soft recovery,
+    # no quality-weighted consensus) uses it.
+    sync_speculation: str = "markers"
     consensus_threshold: float = 0.6    # minimum posterior for a consensus base; below → erasure
     # V6 Phase 4 (opt-in): how pass-2 consensus weighs the pending reads of one address. "count" = the V4 vote (one
     # vote per read base, the default); "quality" = each projected base weighted by its own Phred quality
@@ -67,6 +101,23 @@ class DecodeOptions:
     # unresolved (FC-9); see vnxdna.recovery.cluster. cluster_config: a ClusterConfig (None = defaults).
     read_clustering: str = "off"
     cluster_config: object = None
+    # V13 engine (docs/V13_ENGINE_ARCHITECTURE.md): "auto" (default) = the streaming engine (Rust core) when it is built
+    # and the options are inside its domain, else the V13 path; any engine refusal, internal error or non-SUCCESS
+    # result falls back to the V13 path (report["engine"] records the rung that ran and why). "stream" = the engine or
+    # an error; "v13" = the V13 Python-orchestrated path; "reference" = the V13 path with every kernel on its Python
+    # reference. The default comes from VNXDNA_ENGINE (unset = "auto").
+    engine: str = field(default_factory=_env_engine)
+    # V13 engine: attempt only the reads whose address is not verified yet (address scheduler); False attempts every
+    # read (pass-1 results then equal the V13 path's, record for record)
+    engine_dedup: bool = True
+    # V13 engine: threads of the engine's pool (IO/scan stay on the calling thread); None = ``workers``. The default
+    # comes from VNXDNA_ENGINE_THREADS (unset = None).
+    engine_threads: int | None = field(default_factory=_env_engine_threads)
+
+    @property
+    def threads(self) -> int:
+        """Threads the streaming engine runs with: ``engine_threads`` when set, else ``workers``."""
+        return self.workers if self.engine_threads is None else self.engine_threads
 
     def validate(self) -> None:
         if not isinstance(self.stage_counters, bool):
@@ -75,6 +126,17 @@ class DecodeOptions:
         self.cluster_config = validate_mode(self.read_clustering, self.cluster_config)
         if not 1 <= self.workers <= 256:
             raise VNXConfigurationError("workers must be in 1..256")
+        if self.orientation_retry not in ("bounded", "always"):
+            raise VNXConfigurationError("orientation_retry must be 'bounded' or 'always'")
+        if self.engine not in ENGINES:
+            raise VNXConfigurationError(f"engine must be one of {', '.join(ENGINES)} (option or {ENV_ENGINE})")
+        if not isinstance(self.engine_dedup, bool):
+            raise VNXConfigurationError("engine_dedup must be True or False")
+        if self.engine_threads is not None and (not isinstance(self.engine_threads, int) or isinstance(self.engine_threads, bool)
+                                                or not 1 <= self.engine_threads <= 256):
+            raise VNXConfigurationError(f"engine_threads must be None or in 1..256 (option or {ENV_ENGINE_THREADS})")
+        if self.sync_speculation not in ("markers", "off"):
+            raise VNXConfigurationError("sync_speculation must be 'markers' or 'off'")
         if not 1 <= self.band <= 64:
             raise VNXConfigurationError("band must be in 1..64")
         if (not isinstance(self.retry_band, int) or isinstance(self.retry_band, bool)

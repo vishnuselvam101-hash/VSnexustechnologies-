@@ -1,0 +1,19 @@
+Operator notes, A/B bench ab-final (SIMULATED; build/v12 6bf7749 vs build/v13-final), host clock (+0530)
+
+2026-10-17 22:37  start, `vnx-lab exp` (systemd scope in vnxdna.slice, MemoryMax 8G, no CPU quota, governor admission
+                  not used: the governor reported DANGER on 2.7 GB of stale swap while 27 GB RAM were free). Host 4C/8T
+                  Xeon Gold 6240, nothing else scheduled; load1 at the start of the rows: 0.7-1.7 (indel-w1), the higher
+                  values of the w4/w8 rows (up to 9.3 in indel-w8) are the bench's own workers of the preceding row.
+                  Tree under test: f561449 for the first 45 v13 rows (indel-w1/w2/w4/w8, rc, dropout, clean-w4,
+                  substitution-w4, indel-64k-w1); the two commits after it (8c7ea15 docs/scripts/one test race, a798d89
+                  evidence files, A/A wrapper, volume key handling) do not touch the decode path.
+2026-10-17 ~23:00 the session that started the bench ended; the run stopped after indel-64k-w1 seed 97204 (no AB-DONE).
+2026-10-18 06:54  resumed at a798d89 with the same VNX_BENCH_OUT for the four missing scenarios only
+                  (`--scenarios indel-16m-w4,encode-1m-w1,encode-4m-w1,encode-4m-w4`), host quiet (load1 0.13, 26 GB free).
+2026-10-18 07:00  AB-DONE rc=0; 126 rows (5 seeds per scenario, 3 for 16 MiB; both configurations each), 26 warm-ups.
+stale_libraries:  every v13 row reports ["engine"]: the engine library (built 22:01) is older by mtime than the crate's
+                  source files (22:10-22:12), but the only source change after the build (65047ff) is the five appended
+                  `#[cfg(test)] mod tests` blocks (219 insertions, 0 deletions), which are not part of the release cdylib.
+                  All other kernels native and current in both trees.
+2026-10-18 07:30  check: `cargo build --release --offline --locked` of the crate at HEAD into a scratch target directory
+                  gives a libvnx_engine.so byte-identical (cmp, 13,585,560 bytes) to the library the v13 rows loaded.

@@ -1,0 +1,12 @@
+Operator notes, A/B bench ab-final2 (SIMULATED; build/v12 6bf7749 vs build/v13-final f7586b9, the final engine)
+
+2026-10-18 08:21  start right after the full suite on f7586b9 finished (08:20:44; load1 decaying from the suite's 6
+                  workers, no other process). `vnx-lab exp` (systemd scope in vnxdna.slice, MemoryMax 8G, no CPU quota;
+                  governor admission not used: DANGER on stale swap with 26 GB RAM free). Host 4C/8T Xeon Gold 6240.
+                  Engine library: the in-place build of f7586b9 (python -m vnxdna.native.engine build, 08:0x), ASan-free
+                  (checked after the sanitizer run: 0 asan symbols). All 13 scenarios in one run.
+Why a second run:  ../ab-final measured the engine of a798d89, whose scheduler could skip a distinct strand that shared a
+                  payload window with a verified one (fixed in f7586b9: claim split-off, corroborated skips). The fixed
+                  engine attempts every copy whose raw header does not name a verified address, so it is slower on
+                  noisy pools; the numbers of docs/V13_BENCHMARK_REPORT.md are this run's. ../ab-final is kept as the
+                  record of the pre-fix engine.

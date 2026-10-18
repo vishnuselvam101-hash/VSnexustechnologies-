@@ -84,6 +84,34 @@ def _bucket_consensus(spill_dir: str, b: int, acc_dtype: np.dtype, pend_dtype: n
     return keys, pay, conflicts, delta
 
 
+def _resolve_vectorised(acc: np.ndarray):
+    """:func:`resolve_duplicates` for the data records of one archive tag, as arrays: (groups, symbols, payloads) of
+    the addresses whose verified copies all agree, sorted by (group, symbol), plus the dict and conflict count that
+    resolve_duplicates gives for the addresses with disagreeing copies (the same rule on the same records)."""
+    if not acc.size:
+        return (np.zeros(0, dtype=np.int64), np.zeros(0, dtype=np.int64), np.zeros((0, acc.dtype["payload"].shape[0]),
+                dtype=np.uint8), {}, 0)
+    a = acc[np.lexsort((acc["symbol"], acc["group"]))]
+    g = a["group"].astype(np.int64)
+    s = a["symbol"].astype(np.int64)
+    change = np.flatnonzero((g[1:] != g[:-1]) | (s[1:] != s[:-1])) + 1
+    starts = np.concatenate([[0], change]).astype(np.int64)
+    ends = np.concatenate([change, [len(a)]]).astype(np.int64)
+    pay = a["payload"]
+    same = np.ones(len(a), dtype=bool)
+    if len(a) > 1:
+        same[1:] = (pay[1:] == pay[:-1]).all(axis=1)
+    same[starts] = True
+    uniform = np.logical_and.reduceat(same, starts)
+    keep = starts[uniform]
+    extra, conflicts = {}, 0
+    bad = np.flatnonzero(~uniform)
+    if bad.size:
+        idx = np.concatenate([np.arange(starts[i], ends[i]) for i in bad.tolist()])
+        extra, conflicts = resolve_duplicates(a[idx])
+    return g[keep], s[keep], np.ascontiguousarray(pay[keep]), extra, conflicts
+
+
 def _bucket_results(pool, spill: Spill, tag: int, total: int, n_sym: dict[int, dict[int, int]], lay: Layout,
                     opt: DecodeOptions):
     """Yield ``_bucket_consensus`` results in bucket order, at most 2 × workers buckets in flight (bounded memory, as
@@ -201,6 +229,55 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
 
         done_rows: set[int] = set()
 
+        # V13: vectorised form of the serial bucket loop below for the common configuration (Cauchy RS rows, superblock
+        # version 1, no random access, clustering or stage counters): the same duplicate resolution, missing set and
+        # consensus; a row whose k data symbols are all known is written directly (the systematic code returns them),
+        # every other row goes through codec.decode as below.
+        fast_bucket = (pool is None and cluster is None and sc is None and v6 is None and select is None
+                       and getattr(codec, "name", None) == "cauchy-rs")
+
+        def _fast_bucket(b: int, done: set[int]) -> None:
+            nonlocal conflicts
+            acc, pend = spill.load(b)
+            acc = acc[(acc["kind"] == KIND_DATA) & (acc["tag"] == tag)]
+            acc = acc[acc["group"] < total]
+            ug, us, up, extra, c = _resolve_vectorised(acc)
+            conflicts += c
+            targets = [g for g in range(b, total, spill.B) if g not in done]
+            lo = np.searchsorted(ug, targets, side="left")
+            hi = np.searchsorted(ug, targets, side="right")
+            known: set = set(zip([KIND_DATA] * ug.size, [tag] * ug.size, ug.tolist(), us.tolist()))
+            known.update(extra.keys())
+            missing = set()
+            for g, a, e in zip(targets, lo.tolist(), hi.tolist()):
+                n_sym = codec.symbols_for(row_k(g))
+                if e - a == n_sym:
+                    continue
+                have = set(us[a:e].tolist())
+                missing.update((KIND_DATA, tag, g, s_) for s_ in range(n_sym)
+                               if s_ not in have and (KIND_DATA, tag, g, s_) not in extra)
+            more = dict(extra)
+            more.update(_consensus_symbols(pend, known, lay, opt, stats, missing, None))
+            extra_by: dict[int, dict[int, np.ndarray]] = {}
+            for (kd, tg, g, s_), v in more.items():
+                if kd == KIND_DATA and tg == tag:
+                    extra_by.setdefault(g, {})[s_] = v
+            for g, a, e in zip(targets, lo.tolist(), hi.tolist()):
+                k = row_k(g)
+                ex = extra_by.get(g)
+                if not ex and e - a >= k and np.array_equal(us[a:a + k], np.arange(k)):
+                    row_decoded(g, up[a:a + k], {})
+                    continue
+                syms = {int(s_): v for s_, v in zip(us[a:e].tolist(), up[a:e])}
+                if ex:
+                    syms.update(ex)
+                try:
+                    data = codec.decode(syms, k, P)
+                except VNXDecodeError as error:
+                    row_failed(g, syms, None, error)
+                    continue
+                row_decoded(g, data, syms)
+
         def run(groups_filter: set[int] | None, done: set[int]) -> None:
             nonlocal decoded, conflicts, done_rows
             done_rows = done
@@ -232,6 +309,9 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
                             row_failed(g, syms, None, error)
                             continue
                         row_decoded(g, data, syms)
+                    continue
+                if fast_bucket:
+                    _fast_bucket(b, done)
                     continue
                 acc, pend = spill.load(b)
                 acc = acc[(acc["kind"] == KIND_DATA) & (acc["tag"] == tag)]

@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[3]
-KERNELS = {"align", "reads", "rs", "cluster", "strand", "integrity", "outerlist"}
+KERNELS = {"align", "reads", "rs", "cluster", "strand", "integrity", "outerlist", "engine"}
 
 pytestmark = [pytest.mark.slow,
               pytest.mark.skipif(os.environ.get("VNXDNA_INSTALL_TEST") != "1",

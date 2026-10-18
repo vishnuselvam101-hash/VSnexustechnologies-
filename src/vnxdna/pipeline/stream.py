@@ -1,0 +1,424 @@
+"""Streaming encode and decode (V13, docs/V13_ENGINE_ARCHITECTURE.md §4): a byte stream of any length becomes DNA strands
+with bounded memory, and comes back the same way.
+
+The stream is cut into *extents* of ``extent_bytes``. Every extent is packed into an ordinary VNX archive (one file,
+``EXTENT_NAME``; unchanged container format) and encoded to strands by the unchanged encoder, so a streamed pool is a
+pool of ordinary archives, one per extent, each with its own archive ID and tag. A manifest (``vnx.stream/1``) records,
+per extent, its length, SHA-256, archive ID and the byte range of its strands in the sink. Decoding reads the manifest
+and rebuilds the stream extent by extent: by strand byte range while the sink is the file the encoder wrote (each
+range is one archive's strands), and from the whole pool by archive ID otherwise (a sequenced, shuffled pool), one
+pass per extent. Every extent is verified (container SHA-256 by the decoder, extent SHA-256 against the manifest)
+before a byte of it is written; the whole-stream SHA-256 is checked at the end. Extent archive IDs are content-derived
+(content-v1; random for encrypted extents), so distinct extents get distinct IDs; the 16-bit archive *tag* in the
+strands is the ID's first two bytes, so a pool decode (sequenced pool, by archive ID) needs the extents' tags to be
+distinct and reports ``ARCHIVE_TAG_AMBIGUOUS`` otherwise (``decode_stream`` checks the manifest's tags first). The
+by-range path and :mod:`vnxdna.volume` (one strand file per extent) do not depend on tags.
+
+Memory: at most ``2 x workers`` extents are in flight (bytes on disk in a work directory, strands in the workers), so
+the peak resident memory does not grow with the stream. Workers are processes (one extent per task); each encodes its
+extent with one process.
+"""
+from __future__ import annotations
+
+import hashlib
+import io
+import os
+import shutil
+import sys
+import tempfile
+import time
+from collections import deque
+from concurrent.futures import ProcessPoolExecutor
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import BinaryIO, Iterator
+
+from vnxdna.archive import container as ct
+from vnxdna.archive import operations as ar
+from vnxdna.core.errors import VNXConfigurationError, VNXFormatError, VNXIntegrityError
+from vnxdna.core.util import atomic_output, canonical_json, parse_canonical_json, sha256_file
+from vnxdna.pipeline.encode import DNAOptions, encode_container
+from vnxdna.recovery.options import DecodeOptions
+
+STREAM_FORMAT = "vnx.stream/1"
+EXTENT_NAME = "extent"                 #: the one file of every extent archive
+MIN_EXTENT, MAX_EXTENT = 4096, 1 << 30
+
+
+@dataclass
+class StreamOptions:
+    extent_bytes: int = 1 << 20
+    workers: int = 1                    # extents encoded concurrently (processes); window = 2 x workers extents
+    dna: DNAOptions = field(default_factory=DNAOptions)
+    archive: ar.ArchiveOptions = field(default_factory=lambda: ar.ArchiveOptions(archive_id="content"))
+
+    def validate(self) -> None:
+        if (not isinstance(self.extent_bytes, int) or isinstance(self.extent_bytes, bool)
+                or not MIN_EXTENT <= self.extent_bytes <= MAX_EXTENT):
+            raise VNXConfigurationError(f"extent_bytes must be in [{MIN_EXTENT}, {MAX_EXTENT}]")
+        if not 1 <= self.workers <= 256:
+            raise VNXConfigurationError("workers must be in 1..256")
+        self.dna.resolve()
+        self.archive.validate()
+
+
+# ============================================================================ one extent (shared with vnxdna.volume)
+def encode_extent(data_path: str | os.PathLike, strands: str | os.PathLike, dna: DNAOptions, archive: ar.ArchiveOptions,
+                  *, work: str | os.PathLike | None = None) -> dict:
+    """Pack the bytes of ``data_path`` into an extent archive and encode it to ``strands`` (FASTA/FASTQ by suffix).
+    Returns the extent record: length, sha256, archive_id, archive_tag, strands, bases, strands_sha256."""
+    from dataclasses import replace
+    data_path = Path(data_path)
+    if archive.key is None and archive.passphrase is None and archive.archive_id != "content":
+        # options-v1 IDs depend on paths, sizes and options only: every full extent would get the same archive ID and
+        # tag. Unencrypted extents therefore use content-v1 IDs (encrypted archives always get a random ID).
+        archive = replace(archive, archive_id="content")
+    tmp = Path(tempfile.mkdtemp(prefix="vnx-extent-", dir=work))
+    try:
+        src = tmp / EXTENT_NAME                 # the archive entry is named after the file: always EXTENT_NAME
+        if _same_fs(data_path, tmp):
+            os.link(data_path, src)
+        else:
+            shutil.copyfile(data_path, src)
+        archive_path = tmp / "a.vnx"
+        rep = ar.build_archive([src], archive_path, archive, overwrite=True)
+        enc = encode_container(archive_path, strands, dna, overwrite=True)
+        return {"length": data_path.stat().st_size, "sha256": sha256_file(data_path), "archive_id": enc["archive_id"],
+                "archive_tag": enc["archive_tag"], "strands": enc["strands"], "bases": enc["bases"],
+                "strands_sha256": enc["file_sha256"], "container_sha256": rep.container_sha256}
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def decode_extent(strands: str | os.PathLike, rec: dict, options: DecodeOptions, *, key: bytes | None = None,
+                  passphrase: str | None = None, work: str | os.PathLike | None = None) -> bytes:
+    """Decode the extent ``rec`` (manifest record) from ``strands`` (its own strand file, or a pool holding several
+    archives) and return its bytes, verified against the record's SHA-256. Fails closed."""
+    from dataclasses import replace
+    from vnxdna.pipeline.decode import decode_reads
+    tmp = Path(tempfile.mkdtemp(prefix="vnx-extent-", dir=work))
+    try:
+        out = tmp / "e.vnx"
+        opt = replace(options, expect_archive_id=rec["archive_id"], archive_tag=int(rec["archive_tag"], 16))
+        res = decode_reads(strands, out, opt, overwrite=True, key=key, passphrase=passphrase, workdir=tmp)
+        if res.status != "SUCCESS":
+            raise VNXIntegrityError(f"extent {rec.get('index', '?')} did not decode: status {res.status}",
+                                    stage="stream", details={"extent": rec.get("index"), "status": res.status})
+        c = ct.open_container(out, key=key, passphrase=passphrase)
+        f = c.file(EXTENT_NAME)
+        data = b"".join(ar.iter_file(c, f))
+        if len(data) != rec["length"] or hashlib.sha256(data).hexdigest() != rec["sha256"]:
+            raise VNXIntegrityError(f"extent {rec.get('index', '?')}: decoded bytes do not match the manifest",
+                                    stage="stream", details={"extent": rec.get("index")})
+        return data
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def _same_fs(a: Path, b: Path) -> bool:
+    try:
+        return os.stat(a).st_dev == os.stat(b).st_dev
+    except OSError:
+        return False
+
+
+# ============================================================================ source / sink helpers
+def _open_source(source) -> tuple[BinaryIO | Iterator[bytes], bool]:
+    """(binary stream or iterator of bytes, whether to close it)."""
+    if source == "-":
+        return sys.stdin.buffer, False
+    if isinstance(source, (str, os.PathLike)):
+        return open(source, "rb"), True
+    if hasattr(source, "read"):
+        return source, False
+    if isinstance(source, (bytes, bytearray, memoryview)):
+        return io.BytesIO(bytes(source)), False
+    return iter(source), False
+
+
+def _extents(src, size: int) -> Iterator[bytes]:
+    """Yield the stream in pieces of exactly ``size`` bytes (the last one shorter), from a stream or an iterator."""
+    if hasattr(src, "read"):
+        while True:
+            buf = bytearray()
+            while len(buf) < size:
+                chunk = src.read(size - len(buf))
+                if not chunk:
+                    break
+                buf += chunk
+            if not buf:
+                return
+            yield bytes(buf)
+            if len(buf) < size:
+                return
+    else:
+        buf = bytearray()
+        for piece in src:
+            buf += piece
+            while len(buf) >= size:
+                yield bytes(buf[:size])
+                del buf[:size]
+        if buf:
+            yield bytes(buf)
+
+
+def _task(index: int, data_path: str, strands_path: str, dna: DNAOptions, archive: ar.ArchiveOptions, work: str) -> dict:
+    from dataclasses import replace
+    rec = encode_extent(data_path, strands_path, replace(dna, workers=1), archive, work=work)
+    return {"index": index, **rec}
+
+
+# ============================================================================ encode
+def encode_stream(source, sink: str | os.PathLike, *, options: StreamOptions | None = None, manifest: str | os.PathLike | None = None,
+                  overwrite: bool = False, progress=None, workdir: str | os.PathLike | None = None) -> dict:
+    """Encode a byte stream (path, ``"-"`` for stdin, a binary file object, bytes, or an iterable of bytes) into the
+    strand file ``sink`` (``"-"`` = stdout; FASTA) and write the stream manifest (``manifest``, default
+    ``<sink>.stream.json``; required for a stdout sink). Returns the manifest document."""
+    opt = options or StreamOptions()
+    opt.validate()
+    t0 = time.perf_counter()
+    to_stdout = sink == "-"
+    if to_stdout and manifest is None:
+        raise VNXConfigurationError("a stdout sink needs an explicit manifest path")
+    sink_path = None if to_stdout else Path(sink)
+    man_path = Path(manifest) if manifest is not None else Path(str(sink_path) + ".stream.json")
+    if not overwrite:
+        for p in ([sink_path] if sink_path else []) + [man_path]:
+            if p.exists():
+                raise VNXConfigurationError(f"output already exists: {p} (use --force to overwrite)")
+    fmt = "fasta"
+    if sink_path is not None and sink_path.suffix.lower() in (".fq", ".fastq"):
+        fmt = "fastq"
+    work = Path(tempfile.mkdtemp(prefix="vnx-stream-", dir=workdir))
+    src, close = _open_source(source)
+    pool = None
+    records: list[dict] = []
+    total = hashlib.sha256()
+    out_hash = hashlib.sha256()
+    state = {"offset": 0, "bytes": 0}
+    try:
+        with (atomic_output(sink_path, overwrite=overwrite) if sink_path else _stdout()) as out_path:
+            out = sys.stdout.buffer if out_path is None else open(out_path, "wb")
+            try:
+                def take(rec: dict) -> None:
+                    sp = Path(rec.pop("_strands"))
+                    rec["strands_offset"] = state["offset"]
+                    rec["strands_bytes"] = sp.stat().st_size
+                    with open(sp, "rb") as f:
+                        for block in iter(lambda: f.read(1 << 20), b""):
+                            out.write(block)
+                            out_hash.update(block)
+                    state["offset"] += rec["strands_bytes"]
+                    state["bytes"] += rec["length"]
+                    (work / f"e{rec['index']}.bin").unlink()
+                    sp.unlink()
+                    records.append(rec)
+                    if progress:
+                        progress({"stage": "encode_stream", "extents": len(records), "bytes": state["bytes"],
+                                  "elapsed": time.perf_counter() - t0})
+
+                pending: deque = deque()
+                if opt.workers > 1:
+                    pool = ProcessPoolExecutor(max_workers=opt.workers)
+                for i, data in enumerate(_extents(src, opt.extent_bytes)):
+                    dp = work / f"e{i}.bin"
+                    dp.write_bytes(data)
+                    total.update(data)                      # extents are produced, and taken, in stream order
+                    sp = work / f"s{i}.{fmt}"
+                    args = (i, str(dp), str(sp), opt.dna, opt.archive, str(work))
+                    if pool is None:
+                        rec = _task(*args)
+                        rec["_strands"] = str(sp)
+                        take(rec)
+                    else:
+                        pending.append((pool.submit(_task, *args), sp))
+                        if len(pending) >= 2 * opt.workers:
+                            fut, sp0 = pending.popleft()
+                            rec = fut.result()
+                            rec["_strands"] = str(sp0)
+                            take(rec)
+                while pending:
+                    fut, sp0 = pending.popleft()
+                    rec = fut.result()
+                    rec["_strands"] = str(sp0)
+                    take(rec)
+                out.flush()
+            finally:
+                if out_path is not None:
+                    out.close()
+        doc = {"format": STREAM_FORMAT, "extent_bytes": opt.extent_bytes, "strands_format": fmt,
+               "total_bytes": state["bytes"], "sha256": total.hexdigest(), "extents": records,
+               "strands_sha256": out_hash.hexdigest(), "strands_bytes": state["offset"],
+               "dna": {"profile": opt.dna.profile, "outer_code": opt.dna.outer_code},
+               "encrypted": opt.archive.key is not None or opt.archive.passphrase is not None}
+        with atomic_output(man_path, overwrite=overwrite) as mp:
+            mp.write_bytes(canonical_json(doc) + b"\n")          # canonical JSON: integers and strings only
+        seconds = time.perf_counter() - t0
+        return {**doc, "manifest": str(man_path), "output": "-" if to_stdout else str(sink_path),
+                "seconds": round(seconds, 4), "mb_s": round(state["bytes"] / max(1e-9, seconds) / 1e6, 3)}
+    finally:
+        if pool is not None:
+            pool.shutdown(wait=True, cancel_futures=True)
+        if close:
+            src.close()
+        shutil.rmtree(work, ignore_errors=True)
+
+
+class _stdout:
+    def __enter__(self):
+        return None
+
+    def __exit__(self, *exc):
+        return False
+
+
+# ============================================================================ decode
+def load_manifest(path: str | os.PathLike) -> dict:
+    try:
+        doc = parse_canonical_json(Path(path).read_bytes().rstrip(b"\n"), "stream manifest")
+    except (OSError, ValueError) as error:
+        raise VNXFormatError(f"cannot read the stream manifest {path}: {error}", stage="stream") from None
+    if doc.get("format") != STREAM_FORMAT or not isinstance(doc.get("extents"), list):
+        raise VNXFormatError(f"{path} is not a {STREAM_FORMAT} manifest", stage="stream")
+
+    def bad(msg: str) -> VNXFormatError:
+        return VNXFormatError(f"stream manifest: {msg}", stage="stream")
+
+    def count(rec: dict, k: str, i: int) -> int:
+        v = rec[k]
+        if isinstance(v, bool) or not isinstance(v, int) or v < 0:
+            raise bad(f"extent {i}: {k!r} must be a non-negative integer")
+        return v
+
+    def hexstr(rec: dict, k: str, i: int, digits: int) -> str:
+        v = rec[k]
+        if not isinstance(v, str) or len(v) != digits or any(c not in "0123456789abcdef" for c in v):
+            raise bad(f"extent {i}: {k!r} must be {digits} lowercase hex digits")
+        return v
+
+    total = 0
+    for i, rec in enumerate(doc["extents"]):
+        if not isinstance(rec, dict):
+            raise bad(f"extent {i} is not an object")
+        for k in ("index", "length", "sha256", "archive_id", "archive_tag", "strands_offset", "strands_bytes", "strands_sha256"):
+            if k not in rec:
+                raise bad(f"extent {i} lacks {k!r}")
+        if rec["index"] != i:
+            raise bad("extents out of order")
+        total += count(rec, "length", i)
+        count(rec, "strands_offset", i)
+        count(rec, "strands_bytes", i)
+        hexstr(rec, "sha256", i, 64)
+        hexstr(rec, "strands_sha256", i, 64)
+        hexstr(rec, "archive_tag", i, 4)
+        if not isinstance(rec["archive_id"], str) or not rec["archive_id"]:
+            raise bad(f"extent {i}: 'archive_id' must be a non-empty string")
+    if isinstance(doc.get("total_bytes"), bool) or not isinstance(doc.get("total_bytes"), int) or doc["total_bytes"] != total:
+        raise bad(f"'total_bytes' must equal the sum of the extent lengths ({total})")
+    if not isinstance(doc.get("sha256"), str) or len(doc["sha256"]) != 64:
+        raise bad("'sha256' must be the 64-hex-digit hash of the stream")
+    return doc
+
+
+def _range_matches(strands: Path, rec: dict) -> bool:
+    """The sink still holds the extent's strands at the recorded byte range (then that range alone is decoded)."""
+    try:
+        with open(strands, "rb") as f:
+            f.seek(rec["strands_offset"])
+            h = hashlib.sha256()
+            left = rec["strands_bytes"]
+            while left > 0:
+                block = f.read(min(1 << 20, left))
+                if not block:
+                    return False
+                h.update(block)
+                left -= len(block)
+        return h.hexdigest() == rec["strands_sha256"]
+    except OSError:
+        return False
+
+
+def decode_stream(strands: str | os.PathLike, manifest: str | os.PathLike, output: str | os.PathLike, *,
+                  options: DecodeOptions | None = None, key: bytes | None = None, passphrase: str | None = None,
+                  overwrite: bool = False, progress=None, workdir: str | os.PathLike | None = None,
+                  by_range: bool | None = None) -> dict:
+    """Rebuild the stream described by ``manifest`` from ``strands`` into ``output`` (``"-"`` = stdout). ``by_range``:
+    decode each extent from its recorded strand byte range (default: when the range still hashes as recorded), else
+    from the whole pool by archive ID (one pass per extent, e.g. for a sequenced pool)."""
+    doc = load_manifest(manifest)
+    opt = options or DecodeOptions()
+    opt.validate()
+    t0 = time.perf_counter()
+    strands = Path(strands)
+    tags_checked = False
+
+    def check_tags() -> None:
+        """The pool path separates extents by their 16-bit archive tag: run once before the first pool-path extent."""
+        nonlocal tags_checked
+        if tags_checked:
+            return
+        tags_checked = True
+        by_tag: dict[str, set[str]] = {}
+        for e in doc["extents"]:
+            by_tag.setdefault(e["archive_tag"], set()).add(e["archive_id"])
+        dup = sorted(t for t, ids in by_tag.items() if len(ids) > 1)        # one tag, several different archives
+        if dup:
+            raise VNXFormatError(f"the pool path cannot separate extents sharing an archive tag ({', '.join(dup)}); decode "
+                                 "from the encoder's strand file (by range) or keep extents in separate files",
+                                 stage="stream", details={"archive_tags": dup})
+
+    if by_range is False or (by_range is None and doc["extents"] and not _range_matches(strands, doc["extents"][0])):
+        check_tags()
+    to_stdout = output == "-"
+    out_path = None if to_stdout else Path(output)
+    work = Path(tempfile.mkdtemp(prefix="vnx-stream-", dir=workdir))
+    fmt = doc.get("strands_format", "fasta")
+    total = hashlib.sha256()
+    done = 0
+    ranged = 0
+    try:
+        with (atomic_output(out_path, overwrite=overwrite) if out_path else _stdout()) as tmp_out:
+            out = sys.stdout.buffer if tmp_out is None else open(tmp_out, "wb")
+            try:
+                for rec in doc["extents"]:
+                    use_range = _range_matches(strands, rec) if by_range is None else by_range
+                    if use_range:
+                        part = work / f"r{rec['index']}.{fmt}"
+                        with open(strands, "rb") as f, open(part, "wb") as g:
+                            f.seek(rec["strands_offset"])
+                            left = rec["strands_bytes"]
+                            while left > 0:
+                                block = f.read(min(1 << 20, left))
+                                if not block:
+                                    raise VNXFormatError(f"strand file shorter than the manifest's range of extent {rec['index']}",
+                                                         stage="stream")
+                                g.write(block)
+                                left -= len(block)
+                        data = decode_extent(part, rec, opt, key=key, passphrase=passphrase, work=work)
+                        part.unlink()
+                        ranged += 1
+                    else:
+                        check_tags()
+                        data = decode_extent(strands, rec, opt, key=key, passphrase=passphrase, work=work)
+                    out.write(data)
+                    total.update(data)
+                    done += 1
+                    if progress:
+                        progress({"stage": "decode_stream", "extents": done, "of": len(doc["extents"]),
+                                  "elapsed": time.perf_counter() - t0})
+                out.flush()
+            finally:
+                if tmp_out is not None:
+                    out.close()
+            if total.hexdigest() != doc["sha256"]:
+                raise VNXIntegrityError("the rebuilt stream does not hash as the manifest records", stage="stream")
+        seconds = time.perf_counter() - t0
+        return {"output": "-" if to_stdout else str(out_path), "extents": done, "by_range": ranged, "by_pool": done - ranged,
+                "total_bytes": doc["total_bytes"], "sha256": doc["sha256"], "seconds": round(seconds, 4),
+                "mb_s": round(doc["total_bytes"] / max(1e-9, seconds) / 1e6, 3)}
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+
+
+__all__ = ["STREAM_FORMAT", "EXTENT_NAME", "StreamOptions", "encode_extent", "decode_extent", "encode_stream", "decode_stream",
+           "load_manifest"]
