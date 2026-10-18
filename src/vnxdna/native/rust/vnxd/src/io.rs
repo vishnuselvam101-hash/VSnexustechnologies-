@@ -22,6 +22,7 @@
 //! The scheduler keeps one lock over the queue and the set of pending requests; the earliest pending request never
 //! has an earlier conflict, so the queue always makes progress.
 
+use crate::addr::{ExtentId, Geometry};
 use crate::error::{err, ErrorCode, Result};
 use crate::state::WriteState;
 use crate::volume::Volume;
@@ -43,15 +44,54 @@ fn check_size(len: u64) -> Result<()> {
     Ok(())
 }
 
-/// Synchronous byte-range I/O over a volume.
+/// Whole-extent storage under VNX-IO: the volume itself, or the cache in front of it.
+pub trait ExtentStore: Send + Sync {
+    fn geometry(&self) -> Geometry;
+    fn read_extent(&self, extent: ExtentId) -> Result<Vec<u8>>;
+    /// Replace one whole extent; returns the write state reached.
+    fn write_extent(&self, extent: ExtentId, data: &[u8]) -> Result<WriteState>;
+    /// Read-modify-write of one extent, atomic with respect to other operations on it.
+    fn modify_extent(&self, extent: ExtentId, patch: &mut dyn FnMut(&mut [u8])) -> Result<WriteState>;
+    fn flush(&self) -> Result<()>;
+}
+
+impl ExtentStore for Volume {
+    fn geometry(&self) -> Geometry {
+        Volume::geometry(self)
+    }
+    fn read_extent(&self, extent: ExtentId) -> Result<Vec<u8>> {
+        Volume::read_extent(self, extent)
+    }
+    fn write_extent(&self, extent: ExtentId, data: &[u8]) -> Result<WriteState> {
+        Volume::write_extent(self, extent, data).map(|o| o.state)
+    }
+    fn modify_extent(&self, extent: ExtentId, patch: &mut dyn FnMut(&mut [u8])) -> Result<WriteState> {
+        Volume::modify_extent(self, extent, |b| patch(b)).map(|o| o.state)
+    }
+    fn flush(&self) -> Result<()> {
+        Volume::flush(self)
+    }
+}
+
+/// Synchronous byte-range I/O over an extent store.
 #[derive(Clone)]
 pub struct BlockIo {
+    store: Arc<dyn ExtentStore>,
     vol: Arc<Volume>,
 }
 
 impl BlockIo {
+    /// I/O directly on the volume.
     pub fn new(vol: Arc<Volume>) -> BlockIo {
-        BlockIo { vol }
+        BlockIo { store: vol.clone(), vol }
+    }
+
+    /// I/O through `store` (e.g. the cache) in front of `vol`; both must have the same geometry.
+    pub fn over(store: Arc<dyn ExtentStore>, vol: Arc<Volume>) -> Result<BlockIo> {
+        if store.geometry() != vol.geometry() {
+            return err(ErrorCode::InvalidArgument, "the extent store and the volume have different geometries");
+        }
+        Ok(BlockIo { store, vol })
     }
 
     pub fn volume(&self) -> &Arc<Volume> {
@@ -64,7 +104,7 @@ impl BlockIo {
         let len = usize::try_from(len).or_else(|_| err(ErrorCode::Overflow, "read length exceeds the address space"))?;
         let mut out = vec![0u8; len];
         for s in spans {
-            let data = self.vol.read_extent(s.extent)?;
+            let data = self.store.read_extent(s.extent)?;
             let (a, b) = (s.offset as usize, (s.offset + s.len) as usize);
             out[s.buf_offset as usize..(s.buf_offset + s.len) as usize].copy_from_slice(&data[a..b]);
         }
@@ -79,19 +119,19 @@ impl BlockIo {
         for s in spans {
             let src = &data[s.buf_offset as usize..(s.buf_offset + s.len) as usize];
             let whole = s.offset == 0 && s.len == self.vol.geometry().extent_len(s.extent)?;
-            let o = if whole {
-                self.vol.write_extent(s.extent, src)?
+            let state = if whole {
+                self.store.write_extent(s.extent, src)?
             } else {
                 let at = s.offset as usize;
-                self.vol.modify_extent(s.extent, |buf| buf[at..at + src.len()].copy_from_slice(src))?
+                self.store.modify_extent(s.extent, &mut |buf: &mut [u8]| buf[at..at + src.len()].copy_from_slice(src))?
             };
-            weakest = weakest.min(o.state);
+            weakest = weakest.min(state);
         }
         Ok(weakest)
     }
 
     pub fn flush(&self) -> Result<()> {
-        self.vol.flush()
+        self.store.flush()
     }
 }
 

@@ -1,4 +1,4 @@
-# V14 state — RESUME FILE (last checkpoint 2026-10-18 ~12:00 IST: Phase 2 COMPLETE, P3 next; lab host still in use)
+# V14 state — RESUME FILE (last checkpoint 2026-10-18 ~12:00 IST: Phase 3 COMPLETE, P4 next; lab host still in use)
 
 Governing scope: the founder's V14 MASTER DIRECTIVE (copy: `docs/V14_MASTER_DIRECTIVE_2026-10-18.md`) — the complete
 storage platform (Rust control plane, real Linux block device, media adapters, Pi portability, P0–P13). The earlier
@@ -6,14 +6,16 @@ V14 brief (copy: `docs/V14_BRIEF_2026-10-18.md`) is the detailed spec for Phase 
 pass 2, safe scheduler, bench suite, config/security) and for the volume hardening. Phase 0 (audit + baseline +
 initial docs) and Phase 1 (contracts: Rust crate `vnxd`, Python `vnxdna.device`, docs/V14_CONTRACTS.md) are COMPLETE
 (docs/V14_PHASE0_REPORT.md, docs/V14_PHASE1_REPORT.md), and Phase 2 (block volume + VNX-IO in `vnxd`:
-journal, volume, io; docs/V14_VOLUME_AND_IO.md, docs/V14_PHASE2_REPORT.md) are COMPLETE; P3 is next.
+journal, volume, io; docs/V14_VOLUME_AND_IO.md, docs/V14_PHASE2_REPORT.md) and Phase 3 (VNX-RAM + cache in `vnxd`,
+molecular-memory interface in Python; docs/V14_RAM_AND_CACHE.md, docs/V14_MOLECULAR_MEMORY.md,
+docs/V14_PHASE3_REPORT.md) are COMPLETE; P4 is next.
 
 ## Non-negotiable rules (founder)
-- Founder 2026-10-18: push `build/v14` and a milestone tag `v14-p<k>` after each phase (done for p1, p2). Still NO
+- Founder 2026-10-18: push `build/v14` and a milestone tag `v14-p<k>` after each phase (done for p1, p2, p3). Still NO
   merge to main and NO release tag `v14.0.0` before the P12 acceptance review.
 - Commit author `vishnuselvam101-hash <vishnuselvam101@gmail.com>`; no AI attribution trailers, no AI-tool names,
   no AI-tool scratch paths in committed files.
-- Tests never drop, never weakened (gate: 4,534 passed / 4 skipped / 0 failed after P1; 4,454 at 58171b8).
+- Tests never drop, never weakened (gate: 4,541 passed / 4 skipped / 0 failed after P3; 4,454 at 58171b8).
 - Every channel number is SIMULATED and comes from a committed results file; evidence categories A–F in every report
   (A codec, B software device, C electronic backend, D simulated channel, E real DNA ops, F physical device; V14 claims A–D only).
 - Never claim a tier (2x/5x/10x) unless the CI lower bound clears it. The pre-fix V13 scheduler (5.23x run) never returns.
@@ -74,14 +76,14 @@ journal, volume, io; docs/V14_VOLUME_AND_IO.md, docs/V14_PHASE2_REPORT.md) are C
 Lab host (this machine): worktrees `/root/vnx-dna-lab/v14` (build/v14), `v14-base` (58171b8), `v13-base` (6bf7749),
 venv `/root/vnx-dna-lab/.venv`, every kernel + engine built (`python -m vnxdna.native` -> all_native true).
 On a new machine, follow the clone/build block of git history (this file at 9bd0149) and re-measure the baseline first.
-Phase 1 DONE (contracts), Phase 2 DONE (volume + IO; cargo test 65 in src/vnxdna/native/rust/vnxd). Next, in order:
-1. P3 VNX-RAM + Cache in `vnxd`: memory budget with per-subsystem quotas (io, cache, staging, codec, metadata),
-   buffer pools with reuse + zeroing across security contexts, backpressure (block or RESOURCE_EXHAUSTED), accounting
-   + leak detection, metrics; read-through extent cache over Volume (LRU, checksums, invalidation on write,
-   write-through default, optional write-back with dirty tracking, flush/eviction writeback, interrupted writeback
-   recovery); molecular-memory research interface in Python (region/capability/health protocol + simulator +
-   conformance, never called electronic RAM). Tests per V14_MASTER_PLAN P3.
-2. P4 Fallback + Secure -> P5 Load balancer -> P6 codec (workstreams A–C,
+Phases 1-3 DONE (contracts; volume + IO; RAM + cache; cargo test 83 in src/vnxdna/native/rust/vnxd). Next:
+1. P4 Fallback + Secure: retry policy by error class (bounded, backoff), backend health score, degraded mode
+   (reads allowed, writes READ_ONLY) when a backend is unavailable, recovery orchestration + audit events (JSON
+   lines); sealing at the extent boundary with the EXISTING Python security layer (AES-256-GCM; no new cipher;
+   decide Rust<->Python boundary: sealing in the codec worker vs a sealed-extent format checked by vnxd), authZ of
+   management ops (peer credentials + secure policy); fault-injection backend matrix with recorded expected outcomes;
+   docs V14_SECURITY_MODEL + V14_FAILURE_AND_RECOVERY_MODEL.
+2. P5 Load balancer -> P6 codec (workstreams A–C,
    E–F; A design above) -> P7 media adapters -> P8 NBD block device (this host has nbd + ublk_drv, root) -> P9
    integrated validation -> P10 ARM64 cross-build + qemu (Pi acceptance stays INCOMPLETE) -> P11 hardware + boot
    docs -> P12 acceptance review -> P13 V15 plan. One phase report + one Telegram note per phase; keep this file current.

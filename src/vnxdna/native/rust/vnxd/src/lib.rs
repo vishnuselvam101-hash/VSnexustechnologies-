@@ -9,6 +9,7 @@
 #![deny(unsafe_code)] // a later module that needs an OS interface allows it locally and documents the boundary
 
 pub mod addr;
+pub mod cache;
 pub mod digest;
 pub mod error;
 pub mod io;
@@ -16,6 +17,7 @@ pub mod journal;
 pub mod json;
 pub mod media;
 pub mod proto;
+pub mod ram;
 pub mod record;
 pub mod state;
 pub mod volume;
