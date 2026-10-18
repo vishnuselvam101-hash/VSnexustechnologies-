@@ -38,7 +38,7 @@ DECODE_KEYS = {"profile", "band", "retry_band", "min_quality", "reverse_compleme
                "archive_tag", "batch_reads", "workers", "indel_recovery", "soft_decoding",
                "recovery_schedule", "max_container_bytes", "consensus_weighting",
                "expect_archive_id", "expect_sha256", "read_clustering", "orientation_retry", "sync_speculation",
-               "engine", "engine_dedup", "engine_threads"}
+               "engine", "engine_dedup", "engine_scheduler", "engine_threads"}
 ARCHIVE_KEYS = {"chunk_size", "compression", "level", "workers", "preserve_metadata", "dedup", "archive_id"}
 
 

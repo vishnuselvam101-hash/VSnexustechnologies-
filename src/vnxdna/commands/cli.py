@@ -456,6 +456,10 @@ def decode(reads: Path, output: Optional[Path] = typer.Option(None, "--output", 
            engine_dedup: Optional[bool] = typer.Option(
                None, "--engine-dedup/--no-engine-dedup",
                help="V13 engine: attempt only reads whose address is not verified yet (default) or every read."),
+           engine_scheduler: Optional[str] = typer.Option(
+               None, "--engine-scheduler",
+               help="Engine address scheduler: strand (default; skip a read only when the strand check confirms it "
+                    "against a verified frame) or corroborated (the V13 rule, for comparison)."),
            engine_threads: Optional[int] = typer.Option(
                None, "--engine-threads", help="V13 engine threads (default: --workers; VNXDNA_ENGINE_THREADS)."),
            cache_dir: Optional[Path] = typer.Option(None, "--cache-dir", help="V13 result cache directory (or VNXDNA_CACHE_DIR).")
@@ -473,7 +477,8 @@ def decode(reads: Path, output: Optional[Path] = typer.Option(None, "--output", 
                                   consensus_weighting=consensus_weighting, max_container_bytes=max_container_bytes, expect_archive_id=expect_archive_id,
                                   expect_sha256=expect_sha256, read_clustering=read_clustering,
                                   orientation_retry=orientation_retry, sync_speculation=sync_speculation,
-                                  engine=engine, engine_dedup=engine_dedup, engine_threads=engine_threads)
+                                  engine=engine, engine_dedup=engine_dedup, engine_scheduler=engine_scheduler,
+                                  engine_threads=engine_threads)
         return _decode(reads, output, extract_dir, partial_dir, select, opts, force, key_file, passphrase_env, report, events,
                        task_id, allow_unencrypted, not no_input_hash, cache_dir)
     _run(go)

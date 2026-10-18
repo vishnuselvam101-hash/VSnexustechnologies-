@@ -100,6 +100,8 @@ pub struct Cfg {
     pub max_reads: i64,
     pub fastq: bool,
     pub dedup: bool,
+    /// adaptive scheduler (raw dedup = 2): every skip needs the strand check (sched::strand_unconfirmed)
+    pub strand: bool,
     pub frame_version: u8,
     pub cancel: usize, // address of an i64 the caller may set to non-zero (0 = none)
     pub io_block: usize,
@@ -194,7 +196,8 @@ impl Cfg {
                 2 => false,
                 _ => return Err("fmt must be 1 (FASTQ) or 2 (FASTA)".into()),
             },
-            dedup: c.dedup != 0,
+            dedup: rng(c.dedup, 0, 2, "dedup")? != 0,
+            strand: c.dedup == 2,
             frame_version: rng(c.frame_version, 0, 15, "frame_version")? as u8,
             cancel: c.cancel as usize,
             io_block: rng(c.io_block, 1 << 16, 1 << 30, "io_block")? as usize,

@@ -374,6 +374,7 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
             if engine_info is not None:
                 engine_info["threads"] = opt.threads
                 engine_info["dedup"] = opt.engine_dedup
+                engine_info["scheduler"] = opt.engine_scheduler if opt.engine_dedup else "all"
                 engine_info["pass1"] = {k: (round(v / 1e9, 4) if k.startswith("ns_") else v) for k, v in es.items()
                                         if not k.startswith("reserved")}
             if progress:

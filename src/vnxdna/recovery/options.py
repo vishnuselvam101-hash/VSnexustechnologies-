@@ -110,6 +110,11 @@ class DecodeOptions:
     # V13 engine: attempt only the reads whose address is not verified yet (address scheduler); False attempts every
     # read (pass-1 results then equal the V13 path's, record for record)
     engine_dedup: bool = True
+    # V14 engine address scheduler (docs/V14_SCHEDULER.md): "strand" (default) skips a read only when the strand check
+    # confirms it against a verified frame; "corroborated" is the corrected V13 rule (header key + payload window),
+    # kept for comparison (it can lose distinct strands of structured data, see the spec). Ignored when engine_dedup is
+    # False (the diagnostic mode: every read is attempted).
+    engine_scheduler: str = "strand"
     # V13 engine: threads of the engine's pool (IO/scan stay on the calling thread); None = ``workers``. The default
     # comes from VNXDNA_ENGINE_THREADS (unset = None).
     engine_threads: int | None = field(default_factory=_env_engine_threads)
@@ -132,6 +137,8 @@ class DecodeOptions:
             raise VNXConfigurationError(f"engine must be one of {', '.join(ENGINES)} (option or {ENV_ENGINE})")
         if not isinstance(self.engine_dedup, bool):
             raise VNXConfigurationError("engine_dedup must be True or False")
+        if self.engine_scheduler not in ("strand", "corroborated"):
+            raise VNXConfigurationError("engine_scheduler must be 'strand' or 'corroborated'")
         if self.engine_threads is not None and (not isinstance(self.engine_threads, int) or isinstance(self.engine_threads, bool)
                                                 or not 1 <= self.engine_threads <= 256):
             raise VNXConfigurationError(f"engine_threads must be None or in 1..256 (option or {ENV_ENGINE_THREADS})")
