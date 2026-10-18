@@ -150,7 +150,8 @@ def test_duplicated_reordered_and_garbage_tails_are_refused(tmp_path):
         "swapped last two records": b"\n".join(lines[:-2] + [lines[-1], lines[-2]]) + b"\n",
         "complete fake record + fragment": raw + b'{"op":"commit","extent":9,"seq":5,"crc":"deadbeef"}\n{"op":"commit","ext',
         "garbage line": raw + b"not json at all\n",
-        "garbage that is not a record prefix": raw + b"xyz",
+        "garbage that is not a record prefix": raw + b"XYZ!",
+        "garbage that is not a record prefix (high bytes)": raw + b"\xff\xfe\x01",
         "a record followed by a stray byte": raw[:-1] + b"#",
         "zero fill longer than one record": raw + bytes(jmod.MAX_RECORD_BYTES + 1),
         "two lines of zeros and text": raw + bytes(40) + b"\n" + bytes(40),
@@ -447,7 +448,7 @@ def test_tampered_commit_records_are_refused(tmp_path):
         return b"\n".join(lines[:-1] + [Journal._line(rec).rstrip(b"\n")]) + b"\n"
     outside = tmp_path / "outside.fasta"
     shutil.copy(root / "extents" / last["file"], outside)
-    for changes in ({"extent": 7, "file": "e7-v2.fasta"}, {"version": 3, "file": "e0-v3.fasta"},
+    for changes in ({"file": "e0-v2.fastq"}, {"extent": 7, "file": "e7-v2.fasta"}, {"version": 3, "file": "e0-v3.fasta"},
                     {"file": "../../outside.fasta"}, {"file": "/etc/passwd"}, {"file": "e0-v1.fasta"},
                     {"length": E + 1}, {"length": -1}, {"extent": -1}, {"extent": "0"}, {"version": 1},
                     {"version": True}, {"sha256": "zz"}, {"archive_tag": 7}, {"length": None}):
@@ -493,6 +494,12 @@ def test_write_back_bound_holds_inside_one_large_write(tmp_path):
         v.seek(40 * E + 3)                                  # a 32-extent zero gap
         v.write(b"far")
         assert v.stat()["write_back"]["peak_bytes"] <= 3 * E
+        v.seek(E // 2)
+        v.write(b"o" * (3 * E))                             # overwrite across committed extents
+        assert v._dirty_bytes() == sum(len(b) for b in v._dirty.values())     # the running counter is exact
+    data = bytearray(data)
+    data[E // 2:E // 2 + 3 * E] = b"o" * (3 * E)
+    data = bytes(data)
     data = data + bytes(32 * E + 3) + b"far"
     _assert_healthy(root, data)
     with Volume.create(tmp_path / "z", _opts(write_back_bytes=0)) as v:     # 0 = flush on every write
@@ -708,3 +715,86 @@ def test_volume_written_by_the_base_code_still_opens(tmp_path):
     with Volume.open(root, "rw", options=_opts()) as v:
         v.append(b"new")
     _assert_healthy(root, bytes(expect) + b"new")
+
+
+# ======================================================================================== review follow-ups (c2ae79e)
+def test_cutting_a_torn_tail_is_durable_before_the_new_line(tmp_path, monkeypatch):
+    """With a torn tail, the cut was not synced before the new line was written over the old tail: a power loss could
+    keep the new line and lose the truncation (good + new line + the rest of the old tail). The cut is now fsynced
+    first."""
+    root = tmp_path / "v"
+    _make(root, overwrite=False)
+    j = root / "journal.log"
+    good = j.read_bytes()
+    j.write_bytes(good + b'{"archive_id":"' + b"0" * 300)
+    sizes = []
+    real = os.fsync
+
+    def fsync(fd):
+        if os.readlink(f"/proc/self/fd/{fd}").endswith("journal.log"):
+            sizes.append(os.fstat(fd).st_size)
+        return real(fd)
+    with Volume.open(root, "rw", options=_opts()) as v:
+        v.write(b"cut first")
+        monkeypatch.setattr(os, "fsync", fsync)
+        v.flush()
+        monkeypatch.undo()
+    assert sizes[0] == len(good) and sizes[1] > len(good)
+    _assert_healthy(root)
+
+
+def test_remnant_of_an_old_torn_tail_behind_a_new_record_still_opens(tmp_path):
+    """The shape an unsynced cut could leave (base code, and this code before the fix above): verified records, a
+    new shorter record, then the remainder of the longer torn line it overwrote. It must open (as a torn tail), not be
+    refused as damage."""
+    root = tmp_path / "v"
+    data = _make(root, overwrite=False)
+    j = root / "journal.log"
+    good = j.read_bytes()
+    with Volume.open(root, "rw", options=_opts()) as v:
+        v.write(b"new record")
+    full = j.read_bytes()
+    new_line = full[len(good):]
+    import json
+    rec = json.loads(new_line)
+    rec.pop("crc")
+    longer = Journal._line({**rec, "archive_id": rec["archive_id"] + "f" * 60})
+    for extra in (1, 30, 59):
+        old_tail = longer[:len(new_line) + extra]               # an unterminated torn line, longer than the new one
+        j.write_bytes(good + new_line + old_tail[len(new_line):])
+        jj = Journal(j)
+        assert len(jj.replay()) == len(good.split(b"\n")) and jj.tail_state == "torn" and jj.bad_tail_bytes == extra
+    _assert_healthy(root, b"new record" + data[10:])
+
+
+def test_interrupt_after_the_journal_append_poisons_and_writes_fail_fast(tmp_path, monkeypatch):
+    """A KeyboardInterrupt after the journal record landed but before the volume recorded the commit: a retry wrote a
+    second record with the same version (the volume then no longer opened). Now any exception once the append is
+    entered poisons the journal, and write() fails fast on a poisoned journal."""
+    root = tmp_path / "v"
+    old = _make(root, overwrite=False)
+    real = Journal.append
+    state = {"n": 0}
+
+    def append_then_interrupt(self, rec):
+        out = real(self, rec)
+        state["n"] += 1
+        if state["n"] == 1:
+            raise KeyboardInterrupt
+        return out
+    monkeypatch.setattr(Journal, "append", append_then_interrupt)
+    v = Volume.open(root, "rw", options=_opts())
+    v.write(b"NEW")
+    with pytest.raises(KeyboardInterrupt):
+        v.flush()
+    with pytest.raises(VNXOutputError):
+        v.write(b"more")                                    # fails fast: the journal is poisoned
+    with pytest.raises(VNXOutputError):
+        v.flush()
+    with pytest.raises(VNXOutputError):
+        v.close()
+    monkeypatch.undo()
+    assert state["n"] == 1
+    with Volume.open(root, options=_opts()) as r:
+        assert [x["version"] for x in r.extents()] == [2, 1, 1]
+    _assert_healthy(root, b"NEW" + old[3:])

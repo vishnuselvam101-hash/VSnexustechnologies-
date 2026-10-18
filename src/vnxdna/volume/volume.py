@@ -74,7 +74,7 @@ def _replay_commits(records: list[dict], extent_bytes: int, where: Path) -> tupl
         prev = committed.get(i)
         if ver != (int(prev["version"]) + 1 if prev else 1):
             raise bad(f"has version {ver} for extent {i} (versions increase by one from 1)")
-        if rec.get("file") not in (f"e{i}-v{ver}.fasta", f"e{i}-v{ver}.fastq"):
+        if rec.get("file") != f"e{i}-v{ver}.fasta":
             raise bad("names a strand file that is not its own (e<extent>-v<version>.fasta)")
         if not _int(length, 0, extent_bytes):
             raise bad(f"has an impossible length (0..{extent_bytes})")
@@ -133,6 +133,7 @@ class Volume:
         # extent id -> its last committed record (every record validated: VNXFormatError on a violation)
         self.committed, self.versions = _replay_commits(journal.records, self.extent_bytes, journal.path)
         self._dirty: dict[int, bytearray] = {}
+        self._dirty_nbytes = 0                       # sum of the dirty buffers' lengths, kept up to date
         self._spilled = False
         self._cache: OrderedDict[int, bytes] = OrderedDict()
         self._cache_bytes = 0
@@ -247,6 +248,7 @@ class Volume:
     def __exit__(self, exc_type, exc, tb) -> None:
         if exc_type is not None and self.mode == "rw":
             self._dirty.clear()                 # a failed operation never commits half-written state
+            self._dirty_nbytes = 0
         self.close()
 
     # ------------------------------------------------------------------------------------------------ geometry
@@ -265,6 +267,9 @@ class Volume:
             raise VNXConfigurationError("the volume is closed")
         if writing and self.mode != "rw":
             raise VNXConfigurationError("the volume is open read-only")
+        if writing and self.journal.poisoned:
+            raise VNXOutputError(f"volume {self.path}: the journal is unusable after a failed append "
+                                 f"({self.journal.poisoned}); close and reopen the volume", stage="volume")
 
     # ------------------------------------------------------------------------------------------------ extents
     def _load(self, i: int) -> bytes:
@@ -307,7 +312,7 @@ class Volume:
             self._cache_bytes -= len(old)
 
     def _dirty_bytes(self) -> int:
-        return sum(len(b) for b in self._dirty.values())
+        return self._dirty_nbytes
 
     def _bound_dirty(self) -> None:
         """Record the write-back high-water mark and commit the buffer once it is over its limit: called after every
@@ -388,9 +393,12 @@ class Volume:
             if cur is None:
                 cur = bytearray(self._load(i))
                 self._dirty[i] = cur
+                self._dirty_nbytes += len(cur)
+            before = len(cur)
             if len(cur) < a:
                 cur += bytes(a - len(cur))
             cur[a:a + take] = data[done:done + take]
+            self._dirty_nbytes += len(cur) - before
             self._cache_drop(i)
             done += take
             i += 1
@@ -411,9 +419,12 @@ class Volume:
             if cur is None:
                 cur = bytearray(self._load(i))
                 self._dirty[i] = cur
+                self._dirty_nbytes += len(cur)
+            before = len(cur)
             if len(cur) < b:
                 cur += bytes(b - len(cur))
             cur[a:b] = bytes(b - a)
+            self._dirty_nbytes += len(cur) - before
             self._cache_drop(i)
             i += 1
             self._bound_dirty()
@@ -447,6 +458,7 @@ class Volume:
             committed.append({"extent": i, "version": rec["version"], "length": rec["length"], "strands": rec["strands"]})
             self._cache_put(i, bytes(buf))
             del self._dirty[i]
+            self._dirty_nbytes -= len(buf)
         return committed
 
     def _commit_extent(self, i: int, data: bytes) -> dict:
@@ -465,12 +477,20 @@ class Volume:
         self.metrics["encode_seconds"] += time.perf_counter() - t
         self.metrics["extents_encoded"] += 1
         self.metrics["bytes_encoded"] += len(data)
-        rec = self.journal.append({"op": "commit", "extent": i, "version": version, "file": name, "length": info["length"],
-                                   "sha256": info["sha256"], "archive_id": info["archive_id"], "archive_tag": info["archive_tag"],
-                                   "strands": info["strands"], "bases": info["bases"], "strands_sha256": info["strands_sha256"],
-                                   "time": int(time.time())})
-        self.committed[i] = rec
-        self.versions += 1
+        n_records = len(self.journal.records)
+        try:
+            rec = self.journal.append({"op": "commit", "extent": i, "version": version, "file": name,
+                                       "length": info["length"], "sha256": info["sha256"], "archive_id": info["archive_id"],
+                                       "archive_tag": info["archive_tag"], "strands": info["strands"], "bases": info["bases"],
+                                       "strands_sha256": info["strands_sha256"], "time": int(time.time())})
+            self.committed[i] = rec
+            self.versions += 1
+        except BaseException as error:
+            # a failing append poisons the journal itself; an interrupt after the append completed (the record is in
+            # the journal, the volume has not recorded it) must too: a retry would journal the same version twice
+            if len(self.journal.records) != n_records:
+                self.journal.poison(error)
+            raise
         return rec
 
     # ------------------------------------------------------------------------------------------------ status

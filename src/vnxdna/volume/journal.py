@@ -50,6 +50,10 @@ def sync_dir(path: str | os.PathLike) -> None:
         os.close(fd)
 
 
+# the bytes a canonical-JSON journal record is made of (ASCII lowercase, digits, JSON punctuation, the format name)
+_RECORD_CHARS = frozenset(b'0123456789abcdefghijklmnopqrstuvwxyz"{}[]:,_.-/\x00')
+
+
 def _crc(rec: dict) -> str:
     return f"{zlib.crc32(canonical_json(rec)) & 0xFFFFFFFF:08x}"
 
@@ -108,7 +112,11 @@ def classify_tail(tail: bytes) -> str | None:
     if tail[0] == 0:
         return None                              # zero-filled from the start of the append
     if tail[0] != 0x7B:
-        return "bytes that are not the start of a record"
+        # the remainder of an older, longer torn line that the last record overwrote when the cut of that torn tail
+        # did not reach the disk (the base code did not sync the cut): record characters only, at most one record
+        if all(b in _RECORD_CHARS for b in tail):
+            return None
+        return "bytes that are neither the start nor the remainder of a record"
     if _object_closes_before_end(tail):
         return "a complete record followed by stray bytes (not a record prefix)"
     return None                                  # a prefix of the record line being appended
@@ -184,19 +192,28 @@ class Journal:
         try:
             with open(self.path, "wb" if created else "r+b") as f:
                 f.truncate(self.good_bytes)                 # a torn tail, or what a failed append left behind
+                if self.bad_tail_bytes:
+                    # the cut is durable before the new line is written over the old tail: otherwise a power loss
+                    # could keep the new line and lose the cut (good + new line + the rest of the old tail)
+                    os.fsync(f.fileno())
                 f.seek(self.good_bytes)
                 f.write(line)
                 f.flush()
                 os.fsync(f.fileno())
             if created:
                 sync_dir(self.path.parent)
+            self.records.append(rec)
+            self.good_bytes += len(line)
+            self.bad_tail_bytes, self.tail_state = 0, "clean"
         except BaseException as error:
-            self.poisoned = f"{type(error).__name__}: {error}"[:200]
+            self.poison(error)
             raise
-        self.records.append(rec)
-        self.good_bytes += len(line)
-        self.bad_tail_bytes, self.tail_state = 0, "clean"
         return rec
+
+    def poison(self, error: BaseException) -> None:
+        """Refuse every later append (until a new replay): the journal's on-disk state is unknown."""
+        if not self.poisoned:
+            self.poisoned = f"{type(error).__name__}: {error}"[:200]
 
 
 __all__ = ["JOURNAL_FORMAT", "MAX_RECORD_BYTES", "Journal", "classify_tail", "sync_dir"]
