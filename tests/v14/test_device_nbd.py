@@ -358,7 +358,16 @@ def test_kernel_backend_faults_reach_the_filesystem_as_eio(kernel: Path, tmp_pat
             # stay refused (read-only device) until a write probe succeeds after the probe interval (5 s)
             assert _direct_read(mp / "kept.bin") == payload[:4096]
             time.sleep(6)
-        assert svc.stop() == 0
+        rc = svc.stop()
+        # the store is healthy and flushed at the stop; but writes to the device DID fail during the fault window,
+        # and when one of them failed in the device's own buffers the kernel reports it once to the detach fsync:
+        # then (and only then) the exit is 1 (B3). Which ext4 path hit the fault decides it, so both are legal.
+        last = svc.events()[-1]
+        assert last["event"] == "error" or rc == 0, svc.log()[-2000:]
+        if rc != 0:
+            assert rc == 1 and last["error"].startswith("device fsync at detach"), last
+        detached = [e for e in svc.events() if e["event"] == "detached"][-1]
+        assert detached["closed"] == "ok" and detached["health"]["state"] == "ok"
         ns.wait_device_free(dev)
     finally:
         if ctl.exists():
