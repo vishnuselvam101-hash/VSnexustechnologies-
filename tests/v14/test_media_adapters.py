@@ -37,7 +37,9 @@ def _code(line: str) -> str:
 @pytest.fixture()
 def staged(tmp_path):
     tmp_path.chmod(0o700)
-    return ds.CodecWorker(tmp_path), tmp_path
+    w = ds.CodecWorker(tmp_path)
+    assert _result(w.handle(_req(0, "hello", {"client": "t", "versions": [1]})))["version"] == 1  # contract §6: hello first
+    return w, tmp_path
 
 
 def _encode(w, d: Path, data: bytes, extent: int = 3, generation: int = 1, job: int = 2) -> bytes:

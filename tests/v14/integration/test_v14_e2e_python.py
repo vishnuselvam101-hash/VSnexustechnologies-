@@ -176,14 +176,18 @@ def test_r18b_codec_ipc_worker_rejects_abuse(worker, tmp_path):
     assert sorted(p.name for p in staging.iterdir()) == ["in", "out"], "nothing else was written"
 
 
-@pytest.mark.xfail(strict=True, reason="defect V14-P9-D1: the codec-ipc worker serves operations before hello "
-                                       "(docs/V14_CONTRACTS.md §6: the first exchange on a connection is hello)")
 def test_r18b_worker_requires_hello_first(worker):
+    """Regression for defect V14-P9-D1: the worker served operations before hello (contract §6)."""
     ask, staging, _ = worker
     (staging / "in").write_bytes(b"x" * 64)
     seal = {"job": 1, "device_id": DEV, "extent": 0, "generation": 1, "input": "in",
             "input_sha256": hashlib.sha256(b"x" * 64).hexdigest(), "output": "out"}
     assert _code(ask(_req(1, "seal_extent", seal))) == "PROTOCOL"
+    assert _code(ask(_req(2, "key_check", {"device_id": DEV}))) == "PROTOCOL"
+    assert _code(ask(_req(3, "hello", {"client": "e2e", "versions": [7]}))) == "VERSION_MISMATCH"
+    assert _code(ask(_req(4, "seal_extent", seal))) == "PROTOCOL", "a failed hello negotiates nothing"
+    assert _code(ask(_req(5, "hello", {"client": "e2e", "versions": [1]}))) is None
+    assert _code(ask(_req(6, "seal_extent", seal))) is None
 
 
 # --------------------------------------------------------------------------------------------------------------
