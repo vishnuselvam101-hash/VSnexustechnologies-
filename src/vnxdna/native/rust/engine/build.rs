@@ -2,8 +2,8 @@
 //! is linked into the engine library. Standard library only: the system C compiler is invoked directly (CC, else cc).
 //! VNX_ENGINE_CFLAGS adds flags (sanitizer builds).
 //! Cross builds (docs/V14_BUILD_AND_DEPLOYMENT.md): the compiler and archiver for the target come from
-//! CC_<target> / AR_<target> (e.g. CC_aarch64_unknown_linux_gnu), then CC / AR, then cc / ar, so that
-//! aarch64 objects are never archived by the host `ar` (whose symbol index does not understand them).
+//! CC_<target> / AR_<target> (e.g. CC_aarch64_unknown_linux_gnu), then CC / AR, then cc / ar, so that a cross
+//! build does not need a global CC that would also apply to host tools, and can use the target's own `ar`.
 use std::env;
 use std::path::PathBuf;
 use std::process::Command;

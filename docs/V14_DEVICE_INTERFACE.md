@@ -37,6 +37,10 @@ options: --cache none|write-through|write-back (default write-through)   --ram N
          --read-only   --request-timeout-s N (default 30)   --kernel-timeout-s N (default 120; >= 2 x request + 10; 0 refused)
          --mgmt SOCKET --policy FILE (management socket, §7)   --fault-control FILE (fault drills, §5)
          --no-readback (skip the volume's read-back verification of new generations)
+         --workers N --queue-depth N (I/O queue; default sized from the backend)   --max-inflight N (default 128)
+         --max-inflight-bytes N (default 64M, >= 32M)   --repliers N (default 8)
+         --low-memory (preset: --ram 96M --workers 2 --queue-depth 16 --max-inflight 16 --max-inflight-bytes 32M
+                       --repliers 2; explicit options override it; V14_RASPBERRY_PI_PROFILE.md §3)
 ```
 
 `create` refuses an existing journal and a non-empty backend. `attach` prints one JSON line `{"event":"attached",
@@ -203,7 +207,8 @@ Things deliberately not used: the netlink interface (not needed), `mmap`, raw `s
   loaded (`modprobe nbd max_part=8`) or a tool is missing; the socket tests run anywhere cargo is installed.
 * Unsupported: non-Linux hosts (no NBD driver: use `serve` only where it builds, untested off Linux); kernels without
   NBD; containers without CAP_SYS_ADMIN or without `/dev/nbd*`; block sizes above 4096 (the driver's limit);
-  partitions need `max_part` > 0 at module load. ARM64 is P10 (cross-build + emulation; no Pi hardware).
+  partitions need `max_part` > 0 at module load. ARM64: cross-built and tested under qemu-user in P10
+  (functional only; V14_BUILD_AND_DEPLOYMENT.md, V14_RASPBERRY_PI_PROFILE.md); not run on Pi hardware.
 
 ## 11. Stage A': ublk (design and gap)
 
