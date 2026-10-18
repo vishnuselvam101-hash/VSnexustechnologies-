@@ -44,10 +44,10 @@ and still SIMULATED.
 ### 0.2 Item template
 
 Tracks: §1 long-term readability (headline, release acceptance), §2 format/API freeze, §3 CORE CODEC, §4 supporting
-research, §5 FRONTIER, §6 platform, §7 evidence/release, §8 competitive position and IP.
+research, §5 FRONTIER, §5A archive platform, §6 platform, §7 evidence/release, §8 competitive position and IP.
 
 Each item below has: **Goal**, **Method**, **Evidence target**, **Acceptance**, **Risks**, **Starts from** (V14 file
-or module), **Depends on**. IDs: `LR` long-term readability, `FZ` format/API freeze, `CC` core codec, `RS` supporting research, `F` frontier,
+or module), **Depends on**. IDs: `LR` long-term readability, `FZ` format/API freeze, `CC` core codec, `RS` supporting research, `F` frontier, `AP` archive platform,
 `PL` platform, `QA` evidence and release.
 
 ## 1. Long-term readability track (headline objective and release acceptance)
@@ -606,6 +606,168 @@ Defined once as **LR-2** (§1); it is part of the release acceptance.
 - **Starts from.** `docs/RANDOM_ACCESS.md`, `.vxidx` index code.
 - **Depends on.** CC-5 (physical access model).
 
+## 5A. ARCHIVE PLATFORM and NEXT-GENERATION track (added by the lead, 2026-10-19)
+
+Features a long-lived archival system needs that the tracks above do not cover. All sit in the evolving layer: none
+changes the frozen DNA format except where marked "freeze-relevant", which must be decided at M3. Citations marked †
+are to be verified before the plan is final. Order is by value to the long-term readability goal, then cost.
+
+### AP-1 Snapshots and write-once (WORM) retention
+- **Goal.** Point-in-time snapshots of a volume and a retention mode in which committed data cannot be overwritten or
+  deleted before its retention date, for archives that must be provably unchanged.
+- **Method.** Snapshots as immutable journal checkpoints over generation-referenced extents (V14 never reuses a
+  generation); a retention policy enforced in VNX-IO and the volume, recorded in the sealed metadata; refusal paths
+  tested; a compliance mapping against a published WORM requirement (e.g. SEC Rule 17a-4(f) †) as a study, no
+  compliance claim.
+- **Evidence target.** MEASURED on electronic backends; SIMULATED over DNA media.
+- **Acceptance.** Snapshot read-back byte-identical; every overwrite/delete/truncate path on a retained extent refused
+  with a typed error; retention survives crash, restart and reopen (fault-injection tests).
+- **Risks.** Interaction with tiering (F8) and replication (AP-2); clock trust for retention dates.
+- **Starts from.** `vnxd/src/volume.rs`, `journal.rs`, `io.rs`; `src/vnxdna/volume/`.
+- **Depends on.** FZ-1 (keyed journal) for tamper evidence.
+
+### AP-2 Replication and erasure coding across physical pools
+- **Goal.** Copies or erasure-coded shares of an archive in several physical places (freezers, sites, vendors) so the
+  loss of one site loses nothing.
+- **Method.** A placement layer above the media adapters: N-way replication and k-of-n erasure coding across pools
+  (reusing the GF(256) Cauchy RS code), placement policy, per-site health, repair by re-synthesis from surviving
+  shares; a simulated multi-site loss campaign.
+- **Evidence target.** SIMULATED (DNA sites); MEASURED over electronic backends.
+- **Acceptance.** Any declared number of site losses recovered byte-identically; never wrong bytes when more sites are
+  lost than the code tolerates (explicit failure).
+- **Risks.** Synthesis cost multiplies with redundancy; physical logistics are out of software scope.
+- **Starts from.** `vnxd/src/media.rs`, `src/vnxdna/ecc/` (Cauchy RS), P7 adapters.
+- **Depends on.** FZ-2 (media contract v2).
+
+### AP-3 Key management: rotation, escrow, recovery
+- **Goal.** No sealed archive becomes unreadable because one controller or one person is lost (P11 open question).
+- **Method.** Key hierarchy (archive keys wrapped by rotating key-encryption keys); rotation without re-encoding DNA;
+  offline escrow with threshold secret sharing (Shamir 1979, "How to share a secret", CACM) so k of n custodians can
+  recover; recovery drill tests.
+- **Evidence target.** MEASURED (software).
+- **Acceptance.** Rotation, escrow and k-of-n recovery round-trip on test volumes; fewer than k shares reveal nothing
+  (property tests); audit log of every key event.
+- **Risks.** Custodian process is organisational, not software; mistakes are unrecoverable by design.
+- **Starts from.** `vnxd/src/seal.rs`, `docs/V14_SECURITY_MODEL.md`, `docs/V14_BOOT_ARCHITECTURE.md`.
+- **Depends on.** AP-4 crypto agility decision.
+
+### AP-4 Post-quantum and crypto-agile protection for long-lived archives (freeze-relevant)
+- **Goal.** Archives meant to be read decades from now should not depend only on algorithms a future quantum computer
+  could break (key exchange/signatures; symmetric AES-256 is generally considered adequate with doubled margins †).
+- **Method.** Algorithm identifiers in the sealed format (crypto agility); hybrid key wrapping with ML-KEM (NIST FIPS
+  203, 2024) and signatures with ML-DSA (FIPS 204) or SLH-DSA (FIPS 205); a re-wrap path when algorithms age; library
+  choice by licence and maturity.
+- **Evidence target.** MEASURED (software, test vectors).
+- **Acceptance.** NIST test vectors pass; old and new wrap formats both open; downgrade refused.
+- **Risks.** Library maturity in Rust/Python; larger keys and signatures in metadata.
+- **Starts from.** `docs/V14_SECURITY_MODEL.md`, `vnxd/src/seal.rs`, `src/vnxdna/` container crypto.
+- **Depends on.** M3 freeze (algorithm IDs must be in the frozen format).
+
+### AP-5 Signed provenance and chain of custody
+- **Goal.** Prove what was stored, by whom and when, and track the physical sample from synthesis to retrieval.
+- **Method.** Signed manifests (AP-4 signatures) over the existing SHA-256/Merkle roots; an append-only custody log of
+  physical events (synthesis order, shipment, storage location, retrieval) linked to the P7 lab interface records.
+- **Evidence target.** MEASURED (software).
+- **Acceptance.** Any change to data, manifest or custody log is detected; verification works offline from the spec.
+- **Risks.** Physical custody entries are only as true as the people entering them.
+- **Starts from.** `vnxd/src/lab.rs`, `audit.rs`, manifest/Merkle code.
+- **Depends on.** AP-4.
+
+### AP-6 Monitoring, health and observability
+- **Goal.** Operators see problems before data is at risk.
+- **Method.** Metrics (capacity, I/O latency, cache hit rate, fallback state, scrub results, media/pool health, decode
+  margins) exported in a standard text format (Prometheus exposition †); health checks and alert rules; the web
+  console shows them.
+- **Evidence target.** MEASURED.
+- **Acceptance.** Every V14 fallback/degraded state and scrub failure appears as a metric and an alert in tests.
+- **Risks.** Low.
+- **Starts from.** vnxd diagnostics (P8 health), `web/` console.
+- **Depends on.** none.
+
+### AP-7 Pool health forecasting and refresh planning
+- **Goal.** Re-synthesise (refresh) a pool before decay makes it unrecoverable, instead of discovering loss.
+- **Method.** Combine RS-3 decay models with the outer-code margin measured at each sampling read; forecast the time
+  at which recovery margin falls below a threshold; schedule refresh; a "digital twin" simulation of a pool over time.
+- **Evidence target.** SIMULATED; MEASURED only with real aged samples.
+- **Acceptance.** On simulated decay trajectories, the forecast triggers refresh before any loss in the campaign.
+- **Risks.** Decay models are extrapolations (see LR-4); forecasts must carry uncertainty.
+- **Starts from.** RS-3 models, scrub code.
+- **Depends on.** RS-3, AP-2.
+
+### AP-8 Synthesis-cost planner, deduplication and compression before synthesis
+- **Goal.** Synthesis is the dominant cost; store fewer bases for the same data.
+- **Method.** Content-defined chunking deduplication across archives; compression choice per content type before
+  encoding; a planner that reports strands, bases and an estimated cost per vendor profile from published price
+  inputs the operator supplies (no hard-coded prices).
+- **Evidence target.** MEASURED (software counts).
+- **Acceptance.** Byte-identical round trip; dedup never merges different content (hash-verified); plan output matches
+  the encoder's actual strand counts.
+- **Risks.** Dedup across tenants leaks information; must be per-tenant/opt-in.
+- **Starts from.** `pipeline/encode.py`, `.vxidx` index.
+- **Depends on.** none.
+
+### AP-9 S3-compatible object gateway
+- **Goal.** Let existing tools and applications use VNX through the de-facto object-storage API.
+- **Method.** An S3-compatible subset (buckets, put/get/list/delete, multipart) over VNX volumes/tiering, with object
+  lock mapped to AP-1; conformance against an open S3 test suite †.
+- **Evidence target.** MEASURED.
+- **Acceptance.** The chosen test-suite subset passes; integrity verified end to end.
+- **Risks.** API surface is large; scope to a documented subset.
+- **Starts from.** `src/vnxdna/sdk/`, vnxd service protocol, cloud API.
+- **Depends on.** AP-1 (object lock), F8.
+
+### AP-10 Automated re-encoding (migration) to newer codec profiles
+- **Goal.** When a better codec profile exists, move archives to it on refresh, while every frozen-format archive stays
+  readable.
+- **Method.** Decode-verify-re-encode pipeline triggered by refresh (AP-7) or policy; old and new copies kept until the
+  new one is verified.
+- **Evidence target.** MEASURED (software), SIMULATED (DNA).
+- **Acceptance.** No data deleted before the new copy verifies; compatibility matrix (FZ-4) green.
+- **Starts from.** FZ-4, pipeline code. **Depends on.** M3 freeze.
+
+### AP-11 Plugin SDK for third-party codecs and media adapters
+- **Goal.** Others can add sequencers, synthesis vendors, storage hardware or codecs without forking.
+- **Method.** Stable, versioned plugin interfaces (media contract v2, codec IPC), a conformance suite they must pass,
+  and sandboxing (process isolation, resource limits) for untrusted plugins.
+- **Evidence target.** MEASURED.
+- **Acceptance.** An example external plugin passes conformance; a malicious plugin cannot return unverified bytes as
+  success.
+- **Starts from.** `media::conformance`, `worker.rs`, `vnx.codec-ipc/1`. **Depends on.** FZ-2.
+
+### AP-12 GPU acceleration (gated)
+- **Goal.** Faster alignment/consensus for large pools.
+- **Method.** Only if CC-1 profiling shows alignment/consensus dominates after CPU work; a GPU kernel with bit-exact
+  equivalence tests against the CPU reference; CPU remains the reference path.
+- **Evidence target.** MEASURED. **Acceptance.** Bit-exact outputs; reproducible end-to-end gain with CIs.
+- **Risks.** Hardware dependency; no gain if serial stages dominate. **Starts from.** native align/cluster kernels.
+- **Depends on.** CC-1.
+
+### AP-13 Learned error models assisting the classical decoder (fail-closed)
+- **Goal.** Use machine-learned channel/error priors to raise recovery at low coverage, without ever trusting the model
+  for correctness.
+- **Method.** A learned model supplies soft priors (per-position error likelihoods) to the existing soft path (F6); the
+  outer code, SHA-256 and Merkle checks stay the only acceptance; trained on simulator + public real error data.
+- **Evidence target.** SIMULATED; MEASURED with public raw signals (F6 route).
+- **Acceptance.** Recovery gain with CIs on held-out channels; 0 false successes; deterministic inference.
+- **Risks.** Overfitting to the simulator; model provenance and reproducibility. **Starts from.** V5 soft path, F6.
+- **Depends on.** F6.
+
+### AP-14 Progressive and partial retrieval
+- **Goal.** Read part of a file (a range or a preview) without decoding the whole archive.
+- **Method.** Extend range reads (`.vxidx`, stream extents) so a requested byte range maps to the minimal set of
+  extents and strands; physical side via CC-5/F4.
+- **Evidence target.** MEASURED (software), SIMULATED (physical selection).
+- **Acceptance.** Range output byte-identical to the slice of a full decode; strands touched reported.
+- **Starts from.** `pipeline/stream.py`, `.vxidx`. **Depends on.** CC-5 for physical selection.
+
+### AP-15 Molecular authentication of physical pools (research)
+- **Goal.** Detect a counterfeit or substituted DNA sample.
+- **Method.** Literature study of DNA watermarking/authentication schemes †; design of keyed marker strands verified
+  at retrieval; simulation.
+- **Evidence target.** THEORETICAL / SIMULATED; MEASURED needs wet lab.
+- **Acceptance.** A study with a go/no-go recommendation. **Risks.** Low priority; uncertain value.
+- **Starts from.** AP-5, P7 lab interface. **Depends on.** AP-5.
+
 ## 6. Platform items
 
 ### PL-1 ublk upgrade (P8 Stage A')
@@ -786,6 +948,7 @@ External lead times (vendors, reviewers, hardware, counsel) are calendar time on
 | **M7** platform | PL-1 (gate first), PL-2 (hardware), PL-3 (per P11 study) | 1–10 weeks, hardware-bound | each acceptance or a recorded blocker |
 | **M8** validation + release candidate | QA-1..QA-6; patent review done (Q11) before the spec is published; release acceptance of §1 | 4–6 weeks | full gate on the RC SHA; founder release go |
 | **M9** external validation | LR-5 external run; QA-3 step 2 | calendar, unknown | statements committed or reported as pending (Q6) |
+| **M10** archive platform (§5A) | AP-4 algorithm IDs decided at M3 (freeze-relevant); then AP-1, AP-3, AP-6, AP-8 (high value, low risk); AP-2, AP-5, AP-7, AP-9, AP-10, AP-11; gated AP-12, AP-13; studies AP-14 (with CC-5), AP-15 | 16–28 weeks; parallel with M3–M8 | per-item acceptance; trims allowed at M0 |
 
 Total engineering: roughly **45–75 focused weeks** with every item; with two to three parallel streams, about **8–12
 months of calendar time** to a release candidate, plus vendor, counsel, hardware and reviewer lead times. Without the
@@ -818,8 +981,10 @@ review → RC.
 - **Q10** Frontier scope: which of F8, F7, F6, F2, F4, F3, F5 are in V15, and may experimental profiles (F2, F4) exist
   outside the frozen core after the final version?
 - **Q11** Patent-attorney review of candidate methods before the spec, any paper or public repository (§8).
-- Carried over: `cryptography` pin and scrypt cost (FZ-3); any P12 FAIL/INCOMPLETE item becomes a V15 item or a
-  documented non-goal.
+- **Q12** Post-quantum (AP-4): adopt hybrid ML-KEM/ML-DSA (or SLH-DSA) algorithm IDs in the frozen format at M3?
+- **Q13** Archive platform scope (§5A): which AP items are in V15; AP-2/AP-7 also need a decision on physical sites.
+- Carried over: scrypt cost (FZ-3; the `cryptography` pin was decided in V14: >=48.0.1,<51); any P12 FAIL/INCOMPLETE
+  item becomes a V15 item or a documented non-goal.
 
 ## 12. Placeholders for P12
 
