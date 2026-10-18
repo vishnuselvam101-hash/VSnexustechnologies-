@@ -33,7 +33,7 @@
 //! versioned contract change for the phase that connects real equipment).
 
 use crate::addr::GenerationRef;
-use crate::codec::{frame, metadata_only, simple_channel, unframe, Codec, Envelope, PoolFile, FRAME_OVERHEAD};
+use crate::codec::{frame, metadata_only, simple_channel, unframe, verify_decoded, Codec, Envelope, PoolFile, FRAME_OVERHEAD};
 use crate::digest::{hex, sha256};
 use crate::error::{err, ErrorCode, Result, VnxError};
 use crate::fault::SplitMix64;
@@ -478,6 +478,8 @@ enum JobInput {
 
 struct SimJob {
     status: JobStatus,
+    /// the job that retried this one (a failed job is retried at most once)
+    retried_by: Option<JobId>,
     input: JobInput,
     /// what a completed job produced
     pool: Option<PoolId>,
@@ -526,6 +528,10 @@ impl SimulatedLab {
 
     fn submit(&self, kind: JobKind, input: JobInput, retry_of: Option<JobId>) -> Result<JobId> {
         let mut s = self.lock();
+        Self::submit_in(&mut s, kind, input, retry_of)
+    }
+
+    fn submit_in(s: &mut SimState, kind: JobKind, input: JobInput, retry_of: Option<JobId>) -> Result<JobId> {
         if s.offline {
             return err(ErrorCode::BackendUnavailable, "SIMULATED lab is offline");
         }
@@ -544,7 +550,7 @@ impl SimulatedLab {
             retry_of,
             history: vec![JobState::Submitted],
         };
-        s.jobs.insert(id.clone(), SimJob { status, input, pool: None, sample: None, delivery: None });
+        s.jobs.insert(id.clone(), SimJob { status, retried_by: None, input, pool: None, sample: None, delivery: None });
         Ok(id)
     }
 
@@ -760,6 +766,9 @@ impl DnaLab for SimulatedLab {
 
     fn cancel(&self, job: &JobId) -> Result<()> {
         let mut s = self.lock();
+        if s.offline {
+            return err(ErrorCode::BackendUnavailable, "SIMULATED lab is offline");
+        }
         let Some(j) = s.jobs.get_mut(job) else { return err(ErrorCode::NotFound, format!("no job {}", job.0)) };
         if !j.status.state.can_move_to(JobState::Cancelled) {
             return err(ErrorCode::InvalidArgument, format!("job {} is {}: it cannot be cancelled", job.0, j.status.state.as_str()));
@@ -770,15 +779,15 @@ impl DnaLab for SimulatedLab {
     }
 
     fn retry(&self, job: &JobId) -> Result<JobId> {
-        let (kind, input) = {
-            let s = self.lock();
-            let Some(j) = s.jobs.get(job) else { return err(ErrorCode::NotFound, format!("no job {}", job.0)) };
-            match (&j.status.state, &j.status.error) {
-                (JobState::Failed, Some(e)) if e.kind.retryable() => (j.status.kind, j.input.clone()),
-                _ => return err(ErrorCode::InvalidArgument, format!("job {} has not failed retryably", job.0)),
-            }
+        let mut s = self.lock(); // check and record under one lock: a failed job is retried at most once
+        let Some(j) = s.jobs.get(job) else { return err(ErrorCode::NotFound, format!("no job {}", job.0)) };
+        let (kind, input) = match (&j.status.state, &j.status.error) {
+            (JobState::Failed, Some(e)) if e.kind.retryable() && j.retried_by.is_none() => (j.status.kind, j.input.clone()),
+            _ => return err(ErrorCode::InvalidArgument, format!("job {} has not failed retryably, or was retried already", job.0)),
         };
-        self.submit(kind, input, Some(job.clone()))
+        let new = Self::submit_in(&mut s, kind, input, Some(job.clone()))?;
+        s.jobs.get_mut(job).expect("present").retried_by = Some(new.clone());
+        Ok(new)
     }
 
     fn synthesis_result(&self, job: &JobId) -> Result<PoolId> {
@@ -874,7 +883,13 @@ impl LabMedia {
         loop {
             let mut st = None;
             for _ in 0..self.cfg.max_polls {
-                let s = self.lab.status(&job)?;
+                let s = match self.lab.status(&job) {
+                    Ok(s) => s,
+                    Err(e) => {
+                        let _ = self.lab.cancel(&job); // best effort: an unowned job may still finish (see docs §5)
+                        return Err(e);
+                    }
+                };
                 if s.state.is_terminal() {
                     st = Some(s);
                     break;
@@ -902,6 +917,12 @@ impl LabMedia {
     fn entry(&self, at: GenerationRef) -> Result<Envelope> {
         Envelope::parse(at, &self.catalogue.get(at)?)
     }
+}
+
+/// The pool a catalogue payload names.
+fn pool_of(payload: &[u8]) -> Option<PoolId> {
+    let v = Value::parse(std::str::from_utf8(payload).ok()?).ok()?;
+    v.as_obj()?.get("pool")?.as_str().map(|p| PoolId(p.to_string()))
 }
 
 /// Catalogue payload of one generation: canonical JSON {"pool": id, "pool_header": codec header}.
@@ -938,20 +959,22 @@ impl MediaAdapter for LabMedia {
             Envelope::Dna { frame_sha256: sha256(&framed), frame_len: framed.len() as u64, payload: catalogue_payload(&pid, &pool) }
         };
         let stored = envelope.to_bytes();
-        let r = self.catalogue.put(at, &stored);
-        match r {
-            Ok(r) if r.length == stored.len() as u64 && r.sha256 == sha256(&stored) => {}
-            other => {
-                if let Envelope::Dna { payload, .. } = &envelope {
-                    if let Some(p) = Value::parse(std::str::from_utf8(payload).unwrap_or("")).ok().and_then(|v| v.as_obj().and_then(|o| o.get("pool")).and_then(Value::as_str).map(String::from)) {
-                        let _ = self.lab.destroy_pool(&PoolId(p)); // never leave an unreferenced pool behind
+        let failure = match self.catalogue.put(at, &stored) {
+            Ok(r) if r.length == stored.len() as u64 && r.sha256 == sha256(&stored) => None,
+            Ok(_) => Some(VnxError::new(ErrorCode::Corruption, format!("catalogue receipt for {at:?} does not describe the entry"))),
+            Err(e) => Some(e),
+        };
+        if let Some(e) = failure {
+            // never leave an unreferenced pool behind, but never destroy one the catalogue may still point to:
+            // the entry may have been stored although the put reported a failure
+            if let (Envelope::Dna { payload, .. }, Err(g)) = (&envelope, self.catalogue.get(at)) {
+                if g.code == ErrorCode::NotFound {
+                    if let Some(p) = pool_of(payload) {
+                        let _ = self.lab.destroy_pool(&p);
                     }
                 }
-                return match other {
-                    Err(e) => Err(e),
-                    Ok(_) => err(ErrorCode::Corruption, format!("catalogue receipt for {at:?} does not describe the entry")),
-                };
             }
+            return Err(e);
         }
         Ok(CommitReceipt { at, length: data.len() as u64, sha256: sha256(data) })
     }
@@ -992,16 +1015,14 @@ impl MediaAdapter for LabMedia {
         // reconstruction handoff: the codec decodes the delivered reads; only the recorded bytes come back
         let handoff = PoolFile { header: header.clone(), body: vec![] }.with_body("reads", reads).to_bytes();
         let framed = self.codec.decode(at, &handoff, &frame_sha256, frame_len, None)?;
+        verify_decoded(at, &framed, &frame_sha256, frame_len)?;
         unframe(at, &framed)
     }
 
     fn remove(&self, at: GenerationRef) -> Result<()> {
         if let Envelope::Dna { payload, .. } = self.entry(at)? {
-            let pool = Value::parse(std::str::from_utf8(&payload).unwrap_or(""))
-                .ok()
-                .and_then(|v| v.as_obj().and_then(|o| o.get("pool")).and_then(Value::as_str).map(String::from));
-            if let Some(p) = pool {
-                match self.lab.destroy_pool(&PoolId(p)) {
+            if let Some(p) = pool_of(&payload) {
+                match self.lab.destroy_pool(&p) {
                     Ok(()) => {}
                     Err(e) if e.code == ErrorCode::NotFound => {}
                     Err(e) => return Err(e),
@@ -1116,7 +1137,8 @@ mod tests {
         assert!(e.kind.retryable());
         assert_eq!(e.to_vnx().code, ErrorCode::BackendUnavailable);
         let r = lab.retry(&j).unwrap();
-        assert_eq!(lab.status(&r).unwrap().retry_of, Some(j));
+        assert_eq!(lab.status(&r).unwrap().retry_of, Some(j.clone()));
+        assert_eq!(lab.retry(&j).unwrap_err().code, ErrorCode::InvalidArgument, "a failed job is retried at most once");
         // the adapter gives up after its retries and reports a retryable error, storing nothing
         let (_, m) = media(SimLabConfig { synthesis_failure_ppm: 1_000_000, ..Default::default() });
         assert_eq!(m.put(at(0, 1), b"x").unwrap_err().code, ErrorCode::BackendUnavailable);
@@ -1147,6 +1169,50 @@ mod tests {
         assert_eq!(lab.health().unwrap().state, LabState::Offline);
         lab.set_offline(false);
         assert_eq!(m.get(at(1, 1)).unwrap(), b"x");
+    }
+
+    #[test]
+    fn a_failed_catalogue_put_destroys_the_pool_only_when_no_entry_was_stored() {
+        use crate::fault::{Fault, FaultMedia, MediaOp, Rule};
+        for (fault, entry_kept) in [(Fault::Unavailable, false), (Fault::AckLost, true)] {
+            let lab = Arc::new(SimulatedLab::new(SimLabConfig::default()));
+            let cat = Arc::new(FaultMedia::new());
+            let m = LabMedia::new(lab.clone(), Arc::new(ToyCodec), cat.clone(), LabMediaConfig::default()).unwrap();
+            cat.add(Rule::once(MediaOp::Put, fault));
+            assert!(m.put(at(1, 1), b"payload").is_err());
+            let pool = lab.pool(&lab.pools().unwrap()[0]).unwrap();
+            assert_eq!(pool.lifecycle == PoolLifecycle::Destroyed, !entry_kept, "{fault:?}");
+            if entry_kept {
+                assert_eq!(m.get(at(1, 1)).unwrap(), b"payload", "the stored entry still points to a live pool");
+            }
+        }
+    }
+
+    /// A codec that returns other bytes than it was asked for, claiming success.
+    struct LyingCodec;
+    impl Codec for LyingCodec {
+        fn name(&self) -> &'static str {
+            "lying-test-codec"
+        }
+        fn encode(&self, at: GenerationRef, framed: &[u8]) -> Result<Vec<u8>> {
+            ToyCodec.encode(at, framed)
+        }
+        fn decode(&self, at: GenerationRef, _: &[u8], _: &[u8; 32], len: u64, _: Option<&crate::codec::ChannelRun>) -> Result<Vec<u8>> {
+            let mut f = frame(at, &vec![0xEE; len as usize - FRAME_OVERHEAD]);
+            f.truncate(len as usize);
+            Ok(f)
+        }
+    }
+
+    #[test]
+    fn the_adapters_verify_decoded_bytes_themselves() {
+        let lab = Arc::new(SimulatedLab::new(SimLabConfig::default()));
+        let m = LabMedia::new(lab, Arc::new(LyingCodec), Arc::new(MemoryMedia::new()), LabMediaConfig::default()).unwrap();
+        m.put(at(1, 1), b"truth").unwrap();
+        assert_eq!(m.get(at(1, 1)).unwrap_err().code, ErrorCode::Corruption);
+        let s = crate::dnasim::DnaSimMedia::new(Arc::new(MemoryMedia::new()), Arc::new(LyingCodec), Default::default()).unwrap();
+        s.put(at(1, 1), b"truth").unwrap();
+        assert_eq!(s.get(at(1, 1)).unwrap_err().code, ErrorCode::Corruption);
     }
 
     #[test]

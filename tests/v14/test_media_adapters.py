@@ -92,12 +92,43 @@ def test_the_worker_refuses_moved_tampered_or_mismatched_pools(staged):
 @pytest.mark.parametrize("options", [
     {"x": 1}, {"channel": {"model": "illumina-like"}}, {"channel": {"model": "../etc/passwd", "seed": 1}},
     {"channel": {"model": "illumina-like", "seed": -1}}, {"channel": {"model": "no-such-model", "seed": 1}},
+    {"channel": {"model": "illumina-like\n", "seed": 1}}, {"channel": {"model": "illumina-like@9.9.9", "seed": 1}},
 ])
 def test_bad_channel_options_are_invalid_argument(staged, options):
     w, d = staged
     data = b"x" * 100
     _encode(w, d, data)
-    assert _code(w.handle(_req(8, "decode_extent", _decode_args(8, "pool2", data, options)))) == "INVALID_ARGUMENT"
+    v = json.loads(w.handle(_req(8, "decode_extent", _decode_args(8, "pool2", data, options))))
+    assert v["error"]["code"] == "INVALID_ARGUMENT" and v["error"]["message"].startswith(ds.OPTIONS)
+
+
+def test_a_file_named_like_a_model_in_the_working_directory_is_never_read(staged, monkeypatch):
+    w, d = staged
+    data = os.urandom(800)
+    _encode(w, d, data)
+    (d / "illumina-like").write_text("{not a model}")      # planted next to the worker (its cwd is the staging dir)
+    monkeypatch.chdir(d)
+    _result(w.handle(_req(9, "decode_extent", _decode_args(9, "pool2", data, {"channel": {"model": "illumina-like",
+                                                                                          "seed": 2}}))))
+    assert (d / "out9").read_bytes() == data
+
+
+def test_worker_resource_failures_are_retryable_not_damage(staged, monkeypatch):
+    from vnxdna.core.errors import VNXOutputError
+    from vnxdna.pipeline import stream
+    w, d = staged
+    data = os.urandom(500)
+    _encode(w, d, data)
+
+    def full(*a, **k):
+        raise VNXOutputError("No space left on device")
+    monkeypatch.setattr(stream, "decode_extent", full)
+    assert _code(w.handle(_req(12, "decode_extent", _decode_args(12, "pool2", data, {})))) == "BACKEND_UNAVAILABLE"
+    monkeypatch.setattr(stream, "encode_extent", full)
+    (d / "e2").write_bytes(data)
+    args = {"job": 13, "extent": 0, "generation": 1, "input": "e2", "input_sha256": hashlib.sha256(data).hexdigest(),
+            "output": "o13", "options": {}}
+    assert _code(w.handle(_req(13, "encode_extent", args))) == "BACKEND_UNAVAILABLE"
 
 
 def test_a_channel_is_never_applied_to_reads_and_encode_options_are_strict(staged):

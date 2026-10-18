@@ -48,7 +48,26 @@ FORMAT = "vnx.dna-pool/1"
 EVIDENCE = "SIMULATED"
 MAX_HEADER = 64 << 10
 MAX_POOL = 1 << 30
-_MODEL = re.compile(r"^[a-z0-9][a-z0-9._+-]{0,63}(@[0-9A-Za-z.+-]{1,32})?$")
+_MODEL = re.compile(r"[a-z0-9][a-z0-9._+-]{0,63}(@[0-9A-Za-z.+-]{1,32})?")
+#: INVALID_ARGUMENT messages about a request's options start with this (vnxd passes only those on as permanent)
+OPTIONS = "options: "
+
+
+def _transient(e: BaseException) -> bool:
+    """Failures of the worker's own resources (disk full, output errors, OS errors): retryable, never damage."""
+    from vnxdna.core.errors import VNXOutputError, VNXResourceError
+    return isinstance(e, (VNXOutputError, VNXResourceError, OSError))
+
+
+def _shipped_model(ref: str):
+    """A shipped ``vnx.channel-model/1`` by name or name@version, never a file (the registry would read a file of
+    that name from the current directory)."""
+    from vnxdna.simulation import registry
+    name, _, version = ref.partition("@")
+    versions = sorted((v for n, v in registry.available() if n == name), key=registry._semver_key)
+    if not versions or (version and version not in versions):
+        raise DeviceError("INVALID_ARGUMENT", f"{OPTIONS}unknown channel model {ref!r}; shipped: {registry.model_names()}")
+    return registry._load_shipped(name, version or versions[-1])
 _RECORD = {"length": int, "sha256": str, "archive_id": str, "archive_tag": str, "strands": int, "bases": int,
            "strands_sha256": str, "container_sha256": str}
 _HEADER = {"format", "evidence", "extent", "generation", "body", "body_sha256", "record"}
@@ -120,7 +139,7 @@ class CodecWorker(Worker):
         from vnxdna.pipeline.stream import encode_extent
 
         if a["options"] != {}:
-            raise DeviceError("INVALID_ARGUMENT", f"encode_extent options must be {{}} (got keys {sorted(a['options'])})")
+            raise DeviceError("INVALID_ARGUMENT", f"{OPTIONS}encode_extent options must be {{}} (got keys {sorted(a['options'])})")
         data = self._read_input(a["input"], a["input_sha256"])
         tmp = self._tmp()
         try:
@@ -128,7 +147,9 @@ class CodecWorker(Worker):
             src.write_bytes(data)
             try:
                 rec = encode_extent(src, tmp / "strands.fasta", DNAOptions(), ArchiveOptions(archive_id="content"), work=tmp)
-            except VNXError as e:
+            except (VNXError, OSError) as e:
+                if _transient(e):
+                    raise DeviceError("BACKEND_UNAVAILABLE", f"encoder: {type(e).__name__}: {e}") from None
                 raise DeviceError("INVALID_ARGUMENT", f"the encoder refused the extent: {e}") from None
             body = (tmp / "strands.fasta").read_bytes()
         finally:
@@ -143,19 +164,19 @@ class CodecWorker(Worker):
             return None
         if set(options) != {"channel"} or not isinstance(options["channel"], dict) \
                 or set(options["channel"]) != {"model", "seed"}:
-            raise DeviceError("INVALID_ARGUMENT", 'decode_extent options must be {} or {"channel": {"model", "seed"}}')
+            raise DeviceError("INVALID_ARGUMENT", OPTIONS + 'decode_extent options must be {} or {"channel": {"model", "seed"}}')
         model, seed = options["channel"]["model"], options["channel"]["seed"]
-        if not isinstance(model, str) or not _MODEL.match(model):
-            raise DeviceError("INVALID_ARGUMENT", "channel model must be the name of a shipped model (no paths)")
+        if not isinstance(model, str) or not _MODEL.fullmatch(model):
+            raise DeviceError("INVALID_ARGUMENT", f"{OPTIONS}channel model must be the name of a shipped model (no paths)")
         if isinstance(seed, bool) or not isinstance(seed, int) or not 0 <= seed < 2 ** 63:
-            raise DeviceError("INVALID_ARGUMENT", "channel seed must be a non-negative 63-bit integer")
+            raise DeviceError("INVALID_ARGUMENT", f"{OPTIONS}channel seed must be a non-negative 63-bit integer")
         return model, seed
 
     def _decode(self, a: dict[str, Any]) -> dict[str, Any]:
-        from vnxdna.core.errors import VNXConfigurationError, VNXError
+        from vnxdna.core.errors import VNXError
         from vnxdna.recovery.options import DecodeOptions
         from vnxdna.pipeline.stream import decode_extent
-        from vnxdna.simulation import engine, registry
+        from vnxdna.simulation import engine
 
         channel = self._channel(a["options"])
         raw = self._read_pool(a["input"])
@@ -164,22 +185,21 @@ class CodecWorker(Worker):
             raise DeviceError("CORRUPTION", f"pool of extent {h['extent']} generation {h['generation']} handed in for "
                                             f"extent {a['extent']} generation {a['generation']}")
         if channel is not None and h["body"] != "strands":
-            raise DeviceError("INVALID_ARGUMENT", "a channel can only be applied to strands, not to reads")
+            raise DeviceError("INVALID_ARGUMENT", f"{OPTIONS}a channel can only be applied to strands, not to reads")
+        model = _shipped_model(channel[0]) if channel is not None else None
         tmp = self._tmp()
         try:
             reads = tmp / ("body" + _reads_suffix(body))
             reads.write_bytes(body)
-            if channel is not None:
-                try:
-                    model = registry.load_model(channel[0])
-                except VNXConfigurationError as e:
-                    raise DeviceError("INVALID_ARGUMENT", f"channel model: {e}") from None
-                seq = tmp / "reads.fastq"
-                engine.simulate_file(reads, seq, model, channel[1], fmt="fastq")
-                reads = seq
             try:
+                if channel is not None:
+                    seq = tmp / "reads.fastq"
+                    engine.simulate_file(reads, seq, model, channel[1], fmt="fastq")
+                    reads = seq
                 data = decode_extent(reads, h["record"], DecodeOptions(), work=tmp)
-            except VNXError as e:
+            except (VNXError, OSError) as e:
+                if _transient(e):
+                    raise DeviceError("BACKEND_UNAVAILABLE", f"codec worker resources: {type(e).__name__}: {e}") from None
                 raise DeviceError("CORRUPTION", f"the extent did not decode: {type(e).__name__}: {e}") from None
         finally:
             shutil.rmtree(tmp, ignore_errors=True)

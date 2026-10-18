@@ -172,7 +172,7 @@ pub struct FaultMedia {
     rules: Mutex<Vec<Rule>>,
     plan: Mutex<Option<FaultPlan>>,
     offline: AtomicBool,
-    trace: Mutex<Vec<Injection>>,
+    trace: Mutex<std::collections::VecDeque<Injection>>,
     /// operations per kind (put, get, remove, list, sync)
     pub calls: [AtomicU64; 5],
     pub injected: AtomicU64,
@@ -206,7 +206,7 @@ impl FaultMedia {
             rules: Mutex::new(Vec::new()),
             plan: Mutex::new(None),
             offline: AtomicBool::new(false),
-            trace: Mutex::new(Vec::new()),
+            trace: Mutex::new(std::collections::VecDeque::new()),
             calls: Default::default(),
             injected: AtomicU64::new(0),
         }
@@ -230,7 +230,7 @@ impl FaultMedia {
 
     /// Every fault injected so far, in order (the last 65,536).
     pub fn trace(&self) -> Vec<Injection> {
-        self.trace.lock().unwrap_or_else(|p| p.into_inner()).clone()
+        self.trace.lock().unwrap_or_else(|p| p.into_inner()).iter().copied().collect()
     }
 
     pub fn add(&self, rule: Rule) {
@@ -255,9 +255,9 @@ impl FaultMedia {
             self.injected.fetch_add(1, Ordering::Relaxed);
             let mut t = self.trace.lock().unwrap_or_else(|p| p.into_inner());
             if t.len() == MAX_TRACE {
-                t.remove(0);
+                t.pop_front();
             }
-            t.push(Injection { op, call, fault: f });
+            t.push_back(Injection { op, call, fault: f });
         }
         if let Some(Fault::Delay { millis }) = fault {
             std::thread::sleep(Duration::from_millis(u64::from(millis)));
@@ -311,6 +311,10 @@ impl MediaAdapter for FaultMedia {
     fn info(&self) -> MediaInfo {
         let inner = self.inner.info();
         MediaInfo { kind: "faulty", durability: inner.durability, max_in_flight: inner.max_in_flight }
+    }
+
+    fn sealed(&self) -> bool {
+        self.inner.sealed()
     }
 
     fn put(&self, at: GenerationRef, data: &[u8]) -> Result<CommitReceipt> {

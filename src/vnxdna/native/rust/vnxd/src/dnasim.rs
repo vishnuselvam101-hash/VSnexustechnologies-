@@ -21,7 +21,7 @@
 //!   metadata region only (an `M` envelope), never presented as DNA.
 
 use crate::addr::GenerationRef;
-use crate::codec::{frame, metadata_only, unframe, ChannelRun, Codec, Envelope, FRAME_OVERHEAD};
+use crate::codec::{frame, metadata_only, unframe, verify_decoded, ChannelRun, Codec, Envelope, FRAME_OVERHEAD};
 use crate::digest::sha256;
 use crate::error::{err, ErrorCode, Result};
 use crate::fault::SplitMix64;
@@ -237,7 +237,10 @@ impl MediaAdapter for DnaSimMedia {
                         seed: SplitMix64::keyed(&[self.cfg.seed, OP_CHANNEL, at.extent.0, at.generation.get(), n]) >> 1,
                     });
                     match self.codec.decode(at, &payload, &frame_sha256, frame_len, channel.as_ref()) {
-                        Ok(framed) => return unframe(at, &framed),
+                        Ok(framed) => {
+                            verify_decoded(at, &framed, &frame_sha256, frame_len)?;
+                            return unframe(at, &framed);
+                        }
                         Err(e) if e.code == ErrorCode::Corruption => {
                             self.stats.decode_failures.fetch_add(1, Ordering::Relaxed);
                             last = Some(e);

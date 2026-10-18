@@ -218,14 +218,27 @@ pub struct WorkerCodec {
     pool: WorkerPool,
 }
 
-/// Verdicts about the data (CORRUPTION), the request (INVALID_ARGUMENT: an unknown channel model) and transport
-/// failures pass through; anything else the worker reports is a failure of the codec service (retryable), never
-/// damage.
+/// Prefix of the worker's INVALID_ARGUMENT messages about the request's options (an unknown channel model, bad
+/// options): only those are a verdict about the request. Any other INVALID_ARGUMENT (a staging file that cannot be
+/// created, ...) is a failure of the codec service.
+pub const OPTIONS_REFUSAL: &str = "options: ";
+
+/// Verdicts about the data (CORRUPTION), refusals of the request's options and transport failures pass through;
+/// anything else the worker reports is a failure of the codec service (retryable), never damage.
 fn codec_verdict(e: VnxError) -> VnxError {
     match e.code {
-        ErrorCode::Corruption | ErrorCode::InvalidArgument | ErrorCode::Timeout | ErrorCode::BackendUnavailable => e,
+        ErrorCode::Corruption | ErrorCode::Timeout | ErrorCode::BackendUnavailable => e,
+        ErrorCode::InvalidArgument if e.message.starts_with(OPTIONS_REFUSAL) => e,
         _ => unavailable(format!("codec worker: {e}")),
     }
+}
+
+/// Check decoded bytes against what was recorded at `put`, whatever the codec claims: CORRUPTION if they differ.
+pub fn verify_decoded(at: GenerationRef, framed: &[u8], frame_sha256: &[u8; 32], frame_len: u64) -> Result<()> {
+    if framed.len() as u64 != frame_len || sha256(framed) != *frame_sha256 {
+        return err(ErrorCode::Corruption, format!("{at:?}: decoded bytes do not match the recorded SHA-256"));
+    }
+    Ok(())
 }
 
 impl WorkerCodec {
@@ -428,6 +441,9 @@ impl Codec for ToyCodec {
                 parse_reads(&simple_channel(&p.strands()?, 5, sub, drop, c.seed))?
             }
         };
+        if expect_len > 1 << 24 {
+            return err(ErrorCode::Corruption, format!("{at:?}: expected length beyond the test codec's range"));
+        }
         let strands = (expect_len as usize * 4).div_ceil(TOY_PAYLOAD_NT);
         // per-strand, per-position base counts (majority vote per base)
         let mut votes: Vec<Vec<[u32; 4]>> = vec![vec![[0; 4]; TOY_PAYLOAD_NT]; strands];
@@ -512,6 +528,19 @@ mod tests {
         let mut tampered = pool.clone();
         *tampered.last_mut().unwrap() = b'A';
         assert_eq!(ToyCodec.decode(a, &tampered, &sha, data.len() as u64, None).unwrap_err().code, ErrorCode::Corruption);
+    }
+
+    #[test]
+    fn only_option_refusals_and_data_verdicts_pass_through_as_permanent() {
+        let v = |c, m: &str| codec_verdict(VnxError::new(c, m)).code;
+        assert_eq!(v(ErrorCode::InvalidArgument, "options: unknown channel model"), ErrorCode::InvalidArgument);
+        assert_eq!(v(ErrorCode::InvalidArgument, "staging output o1: File exists"), ErrorCode::BackendUnavailable);
+        assert_eq!(v(ErrorCode::NotFound, "staging input"), ErrorCode::BackendUnavailable);
+        assert_eq!(v(ErrorCode::Internal, "x"), ErrorCode::BackendUnavailable);
+        assert_eq!(v(ErrorCode::Corruption, "x"), ErrorCode::Corruption);
+        let a = at(1, 1);
+        let f = frame(a, b"x");
+        assert_eq!(ToyCodec.decode(a, &ToyCodec.encode(a, &f).unwrap(), &sha256(&f), 1 << 40, None).unwrap_err().code, ErrorCode::Corruption);
     }
 
     #[test]

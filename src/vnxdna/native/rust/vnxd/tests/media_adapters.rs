@@ -173,6 +173,26 @@ fn faulty_wrapper_keeps_conformance_when_no_fault_fires_and_takes_the_inner_dura
     conformance(&FaultMedia::new()).unwrap();
 }
 
+#[test]
+fn the_faulty_wrapper_forwards_sealing() {
+    use vnxd::seal::SealedMedia;
+    struct Plain;
+    impl vnxd::seal::Sealer for Plain {
+        fn seal(&self, _: &[u8; 16], _: GenerationRef, p: &[u8]) -> vnxd::error::Result<Vec<u8>> {
+            Ok(p.to_vec())
+        }
+        fn open(&self, _: &[u8; 16], _: GenerationRef, s: &[u8]) -> vnxd::error::Result<Vec<u8>> {
+            Ok(s.to_vec())
+        }
+        fn key_check(&self, _: &[u8; 16]) -> vnxd::error::Result<[u8; 32]> {
+            Ok([0; 32])
+        }
+    }
+    let sealed: Arc<dyn MediaAdapter> = Arc::new(SealedMedia::new(Arc::new(MemoryMedia::new()), Arc::new(Plain), [0; 16], 4096));
+    assert!(FaultMedia::over(sealed).sealed());
+    assert!(!FaultMedia::new().sealed());
+}
+
 /// Volume + block I/O + fallback over a seeded faulty medium: random writes and reads; every read is the last
 /// completed write or an error.
 fn chaos(seed: u64, plan: FaultPlan, inner: Arc<dyn MediaAdapter>) -> (u64, u64, Vec<Fault>) {

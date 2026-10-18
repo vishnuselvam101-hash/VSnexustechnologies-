@@ -35,6 +35,7 @@ use std::fs::{File, OpenOptions};
 use std::io::{ErrorKind, Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Mutex;
 
 pub const IMAGE_FORMAT: &str = "vnx.media-image/1";
 const IMAGE_FILE: &str = "IMAGE";
@@ -42,7 +43,8 @@ const LOCK_FILE: &str = "LOCK";
 const OBJECTS: &str = "objects";
 const MAGIC: &[u8; 8] = b"VNXIMG01";
 pub const OBJECT_HEADER: u64 = 64;
-/// Largest object an image accepts or reads back (an extent plus room for an envelope or seal).
+/// Default largest object an image accepts or reads back (an extent plus room for an envelope or seal);
+/// see [`ImageMedia::with_max_object`].
 pub const MAX_OBJECT_BYTES: u64 = MAX_EXTENT_BYTES + (1 << 20);
 const STATEMENT: &str = "electronic file-image backend of vnxd: host storage, NOT DNA";
 
@@ -58,7 +60,14 @@ pub struct ImageMedia {
     root: PathBuf,
     objects: PathBuf,
     tmp_seq: AtomicU64,
+    /// the canonical root this instance holds in [`HELD`]
+    key: PathBuf,
+    max_object: u64,
 }
+
+/// Image roots held by an `ImageMedia` of this process (a LOCK naming our own pid but no entry here was left by an
+/// earlier incarnation with the same pid, e.g. pid 1 in a restarted container).
+static HELD: Mutex<Vec<PathBuf>> = Mutex::new(Vec::new());
 
 /// What a scrub found wrong with one stored object.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -107,9 +116,11 @@ impl ImageMedia {
             }
             _ => return err(ErrorCode::Corruption, format!("{}: damaged image identifier", id.display())),
         }
-        lock(root)?;
+        let key = lock(root)?;
         let objects = root.join(OBJECTS);
-        let entries = std::fs::read_dir(&objects).map_err(|e| io_err("read", &objects, e))?;
+        let m = ImageMedia { root: root.to_path_buf(), objects, tmp_seq: AtomicU64::new(0), key, max_object: MAX_OBJECT_BYTES };
+        // from here on, dropping `m` on an error releases the lock
+        let entries = std::fs::read_dir(&m.objects).map_err(|e| io_err("read", &m.objects, e))?;
         let mut swept = false;
         for e in entries.flatten() {
             if e.file_name().to_string_lossy().starts_with(".tmp-") {
@@ -118,9 +129,16 @@ impl ImageMedia {
             }
         }
         if swept {
-            fsync_dir(&objects)?;
+            fsync_dir(&m.objects)?;
         }
-        Ok(ImageMedia { root: root.to_path_buf(), objects, tmp_seq: AtomicU64::new(0) })
+        Ok(m)
+    }
+
+    /// Raise or lower the largest object this image accepts and reads back (default [`MAX_OBJECT_BYTES`]). A pool
+    /// store of the DNA simulator needs several times the extent size (strands + ECC).
+    pub fn with_max_object(mut self, bytes: u64) -> ImageMedia {
+        self.max_object = bytes;
+        self
     }
 
     /// Open the image at `root`, creating it if the directory does not exist or is empty.
@@ -155,31 +173,62 @@ impl ImageMedia {
 impl Drop for ImageMedia {
     fn drop(&mut self) {
         let _ = std::fs::remove_file(self.root.join(LOCK_FILE));
+        HELD.lock().unwrap_or_else(|p| p.into_inner()).retain(|k| k != &self.key);
     }
 }
 
-/// One process per image: LOCK holds the owner's pid; a lock whose process no longer runs is stale and taken over.
-fn lock(root: &Path) -> Result<()> {
-    let p = root.join(LOCK_FILE);
-    for _ in 0..2 {
-        match OpenOptions::new().write(true).create_new(true).open(&p) {
-            Ok(mut f) => {
-                f.write_all(format!("{}\n", std::process::id()).as_bytes()).map_err(|e| io_err("write", &p, e))?;
-                return Ok(());
-            }
-            Err(e) if e.kind() == ErrorKind::AlreadyExists => {
-                let owner = std::fs::read_to_string(&p).unwrap_or_default();
-                let pid = owner.trim().parse::<u32>().ok();
-                let alive = pid.map_or(false, |pid| Path::new(&format!("/proc/{pid}")).exists());
-                if alive {
-                    return err(ErrorCode::BackendBusy, format!("image {} is in use by process {}", root.display(), owner.trim()));
-                }
-                let _ = std::fs::remove_file(&p); // stale: its owner died
-            }
-            Err(e) => return Err(io_err("lock", &p, e)),
-        }
+/// One process per image (advisory). LOCK holds "<pid> <token>" and is created by linking a complete, fsynced
+/// temporary file, so it is never seen empty. A LOCK whose pid no longer runs, or names this process while no
+/// `ImageMedia` of this process holds the root, is stale and taken over; the takeover removes it only if it still
+/// holds the stale content, then re-reads the new LOCK to confirm ownership.
+fn lock(root: &Path) -> Result<PathBuf> {
+    static SEQ: AtomicU64 = AtomicU64::new(0);
+    let key = std::fs::canonicalize(root).map_err(|e| io_err("resolve", root, e))?;
+    let mut held = HELD.lock().unwrap_or_else(|p| p.into_inner());
+    if held.contains(&key) {
+        return err(ErrorCode::BackendBusy, format!("image {} is already open in this process", root.display()));
     }
-    err(ErrorCode::BackendBusy, format!("image {}: could not take the lock", root.display()))
+    let p = root.join(LOCK_FILE);
+    let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_nanos());
+    let me = format!("{} {:x}-{}\n", std::process::id(), nanos, SEQ.fetch_add(1, Ordering::Relaxed));
+    let tmp = root.join(format!(".LOCK.{}.{}", std::process::id(), SEQ.fetch_add(1, Ordering::Relaxed)));
+    let _ = std::fs::remove_file(&tmp);
+    let mut f = OpenOptions::new().write(true).create_new(true).open(&tmp).map_err(|e| io_err("lock", &tmp, e))?;
+    f.write_all(me.as_bytes()).and_then(|_| f.sync_all()).map_err(|e| io_err("lock", &tmp, e))?;
+    drop(f);
+    let r = (|| {
+        for _ in 0..3 {
+            match std::fs::hard_link(&tmp, &p) {
+                Ok(()) => {
+                    if std::fs::read_to_string(&p).ok().as_deref() == Some(me.as_str()) {
+                        return Ok(());
+                    }
+                    return err(ErrorCode::BackendBusy, format!("image {}: lost the lock to another process", root.display()));
+                }
+                Err(e) if e.kind() == ErrorKind::AlreadyExists => {
+                    let owner = std::fs::read_to_string(&p).unwrap_or_default();
+                    let pid = owner.split_whitespace().next().and_then(|t| t.parse::<u32>().ok());
+                    let alive = match pid {
+                        Some(pid) if pid == std::process::id() => false, // not in HELD: an earlier incarnation
+                        Some(pid) => Path::new(&format!("/proc/{pid}")).exists(),
+                        None => false,
+                    };
+                    if alive {
+                        return err(ErrorCode::BackendBusy, format!("image {} is in use by process {}", root.display(), owner.trim()));
+                    }
+                    if std::fs::read_to_string(&p).unwrap_or_default() == owner {
+                        let _ = std::fs::remove_file(&p); // stale: its owner is gone
+                    }
+                }
+                Err(e) => return Err(io_err("lock", &p, e)),
+            }
+        }
+        err(ErrorCode::BackendBusy, format!("image {}: could not take the lock", root.display()))
+    })();
+    let _ = std::fs::remove_file(&tmp);
+    r?;
+    held.push(key.clone());
+    Ok(key)
 }
 
 fn parse_name(name: &str) -> Option<GenerationRef> {
@@ -199,7 +248,7 @@ impl MediaAdapter for ImageMedia {
     }
 
     fn put(&self, at: GenerationRef, data: &[u8]) -> Result<CommitReceipt> {
-        if data.len() as u64 > MAX_OBJECT_BYTES {
+        if data.len() as u64 > self.max_object {
             return err(ErrorCode::InvalidArgument, format!("object of {} bytes exceeds the image limit", data.len()));
         }
         let fin = self.path(at);
@@ -242,7 +291,7 @@ impl MediaAdapter for ImageMedia {
         };
         let size = f.metadata().map_err(|e| io_err("stat", &p, e))?.len();
         let corrupt = |m: &str| err(ErrorCode::Corruption, format!("image object {at:?}: {m}"));
-        if size < OBJECT_HEADER || size - OBJECT_HEADER > MAX_OBJECT_BYTES {
+        if size < OBJECT_HEADER || size - OBJECT_HEADER > self.max_object {
             return corrupt(&format!("size {size} is impossible"));
         }
         let mut buf = Vec::with_capacity(size as usize);
@@ -326,7 +375,30 @@ mod tests {
         let m = ImageMedia::create(&root).unwrap();
         assert_eq!(ImageMedia::open(&root).err().unwrap().code, ErrorCode::BackendBusy);
         drop(m);
-        std::fs::write(root.join(LOCK_FILE), "4000000000\n").unwrap(); // no such process
-        ImageMedia::open(&root).unwrap();
+        std::fs::write(root.join(LOCK_FILE), "4000000000 x\n").unwrap(); // no such process
+        let m = ImageMedia::open(&root).unwrap();
+        // the lock always has content, and names this process
+        assert!(std::fs::read_to_string(root.join(LOCK_FILE)).unwrap().starts_with(&format!("{} ", std::process::id())));
+        drop(m);
+        // a crash of an earlier incarnation with our own pid (pid reuse, pid 1 in a container) is not "in use"
+        std::fs::write(root.join(LOCK_FILE), format!("{} old\n", std::process::id())).unwrap();
+        let m = ImageMedia::open(&root).unwrap();
+        assert_eq!(ImageMedia::open(&root).err().unwrap().code, ErrorCode::BackendBusy, "but a live instance is");
+        drop(m);
+        assert!(!root.join(LOCK_FILE).exists());
+    }
+
+    #[test]
+    fn a_failed_open_releases_the_lock_and_the_object_limit_is_configurable() {
+        let d = TempDir::new("img");
+        let root = d.0.join("img");
+        drop(ImageMedia::create(&root).unwrap());
+        std::fs::rename(root.join(OBJECTS), root.join("moved")).unwrap();
+        assert_eq!(ImageMedia::open(&root).err().unwrap().code, ErrorCode::BackendUnavailable);
+        assert!(!root.join(LOCK_FILE).exists(), "the lock of a failed open is released");
+        std::fs::rename(root.join("moved"), root.join(OBJECTS)).unwrap();
+        let m = ImageMedia::open(&root).unwrap().with_max_object(10);
+        assert_eq!(m.put(at(1, 1), &[0u8; 11]).unwrap_err().code, ErrorCode::InvalidArgument);
+        m.put(at(1, 1), &[0u8; 10]).unwrap();
     }
 }
