@@ -90,6 +90,7 @@ class Worker:
     def __init__(self, key: bytes, staging: Path) -> None:
         self.key = key
         self.staging = staging
+        self.negotiated = False  # docs/V14_CONTRACTS.md §6: the first exchange on a connection is hello
 
     def _read_input(self, name: str, sha: str) -> bytes:
         p = self.staging / name
@@ -144,7 +145,13 @@ class Worker:
             v = pr.parse(line)
             req = pr.validate_request(PROTO, v)
             rid = v["id"]
+            if v["op"] == "hello":
+                self.negotiated = False  # a failed hello leaves the session un-negotiated
+            elif not self.negotiated:
+                raise DeviceError("PROTOCOL", "the first request of a session must be hello")
             result = self.run(v["op"], v["args"])
+            if v["op"] == "hello":
+                self.negotiated = True
             del req
             return pr.canonical(pr.ok_response(PROTO, rid, v["op"], result))
         except DeviceError as e:

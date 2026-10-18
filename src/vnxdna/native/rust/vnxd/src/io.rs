@@ -869,12 +869,22 @@ mod tests {
         }
     }
 
+    /// Opens the gate when dropped. Declared after the queue, so it drops first: a failing assertion then unwinds into
+    /// a queue whose workers can finish, instead of hanging in the queue's drop (it joins workers stuck in the gate).
+    struct OpenOnDrop(Arc<Gate>);
+    impl Drop for OpenOnDrop {
+        fn drop(&mut self) {
+            self.0.release();
+        }
+    }
+
     #[test]
     fn backpressure_cancellation_timeout_and_barrier() {
         let d = TempDir::new("io");
         let gate = Arc::new(Gate::new());
         let io = setup(&d, gate.clone());
         let q = IoQueue::start(io.clone(), QueueConfig { workers: 2, depth: 3 }).unwrap();
+        let _open = OpenOnDrop(gate.clone());
         // two writes to extent 0 and 1 start and block in the backend
         let w0 = q.submit(Op::Write { offset: 0, data: vec![1; 2048] }, None).unwrap();
         let w1 = q.submit(Op::Write { offset: 2048, data: vec![2; 2048] }, None).unwrap();
@@ -882,16 +892,21 @@ mod tests {
         // a flush (barrier), a write that will be cancelled, and a write with an expired deadline fill the queue
         let fl = q.submit(Op::Flush, None).unwrap();
         let wc = q.submit(Op::Write { offset: 4096, data: vec![3; 10] }, None).unwrap();
-        let wt = q.submit(Op::Write { offset: 6144, data: vec![4; 10] }, Some(Instant::now())).unwrap();
+        // the deadline must not pass before the queue-full check: the reaper resolves an expired request at once and
+        // frees its place (with a deadline of `now` the check raced the reaper and failed under load)
+        let deadline = Instant::now() + Duration::from_millis(500);
+        let wt = q.submit(Op::Write { offset: 6144, data: vec![4; 10] }, Some(deadline)).unwrap();
         assert_eq!(q.try_submit(Op::Read { offset: 0, len: 1 }, None).err().unwrap().code, ErrorCode::ResourceExhausted);
         assert!(fl.wait_timeout(Duration::from_millis(50)).is_none(), "the barrier waits for earlier writes");
         wc.cancel();
+        // the write with a deadline is still queued behind the barrier when its deadline passes
+        assert_eq!(wt.wait_timeout(Duration::from_secs(10)).expect("resolved by the reaper").unwrap_err().code, ErrorCode::Timeout);
+        assert!(Instant::now() >= deadline);
         gate.release();
         assert!(matches!(w0.wait().unwrap(), Reply::Written(WriteState::Verified)));
         assert!(matches!(w1.wait().unwrap(), Reply::Written(_)));
         assert_eq!(fl.wait_timeout(Duration::from_secs(5)).unwrap().unwrap(), Reply::Flushed);
         assert_eq!(wc.wait().unwrap_err().code, ErrorCode::Cancelled);
-        assert_eq!(wt.wait().unwrap_err().code, ErrorCode::Timeout);
         assert_eq!(io.read(4096, 10).unwrap(), vec![0; 10], "a cancelled write has no effect");
         assert_eq!(io.read(6144, 10).unwrap(), vec![0; 10], "a timed-out write has no effect");
         let m = q.metrics();
@@ -907,6 +922,7 @@ mod tests {
         let gate = Arc::new(Gate::new());
         let io = setup(&d, gate.clone());
         let q = IoQueue::start(io.clone(), QueueConfig { workers: 1, depth: 8 }).unwrap();
+        let _open = OpenOnDrop(gate.clone());
         let running = q.submit(Op::Write { offset: 0, data: vec![5; 100] }, None).unwrap();
         std::thread::sleep(Duration::from_millis(30));
         let queued: Vec<Ticket> =
@@ -931,6 +947,7 @@ mod tests {
         let gate = Arc::new(Gate::new());
         let io = setup(&d, gate.clone());
         let q = IoQueue::start(io.clone(), QueueConfig { workers: 1, depth: 8 }).unwrap(); // the only worker is stuck
+        let _open = OpenOnDrop(gate.clone());
         let stuck = q.submit(Op::Write { offset: 0, data: vec![1; 100] }, None).unwrap();
         std::thread::sleep(Duration::from_millis(30));
         let c = q.submit(Op::Write { offset: 10, data: vec![2; 10] }, None).unwrap();
