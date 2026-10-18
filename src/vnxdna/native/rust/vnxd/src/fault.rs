@@ -5,13 +5,60 @@
 //! It is the backend of the fault-injection matrix and of the fallback tests; it is never a device backend.
 //! Unlike every real adapter it may violate the media contract on purpose (lying receipts, rotten or short reads):
 //! the layers above must turn every such violation into a typed error, never into wrong data.
+//!
+//! Phase 7 (docs/V14_MEDIA_ADAPTERS.md §4) extends it into the fault-injection backend of the media layer:
+//!
+//! * [`FaultMedia::over`] injects into any adapter (the image backend, the DNA simulator), not only the in-memory
+//!   store; durability is the wrapped adapter's;
+//! * a seeded [`FaultPlan`] injects faults at random but deterministically: the decision for the n-th call of an
+//!   operation kind is a pure function of (seed, kind, n), so the same seed and the same sequence of calls give the
+//!   same faults ([`FaultMedia::trace`] records them); explicit [`Rule`]s are checked first;
+//! * [`Fault::Delay`] slows an operation down and then performs it; [`FaultMedia::set_offline`] makes the whole
+//!   medium unavailable (every operation BACKEND_UNAVAILABLE, nothing changes) until it is brought back, which is how
+//!   recovery after an outage is tested.
 
 use crate::addr::GenerationRef;
 use crate::digest::sha256;
 use crate::error::{err, ErrorCode, Result};
-use crate::media::{CommitReceipt, Durability, MediaAdapter, MediaInfo, MemoryMedia};
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Mutex;
+use crate::media::{CommitReceipt, MediaAdapter, MediaInfo, MemoryMedia};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
+
+/// SplitMix64 (Steele, Lea, Flood 2014): a small seeded generator for deterministic fault and simulator decisions.
+/// Not for cryptography.
+#[derive(Clone, Debug)]
+pub struct SplitMix64(u64);
+
+impl SplitMix64 {
+    pub fn new(seed: u64) -> SplitMix64 {
+        SplitMix64(seed)
+    }
+
+    pub fn next_u64(&mut self) -> u64 {
+        self.0 = self.0.wrapping_add(0x9E37_79B9_7F4A_7C15);
+        let mut z = self.0;
+        z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
+        z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
+        z ^ (z >> 31)
+    }
+
+    /// true with probability `ppm` / 1,000,000
+    pub fn below_ppm(&mut self, ppm: u32) -> bool {
+        self.next_u64() % 1_000_000 < u64::from(ppm)
+    }
+
+    /// One draw keyed by several values (a pure function of the key; no state).
+    pub fn keyed(key: &[u64]) -> u64 {
+        let mut h = SplitMix64::new(0x5658_4E44_5F46_4C54); // "VXND_FLT"
+        let mut v = h.next_u64();
+        for k in key {
+            h = SplitMix64::new(v ^ k);
+            v = h.next_u64();
+        }
+        v
+    }
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum MediaOp {
@@ -48,6 +95,8 @@ pub enum Fault {
     SilentCorruptWrite,
     /// put: store other bytes than given, then fail with BACKEND_UNAVAILABLE (a retry finds the wrong bytes)
     CorruptAckLost,
+    /// any operation: wait this long, then perform it normally (a slow medium)
+    Delay { millis: u32 },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -70,13 +119,69 @@ impl Rule {
     }
 }
 
-#[derive(Default)]
+/// A seeded random fault plan: each entry injects `fault` into a call of `op` with probability `ppm` / 1,000,000.
+/// Entries are tried in order with independent draws; the first that fires applies.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct FaultPlan {
+    pub seed: u64,
+    pub entries: Vec<(MediaOp, Fault, u32)>,
+}
+
+impl FaultPlan {
+    /// Faults that are honest about failing (the adapter reports them): unavailable, busy, timeout, lost
+    /// acknowledgements, slow reads, at `ppm` each (or a fraction of it).
+    pub fn honest(seed: u64, ppm: u32) -> FaultPlan {
+        let mut entries = Vec::new();
+        for op in [MediaOp::Put, MediaOp::Get, MediaOp::Remove, MediaOp::List, MediaOp::Sync] {
+            entries.push((op, Fault::Unavailable, ppm));
+            entries.push((op, Fault::Busy, ppm / 2));
+            entries.push((op, Fault::Timeout, ppm / 2));
+        }
+        entries.push((MediaOp::Put, Fault::AckLost, ppm / 2));
+        entries.push((MediaOp::Get, Fault::Delay { millis: 1 }, ppm));
+        FaultPlan { seed, entries }
+    }
+
+    /// Faults where the medium lies or rots (wrong receipts, torn or corrupted writes, bit rot, short reads, objects
+    /// reported missing although stored): the layers above must detect every one of them.
+    pub fn lying(seed: u64, ppm: u32) -> FaultPlan {
+        let mut p = FaultPlan::honest(seed, ppm);
+        for f in [Fault::TornPut, Fault::WrongReceipt, Fault::SilentCorruptWrite, Fault::CorruptAckLost] {
+            p.entries.push((MediaOp::Put, f, ppm / 2));
+        }
+        for f in [Fault::BitRot, Fault::ShortRead, Fault::Lost] {
+            p.entries.push((MediaOp::Get, f, ppm));
+        }
+        p
+    }
+}
+
+/// One injected fault: the operation kind, its call number (from 0, per kind) and the fault.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Injection {
+    pub op: MediaOp,
+    pub call: u64,
+    pub fault: Fault,
+}
+
+/// Longest fault trace kept (older entries are dropped).
+const MAX_TRACE: usize = 1 << 16;
+
 pub struct FaultMedia {
-    inner: MemoryMedia,
+    inner: Arc<dyn MediaAdapter>,
     rules: Mutex<Vec<Rule>>,
+    plan: Mutex<Option<FaultPlan>>,
+    offline: AtomicBool,
+    trace: Mutex<Vec<Injection>>,
     /// operations per kind (put, get, remove, list, sync)
     pub calls: [AtomicU64; 5],
     pub injected: AtomicU64,
+}
+
+impl Default for FaultMedia {
+    fn default() -> FaultMedia {
+        FaultMedia::over(Arc::new(MemoryMedia::new()))
+    }
 }
 
 fn idx(op: MediaOp) -> usize {
@@ -94,6 +199,40 @@ impl FaultMedia {
         FaultMedia::default()
     }
 
+    /// Inject faults into `inner` (any adapter).
+    pub fn over(inner: Arc<dyn MediaAdapter>) -> FaultMedia {
+        FaultMedia {
+            inner,
+            rules: Mutex::new(Vec::new()),
+            plan: Mutex::new(None),
+            offline: AtomicBool::new(false),
+            trace: Mutex::new(Vec::new()),
+            calls: Default::default(),
+            injected: AtomicU64::new(0),
+        }
+    }
+
+    /// Inject faults into `inner` according to a seeded plan.
+    pub fn seeded(inner: Arc<dyn MediaAdapter>, plan: FaultPlan) -> FaultMedia {
+        let m = FaultMedia::over(inner);
+        m.set_plan(Some(plan));
+        m
+    }
+
+    pub fn set_plan(&self, plan: Option<FaultPlan>) {
+        *self.plan.lock().unwrap_or_else(|p| p.into_inner()) = plan;
+    }
+
+    /// Take the whole medium offline (every operation fails BACKEND_UNAVAILABLE without effect) or bring it back.
+    pub fn set_offline(&self, offline: bool) {
+        self.offline.store(offline, Ordering::SeqCst);
+    }
+
+    /// Every fault injected so far, in order (the last 65,536).
+    pub fn trace(&self) -> Vec<Injection> {
+        self.trace.lock().unwrap_or_else(|p| p.into_inner()).clone()
+    }
+
     pub fn add(&self, rule: Rule) {
         self.rules.lock().unwrap_or_else(|p| p.into_inner()).push(rule);
     }
@@ -103,13 +242,31 @@ impl FaultMedia {
     }
 
     /// Direct access to the stored objects, bypassing every rule (test setup and inspection).
-    pub fn raw(&self) -> &MemoryMedia {
-        &self.inner
+    pub fn raw(&self) -> &dyn MediaAdapter {
+        self.inner.as_ref()
     }
 
-    /// The fault that applies to this call of `op`, if any (consuming one of its `times`).
+    /// The fault that applies to this call of `op`, if any (consuming one of its `times`). A delay is served here
+    /// (the call then proceeds normally); an offline medium fails every call.
     fn take(&self, op: MediaOp) -> Option<Fault> {
-        self.calls[idx(op)].fetch_add(1, Ordering::Relaxed);
+        let call = self.calls[idx(op)].fetch_add(1, Ordering::Relaxed);
+        let fault = if self.offline.load(Ordering::SeqCst) { Some(Fault::Unavailable) } else { self.decide(op, call) };
+        if let Some(f) = fault {
+            self.injected.fetch_add(1, Ordering::Relaxed);
+            let mut t = self.trace.lock().unwrap_or_else(|p| p.into_inner());
+            if t.len() == MAX_TRACE {
+                t.remove(0);
+            }
+            t.push(Injection { op, call, fault: f });
+        }
+        if let Some(Fault::Delay { millis }) = fault {
+            std::thread::sleep(Duration::from_millis(u64::from(millis)));
+            return None;
+        }
+        fault
+    }
+
+    fn decide(&self, op: MediaOp, call: u64) -> Option<Fault> {
         let mut rules = self.rules.lock().unwrap_or_else(|p| p.into_inner());
         for r in rules.iter_mut() {
             if r.op != op && r.op != MediaOp::Any {
@@ -125,8 +282,17 @@ impl FaultMedia {
             if r.times != u64::MAX {
                 r.times -= 1;
             }
-            self.injected.fetch_add(1, Ordering::Relaxed);
             return Some(r.fault);
+        }
+        drop(rules);
+        let plan = self.plan.lock().unwrap_or_else(|p| p.into_inner());
+        let plan = plan.as_ref()?;
+        for (i, (pop, fault, ppm)) in plan.entries.iter().enumerate() {
+            if (*pop == op || *pop == MediaOp::Any)
+                && SplitMix64::keyed(&[plan.seed, idx(op) as u64, call, i as u64]) % 1_000_000 < u64::from(*ppm)
+            {
+                return Some(*fault);
+            }
         }
         None
     }
@@ -143,7 +309,8 @@ fn plain_failure(f: Fault) -> Option<ErrorCode> {
 
 impl MediaAdapter for FaultMedia {
     fn info(&self) -> MediaInfo {
-        MediaInfo { kind: "faulty", durability: Durability::Volatile, max_in_flight: 64 }
+        let inner = self.inner.info();
+        MediaInfo { kind: "faulty", durability: inner.durability, max_in_flight: inner.max_in_flight }
     }
 
     fn put(&self, at: GenerationRef, data: &[u8]) -> Result<CommitReceipt> {
