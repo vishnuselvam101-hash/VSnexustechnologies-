@@ -167,7 +167,17 @@ Rules, checked by `media::conformance` against every adapter: `put` of an existi
 an error, never other bytes; `remove` of a missing generation and `get` after `remove` are NOT_FOUND; `list` is in
 ascending order; a `remove` touches only its own generation (the other generations of the extent, other extents
 and `list` are checked after it). `MemoryMedia` (volatile, in-process) passes the suite and is used to test the layers above the media
-boundary; it is never a device backend. The image, fault-injection and DNA-simulator adapters come in P7.
+boundary; it is never a device backend.
+
+Phase 7 adds the adapters behind this contract without changing it (media contract v1: the trait, the three
+durability classes and the conformance rules are as above; the P1 golden files are unchanged):
+`image` (file-fsync, electronic, not DNA), `dna-sim` (simulated-dna, the VNX-DNA codec over a simulated channel),
+`faulty` (fault injection over any adapter; durability of the wrapped adapter) and `dna-lab-sim` (simulated-dna, the
+future physical-DNA lab interface over its simulator). Each passes `media::conformance`. Specification:
+[V14_MEDIA_ADAPTERS.md](V14_MEDIA_ADAPTERS.md). There is no durability class for physical DNA in v1; adding one is a
+versioned contract change for the phase that connects real equipment. The `vnx.codec-ipc/1` codec operations
+`encode_extent`/`decode_extent` (schemas of §6, unchanged) are served by `python -m vnxdna.device.dnasim`; their
+`options` content is defined in V14_MEDIA_ADAPTERS.md §2.
 
 ## 8. Cross-language golden files
 
