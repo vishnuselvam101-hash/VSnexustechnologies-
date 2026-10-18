@@ -14,6 +14,7 @@ pub mod authz;
 pub mod balance;
 pub mod cache;
 pub mod digest;
+pub mod dirmedia;
 pub mod error;
 pub mod fallback;
 pub mod fault;
@@ -21,6 +22,10 @@ pub mod io;
 pub mod journal;
 pub mod json;
 pub mod media;
+pub mod nbd;
+pub mod nbdctl;
+pub mod nbdserve;
+pub mod nbdsys; // the only module with `unsafe` (the kernel ioctl and signal boundary)
 pub mod proto;
 pub mod ram;
 pub mod record;
