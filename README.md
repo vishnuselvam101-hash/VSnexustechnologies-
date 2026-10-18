@@ -1,5 +1,13 @@
 # VNX-DNA
 
+**Release candidate: 13.0.0 on `build/v13-final` (not tagged).** A streaming decode engine (Rust core with the fuzzed
+C kernels linked in, address scheduler, thread pool) behind a fallback ladder, streaming encode/decode of byte
+streams with bounded memory, a crash-consistent volume with an extent cache, and a decode result cache. Measured
+against v12.0.0 code (6bf7749) on the pre-declared workloads, output byte-identical, 0 false successes: 4 MiB indel
+decode 2.89× faster at 1 worker, 1.70× at 4, 1.37× at 8; clean decode 2.20×; 1.37–1.76× on the other decode cases;
+encode unchanged; decode RSS ~100 MiB at every worker count. The 10× target of the V13 directive is **not** reached (SIMULATED, one host,
+[docs/V13_BENCHMARK_REPORT.md](docs/V13_BENCHMARK_REPORT.md), [docs/V13_COMPLETION_REPORT.md](docs/V13_COMPLETION_REPORT.md)).
+
 **Current release: v12.0.0 (performance release: parallel pass 2, shift-tolerant orientation pre-pass with a native
 kernel, flat pass-1 bookkeeping, exact statistics across worker counts; tag `v12.0.0`).** Status: 4142 tests pass
 (0 failed); 4 MiB indel decode 1.23x (4 workers), 1.11x (1 worker) and 1.34x (8 workers) faster than v11.0.0, output

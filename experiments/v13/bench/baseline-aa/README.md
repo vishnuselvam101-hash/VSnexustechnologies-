@@ -22,6 +22,6 @@ with this band (`compare_aa.py`): a scenario is "beyond noise" only when its A/B
 | encode-4m-w1 | 0.992 [0.971, 0.999] |
 | encode-4m-w4 | 0.974 [0.942, 1.020] |
 
-Every row SUCCESS/ENCODED, outputs identical, 0 false successes. The band is at most ±17 % (clean-w4, the shortest
-decode) and within ±7 % elsewhere; every V13 decode ratio in `../ab-final` lies far outside it, every encode ratio
+Every row SUCCESS/ENCODED, outputs identical, 0 false successes. The band is within ±7 % except clean-w4 (+17 %,
+the shortest decode) and indel-64k-w1 (±14 %, the shortest run); every V13 decode ratio in `../ab-final` lies far outside it, every encode ratio
 lies inside it. No DNA was synthesised, stored or sequenced; one host (4C/8T Xeon Gold 6240).

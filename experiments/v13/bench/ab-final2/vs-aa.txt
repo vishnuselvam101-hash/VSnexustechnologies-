@@ -1,0 +1,14 @@
+scenario           A/B median         A/B ci95 A/A median         A/A ci95  verdict
+indel-w1                2.885 [2.732, 2.989]      0.974 [0.950, 1.036]  FASTER beyond noise
+indel-w2                2.113 [1.991, 2.313]      0.974 [0.942, 1.034]  FASTER beyond noise
+indel-w4                1.704 [1.644, 1.770]      1.028 [0.974, 1.065]  FASTER beyond noise
+indel-w8                1.374 [1.197, 1.621]      1.004 [0.987, 1.033]  FASTER beyond noise
+indel-rc-w4             1.758 [1.606, 1.838]      1.015 [0.989, 1.046]  FASTER beyond noise
+indel-dropout-w4        1.374 [1.259, 1.433]      0.982 [0.955, 1.036]  FASTER beyond noise
+clean-w4                2.200 [2.095, 2.372]      1.069 [0.998, 1.168]  FASTER beyond noise
+substitution-w4         1.476 [1.173, 1.576]      0.990 [0.962, 1.030]  FASTER beyond noise
+indel-64k-w1            1.552 [1.529, 1.639]      0.999 [0.908, 1.140]  FASTER beyond noise
+indel-16m-w4            1.723 [1.593, 1.755]      1.019 [0.950, 1.027]  FASTER beyond noise
+encode-1m-w1            0.998 [0.916, 1.014]      1.012 [0.953, 1.037]  within noise
+encode-4m-w1            1.010 [1.005, 1.021]      0.992 [0.971, 0.999]  FASTER beyond noise
+encode-4m-w4            0.920 [0.910, 1.169]      0.974 [0.942, 1.020]  within noise

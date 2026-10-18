@@ -186,7 +186,14 @@ fallback, cache off, threads = `workers`.
 | result cache (keyed by software/commit/backends/engine library hash, input SHA-256 and size, options, key presence; bounded; off by default) | shipped at the SDK layer | `vnxdna.sdk.cache`, `sdk.decode(cache_dir=...)`, `vnx cache stats|clear`, `vnx decode --cache-dir` |
 | observability: `report["engine"]` (rung, fallbacks, threads, per-stage seconds, reads scanned/attempted/skipped, table statistics), `vnxdna native` lists the engine, `vnx volume stat` (cache hit rate, journal, IO rates) | shipped | — |
 | one configuration surface | shipped: `DecodeOptions.engine/engine_dedup/engine_threads`, SDK config keys, `VNXDNA_ENGINE`, `VNXDNA_ENGINE_THREADS`, `VNXDNA_ENGINE_BACKEND/_LIB`, `VNXDNA_CACHE_DIR/_BYTES`, CLI `--engine`, `--engine-dedup`, `--engine-threads`, `--cache-dir` | — |
+| observer progress events from the engine's pass 1 | not done (the engine rung emits `pass1_end` with its counts, no per-batch `pass1_progress`; the V13 rung keeps them) | — |
 | native pass 2 | not done (the next lever: pass 2 and the layout probe are the serial Python remainder; see the benchmark report's stage budget) | — |
+
+Skip rule (final, f7586b9): a read is skipped only on corroborated evidence that it copies a verified strand: its raw
+header names a verified address and at least one payload window matches that set, or, with an unreadable header,
+every usable window (two or more) matches. A claim that verifies address K splits off the members whose header reads
+another address (distinct strands can share payload windows, e.g. stripes with column parity). Fingerprints only
+decide whether a read is attempted, never what is decoded.
 
 Protection decision (§3, "one verified copy per address"): kept as the default, decided on measurement; the reasons
 are in [V13_COMPLETION_REPORT.md](V13_COMPLETION_REPORT.md) and the lab decision log.

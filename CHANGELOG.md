@@ -93,6 +93,47 @@ plan and pre-declared workloads: docs/V13_PLAN.md; engine design and status: doc
   (seen as a timing race in CI at delay 1.0).
 - Layering: `vnxdna.native.engine` imported layer-3 modules (`tests/architecture` R1, package cycle); the binding now
   takes plain parameters and `vnxdna.recovery.engine` builds them.
+- **Engine scheduler: a distinct strand was counted as a copy.** On a clean pool with one reading per strand encoded
+  with stripes and column parity (distinct strands share 24-nt payload windows), one read was skipped as redundant
+  and its symbol was recovered by the outer code (output still correct). Two causes, both fixed: a claim that
+  verified address K only closed, although its members reading another address were meant to form a new claim (they
+  now do); and the global screen skipped a read on a window match alone (now a read is skipped only when its readable
+  header names a verified address and a window corroborates, or, with an unreadable header, when every usable window
+  of at least two matches). Regression test on that pool; the A/B numbers of the benchmark report are from the fixed
+  engine.
+- Decode result cache: the key did not include the key material or `allow_unencrypted`, so a hit could serve a plain
+  archive decoded earlier with another key, or bypass the V6-SEC-02 refusal; the key now carries a one-way fingerprint
+  of the key or passphrase and the flag. `store()` hashed its own copy rather than the source and used a fixed
+  temporary name: it now hashes the source, copies to a private temporary file and verifies the copy.
+- Volume journal: a corrupt record in the middle of the journal was treated as a torn tail, which would have dropped
+  every later commit and removed their strand files as orphans at the next read-write open; such a journal now refuses
+  to open (`VNXIntegrityError`), and `scrub` reports `journal_torn_tail_bytes`. `Volume.open` releases its lock on a
+  failed open; `Volume.create(overwrite=True)` replaces only a volume or an empty directory.
+- `load_manifest` validates field types and ranges and that `total_bytes` equals the sum of the extent lengths (a
+  malformed manifest was a raw `ValueError`); the pool path's archive-tag check runs before the first pool-path extent.
+- `native.engine.run_pass1` checks the dtype and length of every parameter array against the engine's declarations
+  (a shorter or differently typed array would have been read past its end).
+- The engine's wall-time cancel raises the recovery planner's budget error with its `recovery_plan`, as the V13 path does.
+- Tests that compare a decode with a V13-path-only option (stage counters, read clustering, retry band, observer
+  progress events, parallel pass 2, aligner backends and levels) against a default decode compare on the V13 rung and
+  check the default (engine) rung for the same status and bytes; the engine's stage timings are volatile keys there.
+- `benchmarks/v13/native_engine/sanitizers.sh` built its sanitized library in place (`python -m vnxdna.native.engine
+  build` ignores an output path), overwriting the production library; it now builds with cargo into its own target
+  directory, and its canary accepts the UBSan object-size report as well as ASan's.
+
+### Performance (SIMULATED; build/v12 6bf7749 = 1.0; docs/V13_BENCHMARK_REPORT.md, experiments/v13/bench/ab-final2)
+- Median ratio of V12 seconds to V13 seconds at the final engine f7586b9, paired per seed, 95 % CI, outputs identical,
+  every decode scenario faster beyond the A/A noise band (`baseline-aa`): 4 MiB indel decode **2.89× [2.73, 2.99]**
+  at 1 worker, 2.11× at 2, 1.70× at 4, 1.37× at 8; reverse complement 50 % 1.76×; dropout 5 % 1.37×; clean 2.20×;
+  substitution 2 % 1.48×; 64 KiB 1.55×; 16 MiB (4 workers) 1.72×; encode 0.92–1.01× (unchanged). Pre-declared tiers
+  (docs/V13_PLAN.md): Tier 1 (≥ 2×) on indel-w1 and clean-w4, Tier 2 (≥ 5×) and **Tier 3 (10×) reached nowhere**;
+  the stage budget is in the benchmark report §3.1. The pre-fix engine measured 5.23× at indel-w1 (`ab-final`,
+  kept as a record); the difference is the copies the corrected scheduler no longer skips unverified.
+- Decode peak RSS ~100 MiB at every worker count (V12: 104 MiB at 1 worker to 730 MiB at 8).
+- Streaming codec and volume rates on this host (`experiments/v13/bench/stream-volume`, software codec rates, never
+  physical DNA throughput): stream encode 2.6–2.9 MB/s (1 worker) / 7.7–9.2 MB/s (4); stream decode by range
+  3.4–4.1 MB/s; volume write 3.1 MB/s, cold read 4.2–4.3 MB/s, cached read 1.57–1.75 GB/s; 4 KiB random read ~250 ms
+  cold, ~0.02 ms hot. Known limitation: pool-mode stream decode is O(extents × pool) (docs/STREAMING.md).
 
 ## 12.0.0 (tag `v12.0.0`; performance release; docs/V12_COMPLETION_REPORT.md)
 
