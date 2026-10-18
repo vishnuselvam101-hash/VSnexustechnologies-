@@ -223,7 +223,7 @@ def pool(tmp_path_factory):
 
 def _decode(path, out, **kw):
     try:
-        res = de.decode_reads(path, out, de.DecodeOptions(**kw), overwrite=True)
+        res = de.decode_reads(path, out, de.DecodeOptions(engine="v13", **kw), overwrite=True)   # V13: the retry band runs on this path
     except VNXError as error:
         return f"ERROR:{error.code}", None, {}
     return res.status, (out.read_bytes() if out.exists() else None), res.report

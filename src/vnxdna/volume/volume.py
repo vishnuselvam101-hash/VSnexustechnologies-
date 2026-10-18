@@ -105,6 +105,11 @@ class Volume:
         if root.exists():
             if not overwrite:
                 raise VNXOutputError(f"volume directory already exists: {root} (use --force to replace it)")
+            if not root.is_dir():
+                raise VNXOutputError(f"{root} is not a directory")
+            # --force replaces a volume (volume.json + journal.log) or an empty directory, never arbitrary contents
+            if any(root.iterdir()) and not ((root / "volume.json").is_file() and (root / "journal.log").is_file()):
+                raise VNXOutputError(f"{root} is not a volume directory; refusing to delete its contents")
             shutil.rmtree(root)
         root.mkdir(parents=True)
         (root / "extents").mkdir()
@@ -149,15 +154,18 @@ class Volume:
                 os.close(lock_fd)
                 raise VNXOutputError(f"volume {root} is open for writing by another process", stage="volume") from None
         journal = Journal(root / "journal.log")
+        vol = None
         try:
             journal.replay()
-        except VNXFormatError:
+            vol = cls(root, mode, opt, meta, journal, lock_fd, key, passphrase)
+            if mode == "rw":
+                vol._remove_orphans()
+        except BaseException:
+            if vol is not None:
+                shutil.rmtree(vol._work, ignore_errors=True)
             if lock_fd is not None:
                 os.close(lock_fd)
             raise
-        vol = cls(root, mode, opt, meta, journal, lock_fd, key, passphrase)
-        if mode == "rw":
-            vol._remove_orphans()
         return vol
 
     def _remove_orphans(self) -> None:
@@ -447,6 +455,7 @@ class Volume:
         return {"status": "VERIFIED" if ok else "DAMAGED", "extents": len(results), "verified": sum(r["decoded"] for r in results),
                 "failed": [r["extent"] for r in results if not r["decoded"]],
                 "changed_files": [r["extent"] for r in results if r["strands_file"] == "changed"], "orphans": orphans,
+                "journal_torn_tail_bytes": self.journal.bad_tail_bytes,     # a torn last line (cut on the next append)
                 "results": results}
 
 

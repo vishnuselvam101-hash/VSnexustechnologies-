@@ -7,7 +7,7 @@ import os
 import zlib
 from pathlib import Path
 
-from vnxdna.core.errors import VNXFormatError
+from vnxdna.core.errors import VNXFormatError, VNXIntegrityError
 from vnxdna.core.fsio import fsync_dir
 from vnxdna.core.util import canonical_json, parse_canonical_json
 
@@ -60,7 +60,31 @@ class Journal:
         self.bad_tail_bytes = len(data) - self.good_bytes
         if not self.records or self.records[0].get("op") != "header" or self.records[0].get("format") != JOURNAL_FORMAT:
             raise VNXFormatError(f"{self.path} is not a {JOURNAL_FORMAT} journal", stage="volume")
+        if self.bad_tail_bytes and self._valid_record_after(data, self.good_bytes):
+            # a torn tail is the LAST line, unterminated or half-written; a bad record followed by a well-formed one
+            # is damage in the middle of the journal: later commits would be dropped and their files removed
+            raise VNXIntegrityError(f"volume journal {self.path} is damaged at byte {self.good_bytes}: a corrupt record "
+                                    "is followed by committed records (not a torn tail; the volume is not opened)",
+                                    stage="volume", details={"good_bytes": self.good_bytes, "records": len(self.records)})
         return self.records
+
+    @staticmethod
+    def _valid_record_after(data: bytes, pos: int) -> bool:
+        """Is there any complete line after ``pos`` that parses as a record with a matching CRC?"""
+        pos = data.find(b"\n", pos)
+        while pos >= 0:
+            nl = data.find(b"\n", pos + 1)
+            if nl < 0:
+                return False
+            try:
+                rec = parse_canonical_json(data[pos + 1:nl], "journal record")
+                crc = rec.pop("crc")
+                if isinstance(crc, str) and f"{zlib.crc32(canonical_json(rec)) & 0xFFFFFFFF:08x}" == crc:
+                    return True
+            except (VNXFormatError, ValueError, KeyError, TypeError):
+                pass
+            pos = nl
+        return False
 
     def append(self, rec: dict) -> dict:
         """Append ``rec`` (sequence number assigned here) durably: a torn tail is cut first, the line is written,

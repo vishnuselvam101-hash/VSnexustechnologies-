@@ -262,7 +262,8 @@ def decode(reads: PathLike, output: PathLike | None = None, *, options: DecodeOp
     cdir = _cache.configured_dir(cache_dir)
     if cdir is not None and not select:
         cache = _cache.ResultCache(cdir)
-        cache_key = _cache.key_for(reads, opts, has_key=key is not None or passphrase is not None)
+        cache_key = _cache.key_for(reads, opts, has_key=key is not None or passphrase is not None,
+                                   key_material=_cache.key_fingerprint(key, passphrase), allow_unencrypted=allow_unencrypted)
     hasher = InputHasher("reads", [reads], enabled=input_hash)
     target, tmp = output, None
     ok = False

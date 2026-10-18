@@ -273,7 +273,8 @@ def test_decode_identical_with_either_backend(tmp_path, monkeypatch, native_read
         for backend in ("reference", "native"):
             monkeypatch.setenv("VNXDNA_ALIGN_BACKEND", backend)
             res = de.decode_reads(tmp_path / "r.fastq", tmp_path / f"{backend}.vnx",
-                                  de.DecodeOptions(workers=workers, min_quality=min_q, sync_speculation=spec), overwrite=True)
+                                  de.DecodeOptions(workers=workers, min_quality=min_q, sync_speculation=spec, engine="v13"),
+                                  overwrite=True)      # V13: the path that selects the aligner backend
             # native_backends records which aligner ran: it must name this backend (and is the only field allowed to differ)
             assert res.report["native_backends"]["align"]["backend"] == backend
             rep = {k: v for k, v in res.report.items()

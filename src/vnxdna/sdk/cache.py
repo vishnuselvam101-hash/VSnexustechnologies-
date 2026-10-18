@@ -55,9 +55,20 @@ def _plain(obj):
     return repr(obj)
 
 
-def key_for(reads: str | os.PathLike, options, *, has_key: bool) -> str:
+def key_fingerprint(key: bytes | None, passphrase: str | None) -> str | None:
+    """A one-way fingerprint of the decode's key material (never the material itself), so that a cached result is
+    served only to a caller holding the same key or passphrase; None without key material."""
+    if key is None and passphrase is None:
+        return None
+    material = b"key:" + bytes(key) if key is not None else b"passphrase:" + str(passphrase).encode("utf-8")
+    return hashlib.sha256(b"vnx-dna result cache key fingerprint\0" + material).hexdigest()
+
+
+def key_for(reads: str | os.PathLike, options, *, has_key: bool, key_material: str | None = None,
+            allow_unencrypted: bool = False) -> str:
     """The cache key (hex) of a decode of ``reads`` with ``options``: computed before the decode (one pass over the
-    read file for its SHA-256)."""
+    read file for its SHA-256). ``key_material`` (:func:`key_fingerprint`) and ``allow_unencrypted`` are part of the
+    key: a hit never bypasses the key or the V6-SEC-02 check the uncached decode would apply."""
     from vnxdna.sdk.envelope import backends, provenance
     opts = _plain(options)
     for k in _VOLATILE:
@@ -65,7 +76,8 @@ def key_for(reads: str | os.PathLike, options, *, has_key: bool) -> str:
     p = Path(reads)
     st = p.stat()
     record = {"software": __version__, "git": provenance().get("git_commit"), "backends": backends(),
-              "input_sha256": sha256_file(p), "input_bytes": st.st_size, "options": opts, "has_key": bool(has_key)}
+              "input_sha256": sha256_file(p), "input_bytes": st.st_size, "options": opts, "has_key": bool(has_key),
+              "key_material": key_material, "allow_unencrypted": bool(allow_unencrypted)}
     return hashlib.sha256(json.dumps(record, sort_keys=True, separators=(",", ":"), default=str).encode()).hexdigest()
 
 
@@ -95,11 +107,20 @@ class ResultCache:
         return container, report
 
     def store(self, key: str, container: str | os.PathLike, report: dict) -> dict:
+        import tempfile
         e = self._entry(key)
         e.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(container, e / "container.vnx.tmp")
-        os.replace(e / "container.vnx.tmp", e / "container.vnx")
-        sha = sha256_file(e / "container.vnx")
+        sha = sha256_file(container)                     # the source's hash: a torn or corrupted copy never matches it
+        fd, tmp_name = tempfile.mkstemp(prefix=".container-", suffix=".tmp", dir=e)   # private to this store
+        os.close(fd)
+        try:
+            shutil.copyfile(container, tmp_name)
+            if sha256_file(tmp_name) != sha:
+                raise OSError(f"result cache: the copied container does not hash as its source ({tmp_name})")
+            os.replace(tmp_name, e / "container.vnx")
+        finally:
+            if os.path.exists(tmp_name):
+                os.unlink(tmp_name)
         with atomic_output(e / "report.json", overwrite=True) as tmp:
             tmp.write_text(json.dumps(report, sort_keys=True, default=str))
         meta = {"key": key, "container_sha256": sha, "bytes": (e / "container.vnx").stat().st_size,

@@ -379,3 +379,55 @@ def test_cli_engine_flags(pools, tmp_path):
     assert (tmp_path / "a.vnx").read_bytes() == (tmp_path / "b.vnx").read_bytes() == pools["archive"].read_bytes()
     r = runner.invoke(app, ["decode", reads, "-o", str(tmp_path / "c.vnx"), "--engine", "turbo"])
     assert r.exit_code == 7 and not (tmp_path / "c.vnx").exists()
+
+
+def test_engine_parameter_arrays_are_checked_at_the_boundary(pools, tmp_path):
+    """The binding hands raw pointers to the engine, which reads a fixed number of elements of a fixed type from each:
+    a shorter array or a value that does not fit the declared dtype is refused (EngineUnsupported, the caller falls
+    back); an array of another dtype whose values fit is converted."""
+    from dataclasses import replace
+    opt = DecodeOptions(band=6)
+    lay = detect_layout(pools["clean"], opt)
+    params = re_.params_for(lay, opt)
+    checked = ne._checked_arrays(params)
+    assert all(checked[k].dtype == dt for k, dt in ne._ARRAY_DTYPES.items())
+    assert checked["ks"].size == 256 * params.span and checked["tpl16"].size == params.t
+    wide = replace(params, mpos=np.asarray(params.mpos).astype(np.int32))
+    assert np.array_equal(ne._checked_arrays(wide)["mpos"], checked["mpos"])
+    Spill(tmp_path, 1, lay.payload_bytes, lay.frame_nt).close()
+    for bad in (replace(params, tpl16=np.asarray(params.tpl16)[:-1]),
+                replace(params, ks=np.asarray(params.ks).reshape(-1)[:-1]),
+                replace(params, want=np.asarray(params.want).astype(np.int64) + 1000),
+                replace(params, seg_of=np.asarray(params.seg_of).astype(np.float64) + 0.5)):
+        with pytest.raises(ne.EngineUnsupported):
+            ne.run_pass1(pools["clean"], tmp_path, bad, 1, fmt="fastq", threads=1)
+
+
+def test_distinct_strands_sharing_payload_windows_are_all_attempted(tmp_path):
+    """Regression: a clean pool with one reading per strand (stripes + column parity, so distinct strands share
+    payload windows) must attempt every read. The scheduler once counted such a strand as a copy of the verified
+    strand it shared a window with (the outer code hid the lost symbol); a verified claim now splits off the members
+    that read another address, and a window match alone never skips a read."""
+    from vnxdna.v4 import archive as ar
+    from vnxdna.v4 import datagen
+    from vnxdna.v4 import encoder as en
+    from vnxdna.v4.constraints import iter_fasta
+    datagen.generate(tmp_path / "in.bin", 64_000, "random", 6101)
+    ar.build_archive([tmp_path / "in.bin"], tmp_path / "a.vnx", ar.ArchiveOptions())
+    en.encode_container(tmp_path / "a.vnx", tmp_path / "x.fasta", en.DNAOptions(stripe_depth=4, column_parity=2))
+    with open(tmp_path / "r.fasta", "w") as f:
+        for i, (_, seq) in enumerate(iter_fasta(tmp_path / "x.fasta")):
+            f.write(f">read{i}\n{seq}\n")
+    reports = {}
+    for engine in ("stream", "v13"):
+        res = de.decode_reads(tmp_path / "r.fasta", tmp_path / f"{engine}.vnx", DecodeOptions(engine=engine), overwrite=True)
+        assert res.status == "SUCCESS" and res.report["engine"]["rung"] == engine
+        assert (tmp_path / f"{engine}.vnx").read_bytes() == (tmp_path / "a.vnx").read_bytes()
+        reports[engine] = res.report
+    e = reports["stream"]["engine"]["pass1"]
+    assert e["skipped"] == 0 and e["attempted"] == e["reads"] == reports["v13"]["reads"]["reads"]
+    assert e["split_groups"] >= 1                           # the shared-window group was split by address
+    for engine in reports:
+        assert reports[engine]["outer_v6"]["symbols_missing"] == 0
+        assert reports[engine]["outer_v6"]["rows_failed_row_wise"] == 0
+    assert reports["stream"]["reads"]["fast"] == reports["v13"]["reads"]["fast"]

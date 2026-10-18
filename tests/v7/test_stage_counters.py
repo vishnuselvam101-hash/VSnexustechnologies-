@@ -34,7 +34,8 @@ MANIFEST = json.loads((FIX / "manifest.json").read_text())
 PASSPHRASE = "vnx-test-passphrase-NOT-A-SECRET"
 CASES = sorted(MANIFEST["cases"])
 #: report keys whose values are wall-clock or process measurements (they differ between two identical decodes)
-VOLATILE = {"seconds", "stage_seconds", "peak_rss_bytes", "elapsed", "elapsed_seconds", "wall_seconds"}
+VOLATILE = {"seconds", "stage_seconds", "peak_rss_bytes", "elapsed", "elapsed_seconds", "wall_seconds",
+            "ns_io", "ns_scan", "ns_prep", "ns_attempt", "ns_spill", "ns_total", "ns_cheap", "ns_full", "ns_group"}   # V13 engine stage timings
 
 
 def _strip_volatile(x):
@@ -99,6 +100,13 @@ def harsh_pools(tmp_path_factory):
     return {"dir": d, "container": (d / "a.vnx").read_bytes(), "reads": paths, "strands": d / "s.fasta"}
 
 
+def _same_rung(r0: dict, r1: dict) -> None:
+    """Both decodes ran on the same engine rung (V13: the engine block records the rung and its fallbacks, whose
+    refusal reasons name the option that forced the V13 path); the block is removed so the rest compares key by key."""
+    e0, e1 = r0.pop("engine", None), r1.pop("engine", None)
+    assert (e0 or {}).get("rung") == (e1 or {}).get("rung"), (e0, e1)
+
+
 def _assert_identical_except_block(off, on):
     s0, b0, r0, sc0 = off
     s1, b1, r1, sc1 = on
@@ -106,6 +114,7 @@ def _assert_identical_except_block(off, on):
     assert sc1 is not None and sc1["schema"] == "vnx.stage-counters/1"
     assert s0 == s1
     assert b0 == b1                                   # byte-identical decoded output (or both nothing)
+    _same_rung(r0, r1)
     assert r0 == r1                                   # every pre-existing report key and value unchanged
     assert set(sc1["stages"]) == set(STAGES)
     assert sc1["stages"]["clustering"] == {"applicable": 0}
@@ -114,8 +123,10 @@ def _assert_identical_except_block(off, on):
 @pytest.mark.parametrize("c", CASES)
 def test_golden_fixtures_decode_byte_identically_with_counters(c, golden_reads, tmp_path):
     kw = {"passphrase": PASSPHRASE} if MANIFEST["cases"][c]["encrypted"] else {}
-    off = _run(golden_reads[c], tmp_path / "off.vnx", **kw)
+    default = _run(golden_reads[c], tmp_path / "default.vnx", **kw)
+    off = _run(golden_reads[c], tmp_path / "off.vnx", engine="v13", **kw)     # counters are produced by the V13 path
     on = _run(golden_reads[c], tmp_path / "on.vnx", stage_counters=True, **kw)
+    assert default[:2] == off[:2]                               # the default (engine) rung: same status, same bytes
     _assert_identical_except_block(off, on)
     assert off[0] == "SUCCESS"
     assert on[1] == (FIX / f"{c}.vnx").read_bytes()
@@ -126,8 +137,10 @@ def test_golden_fixtures_decode_byte_identically_with_counters(c, golden_reads, 
 @pytest.mark.parametrize("pool", ["indel", "nanopore", "clean"])
 def test_failing_and_passing_pools_identical_with_counters(pool, harsh_pools, tmp_path):
     p = harsh_pools["reads"][pool]
-    off = _run(p, tmp_path / "off.vnx")
+    default = _run(p, tmp_path / "default.vnx")
+    off = _run(p, tmp_path / "off.vnx", engine="v13")                        # counters are produced by the V13 path
     on = _run(p, tmp_path / "on.vnx", stage_counters=True)
+    assert default[:2] == off[:2]                               # the default (engine) rung: same status, same bytes
     _assert_identical_except_block(off, on)
     if pool == "clean":
         assert on[0] == "SUCCESS" and on[1] == harsh_pools["container"]

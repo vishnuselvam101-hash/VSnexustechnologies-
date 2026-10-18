@@ -525,9 +525,12 @@ impl<'c> Engine<'c> {
             for c in 0..count.len() {
                 mb[cstart[c]..cstart[c + 1]].sort_by_key(|&i| (screen[i].score, i));
             }
-            // ---- global screen per group (parallel, read-only tables): a group is skipped when a member's window matches
-            // a window of a verified strand (Bloom prefilter, then the table), or a member without usable windows reads
-            // the header of a verified address
+            // ---- global screen per group (parallel, read-only tables): a group is skipped only on corroborated evidence
+            // that a member is a copy of a verified strand: its raw header reads a verified address AND at least one of
+            // its windows matches a window of that verified set (Bloom prefilter, then the table); a member whose
+            // header is unreadable needs every usable window (two or more) to match. A window match alone never skips
+            // a read: distinct strands can share a 24-nt window (padding, parity patterns), and a header key alone never
+            // skips either: a raw header read with an error can name a neighbouring, verified address.
             let ng = count.len();
             let mut gskip = vec![false; ng];
             {
@@ -540,10 +543,20 @@ impl<'c> Engine<'c> {
                     for g in c * gch..((c + 1) * gch).min(ng) {
                         let hit = dbg & 2 == 0 && mbr[cs[g]..cs[g + 1]].iter().any(|&i| {
                             let sc = &screen[i];
-                            if sc.win.iter().any(|&x| x != 0) {
-                                sc.win.iter().any(|&x| x != 0 && bloom.maybe(x) && windex.contains(x))
+                            let (mut usable, mut matched) = (0usize, 0usize);
+                            for w in 0..NW {
+                                let ws = &sc.win[w * NS..(w + 1) * NS];
+                                if ws.iter().any(|&x| x != 0) {
+                                    usable += 1;
+                                    if ws.iter().any(|&x| x != 0 && bloom.maybe(x) && windex.contains(x)) {
+                                        matched += 1;
+                                    }
+                                }
+                            }
+                            if sc.hk != 0 {
+                                matched >= 1 && bloom.maybe(sc.hk) && done.contains(sc.hk)
                             } else {
-                                sc.hk != 0 && bloom.maybe(sc.hk) && done.contains(sc.hk)
+                                usable >= 2 && matched == usable
                             }
                         });
                         // SAFETY: group g belongs to this chunk only.
@@ -675,7 +688,9 @@ impl<'c> Engine<'c> {
             if !cfg.dedup {
                 break;
             }
-            // close claims with a verified member; split off members that read another address
+            // close claims with a verified member; split off members that read another address: a group holds reads
+            // that share payload windows, which distinct strands can do (one reading each, so the split by address
+            // above did not apply), and such a member must still be attempted, never counted as a copy
             let mut still: Vec<usize> = Vec::with_capacity(open.len());
             for &ci in &open {
                 let (a, e) = ranges[ci];
@@ -687,7 +702,27 @@ impl<'c> Engine<'c> {
                             still.push(ci);
                         }
                     }
-                    Some(_) => {}
+                    Some(i) => {
+                        let vk = self.b.vkey[i];
+                        let href = self.b.screen[i].hdr;
+                        let other: Vec<usize> = members[a + tried..e]
+                            .iter()
+                            .copied()
+                            .filter(|&j| {
+                                let sc = &self.b.screen[j];
+                                if sc.hk != 0 { sc.hk != vk } else { header_dist(sc.hdr, href) > 2 }
+                            })
+                            .collect();
+                        if !other.is_empty() {
+                            let s = members.len();
+                            members.extend_from_slice(&other);
+                            ranges.push((s, members.len()));
+                            next.push(0);
+                            full_next.push(0);
+                            still.push(ranges.len() - 1);
+                            self.stats[ST_SPLIT_GROUPS] += 1;
+                        }
+                    }
                 }
             }
             open = still;

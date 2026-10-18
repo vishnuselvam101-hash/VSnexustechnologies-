@@ -168,3 +168,49 @@ def test_cli_stream_volume_cache(reads, tmp_path):
     assert _ok(runner.invoke(app, ["cache", "stats", "--dir", cdir]))["result"]["entries"] == 1
     assert _ok(runner.invoke(app, ["cache", "clear", "--dir", cdir]))["result"]["removed"] == 1
     assert os.environ.get(sc.ENV_DIR) is None
+
+
+def test_cache_hit_needs_the_same_key_material(reads, tmp_path):
+    """A cached result is served only to a caller with the same key material and the same V6-SEC-02 setting: a hit
+    never bypasses the key check the uncached decode applies."""
+    cdir = tmp_path / "cache"
+    plain = sdk.decode(reads["reads"], tmp_path / "a.vnx", cache_dir=cdir)
+    assert plain.body["cache"] == {**plain.body["cache"], "hit": False, "stored": True}
+    k1, k2 = bytes(range(32)), bytes(range(1, 33))
+    # the same input with a key (unencrypted archive allowed): its own entry, not the plain one
+    with_key = sdk.decode(reads["reads"], tmp_path / "b.vnx", key=k1, allow_unencrypted=True, cache_dir=cdir)
+    assert with_key.status == "SUCCESS" and with_key.body["cache"]["hit"] is False
+    assert with_key.body["cache"]["key"] != plain.body["cache"]["key"]
+    assert sdk.decode(reads["reads"], tmp_path / "b2.vnx", key=k1, allow_unencrypted=True, cache_dir=cdir).body["cache"]["hit"] is True
+    # another key, or a passphrase, or the strict setting: never the entry of k1
+    other = sdk.decode(reads["reads"], tmp_path / "c.vnx", key=k2, allow_unencrypted=True, cache_dir=cdir)
+    assert other.body["cache"]["hit"] is False and other.body["cache"]["key"] != with_key.body["cache"]["key"]
+    pw = sdk.decode(reads["reads"], tmp_path / "d.vnx", passphrase="correct horse", allow_unencrypted=True, cache_dir=cdir)
+    assert pw.body["cache"]["hit"] is False and pw.body["cache"]["key"] not in {with_key.body["cache"]["key"], other.body["cache"]["key"]}
+    with pytest.raises(sdk.VNXError):                       # V6-SEC-02 applies although k1's result is cached
+        sdk.decode(reads["reads"], tmp_path / "e.vnx", key=k1, cache_dir=cdir)
+    assert not (tmp_path / "e.vnx").exists()
+    assert sc.key_fingerprint(None, None) is None
+    assert sc.key_fingerprint(k1, None) != sc.key_fingerprint(None, k1.hex()) != sc.key_fingerprint(k2, None)
+    assert k1.hex() not in sc.key_fingerprint(k1, None)
+
+
+def test_cache_store_verifies_its_copy(reads, tmp_path, monkeypatch):
+    """store() hashes the source and refuses a copy that does not hash the same; a failed store leaves no entry."""
+    import shutil
+    cdir = tmp_path / "cache"
+    rc = sc.ResultCache(cdir)
+    src = reads["archive"]
+    meta = rc.store("ab" * 32, src, {"x": 1})
+    assert meta["container_sha256"] == sc.sha256_file(src) and rc.lookup("ab" * 32) is not None
+    real = shutil.copyfile
+
+    def torn(a, b, *args, **kw):
+        real(a, b, *args, **kw)
+        with open(b, "r+b") as f:
+            f.seek(0)
+            f.write(b"\0")
+    monkeypatch.setattr(shutil, "copyfile", torn)
+    with pytest.raises(OSError):
+        rc.store("cd" * 32, src, {"x": 1})
+    assert rc.lookup("cd" * 32) is None and not list((cdir / "cd" / ("cd" * 32)).glob("*.tmp"))

@@ -6,6 +6,8 @@
 //!     pass 1), forward and as a reverse complement;
 //!   * window fingerprints: 24-nt windows of the strand at fixed template positions (WIN_POS), tolerant to a net shift
 //!     of +-1 nt (an indel before the window), for the more likely orientation.
+//! A read is skipped only when both kinds agree (a readable header naming a verified address and a matching window),
+//! or, with an unreadable header, when every usable window matches: one kind alone never skips a read.
 //! A fingerprint only decides whether a read is attempted; it never decides what is decoded. Accepted data always
 //! comes from a frame verified by the inner RS code and the CRC.
 //!

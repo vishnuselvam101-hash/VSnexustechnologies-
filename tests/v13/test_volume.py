@@ -241,3 +241,50 @@ def test_cache_is_bounded(tmp_path):
         assert v.read_at(0, 10) == data[:10] and v.read_at(0, 10) == data[:10]
         assert v.stat()["cache"]["entries"] == 0 and v.stat()["io"]["extents_decoded"] == 2
     assert vmod.VOLUME_FORMAT == "vnx.volume/1"
+
+
+def test_journal_damage_in_the_middle_refuses_to_open(tmp_path):
+    """A corrupt record followed by valid committed records is damage, not a torn tail: the volume does not open,
+    nothing is truncated and no extent file is removed as an orphan."""
+    from vnxdna.core.errors import VNXIntegrityError
+    data = _data(E + 10, 5)
+    with Volume.create(tmp_path / "v", _opts()) as v:
+        v.write(data)
+        v.flush()
+    j = tmp_path / "v" / "journal.log"
+    lines = j.read_bytes().split(b"\n")
+    assert len(lines) >= 4                                   # header, two commits, trailing empty
+    first_commit = lines[1]
+    pos = first_commit.find(b'"crc":"') + 7
+    lines[1] = first_commit[:pos] + (b"0" if first_commit[pos:pos + 1] != b"0" else b"1") + first_commit[pos + 1:]
+    j.write_bytes(b"\n".join(lines))
+    before = j.read_bytes()
+    files = sorted(p.name for p in (tmp_path / "v" / "extents").iterdir())
+    for mode in ("r", "rw"):
+        with pytest.raises(VNXIntegrityError):
+            Volume.open(tmp_path / "v", mode, options=_opts())
+    assert j.read_bytes() == before and sorted(p.name for p in (tmp_path / "v" / "extents").iterdir()) == files
+    # the lock is released by the failed open: a later open of a repaired journal works
+    lines[1] = first_commit
+    j.write_bytes(b"\n".join(lines))
+    with Volume.open(tmp_path / "v", "rw", options=_opts()) as v:
+        assert v.read_at(0, len(data)) == data and v.scrub()["journal_torn_tail_bytes"] == 0
+
+
+def test_create_with_overwrite_replaces_only_a_volume_or_an_empty_directory(tmp_path):
+    d = tmp_path / "notes"
+    d.mkdir()
+    (d / "keep.txt").write_text("precious")
+    with pytest.raises(VNXOutputError):
+        Volume.create(d, _opts(), overwrite=True)
+    assert (d / "keep.txt").read_text() == "precious"
+    f = tmp_path / "file"
+    f.write_text("x")
+    with pytest.raises(VNXOutputError):
+        Volume.create(f, _opts(), overwrite=True)
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    with Volume.create(empty, _opts(), overwrite=True) as v:
+        v.write(b"ok")
+    with Volume.create(empty, _opts(), overwrite=True) as v:    # a volume is replaced
+        assert v.size == 0

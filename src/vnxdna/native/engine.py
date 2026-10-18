@@ -168,6 +168,35 @@ class EngineParams:
     orient_shift: int = 2
 
 
+# dtype the engine's RawCfg declares for each array (config.rs), and the number of elements it copies from it
+_ARRAY_DTYPES = {"mpos": np.int64, "want": np.uint8, "block": np.int64, "frame_pos64": np.int64, "tpl16": np.int16,
+                 "seg_of": np.int32, "prev_seg": np.int32, "next_seg": np.int32, "frame_pos32": np.int32,
+                 "seg_frame": np.int32, "ks": np.uint8}
+
+
+def _checked_arrays(q: EngineParams) -> dict[str, np.ndarray]:
+    """The parameter arrays as contiguous arrays of exactly the dtype and length the engine reads through the raw
+    pointers (a shorter array or another dtype would make the engine read past its end). EngineUnsupported on a
+    mismatch: the caller falls back."""
+    nm = int(np.asarray(q.mpos).size)
+    expect = {"mpos": nm, "want": nm, "block": nm, "frame_pos64": int(q.frame_nt), "tpl16": int(q.t),
+              "seg_of": int(q.t), "prev_seg": int(q.t), "next_seg": int(q.t), "frame_pos32": int(q.frame_nt),
+              "seg_frame": int(q.frame_nt), "ks": 256 * int(q.span)}
+    out = {}
+    for k, dt in _ARRAY_DTYPES.items():
+        a = np.asarray(getattr(q, k))
+        if a.ndim != 1 and k != "ks":
+            raise EngineUnsupported(f"engine parameter {k!r} must be one-dimensional (got shape {a.shape})")
+        if a.size != expect[k]:
+            raise EngineUnsupported(f"engine parameter {k!r} has {a.size} elements, the layout needs {expect[k]}")
+        if a.dtype != dt:
+            if not np.array_equal(a.astype(dt), a):
+                raise EngineUnsupported(f"engine parameter {k!r} does not fit {np.dtype(dt).name}")
+            a = a.astype(dt)
+        out[k] = np.ascontiguousarray(a.reshape(-1))
+    return out
+
+
 def run_pass1(reads_path: str | os.PathLike, spill_dir: str | os.PathLike, params: EngineParams, buckets: int, *, fmt: str,
               threads: int, dedup: bool = True, batch: int | None = None, cancel: Cancel | None = None) -> dict:
     """Pass 1 of a decode of ``reads_path`` into the spill bucket files of ``spill_dir`` (record format of
@@ -178,8 +207,7 @@ def run_pass1(reads_path: str | os.PathLike, spill_dir: str | os.PathLike, param
     lib = KERNEL.lib()
     lanes, rs_level = kernel_levels()
     q = params
-    arrays = {k: np.ascontiguousarray(getattr(q, k)) for k in ("mpos", "want", "block", "frame_pos64", "tpl16", "seg_of",
-                                                                "prev_seg", "next_seg", "frame_pos32", "seg_frame", "ks")}
+    arrays = _checked_arrays(q)
     cancel = cancel or Cancel()
     cfg = _Cfg(abi=ABI_VERSION, t=int(q.t), frame_nt=int(q.frame_nt), frame_bytes=int(q.frame_bytes), payload=int(q.payload),
                parity=int(q.parity), nm=int(arrays["mpos"].size), nblocks=int(q.nblocks), mpos=_ptr(arrays["mpos"]),

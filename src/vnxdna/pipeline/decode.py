@@ -173,14 +173,25 @@ def _decode_ladder(reads_path, output, opt: DecodeOptions, t0: float, ev, **kw) 
         timer.daemon = True
         timer.start()
 
+    planner = RecoveryPlanner(opt.recovery_budget, t0)
+
     def over_budget():
+        # the planner records the exhaustion and raises with its plan (the same error and details as the V13 path);
+        # the fallback below is for a cancel that lands exactly at the limit (the timer fired, the clock disagrees)
+        try:
+            planner.checkpoint("pass 1 (engine stopped)")
+        except VNXBudgetExceeded as error:
+            return error
+        planner.exhausted.append({"limit": "max_wall_seconds", "at": "pass 1 (engine stopped)", "used": None,
+                                  "allowed": limit, "effect": "decode stopped"})
         return VNXBudgetExceeded(f"wall-time budget of {limit} s exceeded in pass 1 (engine stopped)",
-                                 details={"budget": "max_wall_seconds", "limit": limit})
+                                 details={"recovery_plan": planner.report()},
+                                 hint="raise the budget, or decode on a larger machine")
     try:
         if rung == "stream":
             t = time.perf_counter()
             try:
-                res = _decode_reads(reads_path, output, opt, t0, ev, RecoveryPlanner(opt.recovery_budget, t0),
+                res = _decode_reads(reads_path, output, opt, t0, ev, planner,
                                     **({**kw, "partial_dir": None} if opt.engine == "auto" else kw), stream=cancel,
                                     engine_info=info)
             except ne.EngineCancelled:

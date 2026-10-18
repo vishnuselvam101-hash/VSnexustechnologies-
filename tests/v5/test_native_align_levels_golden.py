@@ -24,7 +24,7 @@ CASES = [("v4_0", "balanced"), ("v4_0", "archival"), ("v5_0", "balanced"), ("v5_
 
 def _decode(reads: Path, out: Path, backend: str, monkeypatch) -> tuple[str, dict]:
     monkeypatch.setenv("VNXDNA_ALIGN_BACKEND", backend)
-    res = de.decode_reads(reads, out, de.DecodeOptions(), overwrite=True)
+    res = de.decode_reads(reads, out, de.DecodeOptions(engine="v13"), overwrite=True)   # the path that selects the aligner backend
     r = res.report
     assert res.status == "SUCCESS"
     assert hashlib.sha256(out.read_bytes()).hexdigest() == r["container_sha256"]

@@ -20,7 +20,8 @@ from vnxdna.v4.errors import VNXConfigurationError, VNXDecodeError
 from vnxdna.v4.frame import KIND_DATA
 from vnxdna.v6.recovery import RecoveryBudget, RecoveryPlanner, VNXBudgetExceeded
 
-VOLATILE = ("stage_seconds", "seconds", "peak_rss_bytes", "output")
+VOLATILE = ("stage_seconds", "seconds", "peak_rss_bytes", "output",
+            "ns_io", "ns_scan", "ns_prep", "ns_attempt", "ns_spill", "ns_total", "ns_cheap", "ns_full", "ns_group")   # V13 engine timings
 
 
 @pytest.fixture(scope="module")
@@ -52,6 +53,8 @@ def _stable(report):
         sched = dict(out["recovery_schedule"])
         sched["rounds"] = {r: {k: v for k, v in d.items() if k != "seconds"} for r, d in sched.get("rounds", {}).items()}
         out["recovery_schedule"] = sched
+    if isinstance(out.get("engine"), dict) and isinstance(out["engine"].get("pass1"), dict):   # V13 engine stage timings
+        out["engine"] = {**out["engine"], "pass1": {k: v for k, v in out["engine"]["pass1"].items() if k not in VOLATILE}}
     return out
 
 

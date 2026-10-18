@@ -127,6 +127,17 @@ def test_fail_closed(tmp_path):
     (tmp_path / "x.json").write_text("{}")
     with pytest.raises(VNXFormatError):
         st.load_manifest(tmp_path / "x.json")
+    # malformed fields are format errors, never raw ValueError/TypeError from the decode
+    for field, value in (("strands_offset", -1), ("length", "3"), ("archive_tag", "zz12"), ("archive_tag", "abcde"),
+                         ("sha256", "0" * 63), ("strands_bytes", True)):
+        ext = [dict(e) for e in doc["extents"]]
+        ext[0][field] = value
+        bad.write_text(json.dumps({**doc, "extents": ext}, sort_keys=True, separators=(",", ":")) + "\n")
+        with pytest.raises(VNXFormatError):
+            st.load_manifest(bad)
+    bad.write_text(json.dumps({**doc, "total_bytes": doc["total_bytes"] + 1}, sort_keys=True, separators=(",", ":")) + "\n")
+    with pytest.raises(VNXFormatError):
+        st.load_manifest(bad)
 
 
 def test_encrypted_extents(tmp_path):

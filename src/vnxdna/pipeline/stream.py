@@ -280,12 +280,43 @@ def load_manifest(path: str | os.PathLike) -> dict:
         raise VNXFormatError(f"cannot read the stream manifest {path}: {error}", stage="stream") from None
     if doc.get("format") != STREAM_FORMAT or not isinstance(doc.get("extents"), list):
         raise VNXFormatError(f"{path} is not a {STREAM_FORMAT} manifest", stage="stream")
+
+    def bad(msg: str) -> VNXFormatError:
+        return VNXFormatError(f"stream manifest: {msg}", stage="stream")
+
+    def count(rec: dict, k: str, i: int) -> int:
+        v = rec[k]
+        if isinstance(v, bool) or not isinstance(v, int) or v < 0:
+            raise bad(f"extent {i}: {k!r} must be a non-negative integer")
+        return v
+
+    def hexstr(rec: dict, k: str, i: int, digits: int) -> str:
+        v = rec[k]
+        if not isinstance(v, str) or len(v) != digits or any(c not in "0123456789abcdef" for c in v):
+            raise bad(f"extent {i}: {k!r} must be {digits} lowercase hex digits")
+        return v
+
+    total = 0
     for i, rec in enumerate(doc["extents"]):
+        if not isinstance(rec, dict):
+            raise bad(f"extent {i} is not an object")
         for k in ("index", "length", "sha256", "archive_id", "archive_tag", "strands_offset", "strands_bytes", "strands_sha256"):
             if k not in rec:
-                raise VNXFormatError(f"stream manifest: extent {i} lacks {k!r}", stage="stream")
+                raise bad(f"extent {i} lacks {k!r}")
         if rec["index"] != i:
-            raise VNXFormatError("stream manifest: extents out of order", stage="stream")
+            raise bad("extents out of order")
+        total += count(rec, "length", i)
+        count(rec, "strands_offset", i)
+        count(rec, "strands_bytes", i)
+        hexstr(rec, "sha256", i, 64)
+        hexstr(rec, "strands_sha256", i, 64)
+        hexstr(rec, "archive_tag", i, 4)
+        if not isinstance(rec["archive_id"], str) or not rec["archive_id"]:
+            raise bad(f"extent {i}: 'archive_id' must be a non-empty string")
+    if isinstance(doc.get("total_bytes"), bool) or not isinstance(doc.get("total_bytes"), int) or doc["total_bytes"] != total:
+        raise bad(f"'total_bytes' must equal the sum of the extent lengths ({total})")
+    if not isinstance(doc.get("sha256"), str) or len(doc["sha256"]) != 64:
+        raise bad("'sha256' must be the 64-hex-digit hash of the stream")
     return doc
 
 
@@ -319,7 +350,14 @@ def decode_stream(strands: str | os.PathLike, manifest: str | os.PathLike, outpu
     opt.validate()
     t0 = time.perf_counter()
     strands = Path(strands)
-    if by_range is False or (by_range is None and doc["extents"] and not _range_matches(strands, doc["extents"][0])):
+    tags_checked = False
+
+    def check_tags() -> None:
+        """The pool path separates extents by their 16-bit archive tag: run once before the first pool-path extent."""
+        nonlocal tags_checked
+        if tags_checked:
+            return
+        tags_checked = True
         by_tag: dict[str, set[str]] = {}
         for e in doc["extents"]:
             by_tag.setdefault(e["archive_tag"], set()).add(e["archive_id"])
@@ -328,6 +366,9 @@ def decode_stream(strands: str | os.PathLike, manifest: str | os.PathLike, outpu
             raise VNXFormatError(f"the pool path cannot separate extents sharing an archive tag ({', '.join(dup)}); decode "
                                  "from the encoder's strand file (by range) or keep extents in separate files",
                                  stage="stream", details={"archive_tags": dup})
+
+    if by_range is False or (by_range is None and doc["extents"] and not _range_matches(strands, doc["extents"][0])):
+        check_tags()
     to_stdout = output == "-"
     out_path = None if to_stdout else Path(output)
     work = Path(tempfile.mkdtemp(prefix="vnx-stream-", dir=workdir))
@@ -357,6 +398,7 @@ def decode_stream(strands: str | os.PathLike, manifest: str | os.PathLike, outpu
                         part.unlink()
                         ranged += 1
                     else:
+                        check_tags()
                         data = decode_extent(strands, rec, opt, key=key, passphrase=passphrase, work=work)
                     out.write(data)
                     total.update(data)
