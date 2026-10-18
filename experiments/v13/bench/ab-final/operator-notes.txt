@@ -15,3 +15,5 @@ stale_libraries:  every v13 row reports ["engine"]: the engine library (built 22
                   source files (22:10-22:12), but the only source change after the build (65047ff) is the five appended
                   `#[cfg(test)] mod tests` blocks (219 insertions, 0 deletions), which are not part of the release cdylib.
                   All other kernels native and current in both trees.
+2026-10-18 07:30  check: `cargo build --release --offline --locked` of the crate at HEAD into a scratch target directory
+                  gives a libvnx_engine.so byte-identical (cmp, 13,585,560 bytes) to the library the v13 rows loaded.

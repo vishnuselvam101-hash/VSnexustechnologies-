@@ -27,14 +27,13 @@ export ASAN_OPTIONS=detect_leaks=0:abort_on_error=1:halt_on_error=1:detect_stack
 export UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1
 pre="$(gcc -print-file-name=libasan.so) $(gcc -print-file-name=libubsan.so)"
 lib="$W/engine_asan_ubsan.so"
-if ! VNX_ENGINE_CFLAGS="-O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=all" \
-     RUSTFLAGS="-C link-arg=-fsanitize=address,undefined" $PY -m vnxdna.native.engine build "$lib" > "$W/build-asan.log" 2>&1; then
-    # the Python build command builds in place; build to a temporary target and copy instead
-    VNX_ENGINE_CFLAGS="-O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=all" \
-    RUSTFLAGS="-C link-arg=-fsanitize=address,undefined" \
-    cargo build --release --offline --locked --manifest-path $CRATE/Cargo.toml --target-dir "$W/target-asan" > "$W/build-asan.log" 2>&1 \
-        && cp "$W/target-asan/release/libvnx_engine.so" "$lib" || { echo "asan build failed"; tail -20 "$W/build-asan.log"; exit 1; }
-fi
+# Never `python -m vnxdna.native.engine build` here: that command only builds in place (the production library);
+# the sanitized library is built by cargo into its own target directory and copied next to the logs.
+VNX_ENGINE_CFLAGS="-O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=all" \
+RUSTFLAGS="-C link-arg=-fsanitize=address,undefined" \
+cargo build --release --offline --locked --manifest-path $CRATE/Cargo.toml --target-dir "$W/target-asan" > "$W/build-asan.log" 2>&1 \
+    && cp "$W/target-asan/release/libvnx_engine.so" "$lib" || { echo "asan build failed"; tail -20 "$W/build-asan.log"; exit 1; }
+nm -D "$lib" | grep -q __asan || { echo "asan build has no ASan symbols"; exit 1; }
 loaded=$(VNXDNA_ENGINE_LIB=$lib LD_PRELOAD="$pre" $PY -c "from vnxdna.native import engine as n; print(n.status()['library'])" 2>&1 | tail -1)
 if [ "$loaded" != "$lib" ]; then echo "sanitized library NOT loaded ($loaded)"; fail=1; else
     VNXDNA_ENGINE_LIB=$lib VNXDNA_ENGINE_BACKEND=native LD_PRELOAD="$pre" $PY -m pytest -q -p no:cacheprovider -o addopts= $TESTS \
@@ -67,6 +66,10 @@ int vnx_canary(void) { char *p = malloc(8); p[9] = 1; int r = p[0]; free(p); ret
 EOF
 gcc -O1 -g -fPIC -shared -fsanitize=address,undefined -fno-sanitize-recover=all "$W/canary.c" -o "$W/canary.so" \
     && LD_PRELOAD="$pre" $PY -c "import ctypes; ctypes.CDLL('$W/canary.so').vnx_canary()" > "$W/canary.log" 2>&1
-if grep -q "heap-buffer-overflow" "$W/canary.log"; then echo "canary: caught (heap-buffer-overflow)"; else echo "canary: NOT caught"; fail=1; fi
+# with -fno-sanitize-recover=all the first sanitizer to see the write halts the process: UBSan's object-size check
+# ("runtime error: store to address ... insufficient space") or ASan's heap-buffer-overflow report; either is a catch
+if grep -q "heap-buffer-overflow" "$W/canary.log"; then echo "canary: caught (ASan heap-buffer-overflow)"
+elif grep -q "runtime error: store to address" "$W/canary.log"; then echo "canary: caught (UBSan object-size check)"
+else echo "canary: NOT caught"; fail=1; fi
 echo "overall: $([ $fail -eq 0 ] && echo PASS || echo FAIL)"
 exit $fail

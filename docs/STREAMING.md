@@ -104,6 +104,9 @@ two layers on top of the unchanged codec ([V13_ENGINE_ARCHITECTURE.md](V13_ENGIN
   extent by extent, by strand byte range while the sink is the encoder's file and from the whole pool by archive ID
   otherwise (a SIMULATED sequenced pool: one pass over the pool per extent); every extent is verified by the decoder
   and against the manifest before it is written, and the whole-stream hash before the output is published.
+  Because the pool path decodes the whole pool once per extent, its cost grows with extents × pool size (measured:
+  6.1 s for a 4 MiB stream, 98 s for 16 MiB at 1 worker, V13_BENCHMARK_REPORT.md §4); the range path and the volume
+  are linear. A one-pass partition of the pool by archive tag is the planned fix (not in V13).
 * **`vnxdna.volume`** (`vnx volume init|write|read|stat|scrub`): `write`/`append`/`seek`/`read`/`read_at`/`flush` over
   extents stored as one strand file per extent version, a byte-bounded LRU cache of decoded extents, a write-back
   buffer, a CRC-32-framed write-ahead journal (replayed on open; an interrupted flush leaves the volume at its last
