@@ -69,8 +69,6 @@ def test_every_row_has_its_implementation_and_skip_state():
             assert fn in tests, f"{r.id}: no test {ref}"
             skips = [d for d in tests[fn] if "skip" in d]
             reason = skips[0] if skips else None
-            if file == "test_v14_e2e_blockdev.py" and fn != "test_r24hw_pi_memory_on_hardware":
-                reason = "needs P7/P8 integration" if any(d in ("needs_device", "needs_fs") for d in tests[fn]) else None
         if r.status == "run":
             assert reason is None, f"{r.id} is marked run but is skipped/ignored"
         else:

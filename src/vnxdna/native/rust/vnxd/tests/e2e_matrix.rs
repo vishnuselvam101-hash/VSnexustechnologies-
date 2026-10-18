@@ -26,10 +26,14 @@ use vnxd::cache::{CacheMode, ExtentCache};
 use vnxd::digest::{hex, sha256};
 use vnxd::error::{err, ErrorCode, Result, VnxError};
 use vnxd::fallback::{HealthConfig, ResilientMedia, RetryPolicy};
-use vnxd::fault::{Fault, FaultMedia, LatencyMedia, MediaOp, Rule};
+use vnxd::codec::ToyCodec;
+use vnxd::dnasim::{DnaSimConfig, DnaSimMedia};
+use vnxd::fault::{Fault, FaultMedia, FaultPlan, LatencyMedia, MediaOp, Rule};
+use vnxd::image::ImageMedia;
+use vnxd::lab::{LabMedia, LabMediaConfig, SimLabConfig, SimulatedLab};
 use vnxd::io::{BlockIo, ExtentStore, IoQueue, Op, QueueConfig, Reply, MAX_REQUEST_BYTES};
 use vnxd::json::{obj, Value};
-use vnxd::media::{CommitReceipt, Durability, MediaAdapter, MediaInfo};
+use vnxd::media::{CommitReceipt, Durability, MediaAdapter, MediaInfo, MemoryMedia};
 use vnxd::ram::{MemoryManager, RamConfig, Subsystem};
 use vnxd::seal::{SealedMedia, Sealer, WorkerConfig, WorkerSealer};
 use vnxd::state::WriteState;
@@ -191,11 +195,30 @@ impl Sealer for TestSealer {
     }
 }
 
-/// The P7 adapter under test, by kind ("file-image", "dna-sim", "fault-injection", "physical"). Returns None until
-/// the P7 adapters are merged; the integration lead replaces the body with the adapters' constructors (each over a
-/// fresh, empty backend in `dir`) and removes the `#[ignore]` of the m-rows.
-fn p7_adapter(_kind: &str, _dir: &Path) -> Option<Arc<dyn MediaAdapter>> {
-    None
+/// The P7 adapter under test, by kind, over a backend kept in `dir` (opened again when it exists, so a restart can
+/// build a fresh adapter over the same stored bytes): "file-image" (ImageMedia), "dna-sim" (DnaSimMedia over an
+/// image store, TEST-ONLY ToyCodec, SIMULATED channel), "fault-injection" (seeded FaultMedia over an image, faults off
+/// until a row sets a plan), "lab" (LabMedia over the SimulatedLab of the vnx.dna-lab/1 interface; in-memory, so it is
+/// not reopened). The real VNX-DNA codec behind these adapters is exercised by tests/media_worker.rs.
+fn p7_adapter(kind: &str, dir: &Path) -> Option<Arc<dyn MediaAdapter>> {
+    let image = |d: &Path| Arc::new(ImageMedia::open_or_create(d).unwrap());
+    Some(match kind {
+        "file-image" => image(dir),
+        "dna-sim" => {
+            let cfg = DnaSimConfig { channel: Some("toy-sub-1000".into()), seed: 72, ..Default::default() };
+            Arc::new(DnaSimMedia::new(image(dir), Arc::new(ToyCodec), cfg).unwrap())
+        }
+        "fault-injection" => Arc::new(FaultMedia::seeded(image(dir), FaultPlan { seed: 73, entries: Vec::new() })),
+        "lab" => {
+            let lab = Arc::new(SimulatedLab::new(SimLabConfig {
+                seed: 74, substitution_ppm: 200, synthesis_failure_ppm: 50_000, sequencing_failure_ppm: 50_000, aliquots: 100_000,
+                ..Default::default()
+            }));
+            let cfg = LabMediaConfig { job_retries: 8, ..Default::default() };
+            Arc::new(LabMedia::new(lab, Arc::new(ToyCodec), Arc::new(MemoryMedia::new()), cfg).unwrap())
+        }
+        _ => return None,
+    })
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -1500,50 +1523,96 @@ fn r24_pi_class_memory_budget() {
 }
 
 // ---------------------------------------------------------------------------------------------------------------
-// M-rows: the P7 media adapters under the integrated stack (ignored until P7 is merged)
+// M-rows: the P7 media adapters under the integrated stack
 
-fn adapter_workload(kind: &str) {
+fn adapter_workload(kind: &str, ops: usize) {
     let d = Dir::new(kind);
-    let m = p7_adapter(kind, &d.0).unwrap_or_else(|| panic!("needs P7 integration: plug the {kind} adapter into p7_adapter()"));
     vnxd::media::conformance(p7_adapter(kind, &d.0.join("conf")).unwrap().as_ref()).unwrap();
-    let s = Stack::create_over(Cfg::cached(CacheMode::WriteThrough), 70, m, d.0.clone(), None);
+    let m = p7_adapter(kind, &d.0.join("media")).unwrap();
+    let cfg = Cfg { blocks: 512, ..Cfg::cached(CacheMode::WriteThrough) }; // 64 extents
+    let s = Stack::create_over(cfg.clone(), 70, m, d.0.clone(), None);
     let mut o = Oracle::new(s.cap());
-    random_workload(&s, &mut o, &mut Rng(70), 200, 2);
+    random_workload(&s, &mut o, &mut Rng(70), ops, 2);
     s.flush().unwrap();
     let (s, rep) = s.restart();
-    assert!(rep.torn_tail.is_none() && rep.damaged.is_empty(), "{rep:?}");
+    assert!(rep.torn_tail.is_none() && rep.damaged.is_empty() && rep.orphans_removed.is_empty(), "{rep:?}");
     s.check_all(&o, 64 * 1024);
+    s.check_clean();
+    if kind != "lab" {
+        // a new process: a fresh adapter over the same stored backend
+        drop(s);
+        let base = p7_adapter(kind, &d.0.join("media")).unwrap();
+        let (v, rep) = Volume::open(&d.0.join("vol"), resilient(base.clone()), VolumeConfig::default()).unwrap();
+        assert!(rep.damaged.is_empty() && rep.orphans_removed.is_empty(), "{rep:?}");
+        let s = Stack::assemble(cfg, Arc::new(v), resilient(base.clone()), base, d.0.clone());
+        s.check_all(&o, 64 * 1024);
+        s.check_clean();
+    }
+}
+
+/// M01 file-image adapter (P7): conformance, the random workload, restart, reopen by a fresh adapter (a new process).
+/// Expected: as R02 + R10; nothing damaged or orphaned.
+#[test]
+fn m01_file_image_adapter() {
+    adapter_workload("file-image", 300);
+}
+
+/// M02 DNA-simulator adapter (P7) over an image store, TEST-ONLY codec, SIMULATED substitution channel: conformance,
+/// workload, restart, reopen. Expected: every read is the oracle's bytes (the simulated channel's errors are corrected
+/// or retried), nothing damaged.
+#[test]
+fn m02_dna_simulator_adapter() {
+    adapter_workload("dna-sim", 150);
+}
+
+/// M03 fault-injection adapter (P7): a seeded plan of lying and honest faults (2 % per operation kind) under 300
+/// requests. Expected: every successful read equals the oracle; failed writes have no effect; no INTERNAL error;
+/// after the plan is cleared the device equals the oracle, also after a restart and a reopen.
+#[test]
+fn m03_fault_injection_adapter() {
+    let d = Dir::new("m03");
+    let fm = Arc::new(FaultMedia::seeded(Arc::new(ImageMedia::create(&d.0.join("media")).unwrap()), FaultPlan { seed: 73, entries: Vec::new() }));
+    let cfg = Cfg { blocks: 512, probe: Duration::from_millis(5), ..Cfg::cached(CacheMode::WriteThrough) };
+    let s = Stack::create_over(cfg, 73, fm.clone(), d.0.clone(), None);
+    let mut o = Oracle::new(s.cap());
+    fm.set_plan(Some(FaultPlan::lying(73, 20_000)));
+    let mut r = Rng(73);
+    let mut errors = 0;
+    for _ in 0..300 {
+        let (off, len) = random_range(&mut r, s.cap(), s.eb(), 2);
+        if r.below(3) == 0 {
+            match s.read(off, len) {
+                Ok(b) => assert!(b == o.get(off, len), "read {off}+{len} returned other bytes"),
+                Err(e) => {
+                    assert!(e.code != ErrorCode::Internal, "{e:?}");
+                    errors += 1
+                }
+            }
+        } else {
+            let data = r.bytes(len as usize);
+            match s.write(off, &data) {
+                Ok(_) => o.apply(off, &data),
+                Err(e) => {
+                    assert!(e.code != ErrorCode::Internal, "{e:?}");
+                    errors += 1
+                }
+            }
+        }
+    }
+    assert!(errors > 0 && !fm.trace().is_empty(), "the plan fired");
+    fm.set_plan(None);
+    std::thread::sleep(Duration::from_millis(10));
+    s.flush().unwrap();
+    s.check_all(&o, 4096);
+    let (s, _) = s.restart();
+    s.check_all(&o, 4096);
     s.check_clean();
 }
 
-/// M01 file-image adapter (P7): conformance, the random workload, restart. Expected: as R02 + R10.
+/// M04 physical-lab interface (P7 `vnx.dna-lab/1`, SIMULATED lab, TEST-ONLY codec; no equipment exists): conformance
+/// and the workload through synthesis / retrieval / sequencing jobs with seeded equipment failures (retried).
+/// Expected: every read is the oracle's bytes, after restart too; nothing damaged.
 #[test]
-#[ignore = "needs P7/P8 integration: P7 file-image media adapter"]
-fn m01_file_image_adapter() {
-    adapter_workload("file-image");
-}
-
-/// M02 DNA-simulator adapter (P7): conformance, workload, restart over the SIMULATED channel. Expected: every read is
-/// the oracle's bytes or a typed error (CORRUPTION/NOT_FOUND class) when the simulated channel loses an extent.
-#[test]
-#[ignore = "needs P7/P8 integration: P7 DNA-simulator media adapter"]
-fn m02_dna_simulator_adapter() {
-    adapter_workload("dna-sim");
-}
-
-/// M03 fault-injection adapter (P7) from its seeded configuration: the R13-R17 outcomes through the adapter.
-#[test]
-#[ignore = "needs P7/P8 integration: P7 fault-injection media adapter"]
-fn m03_fault_injection_adapter() {
-    adapter_workload("fault-injection");
-}
-
-/// M04 physical-interface adapter (P7, no hardware): every data operation fails with a typed error; creating a device
-/// over it fails; nothing reports success.
-#[test]
-#[ignore = "needs P7/P8 integration: P7 physical-interface media adapter"]
-fn m04_physical_interface_adapter_refuses() {
-    let d = Dir::new("phys");
-    let m = p7_adapter("physical", &d.0).expect("needs P7 integration: plug the physical adapter into p7_adapter()");
-    assert!(Volume::create(&d.0.join("vol"), Cfg::default().geometry(), [4; 16], 0, m, VolumeConfig::default()).is_err());
+fn m04_simulated_lab_interface_adapter() {
+    adapter_workload("lab", 100);
 }
