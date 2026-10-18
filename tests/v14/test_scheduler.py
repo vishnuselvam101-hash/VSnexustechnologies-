@@ -260,7 +260,8 @@ def test_layout_without_the_margin_skips_nothing(tmp_path):
                  {"sequencing.substitution.rate": 0.002, **_cov(3)}, 71900, True, layout=lay)
     got = _pass1(pool, tmp_path / "strand", engine_scheduler="strand", layout=lay)
     assert got["stats"]["skipped"] == 0 and got["stats"]["attempted"] == pool["n"] and got["stats"]["strand_checks"] == 0
-    res = de.decode_reads(pool["reads"], tmp_path / "o.vnx", DecodeOptions(layout=lay), overwrite=True)
+    res = de.decode_reads(pool["reads"], tmp_path / "o.vnx", DecodeOptions(layout=lay, engine_scheduler="strand"),
+                          overwrite=True)
     assert res.status == "SUCCESS" and (tmp_path / "o.vnx").read_bytes() == pool["archive"].read_bytes()
     assert res.report["engine"]["rung"] == "stream" and res.report["engine"]["pass1"]["skipped"] == 0
 
@@ -284,7 +285,7 @@ def test_scheduler_option_validation_and_report(pools, tmp_path):
         ne.run_pass1(pools("random-ordered")["reads"], tmp_path, re_.params_for(pools("random-ordered")["lay"],
                                                                                 DecodeOptions()),
                      1, fmt="fastq", threads=1, scheduler="fast")
-    assert DecodeOptions().engine_scheduler == "strand"
+    assert DecodeOptions().engine_scheduler == "auto"          # the V13 rule with the strand retry rung (lead decision)
     pool = pools("random-ordered")
     res = de.decode_reads(pool["reads"], tmp_path / "o.vnx", DecodeOptions(engine_dedup=False), overwrite=True)
     assert res.report["engine"]["scheduler"] == "all" and res.report["engine"]["pass1"]["skipped"] == 0
@@ -322,7 +323,8 @@ def test_a_reading_with_a_parity_error_does_not_poison_the_frame_store(tmp_path)
     d = tmp_path / "spill"
     d.mkdir()
     Spill(d, 2, lay.payload_bytes, lay.frame_nt).close()
-    st = re_.run_pass1(tmp_path / "r.fasta", d, lay, DecodeOptions(), 2, fmt="fasta", threads=1, batch=4096)
+    st = re_.run_pass1(tmp_path / "r.fasta", d, lay, DecodeOptions(engine_scheduler="strand"), 2, fmt="fasta", threads=1,
+                       batch=4096)
     n = len(strands)
     assert st["store_parity_fixed"] == n                         # every first reading had its parity re-derived
     assert st["skipped"] == 2 * n and st["attempted"] == n       # the clean copies match the stored codeword exactly
@@ -336,3 +338,61 @@ def test_cli_engine_scheduler_rejects_unknown_values(pools, tmp_path):
     pool = pools("random-ordered")
     r = CliRunner().invoke(app, ["decode", str(pool["reads"]), "-o", str(tmp_path / "o.vnx"), "--engine-scheduler", "fast"])
     assert r.exit_code != 0 and not (tmp_path / "o.vnx").exists()
+
+
+# ---------------------------------------------------------------------------------------- the scheduler retry rung
+def _decode_events(pool, out, threads=1, **opts):
+    got: list = []
+    res = de.decode_reads(pool["reads"], out, DecodeOptions(workers=threads, **opts), overwrite=True, observer=got.append)
+    return res, [e for e in got if e["event"] == "engine_fallback"]
+
+
+def test_default_retries_a_failed_v13_rule_run_with_the_strand_scheduler(pools, tmp_path):
+    """Lead decision (docs/V14_SCHEDULER.md §9.4): the default "auto" runs the V13 rule; on the zero-run pool it loses
+    distinct strands and the stream run fails, so the engine is re-run once with "strand", which decodes on the stream
+    rung: no fallback to the V13 path. The failed first attempt is recorded as a fallback activation and an event."""
+    pool = pools("zeros-stripes")
+    res, ev = _decode_events(pool, tmp_path / "o.vnx")
+    eng = res.report["engine"]
+    assert res.status == "SUCCESS" and (tmp_path / "o.vnx").read_bytes() == pool["archive"].read_bytes()
+    assert eng["rung"] == "stream" and eng["scheduler"] == "strand"
+    assert [f["reason"].split(" (")[0] for f in eng["fallbacks"]] == ["sched_retry: corroborated->strand"]
+    assert eng["fallbacks"][0]["pass1"]["skip_screen_group"] > 0     # the first attempt ran the V13 rule
+    assert eng["sched_retry"]["from"] == "corroborated" and eng["sched_retry"]["to"] == "strand"
+    assert [e["rung"] for e in ev] == ["stream"] and ev[0]["reason"].startswith("sched_retry: corroborated->strand")
+
+
+@pytest.mark.parametrize("name", ["random-ordered", "random-dropout-duplicates"])
+def test_random_pools_never_trigger_the_retry(pools, tmp_path, name):
+    pool = pools(name)
+    res, ev = _decode_events(pool, tmp_path / "o.vnx")
+    eng = res.report["engine"]
+    assert res.status == "SUCCESS" and eng["rung"] == "stream" and eng["fallbacks"] == [] and ev == []
+    assert eng["scheduler"] == "corroborated" and "sched_retry" not in eng
+
+
+@pytest.mark.parametrize("opts", [{"engine_scheduler": "corroborated"}, {"engine_scheduler": "strand"},
+                                  {"engine_dedup": False}])
+def test_an_explicit_scheduler_is_never_retried(pools, tmp_path, opts):
+    pool = pools("zeros-stripes")
+    res, ev = _decode_events(pool, tmp_path / "o.vnx", **opts)
+    eng = res.report["engine"]
+    assert res.status == "SUCCESS" and (tmp_path / "o.vnx").read_bytes() == pool["archive"].read_bytes()
+    assert "sched_retry" not in eng and not any("sched_retry" in f["reason"] for f in eng["fallbacks"])
+    if opts == {"engine_scheduler": "corroborated"}:
+        assert eng["rung"] == "v13" and [e["rung"] for e in ev] == ["v13"]   # the V13 rule's loss: the ladder falls back
+    else:
+        assert eng["rung"] == "stream" and eng["fallbacks"] == [] and ev == []
+
+
+def test_the_retry_rung_is_deterministic_across_threads(pools, tmp_path):
+    pool = pools("zeros-stripes")
+    runs = []
+    for t in (1, 3):
+        res, _ = _decode_events(pool, tmp_path / f"o{t}.vnx", threads=t)
+        eng = res.report["engine"]
+        keys = ("attempted", "skipped", "full_attempts", "skip_claim_strand", "skip_screen_strand")
+        runs.append(((tmp_path / f"o{t}.vnx").read_bytes(), eng["rung"], eng["scheduler"],
+                     [f["reason"] for f in eng["fallbacks"]], {k: eng["pass1"][k] for k in keys},
+                     {k: eng["fallbacks"][0]["pass1"][k] for k in keys}))
+    assert runs[0] == runs[1]

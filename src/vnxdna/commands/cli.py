@@ -41,6 +41,7 @@ from vnxdna.core.errors import VNXConfigurationError, VNXError, VNXOutputError
 
 class EngineScheduler(str, Enum):
     """--engine-scheduler choices (docs/V14_SCHEDULER.md)."""
+    auto = "auto"
     strand = "strand"
     corroborated = "corroborated"
 
@@ -466,8 +467,9 @@ def decode(reads: Path, output: Optional[Path] = typer.Option(None, "--output", 
                help="V13 engine: attempt only reads whose address is not verified yet (default) or every read."),
            engine_scheduler: Optional[EngineScheduler] = typer.Option(
                None, "--engine-scheduler", case_sensitive=True,
-               help="Engine address scheduler: strand (default; skip a read only when the strand check confirms it "
-                    "against a verified frame) or corroborated (the V13 rule, for comparison). No environment override."),
+               help="Engine address scheduler: auto (default; the V13 rule, re-run once with strand when it does not "
+                    "succeed), corroborated (the V13 rule only) or strand (skip a read only when the strand check "
+                    "confirms it against a verified frame). No environment override."),
            engine_threads: Optional[int] = typer.Option(
                None, "--engine-threads", help="V13 engine threads (default: --workers; VNXDNA_ENGINE_THREADS)."),
            cache_dir: Optional[Path] = typer.Option(None, "--cache-dir", help="V13 result cache directory (or VNXDNA_CACHE_DIR).")

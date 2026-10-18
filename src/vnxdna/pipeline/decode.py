@@ -192,31 +192,56 @@ def _decode_ladder(reads_path, output, opt: DecodeOptions, t0: float, ev, **kw) 
                                  hint="raise the budget, or decode on a larger machine")
     try:
         if rung == "stream":
-            t = time.perf_counter()
-            try:
-                res = _decode_reads(reads_path, output, opt, t0, ev, planner,
-                                    **({**kw, "partial_dir": None} if opt.engine == "auto" else kw), stream=cancel,
-                                    engine_info=info)
-            except ne.EngineCancelled:
-                raise over_budget() from None
-            except (ne.EngineUnsupported, ne.EngineError) as error:
-                if opt.engine == "stream":
-                    raise
-                info["fallbacks"].append({"rung": "stream", "reason": f"{type(error).__name__}: {error}"[:300],
-                                          "seconds": round(time.perf_counter() - t, 4)})
-                res = None
-            except VNXError as error:
-                if type(error).__name__ in _NO_FALLBACK or opt.engine == "stream":
-                    raise
-                info["fallbacks"].append({"rung": "stream", "reason": f"{type(error).__name__}: {error}"[:300],
-                                          "seconds": round(time.perf_counter() - t, 4)})
-                res = None
-            if res is not None:
-                if res.status == "SUCCESS" or opt.engine == "stream":
-                    info["rung"] = "stream"
-                    res.report["engine"] = info
-                    return res
-                info["fallbacks"].append({"rung": "stream", "reason": f"status {res.status}",
+            # engine_scheduler="auto" (the default): the V13 rule first; a run that ends without SUCCESS for a reason
+            # the scheduler can cause (a status, or a decode error such as no superblock) is re-run ONCE on the strand
+            # scheduler before the ladder falls back to the V13 path (docs/V14_SCHEDULER.md §9.4). Explicit schedulers
+            # and engine_dedup=False are never retried.
+            attempts = [opt]
+            if opt.engine_scheduler == "auto" and opt.engine_dedup:
+                attempts.append(replace(opt, engine_scheduler="strand"))
+            res = None
+            for k, aopt in enumerate(attempts):
+                t = time.perf_counter()
+                retry = k + 1 < len(attempts)
+                if k > 0:
+                    planner = RecoveryPlanner(opt.recovery_budget, t0)
+                try:
+                    res = _decode_reads(reads_path, output, aopt, t0, ev, planner,
+                                        **({**kw, "partial_dir": None} if opt.engine == "auto" or retry else kw),
+                                        stream=cancel, engine_info=info)
+                except ne.EngineCancelled:
+                    raise over_budget() from None
+                except (ne.EngineUnsupported, ne.EngineError) as error:
+                    if opt.engine == "stream":
+                        raise
+                    info["fallbacks"].append({"rung": "stream", "reason": f"{type(error).__name__}: {error}"[:300],
+                                              "seconds": round(time.perf_counter() - t, 4)})
+                    res = None
+                    break                                    # not a scheduler outcome: no retry
+                except VNXError as error:
+                    if type(error).__name__ in _NO_FALLBACK or (opt.engine == "stream" and not retry):
+                        raise
+                    cause = f"{type(error).__name__}: {error}"[:300]
+                    res = None
+                else:
+                    if res.status == "SUCCESS" or (opt.engine == "stream" and not retry):
+                        info["rung"] = "stream"
+                        res.report["engine"] = info
+                        return res
+                    cause = f"status {res.status}"
+                    res = None
+                if retry:
+                    reason = f"sched_retry: corroborated->strand ({cause})"
+                    info["fallbacks"].append({"rung": "stream", "reason": reason[:300],
+                                              "seconds": round(time.perf_counter() - t, 4),
+                                              "pass1": dict(info.get("pass1") or {})})
+                    info["sched_retry"] = {"from": "corroborated", "to": "strand", "cause": cause[:300]}
+                    if ev:
+                        ev.emit("engine_fallback", "pass1", rung="stream", reason=reason[:300])
+                    if cancel.is_set:
+                        raise over_budget()
+                    continue
+                info["fallbacks"].append({"rung": "stream", "reason": cause,
                                           "seconds": round(time.perf_counter() - t, 4)})
             rung = "v13"
             if ev:
@@ -374,7 +399,7 @@ def _decode_reads(reads_path, output, opt: DecodeOptions, t0: float, ev, planner
             if engine_info is not None:
                 engine_info["threads"] = opt.threads
                 engine_info["dedup"] = opt.engine_dedup
-                engine_info["scheduler"] = opt.engine_scheduler if opt.engine_dedup else "all"
+                engine_info["scheduler"] = ne.scheduler_of(opt.engine_scheduler) if opt.engine_dedup else "all"
                 engine_info["pass1"] = {k: (round(v / 1e9, 4) if k.startswith("ns_") else v) for k, v in es.items()
                                         if not k.startswith("reserved")}
             if progress:
