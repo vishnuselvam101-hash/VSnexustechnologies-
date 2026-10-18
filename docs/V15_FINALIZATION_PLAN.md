@@ -55,7 +55,8 @@ or module), **Depends on**. IDs: `LR` long-term readability, `FZ` format/API fre
 **Objective.** The founder's end goal for V15, the final version, is software and archives that can still be read
 "after 100 years". This plan phrases it the only way the project's evidence rules allow: **V15 maximises the chance
 that a future reader, without VNX software, VSNexus or any of today's tools, can recover the data.** No lifetime is
-guaranteed or claimed. Nothing about DNA longevity is measured by this project (§0.1: category E is not reached).
+guaranteed or claimed. Nothing about DNA longevity is measured by this project (§0.1); CC-5's order, if funded, would
+measure decoding of one fresh pool, not longevity.
 
 Design principles, taken from long-lived format practice: a format is more likely to stay readable when it is
 openly disclosed, widely adopted, transparent (readable with simple tools), self-documenting, free of external
@@ -688,7 +689,7 @@ Defined once as **LR-2** (§1); it is part of the release acceptance.
   V14/V15 benchmark suite, CC-2's comparison, RS-4's campaign. Step 1 (REPRODUCED): a second host run by the team.
   Step 2 (EXTERNALLY VALIDATED): researchers or reviewers outside VSNexus, invited by the founder; their written
   statement is committed verbatim. Same for an independent architecture and security review.
-- **Evidence target.** REPRODUCED guaranteed; EXTERNALLY VALIDATED only if an outside party agrees and reports.
+- **Evidence target.** REPRODUCED (second host, in-house) is within the team's control; EXTERNALLY VALIDATED only if an outside party agrees and reports.
 - **Acceptance.** Step 1 within the stated intervals; step 2 is reported as done, pending or declined; never implied.
 - **Risks.** External lead time is outside the project's control; the release does not wait for it unless the founder
   says so (Q6).
