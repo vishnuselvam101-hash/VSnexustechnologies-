@@ -23,6 +23,10 @@ _I64 = (-(1 << 63), (1 << 63) - 1)
 _NAME = re.compile(r"[A-Za-z0-9._-]{1,255}")
 _SHA = re.compile(r"[0-9a-f]{64}")
 
+_HEX128 = re.compile(r"[0-9a-f]{32}")
+_SEAL_ARGS = {"job": "count", "device_id": "hex128", "extent": "count", "generation": "positive", "input": "name",
+              "input_sha256": "sha256", "output": "name"}
+_SEAL_RESULT = {"job": "count", "output_sha256": "sha256", "output_bytes": "positive"}
 _HELLO = ({"client": "str", "versions": "versions"}, {"server": "str", "version": "positive"})
 #: protocol -> op -> (request args schema, ok-result schema)
 OPS: dict[str, dict[str, tuple[dict[str, str], dict[str, str]]]] = {
@@ -33,6 +37,7 @@ OPS: dict[str, dict[str, tuple[dict[str, str], dict[str, str]]]] = {
         "health": ({}, {"state": "health", "detail": "object"}),
         "stats": ({}, {"counters": "object"}),
         "shutdown": ({}, {}),
+        "authenticate": ({"token": "str"}, {"role": "str"}),
     },
     "vnx.codec-ipc": {
         "hello": _HELLO,
@@ -43,6 +48,9 @@ OPS: dict[str, dict[str, tuple[dict[str, str], dict[str, str]]]] = {
                            "output": "name", "expect_sha256": "sha256", "expect_bytes": "positive",
                            "options": "object"},
                           {"job": "count", "output_sha256": "sha256", "output_bytes": "positive"}),
+        "key_check": ({"device_id": "hex128"}, {"key_check": "sha256"}),
+        "seal_extent": (_SEAL_ARGS, _SEAL_RESULT),
+        "open_extent": (_SEAL_ARGS, _SEAL_RESULT),
     },
 }
 
@@ -79,6 +87,7 @@ def _check_ty(key: str, ty: str, v: Any) -> None:
         "object": lambda: isinstance(v, dict),
         "versions": lambda: isinstance(v, list) and len(v) > 0 and all(_is_int(x) and x >= 1 for x in v),
         "health": lambda: v in HEALTH_STATES,
+        "hex128": lambda: isinstance(v, str) and _HEX128.fullmatch(v) is not None,
     }[ty]()
     if not ok:
         raise _bad(f"field {key!r}: expected {ty}")

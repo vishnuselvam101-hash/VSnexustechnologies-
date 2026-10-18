@@ -66,6 +66,10 @@ pub trait MediaAdapter: Send + Sync {
     fn list(&self) -> Result<Vec<GenerationRef>>;
     /// Make every earlier successful `put` and `remove` reach the adapter's commit point.
     fn sync(&self) -> Result<()>;
+    /// Whether this adapter seals every generation before it reaches the backend (`seal::SealedMedia`).
+    fn sealed(&self) -> bool {
+        false
+    }
 }
 
 /// Volatile in-process adapter (tests of the layers above the media boundary).

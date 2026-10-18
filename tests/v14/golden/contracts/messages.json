@@ -72,6 +72,78 @@
   "canonical": "{\"id\":3,\"kind\":\"response\",\"ok\":true,\"proto\":\"vnx.mgmt\",\"result\":{\"counters\":{\"a\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}},\"v\":1}"
  },
  {
+  "name": "mgmt_authenticate",
+  "proto": "vnx.mgmt",
+  "direction": "request",
+  "op": "authenticate",
+  "text": "{\"proto\":\"vnx.mgmt\",\"v\":1,\"kind\":\"request\",\"id\":4,\"op\":\"authenticate\",\"args\":{\"token\":\"ttttttttttttttttttttttttttttttttttttttttttt\"}}",
+  "canonical": "{\"args\":{\"token\":\"ttttttttttttttttttttttttttttttttttttttttttt\"},\"id\":4,\"kind\":\"request\",\"op\":\"authenticate\",\"proto\":\"vnx.mgmt\",\"v\":1}"
+ },
+ {
+  "name": "mgmt_authenticate_ok",
+  "proto": "vnx.mgmt",
+  "direction": "response",
+  "op": "authenticate",
+  "text": "{\"proto\":\"vnx.mgmt\",\"v\":1,\"kind\":\"response\",\"id\":4,\"ok\":true,\"result\":{\"role\":\"reader\"}}",
+  "canonical": "{\"id\":4,\"kind\":\"response\",\"ok\":true,\"proto\":\"vnx.mgmt\",\"result\":{\"role\":\"reader\"},\"v\":1}"
+ },
+ {
+  "name": "mgmt_unauthorized",
+  "proto": "vnx.mgmt",
+  "direction": "response",
+  "op": "shutdown",
+  "text": "{\"proto\":\"vnx.mgmt\",\"v\":1,\"kind\":\"response\",\"id\":9,\"ok\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"class\":\"permanent\",\"message\":\"operation shutdown is not allowed\"}}",
+  "canonical": "{\"error\":{\"class\":\"permanent\",\"code\":\"UNAUTHORIZED\",\"message\":\"operation shutdown is not allowed\"},\"id\":9,\"kind\":\"response\",\"ok\":false,\"proto\":\"vnx.mgmt\",\"v\":1}"
+ },
+ {
+  "name": "codec_key_check",
+  "proto": "vnx.codec-ipc",
+  "direction": "request",
+  "op": "key_check",
+  "text": "{\"proto\":\"vnx.codec-ipc\",\"v\":1,\"kind\":\"request\",\"id\":20,\"op\":\"key_check\",\"args\":{\"device_id\":\"0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a\"}}",
+  "canonical": "{\"args\":{\"device_id\":\"0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a\"},\"id\":20,\"kind\":\"request\",\"op\":\"key_check\",\"proto\":\"vnx.codec-ipc\",\"v\":1}"
+ },
+ {
+  "name": "codec_seal",
+  "proto": "vnx.codec-ipc",
+  "direction": "request",
+  "op": "seal_extent",
+  "text": "{\"proto\":\"vnx.codec-ipc\",\"v\":1,\"kind\":\"request\",\"id\":21,\"op\":\"seal_extent\",\"args\":{\"job\":21,\"device_id\":\"0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a\",\"extent\":3,\"generation\":2,\"input\":\"seal-21.in\",\"input_sha256\":\"abababababababababababababababababababababababababababababababab\",\"output\":\"seal-21.out\"}}",
+  "canonical": "{\"args\":{\"device_id\":\"0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a\",\"extent\":3,\"generation\":2,\"input\":\"seal-21.in\",\"input_sha256\":\"abababababababababababababababababababababababababababababababab\",\"job\":21,\"output\":\"seal-21.out\"},\"id\":21,\"kind\":\"request\",\"op\":\"seal_extent\",\"proto\":\"vnx.codec-ipc\",\"v\":1}"
+ },
+ {
+  "name": "codec_open_ok",
+  "proto": "vnx.codec-ipc",
+  "direction": "response",
+  "op": "open_extent",
+  "text": "{\"proto\":\"vnx.codec-ipc\",\"v\":1,\"kind\":\"response\",\"id\":22,\"ok\":true,\"result\":{\"job\":22,\"output_sha256\":\"cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd\",\"output_bytes\":4096}}",
+  "canonical": "{\"id\":22,\"kind\":\"response\",\"ok\":true,\"proto\":\"vnx.codec-ipc\",\"result\":{\"job\":22,\"output_bytes\":4096,\"output_sha256\":\"cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd\"},\"v\":1}"
+ },
+ {
+  "name": "bad_device_id_upper",
+  "proto": "vnx.codec-ipc",
+  "direction": "request",
+  "op": "key_check",
+  "text": "{\"proto\":\"vnx.codec-ipc\",\"v\":1,\"kind\":\"request\",\"id\":23,\"op\":\"key_check\",\"args\":{\"device_id\":\"0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A\"}}",
+  "error": "PROTOCOL"
+ },
+ {
+  "name": "bad_device_id_short",
+  "proto": "vnx.codec-ipc",
+  "direction": "request",
+  "op": "seal_extent",
+  "text": "{\"proto\":\"vnx.codec-ipc\",\"v\":1,\"kind\":\"request\",\"id\":24,\"op\":\"seal_extent\",\"args\":{\"job\":1,\"device_id\":\"0a0a\",\"extent\":0,\"generation\":1,\"input\":\"i\",\"input_sha256\":\"abababababababababababababababababababababababababababababababab\",\"output\":\"o\"}}",
+  "error": "PROTOCOL"
+ },
+ {
+  "name": "bad_authenticate_empty",
+  "proto": "vnx.mgmt",
+  "direction": "request",
+  "op": "authenticate",
+  "text": "{\"proto\":\"vnx.mgmt\",\"v\":1,\"kind\":\"request\",\"id\":5,\"op\":\"authenticate\",\"args\":{\"token\":\"\"}}",
+  "error": "PROTOCOL"
+ },
+ {
   "name": "bad_depth_over_limit",
   "proto": "vnx.mgmt",
   "direction": "response",

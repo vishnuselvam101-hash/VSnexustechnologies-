@@ -53,6 +53,8 @@ pub enum Ty {
     Versions,
     /// one of the health states
     Health,
+    /// 32 lowercase hex digits (a 16-byte device id)
+    Hex128,
 }
 
 type Schema = &'static [(&'static str, Ty)];
@@ -61,6 +63,16 @@ type Schema = &'static [(&'static str, Ty)];
 fn ops(proto: Proto) -> &'static [(&'static str, Schema, Schema)] {
     const HELLO_ARGS: Schema = &[("client", Ty::Str), ("versions", Ty::Versions)];
     const HELLO_RESULT: Schema = &[("server", Ty::Str), ("version", Ty::Positive)];
+    const SEAL_ARGS: Schema = &[
+        ("job", Ty::Count),
+        ("device_id", Ty::Hex128),
+        ("extent", Ty::Count),
+        ("generation", Ty::Positive),
+        ("input", Ty::Name),
+        ("input_sha256", Ty::Sha256),
+        ("output", Ty::Name),
+    ];
+    const SEAL_RESULT: Schema = &[("job", Ty::Count), ("output_sha256", Ty::Sha256), ("output_bytes", Ty::Positive)];
     match proto {
         Proto::Mgmt => &[
             ("hello", HELLO_ARGS, HELLO_RESULT),
@@ -78,6 +90,7 @@ fn ops(proto: Proto) -> &'static [(&'static str, Schema, Schema)] {
             ("health", &[], &[("state", Ty::Health), ("detail", Ty::Object)]),
             ("stats", &[], &[("counters", Ty::Object)]),
             ("shutdown", &[], &[]),
+            ("authenticate", &[("token", Ty::Str)], &[("role", Ty::Str)]),
         ],
         Proto::Codec => &[
             ("hello", HELLO_ARGS, HELLO_RESULT),
@@ -108,6 +121,9 @@ fn ops(proto: Proto) -> &'static [(&'static str, Schema, Schema)] {
                 ],
                 &[("job", Ty::Count), ("output_sha256", Ty::Sha256), ("output_bytes", Ty::Positive)],
             ),
+            ("key_check", &[("device_id", Ty::Hex128)], &[("key_check", Ty::Sha256)]),
+            ("seal_extent", SEAL_ARGS, SEAL_RESULT),
+            ("open_extent", SEAL_ARGS, SEAL_RESULT),
         ],
     }
 }
@@ -128,6 +144,7 @@ fn check_ty(key: &str, ty: Ty, v: &Value) -> Result<()> {
         (Ty::Object, Value::Obj(_)) => true,
         (Ty::Versions, Value::Arr(a)) => !a.is_empty() && a.iter().all(|x| matches!(x, Value::Int(i) if *i >= 1)),
         (Ty::Health, Value::Str(s)) => HEALTH_STATES.contains(&s.as_str()),
+        (Ty::Hex128, Value::Str(s)) => parse_hex::<16>(s).is_some(),
         _ => false,
     };
     if ok {

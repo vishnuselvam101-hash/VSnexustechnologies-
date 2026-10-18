@@ -31,7 +31,7 @@ use crate::digest::sha256;
 use crate::error::{err, ErrorCode, Result, VnxError};
 use crate::journal::Journal;
 use crate::media::MediaAdapter;
-use crate::record::{BatchEntry, GenerationReleased, MapBatch, MapUpdate, Record, Superblock, MAX_BATCH_EXTENTS};
+use crate::record::{BatchEntry, GenerationReleased, MapBatch, MapUpdate, Record, Superblock, FLAG_SEALED, MAX_BATCH_EXTENTS};
 use crate::state::WriteState;
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
@@ -123,6 +123,12 @@ pub struct Patch<'a> {
     pub data: &'a [u8],
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ScrubReport {
+    pub checked: u64,
+    pub failed: Vec<(ExtentId, VnxError)>,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CommitOutcome {
     pub generation: Generation,
@@ -157,6 +163,16 @@ fn corrupt<T>(msg: impl Into<String>) -> Result<T> {
     err(ErrorCode::Corruption, msg)
 }
 
+/// A sealed volume (superblock flag) only runs over a sealing adapter, and an unsealed one never does: plaintext
+/// never reaches the backend of a sealed device, and sealed objects are never served as plaintext.
+fn check_sealing(flags: u32, media: &dyn MediaAdapter) -> Result<()> {
+    match (flags & FLAG_SEALED != 0, media.sealed()) {
+        (true, false) => err(ErrorCode::InvalidArgument, "the volume is sealed: it needs the sealing media adapter"),
+        (false, true) => err(ErrorCode::InvalidArgument, "the volume is not sealed: it cannot run over the sealing adapter"),
+        _ => Ok(()),
+    }
+}
+
 impl Volume {
     /// Create a volume in `dir` (which must not hold a journal) over an empty media adapter.
     pub fn create(
@@ -167,6 +183,7 @@ impl Volume {
         media: Arc<dyn MediaAdapter>,
         cfg: VolumeConfig,
     ) -> Result<Volume> {
+        check_sealing(flags, media.as_ref())?;
         if !media.list()?.is_empty() {
             // also refuses another volume's backend (its marker is listed)
             return err(ErrorCode::InvalidArgument, "a new volume needs an empty backend");
@@ -221,6 +238,7 @@ impl Volume {
             Some(Record::Superblock(s)) => (s.device_id, s.geometry, s.flags),
             _ => return corrupt("journal does not start with a superblock"),
         };
+        check_sealing(flags, media.as_ref())?;
         let mut map: BTreeMap<ExtentId, Entry> = BTreeMap::new();
         let mut last_gen: BTreeMap<ExtentId, Generation> = BTreeMap::new();
         let mut last_txid = 0u64;
@@ -431,7 +449,15 @@ impl Volume {
             }
             Some(e) => e,
         };
-        let data = self.media.get(GenerationRef { extent, generation: e.generation })?;
+        let data = match self.media.get(GenerationRef { extent, generation: e.generation }) {
+            Ok(d) => d,
+            // the map says the generation exists: its absence is damage, reported like any other (never zeros)
+            Err(x) if x.code == ErrorCode::NotFound => {
+                self.stats.integrity_failures.fetch_add(1, Ordering::Relaxed);
+                return corrupt(format!("extent {} generation {}: missing from the backend ({})", extent.0, e.generation.get(), x.message));
+            }
+            Err(x) => return Err(x),
+        };
         if data.len() as u64 != e.length || sha256(&data) != e.sha256 {
             self.stats.integrity_failures.fetch_add(1, Ordering::Relaxed);
             return corrupt(format!("extent {} generation {}: stored bytes do not match the map", extent.0, e.generation.get()));
@@ -553,7 +579,8 @@ impl Volume {
             let receipt = match self.media.put(at(i), data) {
                 Ok(r) => r,
                 Err(e) => {
-                    discard(self, i + 1); // the failed put may have left something behind
+                    // a failed put may have left something behind; a refused one (READ_ONLY) never reached the backend
+                    discard(self, if e.code == ErrorCode::ReadOnly { i } else { i + 1 });
                     return Err(e);
                 }
             };
@@ -657,6 +684,26 @@ impl Volume {
             self.stats.release_failures.fetch_add(1, Ordering::Relaxed);
         }
         Ok(())
+    }
+
+    /// Read and verify every mapped extent (length and SHA-256 against the map); returns the extents that fail, with
+    /// the error each one gave. Changes nothing: damage is reported, the extents keep failing their reads until a
+    /// whole-extent write replaces them.
+    pub fn scrub(&self) -> Result<ScrubReport> {
+        let extents: Vec<ExtentId> = self.lock_state()?.map.keys().copied().collect();
+        let mut report = ScrubReport { checked: 0, failed: Vec::new() };
+        for e in extents {
+            report.checked += 1;
+            match self.read_extent(e) {
+                Ok(_) => {}
+                // the backend or the sealing service is unreachable: no verdict on the data, stop
+                Err(x) if x.code.class() == crate::error::ErrorClass::Retryable || x.code == ErrorCode::ShuttingDown => {
+                    return Err(x)
+                }
+                Err(x) => report.failed.push((e, x)),
+            }
+        }
+        Ok(report)
     }
 
     /// Make every completed write durable at the backend's commit point (map records are fsynced on append).

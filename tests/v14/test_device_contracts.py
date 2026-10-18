@@ -97,7 +97,7 @@ def test_protocol_ops_match_the_rust_source():
     src = (RUST / "proto.rs").read_text()
     for proto, rust_name in (("vnx.mgmt", "Mgmt"), ("vnx.codec-ipc", "Codec")):
         block = src.split(f"Proto::{rust_name} => &[", 1)[1].split("\n        ],", 1)[0]
-        ops = re.findall(r'\(\s*"([a-z_]+)",\s*(?:HELLO_ARGS|&\[)', block)   # op tuples, not field tuples
+        ops = re.findall(r'\(\s*"([a-z_]+)",\s*(?:HELLO_ARGS|SEAL_ARGS|&\[)', block)   # op tuples, not field tuples
         assert ops == list(pr.OPS[proto]), proto
 
 

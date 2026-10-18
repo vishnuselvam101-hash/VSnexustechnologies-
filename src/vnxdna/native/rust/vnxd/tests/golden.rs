@@ -85,6 +85,6 @@ fn every_error_code_and_op_is_known_to_both_languages() {
     // the Python mirror lists the same codes and ops; the golden messages cover hello on both protocols
     let codes: Vec<&str> = ErrorCode::ALL.iter().map(|c| c.as_str()).collect();
     assert_eq!(codes.len(), 17);
-    assert_eq!(proto::op_names(Proto::Mgmt), ["hello", "capacity", "health", "stats", "shutdown"]);
-    assert_eq!(proto::op_names(Proto::Codec), ["hello", "encode_extent", "decode_extent"]);
+    assert_eq!(proto::op_names(Proto::Mgmt), ["hello", "capacity", "health", "stats", "shutdown", "authenticate"]);
+    assert_eq!(proto::op_names(Proto::Codec), ["hello", "encode_extent", "decode_extent", "key_check", "seal_extent", "open_extent"]);
 }

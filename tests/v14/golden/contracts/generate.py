@@ -126,6 +126,30 @@ MESSAGES: list[tuple[str, str, str, str, str]] = [
     ("mgmt_depth_limit", "vnx.mgmt", "response", "stats",
      '{"proto":"vnx.mgmt","v":1,"kind":"response","id":3,"ok":true,"result":{"counters":{"a":'
      + "[" * 29 + "]" * 29 + '}}}'),
+    # P4: authentication and sealing operations
+    ("mgmt_authenticate", "vnx.mgmt", "request", "authenticate",
+     '{"proto":"vnx.mgmt","v":1,"kind":"request","id":4,"op":"authenticate","args":{"token":"' + "t" * 43 + '"}}'),
+    ("mgmt_authenticate_ok", "vnx.mgmt", "response", "authenticate",
+     '{"proto":"vnx.mgmt","v":1,"kind":"response","id":4,"ok":true,"result":{"role":"reader"}}'),
+    ("mgmt_unauthorized", "vnx.mgmt", "response", "shutdown",
+     '{"proto":"vnx.mgmt","v":1,"kind":"response","id":9,"ok":false,'
+     '"error":{"code":"UNAUTHORIZED","class":"permanent","message":"operation shutdown is not allowed"}}'),
+    ("codec_key_check", "vnx.codec-ipc", "request", "key_check",
+     '{"proto":"vnx.codec-ipc","v":1,"kind":"request","id":20,"op":"key_check","args":{"device_id":"' + "0a" * 16 + '"}}'),
+    ("codec_seal", "vnx.codec-ipc", "request", "seal_extent",
+     '{"proto":"vnx.codec-ipc","v":1,"kind":"request","id":21,"op":"seal_extent","args":{"job":21,'
+     '"device_id":"' + "0a" * 16 + '","extent":3,"generation":2,"input":"seal-21.in","input_sha256":"' + "ab" * 32
+     + '","output":"seal-21.out"}}'),
+    ("codec_open_ok", "vnx.codec-ipc", "response", "open_extent",
+     '{"proto":"vnx.codec-ipc","v":1,"kind":"response","id":22,"ok":true,'
+     '"result":{"job":22,"output_sha256":"' + "cd" * 32 + '","output_bytes":4096}}'),
+    ("bad_device_id_upper", "vnx.codec-ipc", "request", "key_check",
+     '{"proto":"vnx.codec-ipc","v":1,"kind":"request","id":23,"op":"key_check","args":{"device_id":"' + "0A" * 16 + '"}}'),
+    ("bad_device_id_short", "vnx.codec-ipc", "request", "seal_extent",
+     '{"proto":"vnx.codec-ipc","v":1,"kind":"request","id":24,"op":"seal_extent","args":{"job":1,'
+     '"device_id":"0a0a","extent":0,"generation":1,"input":"i","input_sha256":"' + "ab" * 32 + '","output":"o"}}'),
+    ("bad_authenticate_empty", "vnx.mgmt", "request", "authenticate",
+     '{"proto":"vnx.mgmt","v":1,"kind":"request","id":5,"op":"authenticate","args":{"token":""}}'),
     # invalid messages: (expected error code is computed and must match in both languages)
     ("bad_depth_over_limit", "vnx.mgmt", "response", "stats",
      '{"proto":"vnx.mgmt","v":1,"kind":"response","id":3,"ok":true,"result":{"counters":{"a":'

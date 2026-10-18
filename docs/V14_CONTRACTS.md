@@ -131,7 +131,7 @@ response carrying PROTOCOL is never confused with a malformed message.
 Field types: `str` 1–1024 UTF-8 bytes; `count` integer >= 0; `positive` integer >= 1; `sha256` 64 lowercase hex
 digits; `name` a staging file name, 1–255 bytes of `[A-Za-z0-9._-]` not starting with `.` (never a path); `object`
 any object (validated by the receiver); `versions` non-empty list of integers >= 1; `health` one of
-`ok`, `degraded`, `failed`.
+`ok`, `degraded`, `failed`; `hex128` 32 lowercase hex digits (a device id).
 
 | protocol | op | args | result |
 |---|---|---|---|
@@ -140,8 +140,13 @@ any object (validated by the receiver); `versions` non-empty list of integers >=
 | vnx.mgmt | health | — | state health, detail object |
 | vnx.mgmt | stats | — | counters object |
 | vnx.mgmt | shutdown | — | — |
+| vnx.mgmt | authenticate (P4) | token str | role str |
 | vnx.codec-ipc | encode_extent | job count, extent count, generation positive, input name, input_sha256 sha256, output name, options object | job count, output_sha256 sha256, output_bytes positive |
 | vnx.codec-ipc | decode_extent | job count, extent count, generation positive, input name, output name, expect_sha256 sha256, expect_bytes positive, options object | job count, output_sha256 sha256, output_bytes positive |
+| vnx.codec-ipc | key_check (P4) | device_id hex128 | key_check sha256 |
+| vnx.codec-ipc | seal_extent, open_extent (P4) | job count, device_id hex128, extent count, generation positive, input name, input_sha256 sha256, output name | job count, output_sha256 sha256, output_bytes positive |
+
+Authorisation of `vnx.mgmt` and the sealing operations are specified in [V14_SECURITY_MODEL.md](V14_SECURITY_MODEL.md).
 
 New operations are added by later phases with a version bump only if an existing message changes meaning; adding an
 op to a protocol is compatible (an older peer answers PROTOCOL "unknown op").
