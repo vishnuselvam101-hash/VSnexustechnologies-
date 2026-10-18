@@ -3,8 +3,8 @@ message: "If you use this software, please cite it as below."
 title: "VNX-DNA"
 abstract: "Open-source DNA data-storage codec (streaming archives, AES-256-GCM, erasure coding, DNA encoding, sequencing simulation, recovery). Reported results are simulated."
 type: software
-version: 11.0.0
-date-released: 2026-10-12
+version: 13.0.0
+date-released: 2026-10-18
 license: MIT
 repository-code: "https://github.com/vishnuselvam101-hash/VSnexustechnologies-"
 authors:
