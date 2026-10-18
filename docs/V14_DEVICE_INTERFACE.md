@@ -17,20 +17,24 @@ DNA; a DNA-simulator backend (P7) behind the same device is category D.
 | B: portable userspace API | documented (§12) | the same device served on a Unix socket to any NBD client; the SDK/CLI volume of V13 is a separate format |
 | C: external hardware controller | P11 | not in this phase |
 
-A device is a **volume** (journal directory) over a **backend** (media adapter). Until the P7 image adapter is wired in,
-the device runs on `DirMedia`: one file per extent generation in a directory, written to a temporary file, fsynced,
-hard-linked to its final name (a second `put` of the same generation fails) and the directory fsynced
-(`Durability::FileSync`). The device depends only on the `MediaAdapter` trait.
+A device is a **volume** (journal directory) over a **backend** (media adapter); the device depends only on the
+`MediaAdapter` trait. Default backend (`--media image`): the P7 `ImageMedia` (`vnx.media-image/1`,
+docs/V14_MEDIA_ADAPTERS.md §3): immutable object files with a header naming the generation and its SHA-256, written
+temp + fsync + `link(2)` + directory fsync, checked on every read. It is the backend the device should run over: it is
+persisted, integrity-checked below the volume's own SHA-256 check, and the one the media phase tested. `--media dir`
+keeps `DirMedia`, the P8 interim adapter (the same commit procedure without the object header). Other adapters (the
+DNA simulator, sealing) plug in behind the same trait in P9.
 
 ## 2. Commands
 
 ```
 vnxd nbd create --volume DIR --backend DIR --size N [--block-size 4096] [--extent-blocks 16]
 vnxd nbd attach --volume DIR --backend DIR [--device /dev/nbdN | auto] [options]
+                (--media image|dir on every command; image is the default)
 vnxd nbd serve  --volume DIR --backend DIR --socket PATH [options]
 
 options: --cache none|write-through|write-back (default write-through)   --ram N (VNX-RAM budget, default 256M)
-         --read-only   --request-timeout-s N (default 30)   --kernel-timeout-s N (default 120; must exceed the former)
+         --read-only   --request-timeout-s N (default 30)   --kernel-timeout-s N (default 120; >= 2 x request + 10; 0 refused)
          --mgmt SOCKET --policy FILE (management socket, §7)   --fault-control FILE (fault drills, §5)
          --no-readback (skip the volume's read-back verification of new generations)
 ```
@@ -39,7 +43,10 @@ options: --cache none|write-through|write-back (default write-through)   --ram N
 "device":"/dev/nbdN",...}` on stdout once the kernel reports the device as served by this process
 (`/sys/block/nbdN/pid`); `serve` prints `{"event":"serving",...}`. Every event (volume opened with its recovery report,
 signals, detach steps, errors, the final health and counters) is one canonical-JSON line on stderr. Exit status: 0
-after a clean stop with the final flush succeeding, 1 on any error (including a failed final flush), 2 on usage errors.
+only after a requested stop (signal or management `shutdown`) in which everything succeeded; 1 on any error, including
+a failed final flush, a failed fsync of the device at detach (the kernel could not write its dirty buffers), an
+`NBD_DO_IT` error (kernel timeout), a connection that ended without a requested detach, or a failed device health;
+2 on usage errors. Logging never panics: a closed stderr does not stop the service from handling signals.
 
 ## 3. The NBD protocol subset
 
@@ -50,7 +57,8 @@ Server and client sides of the **fixed newstyle** negotiation (the old style is 
   preferred = the volume block size, maximum payload 32 MiB), `LIST`, `ABORT`; any other option (STARTTLS,
   STRUCTURED_REPLY, META_CONTEXT, ...) gets `NBD_REP_ERR_UNSUP` and negotiation continues. The export is named `vnx`;
   the empty name means the default export;
-* limits: option payloads above 8 KiB and more than 64 options end the connection (PROTOCOL);
+* limits: option payloads above 8 KiB, more than 64 options, or a negotiation not finished within 10 s end the
+  connection (PROTOCOL);
 * transmission flags: HAS_FLAGS, SEND_FLUSH, SEND_FUA, SEND_TRIM, and READ_ONLY with `--read-only`. Simple replies only.
 
 | command | behaviour |
@@ -63,6 +71,7 @@ Server and client sides of the **fixed newstyle** negotiation (the old style is 
 | DISC | stop reading; answer every outstanding request; flush; close |
 | anything else (WRITE_ZEROES, CACHE, BLOCK_STATUS, ...: not advertised) | EINVAL |
 | zero-length READ/WRITE | EINVAL |
+| a command flag other than FUA (none other is negotiated) | EINVAL (a write's payload is still consumed) |
 | a malformed request header | PROTOCOL: the connection is closed |
 
 ## 4. The kernel interface
@@ -83,7 +92,8 @@ Attach sequence (all on the main thread; the kernel ties a device's setup to the
    `NBD_SET_TIMEOUT` (kernel timeout, default 120 s);
 5. `NBD_DO_IT` blocks while the device runs; a helper thread announces `attached` when sysfs shows this pid.
 
-Detach (SIGINT/SIGTERM/SIGHUP, a management `shutdown`, or the connection ending): a controller thread, holding the
+Detach (SIGINT/SIGTERM, a management `shutdown`, or the connection ending; SIGHUP is blocked and only logged, so a
+dropped terminal never detaches a device a filesystem may be using): a controller thread, holding the
 lock that says whether the device is still ours, fsyncs `/dev/nbdN` (the kernel writes its dirty buffers of the device
 and sends FLUSH) and sends `NBD_DISCONNECT`; the kernel sends DISC, the server answers everything and flushes, `NBD_DO_IT`
 returns, the main thread clears the device (`NBD_CLEAR_QUE`, `NBD_CLEAR_SOCK`) under the same lock, the queue drains and
@@ -92,7 +102,9 @@ the store is flushed again. After the clear no ioctl reaches the device (another
 * stop signals are blocked in every thread before any thread starts and received by one `sigwait` thread, so a signal
   never interrupts `NBD_DO_IT` (which would drop the connection without the clean sequence);
 * an error or panic after the claim releases the device through a drop guard; a guard on the attach scope also wakes
-  the controller and shuts the server socket, so every scoped thread ends and the process exits;
+  the controller and shuts the server socket, so every scoped thread ends and the process exits; the server's
+  connection is shut down on every way out of the server (return, error, panic), so the kernel never waits on a FLUSH
+  nobody will answer;
 * SIGKILL: the kernel sees the socket close, fails outstanding and later requests with EIO, and frees the device when
   its last opener closes (after the unmount). The volume recovers by journal replay on the next open: every commit is
   either fully applied or absent (docs/V14_VOLUME_AND_IO.md).
@@ -115,8 +127,10 @@ IoQueue ─ BlockIo (VNX-RAM io quota) ─ [ExtentCache] ─ Volume ─ Resilien
   reading the socket when either is reached (backpressure). VNX-IO then leases each request's working memory from the
   VNX-RAM `io` quota, sized so that one largest request always fits (`ram_config`);
 * **scheduling and cancellation**: the queue orders conflicting requests (overlapping ranges, one writing) in arrival
-  order and runs the others in parallel (docs/V14_LOAD_BALANCER.md); a request not started within
-  `--request-timeout-s` completes with TIMEOUT (EIO) long before the kernel's own timeout; when the connection dies,
+  order and runs the others in parallel (docs/V14_LOAD_BALANCER.md); each NBD request has one deadline
+  (`--request-timeout-s` from its arrival, also bounding the flush of a FUA write): not started by then, it completes
+  with TIMEOUT (EIO); the kernel timeout must be at least twice that plus 10 s, so a started request (which runs to
+  completion, with the backend's bounded retries) is answered before the kernel gives up; when the connection dies,
   requests not started are cancelled;
 * **write-back cache** (`--cache write-back`): single-extent writes are acknowledged from memory and written at the
   next FLUSH/FUA (filesystems issue them); data a filesystem never flushed is lost with the process, as with any
@@ -209,6 +223,23 @@ NBD's integer-only ioctls — plus its own teardown rules (a dead server leaves 
 with `UBLK_F_USER_RECOVERY`). It was not started in P8 so that it is not half-built; the expected gain (no socket copy
 per request) is unmeasured, and is only worth the surface once the P9 profile shows the NBD socket hop matters next to
 the volume's per-extent fsyncs (the throughput in the P8 report is bound by the backend's fsyncs, not by the socket).
+
+## 13. Measured (evidence category B on C)
+
+`experiments/v14/device/p8-nbd/results.json` (commit 86c16c0, idle host, 8 vCPU, Linux 6.8.0-146): the acceptance
+transcript (11 files, 19,148,626 bytes on ext4 in a partition of a 128 MiB device; all SHA-256 equal after detach and
+re-attach; `e2fsck -f -n` exit 0) and raw-device O_DIRECT throughput, 64 MiB in 1 MiB requests, medians of 3:
+
+| cache | write MiB/s | read MiB/s |
+|---|---|---|
+| none | 52.6 | 306.3 |
+| write-through | 47.4 | 926.4 |
+| write-back | 58.3 | 874.1 |
+
+Writes are bound by the backend's per-generation fsyncs and the journal's fsync per transaction (1 MiB requests span
+16 extents and always go through to the volume, so write-back does not change them); cached reads skip the backend's
+read and SHA-256 check of the object. These are numbers of this host's virtual disk and page cache, not of any
+storage medium, and say nothing about DNA.
 
 ## 12. Stage B: hosts without the kernel interface
 

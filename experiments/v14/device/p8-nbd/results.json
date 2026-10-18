@@ -1,0 +1,154 @@
+{
+ "acceptance": {
+  "all_hashes_match": true,
+  "block_size": 4096,
+  "bytes": 19148626,
+  "cache": "write-back",
+  "capacity_bytes": 134217728,
+  "device_first": "/dev/nbd0",
+  "device_released_after_detach": true,
+  "device_second": "/dev/nbd0",
+  "df": [
+   "ext4",
+   "120573952",
+   "19197952"
+  ],
+  "e2fsck_exit": 0,
+  "exit_first": 0,
+  "exit_second": 0,
+  "extent_bytes": 65536,
+  "file_sha256": {
+   "a/b/f1.bin": "e7ac0786668e0ff0f02b62bd04f45ff636fd82db63b1104601c975dc005f3a67",
+   "a/b/f3.bin": "472d55114b6d43e72885d3d0d4888f7eac79574fca627f6640735d40c1042ae0",
+   "a/b/f5.bin": "c994f54a271fbe0035e79a6a7e19f08f23a4cb2a5fdeb6abe5e3fd4350f1df79",
+   "a/b/f7.bin": "9673cf608a79d66112e9d21b318b6add7c62f49727738ae37d554486f254c8f0",
+   "a/b/f9.bin": "2e80b58d55e5f1fc0e8c32dfe45c802bcdb939fc4e8d46db747ab580b1610d02",
+   "a/f0.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "a/f2.bin": "58b3bf4d8e1db66d9870c6aebe570e0192c786b1aba631cdcd9f00154fd3860f",
+   "a/f4.bin": "9c728ad2b565b365d64fda4ecd0cf032f9d012292a2517928f882dbc97b1820b",
+   "a/f6.bin": "b542b1c139c212cf6e97253962d7e28904636d96ff84548083fb4e7a20fbd38f",
+   "a/f8.bin": "d84cdaa1ed6ebbc7f71c59d75f3f1e86c77a6c45790a051585a414d623615fb3",
+   "copy.bin": "2e80b58d55e5f1fc0e8c32dfe45c802bcdb939fc4e8d46db747ab580b1610d02"
+  },
+  "files": 11,
+  "partition_table": "/dev/nbd0p1 : start=         256, size=       32512, type=83",
+  "timings": {
+   "attach_s": 0.021,
+   "mkfs_s": 0.586,
+   "verify_s": 0.236,
+   "write_and_sync_s": 0.862
+  }
+ },
+ "post_run_attached_nbd": [],
+ "post_run_nbd_mounts": [],
+ "provenance": {
+  "commit": "86c16c0",
+  "cpus": 8,
+  "date": "2026-10-18T20:42:37+0530",
+  "dirty": false,
+  "evidence": "B (software block device over the kernel NBD driver) on C (file-per-generation backend, host disk)",
+  "kernel": "6.8.0-146-generic",
+  "machine": "x86_64",
+  "nbd_params": {
+   "max_part": "15",
+   "nbds_max": "16"
+  }
+ },
+ "throughput_median": {
+  "none": {
+   "read_MiB_s": 306.3,
+   "write_MiB_s": 52.6
+  },
+  "write-back": {
+   "read_MiB_s": 874.1,
+   "write_MiB_s": 58.3
+  },
+  "write-through": {
+   "read_MiB_s": 926.4,
+   "write_MiB_s": 47.4
+  }
+ },
+ "throughput_rows": [
+  {
+   "bytes": 67108864,
+   "cache": "none",
+   "read_MiB_s": 299.8,
+   "read_s": 0.214,
+   "rep": 0,
+   "write_MiB_s": 52.6,
+   "write_s": 1.216
+  },
+  {
+   "bytes": 67108864,
+   "cache": "none",
+   "read_MiB_s": 307.1,
+   "read_s": 0.208,
+   "rep": 1,
+   "write_MiB_s": 52.3,
+   "write_s": 1.224
+  },
+  {
+   "bytes": 67108864,
+   "cache": "none",
+   "read_MiB_s": 306.3,
+   "read_s": 0.209,
+   "rep": 2,
+   "write_MiB_s": 57.4,
+   "write_s": 1.115
+  },
+  {
+   "bytes": 67108864,
+   "cache": "write-through",
+   "read_MiB_s": 788.8,
+   "read_s": 0.081,
+   "rep": 0,
+   "write_MiB_s": 52.6,
+   "write_s": 1.216
+  },
+  {
+   "bytes": 67108864,
+   "cache": "write-through",
+   "read_MiB_s": 926.4,
+   "read_s": 0.069,
+   "rep": 1,
+   "write_MiB_s": 47.4,
+   "write_s": 1.351
+  },
+  {
+   "bytes": 67108864,
+   "cache": "write-through",
+   "read_MiB_s": 999.2,
+   "read_s": 0.064,
+   "rep": 2,
+   "write_MiB_s": 45.5,
+   "write_s": 1.407
+  },
+  {
+   "bytes": 67108864,
+   "cache": "write-back",
+   "read_MiB_s": 843.1,
+   "read_s": 0.076,
+   "rep": 0,
+   "write_MiB_s": 57.2,
+   "write_s": 1.119
+  },
+  {
+   "bytes": 67108864,
+   "cache": "write-back",
+   "read_MiB_s": 874.1,
+   "read_s": 0.073,
+   "rep": 1,
+   "write_MiB_s": 61.1,
+   "write_s": 1.047
+  },
+  {
+   "bytes": 67108864,
+   "cache": "write-back",
+   "read_MiB_s": 875.5,
+   "read_s": 0.073,
+   "rep": 2,
+   "write_MiB_s": 58.3,
+   "write_s": 1.098
+  }
+ ]
+}
