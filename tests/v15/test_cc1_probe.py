@@ -6,6 +6,7 @@ SIMULATED reads."""
 from __future__ import annotations
 
 from collections import Counter
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -21,6 +22,9 @@ from vnxdna.v4 import archive as ar
 from vnxdna.v4 import channel as ch
 from vnxdna.v4 import datagen
 from vnxdna.v4 import encoder as en
+
+
+NEGATIVE = Path(__file__).resolve().parents[1] / "conformance" / "negative"
 
 
 def _old_sample_reads(reads_path, limit=P.SAMPLE_READS):
@@ -76,11 +80,16 @@ def _old_probe_reads(reads_path, band=6):
     return p
 
 
+def _err(error) -> tuple:
+    return (type(error).__name__, getattr(error, "code", None), str(error), repr(getattr(error, "details", None)))
+
+
 def _outcome(fn):
     try:
-        return ("ok", fn())
+        r = fn()
+        return ("ok", _err(r) if isinstance(r, Exception) else r)   # refusal() returns its error
     except Exception as error:  # noqa: BLE001 - a refusal is an outcome
-        return ("error", type(error).__name__, getattr(error, "code", None), str(error))
+        return ("error", *_err(error))
 
 
 @pytest.fixture(scope="module")
@@ -101,6 +110,24 @@ def pools(tmp_path_factory):
     for name, (profile, cfg) in cases.items():
         ch.simulate_file(d / f"s-{profile}.fasta", d / f"{name}.fastq", ch.ChannelConfig(seed=15409, **cfg))
         out[name] = d / f"{name}.fastq"
+    ch.simulate_file(d / "s-v4-balanced.fasta", d / "rc-heavy.fastq",
+                     ch.ChannelConfig(seed=15413, coverage=3, substitution_rate=0.01, reverse_complement_rate=0.9))
+    out["rc-heavy"] = d / "rc-heavy.fastq"
+    # damaged headers: the first 48 bases of every read replaced by random bases
+    rng = np.random.default_rng(15417)
+    lines = (d / "clean.fastq").read_text().splitlines()
+    for i in range(1, len(lines), 4):
+        lines[i] = "".join("ACGT"[int(x)] for x in rng.integers(0, 4, 48)) + lines[i][48:]
+    (d / "damaged-header.fastq").write_text("\n".join(lines) + "\n")
+    out["damaged-header"] = d / "damaged-header.fastq"
+    # the conformance refusal vectors (unsupported frame version 7, V3 frame-5 strands), and pools of 63/64/65 reads
+    # of the version-7 vector around MIN_REFUSAL_SAMPLE (refusal needs >= 64 distinct molecules)
+    for vec in ("nibble7", "v3-frame5"):
+        out[vec] = NEGATIVE / f"probe.{vec}" / "reads.fasta"
+    recs = (NEGATIVE / "probe.nibble7" / "reads.fasta").read_text().split(">")[1:]
+    for k in (P.MIN_REFUSAL_SAMPLE - 1, P.MIN_REFUSAL_SAMPLE, P.MIN_REFUSAL_SAMPLE + 1):
+        (d / f"nibble7-{k}.fasta").write_text("".join(">" + r for r in recs[:k]))
+        out[f"nibble7-{k}"] = d / f"nibble7-{k}.fasta"
     rng = np.random.default_rng(15411)
     with open(d / "junk.fastq", "w") as f:                      # no layout: random reads of random lengths
         for i in range(3000):
@@ -112,7 +139,8 @@ def pools(tmp_path_factory):
     return out
 
 
-@pytest.mark.parametrize("name", ["clean", "indel-rc", "heavy", "dense", "hd", "junk", "empty"])
+@pytest.mark.parametrize("name", ["clean", "indel-rc", "heavy", "dense", "hd", "junk", "empty", "rc-heavy",
+                                  "damaged-header", "nibble7", "v3-frame5", "nibble7-63", "nibble7-64", "nibble7-65"])
 def test_probe_decisions_equal_the_v14_probe(pools, name):
     path = pools[name]
     o, n = _outcome(lambda: _old_probe_reads(path)), _outcome(lambda: P.probe_reads(path))

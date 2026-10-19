@@ -20,7 +20,6 @@ from pathlib import Path
 
 import pytest
 
-from vnxdna.native import engine as ne
 from vnxdna.simulation.channel import ChannelConfig, simulate_file
 from vnxdna.v4 import archive as ar
 from vnxdna.v4 import datagen
@@ -122,7 +121,15 @@ def digest(d: Path, threads: int) -> tuple:
     return outcome, sha, rep, tr
 
 
-pytestmark = pytest.mark.skipif(not ne.available(), reason="engine library not built (python -m vnxdna.native.engine build)")
+def _all_native() -> bool:
+    import vnxdna
+    return all(k["backend"] == "native" for k in vnxdna.native_status()["kernels"].values())
+
+
+# the digests were recorded with every kernel native (engine path, native RS, aligner, ...); another backend mix takes
+# other paths, so the comparison holds only when every native backend is active (python -m vnxdna.native: all_native)
+pytestmark = pytest.mark.skipif(not _all_native(), reason="needs every native kernel active (python -m vnxdna.native "
+                                                          "reports all_native false): build the native kernels first")
 
 
 @pytest.mark.parametrize("name", sorted(CASES))

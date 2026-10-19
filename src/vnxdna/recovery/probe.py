@@ -41,7 +41,7 @@ class Probe:
 
     n: int
     counts: Counter
-    sample: list
+    sample: Sequence      # list of per-read code arrays, or a FlatSample (probe_reads)
     heads: dict = field(default_factory=dict)     # orientation -> (b0 (n,), nibbles (3, n) per domain, valid (n,))
     unique: "Probe | None" = None                 # the same over distinct molecules (copies of one strand counted once)
     candidates: list = field(default_factory=list)
@@ -149,7 +149,7 @@ def sample_reads(reads_path: str | os.PathLike, limit: int = SAMPLE_READS) -> tu
     return counts, list(flat)
 
 
-def frame_heads(sample: list) -> dict:
+def frame_heads(sample: Sequence) -> dict:
     """D1 step 2: for each read and both orientations, the 8 nt at the frame start → bytes b0 b1 → per domain the
     version nibble ``(b1 ⊕ SHAKE-128(domain ‖ b0)[0]) >> 4`` (spec §3.10; reads shorter than 8 nt or with N there
     give no nibble)."""
@@ -222,7 +222,7 @@ def probe_reads(reads_path: str | os.PathLike, band: int = 6) -> Probe:
     return p
 
 
-def distinct_molecules(sample: list) -> list:
+def distinct_molecules(sample: Sequence) -> list:
     """The sample with copies of one strand counted once: reads are keyed by their first and last 24 nt, orientation-
     independent. Coverage makes many reads copies of few strands; a version refusal must rest on many strands."""
     seen, out = set(), []

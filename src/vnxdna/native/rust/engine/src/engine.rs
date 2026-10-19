@@ -1365,6 +1365,9 @@ impl<'c> Engine<'c> {
         acc.extend(todo.iter().copied().filter(|&i| self.b.fate[i] == Fate::Accepted));
         let (vkey, vwin) = (&self.b.vkey, &self.b.vwin);
         let mut redundant = 0i64;
+        for &j in acc.iter().take(PREFETCH_AHEAD) {          // warm-up: the loops prefetch from entry PREFETCH_AHEAD on
+            self.done.prefetch(vkey[j]);
+        }
         for k in 0..acc.len() {
             if let Some(&j) = acc.get(k + PREFETCH_AHEAD) {
                 self.done.prefetch(vkey[j]);
@@ -1372,6 +1375,15 @@ impl<'c> Engine<'c> {
             redundant += self.done.contains(vkey[acc[k]]) as i64;
         }
         self.stats[ST_REDUNDANT_ACCEPTS] += redundant;
+        for &j in acc.iter().take(PREFETCH_AHEAD) {
+            self.bloom.prefetch(vkey[j]);
+            for &w in &vwin[j] {
+                if w != 0 {
+                    self.windex.prefetch(w);
+                    self.bloom.prefetch(w);
+                }
+            }
+        }
         for k in 0..acc.len() {
             if let Some(&j) = acc.get(k + PREFETCH_AHEAD) {
                 self.done.prefetch(vkey[j]);

@@ -122,10 +122,17 @@ unsafe impl<T: Zeroable + Send> Send for ZeroTable<T> {}
 unsafe impl<T: Zeroable + Sync> Sync for ZeroTable<T> {}
 
 impl<T: Zeroable> ZeroTable<T> {
+    /// (table bytes, mapping bytes) of a mapped table of `len` elements; None for a table below 2 MiB or for a size
+    /// that overflows (checked: a saturated size could map less than the table needs; such a size takes the vector
+    /// path, whose allocation fails loudly).
+    fn map_size(len: usize) -> Option<(usize, usize)> {
+        let bytes = len.checked_mul(std::mem::size_of::<T>())?;
+        let map_len = bytes.checked_add(HUGE)?;
+        (bytes >= HUGE).then_some((bytes, map_len))
+    }
+
     pub fn new(len: usize) -> ZeroTable<T> {
-        let bytes = len.saturating_mul(std::mem::size_of::<T>());
-        if bytes >= HUGE {
-            let map_len = bytes + HUGE;
+        if let Some((bytes, map_len)) = Self::map_size(len) {
             // SAFETY: a fresh private anonymous read-write mapping, checked against MAP_FAILED; it is zero-filled.
             let p = unsafe { mmap(std::ptr::null_mut(), map_len, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0) };
             if p as isize != -1 && !p.is_null() {
@@ -194,6 +201,10 @@ mod tests {
                 assert_eq!((t[0], t[len - 1]), (5, 7));
             }
         }
+        assert!(ZeroTable::<u64>::map_size(usize::MAX / 4).is_none());     // len * 8 overflows
+        assert!(ZeroTable::<u8>::map_size(usize::MAX - 1).is_none());      // len + HUGE overflows
+        assert_eq!(ZeroTable::<u64>::map_size(HUGE / 8), Some((HUGE, 2 * HUGE)));
+        assert_eq!(ZeroTable::<u64>::map_size(10), None);                  // small: the vector path
         let b: ZeroTable<u8> = ZeroTable::new(3 * HUGE + 1);
         assert_eq!(b.len(), 3 * HUGE + 1);
         assert_eq!(b.as_ptr() as usize % HUGE, 0);
