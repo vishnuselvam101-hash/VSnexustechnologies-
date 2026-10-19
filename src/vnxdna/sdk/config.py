@@ -101,15 +101,16 @@ def decode_options(cfg: dict, **overrides):
     sec.update({k: v for k, v in overrides.items() if v is not None})
     lay = cfg.get("dna", {}).get("layout")
     preset = sec.pop("cluster_preset", None)
-    extra = {}
-    if preset is not None:
+    kw = {k: v for k, v in sec.items() if k in DECODE_KEYS}
+    if preset is None:
+        opt = DecodeOptions(**kw)
+    else:
         # a named clustering preset turns read clustering on ("fallback"); combining it with "off" is a contradiction
         from vnxdna.recovery.cluster import cluster_preset
-        if sec.get("read_clustering", "fallback") == "off":
+        if kw.get("read_clustering", "fallback") == "off":
             raise VNXConfigurationError("cluster_preset needs read_clustering 'fallback' (it is not used when 'off')")
-        sec["read_clustering"] = sec.get("read_clustering", "fallback")
-        extra["cluster_config"] = cluster_preset(preset)
-    opt = DecodeOptions(**{k: v for k, v in sec.items() if k in DECODE_KEYS}, **extra)
+        kw["read_clustering"] = kw.get("read_clustering", "fallback")
+        opt = DecodeOptions(**kw, cluster_config=cluster_preset(preset))
     if lay is not None:
         opt.layout = Layout(**lay)
     return opt
