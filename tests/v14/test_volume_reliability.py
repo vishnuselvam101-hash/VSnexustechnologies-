@@ -34,6 +34,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from vnxdna._version import __version__
 from vnxdna.core.errors import VNXError, VNXFormatError, VNXIntegrityError, VNXOutputError
 from vnxdna.volume import Journal, Volume, VolumeOptions
 from vnxdna.volume import journal as jmod
@@ -701,7 +702,8 @@ def test_sigkill_at_an_arbitrary_moment_and_the_lock(tmp_path):
 # ======================================================================================== compatibility
 def test_volume_written_by_the_base_code_still_opens(tmp_path):
     """Fixture written by the V13/V14 base code (b69e70f): 4,396 bytes in 2 extents of 4,096, extent 0 rewritten once
-    (e0-v1, e0-v2, e1-v1). The format is unchanged: it opens, reads, scrubs, and accepts new commits."""
+    (e0-v1, e0-v2, e1-v1), metadata software "13.0.0". The format is unchanged: it opens, reads, scrubs, and accepts
+    new commits; the creator version stays in the metadata and a volume created now records the current version."""
     with tarfile.open(GOLDEN) as t:
         t.extractall(tmp_path, filter="data")
     root = tmp_path / "vol"
@@ -715,6 +717,10 @@ def test_volume_written_by_the_base_code_still_opens(tmp_path):
     with Volume.open(root, "rw", options=_opts()) as v:
         v.append(b"new")
     _assert_healthy(root, bytes(expect) + b"new")
+    with Volume.open(root, options=_opts()) as v:                # the creator's version is kept, not rewritten
+        assert v.meta["software"] == "13.0.0"
+    with Volume.create(tmp_path / "fresh", _opts()) as v:         # the current code records its own version
+        assert v.meta["software"] == __version__ != "13.0.0"
 
 
 # ======================================================================================== review follow-ups (c2ae79e)

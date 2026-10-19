@@ -1,6 +1,65 @@
 # Changelog
 
-## 13.0.0 (branch `build/v13-final`, release candidate, not tagged; docs/V13_COMPLETION_REPORT.md)
+## 14.0.0 (branch `build/v14`, release candidate, not tagged; docs/V14_IMPLEMENTATION_REPORT.md)
+
+All channel results are SIMULATED; no DNA was synthesised, stored or sequenced (evidence categories A-D only; nothing
+is E or F). Archive, container, strand, stream (`vnx.stream/1`) and volume (`vnx.volume/1`) formats are unchanged from
+13.0.0; a V13 volume fixture opens, reads, scrubs and accepts new commits. Only the Python package version and
+CITATION.cff move to 14.0.0; the Rust crate versions (`vnxd`, `vnx_engine`, integrity) are deliberately left unchanged.
+Governing scope: docs/V14_MASTER_DIRECTIVE_2026-10-18.md (P0-P13); benchmarks: docs/V14_BENCHMARK_REPORT.md.
+
+### Added: the storage platform (P1-P8)
+- **P1 contracts**: Rust crate `vnxd` and Python `vnxdna.device` (docs/V14_CONTRACTS.md).
+- **P2 block volume + VNX-IO** in `vnxd`: journal, volume, I/O queue (docs/V14_VOLUME_AND_IO.md); mirrored journal,
+  atomic multi-extent writes, no generation reuse.
+- **P3 VNX-RAM + cache** (none / write-through / write-back) and the molecular-memory interface in Python
+  (docs/V14_RAM_AND_CACHE.md, docs/V14_MOLECULAR_MEMORY.md).
+- **P4 fallback + security**: fallback, fault, audit, authz and seal modules; Python seal worker
+  (docs/V14_SECURITY_MODEL.md, docs/V14_FAILURE_AND_RECOVERY_MODEL.md).
+- **P5 load balancer** (`balance.rs`, I/O queue reaper, measured defaults; docs/V14_LOAD_BALANCER.md).
+- **P7 media adapters**: file image (electronic), DNA software simulator, seeded fault injection, simulated lab
+  (docs/V14_MEDIA_ADAPTERS.md).
+- **P8 Linux block device**: `vnxd nbd create|attach|serve` exports a volume as `/dev/nbdN` (docs/V14_DEVICE_INTERFACE.md).
+  Measured on this host's disk, 64 MiB raw O_DIRECT, median MiB/s (`experiments/v14/device/p8-nbd/results.json`):
+  cache none write 52.6 / read 306.3, write-through 47.4 / 926.4, write-back 58.3 / 874.1. These measure the host
+  disk and page cache through the V14 stack, not any DNA medium.
+
+### Changed: codec integration (P6 workstreams A-F; SIMULATED)
+- **A, linear-time shuffled-pool decode** (`PoolDecoder`, one pass 1 partitioned by archive tag): v13/v14 pool decode
+  3.3x / 6.6x / 13x / 25x at E = 4 / 8 / 16 / 32 extents (n = 2, n = 1 at E = 32), RSS ~100 MiB flat
+  (`experiments/v14/bench/p6a-pool/`).
+- **B, parallel per-extent pass 2 in the pool path**: 1.18x end to end at 4 workers on pools (E = 8: 1.184
+  [1.138, 1.203]; E = 16: 1.184 [1.129, 1.211]); no gain on single archives (`experiments/v14/bench/p6b-profile/`).
+- **C, recovery scheduler**: default `engine_scheduler="auto"` = the V13 rule plus one `strand` retry rung. `strand`
+  missed its preregistered endpoint (0.70x on indel-w1, a negative result) and is kept as an option and retry rung;
+  0 false skips in the campaign. Zero/repetitive payloads now decode on the engine without the v13 fallback
+  (4 MiB w4 peak RSS 489.8 -> 114.2 MiB) (`experiments/v14/bench/p6c-scheduler/`, docs/V14_SCHEDULER.md).
+- **D, volume reliability**: 23 fault-injection tests with reopen + scrub, three with a real SIGKILL
+  (docs/V14_VOLUME_RELIABILITY.md).
+- **E, channel benchmark suite**: 600 runs, 0 false successes, 0 wrong archives, 0 crashes
+  (`experiments/v14/bench/p6e-channels/full/`).
+- **F, configuration/SDK/CLI/security hardening** (docs/V14_HARDENING.md); finding O-1 (unkeyed journal CRC on
+  encrypted volumes) is OPEN; the `cryptography` pin `>=44,<47` is unchanged pending a founder decision.
+
+### Validation and portability (P9-P11)
+- **P9 integrated validation**: 44-row E2E/fault-injection matrix, 43 pass, 1 skipped (R24-hw, needs Pi hardware);
+  `tools/v14-e2e.sh` (docs/V14_PHASE9_REPORT.md, docs/V14_VALIDATION_PLAN.md).
+- **P10 ARM64**: aarch64 cross-builds of the three crates and the C/C++ kernels, their tests under qemu-user, golden
+  and equivalence tests through an aarch64 CPython (docs/V14_PHASE10_REPORT.md). Pi acceptance is INCOMPLETE (no
+  hardware).
+- **P11 hardware + boot design documents** (docs/V14_BOOT_ARCHITECTURE.md, docs/V14_EXTERNAL_CONTROLLER.md,
+  docs/V14_PHYSICAL_DNA_DEVICE.md): designs only; no device exists. **P13** V15 plan: docs/V15_FINALIZATION_PLAN.md.
+
+### Missed targets and limitations (stated plainly)
+- Both primary speed targets are **MISSED**: 4 MiB indel w1 v12/v14 2.848 [2.627, 2.899] (target >= 5x); 4 MiB clean
+  w4 2.209 [2.111, 2.326] (target >= 3x). On single-archive decode V14 equals V13; it is ~5 % slower than V13 on
+  indel 16 MiB w4 (0.948 [0.944, 0.981]) and ~2 % slower on substitution 64 MiB w4 (0.977 [0.905, 0.981]).
+- The strand retry rung roughly doubles the time to report FAILURE on undecodable inputs (e.g. 17.95 s vs 9.64 s).
+- Not measured: logical-I/O overhead, isolated cache, electronic backend, simulator end-to-end timing (benchmark
+  report §2/3/5/6). ext4 only, on this host. The DNA adapters in E2E rows M02/M04 use the TEST-ONLY `ToyCodec`.
+  No clean-checkout reproducible-build evidence. No physical DNA validation of any kind.
+
+## 13.0.0 (tag `v13.0.0`; docs/V13_COMPLETION_REPORT.md)
 
 All channel results are SIMULATED; no DNA was synthesised, stored or sequenced. Archive, container and strand formats
 are unchanged from 12.0.0 (no new format version); decode output is byte-identical to build/v12 (6bf7749) on every
