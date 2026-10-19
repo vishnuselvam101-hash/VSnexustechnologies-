@@ -439,6 +439,11 @@ def decode(reads: Path, output: Optional[Path] = typer.Option(None, "--output", 
                None, "--read-clustering",
                help="off (default) or fallback: V7 header-independent read clustering + per-cluster consensus whose "
                     "verified frames only fill what the default path left unresolved (opt-in)."),
+           cluster_preset: Optional[str] = typer.Option(
+               None, "--cluster-preset",
+               help="Named read-clustering preset (implies --read-clustering fallback): default, or nanopore = "
+                    "full-template consensus + template fill + outer-code list decoding of short rows (opt-in; "
+                    "SIMULATED evidence only)."),
            max_recovery_reads: Optional[int] = typer.Option(None, "--max-recovery-reads",
                                                             help="V6 budget: reads examined by smart/soft recovery (all rounds)."),
            max_round_b_reads: Optional[int] = typer.Option(None, "--max-round-b-reads",
@@ -485,7 +490,7 @@ def decode(reads: Path, output: Optional[Path] = typer.Option(None, "--output", 
                                   profile=profile, band=band, retry_band=retry_band, min_quality=min_quality, indel_recovery=indel_recovery,
                                   soft_decoding=soft_decoding, recovery_schedule=recovery_schedule,
                                   consensus_weighting=consensus_weighting, max_container_bytes=max_container_bytes, expect_archive_id=expect_archive_id,
-                                  expect_sha256=expect_sha256, read_clustering=read_clustering,
+                                  expect_sha256=expect_sha256, read_clustering=read_clustering, cluster_preset=cluster_preset,
                                   orientation_retry=orientation_retry, sync_speculation=sync_speculation,
                                   engine=engine, engine_dedup=engine_dedup,
                                   engine_scheduler=None if engine_scheduler is None else engine_scheduler.value,

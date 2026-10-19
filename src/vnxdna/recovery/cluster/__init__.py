@@ -160,6 +160,24 @@ class ClusterConfig:
         return asdict(self)
 
 
+# Named decoder presets of the clustering stage (opt-in; used only with read_clustering="fallback"). "default" is
+# ClusterConfig(). "nanopore" is decoder preset F of the V9/V10 evaluations (experiments/v9/consensus/candidates.py):
+# full-template consensus, indel cost 4, template fill, and outer-code list decoding of rows still short after the
+# fill (vnxdna.recovery.outer_list). Every frame it adds is still verified (inner RS + CRC-32), and the container
+# SHA-256 still decides publication. Evidence: experiments/arch/outer_list_eval, experiments/v15/cc3 (SIMULATED).
+CLUSTER_PRESETS: dict[str, dict] = {
+    "default": {},
+    "nanopore": {"consensus_template": "full", "c_indel": 4, "fill": "template", "outer_list": "on"},
+}
+
+
+def cluster_preset(name: str) -> ClusterConfig:
+    """The validated :class:`ClusterConfig` of a named preset (:data:`CLUSTER_PRESETS`)."""
+    if name not in CLUSTER_PRESETS:
+        raise VNXConfigurationError(f"unknown cluster preset {name!r}; known: {', '.join(CLUSTER_PRESETS)}")
+    return ClusterConfig(**CLUSTER_PRESETS[name]).validate()
+
+
 def validate_mode(mode, config) -> ClusterConfig | None:
     """Check ``DecodeOptions.read_clustering`` / ``cluster_config``; returns the effective config (None when off)."""
     if mode not in READ_CLUSTERING_MODES:

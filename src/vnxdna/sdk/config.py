@@ -38,7 +38,7 @@ DECODE_KEYS = {"profile", "band", "retry_band", "min_quality", "reverse_compleme
                "archive_tag", "batch_reads", "workers", "indel_recovery", "soft_decoding",
                "recovery_schedule", "max_container_bytes", "consensus_weighting",
                "expect_archive_id", "expect_sha256", "read_clustering", "orientation_retry", "sync_speculation",
-               "engine", "engine_dedup", "engine_scheduler", "engine_threads"}
+               "engine", "engine_dedup", "engine_scheduler", "engine_threads", "cluster_preset"}
 ARCHIVE_KEYS = {"chunk_size", "compression", "level", "workers", "preserve_metadata", "dedup", "archive_id"}
 
 
@@ -100,7 +100,16 @@ def decode_options(cfg: dict, **overrides):
     sec = dict(cfg.get("decode", {}))
     sec.update({k: v for k, v in overrides.items() if v is not None})
     lay = cfg.get("dna", {}).get("layout")
-    opt = DecodeOptions(**{k: v for k, v in sec.items() if k in DECODE_KEYS})
+    preset = sec.pop("cluster_preset", None)
+    extra = {}
+    if preset is not None:
+        # a named clustering preset turns read clustering on ("fallback"); combining it with "off" is a contradiction
+        from vnxdna.recovery.cluster import cluster_preset
+        if sec.get("read_clustering", "fallback") == "off":
+            raise VNXConfigurationError("cluster_preset needs read_clustering 'fallback' (it is not used when 'off')")
+        sec["read_clustering"] = sec.get("read_clustering", "fallback")
+        extra["cluster_config"] = cluster_preset(preset)
+    opt = DecodeOptions(**{k: v for k, v in sec.items() if k in DECODE_KEYS}, **extra)
     if lay is not None:
         opt.layout = Layout(**lay)
     return opt
