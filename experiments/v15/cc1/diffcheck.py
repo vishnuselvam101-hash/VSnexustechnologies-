@@ -103,7 +103,7 @@ def _run_one(tree: Path, work: Path, workers: int, kind: str) -> dict:
     if not row["vnxdna_file"].startswith(str(tree)):
         raise SystemExit(f"{tree}: imported {row['vnxdna_file']}")
     if not row["all_native"] or row["stale"]:
-        raise SystemExit(f"{tree}: native kernels missing or stale: {row}")
+        raise SystemExit(f"{tree}: native kernels missing or stale: {row['stale']}, all native {row['all_native']}")
     return row
 
 
