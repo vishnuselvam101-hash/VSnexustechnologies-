@@ -1,0 +1,8 @@
+# /etc/default/vnxd: settings of vnxd.service (docs/V14_BUILD_AND_DEPLOYMENT.md §6)
+VNXD_VOLUME=/var/lib/vnx/vol
+VNXD_BACKEND=/var/lib/vnx/media
+VNXD_DEVICE=/dev/nbd0
+# memory/concurrency profile; on a 1-2 GB Raspberry Pi start from --low-memory (docs/V14_RASPBERRY_PI_PROFILE.md §3)
+VNXD_OPTS=--low-memory --cache write-through
+# optional management socket (health, stats, capacity, shutdown); it needs an authorisation policy file
+# (docs/V14_SECURITY_MODEL.md §4):  --mgmt /run/vnxd/mgmt.sock --policy /etc/vnxd/policy.json

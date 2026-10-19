@@ -756,8 +756,16 @@ mod tests {
         let b = Arc::new(Balancer::start(cfg(2)).unwrap());
         let b2 = b.clone();
         let t = b.submit(Class::Maintenance, None, None, move || {
-            let inner = b2.submit(Class::Maintenance, None, None, || Ok(5))?;
+            // the inner task is held until the outer one has tried to wait: otherwise the second worker may finish it
+            // first and the wait returns its result, which is harmless but leaves nothing to refuse (seen under
+            // qemu-user emulation, where the outer task is slower to reach the wait)
+            let (go, held) = std::sync::mpsc::channel::<()>();
+            let inner = b2.submit(Class::Maintenance, None, None, move || {
+                let _ = held.recv();
+                Ok(5)
+            })?;
             let refused = inner.wait_timeout(Duration::from_secs(1)).unwrap();
+            let _ = go.send(());
             Ok(refused.unwrap_err().code)
         }).unwrap();
         assert_eq!(t.wait().unwrap(), ErrorCode::Internal);

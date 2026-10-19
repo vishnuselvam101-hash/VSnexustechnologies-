@@ -19,7 +19,8 @@ use crate::error::{err, ErrorCode, Result, VnxError};
 use crate::json::Value;
 use crate::media::MediaAdapter;
 use crate::nbd;
-use crate::nbdserve::{ConnEnd, Device, DeviceConfig, DeviceMgmt};
+use crate::io::{QueueConfig, MAX_QUEUE_DEPTH};
+use crate::nbdserve::{ConnEnd, Device, DeviceConfig, DeviceMgmt, MAX_PAYLOAD};
 use crate::nbdsys::{self, NbdDevice};
 use crate::volume::{Volume, VolumeConfig};
 use std::io::{BufRead, BufReader, Read, Write};
@@ -122,6 +123,16 @@ fn parse_size(s: &str) -> Option<u64> {
     n.parse::<u64>().ok()?.checked_mul(mul)
 }
 
+/// The `--low-memory` preset (docs/V14_RASPBERRY_PI_PROFILE.md §3): the smallest budgets the device accepts with the
+/// NBD maximum request size, two I/O workers and two reply threads. Options given on the command line override it.
+pub fn apply_low_memory(dev: &mut DeviceConfig) {
+    dev.ram_bytes = 96 << 20;
+    dev.max_inflight = 16;
+    dev.max_inflight_bytes = u64::from(MAX_PAYLOAD);
+    dev.repliers = 2;
+    dev.queue = Some(QueueConfig { workers: 2, depth: 16 });
+}
+
 pub fn parse_opts(args: &[String]) -> Result<Opts> {
     let bad = |m: String| VnxError::new(ErrorCode::InvalidArgument, m);
     let mut o = Opts {
@@ -138,6 +149,9 @@ pub fn parse_opts(args: &[String]) -> Result<Opts> {
         block_size: 4096,
         extent_blocks: 16,
     };
+    if args.iter().any(|a| a == "--low-memory") {
+        apply_low_memory(&mut o.dev);
+    }
     let mut it = args.iter();
     while let Some(k) = it.next() {
         let mut val = || it.next().cloned().ok_or_else(|| bad(format!("{k} needs a value")));
@@ -165,6 +179,18 @@ pub fn parse_opts(args: &[String]) -> Result<Opts> {
                 }
             }
             "--ram" => o.dev.ram_bytes = num(val()?)?,
+            "--low-memory" => {} // applied before the loop, so later options override it
+            "--workers" => {
+                let q = o.dev.queue.get_or_insert_with(QueueConfig::default);
+                q.workers = usize::try_from(num(val()?)?).map_err(|_| bad("--workers too large".into()))?;
+            }
+            "--queue-depth" => {
+                let q = o.dev.queue.get_or_insert_with(QueueConfig::default);
+                q.depth = usize::try_from(num(val()?)?).map_err(|_| bad("--queue-depth too large".into()))?;
+            }
+            "--max-inflight" => o.dev.max_inflight = usize::try_from(num(val()?)?).map_err(|_| bad("--max-inflight too large".into()))?,
+            "--max-inflight-bytes" => o.dev.max_inflight_bytes = num(val()?)?,
+            "--repliers" => o.dev.repliers = usize::try_from(num(val()?)?).map_err(|_| bad("--repliers too large".into()))?,
             "--request-timeout-s" => o.dev.request_timeout = Duration::from_secs(num(val()?)?),
             "--kernel-timeout-s" => o.kernel_timeout_s = u32::try_from(num(val()?)?).map_err(|_| bad("timeout too large".into()))?,
             "--size" => o.size = num(val()?)?,
@@ -175,6 +201,16 @@ pub fn parse_opts(args: &[String]) -> Result<Opts> {
     }
     if o.volume.as_os_str().is_empty() || o.backend.as_os_str().is_empty() {
         return Err(bad("--volume DIR and --backend DIR are required".into()));
+    }
+    if let Some(q) = &o.dev.queue {
+        if q.workers == 0 || q.workers > 256 || q.depth == 0 || q.depth > MAX_QUEUE_DEPTH {
+            return Err(bad(format!("need --workers 1..=256 and --queue-depth 1..={MAX_QUEUE_DEPTH}")));
+        }
+    }
+    if o.dev.max_inflight == 0 || o.dev.repliers == 0 || o.dev.repliers > 256 || o.dev.max_inflight_bytes < u64::from(MAX_PAYLOAD) {
+        return Err(bad(format!(
+            "need --max-inflight >= 1, --repliers 1..=256 and --max-inflight-bytes >= {MAX_PAYLOAD} (the largest NBD request)"
+        )));
     }
     // every request is answered within its deadline (start) plus its own run and a FUA flush: the kernel timeout
     // must leave that margin, and 0 (no kernel timeout) is refused (a dead server would hang the host's I/O)
@@ -666,7 +702,9 @@ pub fn main(args: &[String]) -> i32 {
                  \x20      vnxd nbd attach --volume DIR --backend DIR [--device /dev/nbdN|auto] [options]\n\
                  \x20      vnxd nbd serve  --volume DIR --backend DIR --socket PATH [options]\n\
                  options: --media image|dir  --cache none|write-through|write-back  --ram N  --read-only  --request-timeout-s N\n\
-                 \x20        --kernel-timeout-s N  --mgmt SOCKET --policy FILE  --fault-control FILE  --no-readback";
+                 \x20        --kernel-timeout-s N  --mgmt SOCKET --policy FILE  --fault-control FILE  --no-readback\n\
+                 \x20        --workers N  --queue-depth N  --max-inflight N  --max-inflight-bytes N  --repliers N\n\
+                 \x20        --low-memory (preset: --ram 96M --workers 2 --queue-depth 16 --max-inflight 16 --max-inflight-bytes 32M --repliers 2)";
     let (cmd, rest) = match args.split_first() {
         Some((c, r)) => (c.as_str(), r),
         None => {
@@ -743,6 +781,27 @@ mod tests {
         assert!(parse_opts(&args("--volume v --backend b --request-timeout-s 30 --kernel-timeout-s 60")).is_err(), "margin");
         assert_eq!(parse_opts(&args("--volume v --backend b")).unwrap().media, "image");
         assert_eq!(parse_opts(&args("--volume v --backend b --device auto")).unwrap().device, None);
+    }
+
+    #[test]
+    fn low_memory_preset_and_concurrency_limits() {
+        let d = parse_opts(&args("--volume v --backend b")).unwrap().dev;
+        assert_eq!((d.ram_bytes, d.max_inflight, d.max_inflight_bytes, d.repliers), (256 << 20, 128, 64 << 20, 8));
+        assert!(d.queue.is_none(), "the queue is sized from the backend unless given");
+        let o = parse_opts(&args("--volume v --backend b --low-memory")).unwrap().dev;
+        assert_eq!((o.ram_bytes, o.max_inflight, o.max_inflight_bytes, o.repliers), (96 << 20, 16, 32 << 20, 2));
+        assert_eq!(o.queue.map(|q| (q.workers, q.depth)), Some((2, 16)));
+        // explicit options override the preset whatever their position
+        let o = parse_opts(&args("--ram 128M --volume v --backend b --low-memory --workers 1 --repliers 1")).unwrap().dev;
+        assert_eq!((o.ram_bytes, o.repliers), (128 << 20, 1));
+        assert_eq!(o.queue.map(|q| (q.workers, q.depth)), Some((1, 16)));
+        let o = parse_opts(&args("--volume v --backend b --queue-depth 8 --max-inflight 4 --max-inflight-bytes 40M")).unwrap().dev;
+        assert_eq!(o.queue.map(|q| q.depth), Some(8));
+        assert_eq!((o.max_inflight, o.max_inflight_bytes), (4, 40 << 20));
+        for bad in ["--workers 0", "--workers 257", "--queue-depth 0", "--queue-depth 5000", "--max-inflight 0", "--repliers 0",
+                    "--max-inflight-bytes 1M", "--workers x"] {
+            assert!(parse_opts(&args(&format!("--volume v --backend b {bad}"))).is_err(), "{bad}");
+        }
     }
 
     #[test]

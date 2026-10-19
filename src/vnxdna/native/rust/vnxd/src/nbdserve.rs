@@ -1032,6 +1032,33 @@ mod tests {
     }
 
     #[test]
+    fn the_low_memory_preset_runs_a_device_round_trip() {
+        // the `vnxd nbd --low-memory` budgets (docs/V14_RASPBERRY_PI_PROFILE.md §3) are accepted by the device with
+        // the default geometry (4 KiB blocks, 16-block extents), and requests round-trip through every layer
+        let t = TempDir::new("nbd-lowmem");
+        let media: Arc<dyn MediaAdapter> = Arc::new(MemoryMedia::new());
+        let geo = Geometry::new(4096, 16, 256).unwrap(); // 1 MiB
+        Volume::create(&t.0.join("vol"), geo, [7; 16], 0, media.clone(), VolumeConfig::default()).unwrap();
+        let mut cfg = DeviceConfig::default();
+        crate::nbdctl::apply_low_memory(&mut cfg);
+        let dev = Device::open(&t.0.join("vol"), media, cfg).unwrap();
+        let ((), _) = with_conn(&dev, |c| {
+            let data: Vec<u8> = (0..3 * 65536u32).map(|i| (i * 7 + 3) as u8).collect();
+            assert_eq!(c.call(CMD_WRITE, 0, 4096, data.len() as u32, &data, 0).0, 0);
+            assert_eq!(c.call(CMD_FLUSH, 0, 0, 0, &[], 0).0, 0);
+            assert_eq!(c.call(CMD_READ, 0, 4096, data.len() as u32, &[], data.len()), (0, data));
+            c.send(CMD_DISC, 0, 0, 0, &[]);
+        });
+        assert!(dev.stats.max_inflight_seen.load(Ordering::Relaxed) <= 16);
+        dev.close().unwrap();
+        // the floor: one largest request must fit, so a budget below it is refused rather than run unbounded
+        let mut low = DeviceConfig::default();
+        crate::nbdctl::apply_low_memory(&mut low);
+        assert!(ram_config(low.ram_bytes, geo).is_ok());
+        assert!(ram_config(2 * u64::from(MAX_PAYLOAD), geo).is_err());
+    }
+
+    #[test]
     fn unknown_flags_are_refused_and_the_inflight_gauge_returns_to_zero() {
         let t = TempDir::new("nbd-flags");
         let dev = make(&t, DeviceConfig::default(), Arc::new(MemoryMedia::new()));

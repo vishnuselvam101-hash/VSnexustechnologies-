@@ -1,0 +1,47 @@
+# vnxd: the VNX storage service exporting a volume as /dev/nbd0 (docs/V14_BUILD_AND_DEPLOYMENT.md §6).
+# Install: /etc/systemd/system/vnxd.service, the binary at /usr/local/bin/vnxd, settings in /etc/default/vnxd.
+# Validated with `systemd-analyze verify`; not yet run as a service on a Pi (docs/V14_RASPBERRY_PI_PROFILE.md §6).
+[Unit]
+Description=VNX storage service (NBD block device)
+Documentation=file:///usr/local/share/doc/vnxd/V14_DEVICE_INTERFACE.md
+After=local-fs.target systemd-modules-load.service
+# a filesystem on the device is ordered After=/Requires= this unit, so it is unmounted before vnxd stops
+Before=remote-fs-pre.target
+
+[Service]
+Type=exec
+EnvironmentFile=/etc/default/vnxd
+ExecStartPre=/sbin/modprobe nbd max_part=8
+# one fixed device so that fstab and mount units can name it; VNXD_OPTS holds the memory profile (e.g. --low-memory)
+ExecStart=/usr/local/bin/vnxd nbd attach --volume ${VNXD_VOLUME} --backend ${VNXD_BACKEND} --device ${VNXD_DEVICE} $VNXD_OPTS
+# SIGTERM: fsync the device, NBD_DISCONNECT, answer every request, flush the store (V14_DEVICE_INTERFACE.md §2)
+KillSignal=SIGTERM
+KillMode=mixed
+# longer than the kernel timeout (default 120 s) so a slow final flush is never cut short
+TimeoutStopSec=300
+# exit 1 = an error after or during attach; a restart replays the journal (recovery report on stderr)
+Restart=on-failure
+RestartSec=5
+RuntimeDirectory=vnxd
+RuntimeDirectoryMode=0750
+StateDirectory=vnx
+# /dev/nbdN ioctls need CAP_SYS_ADMIN; nothing else is granted
+CapabilityBoundingSet=CAP_SYS_ADMIN
+AmbientCapabilities=CAP_SYS_ADMIN
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths=/var/lib/vnx
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX
+LockPersonality=yes
+# a hard ceiling above the configured budgets (VNX-RAM + in-flight payloads + stacks); see the Pi profile §2
+MemoryMax=512M
+# the I/O path must not be swapped out under memory pressure (it would stall the filesystem above it)
+MemorySwapMax=0
+OOMScoreAdjust=-500
+
+[Install]
+WantedBy=multi-user.target

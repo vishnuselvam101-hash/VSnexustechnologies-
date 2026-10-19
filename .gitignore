@@ -50,3 +50,4 @@ fuzz/out/
 seen_barocdes.json
 src/vnxdna/native/rust/*/target/
 src/vnxdna/*.so
+build-aarch64/
