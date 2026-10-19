@@ -822,6 +822,25 @@ claimed for the product. The earlier hybrid (RAM + SSD tier) mode is dropped fro
 used only as development/test fixtures, never as product storage. Microsecond-class access becomes a research goal
 (RT-1).
 
+**Molecular partition architecture (founder, 2026-10-19).** Every subsystem has its own DNA pool, physically
+compartmented (separate chambers/cartridges) and chemically addressable (an orthogonal primer set per pool, CC-5):
+
+| pool | contents | behaviour | V14 software it maps to |
+|---|---|---|---|
+| storage | user data | write-once, read-rare; standard redundancy | volume extents, codec |
+| VNX-RAM | working state, hot data | highest write rate; small; updates are new versions (DNA is not rewritable in place) | VNX-RAM pool, cache |
+| VNX-IO journal | write-ahead log for crash safety | append-only, small, frequent | journal, VNX-IO |
+| metadata/index | extent map, versions, file map | small, critical: highest redundancy | volume map, `.vxidx` |
+| security | sealed keys, audit log, chain of custody | append-only, tamper-evident | VNX-Secure, `audit.rs`, AP-5 |
+| bootstrap | Sector Zero decoding instructions | write-once, maximum redundancy | LR-2 |
+
+Software method: one media-adapter instance per pool with its own ECC profile and capacity accounting; generation
+references never reused (already a V14 invariant) model write-once molecules; stale versions are tracked and
+garbage-collected logically; physical erasure (e.g. enzymatic degradation of stale strands) is a research item under
+RT-2. Acceptance in V15: the full stack runs over six simulated pools (P7 dnasim), with per-pool fault injection
+showing that loss/damage in one pool is contained and recovered as declared (e.g. metadata rebuilt from storage-pool
+headers, journal replay after a crash).
+
 **Research track RT-2: molecular memory and computation.** Move control state and computation into molecules as the
 science matures: DNA-based rewritable memory and DNA logic (strand-displacement) circuits, starting from
 `docs/V14_MOLECULAR_MEMORY.md`; literature survey first (sources verified at M0), simulation next; THEORETICAL /
