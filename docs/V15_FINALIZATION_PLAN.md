@@ -806,28 +806,26 @@ retrieve, decode and protection itself, fully offline.
 | part | V15 (software, ₹0) | after V15 (needs partner/sponsor hardware) |
 |---|---|---|
 | controller | P11 C1 design: Raspberry Pi as a USB Mass Storage gadget over the P8 device; `--low-memory` profile (P10) | custom board (P11 C2/C3) |
-| speed | F8 tiering: all I/O at RAM/SSD tier latency, DNA as background archive tier. DNA itself cannot be nanosecond-class (synthesis hours, sequencing minutes–hours); no such claim is made | — |
+| speed | DNA speed (synthesis hours, sequencing minutes or more); no microsecond claim (see design decision below; RT-1 research) | — |
 | capacity reporting | device reports the DNA tier capacity as the disk size | — |
 | DNA write/read | simulated DNA tier (P7 dnasim) + lab interface (P7 `vnx.dna-lab/1`) | electrode-array synthesis and nanopore sequencing modules (research-grade today), integrated box |
 | third-party machines | AP-11 plugin SDK + media contract: other synthesisers/sequencers plug in | vendor integrations |
 | security | AP-16 24/7 offline monitor, AP-4 post-quantum, AP-1 WORM, AP-3 escrow, secure boot | hardware tamper sensors |
 | network | AP-17 offline-only build, signed USB updates | — |
 
-**Performance commitment (founder, 2026-10-19: "no matter what we need to build that system").** The drive is built
-to microsecond-class host latency: writes acknowledged once durable in the VNX-RAM + power-loss-safe SSD journal;
-reads of data resident in the RAM/SSD tiers at microsecond-class latency; p50/p99 latencies measured on the real
-controller board and reported per tier (acceptance target set at M0 from the first hardware measurement). Data that
-lives only in the DNA tier is reported with its retrieval status and expected time; no microsecond claim is made for
-the molecular tier.
+**Design decision (founder, 2026-10-19, final): DNA-only drive.** No RAM modules, no SSD, flash or disk: DNA is the
+only storage and memory of the product. The only electronics are those that cannot be molecular today: the host link
+(USB), the control processor (with only its built-in volatile scratch memory), and the electrical parts of the
+synthesis and sequencing modules. Consequences stated plainly: every write and read goes through chemistry (hours to
+write, minutes or more to read); a write is acknowledged only when committed to DNA; no microsecond-class latency is
+claimed for the product. The earlier hybrid (RAM + SSD tier) mode is dropped from the product; electronic tiers may be
+used only as development/test fixtures, never as product storage. Microsecond-class access becomes a research goal
+(RT-1).
 
-**Two drive modes (founder decision, 2026-10-19), one VNX stack:**
-- **DNA-native mode (flagship).** No SSD, flash or disk: DNA is the only persistent store. The controller keeps only
-  volatile working memory (an unavoidable property of any processor). VNX-RAM is pursued toward the molecular-memory
-  interface (`docs/V14_MOLECULAR_MEMORY.md`). Writes are committed archives at DNA speed; a write is acknowledged only
-  when its DNA copy is committed (or held in a power-loss-protected buffer whose limits are stated). Configured as
-  the F8 tiering policy with electronic tier capacity = 0.
-- **Hybrid mode.** RAM + SSD tiers in front of DNA for the microsecond-class commitment above.
-- Both modes share the codec, volume, security and media adapters, and are tested as separate device profiles.
+**Research track RT-2: molecular memory and computation.** Move control state and computation into molecules as the
+science matures: DNA-based rewritable memory and DNA logic (strand-displacement) circuits, starting from
+`docs/V14_MOLECULAR_MEMORY.md`; literature survey first (sources verified at M0), simulation next; THEORETICAL /
+SIMULATED until a wet-lab partner exists. Never promised.
 
 **Research track RT-1: reducing molecular-tier latency** (pursued continuously, never promised): predictive
 pre-retrieval of likely-needed data into the electronic tiers; read parallelism (many pores/sensors) and parallel
