@@ -306,6 +306,8 @@ pub struct Engine<'c> {
     pool: Pool,
     gmap: FpMap,
     hmap: FpMap,
+    /// scratch: the accepted reads of one round (record_accepted)
+    acc_buf: Vec<usize>,
     // adaptive scheduler (cfg.strand): verified frames, window -> address candidates, strand-check geometry
     store: FrameStore,
     wmap: WinMap,
@@ -408,7 +410,8 @@ impl<'c> Engine<'c> {
                     },
                     stats: [0; N_STATS], b: Batch::default(),
                     dbg: std::env::var("VNX_ENG_DEBUG").ok().and_then(|v| v.parse().ok()).unwrap_or(0),
-                    firsts: block_firsts(cfg), pool: Pool::new(cfg.threads), gmap: FpMap::new(), hmap: FpMap::new() })
+                    firsts: block_firsts(cfg), pool: Pool::new(cfg.threads), gmap: FpMap::new(), hmap: FpMap::new(),
+                    acc_buf: Vec::new() })
     }
 
     /// Pass 1 over a whole read file: memory-mapped when possible, else read in blocks.
@@ -1066,31 +1069,7 @@ impl<'c> Engine<'c> {
                     }
                     continue;
                 }
-                for &i in todo.iter() {
-                    if self.b.fate[i] == Fate::Accepted {
-                        if self.done.contains(self.b.vkey[i]) {
-                            self.stats[ST_REDUNDANT_ACCEPTS] += 1;
-                        }
-                        self.done.prefetch(self.b.vkey[i]);
-                        for &w in &self.b.vwin[i] {
-                            if w != 0 {
-                                self.windex.prefetch(w);
-                            }
-                        }
-                    }
-                }
-                for &i in todo.iter() {
-                    if self.b.fate[i] == Fate::Accepted {
-                        self.done.insert(self.b.vkey[i]);
-                        self.bloom.insert(self.b.vkey[i]);
-                        for &w in &self.b.vwin[i] {
-                            if w != 0 {
-                                self.windex.insert(w);
-                                self.bloom.insert(w);
-                            }
-                        }
-                    }
-                }
+                self.record_accepted(todo);
             }
             if !cfg.dedup {
                 break;
@@ -1371,6 +1350,50 @@ impl<'c> Engine<'c> {
         }
         self.stats[ST_NS_SPILL] += ns(tw);
         Ok(())
+    }
+
+    /// V13 rule: count the accepted reads of `todo` whose address was verified before this round (redundant accepts),
+    /// then record their verified addresses and strand windows in the tables, in `todo` order. The tables are larger
+    /// than the caches, so the lines of the read `PREFETCH_AHEAD` positions ahead are prefetched while the current
+    /// one is processed (a fixed distance: one batch-wide prefetch pass evicted its own lines before they were used).
+    /// The counter is taken over the whole round before the first insert and every table sees the same inserts in
+    /// the same order as before, so the counts and the table contents are unchanged (V15 CC-1).
+    fn record_accepted(&mut self, todo: &[usize]) {
+        const PREFETCH_AHEAD: usize = 8;
+        let mut acc = std::mem::take(&mut self.acc_buf);
+        acc.clear();
+        acc.extend(todo.iter().copied().filter(|&i| self.b.fate[i] == Fate::Accepted));
+        let (vkey, vwin) = (&self.b.vkey, &self.b.vwin);
+        let mut redundant = 0i64;
+        for k in 0..acc.len() {
+            if let Some(&j) = acc.get(k + PREFETCH_AHEAD) {
+                self.done.prefetch(vkey[j]);
+            }
+            redundant += self.done.contains(vkey[acc[k]]) as i64;
+        }
+        self.stats[ST_REDUNDANT_ACCEPTS] += redundant;
+        for k in 0..acc.len() {
+            if let Some(&j) = acc.get(k + PREFETCH_AHEAD) {
+                self.done.prefetch(vkey[j]);
+                self.bloom.prefetch(vkey[j]);
+                for &w in &vwin[j] {
+                    if w != 0 {
+                        self.windex.prefetch(w);
+                        self.bloom.prefetch(w);
+                    }
+                }
+            }
+            let i = acc[k];
+            self.done.insert(vkey[i]);
+            self.bloom.insert(vkey[i]);
+            for &w in &vwin[i] {
+                if w != 0 {
+                    self.windex.insert(w);
+                    self.bloom.insert(w);
+                }
+            }
+        }
+        self.acc_buf = acc;
     }
 
     /// Make the corrected frames of accepted reads `idx` inner-code codewords before they are stored as references: each
