@@ -120,10 +120,28 @@ def summary(a) -> None:
             x, y = p.split("/")
             if x in by and y in by:
                 rec["pairs"][p] = S.ratio_record([by[x][k]["seconds"] for k in keys], [by[y][k]["seconds"] for k in keys])
+        rec["components"] = {}
+        for comp in a.component:
+            def val(r, comp=comp):
+                st = (r.get("report") or {}).get("stage_seconds") or {}
+                p1 = ((r.get("report") or {}).get("engine") or {}).get("pass1") or {}
+                return st.get(comp, p1.get(comp))
+            have = [k for k in keys if all(val(by[c][k]) is not None for c in by)]
+            if not have:
+                continue
+            crec = {"median_s": {c: round(statistics.median(val(by[c][k]) for k in have), 4) for c in by}}
+            for p in a.pair:
+                x, y = p.split("/")
+                if x in by and y in by and all(val(by[y][k]) > 0 for k in have):
+                    crec[p] = S.ratio_record([val(by[x][k]) for k in have], [val(by[y][k]) for k in have])
+            rec["components"][comp] = crec
         out[wl] = rec
         print(wl, json.dumps({c: v["median_s"] for c, v in rec["configs"].items()}), "identical=", same)
         for p, v in rec["pairs"].items():
             print(f"   {p:16s} {v['median']:.3f} {v['ci95']} n={v['n']}")
+        for comp, c in rec["components"].items():
+            print(f"   [{comp}] medians {json.dumps(c['median_s'])} " + " ".join(
+                f"{p} {v['median']:.3f} {v['ci95']}" for p, v in c.items() if p != "median_s"))
     if a.json:
         Path(a.json).write_text(json.dumps(out, indent=1) + "\n")
 
@@ -151,6 +169,8 @@ def main(argv=None) -> int:
     p.add_argument("--pair", action="append", default=[])
     p.add_argument("--workload", default="")
     p.add_argument("--json")
+    p.add_argument("--component", action="append", default=[],
+                   help="a decoder stage timer (stage_seconds) or engine counter (engine.pass1) to compare per config")
     a = ap.parse_args(argv)
     {"prep": prep, "run": run, "summary": summary}[a.cmd](a)
     return 0
