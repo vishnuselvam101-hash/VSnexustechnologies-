@@ -1,0 +1,31 @@
+T-A-indel-4m-w1                    n=5 out={'v12': ['SUCCESS'], 'v13': ['SUCCESS'], 'v14': ['SUCCESS'], 'v14aa': ['SUCCESS']} fs=0 expfail={} identical=True  v12/v14 2.848 [2.627, 2.899] faster beyond noise  v13/v14 0.990 [0.94, 1.007] within noise  v12/v13 2.862 [2.795, 2.929] faster beyond noise  v14/v14aa 1.006 [0.951, 1.031]
+T-B-clean-4m-w4                    n=5 out={'v12': ['SUCCESS'], 'v13': ['SUCCESS'], 'v14': ['SUCCESS'], 'v14aa': ['SUCCESS']} fs=0 expfail={} identical=True  v12/v14 2.209 [2.111, 2.326] faster beyond noise  v13/v14 0.998 [0.929, 1.047] within noise  v12/v13 2.187 [2.144, 2.456] faster beyond noise  v14/v14aa 1.038 [0.953, 1.098]
+T-E-encode-4m-w1                   n=5 out={'v12': ['ENCODED'], 'v13': ['ENCODED'], 'v14': ['ENCODED'], 'v14aa': ['ENCODED']} fs=0 expfail={} identical=True  v12/v14 0.990 [0.978, 1.034] within noise  v13/v14 1.015 [1.0, 1.027] within noise  v12/v13 0.983 [0.952, 1.018] within noise  v14/v14aa 1.015 [0.904, 1.027]
+T-E-encode-4m-w4                   n=5 out={'v12': ['ENCODED'], 'v13': ['ENCODED'], 'v14': ['ENCODED'], 'v14aa': ['ENCODED']} fs=0 expfail={} identical=True  v12/v14 0.996 [0.982, 1.008] within noise  v13/v14 0.992 [0.979, 1.03] within noise  v12/v13 0.992 [0.976, 1.018] within noise  v14/v14aa 1.007 [0.971, 1.015]
+indel-4m-w4                        NOT RUN
+mixed-4m-w4                        NOT RUN
+mixed-mild-model-4m-w4             NOT RUN
+mixed-harsh-model-1m-w4            NOT RUN
+rc50-indel-4m-w4                   NOT RUN
+rc100-indel-4m-w4                  NOT RUN
+dropout-uneven-4m-w4               NOT RUN
+dropout10-model-4m-w4              NOT RUN
+dup-strandbias-4m-w4               NOT RUN
+lowcov2-4m-w4                      NOT RUN
+lowcov-edge-indel-4m-w4            NOT RUN
+indel-16m-w4                       NOT RUN
+sub-64m-w4                         NOT RUN
+payload-zeros-4m-w4                NOT RUN
+payload-zeros-4m-w1                NOT RUN
+payload-repetitive-4m-w4           NOT RUN
+payload-binary-4m-w4               NOT RUN
+payload-text-4m-w4                 NOT RUN
+adv-foreign-40pct-1m-w4            NOT RUN
+adv-truncated-1m-w4                NOT RUN
+adv-junk-reads-1m-w4               NOT RUN
+adv-malformed-records-1m-w4        NOT RUN
+adv-jackpot-dup-1m-w4              NOT RUN
+adv-poisoned-consensus-1m-w4       NOT RUN
+adv-empty-pool                     NOT RUN
+adv-loss-beyond-capacity-1m-w4     NOT RUN
+totals: {"env_crash_retries": 0, "runs": 80, "false_success": 0, "wrong_archive": 0, "crash": 0, "expectation_failures": 0, "nonidentical_outputs": 0}

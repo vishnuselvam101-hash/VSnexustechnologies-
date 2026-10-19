@@ -1,0 +1,608 @@
+{
+ "label": "SIMULATED",
+ "run_labels": [
+  "measurement"
+ ],
+ "timings_are_results": true,
+ "manifest_schema": "vnx.p6e.workloads/1",
+ "method": "paired per seed, alternating order, 1 warm-up per config per workload discarded; ratio a/b = a seconds / b seconds (> 1 = b faster); 95 % CI = percentile bootstrap of the median ratio (10000 resamples, seed 11); verdict against the in-run A/A ratio v14/v14aa (docs/V13_BENCHMARK_REPORT.md)",
+ "workloads": {
+  "T-A-indel-4m-w1": {
+   "status": "NOT RUN"
+  },
+  "T-B-clean-4m-w4": {
+   "status": "NOT RUN"
+  },
+  "T-E-encode-4m-w1": {
+   "status": "NOT RUN"
+  },
+  "T-E-encode-4m-w4": {
+   "status": "NOT RUN"
+  },
+  "indel-4m-w4": {
+   "status": "NOT RUN"
+  },
+  "mixed-4m-w4": {
+   "status": "NOT RUN"
+  },
+  "mixed-mild-model-4m-w4": {
+   "status": "NOT RUN"
+  },
+  "mixed-harsh-model-1m-w4": {
+   "status": "NOT RUN"
+  },
+  "rc50-indel-4m-w4": {
+   "status": "NOT RUN"
+  },
+  "rc100-indel-4m-w4": {
+   "status": "NOT RUN"
+  },
+  "dropout-uneven-4m-w4": {
+   "status": "NOT RUN"
+  },
+  "dropout10-model-4m-w4": {
+   "status": "NOT RUN"
+  },
+  "dup-strandbias-4m-w4": {
+   "status": "NOT RUN"
+  },
+  "lowcov2-4m-w4": {
+   "status": "NOT RUN"
+  },
+  "lowcov-edge-indel-4m-w4": {
+   "status": "NOT RUN"
+  },
+  "indel-16m-w4": {
+   "group": "large",
+   "kind": "decode",
+   "workers": 4,
+   "expect": "success",
+   "target": null,
+   "input_bytes": [
+    16777216
+   ],
+   "n": 3,
+   "incomplete_seeds": 0,
+   "seeds": [
+    97300,
+    97301,
+    97302
+   ],
+   "labels": [
+    "v12",
+    "v13",
+    "v14",
+    "v14aa"
+   ],
+   "commits": {
+    "v12": "6bf7749ae9221a1ea6108e6b3710144dc4b6bd3a",
+    "v13": "58171b8494ad09e02fb9f2bb18e5e5e406bb7373",
+    "v14": "584763fd7a2bc26ccb1ddf64d03fa515a1dcb92a",
+    "v14aa": "584763fd7a2bc26ccb1ddf64d03fa515a1dcb92a"
+   },
+   "run_labels": [
+    "measurement"
+   ],
+   "outcomes": {
+    "v12": [
+     "SUCCESS"
+    ],
+    "v13": [
+     "SUCCESS"
+    ],
+    "v14": [
+     "SUCCESS"
+    ],
+    "v14aa": [
+     "SUCCESS"
+    ]
+   },
+   "false_success": {
+    "v12": 0,
+    "v13": 0,
+    "v14": 0,
+    "v14aa": 0
+   },
+   "wrong_archive": {
+    "v12": 0,
+    "v13": 0,
+    "v14": 0,
+    "v14aa": 0
+   },
+   "crash_or_timeout": {
+    "v12": 0,
+    "v13": 0,
+    "v14": 0,
+    "v14aa": 0
+   },
+   "expectation_failures": {
+    "v12": [],
+    "v13": [],
+    "v14": [],
+    "v14aa": []
+   },
+   "notes": {
+    "v12": [
+     "ok"
+    ],
+    "v13": [
+     "ok"
+    ],
+    "v14": [
+     "ok"
+    ],
+    "v14aa": [
+     "ok"
+    ]
+   },
+   "matches_input": {
+    "v12": 3,
+    "v13": 3,
+    "v14": 3,
+    "v14aa": 3
+   },
+   "identical_outcome_and_output": true,
+   "seconds_median": {
+    "v12": 9.582,
+    "v13": 5.819,
+    "v14": 5.933,
+    "v14aa": 5.901
+   },
+   "seconds_range": {
+    "v12": [
+     9.537,
+     9.762
+    ],
+    "v13": [
+     5.612,
+     5.887
+    ],
+    "v14": [
+     5.921,
+     6.238
+    ],
+    "v14aa": [
+     5.87,
+     6.101
+    ]
+   },
+   "tree_rss_peak_mib_median": {
+    "v12": 429.3,
+    "v13": 105.4,
+    "v14": 107.3,
+    "v14aa": 107.2
+   },
+   "tree_rss_peak_mib_max": {
+    "v12": 433.9,
+    "v13": 105.5,
+    "v14": 107.3,
+    "v14aa": 107.4
+   },
+   "report_peak_rss_mib_median": {
+    "v12": 148.5,
+    "v13": 148.5,
+    "v14": 148.5,
+    "v14aa": 148.5
+   },
+   "stage_seconds_median": {
+    "v12": {
+     "pass1_reads": 8.0709,
+     "pass1_worker_cpu": 29.7413,
+     "pass2_decode": 1.2106,
+     "verify": 0.0447
+    },
+    "v13": {
+     "pass1_reads": 4.7293,
+     "pass1_worker_cpu": 4.7232,
+     "pass2_decode": 0.8691,
+     "verify": 0.045
+    },
+    "v14": {
+     "pass1_reads": 4.8448,
+     "pass1_worker_cpu": 4.8396,
+     "pass2_decode": 0.8959,
+     "verify": 0.045
+    },
+    "v14aa": {
+     "pass1_reads": 4.7986,
+     "pass1_worker_cpu": 4.7932,
+     "pass2_decode": 0.8925,
+     "verify": 0.0449
+    }
+   },
+   "engine_rungs": {
+    "v12": [
+     "None"
+    ],
+    "v13": [
+     "stream"
+    ],
+    "v14": [
+     "stream"
+    ],
+    "v14aa": [
+     "stream"
+    ]
+   },
+   "engine_fallbacks": {
+    "v12": 0,
+    "v13": 0,
+    "v14": 0,
+    "v14aa": 0
+   },
+   "groups_failed_total": {
+    "v12": 0,
+    "v13": 0,
+    "v14": 0,
+    "v14aa": 0
+   },
+   "load1_range": [
+    1.43,
+    2.73
+   ],
+   "ratios": {
+    "v12/v14": {
+     "median": 1.615,
+     "ci95": [
+      1.529,
+      1.649
+     ],
+     "n": 3,
+     "per_seed": [
+      1.529,
+      1.649,
+      1.615
+     ],
+     "rel_ci_width": 0.074,
+     "verdict": "faster beyond noise",
+     "tier": 0
+    },
+    "v13/v14": {
+     "median": 0.948,
+     "ci95": [
+      0.944,
+      0.981
+     ],
+     "n": 3,
+     "per_seed": [
+      0.944,
+      0.948,
+      0.981
+     ],
+     "rel_ci_width": 0.039,
+     "verdict": "slower beyond noise"
+    },
+    "v12/v13": {
+     "median": 1.647,
+     "ci95": [
+      1.62,
+      1.739
+     ],
+     "n": 3,
+     "per_seed": [
+      1.62,
+      1.739,
+      1.647
+     ],
+     "rel_ci_width": 0.072,
+     "verdict": "faster beyond noise"
+    },
+    "v14/v14aa": {
+     "median": 1.011,
+     "ci95": [
+      1.003,
+      1.022
+     ],
+     "n": 3,
+     "per_seed": [
+      1.022,
+      1.003,
+      1.011
+     ],
+     "rel_ci_width": 0.019
+    }
+   },
+   "ci_too_wide": false
+  },
+  "sub-64m-w4": {
+   "group": "large",
+   "kind": "decode",
+   "workers": 4,
+   "expect": "success",
+   "target": null,
+   "input_bytes": [
+    67108864
+   ],
+   "n": 3,
+   "incomplete_seeds": 0,
+   "seeds": [
+    98070,
+    98071,
+    98072
+   ],
+   "labels": [
+    "v12",
+    "v13",
+    "v14",
+    "v14aa"
+   ],
+   "commits": {
+    "v12": "6bf7749ae9221a1ea6108e6b3710144dc4b6bd3a",
+    "v13": "58171b8494ad09e02fb9f2bb18e5e5e406bb7373",
+    "v14": "584763fd7a2bc26ccb1ddf64d03fa515a1dcb92a",
+    "v14aa": "584763fd7a2bc26ccb1ddf64d03fa515a1dcb92a"
+   },
+   "run_labels": [
+    "measurement"
+   ],
+   "outcomes": {
+    "v12": [
+     "SUCCESS"
+    ],
+    "v13": [
+     "SUCCESS"
+    ],
+    "v14": [
+     "SUCCESS"
+    ],
+    "v14aa": [
+     "SUCCESS"
+    ]
+   },
+   "false_success": {
+    "v12": 0,
+    "v13": 0,
+    "v14": 0,
+    "v14aa": 0
+   },
+   "wrong_archive": {
+    "v12": 0,
+    "v13": 0,
+    "v14": 0,
+    "v14aa": 0
+   },
+   "crash_or_timeout": {
+    "v12": 0,
+    "v13": 0,
+    "v14": 0,
+    "v14aa": 0
+   },
+   "expectation_failures": {
+    "v12": [],
+    "v13": [],
+    "v14": [],
+    "v14aa": []
+   },
+   "notes": {
+    "v12": [
+     "ok"
+    ],
+    "v13": [
+     "ok"
+    ],
+    "v14": [
+     "ok"
+    ],
+    "v14aa": [
+     "ok"
+    ]
+   },
+   "matches_input": {
+    "v12": 3,
+    "v13": 3,
+    "v14": 3,
+    "v14aa": 3
+   },
+   "identical_outcome_and_output": true,
+   "seconds_median": {
+    "v12": 18.993,
+    "v13": 11.386,
+    "v14": 11.858,
+    "v14aa": 11.625
+   },
+   "seconds_range": {
+    "v12": [
+     18.429,
+     19.297
+    ],
+    "v13": [
+     11.28,
+     11.588
+    ],
+    "v14": [
+     11.613,
+     12.464
+    ],
+    "v14aa": [
+     11.491,
+     13.691
+    ]
+   },
+   "tree_rss_peak_mib_median": {
+    "v12": 438.8,
+    "v13": 110.1,
+    "v14": 111.7,
+    "v14aa": 111.7
+   },
+   "tree_rss_peak_mib_max": {
+    "v12": 440.4,
+    "v13": 110.1,
+    "v14": 111.8,
+    "v14aa": 111.7
+   },
+   "report_peak_rss_mib_median": {
+    "v12": 150.0,
+    "v13": 150.0,
+    "v14": 150.0,
+    "v14aa": 150.0
+   },
+   "stage_seconds_median": {
+    "v12": {
+     "pass1_reads": 14.5932,
+     "pass1_worker_cpu": 51.7831,
+     "pass2_decode": 3.8418,
+     "verify": 0.1772
+    },
+    "v13": {
+     "pass1_reads": 9.1558,
+     "pass1_worker_cpu": 9.1489,
+     "pass2_decode": 1.775,
+     "verify": 0.1802
+    },
+    "v14": {
+     "pass1_reads": 9.4797,
+     "pass1_worker_cpu": 9.4736,
+     "pass2_decode": 1.8576,
+     "verify": 0.1903
+    },
+    "v14aa": {
+     "pass1_reads": 9.4375,
+     "pass1_worker_cpu": 9.4322,
+     "pass2_decode": 1.7665,
+     "verify": 0.1831
+    }
+   },
+   "engine_rungs": {
+    "v12": [
+     "None"
+    ],
+    "v13": [
+     "stream"
+    ],
+    "v14": [
+     "stream"
+    ],
+    "v14aa": [
+     "stream"
+    ]
+   },
+   "engine_fallbacks": {
+    "v12": 0,
+    "v13": 0,
+    "v14": 0,
+    "v14aa": 0
+   },
+   "groups_failed_total": {
+    "v12": 0,
+    "v13": 0,
+    "v14": 0,
+    "v14aa": 0
+   },
+   "load1_range": [
+    1.1,
+    2.38
+   ],
+   "ratios": {
+    "v12/v14": {
+     "median": 1.587,
+     "ci95": [
+      1.524,
+      1.627
+     ],
+     "n": 3,
+     "per_seed": [
+      1.524,
+      1.627,
+      1.587
+     ],
+     "rel_ci_width": 0.065,
+     "verdict": "faster beyond noise",
+     "tier": 0
+    },
+    "v13/v14": {
+     "median": 0.977,
+     "ci95": [
+      0.905,
+      0.981
+     ],
+     "n": 3,
+     "per_seed": [
+      0.905,
+      0.977,
+      0.981
+     ],
+     "rel_ci_width": 0.078,
+     "verdict": "within noise"
+    },
+    "v12/v13": {
+     "median": 1.665,
+     "ci95": [
+      1.619,
+      1.684
+     ],
+     "n": 3,
+     "per_seed": [
+      1.684,
+      1.665,
+      1.619
+     ],
+     "rel_ci_width": 0.039,
+     "verdict": "faster beyond noise"
+    },
+    "v14/v14aa": {
+     "median": 1.011,
+     "ci95": [
+      0.91,
+      1.02
+     ],
+     "n": 3,
+     "per_seed": [
+      0.91,
+      1.02,
+      1.011
+     ],
+     "rel_ci_width": 0.109
+    }
+   },
+   "ci_too_wide": false
+  },
+  "payload-zeros-4m-w4": {
+   "status": "NOT RUN"
+  },
+  "payload-zeros-4m-w1": {
+   "status": "NOT RUN"
+  },
+  "payload-repetitive-4m-w4": {
+   "status": "NOT RUN"
+  },
+  "payload-binary-4m-w4": {
+   "status": "NOT RUN"
+  },
+  "payload-text-4m-w4": {
+   "status": "NOT RUN"
+  },
+  "adv-foreign-40pct-1m-w4": {
+   "status": "NOT RUN"
+  },
+  "adv-truncated-1m-w4": {
+   "status": "NOT RUN"
+  },
+  "adv-junk-reads-1m-w4": {
+   "status": "NOT RUN"
+  },
+  "adv-malformed-records-1m-w4": {
+   "status": "NOT RUN"
+  },
+  "adv-jackpot-dup-1m-w4": {
+   "status": "NOT RUN"
+  },
+  "adv-poisoned-consensus-1m-w4": {
+   "status": "NOT RUN"
+  },
+  "adv-empty-pool": {
+   "status": "NOT RUN"
+  },
+  "adv-loss-beyond-capacity-1m-w4": {
+   "status": "NOT RUN"
+  }
+ },
+ "totals": {
+  "env_crash_retries": 0,
+  "runs": 24,
+  "false_success": 0,
+  "wrong_archive": 0,
+  "crash": 0,
+  "expectation_failures": 0,
+  "nonidentical_outputs": 0
+ }
+}

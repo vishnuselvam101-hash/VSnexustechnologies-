@@ -1,12 +1,11 @@
-# V14 benchmark report (skeleton)
+# V14 benchmark report
 
 Master directive §20 (performance sequence) and §21; [V14_MASTER_PLAN.md](V14_MASTER_PLAN.md) P9: "codec, I/O,
 cache, scheduler, backend and simulator numbers kept separate; benchmarks reproducible from committed commands".
 
-**Status: SKELETON, no numbers.** Written in the P9 preparation pass (base `build/v14` b69e70f). The lab host was
-shared with seven other build jobs at the time, so nothing is measured here: every section is filled after P6-P8 are
-merged, on a quiet host (§0), from the committed commands below. A number enters this file only together with its
-committed results file, commit, host and repetition count.
+**Status:** §1 filled from the full P6E suite run at `build/v14` 584763f (2026-10-19, results in
+`experiments/v14/bench/p6e-channels/full/`); §2–§8 point to the phase measurements committed with each phase (no
+new runs). All channel numbers are SIMULATED.
 
 ## 0. Rules for every section
 
@@ -43,7 +42,55 @@ PYTHONPATH=src python experiments/v14/bench/pool_bench.py run --trees v13,v14 --
 PYTHONPATH=src python experiments/v14/bench/pool_bench.py summary
 ```
 
-Results: _to fill_ (`experiments/v14/bench/p9-codec/`).
+Results (full P6E suite, `experiments/v14/bench/p6e-channels/full/`, run 2026-10-19 07:29–08:5x IST at 584763f;
+host: Intel Xeon Gold 6240, 8 vCPU, 31 GB RAM, Linux 6.8, Python 3.12; configurations v12 = 6bf7749, v13 = 58171b8,
+v14 = 584763f, v14aa = the same v14 tree again as the in-run A/A control). Ratios are time(denominator)/time(v14),
+median with percentile-bootstrap 95 % CI over paired seeds; "faster/slower beyond noise" when the CI excludes 1.
+
+**Phase A: timing-valid (each workload alone on an otherwise idle host).**
+
+| workload | n | v12/v14 | v13/v14 | v14/v14aa (A/A) | V14 target | verdict |
+|---|---|---|---|---|---|---|
+| T-A indel 4 MiB, 1 worker | 5 | **2.848** [2.627, 2.899] | 0.990 [0.94, 1.007] | 1.006 [0.951, 1.031] | ≥ 5x (CI lower bound) | **MISSED** |
+| T-B clean 4 MiB, 4 workers | 5 | **2.209** [2.111, 2.326] | 0.998 [0.929, 1.047] | 1.038 [0.953, 1.098] | ≥ 3x (CI lower bound) | **MISSED** |
+| T-E encode 4 MiB, 1 worker | 5 | 0.990 [0.978, 1.034] | 1.015 [1.0, 1.027] | 1.015 [0.904, 1.027] | no material regression | met (within noise) |
+| T-E encode 4 MiB, 4 workers | 5 | 0.996 [0.982, 1.008] | 0.992 [0.979, 1.03] | 1.007 [0.971, 1.015] | no material regression | met (within noise) |
+| indel 16 MiB, 4 workers | 3 | 1.615 [1.529, 1.649] | **0.948 [0.944, 0.981]** | 1.011 [1.003, 1.022] | — | v14 **slower than v13** beyond noise (~5 %) |
+| substitution 64 MiB, 4 workers | 3 | 1.587 [1.524, 1.627] | 0.977 [0.905, 0.981] | 1.011 [0.91, 1.02] | — | within noise of v13 |
+
+Reading: V14 keeps all of V13's single-archive decode speed (2.2–2.9x over V12) but adds none on these workloads;
+the V14 gains are on paths these workloads do not exercise (P6-A linear shuffled-pool decode 3.3–25x vs V13 at
+E = 4–32, `experiments/v14/bench/p6a-pool/`; P6-B parallel pass 2 1.18x at 4 workers on pools,
+`experiments/v14/bench/p6b-profile/`; P6-C no v13 fallback on zero/repetitive payloads, 4 MiB w4 RSS 489.8 →
+114.2 MiB, `experiments/v14/bench/p6c-scheduler/`). The ~5 % regression vs V13 on indel-16m-w4 is consistent with
+the per-read bookkeeping P6-C measured on the V13-rule path (docs/V14_SCHEDULER.md §9.4); it is reported, not
+explained away. Both primary targets (5x / 3x) are **missed**; the remaining bottleneck is pass 1 in the native
+engine, which runs serially (V15 CC-1).
+
+**Phase B: correctness campaign (channel, payload, adversarial groups run three at a time; timings CONTENDED and
+not used for any speed claim).**
+
+| group | runs | false successes | wrong archive | crashes | expectation misses | versions disagree |
+|---|---|---|---|---|---|---|
+| channel (11 workloads) | 280 | 0 | 0 | 0 | 48 | 2 |
+| payload (5) | 120 | 0 | 0 | 0 | 0 | 0 |
+| adversarial (8) | 96 | 0 | 0 | 0 | 0 | 0 |
+| target + large (phase A) | 104 | 0 | 0 | 0 | 0 | 0 |
+| **total** | **600** | **0** | **0** | **0** | **48** | **2** |
+
+* Expectation misses are preregistered "must succeed" workloads that FAIL in every version at this size:
+  `mixed-4m-w4` and `mixed-harsh-model-1m-w4` (some seeds), `dropout-uneven`, `dropout10-model` (known
+  preregistration error, reported in P6E), `lowcov2`, `lowcov-edge-indel`: channels beyond the outer code's capacity.
+  All are explicit FAILURE, never wrong bytes. "Versions disagree" = V12 failed where V13/V14 succeeded.
+* Payload group: every structured payload (zeros, repetitive, binary, text) decodes in all versions; with P6-C,
+  V14 decodes zero/repetitive payloads on the engine without the v13 fallback.
+* Adversarial group: foreign archives, truncated/malformed/empty pools are refused with typed errors; junk reads,
+  PCR-jackpot duplicates and poisoned consensus copies decode to the correct bytes.
+* Known cost found by this run: on undecodable inputs V14 takes ~2x as long as V13 to report FAILURE (e.g.
+  mixed-4m-w4 seed 98001: v14 17.95 s vs v13 9.64 s) because of the P6-C strand retry rung. V15 item: skip the
+  retry when pass 1 already shows the input is beyond capacity.
+* Deviation from the preregistered protocol: phase B ran three groups in parallel to save time; its timings are
+  labelled contended and excluded from every ratio above. Correctness results are unaffected.
 
 ## 2. Logical I/O overhead (category B)
 
@@ -54,7 +101,7 @@ separately (journal on tmpfs vs on disk).
 Commands: _to add_ — a `vnxd-io-bench` binary next to `vnxd-lb-bench` (same JSON-line output, one configuration per
 process) driven by `experiments/v14/bench/p9-io/run.py`.
 
-Results: _to fill_.
+Results: no dedicated V14 measurement was run. Functional behaviour is covered by the P9 E2E matrix (43/44 rows pass). The block-device throughput in §7 is the end-to-end figure; logical-I/O overhead is not separated. **NOT MEASURED** (listed as a V15 item).
 
 ## 3. Cache (category B)
 
@@ -63,7 +110,7 @@ write-through ack latency and flush cost, eviction rate vs cache quota, read-ahe
 
 Commands: _to add_ — `vnxd-io-bench --cache none|wt|wb --trace seq|uniform|zipf:<s> --cache-mib N`, same driver.
 
-Results: _to fill_.
+Results: cache effects are visible only in the §7 block-device figures (cache none vs write-through vs write-back). No isolated cache benchmark was run. **NOT MEASURED** separately.
 
 ## 4. Scheduler / load balancer (category B; modelled backend)
 
@@ -78,7 +125,7 @@ cargo build --release --offline --locked --manifest-path src/vnxdna/native/rust/
 python experiments/v14/bench/p5-balancer/run.py      # vnxd-lb-bench --profile electronic|dna-sim --io-workers N --lb-workers N
 ```
 
-Results: _to fill_ (`experiments/v14/bench/p9-balancer/`).
+Results: P5 load-balancer measurements, committed with Phase 5 at `experiments/v14/bench/p5-balancer/` (see docs/V14_PHASE5_REPORT.md); not re-run in P9.
 
 ## 5. Electronic backend (category C)
 
@@ -88,7 +135,7 @@ after a SIGKILL (journal replay + orphan collection) as a function of journal le
 Commands: _to add after P7_ — `vnxd-io-bench --media file-image:<dir>`; recovery time from the E2E row R11b's
 harness with timing enabled.
 
-Results: _to fill_.
+Results: no isolated electronic-backend benchmark; the P7 image backend is covered functionally (conformance + restart tests, docs/V14_PHASE7_REPORT.md). **NOT MEASURED**.
 
 ## 6. Simulator end to end (category D; SIMULATED)
 
@@ -99,7 +146,7 @@ with the electronic backend in one figure.
 Commands: _to add after P6 E and P7_ — the channel bench suite in `experiments/v14/bench/p6e-channels/` and
 `vnxd-io-bench --media dna-sim --channel <model>`.
 
-Results: _to fill_.
+Results: the DNA simulator adapter (P7 dnasim) is covered by conformance and round-trip tests over the real codec; no end-to-end simulator timing was taken. **NOT MEASURED**.
 
 ## 7. Block device (category B/C; after P8)
 
@@ -109,7 +156,7 @@ fsync latency on ext4, service RSS and CPU; reported separately for the memory, 
 Commands: _to add after P8_ — `fio` job files in `experiments/v14/bench/p9-blockdev/`, run against a disposable device
 vnxd exported (the rules of docs/V14_STATE.md).
 
-Results: _to fill_.
+Results (P8, `experiments/v14/device/p8-nbd/results.json`, measured at 86c16c0 on this host, 64 MiB raw O_DIRECT, median MiB/s; these measure this host's disk and page cache through the V14 stack, not any DNA medium): cache none write 52.6 / read 306.3; write-through 47.4 / 926.4; write-back 58.3 / 874.1.
 
 ## 8. Memory, recovery, Pi
 

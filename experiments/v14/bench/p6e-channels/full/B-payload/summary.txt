@@ -1,0 +1,31 @@
+T-A-indel-4m-w1                    NOT RUN
+T-B-clean-4m-w4                    NOT RUN
+T-E-encode-4m-w1                   NOT RUN
+T-E-encode-4m-w4                   NOT RUN
+indel-4m-w4                        NOT RUN
+mixed-4m-w4                        NOT RUN
+mixed-mild-model-4m-w4             NOT RUN
+mixed-harsh-model-1m-w4            NOT RUN
+rc50-indel-4m-w4                   NOT RUN
+rc100-indel-4m-w4                  NOT RUN
+dropout-uneven-4m-w4               NOT RUN
+dropout10-model-4m-w4              NOT RUN
+dup-strandbias-4m-w4               NOT RUN
+lowcov2-4m-w4                      NOT RUN
+lowcov-edge-indel-4m-w4            NOT RUN
+indel-16m-w4                       NOT RUN
+sub-64m-w4                         NOT RUN
+payload-zeros-4m-w4                n=10 out={'v12': ['SUCCESS'], 'v13': ['SUCCESS'], 'v14': ['SUCCESS'], 'v14aa': ['SUCCESS']} fs=0 expfail={} identical=True  v12/v14 0.713 [0.664, 0.958] slower beyond noise  v13/v14 0.725 [0.714, 0.771] slower beyond noise  v12/v13 0.990 [0.933, 1.153] within noise  v14/v14aa 1.041 [0.976, 1.081]
+payload-zeros-4m-w1                n=5 out={'v12': ['SUCCESS'], 'v13': ['SUCCESS'], 'v14': ['SUCCESS'], 'v14aa': ['SUCCESS']} fs=0 expfail={} identical=True  v12/v14 1.287 [1.256, 1.314] faster beyond noise  v13/v14 0.876 [0.859, 0.886] slower beyond noise  v12/v13 1.469 [1.434, 1.527] faster beyond noise  v14/v14aa 1.008 [0.99, 1.016]
+payload-repetitive-4m-w4           n=5 out={'v12': ['SUCCESS'], 'v13': ['SUCCESS'], 'v14': ['SUCCESS'], 'v14aa': ['SUCCESS']} fs=0 expfail={} identical=True  v12/v14 0.713 [0.673, 0.795] slower beyond noise  v13/v14 0.816 [0.787, 0.849] slower beyond noise  v12/v13 0.874 [0.833, 0.936] slower beyond noise  v14/v14aa 0.993 [0.955, 1.066]
+payload-binary-4m-w4               n=5 out={'v12': ['SUCCESS'], 'v13': ['SUCCESS'], 'v14': ['SUCCESS'], 'v14aa': ['SUCCESS']} fs=0 expfail={} identical=True  v12/v14 1.129 [1.074, 1.168] faster beyond noise  v13/v14 0.943 [0.924, 1.017] within noise  v12/v13 1.172 [1.11, 1.214] faster beyond noise  v14/v14aa 1.034 [0.989, 1.043]
+payload-text-4m-w4                 n=5 out={'v12': ['SUCCESS'], 'v13': ['SUCCESS'], 'v14': ['SUCCESS'], 'v14aa': ['SUCCESS']} fs=0 expfail={} identical=True  v12/v14 0.615 [0.592, 0.676] slower beyond noise  v13/v14 0.781 [0.757, 0.857] slower beyond noise  v12/v13 0.789 [0.751, 0.813] slower beyond noise  v14/v14aa 0.996 [0.97, 1.019]
+adv-foreign-40pct-1m-w4            NOT RUN
+adv-truncated-1m-w4                NOT RUN
+adv-junk-reads-1m-w4               NOT RUN
+adv-malformed-records-1m-w4        NOT RUN
+adv-jackpot-dup-1m-w4              NOT RUN
+adv-poisoned-consensus-1m-w4       NOT RUN
+adv-empty-pool                     NOT RUN
+adv-loss-beyond-capacity-1m-w4     NOT RUN
+totals: {"env_crash_retries": 0, "runs": 120, "false_success": 0, "wrong_archive": 0, "crash": 0, "expectation_failures": 0, "nonidentical_outputs": 0}
