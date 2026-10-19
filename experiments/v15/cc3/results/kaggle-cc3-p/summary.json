@@ -1,0 +1,45 @@
+{
+ "cells": {
+  "d13f1-1m|new|F": {
+   "exact": 19,
+   "failures": {
+    "93097": [
+     "FAILURE",
+     [
+      92
+     ]
+    ]
+   },
+   "false_success": 0,
+   "median_decode_seconds": 312.29,
+   "n": 20,
+   "seeds": [
+    93090,
+    93091,
+    93092,
+    93093,
+    93094,
+    93095,
+    93096,
+    93097,
+    93098,
+    93099,
+    93100,
+    93101,
+    93102,
+    93103,
+    93104,
+    93105,
+    93106,
+    93107,
+    93108,
+    93109
+   ]
+  }
+ },
+ "commits": [
+  "new:c416349be0e0044a6858e44f1547ca1b303de968"
+ ],
+ "false_success_total": 0,
+ "label": "SIMULATED: reads from a software channel model; no DNA was synthesised, stored or sequenced"
+}
