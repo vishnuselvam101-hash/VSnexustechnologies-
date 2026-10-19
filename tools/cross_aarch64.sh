@@ -13,7 +13,7 @@
 #   tools/cross_aarch64.sh pytest ARGS  run a focused pytest subset with an aarch64 CPython + the aarch64 kernels
 #   tools/cross_aarch64.sh all          vnxd, engine, integrity, ckernels
 #
-# Environment: OUT (build directory, default ./build-aarch64), PYROOT (aarch64 CPython sysroot + site, see the
+# Environment: OUT (build directory, default ./build-aarch64), TEST_THREADS (default 1), PYROOT (aarch64 CPython sysroot + site, see the
 # deployment doc §3.4), JOBS (default 1). The caller decides how to throttle (nice, systemd-run); this script does not.
 set -euo pipefail
 
@@ -50,7 +50,7 @@ check() {
 
 crate() { # crate DIR: cross-build release artefacts, then build + run the tests under qemu
     (cd "$PKG/native/rust/$1" && cargo build --offline --locked --release --target $TARGET)
-    (cd "$PKG/native/rust/$1" && cargo test --offline --locked --no-fail-fast --target $TARGET -- --test-threads=1)
+    (cd "$PKG/native/rust/$1" && cargo test --offline --locked --no-fail-fast --target $TARGET -- --test-threads="${TEST_THREADS:-1}")
 }
 
 ckernels() {
