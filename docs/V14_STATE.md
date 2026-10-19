@@ -1,4 +1,12 @@
-# V14 state — RESUME FILE (last checkpoint 2026-10-18 ~15:00 IST: Phase 5 COMPLETE; P6 IN PROGRESS (workstream A done, B running); lab host still in use)
+# V14 state — RESUME FILE (last checkpoint 2026-10-19: P0-P11 + P13 DONE; P12 acceptance review DONE; v14.0.0 release prep IN PROGRESS)
+
+**Current state (2026-10-19, supersedes the phase-by-phase notes below):** Phases P0-P11 and P13 are complete and
+milestone-tagged `v14-p1`..`v14-p10` (P0 and P11/P13 are docs-only and untagged; P11 = docs/V14_PHASE11_REPORT.md,
+P13 = docs/V15_FINALIZATION_PLAN.md). The P12 acceptance review is done; its blockers (state file, version bump to
+14.0.0, implementation report, benchmark trade-offs, V15 follow-ups, release gate at the final commit) are fixed in the
+release-prep commits on `build/v14` (docs/V14_IMPLEMENTATION_REPORT.md has the 18-criterion table and the gate
+evidence). **Next:** the founder's explicit go for the exact release SHA (merge to main + tag `v14.0.0`; nothing is
+pushed/merged/tagged before that), then V15 per `docs/V15_FINALIZATION_PLAN.md`.
 
 Governing scope: the founder's V14 MASTER DIRECTIVE (copy: `docs/V14_MASTER_DIRECTIVE_2026-10-18.md`) — the complete
 storage platform (Rust control plane, real Linux block device, media adapters, Pi portability, P0–P13). The earlier
@@ -112,4 +120,4 @@ Phases 1-5 DONE (cargo test 141 + seal_worker via pytest, in src/vnxdna/native/r
 - The old host's main checkout had someone else's uncommitted edits in `tests/v2/` (never touched; not part of V14).
 - Web console node tests were never run (no `node_modules`); run `npm ci && npm test` in `web/` on the new machine
   (needs the npm registry) and record the result in Phase 6 F.
-- CITATION.cff is at 13.0.0; V14 version string stays `13.0.0` until the release phase sets `14.0.0.dev0`/`14.0.0`.
+- Version: set to 14.0.0 (src/vnxdna/_version.py, CITATION.cff) in the release prep; Rust crate versions unchanged.
