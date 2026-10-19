@@ -50,3 +50,17 @@ p6e INDEL channel (sub 0.01, ins 0.002, del 0.002, coverage 5).
 - **G (regression):** `default` returns the same status and output SHA-256 on base and new for every row; on every
   row new E/F is EXACT wherever base E/F is EXACT.
 - **P:** reported; a difference from evaluation 5 is investigated before any claim (development data, not evidence).
+
+## Amendment 1 (2026-10-19, before any run of the seeds below)
+Seen so far: runs R, H (15 of 20 seeds) and the port check in progress; no result of this amendment's case. Finding:
+on the default v4-balanced archive the remaining F failures on D13-F1 at 1 MiB are each one or two rows short, and
+V10 W3 (`experiments/v10/w3`, seeds 93000-93009) recovered 10/10 with decoder E once the existing opt-in V6 column
+parity (stripe depth 128, 4 column-parity rows, +3.9 % strands) was used. Added run:
+
+| id | case | seeds | trees x configs | role |
+|---|---|---|---|---|
+| C | d13f1-cp-1m (v4-balanced + column parity 128/4) | **93150-93169** (never used) | new x {default, E, F} | held-out: encoder-side redundancy + decoder preset |
+
+Criteria: 0 FALSE_SUCCESS (hard gate); exact counts of E and F with Wilson 95 % intervals; no seed where E is EXACT
+and F is not. If F (or E) reaches >= 19/20 here, the recommendation for nanopore-like reads is column parity at encode
+time plus the `nanopore` decoder preset; otherwise the gap is reported as the remaining limit.

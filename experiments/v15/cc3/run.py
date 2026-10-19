@@ -38,6 +38,7 @@ INDEL = {"substitution_rate": 0.01, "insertion_rate": 0.002, "deletion_rate": 0.
 CASES = {
     "d13f1-1m": (1 << 20, "d13-f1", None),                 # = experiments/arch/outer_list_eval (evaluations 1-5)
     "d13f1-10m": (10_000_000, "d13-f1", (128, 4)),          # = experiments/v10/w3 10m and job 86 (cluster_budget)
+    "d13f1-cp-1m": (1 << 20, "d13-f1", (128, 4)),           # = experiments/v10/w3 1m (existing opt-in column parity)
     "nanopore-like-1m": (1 << 20, "nanopore-like", None),
     "clean-1m": (1 << 20, "clean", None),
     "illumina-like-1m": (1 << 20, "illumina-like", None),
