@@ -83,6 +83,8 @@ def run(a) -> None:
             rows = []
             for c in order:
                 r = S.step(c, trees[c], w["kind"], work, workers, 1800)
+                if r.get("stale_libraries") or any(v != "native" for v in (r.get("native") or {}).values()):
+                    raise SystemExit(f"{c}: native kernels missing or stale ({r.get('stale_libraries')}): run refused")
                 r.update(workload=a.workload, seed=seed, rep=rep, workers=workers, commit=commits[c], order=order,
                          label=a.label)
                 rows.append(r)
