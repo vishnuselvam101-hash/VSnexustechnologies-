@@ -768,6 +768,51 @@ are to be verified before the plan is final. Order is by value to the long-term 
 - **Acceptance.** A study with a go/no-go recommendation. **Risks.** Low priority; uncertain value.
 - **Starts from.** AP-5, P7 lab interface. **Depends on.** AP-5.
 
+### AP-16 Integrated 24/7 offline security monitor (added 2026-10-19, founder)
+- **Goal.** A device that protects itself continuously with no network: integrity, access and tamper monitoring.
+- **Method.** An always-on monitor inside vnxd/the controller: file and metadata integrity checks against signed
+  manifests (AP-5), audit of every access (existing `audit.rs`), anomaly rules (unusual read volume, repeated auth
+  failures, unexpected processes or devices), tamper-evident hash-chained log, configurable lock-down (read-only,
+  key wipe on policy); secure boot and measured state from `docs/V14_BOOT_ARCHITECTURE.md`.
+- **Evidence target.** MEASURED (software, fault and attack-injection tests).
+- **Acceptance.** Every injected tamper/attack scenario in a declared campaign is detected and logged; no false
+  lock-down in the normal-use campaign; works with networking disabled.
+- **Risks.** False positives; physical attacks are out of software scope. **Starts from.** `vnxd/src/audit.rs`,
+  `authz.rs`, AP-5, AP-6. **Depends on.** AP-4, AP-5.
+
+### AP-17 Offline-only device build (design rule, added 2026-10-19, founder)
+- **Goal.** The device build and its runtime need no network at any time (defence use).
+- **Method.** Remove/forbid network dependencies from the device profile (build from vendored sources; no telemetry;
+  no online key/licence checks); updates as signed offline packages (USB), verified before install; a CI check that
+  fails on any network call in the device profile (e.g. run the test suite in a network namespace with no interfaces).
+- **Acceptance.** Full device test suite passes with networking disabled; signed-update install/rollback tested.
+- **Starts from.** `docs/V14_BUILD_AND_DEPLOYMENT.md`, `deploy/systemd/`. **Depends on.** AP-4 (signatures).
+
+### AP-18 Real-error replay from public sequencing data (added 2026-10-19, founder)
+- **Goal.** Validate VNX decoding against the errors of real sequencers, without a wet lab.
+- **Method.** Re-download public DNA-storage read sets with published reference designs (e.g. the datasets of
+  `docs/DNA_STORAGE_DATASET_REGISTRY.md`); align reads to their references to extract per-read error events
+  (substitutions, insertions, deletions, dropouts, coverage); replay exactly those events onto VNX strands and decode.
+  Downloads and long runs on Kaggle CPU sessions (no GPU quota).
+- **Evidence target.** SIMULATED with real error data (not MEASURED: no VNX strand was synthesised).
+- **Acceptance.** Replay reproduces the dataset's measured error statistics; VNX decode results with CIs and 0 false
+  successes. **Starts from.** V7/V8 dataset tooling. **Depends on.** RS-3.
+
+## 5B. FINAL PRODUCT: the VNX-DNA Drive (founder vision, 2026-10-19)
+
+A portable unit that a computer sees as an ordinary external disk reporting DNA capacity, doing encode, store,
+retrieve, decode and protection itself, fully offline.
+
+| part | V15 (software, ₹0) | after V15 (needs partner/sponsor hardware) |
+|---|---|---|
+| controller | P11 C1 design: Raspberry Pi as a USB Mass Storage gadget over the P8 device; `--low-memory` profile (P10) | custom board (P11 C2/C3) |
+| speed | F8 tiering: all I/O at RAM/SSD tier latency, DNA as background archive tier. DNA itself cannot be nanosecond-class (synthesis hours, sequencing minutes–hours); no such claim is made | — |
+| capacity reporting | device reports the DNA tier capacity as the disk size | — |
+| DNA write/read | simulated DNA tier (P7 dnasim) + lab interface (P7 `vnx.dna-lab/1`) | electrode-array synthesis and nanopore sequencing modules (research-grade today), integrated box |
+| third-party machines | AP-11 plugin SDK + media contract: other synthesisers/sequencers plug in | vendor integrations |
+| security | AP-16 24/7 offline monitor, AP-4 post-quantum, AP-1 WORM, AP-3 escrow, secure boot | hardware tamper sensors |
+| network | AP-17 offline-only build, signed USB updates | — |
+
 ## 6. Platform items
 
 ### PL-1 ublk upgrade (P8 Stage A')
