@@ -445,7 +445,7 @@ def test_missing_library_falls_back_to_reference(monkeypatch, caplog, tmp_path):
 
 
 def test_abi_mismatch_is_not_loaded(monkeypatch, tmp_path):
-    cc = shutil.which("cc") or shutil.which("gcc") or shutil.which("clang")
+    cc = os.environ.get("CC") or shutil.which("cc") or shutil.which("gcc") or shutil.which("clang")   # CC: as the loaders (cross runs)
     if not cc:
         pytest.skip("no C compiler")
     src = tmp_path / "fake.c"

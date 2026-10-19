@@ -1,0 +1,112 @@
+{
+  "label": "SIMULATED (software codec rates on this host; the pool is produced by the channel simulator)",
+  "channel": {
+    "seed": 7,
+    "coverage": 3,
+    "substitution_rate": 0.01
+  },
+  "python": "3.12.3",
+  "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+  "cpu_count": 8,
+  "per_extents": {
+    "4": {
+      "v13": {
+        "n": 3,
+        "commit": "58171b8494ad09e02fb9f2bb18e5e5e406bb7373",
+        "workers": 1,
+        "pool_bytes": 251683006,
+        "seconds_median": 4.447,
+        "seconds_range": [
+          4.382,
+          4.493
+        ],
+        "outcomes": [
+          "SUCCESS"
+        ],
+        "matches_input": true,
+        "false_success": 0,
+        "maxrss_mib_median": 102.6,
+        "load1_range": [
+          0.42,
+          0.51
+        ],
+        "report_keys": [
+          "by_pool",
+          "by_range",
+          "extents",
+          "mb_s",
+          "seconds",
+          "sha256",
+          "total_bytes"
+        ],
+        "stages_median": {}
+      }
+    },
+    "8": {
+      "v13": {
+        "n": 3,
+        "commit": "58171b8494ad09e02fb9f2bb18e5e5e406bb7373",
+        "workers": 1,
+        "pool_bytes": 503477122,
+        "seconds_median": 16.835,
+        "seconds_range": [
+          16.402,
+          17.174
+        ],
+        "outcomes": [
+          "SUCCESS"
+        ],
+        "matches_input": true,
+        "false_success": 0,
+        "maxrss_mib_median": 102.0,
+        "load1_range": [
+          0.7,
+          0.89
+        ],
+        "report_keys": [
+          "by_pool",
+          "by_range",
+          "extents",
+          "mb_s",
+          "seconds",
+          "sha256",
+          "total_bytes"
+        ],
+        "stages_median": {}
+      }
+    },
+    "16": {
+      "v13": {
+        "n": 3,
+        "commit": "58171b8494ad09e02fb9f2bb18e5e5e406bb7373",
+        "workers": 1,
+        "pool_bytes": 1007641530,
+        "seconds_median": 63.687,
+        "seconds_range": [
+          63.448,
+          64.77
+        ],
+        "outcomes": [
+          "SUCCESS"
+        ],
+        "matches_input": true,
+        "false_success": 0,
+        "maxrss_mib_median": 103.4,
+        "load1_range": [
+          1.04,
+          1.11
+        ],
+        "report_keys": [
+          "by_pool",
+          "by_range",
+          "extents",
+          "mb_s",
+          "seconds",
+          "sha256",
+          "total_bytes"
+        ],
+        "stages_median": {}
+      }
+    }
+  }
+}

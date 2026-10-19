@@ -1,6 +1,17 @@
 # VNX-DNA
 
-**Release candidate: 13.0.0 on `build/v13-final` (not tagged).** A streaming decode engine (Rust core with the fuzzed
+**Release candidate: 14.0.0 on `build/v14` (not tagged).** V14 turns the codec into a storage platform: a Rust
+control plane (`vnxd`: block volume + journal, VNX-IO queue, VNX-RAM, cache, fallback, security, load balancer), media
+adapters (file image, DNA software simulator, fault injection, simulated lab), and a real Linux software block device
+(`/dev/nbdN`, tested with ext4 on this host only). Codec: shuffled-pool decode is linear in the number of extents
+(3.3-25x faster than V13 at 4-32 extents) and parallel pass 2 gives 1.18x on pools. Single-archive decode is **not**
+faster than V13 (equal, ~2-5 % slower on the 16/64 MiB w4 workloads), and both V14 speed targets (5x / 3x over V12)
+are **missed**. Pi acceptance is incomplete (no hardware; ARM64 is cross-built and tested under qemu only); the
+hardware and physical DNA device are designs, not devices. All channel numbers are SIMULATED
+([docs/V14_IMPLEMENTATION_REPORT.md](docs/V14_IMPLEMENTATION_REPORT.md),
+[docs/V14_BENCHMARK_REPORT.md](docs/V14_BENCHMARK_REPORT.md)).
+
+**Previous release: 13.0.0 (tag `v13.0.0`).** A streaming decode engine (Rust core with the fuzzed
 C kernels linked in, address scheduler, thread pool) behind a fallback ladder, streaming encode/decode of byte
 streams with bounded memory, a crash-consistent volume with an extent cache, and a decode result cache. Measured
 against v12.0.0 code (6bf7749) on the pre-declared workloads, output byte-identical, 0 false successes: 4 MiB indel

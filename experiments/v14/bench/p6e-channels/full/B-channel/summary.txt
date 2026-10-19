@@ -1,0 +1,31 @@
+T-A-indel-4m-w1                    NOT RUN
+T-B-clean-4m-w4                    NOT RUN
+T-E-encode-4m-w1                   NOT RUN
+T-E-encode-4m-w4                   NOT RUN
+indel-4m-w4                        n=10 out={'v12': ['SUCCESS'], 'v13': ['SUCCESS'], 'v14': ['SUCCESS'], 'v14aa': ['SUCCESS']} fs=0 expfail={} identical=True  v12/v14 1.734 [1.52, 2.036] faster beyond noise  v13/v14 0.997 [0.96, 1.053] within noise  v12/v13 1.662 [1.619, 1.995] faster beyond noise  v14/v14aa 0.929 [0.883, 0.965]
+mixed-4m-w4                        n=10 out={'v12': ['FAILURE'], 'v13': ['FAILURE', 'SUCCESS'], 'v14': ['FAILURE', 'SUCCESS'], 'v14aa': ['FAILURE', 'SUCCESS']} fs=0 expfail={'v12': [98000, 98001, 98002, 98003, 98004, 98005, 98006, 98007, 98008, 98009], 'v13': [98001, 98002, 98004, 98005, 98006, 98007], 'v14': [98001, 98002, 98004, 98005, 98006, 98007], 'v14aa': [98001, 98002, 98004, 98005, 98006, 98007]} identical=False  v12/v14 0.352 [0.344, 1.137] within noise  v13/v14 0.542 [0.53, 0.991] within noise  v12/v13 0.661 [0.648, 1.156] within noise  v14/v14aa 1.002 [0.983, 1.027]
+mixed-mild-model-4m-w4             n=5 out={'v12': ['SUCCESS'], 'v13': ['SUCCESS'], 'v14': ['SUCCESS'], 'v14aa': ['SUCCESS']} fs=0 expfail={} identical=True  v12/v14 1.570 [1.525, 1.586] faster beyond noise  v13/v14 0.913 [0.874, 1.017] slower beyond noise  v12/v13 1.712 [1.546, 1.793] faster beyond noise  v14/v14aa 1.037 [1.022, 1.087]
+mixed-harsh-model-1m-w4            n=10 out={'v12': ['FAILURE'], 'v13': ['FAILURE', 'SUCCESS'], 'v14': ['FAILURE', 'SUCCESS'], 'v14aa': ['FAILURE', 'SUCCESS']} fs=0 expfail={} identical=False  v12/v14 0.333 [0.327, 0.713] slower beyond noise  v13/v14 0.526 [0.516, 0.753] slower beyond noise  v12/v13 0.641 [0.624, 0.882] slower beyond noise  v14/v14aa 0.999 [0.987, 1.01]
+rc50-indel-4m-w4                   n=5 out={'v12': ['SUCCESS'], 'v13': ['SUCCESS'], 'v14': ['SUCCESS'], 'v14aa': ['SUCCESS']} fs=0 expfail={} identical=True  v12/v14 1.885 [1.784, 1.954] faster beyond noise  v13/v14 0.999 [0.951, 1.006] within noise  v12/v13 1.895 [1.777, 1.981] faster beyond noise  v14/v14aa 0.960 [0.88, 1.015]
+rc100-indel-4m-w4                  n=5 out={'v12': ['SUCCESS'], 'v13': ['SUCCESS'], 'v14': ['SUCCESS'], 'v14aa': ['SUCCESS']} fs=0 expfail={} identical=True  v12/v14 2.002 [1.877, 2.036] faster beyond noise  v13/v14 0.996 [0.969, 1.015] within noise  v12/v13 1.982 [1.922, 2.083] faster beyond noise  v14/v14aa 0.983 [0.966, 1.016]
+dropout-uneven-4m-w4               n=5 out={'v12': ['FAILURE'], 'v13': ['FAILURE'], 'v14': ['FAILURE'], 'v14aa': ['FAILURE']} fs=0 expfail={} identical=True  v12/v14 0.400 [0.382, 0.421] slower beyond noise  v13/v14 0.582 [0.559, 0.585] slower beyond noise  v12/v13 0.684 [0.681, 0.724] slower beyond noise  v14/v14aa 1.013 [1.007, 1.031]
+dropout10-model-4m-w4              n=5 out={'v12': ['FAILURE'], 'v13': ['FAILURE'], 'v14': ['FAILURE'], 'v14aa': ['FAILURE']} fs=0 expfail={'v12': [98050, 98051, 98052, 98053, 98054], 'v13': [98050, 98051, 98052, 98053, 98054], 'v14': [98050, 98051, 98052, 98053, 98054], 'v14aa': [98050, 98051, 98052, 98053, 98054]} identical=True  v12/v14 0.407 [0.397, 0.433] slower beyond noise  v13/v14 0.651 [0.633, 0.665] slower beyond noise  v12/v13 0.629 [0.597, 0.665] slower beyond noise  v14/v14aa 1.004 [0.975, 1.02]
+dup-strandbias-4m-w4               n=5 out={'v12': ['SUCCESS'], 'v13': ['SUCCESS'], 'v14': ['SUCCESS'], 'v14aa': ['SUCCESS']} fs=0 expfail={} identical=True  v12/v14 1.514 [1.481, 1.62] faster beyond noise  v13/v14 0.985 [0.939, 0.999] within noise  v12/v13 1.594 [1.537, 1.623] faster beyond noise  v14/v14aa 0.987 [0.962, 1.039]
+lowcov2-4m-w4                      n=5 out={'v12': ['FAILURE'], 'v13': ['FAILURE'], 'v14': ['FAILURE'], 'v14aa': ['FAILURE']} fs=0 expfail={} identical=True  v12/v14 0.402 [0.39, 0.413] slower beyond noise  v13/v14 0.664 [0.648, 0.675] slower beyond noise  v12/v13 0.603 [0.58, 0.638] slower beyond noise  v14/v14aa 0.984 [0.973, 1.002]
+lowcov-edge-indel-4m-w4            n=5 out={'v12': ['FAILURE'], 'v13': ['FAILURE'], 'v14': ['FAILURE'], 'v14aa': ['FAILURE']} fs=0 expfail={} identical=True  v12/v14 0.611 [0.588, 0.64] slower beyond noise  v13/v14 0.632 [0.616, 0.657] slower beyond noise  v12/v13 0.953 [0.932, 1.012] within noise  v14/v14aa 1.001 [0.969, 1.036]
+indel-16m-w4                       NOT RUN
+sub-64m-w4                         NOT RUN
+payload-zeros-4m-w4                NOT RUN
+payload-zeros-4m-w1                NOT RUN
+payload-repetitive-4m-w4           NOT RUN
+payload-binary-4m-w4               NOT RUN
+payload-text-4m-w4                 NOT RUN
+adv-foreign-40pct-1m-w4            NOT RUN
+adv-truncated-1m-w4                NOT RUN
+adv-junk-reads-1m-w4               NOT RUN
+adv-malformed-records-1m-w4        NOT RUN
+adv-jackpot-dup-1m-w4              NOT RUN
+adv-poisoned-consensus-1m-w4       NOT RUN
+adv-empty-pool                     NOT RUN
+adv-loss-beyond-capacity-1m-w4     NOT RUN
+totals: {"env_crash_retries": 0, "runs": 280, "false_success": 0, "wrong_archive": 0, "crash": 0, "expectation_failures": 48, "nonidentical_outputs": 2}

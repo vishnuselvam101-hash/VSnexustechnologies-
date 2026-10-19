@@ -15,11 +15,14 @@ volume replays the journal up to its last verified record and, in read-write mod
 record names (the leftovers of an interrupted flush); the state is always the last committed one. ``read_at`` serves
 dirty extents from the write-back buffer, hot ones from a byte-bounded LRU cache, and decodes the others from their
 strand files (an ordinary decode: container SHA-256 verified by the decoder, extent SHA-256 checked against the
-journal) before caching them. ``scrub`` re-verifies every committed extent and reports; it never repairs.
+journal) before caching them. ``scrub`` re-verifies every committed extent and the persisted journal and reports;
+it never repairs. The crash-recovery contract (what is durable when, torn tail vs damage, failed flushes, bounds) is
+docs/V14_VOLUME_RELIABILITY.md.
 
 The strands stay files on disk: the "disk" vocabulary here describes a software codec, not physical DNA. A strand
 file may be replaced by a SIMULATED (or, later, real) read pool of the same extent; the decoder reads both. One writer
 at a time (an exclusive lock file); readers may open a volume that another process writes, and see its last commit.
+A ``Volume`` object is not thread-safe: serialise calls on one object.
 """
 from __future__ import annotations
 
@@ -35,16 +38,63 @@ from pathlib import Path
 
 from vnxdna._version import __version__
 from vnxdna.archive.operations import ArchiveOptions
-from vnxdna.core.errors import VNXConfigurationError, VNXFormatError, VNXIntegrityError, VNXOutputError
-from vnxdna.core.fsio import fsync_dir
+from vnxdna.core.errors import VNXConfigurationError, VNXError, VNXFormatError, VNXIntegrityError, VNXOutputError
 from vnxdna.core.util import atomic_output, canonical_json, parse_canonical_json
 from vnxdna.pipeline.encode import DNAOptions
 from vnxdna.pipeline.stream import MAX_EXTENT, MIN_EXTENT, decode_extent, encode_extent
 from vnxdna.recovery.options import DecodeOptions
-from vnxdna.volume.journal import Journal
+from vnxdna.volume.journal import Journal, sync_dir
 
 VOLUME_FORMAT = "vnx.volume/1"
 _EXTENT_FILE = re.compile(r"^e(\d+)-v(\d+)\.(fasta|fastq)$")
+_HEX64 = re.compile(r"^[0-9a-f]{64}$")
+
+
+def _int(v, lo: int, hi: int | None = None) -> bool:
+    return isinstance(v, int) and not isinstance(v, bool) and v >= lo and (hi is None or v <= hi)
+
+
+def _replay_commits(records: list[dict], extent_bytes: int, where: Path) -> tuple[dict[int, dict], int]:
+    """The committed state a journal describes, after checking every commit record against the invariants the writer
+    keeps (a CRC is not a MAC: a record can be edited and re-CRCed). Raises VNXFormatError on the first violation."""
+    committed: dict[int, dict] = {}
+    versions = 0
+    for rec in records:
+        if rec.get("op") != "commit":
+            continue
+        seq = rec.get("seq")
+
+        def bad(why: str) -> VNXFormatError:
+            return VNXFormatError(f"volume journal {where}: commit record {seq} {why}", stage="volume",
+                                  details={"seq": seq})
+        i_raw, ver, length = rec.get("extent"), rec.get("version"), rec.get("length")
+        if not _int(i_raw, 0) or not _int(ver, 1):
+            raise bad("has no valid extent/version")
+        i = int(i_raw)  # type: ignore[arg-type]
+        prev = committed.get(i)
+        if ver != (int(prev["version"]) + 1 if prev else 1):
+            raise bad(f"has version {ver} for extent {i} (versions increase by one from 1)")
+        if rec.get("file") != f"e{i}-v{ver}.fasta":
+            raise bad("names a strand file that is not its own (e<extent>-v<version>.fasta)")
+        if not _int(length, 0, extent_bytes):
+            raise bad(f"has an impossible length (0..{extent_bytes})")
+        if not all(isinstance(rec.get(k), str) and _HEX64.match(rec[k]) for k in ("sha256", "strands_sha256")):
+            raise bad("has no valid SHA-256")
+        tag = rec.get("archive_tag")
+        if not isinstance(rec.get("archive_id"), str) or not isinstance(tag, str) or not re.fullmatch(r"[0-9a-f]{1,16}", tag):
+            raise bad("has no valid archive ID/tag")
+        if not _int(rec.get("strands"), 0) or not _int(rec.get("bases"), 0):
+            raise bad("has no valid strand/base counts")
+        committed[i] = rec
+        versions += 1
+    n = len(committed)
+    if committed and sorted(committed) != list(range(n)):
+        raise VNXFormatError(f"volume journal {where}: committed extents are not contiguous from 0", stage="volume")
+    for i, rec in committed.items():
+        if i < n - 1 and int(rec["length"]) != extent_bytes:
+            raise VNXFormatError(f"volume journal {where}: extent {i} is short ({rec['length']} bytes) but is not the "
+                                 "last extent", stage="volume")
+    return committed, versions
 
 
 @dataclass
@@ -80,20 +130,19 @@ class Volume:
         self._lock_fd = lock_fd
         self._key, self._passphrase = key, passphrase
         self.extent_bytes = int(meta["extent_bytes"])
-        self.committed: dict[int, dict] = {}         # extent id -> its last committed record
-        self.versions = 0
-        for rec in journal.records:
-            if rec.get("op") == "commit":
-                self.committed[int(rec["extent"])] = rec
-                self.versions += 1
+        # extent id -> its last committed record (every record validated: VNXFormatError on a violation)
+        self.committed, self.versions = _replay_commits(journal.records, self.extent_bytes, journal.path)
         self._dirty: dict[int, bytearray] = {}
+        self._dirty_nbytes = 0                       # sum of the dirty buffers' lengths, kept up to date
+        self._spilled = False
         self._cache: OrderedDict[int, bytes] = OrderedDict()
         self._cache_bytes = 0
         self.pos = 0
         self.closed = False
         self.metrics = {"cache_hits": 0, "cache_misses": 0, "cache_evictions": 0, "bytes_written": 0, "bytes_read": 0,
                         "extents_encoded": 0, "extents_decoded": 0, "bytes_encoded": 0, "bytes_decoded": 0,
-                        "encode_seconds": 0.0, "decode_seconds": 0.0, "flushes": 0, "orphans_removed": 0}
+                        "encode_seconds": 0.0, "decode_seconds": 0.0, "flushes": 0, "orphans_removed": 0,
+                        "dirty_peak_bytes": 0}
         self._work = Path(tempfile.mkdtemp(prefix="vnx-volume-", dir=None))
 
     # ------------------------------------------------------------------------------------------------ lifecycle
@@ -121,7 +170,8 @@ class Volume:
         with atomic_output(root / "volume.json", overwrite=True) as tmp:
             tmp.write_bytes(canonical_json(meta) + b"\n")
         Journal(root / "journal.log").create()
-        fsync_dir(root)
+        sync_dir(root)
+        sync_dir(root.parent)                                       # the volume directory's own entry
         return cls.open(root, "rw", options=opt, key=opt.archive.key, passphrase=opt.archive.passphrase)
 
     @classmethod
@@ -198,6 +248,7 @@ class Volume:
     def __exit__(self, exc_type, exc, tb) -> None:
         if exc_type is not None and self.mode == "rw":
             self._dirty.clear()                 # a failed operation never commits half-written state
+            self._dirty_nbytes = 0
         self.close()
 
     # ------------------------------------------------------------------------------------------------ geometry
@@ -216,6 +267,9 @@ class Volume:
             raise VNXConfigurationError("the volume is closed")
         if writing and self.mode != "rw":
             raise VNXConfigurationError("the volume is open read-only")
+        if writing and self.journal.poisoned:
+            raise VNXOutputError(f"volume {self.path}: the journal is unusable after a failed append "
+                                 f"({self.journal.poisoned}); close and reopen the volume", stage="volume")
 
     # ------------------------------------------------------------------------------------------------ extents
     def _load(self, i: int) -> bytes:
@@ -241,17 +295,16 @@ class Volume:
         return data
 
     def _cache_put(self, i: int, data: bytes) -> None:
-        if self.options.cache_bytes <= 0:
-            return
         if i in self._cache:
             self._cache_bytes -= len(self._cache.pop(i))
+        if self.options.cache_bytes <= 0 or len(data) > self.options.cache_bytes:
+            return                           # never cached: evicting the hot entries for it would gain nothing
         while self._cache and self._cache_bytes + len(data) > self.options.cache_bytes:
             _, old = self._cache.popitem(last=False)
             self._cache_bytes -= len(old)
             self.metrics["cache_evictions"] += 1
-        if len(data) <= self.options.cache_bytes:
-            self._cache[i] = data
-            self._cache_bytes += len(data)
+        self._cache[i] = data
+        self._cache_bytes += len(data)
 
     def _cache_drop(self, i: int) -> None:
         old = self._cache.pop(i, None)
@@ -259,7 +312,18 @@ class Volume:
             self._cache_bytes -= len(old)
 
     def _dirty_bytes(self) -> int:
-        return sum(len(b) for b in self._dirty.values())
+        return self._dirty_nbytes
+
+    def _bound_dirty(self) -> None:
+        """Record the write-back high-water mark and commit the buffer once it is over its limit: called after every
+        extent a write or a zero fill touches, so one large write never holds more than the limit plus one extent.
+        The commits it makes are part of the write's single write-back flush (counted once, at the end of the write)."""
+        n = self._dirty_bytes()
+        if n > self.metrics["dirty_peak_bytes"]:
+            self.metrics["dirty_peak_bytes"] = n
+        if n > self.options.write_back_bytes:
+            self._commit_dirty()
+            self._spilled = True
 
     # ------------------------------------------------------------------------------------------------ positioning
     def seek(self, offset: int, whence: int = os.SEEK_SET) -> int:
@@ -317,6 +381,7 @@ class Volume:
         e = self.extent_bytes
         pos = self.pos
         size = self.size
+        self._spilled = False
         if pos > size:                                      # zero-fill the gap, extent by extent
             self._fill_zeros(size, pos)
         i = pos // e
@@ -328,15 +393,19 @@ class Volume:
             if cur is None:
                 cur = bytearray(self._load(i))
                 self._dirty[i] = cur
+                self._dirty_nbytes += len(cur)
+            before = len(cur)
             if len(cur) < a:
                 cur += bytes(a - len(cur))
             cur[a:a + take] = data[done:done + take]
+            self._dirty_nbytes += len(cur) - before
             self._cache_drop(i)
             done += take
             i += 1
+            self._bound_dirty()
         self.pos = pos + len(data)
         self.metrics["bytes_written"] += len(data)
-        if self._dirty_bytes() > self.options.write_back_bytes:
+        if self._spilled or self._dirty_bytes() > self.options.write_back_bytes:
             self.flush()
         return len(data)
 
@@ -350,11 +419,15 @@ class Volume:
             if cur is None:
                 cur = bytearray(self._load(i))
                 self._dirty[i] = cur
+                self._dirty_nbytes += len(cur)
+            before = len(cur)
             if len(cur) < b:
                 cur += bytes(b - len(cur))
             cur[a:b] = bytes(b - a)
+            self._dirty_nbytes += len(cur) - before
             self._cache_drop(i)
             i += 1
+            self._bound_dirty()
 
     def append(self, data: bytes) -> int:
         self._check_open(writing=True)
@@ -365,16 +438,28 @@ class Volume:
         """Encode every dirty extent as a new committed version (crash-consistent: strand file published atomically
         and synced before its journal record is appended and synced). Returns what was committed."""
         self._check_open(writing=True)
-        committed = []
         t0 = time.perf_counter()
+        committed = self._commit_dirty()
+        self.metrics["flushes"] += 1
+        return {"committed": committed, "seconds": round(time.perf_counter() - t0, 4)}
+
+    def _commit_dirty(self) -> list[dict]:
+        """Commit every dirty extent in ascending order (each one: strand file published and synced, then its journal
+        record appended and synced); stops at the first failure, leaving that extent and the later ones dirty."""
+        if self.journal.poisoned and self._dirty:
+            # a journal append failed: its record may or may not be on disk, so nothing more is written (in
+            # particular no strand file is re-encoded under a name that record may hold) until a reopen replays it
+            raise VNXOutputError(f"volume {self.path}: the journal is unusable after a failed append "
+                                 f"({self.journal.poisoned}); close and reopen the volume", stage="volume")
+        committed = []
         for i in sorted(self._dirty):
             buf = self._dirty[i]
             rec = self._commit_extent(i, bytes(buf))
             committed.append({"extent": i, "version": rec["version"], "length": rec["length"], "strands": rec["strands"]})
             self._cache_put(i, bytes(buf))
             del self._dirty[i]
-        self.metrics["flushes"] += 1
-        return {"committed": committed, "seconds": round(time.perf_counter() - t0, 4)}
+            self._dirty_nbytes -= len(buf)
+        return committed
 
     def _commit_extent(self, i: int, data: bytes) -> dict:
         prev = self.committed.get(i)
@@ -388,16 +473,24 @@ class Volume:
             info = encode_extent(src, target, self.options.dna, self.options.archive, work=self._work)
         finally:
             src.unlink(missing_ok=True)
-        fsync_dir(target.parent)                                            # the file is durable before its record
+        sync_dir(target.parent)                                             # the file is durable before its record
         self.metrics["encode_seconds"] += time.perf_counter() - t
         self.metrics["extents_encoded"] += 1
         self.metrics["bytes_encoded"] += len(data)
-        rec = self.journal.append({"op": "commit", "extent": i, "version": version, "file": name, "length": info["length"],
-                                   "sha256": info["sha256"], "archive_id": info["archive_id"], "archive_tag": info["archive_tag"],
-                                   "strands": info["strands"], "bases": info["bases"], "strands_sha256": info["strands_sha256"],
-                                   "time": int(time.time())})
-        self.committed[i] = rec
-        self.versions += 1
+        n_records = len(self.journal.records)
+        try:
+            rec = self.journal.append({"op": "commit", "extent": i, "version": version, "file": name,
+                                       "length": info["length"], "sha256": info["sha256"], "archive_id": info["archive_id"],
+                                       "archive_tag": info["archive_tag"], "strands": info["strands"], "bases": info["bases"],
+                                       "strands_sha256": info["strands_sha256"], "time": int(time.time())})
+            self.committed[i] = rec
+            self.versions += 1
+        except BaseException as error:
+            # a failing append poisons the journal itself; an interrupt after the append completed (the record is in
+            # the journal, the volume has not recorded it) must too: a retry would journal the same version twice
+            if len(self.journal.records) != n_records:
+                self.journal.poison(error)
+            raise
         return rec
 
     # ------------------------------------------------------------------------------------------------ status
@@ -411,9 +504,11 @@ class Volume:
         return {"format": VOLUME_FORMAT, "path": str(self.path), "mode": self.mode, "extent_bytes": self.extent_bytes,
                 "size": self.size, "extents": len(self.committed), "versions": self.versions,
                 "dirty": {"extents": len(self._dirty), "bytes": self._dirty_bytes()},
+                "write_back": {"limit": self.options.write_back_bytes, "peak_bytes": m["dirty_peak_bytes"]},
                 "cache": {"entries": len(self._cache), "bytes": self._cache_bytes, "limit": self.options.cache_bytes,
                           "hits": m["cache_hits"], "misses": m["cache_misses"], "evictions": m["cache_evictions"]},
                 "journal": {"records": len(self.journal.records), "bad_tail_bytes": self.journal.bad_tail_bytes,
+                            "tail": self.journal.tail_state, "poisoned": self.journal.poisoned,
                             "orphans_removed": m["orphans_removed"]},
                 "io": {"bytes_written": m["bytes_written"], "bytes_read": m["bytes_read"], "flushes": m["flushes"],
                        "extents_encoded": m["extents_encoded"], "extents_decoded": m["extents_decoded"],
@@ -449,14 +544,37 @@ class Volume:
             except Exception as error:  # noqa: BLE001 - a scrub reports every failure, never raises mid-way
                 row["error"] = f"{type(error).__name__}: {error}"[:300]
             results.append(row)
-        named = {rec["file"] for rec in self.committed.values()}
+        named = {rec["file"] for rec in self.journal.records if rec.get("op") == "commit"}
         orphans = sorted(p.name for p in (self.path / "extents").iterdir() if p.name not in named)
-        ok = all(r["decoded"] and r["error"] is None for r in results)
+        journal = self._scrub_journal()
+        ok = all(r["decoded"] and r["error"] is None for r in results) and journal["status"] == "intact"
         return {"status": "VERIFIED" if ok else "DAMAGED", "extents": len(results), "verified": sum(r["decoded"] for r in results),
                 "failed": [r["extent"] for r in results if not r["decoded"]],
                 "changed_files": [r["extent"] for r in results if r["strands_file"] == "changed"], "orphans": orphans,
                 "journal_torn_tail_bytes": self.journal.bad_tail_bytes,     # a torn last line (cut on the next append)
-                "results": results}
+                "journal": journal, "results": results}
+
+    def _scrub_journal(self) -> dict:
+        """Re-read the persisted metadata: volume.json unchanged, and the journal on disk still verifies and still
+        begins with the records this volume holds (a writer in another process may have appended more)."""
+        try:
+            meta = parse_canonical_json((self.path / "volume.json").read_bytes().rstrip(b"\n"), "volume.json")
+        except (OSError, ValueError, VNXError) as error:
+            return {"status": "damaged", "error": f"volume.json: {error}"[:300]}
+        if meta != self.meta:
+            return {"status": "damaged", "error": "volume.json changed since the volume was opened"}
+        fresh = Journal(self.journal.path)
+        try:
+            recs = fresh.replay()
+            _replay_commits(recs, self.extent_bytes, fresh.path)
+        except VNXError as error:
+            return {"status": "damaged", "error": f"{type(error).__name__}: {error}"[:300]}
+        mine = self.journal.records
+        if recs[:len(mine)] != mine:
+            return {"status": "diverged", "error": "the journal on disk no longer holds the records this volume opened "
+                    f"with ({len(recs)} on disk, {len(mine)} in memory)"}
+        return {"status": "intact", "error": None, "records": len(recs), "newer_records": len(recs) - len(mine),
+                "torn_tail_bytes": fresh.bad_tail_bytes}
 
 
 __all__ = ["VOLUME_FORMAT", "VolumeOptions", "Volume"]

@@ -1,0 +1,282 @@
+[
+ {
+  "name": "mgmt_hello",
+  "proto": "vnx.mgmt",
+  "direction": "request",
+  "op": "hello",
+  "text": "{\"proto\": \"vnx.mgmt\", \"v\": 1, \"kind\": \"request\", \"id\": 0, \"op\": \"hello\", \"args\": {\"client\": \"vnx-cli 14 \\u00e9\\ud83d\\ude00 \\\"q\\\" \\\\ /\", \"versions\": [1]}}",
+  "canonical": "{\"args\":{\"client\":\"vnx-cli 14 \\u00e9\\ud83d\\ude00 \\\"q\\\" \\\\ /\",\"versions\":[1]},\"id\":0,\"kind\":\"request\",\"op\":\"hello\",\"proto\":\"vnx.mgmt\",\"v\":1}"
+ },
+ {
+  "name": "mgmt_capacity_ok",
+  "proto": "vnx.mgmt",
+  "direction": "response",
+  "op": "capacity",
+  "text": "{\"v\":1,\"proto\":\"vnx.mgmt\",\"kind\":\"response\",\"id\":5,\"ok\":true,\"result\":{\"block_size\":4096,\"blocks_per_extent\":256,\"capacity_blocks\":262144,\"capacity_bytes\":1073741824,\"extent_count\":1024}}",
+  "canonical": "{\"id\":5,\"kind\":\"response\",\"ok\":true,\"proto\":\"vnx.mgmt\",\"result\":{\"block_size\":4096,\"blocks_per_extent\":256,\"capacity_blocks\":262144,\"capacity_bytes\":1073741824,\"extent_count\":1024},\"v\":1}"
+ },
+ {
+  "name": "mgmt_health_ok",
+  "proto": "vnx.mgmt",
+  "direction": "response",
+  "op": "health",
+  "text": "{\"proto\":\"vnx.mgmt\",\"v\":1,\"kind\":\"response\",\"id\":6,\"ok\":true,\"result\":{\"state\":\"degraded\",\"detail\":{\"backend\":\"unavailable\",\"since_ms\":1200}}}",
+  "canonical": "{\"id\":6,\"kind\":\"response\",\"ok\":true,\"proto\":\"vnx.mgmt\",\"result\":{\"detail\":{\"backend\":\"unavailable\",\"since_ms\":1200},\"state\":\"degraded\"},\"v\":1}"
+ },
+ {
+  "name": "mgmt_stats_request",
+  "proto": "vnx.mgmt",
+  "direction": "request",
+  "op": "stats",
+  "text": "{\"proto\":\"vnx.mgmt\",\"v\":1,\"kind\":\"request\",\"id\":7,\"op\":\"stats\",\"args\":{}}",
+  "canonical": "{\"args\":{},\"id\":7,\"kind\":\"request\",\"op\":\"stats\",\"proto\":\"vnx.mgmt\",\"v\":1}"
+ },
+ {
+  "name": "mgmt_error_response",
+  "proto": "vnx.mgmt",
+  "direction": "response",
+  "op": "shutdown",
+  "text": "{\"proto\":\"vnx.mgmt\",\"v\":1,\"kind\":\"response\",\"id\":8,\"ok\":false,\"error\":{\"code\":\"BACKEND_BUSY\",\"class\":\"retryable\",\"message\":\"flush in progress\\n\"}}",
+  "canonical": "{\"error\":{\"class\":\"retryable\",\"code\":\"BACKEND_BUSY\",\"message\":\"flush in progress\\n\"},\"id\":8,\"kind\":\"response\",\"ok\":false,\"proto\":\"vnx.mgmt\",\"v\":1}"
+ },
+ {
+  "name": "codec_encode",
+  "proto": "vnx.codec-ipc",
+  "direction": "request",
+  "op": "encode_extent",
+  "text": "{\"proto\":\"vnx.codec-ipc\",\"v\":1,\"kind\":\"request\",\"id\":11,\"op\":\"encode_extent\",\"args\":{\"job\":11,\"extent\":3,\"generation\":2,\"input\":\"e3-g2.bin\",\"input_sha256\":\"abababababababababababababababababababababababababababababababab\",\"output\":\"e3-g2.fasta\",\"options\":{\"profile\":\"default\",\"workers\":2}}}",
+  "canonical": "{\"args\":{\"extent\":3,\"generation\":2,\"input\":\"e3-g2.bin\",\"input_sha256\":\"abababababababababababababababababababababababababababababababab\",\"job\":11,\"options\":{\"profile\":\"default\",\"workers\":2},\"output\":\"e3-g2.fasta\"},\"id\":11,\"kind\":\"request\",\"op\":\"encode_extent\",\"proto\":\"vnx.codec-ipc\",\"v\":1}"
+ },
+ {
+  "name": "codec_decode_ok",
+  "proto": "vnx.codec-ipc",
+  "direction": "response",
+  "op": "decode_extent",
+  "text": "{\"proto\":\"vnx.codec-ipc\",\"v\":1,\"kind\":\"response\",\"id\":12,\"ok\":true,\"result\":{\"job\":12,\"output_sha256\":\"0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f\",\"output_bytes\":1048576}}",
+  "canonical": "{\"id\":12,\"kind\":\"response\",\"ok\":true,\"proto\":\"vnx.codec-ipc\",\"result\":{\"job\":12,\"output_bytes\":1048576,\"output_sha256\":\"0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f\"},\"v\":1}"
+ },
+ {
+  "name": "mgmt_del_escaped",
+  "proto": "vnx.mgmt",
+  "direction": "request",
+  "op": "hello",
+  "text": "{\"proto\":\"vnx.mgmt\",\"v\":1,\"kind\":\"request\",\"id\":2,\"op\":\"hello\",\"args\":{\"client\":\"a\\u007fb\\u001f~\",\"versions\":[1,2]}}",
+  "canonical": "{\"args\":{\"client\":\"a\\u007fb\\u001f~\",\"versions\":[1,2]},\"id\":2,\"kind\":\"request\",\"op\":\"hello\",\"proto\":\"vnx.mgmt\",\"v\":1}"
+ },
+ {
+  "name": "mgmt_depth_limit",
+  "proto": "vnx.mgmt",
+  "direction": "response",
+  "op": "stats",
+  "text": "{\"proto\":\"vnx.mgmt\",\"v\":1,\"kind\":\"response\",\"id\":3,\"ok\":true,\"result\":{\"counters\":{\"a\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}}}",
+  "canonical": "{\"id\":3,\"kind\":\"response\",\"ok\":true,\"proto\":\"vnx.mgmt\",\"result\":{\"counters\":{\"a\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}},\"v\":1}"
+ },
+ {
+  "name": "mgmt_authenticate",
+  "proto": "vnx.mgmt",
+  "direction": "request",
+  "op": "authenticate",
+  "text": "{\"proto\":\"vnx.mgmt\",\"v\":1,\"kind\":\"request\",\"id\":4,\"op\":\"authenticate\",\"args\":{\"token\":\"ttttttttttttttttttttttttttttttttttttttttttt\"}}",
+  "canonical": "{\"args\":{\"token\":\"ttttttttttttttttttttttttttttttttttttttttttt\"},\"id\":4,\"kind\":\"request\",\"op\":\"authenticate\",\"proto\":\"vnx.mgmt\",\"v\":1}"
+ },
+ {
+  "name": "mgmt_authenticate_ok",
+  "proto": "vnx.mgmt",
+  "direction": "response",
+  "op": "authenticate",
+  "text": "{\"proto\":\"vnx.mgmt\",\"v\":1,\"kind\":\"response\",\"id\":4,\"ok\":true,\"result\":{\"role\":\"reader\"}}",
+  "canonical": "{\"id\":4,\"kind\":\"response\",\"ok\":true,\"proto\":\"vnx.mgmt\",\"result\":{\"role\":\"reader\"},\"v\":1}"
+ },
+ {
+  "name": "mgmt_unauthorized",
+  "proto": "vnx.mgmt",
+  "direction": "response",
+  "op": "shutdown",
+  "text": "{\"proto\":\"vnx.mgmt\",\"v\":1,\"kind\":\"response\",\"id\":9,\"ok\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"class\":\"permanent\",\"message\":\"operation shutdown is not allowed\"}}",
+  "canonical": "{\"error\":{\"class\":\"permanent\",\"code\":\"UNAUTHORIZED\",\"message\":\"operation shutdown is not allowed\"},\"id\":9,\"kind\":\"response\",\"ok\":false,\"proto\":\"vnx.mgmt\",\"v\":1}"
+ },
+ {
+  "name": "codec_key_check",
+  "proto": "vnx.codec-ipc",
+  "direction": "request",
+  "op": "key_check",
+  "text": "{\"proto\":\"vnx.codec-ipc\",\"v\":1,\"kind\":\"request\",\"id\":20,\"op\":\"key_check\",\"args\":{\"device_id\":\"0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a\"}}",
+  "canonical": "{\"args\":{\"device_id\":\"0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a\"},\"id\":20,\"kind\":\"request\",\"op\":\"key_check\",\"proto\":\"vnx.codec-ipc\",\"v\":1}"
+ },
+ {
+  "name": "codec_seal",
+  "proto": "vnx.codec-ipc",
+  "direction": "request",
+  "op": "seal_extent",
+  "text": "{\"proto\":\"vnx.codec-ipc\",\"v\":1,\"kind\":\"request\",\"id\":21,\"op\":\"seal_extent\",\"args\":{\"job\":21,\"device_id\":\"0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a\",\"extent\":3,\"generation\":2,\"input\":\"seal-21.in\",\"input_sha256\":\"abababababababababababababababababababababababababababababababab\",\"output\":\"seal-21.out\"}}",
+  "canonical": "{\"args\":{\"device_id\":\"0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a\",\"extent\":3,\"generation\":2,\"input\":\"seal-21.in\",\"input_sha256\":\"abababababababababababababababababababababababababababababababab\",\"job\":21,\"output\":\"seal-21.out\"},\"id\":21,\"kind\":\"request\",\"op\":\"seal_extent\",\"proto\":\"vnx.codec-ipc\",\"v\":1}"
+ },
+ {
+  "name": "codec_open_ok",
+  "proto": "vnx.codec-ipc",
+  "direction": "response",
+  "op": "open_extent",
+  "text": "{\"proto\":\"vnx.codec-ipc\",\"v\":1,\"kind\":\"response\",\"id\":22,\"ok\":true,\"result\":{\"job\":22,\"output_sha256\":\"cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd\",\"output_bytes\":4096}}",
+  "canonical": "{\"id\":22,\"kind\":\"response\",\"ok\":true,\"proto\":\"vnx.codec-ipc\",\"result\":{\"job\":22,\"output_bytes\":4096,\"output_sha256\":\"cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd\"},\"v\":1}"
+ },
+ {
+  "name": "bad_device_id_upper",
+  "proto": "vnx.codec-ipc",
+  "direction": "request",
+  "op": "key_check",
+  "text": "{\"proto\":\"vnx.codec-ipc\",\"v\":1,\"kind\":\"request\",\"id\":23,\"op\":\"key_check\",\"args\":{\"device_id\":\"0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A\"}}",
+  "error": "PROTOCOL"
+ },
+ {
+  "name": "bad_device_id_short",
+  "proto": "vnx.codec-ipc",
+  "direction": "request",
+  "op": "seal_extent",
+  "text": "{\"proto\":\"vnx.codec-ipc\",\"v\":1,\"kind\":\"request\",\"id\":24,\"op\":\"seal_extent\",\"args\":{\"job\":1,\"device_id\":\"0a0a\",\"extent\":0,\"generation\":1,\"input\":\"i\",\"input_sha256\":\"abababababababababababababababababababababababababababababababab\",\"output\":\"o\"}}",
+  "error": "PROTOCOL"
+ },
+ {
+  "name": "bad_authenticate_empty",
+  "proto": "vnx.mgmt",
+  "direction": "request",
+  "op": "authenticate",
+  "text": "{\"proto\":\"vnx.mgmt\",\"v\":1,\"kind\":\"request\",\"id\":5,\"op\":\"authenticate\",\"args\":{\"token\":\"\"}}",
+  "error": "PROTOCOL"
+ },
+ {
+  "name": "bad_depth_over_limit",
+  "proto": "vnx.mgmt",
+  "direction": "response",
+  "op": "stats",
+  "text": "{\"proto\":\"vnx.mgmt\",\"v\":1,\"kind\":\"response\",\"id\":3,\"ok\":true,\"result\":{\"counters\":{\"a\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}}}",
+  "error": "PROTOCOL"
+ },
+ {
+  "name": "bad_json",
+  "proto": "vnx.mgmt",
+  "direction": "request",
+  "op": "hello",
+  "text": "{\"proto\":\"vnx.mgmt\",",
+  "error": "PROTOCOL"
+ },
+ {
+  "name": "bad_float",
+  "proto": "vnx.mgmt",
+  "direction": "request",
+  "op": "stats",
+  "text": "{\"proto\":\"vnx.mgmt\",\"v\":1,\"kind\":\"request\",\"id\":1.0,\"op\":\"stats\",\"args\":{}}",
+  "error": "PROTOCOL"
+ },
+ {
+  "name": "bad_duplicate_key",
+  "proto": "vnx.mgmt",
+  "direction": "request",
+  "op": "stats",
+  "text": "{\"proto\":\"vnx.mgmt\",\"v\":1,\"kind\":\"request\",\"id\":1,\"id\":2,\"op\":\"stats\",\"args\":{}}",
+  "error": "PROTOCOL"
+ },
+ {
+  "name": "bad_lone_surrogate",
+  "proto": "vnx.mgmt",
+  "direction": "request",
+  "op": "hello",
+  "text": "{\"proto\":\"vnx.mgmt\",\"v\":1,\"kind\":\"request\",\"id\":1,\"op\":\"hello\",\"args\":{\"client\":\"\\ud800\",\"versions\":[1]}}",
+  "error": "PROTOCOL"
+ },
+ {
+  "name": "bad_not_object",
+  "proto": "vnx.mgmt",
+  "direction": "request",
+  "op": "stats",
+  "text": "[1,2]",
+  "error": "PROTOCOL"
+ },
+ {
+  "name": "bad_wrong_proto",
+  "proto": "vnx.mgmt",
+  "direction": "request",
+  "op": "stats",
+  "text": "{\"proto\":\"vnx.codec-ipc\",\"v\":1,\"kind\":\"request\",\"id\":1,\"op\":\"stats\",\"args\":{}}",
+  "error": "PROTOCOL"
+ },
+ {
+  "name": "bad_future_version",
+  "proto": "vnx.mgmt",
+  "direction": "request",
+  "op": "stats",
+  "text": "{\"proto\":\"vnx.mgmt\",\"v\":2,\"kind\":\"request\",\"id\":1,\"op\":\"stats\"}",
+  "error": "VERSION_MISMATCH"
+ },
+ {
+  "name": "bad_extra_envelope_key",
+  "proto": "vnx.mgmt",
+  "direction": "request",
+  "op": "stats",
+  "text": "{\"proto\":\"vnx.mgmt\",\"v\":1,\"kind\":\"request\",\"id\":1,\"op\":\"stats\",\"args\":{},\"x\":0}",
+  "error": "PROTOCOL"
+ },
+ {
+  "name": "bad_unknown_op",
+  "proto": "vnx.mgmt",
+  "direction": "request",
+  "op": "stats",
+  "text": "{\"proto\":\"vnx.mgmt\",\"v\":1,\"kind\":\"request\",\"id\":1,\"op\":\"format\",\"args\":{}}",
+  "error": "PROTOCOL"
+ },
+ {
+  "name": "bad_path_name",
+  "proto": "vnx.codec-ipc",
+  "direction": "request",
+  "op": "encode_extent",
+  "text": "{\"proto\":\"vnx.codec-ipc\",\"v\":1,\"kind\":\"request\",\"id\":1,\"op\":\"encode_extent\",\"args\":{\"job\":1,\"extent\":0,\"generation\":1,\"input\":\"../etc/passwd\",\"input_sha256\":\"abababababababababababababababababababababababababababababababab\",\"output\":\"o\",\"options\":{}}}",
+  "error": "PROTOCOL"
+ },
+ {
+  "name": "bad_generation_zero",
+  "proto": "vnx.codec-ipc",
+  "direction": "request",
+  "op": "encode_extent",
+  "text": "{\"proto\":\"vnx.codec-ipc\",\"v\":1,\"kind\":\"request\",\"id\":1,\"op\":\"encode_extent\",\"args\":{\"job\":1,\"extent\":0,\"generation\":0,\"input\":\"i\",\"input_sha256\":\"abababababababababababababababababababababababababababababababab\",\"output\":\"o\",\"options\":{}}}",
+  "error": "PROTOCOL"
+ },
+ {
+  "name": "bad_sha_uppercase",
+  "proto": "vnx.codec-ipc",
+  "direction": "response",
+  "op": "decode_extent",
+  "text": "{\"proto\":\"vnx.codec-ipc\",\"v\":1,\"kind\":\"response\",\"id\":1,\"ok\":true,\"result\":{\"job\":1,\"output_sha256\":\"ABABABABABABABABABABABABABABABABABABABABABABABABABABABABABABABAB\",\"output_bytes\":1}}",
+  "error": "PROTOCOL"
+ },
+ {
+  "name": "bad_error_class",
+  "proto": "vnx.mgmt",
+  "direction": "response",
+  "op": "stats",
+  "text": "{\"proto\":\"vnx.mgmt\",\"v\":1,\"kind\":\"response\",\"id\":1,\"ok\":false,\"error\":{\"code\":\"TIMEOUT\",\"class\":\"permanent\",\"message\":\"x\"}}",
+  "error": "PROTOCOL"
+ },
+ {
+  "name": "bad_health_state",
+  "proto": "vnx.mgmt",
+  "direction": "response",
+  "op": "health",
+  "text": "{\"proto\":\"vnx.mgmt\",\"v\":1,\"kind\":\"response\",\"id\":1,\"ok\":true,\"result\":{\"state\":\"fine\",\"detail\":{}}}",
+  "error": "PROTOCOL"
+ },
+ {
+  "name": "bad_negative_zero",
+  "proto": "vnx.mgmt",
+  "direction": "request",
+  "op": "stats",
+  "text": "{\"proto\":\"vnx.mgmt\",\"v\":1,\"kind\":\"request\",\"id\":-0,\"op\":\"stats\",\"args\":{}}",
+  "error": "PROTOCOL"
+ },
+ {
+  "name": "bad_int_range",
+  "proto": "vnx.mgmt",
+  "direction": "request",
+  "op": "stats",
+  "text": "{\"proto\":\"vnx.mgmt\",\"v\":1,\"kind\":\"request\",\"id\":9223372036854775808,\"op\":\"stats\",\"args\":{}}",
+  "error": "PROTOCOL"
+ }
+]

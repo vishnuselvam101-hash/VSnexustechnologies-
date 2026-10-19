@@ -4,7 +4,7 @@ from pathlib import Path
 from vnxdna import __version__
 from vnxdna._version import __version__ as v2
 
-RELEASE = "13.0.0"
+RELEASE = "14.0.0"
 
 
 def test_version_matches_changelog_head():

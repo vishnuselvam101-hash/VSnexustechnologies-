@@ -13,7 +13,7 @@ license-files = ["LICENSE"]
 authors = [{name = "VS Nexus Technologies"}]
 dependencies = [
     "numpy>=2.0,<3",
-    "cryptography>=44,<47",
+    "cryptography>=48.0.1,<51",
     "zstandard>=0.23,<1",
     "reedsolo>=1.7,<2",
     "pydantic>=2.10,<3",
@@ -62,7 +62,7 @@ python_version = "3.12"
 mypy_path = "src"
 follow_imports = "silent"
 packages = ["vnxdna.core", "vnxdna.native", "vnxdna.codec", "vnxdna.dnaenc", "vnxdna.simulation", "vnxdna.sdk",
-            "vnxdna.conformance", "vnxdna.commands", "vnxdna.v6", "vnxdna.v2", "vnxdna.v4", "vnxdna.ecc"]
+            "vnxdna.conformance", "vnxdna.commands", "vnxdna.v6", "vnxdna.v2", "vnxdna.v4", "vnxdna.ecc", "vnxdna.device"]
 
 [[tool.mypy.overrides]]
 module = ["reedsolo", "reedsolo.*", "jsonschema", "jsonschema.*", "edlib", "edlib.*"]    # no type information shipped

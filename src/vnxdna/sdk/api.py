@@ -278,6 +278,11 @@ def decode(reads: PathLike, output: PathLike | None = None, *, options: DecodeOp
             from vnxdna.core.util import atomic_output
             with atomic_output(target, overwrite=overwrite) as t:
                 shutil.copyfile(cached, t)
+                # V14 F (H-4): the published copy is verified, not only the cached entry
+                from vnxdna.core.util import sha256_file
+                if sha256_file(t) != report.get("container_sha256", sha256_file(cached)):
+                    raise VNXIntegrityError("result cache: the copied container does not hash as the cached entry; "
+                                            "nothing was published", stage="cache")
             res = _de.DecodeResult("SUCCESS", {**report, "cache": {"hit": True, "key": cache_key, "dir": str(cdir)}}, str(target))
             if extract_to is not None and target is not None:
                 res.report["extract"] = _ar.extract(target, extract_to, key=key, passphrase=passphrase, overwrite=overwrite,

@@ -8,6 +8,7 @@ of the whole differential suite is in test_native_alignment_equivalence.py (leve
 from __future__ import annotations
 
 import ctypes
+import os
 import subprocess
 
 import numpy as np
@@ -162,7 +163,7 @@ def test_abi2_library_rejected(tmp_path, monkeypatch):
     src = tmp_path / "old.c"
     src.write_text("int vnx_align_abi_version(void) { return 2; }\n")
     lib = tmp_path / "libold.so"
-    cc = subprocess.run(["cc", "-shared", "-fPIC", str(src), "-o", str(lib)], capture_output=True)
+    cc = subprocess.run([os.environ.get("CC", "cc"), "-shared", "-fPIC", str(src), "-o", str(lib)], capture_output=True)
     if cc.returncode:
         pytest.skip("no C compiler")
     monkeypatch.setattr(na, "_candidates", lambda: [lib])

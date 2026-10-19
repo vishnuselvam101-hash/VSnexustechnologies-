@@ -97,7 +97,7 @@ jobs:
       - run: mypy
 
   rust:
-    # the Rust kernels (src/vnxdna/native/rust/integrity, src/vnxdna/native/rust/engine): unit tests, warnings as errors,
+    # the Rust crates (src/vnxdna/native/rust/{integrity,engine,vnxd}): unit + golden tests, warnings as errors,
     # offline (no crates); the engine crate compiles the reused C kernels with the system C compiler (build.rs)
     runs-on: ubuntu-latest
     steps:
@@ -106,6 +106,8 @@ jobs:
       - run: cargo test --release --offline --locked --manifest-path src/vnxdna/native/rust/integrity/Cargo.toml
         env: {RUSTFLAGS: -D warnings}
       - run: cargo test --release --offline --locked --manifest-path src/vnxdna/native/rust/engine/Cargo.toml
+        env: {RUSTFLAGS: -D warnings}
+      - run: cargo test --release --offline --locked --manifest-path src/vnxdna/native/rust/vnxd/Cargo.toml
         env: {RUSTFLAGS: -D warnings}
   web:
     # TypeScript web layer (web/): strict type check, dashboard build, node:test (contracts against the JSON schemas,

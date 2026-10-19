@@ -1,0 +1,145 @@
+{
+ "prep": {
+  "workload": "payload-zeros-4m-w1",
+  "seed": 98085,
+  "size": 1048576,
+  "payload": "zero-heavy",
+  "archive_options": {
+   "compression": "none",
+   "dedup": false
+  },
+  "archive_sha256": "7e1aee10f7918f85291508b137b267d11798808820df9b22556b665b434fa357",
+  "archive_bytes": 1049926,
+  "channel": {
+   "substitution_rate": 0.01,
+   "insertion_rate": 0.002,
+   "deletion_rate": 0.002,
+   "coverage": 5
+  },
+  "loss": {
+   "dropout": 0.0,
+   "burst_count": 0,
+   "burst_length": 0
+  },
+  "model": null,
+  "simulator": "v4",
+  "channel_seed": 98092,
+  "channel_stats": {
+   "reads": 164185
+  },
+  "reads_bytes": 104801765,
+  "reads_sha256": "4f742c1489e8d4276bc578ccb81cfa123a57bf9d61474a24fea3da857165ec99",
+  "prepare_seconds": 5.105
+ },
+ "row": {
+  "config": "v14",
+  "load1_start": 0.64697265625,
+  "time": 1792340856.7338,
+  "tree_rss_peak_bytes": 126504960,
+  "vnxdna_file": "/root/vnx-dna-lab/v14/src/vnxdna/__init__.py",
+  "native": {
+   "align": "native",
+   "reads": "native",
+   "rs": "native",
+   "cluster": "native",
+   "strand": "native",
+   "orient": "native",
+   "integrity": "native",
+   "outerlist": "native",
+   "engine": "native"
+  },
+  "stale_libraries": [],
+  "outcome": "SUCCESS",
+  "report": {
+   "seconds": 1.7627387191168964,
+   "peak_rss_bytes": 153210880,
+   "stage_seconds": {
+    "pass1_reads": 1.0120860110037029,
+    "pass1_worker_cpu": 1.0673234619999996,
+    "pass2_decode": 0.11097189015708864,
+    "verify": 0.003531770082190633
+   },
+   "reads": {
+    "reads": 164185,
+    "fast": 49714,
+    "sync": 83100,
+    "speculative": 72156,
+    "reverse_complement": 0,
+    "pending": 27878,
+    "orphans": 11240,
+    "unaligned": 0,
+    "rc_retry_skipped": 18409,
+    "consensus_attempted": 15,
+    "consensus_recovered": 0,
+    "addresses_snapped": 1491
+   },
+   "engine": {
+    "requested": "auto",
+    "rung": "v13",
+    "fallbacks": [
+     {
+      "rung": "stream",
+      "reason": "status FAILURE",
+      "seconds": 0.5375
+     }
+    ],
+    "threads": 1,
+    "dedup": true,
+    "pass1": {
+     "reads": 164185,
+     "fast": 6021,
+     "sync": 6735,
+     "speculative": 6176,
+     "reverse_complement": 0,
+     "pending": 1986,
+     "orphans": 1172,
+     "unaligned": 0,
+     "rc_retry_skipped": 1395,
+     "attempted": 14983,
+     "skipped": 149202,
+     "input_bytes": 104801765,
+     "batches": 13,
+     "rounds": 419,
+     "ns_io": 0.0,
+     "ns_scan": 0.022,
+     "ns_prep": 0.078,
+     "ns_attempt": 0.2043,
+     "ns_spill": 0.0028,
+     "ns_total": 0.3115,
+     "acc_records": 12756,
+     "max_batch": 13165,
+     "table_evictions": 0,
+     "table_bytes": 26214400,
+     "cheap_attempts": 17192,
+     "full_attempts": 2786,
+     "ns_cheap": 0.056,
+     "ns_full": 0.0345,
+     "ns_group": 0.0813,
+     "split_groups": 7918
+    }
+   },
+   "groups_decoded": 411,
+   "groups_failed": 0,
+   "superblock_conflicts": 0,
+   "duplicate_conflicts": 0,
+   "archive_tags_seen": 1,
+   "budget_exhausted": [],
+   "stages_run": [
+    "FAST",
+    "SYNC",
+    "OUTER"
+   ]
+  },
+  "seconds": 1.7709798600990325,
+  "output_sha256": "7e1aee10f7918f85291508b137b267d11798808820df9b22556b665b434fa357",
+  "matches_input": true,
+  "output_is_foreign": false
+ },
+ "class": {
+  "false_success": false,
+  "wrong_archive": false,
+  "crash": false,
+  "expectation_met": true,
+  "note": "ok"
+ }
+}

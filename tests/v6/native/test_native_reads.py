@@ -9,6 +9,7 @@ from __future__ import annotations
 import ctypes
 import gzip
 import logging
+import os
 import subprocess
 from pathlib import Path
 
@@ -321,7 +322,7 @@ def test_abi_mismatch_is_rejected(tmp_path, monkeypatch):
                    "int vnx_reads_new_batch(void) { return 0; }\nint vnx_reads_feed(void) { return 0; }\n")
     lib = tmp_path / "stub.so"
     try:
-        subprocess.run(["cc", "-shared", "-fPIC", str(src), "-o", str(lib)], check=True, capture_output=True)
+        subprocess.run([os.environ.get("CC", "cc"), "-shared", "-fPIC", str(src), "-o", str(lib)], check=True, capture_output=True)
     except (OSError, subprocess.CalledProcessError) as error:
         pytest.skip(f"no C compiler for the ABI stub: {error}")
     monkeypatch.setenv("VNXDNA_READS_LIB", str(lib))

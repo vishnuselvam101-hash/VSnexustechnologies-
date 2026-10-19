@@ -1,0 +1,13 @@
+# phase0 pool at 9bd0149 (code = 58171b8) 2026-10-18 rerun on the same lab host
+E=4 v13 rep 0: 4.38s SUCCESS match=True partition=None pass1=None
+E=4 v13 rep 1: 4.49s SUCCESS match=True partition=None pass1=None
+E=4 v13 rep 2: 4.45s SUCCESS match=True partition=None pass1=None
+E=8 v13 rep 0: 16.40s SUCCESS match=True partition=None pass1=None
+E=8 v13 rep 1: 16.83s SUCCESS match=True partition=None pass1=None
+E=8 v13 rep 2: 17.17s SUCCESS match=True partition=None pass1=None
+E=16 v13 rep 0: 64.77s SUCCESS match=True partition=None pass1=None
+E=16 v13 rep 1: 63.45s SUCCESS match=True partition=None pass1=None
+E=16 v13 rep 2: 63.69s SUCCESS match=True partition=None pass1=None
+E=4: v13 4.45s ['SUCCESS']
+E=8: v13 16.84s ['SUCCESS']
+E=16: v13 63.69s ['SUCCESS']

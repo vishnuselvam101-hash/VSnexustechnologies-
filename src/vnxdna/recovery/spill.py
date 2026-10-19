@@ -24,6 +24,7 @@ class Spill:
         self.acc_files: list = []
         self.pend_files: list = []
         self.orph_file = None
+        self._records_override: int | None = None
         try:
             for b in range(buckets):
                 self.acc_files.append(open(workdir / f"acc{b}.bin", "wb"))
@@ -66,8 +67,29 @@ class Spill:
     def load(self, b: int) -> tuple[np.ndarray, np.ndarray]:
         return (np.fromfile(self.dir / f"acc{b}.bin", dtype=self.acc_dtype), np.fromfile(self.dir / f"pend{b}.bin", dtype=self.pend_dtype))
 
+    @classmethod
+    def view(cls, workdir: Path, buckets: int, acc_dtype: np.dtype, pend_dtype: np.dtype,
+             records: int | None = None) -> "Spill":
+        """A read-only Spill over an already-written bucket directory (no files are opened or truncated).
+
+        Pass-2 reads buckets through :meth:`load` and asks :meth:`records` for the evidence denominator; the streamed
+        pool decode builds per-archive-tag partitions this way and sets ``records`` to the whole-pool count, so
+        :func:`vnxdna.recovery.superblock.evidence_refusal` sees the same denominator as a whole-pool decode."""
+        self = cls.__new__(cls)
+        self.dir = Path(workdir)
+        self.B = buckets
+        self.acc_dtype = acc_dtype
+        self.pend_dtype = pend_dtype
+        self.acc_files = []
+        self.pend_files = []
+        self.orph_file = None
+        self._records_override = records
+        return self
+
     def records(self) -> int:
         """Records spilled so far (verified + pending + unaddressed), from the file sizes; nothing is loaded."""
+        if self._records_override is not None:
+            return self._records_override
         n = 0
         for name, dtype in (("acc", self.acc_dtype), ("pend", self.pend_dtype)):
             for b in range(self.B):

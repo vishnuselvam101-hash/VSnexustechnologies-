@@ -1,6 +1,6 @@
 # Runtime dependencies (mirrors pyproject.toml; install with `pip install -e .`)
 numpy>=2.0,<3
-cryptography>=44,<47
+cryptography>=48.0.1,<51
 zstandard>=0.23,<1
 reedsolo>=1.7,<2
 pydantic>=2.10,<3

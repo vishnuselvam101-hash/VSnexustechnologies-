@@ -1,0 +1,93 @@
+[
+ {
+  "name": "superblock_sealed",
+  "record": {
+   "kind": "superblock",
+   "device_id": "00112233445566778899aabbccddeeff",
+   "block_size": 4096,
+   "blocks_per_extent": 256,
+   "capacity_blocks": 262144,
+   "flags": 1
+  },
+  "hex": "564e5852010001002400000000112233445566778899aabbccddeeff0010000000010000000004000000000001000000d01d35d8"
+ },
+ {
+  "name": "superblock_short_last_extent",
+  "record": {
+   "kind": "superblock",
+   "device_id": "ffffffffffffffffffffffffffffffff",
+   "block_size": 512,
+   "blocks_per_extent": 3,
+   "capacity_blocks": 10,
+   "flags": 0
+  },
+  "hex": "564e58520100010024000000ffffffffffffffffffffffffffffffff00020000030000000a000000000000000000000018a95596"
+ },
+ {
+  "name": "map_update_first",
+  "record": {
+   "kind": "map_update",
+   "txid": 1,
+   "extent": 0,
+   "generation": 1,
+   "previous": 0,
+   "length": 1048576,
+   "sha256": "fa1f726782246745c287dc2eab650763019ba90ceeef08fb5a1ea354aa1da679"
+  },
+  "hex": "564e5852010002004800000001000000000000000000000000000000010000000000000000000000000000000000100000000000fa1f726782246745c287dc2eab650763019ba90ceeef08fb5a1ea354aa1da679da6d5ad8"
+ },
+ {
+  "name": "map_update_remap",
+  "record": {
+   "kind": "map_update",
+   "txid": 9223372036854775807,
+   "extent": 4095,
+   "generation": 7,
+   "previous": 6,
+   "length": 5,
+   "sha256": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
+  },
+  "hex": "564e58520100020048000000ffffffffffffff7fff0f0000000000000700000000000000060000000000000005000000000000002cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b982405a8cc6a"
+ },
+ {
+  "name": "generation_released",
+  "record": {
+   "kind": "generation_released",
+   "txid": 2,
+   "extent": 4095,
+   "generation": 6
+  },
+  "hex": "564e585201000300180000000200000000000000ff0f00000000000006000000000000001498115f"
+ },
+ {
+  "name": "map_batch",
+  "record": {
+   "kind": "map_batch",
+   "txid": 3,
+   "entries": [
+    {
+     "extent": 4,
+     "generation": 2,
+     "previous": 1,
+     "length": 1048576,
+     "sha256": "8fe142e6697fb69c6fefadcf8f2989f7fb7910f6b18f3d23bd810dbc06099396"
+    },
+    {
+     "extent": 5,
+     "generation": 1,
+     "previous": 0,
+     "length": 1048576,
+     "sha256": "0de61956847a6047dcb3b9141adf9ea2bc7f5ba1571df5be1994700c0dee1408"
+    },
+    {
+     "extent": 4095,
+     "generation": 9,
+     "previous": 8,
+     "length": 5,
+     "sha256": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
+    }
+   ]
+  },
+  "hex": "564e585201000400d00000000300000000000000030000000000000004000000000000000200000000000000010000000000000000001000000000008fe142e6697fb69c6fefadcf8f2989f7fb7910f6b18f3d23bd810dbc0609939605000000000000000100000000000000000000000000000000001000000000000de61956847a6047dcb3b9141adf9ea2bc7f5ba1571df5be1994700c0dee1408ff0f0000000000000900000000000000080000000000000005000000000000002cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824cfbb55b0"
+ }
+]

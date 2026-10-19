@@ -1,0 +1,27 @@
+[package]
+name = "vnxd"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"   # the toolchain it is built and tested with (OnceLock and div_ceil need >= 1.73; Debian 12 ships 1.63)
+publish = false
+description = "VNX storage service (V14): storage contracts, persisted record formats, protocol schemas and the media-adapter contract"
+license = "MIT"
+
+[lib]
+name = "vnxd"
+path = "src/lib.rs"
+
+[[bin]]
+name = "vnxd"
+path = "src/bin/vnxd.rs"
+
+# No third-party crates: the service builds offline with the standard library only
+# (docs/V14_LANGUAGE_AND_RUNTIME_STRATEGY.md, decision D2).
+[dependencies]
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+debug = false
+overflow-checks = true   # every arithmetic overflow on a block address or length is a panic, never a wrap

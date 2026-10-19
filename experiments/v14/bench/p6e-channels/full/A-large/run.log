@@ -1,0 +1,6 @@
+indel-16m-w4 seed 97300 (16777216 B): v12 9.54s SUCCESS | v13 5.89s SUCCESS | v14 6.24s SUCCESS | v14aa 6.10s SUCCESS | identical=True
+indel-16m-w4 seed 97301 (16777216 B): v14aa 5.90s SUCCESS | v14 5.92s SUCCESS | v13 5.61s SUCCESS | v12 9.76s SUCCESS | identical=True
+indel-16m-w4 seed 97302 (16777216 B): v12 9.58s SUCCESS | v13 5.82s SUCCESS | v14 5.93s SUCCESS | v14aa 5.87s SUCCESS | identical=True
+sub-64m-w4 seed 98070 (67108864 B): v12 18.99s SUCCESS | v13 11.28s SUCCESS | v14 12.46s SUCCESS | v14aa 13.69s SUCCESS | identical=True
+sub-64m-w4 seed 98071 (67108864 B): v14aa 11.62s SUCCESS | v14 11.86s SUCCESS | v13 11.59s SUCCESS | v12 19.30s SUCCESS | identical=True
+sub-64m-w4 seed 98072 (67108864 B): v12 18.43s SUCCESS | v13 11.39s SUCCESS | v14 11.61s SUCCESS | v14aa 11.49s SUCCESS | identical=True

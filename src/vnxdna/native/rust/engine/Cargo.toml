@@ -2,10 +2,10 @@
 name = "vnx_engine"
 version = "1.0.0"
 edition = "2021"
-rust-version = "1.63"   # std::thread::scope
+rust-version = "1.75"   # the toolchain it is built and tested with (let-else needs >= 1.65; Debian 12 ships 1.63)
 publish = false
 description = "VNX-DNA V13 streaming decode engine: pass 1 end to end (IO, scan, orientation, address scheduling, decode attempts, spill) behind a C ABI"
-license = "Proprietary"
+license = "MIT"
 build = "build.rs"
 
 [lib]
