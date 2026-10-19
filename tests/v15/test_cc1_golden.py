@@ -45,18 +45,21 @@ CASES = {
     "shuffled-indel": ("random", 192 * KIB, {}, {**INDEL, "shuffle_window": 1000000}, 15200),
 }
 THREADS = (1, 3)
-VOLATILE = {"seconds", "stage_seconds", "peak_rss_bytes", "threads", "elapsed", "pass1_worker_cpu", "library_origin"}
+#: report fields that are timings, memory or thread counts, or that describe how the native backends were selected
+#: (environment, e.g. VNXDNA_ENGINE_BACKEND=native in the sanitizer runs), not what the decode decided
+VOLATILE = {"seconds", "stage_seconds", "peak_rss_bytes", "threads", "elapsed", "pass1_worker_cpu", "library_origin",
+            "requested", "native_backends", "path_selection"}
 
 #: recorded with 14.0.0 (7369e09): name -> (outcome, output sha256, normalised report sha256, engine trace sha256)
 GOLDEN: dict[str, tuple] = {
-    'clean-cov3': ('SUCCESS', '96db1888a82abf1519a8cb977213cfa2f2c1c633dc7b2f01e4907e401d3bd121', '8af416ad03a460705918f56778d8daf5d29c3cfda0a2ab46f6b5937829d39469', '498fbd930fdc37bb8721b3b20a1c9a68c7a67bc68a7332a3432deecbd6359dae'),
-    'dup-strandbias': ('SUCCESS', '25f3ad3f2f85a6a2d6e16df03b4c0247d0dd77fe83be3ca5ef0d0810b15402be', '7dc5028a3f96457ffefae251cc95c3d8bc591ca3a8cd719a3583b780ef6d5d97', '2490014b41fb7b2c906f8d576428896ea666d81b0ee44419e4b98974d2ad5899'),
-    'indel-cov5': ('SUCCESS', '6997939abef7bb4931abc7b0fc85d429c2c375a9f66722109dc013446e0ceef3', '04b12882f0d5f7c3f8bc8511fe6c52bbde8a3056cc693ab683fea296999aa9e2', 'aea60bb2d2aad25ded50a85abbfb42941408fb4e496aff8d0a812b1a28ae9e5a'),
-    'lowcov-indel': ('FAILURE', None, 'a21f7272a19f3121359a6478c6c5c5177b803ee028c4a46526bf7767e2651907', '846689aeb224837d509593abe4ed47465ed64092a4d55cf661cb967d0b23a25b'),
-    'mixed-harsh': ('SUCCESS', '4b42c143ab1ddaf2ab4be0b9c891e44ee1fed299e69ce02b68a352eb26d7a761', '66c4897e25be4da1a4fc628e826fd2c85d0d7d41f99ca27b03b43ebef5c66ce8', 'f816e3b91868821a7ff5f7205a500dbd01b7a34cc13f56a76eda4ddf27188437'),
-    'rc50-indel': ('SUCCESS', '2cf333d6336aff8c1b7191df563e3433fdfb973f620d46aca9482f46059d9498', '1f93af3dd756d2a0ed3000ad2002425cc96e7751d4090ddd8e71a16799566950', '1ea33320ed26b415d1aae6a20ffd177c566f5f4a40aaefb3a847c0394b7a1850'),
-    'shuffled-indel': ('SUCCESS', 'dd639fcb19a64c2680cf794551cff80712db9f1a2053b6db84acd6003de6da2b', 'f01d88d408cb96532d74adcc1d1395b8b55047dc2133d3adb56dc430cab505a6', 'aea705960109edd0641b7513b7406f9d4c0d3b5ba43e834f100fc82354b999d5'),
-    'zero-heavy-indel': ('SUCCESS', '13787aa36281c48f260de8c4a286527416e83450a1a03a6218a5b22de6af0270', 'bbcacdfa94e4eb79f8bc8c06512b078d269c30fd3b25a786e20dd0ee7c0dc6d1', 'c0419b48fd7470f95c38e9ffc957a38526cbb33ea3496d651b7a6f7036b7c5e3'),
+    'clean-cov3': ('SUCCESS', '96db1888a82abf1519a8cb977213cfa2f2c1c633dc7b2f01e4907e401d3bd121', '1fc21e28e72c4a837257a753e6648137cc0639943460a3bc1a12d6870699969e', '498fbd930fdc37bb8721b3b20a1c9a68c7a67bc68a7332a3432deecbd6359dae'),
+    'dup-strandbias': ('SUCCESS', '25f3ad3f2f85a6a2d6e16df03b4c0247d0dd77fe83be3ca5ef0d0810b15402be', 'dbc9df148037c41f9685cfe620d517e66a16227eebea4db71395858e451ca1c3', '2490014b41fb7b2c906f8d576428896ea666d81b0ee44419e4b98974d2ad5899'),
+    'indel-cov5': ('SUCCESS', '6997939abef7bb4931abc7b0fc85d429c2c375a9f66722109dc013446e0ceef3', 'e5b1fc0ee30602b152d55274a6cb9648ecdb6ca9f56ecd0bbf049f1897603b6c', 'aea60bb2d2aad25ded50a85abbfb42941408fb4e496aff8d0a812b1a28ae9e5a'),
+    'lowcov-indel': ('FAILURE', None, '81e4202940b21a9682141ca4f349461581ad31920dc98e33105cf566deb9c812', '846689aeb224837d509593abe4ed47465ed64092a4d55cf661cb967d0b23a25b'),
+    'mixed-harsh': ('SUCCESS', '4b42c143ab1ddaf2ab4be0b9c891e44ee1fed299e69ce02b68a352eb26d7a761', 'dc26377a972a1fe9f8367abf58f56ee8bcddfe532b2871789b58a8982302fd59', 'f816e3b91868821a7ff5f7205a500dbd01b7a34cc13f56a76eda4ddf27188437'),
+    'rc50-indel': ('SUCCESS', '2cf333d6336aff8c1b7191df563e3433fdfb973f620d46aca9482f46059d9498', '634b41a7680725249b555d5eb8a14ca3411fb32cd6b727cc32a49b761dd99429', '1ea33320ed26b415d1aae6a20ffd177c566f5f4a40aaefb3a847c0394b7a1850'),
+    'shuffled-indel': ('SUCCESS', 'dd639fcb19a64c2680cf794551cff80712db9f1a2053b6db84acd6003de6da2b', 'a5d190fc086d527599fc4b6a701796e08dfab4516f54f31cccea7b15a088daf9', 'aea705960109edd0641b7513b7406f9d4c0d3b5ba43e834f100fc82354b999d5'),
+    'zero-heavy-indel': ('SUCCESS', '13787aa36281c48f260de8c4a286527416e83450a1a03a6218a5b22de6af0270', 'f30f40f8dfaddeb9943d1f8dd4ff0774c1c2a962c48224afe394284919c7a813', 'c0419b48fd7470f95c38e9ffc957a38526cbb33ea3496d651b7a6f7036b7c5e3'),
 }
 
 
