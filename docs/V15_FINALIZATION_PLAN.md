@@ -841,6 +841,30 @@ RT-2. Acceptance in V15: the full stack runs over six simulated pools (P7 dnasim
 showing that loss/damage in one pool is contained and recovered as declared (e.g. metadata rebuilt from storage-pool
 headers, journal replay after a crash).
 
+**DNA-only adaptation of the V14 subsystems (DA track, founder 2026-10-19).** Every operation is a long-running job
+(synthesis hours, retrieval minutes or more), so each subsystem becomes planned, batched, tracked and fail-safe:
+
+| id | subsystem | V15 change | starts from |
+|---|---|---|---|
+| DA-1 | VNX-IO → job engine | writes/reads as tracked jobs: states (queued, synthesising, committed, retrieving, verified), progress, hour-scale deadlines, cancellation, host-visible status | `vnxd/src/io.rs`, P8 device |
+| DA-2 | VNX-RAM → RAM-pool manager | small hot pool, versioned updates, stale-version tracking, compaction into a fresh pool | `ram.rs`, `volume.rs` |
+| DA-3 | cache → predictive pre-retrieval | access-pattern prediction, pre-sequencing of likely reads (RT-1) | `cache.rs` |
+| DA-4 | load balancer → molecular scheduler | fair sharing of synthesiser slots, sequencer flow cells, reagents and cost; priority retrieval | `balance.rs` |
+| DA-5 | fallback → per-pool health | pool damage rebuilt from other pools (metadata from storage headers, journal replay); synthesis down → read-only; sequencing down → retrieval blocked with status; never wrong bytes | `fallback.rs`, `fault.rs` |
+| DA-6 | volume/journal → journal pool + group commit | journal in its own pool; many writes per synthesis run | `journal.rs`, `volume.rs` |
+| DA-7 | security → per-pool keys | per-pool sealing keys, audit log in the security pool, tamper checks on retrieval | `seal.rs`, `audit.rs`, AP-16 |
+| DA-8 | synthesis batch planner (new) | pack pending writes into runs minimising time and reagents | P7 lab interface |
+| DA-9 | retrieval planner (new) | choose pools and primer sets; retrieve only what is needed | CC-5, `.vxidx` |
+| DA-10 | consumables manager (new) | reagents/flow cells/cartridges inventory, warnings, refuse writes that cannot complete | P7 `lab.rs` |
+| DA-11 | pool lifecycle manager (new) | ageing, decay forecast, refresh scheduling | AP-7, RS-3 |
+| DA-12 | GC / compaction (new) | logical removal of stale versions; physical erasure under RT-2 | DA-2 |
+| DA-13 | instrument drivers (new) | real synthesiser/sequencer drivers through AP-11, simulator until hardware exists | AP-11, P7 |
+| DA-14 | drive digital twin (new) | whole-drive simulation: six pools, instruments, failures, timing; the V15 test bed | P7 dnasim, P9 matrix |
+
+Acceptance: the P9-style end-to-end matrix re-run against the digital twin (DA-14) in DNA-only mode, including
+per-pool damage, instrument failure, consumable exhaustion, power loss mid-job and crash replay; 0 wrong bytes or
+false successes. All software, ₹0.
+
 **Research track RT-2: molecular memory and computation.** Move control state and computation into molecules as the
 science matures: DNA-based rewritable memory and DNA logic (strand-displacement) circuits, starting from
 `docs/V14_MOLECULAR_MEMORY.md`; literature survey first (sources verified at M0), simulation next; THEORETICAL /
