@@ -59,3 +59,12 @@ On the final head: configurations v12, v14, final, finalaa on T-A and T-B, n = 9
 V14 tiers are claimed only when the CI lower bound of v12/final clears them: T-A >= 5x, T-B >= 3x. If a target is
 missed, the remaining serial share (Amdahl bound from the stage profile) is quantified and reported. Deviations
 from this document are reported as deviations.
+
+## Amendment 1 (written after change 3 was measured and reverted, before change 4 was measured)
+
+Change 3 (engine read-ahead scan) gave T-B 1.104 [1.04, 1.294] against an A/A band of [0.993, 1.074]: the lower
+bound clears 1 but not the A/A upper bound, so it was reverted under the rule above. It is not re-tested. With n = 9
+the A/A band is about +-4 %, wider than the gains the remaining candidates can give. From change 4 on, every per-change
+A/B uses n = 18 seeds per primary workload (T-A 95500-95517, T-B 95100-95117), same configurations, order rule,
+statistic and keep rule. The final measurement stays as registered (n = 9 seeds 95500-95508 / 95100-95108, plus the
+same configurations on the 9 extension seeds, reported separately).
