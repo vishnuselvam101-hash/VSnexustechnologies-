@@ -138,7 +138,8 @@ pip install --target $R/site --platform manylinux_2_17_aarch64 --platform manyli
      numpy==2.5.3 pydantic==2.13.5 pydantic_core==2.46.5 cryptography==50.0.2 cffi==2.1.1 zstandard==0.25.0 \
      typer==0.27.2 click rich ... pytest==8.4.2 hypothesis==6.168.3 ...   # the lab pins (pip freeze)
 cp <venv>/site-packages/reedsolo.py $R/site/                   # pure Python; PyPI has only an sdist
-PYROOT=$R tools/cross_aarch64.sh pytest tests/v6/test_native_rs.py ...
+mkdir -p $R/sysroot/usr/lib/python3 && ln -s $R/site $R/sysroot/usr/lib/python3/dist-packages   # on the default path
+PYROOT=$R tools/cross_aarch64.sh pytest tests/v6/native/test_native_rs.py ...
 ```
 
 `tools/cross_aarch64.sh pytest` points every `VNXDNA_*_LIB` at the aarch64 kernels and sets `CC`/`CXX` to the cross
