@@ -1131,7 +1131,15 @@ P12 adds rows here; the lead merges them into the tracks when finalizing.
 
 | from P12 criterion | finding | proposed V15 item |
 |---|---|---|
-| — | — | — |
+| 2 reproducible build | no clean-checkout build + test evidence; only the lab worktree was tested | reproducible clean-build test: fresh clone at the release SHA, clean venv, native + crate builds, full suite, the log committed |
+| 14 benchmarks separated by backend | benchmark report §2 logical I/O, §3 cache, §5 electronic backend, §6 simulator end to end NOT MEASURED | `vnxd-io-bench` (JSON lines, one configuration per process) and a driver for §2/3/5/6 |
+| 11 block device E2E | B05 kill-under-load left `/dev/nbdN` attached until b2e5e0e (test fd leak) | nbd-leak soak (repeated E2E + kill rows, 0 attached devices / mounts after) as a release gate |
+| 12 filesystem tests | ext4 only, on this host | xfs, btrfs and f2fs over `/dev/nbdN` on disposable devices |
+| 10 simulator + electronic backend | E2E rows M02/M04 run the DNA adapters on the TEST-ONLY `ToyCodec` | M02/M04 with the real codec worker |
+| 15 ARM64 / Pi | Pi acceptance hardware-blocked; R24 is a SIMULATED budget | Pi native build + golden subset and R24-hw when hardware exists |
+| 2/7 evidence | the release-gate suite log lived only in the lab results directory | commit the release-gate suite log under a tracked results path (`results/v<N>/release-gate/`) |
+| 14 trade-offs | strand retry rung doubles time-to-FAILURE on undecodable inputs; ~2-5 % single-archive regression vs V13 at w4 | early exit when pass 1 shows capacity exceeded; profile the per-read bookkeeping on the V13-rule path |
+| 9 security + integrity | O-1: unkeyed journal CRC-32 lets a writer reorder or roll back commits of an encrypted volume undetected | keyed journal MAC (or extent number/version bound into the sealed data) as the encrypted-volume release gate |
 
 ## 13. References
 
