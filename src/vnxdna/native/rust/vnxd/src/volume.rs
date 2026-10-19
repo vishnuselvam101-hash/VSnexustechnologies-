@@ -191,9 +191,17 @@ impl Volume {
         std::fs::create_dir_all(dir)
             .map_err(|e| VnxError::new(ErrorCode::BackendUnavailable, format!("create {}: {e}", dir.display())))?;
         let sb = Record::Superblock(Superblock { device_id, geometry, flags });
-        let journal = Journal::create(&dir.join(JOURNAL_FILE), &sb)?;
-        media.put(marker_ref(), &marker_bytes(&device_id))?;
-        media.sync()?;
+        let jpath = dir.join(JOURNAL_FILE);
+        let journal = Journal::create(&jpath, &sb)?;
+        if let Err(e) = media.put(marker_ref(), &marker_bytes(&device_id)).and_then(|_| media.sync()) {
+            // undo, so a failed create leaves no half-made device and can simply be retried: the backend was empty
+            // (checked above), so a marker it may hold (acknowledgement lost) is this attempt's own
+            drop(journal);
+            let _ = media.remove(marker_ref());
+            let _ = std::fs::remove_file(&jpath);
+            let _ = std::fs::File::open(dir).and_then(|d| d.sync_all());
+            return Err(e);
+        }
         let state = State {
             journal,
             map: BTreeMap::new(),
@@ -790,6 +798,23 @@ mod tests {
         assert_eq!(v.write_extent(ExtentId(1), &fill(1, 1)).unwrap().generation.get(), 3, "generations never reused");
         assert_eq!(v.write_extent(ExtentId(1), &[0; 5]).unwrap_err().code, ErrorCode::InvalidArgument);
         assert_eq!(v.read_extent(ExtentId(3)).unwrap_err().code, ErrorCode::OutOfRange);
+    }
+
+    #[test]
+    fn a_failed_create_leaves_nothing_behind_and_can_be_retried() {
+        // V14-P9-D2: when the device-marker put failed, create left its journal behind: every retry failed with
+        // BACKEND_UNAVAILABLE ("File exists", a retryable code for a permanent state) and open refused the directory
+        let d = TempDir::new("vol");
+        let m = Arc::new(FailNth::new());
+        m.fail_in(1);
+        let e = Volume::create(&d.0, geo(), [1; 16], 0, m.clone(), VolumeConfig::default()).err().unwrap();
+        assert_eq!(e.code, ErrorCode::BackendUnavailable);
+        assert!(!d.0.join(JOURNAL_FILE).exists(), "no journal of a device that was never created");
+        assert!(m.list().unwrap().is_empty());
+        let v = Volume::create(&d.0, geo(), [1; 16], 0, m.clone(), VolumeConfig::default()).unwrap();
+        v.write_extent(ExtentId(0), &fill(0, 1)).unwrap();
+        drop(v);
+        assert_eq!(Volume::open(&d.0, m, VolumeConfig::default()).unwrap().0.read_extent(ExtentId(0)).unwrap(), fill(0, 1));
     }
 
     #[test]

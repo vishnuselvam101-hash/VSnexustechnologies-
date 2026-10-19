@@ -151,6 +151,7 @@ def test_worker_refuses_a_shared_staging_directory_and_symlinked_inputs(tmp_path
     (tmp_path / "secret").write_bytes(b"not for the worker")
     (private / "in").symlink_to(tmp_path / "secret")
     w = wk.Worker(KEY, private)
+    w.handle(_req(0, "hello", {"client": "t", "versions": [1]}))
     args = {"job": 1, "device_id": DEV.hex(), "extent": 0, "generation": 1, "input": "in",
             "input_sha256": hashlib.sha256(b"not for the worker").hexdigest(), "output": "out"}
     r = json.loads(w.handle(_req(1, "seal_extent", args)))

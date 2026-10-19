@@ -884,12 +884,22 @@ mod tests {
         }
     }
 
+    /// Opens the gate when dropped. Declared after the queue, so it drops first: a failing assertion then unwinds into
+    /// a queue whose workers can finish, instead of hanging in the queue's drop (it joins workers stuck in the gate).
+    struct OpenOnDrop(Arc<Gate>);
+    impl Drop for OpenOnDrop {
+        fn drop(&mut self) {
+            self.0.release();
+        }
+    }
+
     #[test]
     fn backpressure_cancellation_timeout_and_barrier() {
         let d = TempDir::new("io");
         let gate = Arc::new(Gate::new());
         let io = setup(&d, gate.clone());
         let q = IoQueue::start(io.clone(), QueueConfig { workers: 2, depth: 3 }).unwrap();
+        let _open = OpenOnDrop(gate.clone());
         // two writes to extent 0 and 1 start and block in the backend
         let w0 = q.submit(Op::Write { offset: 0, data: vec![1; 2048] }, None).unwrap();
         let w1 = q.submit(Op::Write { offset: 2048, data: vec![2; 2048] }, None).unwrap();
@@ -929,6 +939,7 @@ mod tests {
         let gate = Arc::new(Gate::new());
         let io = setup(&d, gate.clone());
         let q = IoQueue::start(io.clone(), QueueConfig { workers: 1, depth: 8 }).unwrap();
+        let _open = OpenOnDrop(gate.clone());
         let running = q.submit(Op::Write { offset: 0, data: vec![5; 100] }, None).unwrap();
         gate.wait_blocked(1);
         let queued: Vec<Ticket> =
@@ -957,6 +968,7 @@ mod tests {
         let gate = Arc::new(Gate::new());
         let io = setup(&d, gate.clone());
         let q = IoQueue::start(io.clone(), QueueConfig { workers: 1, depth: 8 }).unwrap(); // the only worker is stuck
+        let _open = OpenOnDrop(gate.clone());
         let stuck = q.submit(Op::Write { offset: 0, data: vec![1; 100] }, None).unwrap();
         gate.wait_blocked(1);
         let c = q.submit(Op::Write { offset: 10, data: vec![2; 10] }, None).unwrap();
