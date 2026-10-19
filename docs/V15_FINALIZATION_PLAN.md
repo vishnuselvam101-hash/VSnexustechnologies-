@@ -875,6 +875,23 @@ pre-retrieval of likely-needed data into the electronic tiers; read parallelism 
 electrode synthesis; in-situ reading without library preparation; each integrated through the AP-11 plugin SDK when
 real hardware exists, with measured latency reported honestly.
 
+## 5B-G. GRAND TARGET: DNA replacing RAM and SSD (founder, 2026-10-19)
+
+The specialised long-term target of VNX is DNA as a replacement for electronic storage and memory. It is pursued as a
+measured ladder, never claimed early:
+
+| rung | replaces | condition to claim it | status |
+|---|---|---|---|
+| R1 | archive tape / cold storage | reliable write + read with long retention, MEASURED with real DNA | closest: V15 + first wet-lab result (CC-5) |
+| R2 | cold SSD / backup drive | retrieval in minutes; cost per GB competitive | needs faster, cheaper synthesis and sequencing |
+| R3 | warm SSD (daily files) | seconds-level reads; rewrite cycles via molecular erase | needs RT-1 in-situ reading, RT-2 erasure |
+| R4 | RAM | nanosecond-class rewritable molecular memory | frontier research (RT-2); no known chemistry today |
+
+**Gap dashboard (every release from V15):** the DNA-only drive (digital twin until hardware exists, then hardware)
+and a reference SSD and RAM measured on the same workloads: read/write latency, throughput, cost per GB, rewrite
+cycles, energy at rest and active, retention. Reported as ratios with their sources; the gap is tracked, never
+rounded away. VNX software is kept ready to exploit each hardware improvement immediately (AP-11 drivers, DA track).
+
 ## 5C. EXTREME TARGETS (founder, 2026-10-19: "push the limits to the extreme")
 
 Ambition is expressed as measured records against published work or theoretical limits, never as unsupported
