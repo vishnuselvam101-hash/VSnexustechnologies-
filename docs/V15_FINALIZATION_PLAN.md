@@ -845,7 +845,7 @@ superlatives. Each target reports the number, the comparator, the method and the
 | X4 | false-success bound | upper confidence bound on P(wrong bytes returned) from very large adversarial campaigns | — (absolute bound) | E suite, QA-2 |
 | X5 | proven safety | formally verified "never returns unverified bytes" for the scoped core | — | F7 |
 | X6 | scale | decode time linear in pool size at constant memory up to the largest simulated pool feasible | V14 linear pool decode | workstream A |
-| X7 | host latency | p50/p99 per tier on the drive (see §5B commitment) | — | F8, P8 device |
+| X7 | DNA latency | measured write/read latency per stage of the DNA-only drive (synthesis, retrieval, sequencing, decode), driven down by RT-1 | — | RT-1, P8 device |
 
 ## 6. Platform items
 
