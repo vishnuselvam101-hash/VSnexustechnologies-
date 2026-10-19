@@ -813,6 +813,18 @@ retrieve, decode and protection itself, fully offline.
 | security | AP-16 24/7 offline monitor, AP-4 post-quantum, AP-1 WORM, AP-3 escrow, secure boot | hardware tamper sensors |
 | network | AP-17 offline-only build, signed USB updates | — |
 
+**Performance commitment (founder, 2026-10-19: "no matter what we need to build that system").** The drive is built
+to microsecond-class host latency: writes acknowledged once durable in the VNX-RAM + power-loss-safe SSD journal;
+reads of data resident in the RAM/SSD tiers at microsecond-class latency; p50/p99 latencies measured on the real
+controller board and reported per tier (acceptance target set at M0 from the first hardware measurement). Data that
+lives only in the DNA tier is reported with its retrieval status and expected time; no microsecond claim is made for
+the molecular tier.
+
+**Research track RT-1: reducing molecular-tier latency** (pursued continuously, never promised): predictive
+pre-retrieval of likely-needed data into the electronic tiers; read parallelism (many pores/sensors) and parallel
+electrode synthesis; in-situ reading without library preparation; each integrated through the AP-11 plugin SDK when
+real hardware exists, with measured latency reported honestly.
+
 ## 6. Platform items
 
 ### PL-1 ublk upgrade (P8 Stage A')
