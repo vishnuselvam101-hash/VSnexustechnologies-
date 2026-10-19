@@ -825,6 +825,21 @@ pre-retrieval of likely-needed data into the electronic tiers; read parallelism 
 electrode synthesis; in-situ reading without library preparation; each integrated through the AP-11 plugin SDK when
 real hardware exists, with measured latency reported honestly.
 
+## 5C. EXTREME TARGETS (founder, 2026-10-19: "push the limits to the extreme")
+
+Ambition is expressed as measured records against published work or theoretical limits, never as unsupported
+superlatives. Each target reports the number, the comparator, the method and the confidence interval.
+
+| id | target | metric | comparator | builds on |
+|---|---|---|---|---|
+| X1 | density near capacity | net bits/base at a declared recovery rate, and the gap to the channel's capacity bound | published codecs on the same channel (CC-2) | CC-4, ECC math |
+| X2 | robustness envelope | highest substitution/indel/dropout rates and lowest coverage still decoded (rate at ≥ declared recovery) | HEDGES, DNA-Aeon, DNA-RS, marker codes (CC-2) | CC-2, RS-3 |
+| X3 | decode throughput | MB/s per core and scaling efficiency to N cores, end-to-end | the same decoders on the same host | CC-1, AP-12 |
+| X4 | false-success bound | upper confidence bound on P(wrong bytes returned) from very large adversarial campaigns | — (absolute bound) | E suite, QA-2 |
+| X5 | proven safety | formally verified "never returns unverified bytes" for the scoped core | — | F7 |
+| X6 | scale | decode time linear in pool size at constant memory up to the largest simulated pool feasible | V14 linear pool decode | workstream A |
+| X7 | host latency | p50/p99 per tier on the drive (see §5B commitment) | — | F8, P8 device |
+
 ## 6. Platform items
 
 ### PL-1 ublk upgrade (P8 Stage A')
