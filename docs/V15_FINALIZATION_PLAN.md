@@ -1,6 +1,6 @@
 # V15 finalization plan
 
-**Status: DRAFT (V14 phase P13, 2026-10-18; revised the same day with the lead's additions: core codec track,
+**Status: FINAL (M0 2026-10-19; see V15_M0_DECISIONS.md) (V14 phase P13, 2026-10-18; revised the same day with the lead's additions: core codec track,
 frontier track, long-term-readability objective, competitive position and IP).** Written from `build/v14` a32cbf5 before the P12 acceptance review.
 P12 may add items (every criterion it marks FAIL or INCOMPLETE becomes a V15 item or an explicit, documented
 non-goal). The V14 lead finalizes this plan after P12. Nothing in it is implemented, and nothing was run or measured
@@ -906,6 +906,28 @@ superlatives. Each target reports the number, the comparator, the method and the
 | X5 | proven safety | formally verified "never returns unverified bytes" for the scoped core | — | F7 |
 | X6 | scale | decode time linear in pool size at constant memory up to the largest simulated pool feasible | V14 linear pool decode | workstream A |
 | X7 | DNA latency | measured write/read latency per stage of the DNA-only drive (synthesis, retrieval, sequencing, decode), driven down by RT-1 | — | RT-1, P8 device |
+
+## 5D. HARDWARE and OS tracks (founder, 2026-10-19)
+
+**Controller boards (cheapest first).** Full VNX (Linux, ARM64; P10) on a Raspberry Pi Zero 2 W (512 MB, `--low-memory`
+profile ~96 MB, USB gadget) as the minimum target, Pi 4/5 as the standard one; other 64-bit ARM Linux boards with
+>= 512 MB and USB gadget support are candidates after testing. ESP32/Arduino-class microcontrollers cannot run VNX (RAM,
+no Linux) and are used only as helpers on a serial link: temperature/humidity, tamper, pumps/valves/motors of the DNA
+modules. Nothing has run on real hardware yet (PL-2).
+
+| id | hardware track | what we design | first step at ₹0 |
+|---|---|---|---|
+| H1 | carrier board | our own PCB around a Raspberry Pi Compute Module: USB-C host link, power-loss hold-up, secure element, tamper, sensor/helper connectors, enclosure | spec + KiCad schematic + BOM checked against datasheets |
+| H2 | fully custom controller board | own board with an off-the-shelf SoC, DDR layout, Linux bring-up | after H1; needs funding |
+| H3 | VNX codec accelerator (FPGA) | Verilog for the hot paths (RS decode, alignment, consensus), bit-exact against the software reference | Verilog + Verilator/Yosys simulation of the GF(256) RS decoder, differential against `vnxdna` |
+| H4 | VNX codec ASIC | the proven H3 design taped out on an open PDK | after H3; fabrication costs money |
+| H5 | own DNA hardware | electrode synthesis, microfluidics, nanopore read electronics | research partnership (RT-1/RT-2) |
+
+| id | OS track | what | first step |
+|---|---|---|---|
+| OS1 | VNX-OS | own minimal Linux distribution (Buildroot/Yocto): kernel + VNX only, no network stack, read-only root, secure boot (P11), A/B and signed USB updates (AP-17); boots straight into the drive | Buildroot ARM64 config, boot + VNX tests in QEMU |
+| OS2 | verified core | keys, security monitor and audit on the seL4 microkernel; Linux drivers isolated | after OS1; ties to F7 |
+| OS3 | own kernel | a VNX-specific kernel (e.g. Rust) | long-term research |
 
 ## 6. Platform items
 
