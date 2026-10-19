@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import os
 from collections import Counter
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -47,6 +48,13 @@ class Probe:
     scores: dict = field(default_factory=dict)
     sync_vote: bool = False
 
+    def ensure_heads(self) -> dict:
+        """The frame-start bytes of the sample, computed on first use: :func:`probe_reads` leaves them out, since the
+        layout choice needs them only when no candidate verified a frame (V15 CC-1)."""
+        if not self.heads and self.n:
+            self.heads = frame_heads(self.sample)
+        return self.heads
+
     def dominant(self, domain: str) -> tuple[int, float, float, int]:
         """(nibble u, share of reads showing u in either orientation, share among the reads whose variant byte b0 is
         not the most common one, size of that set) for the most frequent nibble of ``domain``.
@@ -55,7 +63,7 @@ class Probe:
         kind) XOR keystream(domain, b0)[0], so in its own domain every read shows the version whatever its variant,
         while in a foreign domain a nibble value only follows one variant. Most strands use variant 0, so a foreign
         domain alone can show one nibble in about half of the reads (measured 0.39-0.57 on the probe test pools)."""
-        if not self.heads or not self.n:
+        if not self.ensure_heads() or not self.n:
             return 0, 0.0, 0.0, 0
         di = [d for d, _ in DOMAINS].index(domain)
         (b0f, nf, vf), (b0r, nr, vr) = self.heads["forward"], self.heads["reverse"]
@@ -83,19 +91,62 @@ class Probe:
         return share >= threshold and (rest_share >= threshold if n_rest >= 16 else share >= 0.9)
 
 
-def sample_reads(reads_path: str | os.PathLike, limit: int = SAMPLE_READS) -> tuple[Counter, list]:
-    """D1 step 1: up to ``limit`` reads (codes) and the read-length histogram of the sampled batches."""
+class FlatSample(Sequence):
+    """The sampled reads as one code array plus read starts and lengths; behaves as the list of per-read code arrays
+    (views into the one array) that :func:`sample_reads` returns, built only when a caller iterates it."""
+
+    def __init__(self, codes: np.ndarray, lengths: np.ndarray) -> None:
+        self.codes = codes
+        self.lengths = lengths
+        self.starts = np.concatenate([[0], np.cumsum(lengths)[:-1]]).astype(np.int64) if lengths.size else \
+            np.zeros(0, dtype=np.int64)
+        self._list: list | None = None
+
+    def _views(self) -> list:
+        if self._list is None:
+            ends = (self.starts + self.lengths).tolist()
+            self._list = [self.codes[a:e] for a, e in zip(self.starts.tolist(), ends)]
+        return self._list
+
+    def __len__(self) -> int:
+        return int(self.lengths.size)
+
+    def __getitem__(self, i):
+        return self._views()[i]
+
+    def __iter__(self):
+        return iter(self._views())
+
+    def exact(self, nt: int, limit: int) -> np.ndarray | None:
+        """``np.stack`` of the first ``limit`` reads of exactly ``nt`` bases (None if there is none)."""
+        idx = np.flatnonzero(self.lengths == nt)[:limit]
+        if not idx.size:
+            return None
+        return self.codes[self.starts[idx][:, None] + np.arange(nt, dtype=np.int64)[None, :]]
+
+
+def _sample_flat(reads_path: str | os.PathLike, limit: int = SAMPLE_READS) -> tuple[Counter, FlatSample]:
     counts: Counter = Counter()
-    sample: list[np.ndarray] = []
+    codes: list[np.ndarray] = []
+    lens: list[np.ndarray] = []
     seen = 0
     for batch in iter_reads(reads_path, 4096):
         counts.update(batch.lengths.tolist())
-        offs = np.concatenate([[0], np.cumsum(batch.lengths)])
-        sample.extend(batch.codes[offs[i]:offs[i + 1]] for i in range(batch.count))
+        n_codes = int(batch.lengths.sum())
+        codes.append(batch.codes[:n_codes])
+        lens.append(batch.lengths[:batch.count])
         seen += batch.count
         if seen >= limit:
             break
-    return counts, sample
+    if not lens:
+        return counts, FlatSample(np.zeros(0, dtype=np.uint8), np.zeros(0, dtype=np.int64))
+    return counts, FlatSample(np.concatenate(codes), np.concatenate(lens).astype(np.int64))
+
+
+def sample_reads(reads_path: str | os.PathLike, limit: int = SAMPLE_READS) -> tuple[Counter, list]:
+    """D1 step 1: up to ``limit`` reads (codes) and the read-length histogram of the sampled batches."""
+    counts, flat = _sample_flat(reads_path, limit)
+    return counts, list(flat)
 
 
 def frame_heads(sample: list) -> dict:
@@ -128,11 +179,13 @@ def frame_heads(sample: list) -> dict:
 def probe_reads(reads_path: str | os.PathLike, band: int = 6) -> Probe:
     """D1 steps 1–4: sample, nibble histograms, length candidates (≥ 10 % of the sample within the band) and the frame
     check vote of every candidate (exact-length reads, both orientations; applied even to a single candidate)."""
-    counts, sample = sample_reads(reads_path)
+    counts, sample = _sample_flat(reads_path)
     p = Probe(len(sample), counts, sample)
     if not counts:
         return p
-    p.heads = frame_heads(sample)
+    # p.heads: computed on demand (Probe.ensure_heads); the exact-length matrices are shared by candidates of one
+    # strand length (V15 CC-1: the same arrays as before, built once)
+    mats: dict[int, tuple] = {}
     for name, (lay, _, _) in PROFILES.items():
         nt = lay.strand_nt    # hoisted: Layout.strand_nt is a computed property (pure function of the frozen fields)
         near = sum(v for length, v in counts.items() if abs(length - nt) <= band)
@@ -140,11 +193,12 @@ def probe_reads(reads_path: str | os.PathLike, band: int = 6) -> Probe:
             p.candidates.append((name, lay))
     for name, lay in p.candidates:
         nt = lay.strand_nt
-        exact = [r for r in sample if r.size == nt][:4000]
+        if nt not in mats:
+            mat = sample.exact(nt, 4000)
+            mats[nt] = () if mat is None else (mat, _RC[mat[:, ::-1]])
         score = 0
-        if exact:
-            mat = np.stack(exact)
-            for m in (mat, _RC[mat[:, ::-1]]):
+        if mats[nt]:
+            for m in mats[nt]:
                 fb, _ = strip_markers_exact(lay, m)
                 score += int(decode_frames(lay, nt_to_bytes(np.minimum(fb, 3)), errors_only_retry=False).ok.sum())
         p.scores[name] = score
@@ -193,7 +247,7 @@ def _unique(p: Probe) -> Probe:
 def refusal(p: Probe):
     """D1 step 6 (a) and (b): the error for a pool of an unsupported or legacy frame version, or None. Decided on
     distinct molecules, of which at least MIN_REFUSAL_SAMPLE are required (spec: n ≥ 64)."""
-    if not p.heads:
+    if not p.counts:
         return None
     p = _unique(p)
     if p.n < MIN_REFUSAL_SAMPLE:
