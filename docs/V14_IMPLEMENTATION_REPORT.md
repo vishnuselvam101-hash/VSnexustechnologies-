@@ -86,7 +86,17 @@ Consolidated from [V14_PHASE11_REPORT.md](V14_PHASE11_REPORT.md) ("Not done"), [
 Release gate at the final release-prep commit (logs committed in
 `results/v14.0.0/release-gate/`):
 
-_Pending: the release-gate results are added by the commit that stores the logs._
+Gated commit `4d0e3ce` (the commit after it adds only these logs and this table); summary:
+[`results/v14.0.0/release-gate/SUMMARY.md`](../results/v14.0.0/release-gate/SUMMARY.md).
+
+| check | result |
+|---|---|
+| full Python suite (8 workers, systemd scope) | **4,852 passed, 5 skipped, 0 failed**, 383 s (`pytest-full-suite.log`) |
+| `cargo test --release --locked`, `RUSTFLAGS=-D warnings`: `vnxd` | **240 passed, 0 failed, 3 ignored** (`cargo-test.log`) |
+| same: `engine` / `integrity` | **25 / 5 passed, 0 failed** |
+| `ruff check src tests research` | all checks passed (`ruff.log`) |
+| E2E matrix (P9, `tools/v14-e2e.sh --integration`) | 44 rows: 43 pass, 1 skipped (R24-hw); last run in P9, not re-run at the gated commit |
+| sanitizers, fuzz smoke, aarch64 | last results in P9 (plan §8) and P10; not re-run at the gated commit |
 
 Reproduction (from the repository root, lab venv on `PATH`):
 
