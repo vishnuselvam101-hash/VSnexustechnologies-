@@ -110,7 +110,13 @@ the store is flushed again. After the clear no ioctl reaches the device (another
   connection is shut down on every way out of the server (return, error, panic), so the kernel never waits on a FLUSH
   nobody will answer;
 * SIGKILL: the kernel sees the socket close, fails outstanding and later requests with EIO, and frees the device when
-  its last opener closes (after the unmount). The volume recovers by journal replay on the next open: every commit is
+  its last opener closes (after the unmount). Until then `/sys/block/nbdN/pid` keeps showing the dead server's pid.
+  A filesystem that cannot be unmounted because a process still holds a file or directory on it keeps the device
+  configured; a lazy unmount (`umount -l`) does not help, because the detached filesystem lives on while it is in
+  use. Operator: find the holders (`fuser -vm <mountpoint>`, or `ls -l /proc/*/fd | grep nbdN`), close them, then
+  unmount. No ioctl or `nbd-client -d` is needed: the device is freed by itself once the last opener is gone.
+  (Found as an intermittent failure of the P9 kill-under-load test: the test leaked a directory fd when its fsync
+  failed with EIO; fixed in the test, with a regression test.) The volume recovers by journal replay on the next open: every commit is
   either fully applied or absent (docs/V14_VOLUME_AND_IO.md).
 
 ## 5. Request path and status

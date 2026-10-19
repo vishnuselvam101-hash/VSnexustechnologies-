@@ -167,10 +167,42 @@ def device_free(dev: str) -> bool:
     return not Path(f"/sys/block/nbd{n}/pid").exists() and Path(f"/sys/block/nbd{n}/size").read_text().strip() == "0"
 
 
+def fsync_dir(path: Path) -> None:
+    """fsync a directory; the descriptor is closed whatever happens (a leaked one keeps a mount busy)."""
+    fd = os.open(path, os.O_RDONLY)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
+def device_holders(dev: str) -> list[str]:
+    """Why a device whose server is gone is still configured: the kernel frees it only when its last opener closes
+    (an open fd, or a mounted filesystem, including one lazily unmounted but still in use)."""
+    m = _DEV_RE.match(dev)
+    assert m is not None
+    name = f"nbd{m.group(1)}"
+    out = [f"ext4 superblock of {name} still alive"] if Path(f"/sys/fs/ext4/{name}").exists() else []
+    for p in Path("/proc").iterdir():
+        if not p.name.isdigit():
+            continue
+        try:
+            for fd in (p / "fd").iterdir():
+                try:
+                    if os.readlink(fd).startswith(f"/dev/{name}"):
+                        out.append(f"pid {p.name} ({(p / 'comm').read_text().strip()}) has {dev} open")
+                except OSError:
+                    pass
+        except OSError:
+            pass
+    return out
+
+
 def wait_device_free(dev: str, timeout: float = 30.0) -> None:
     t0 = time.monotonic()
     while not device_free(dev):
-        assert time.monotonic() - t0 < timeout, f"{dev} still attached after {timeout} s"
+        if time.monotonic() - t0 >= timeout:
+            raise AssertionError(f"{dev} still attached after {timeout} s; holders: {device_holders(dev) or 'none found'}")
         time.sleep(0.1)
 
 

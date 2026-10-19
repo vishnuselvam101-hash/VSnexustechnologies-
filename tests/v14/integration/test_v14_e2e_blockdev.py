@@ -245,9 +245,7 @@ def test_b05_service_kill_under_load(kernel, tmp_path):
                             f.write(data)
                             f.flush()
                             os.fsync(f.fileno())
-                        dfd = os.open(mp, os.O_RDONLY)
-                        os.fsync(dfd)
-                        os.close(dfd)
+                        ns.fsync_dir(mp)  # never leaks its fd when the fsync fails (a leaked one kept the device attached)
                     except OSError:
                         return
                     synced[p.name] = hashlib.sha256(data).hexdigest()

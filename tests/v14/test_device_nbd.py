@@ -506,3 +506,21 @@ def test_kernel_failed_detach_is_a_failed_exit(kernel: Path, tmp_path: Path) -> 
         if ctl.exists():
             ctl.unlink()
         svc.stop()
+
+
+def test_fsync_dir_never_leaks_its_descriptor(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Regression (P9 B05, about 1 run in 3): a writer's directory fsync failed with EIO after the server was killed,
+    and its fd was never closed. The leaked fd kept the mount busy, the lazy unmount left the ext4 superblock alive,
+    so the NBD device kept its config reference and stayed 'attached' until the test process exited."""
+    before = len(os.listdir("/proc/self/fd"))
+
+    def eio(fd: int) -> None:
+        raise OSError(5, "Input/output error")
+
+    monkeypatch.setattr(os, "fsync", eio)
+    for _ in range(5):
+        with pytest.raises(OSError):
+            ns.fsync_dir(tmp_path)
+    monkeypatch.undo()
+    assert len(os.listdir("/proc/self/fd")) == before
+    ns.fsync_dir(tmp_path)  # and it works when fsync does
