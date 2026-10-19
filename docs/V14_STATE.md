@@ -1,4 +1,4 @@
-# V14 state — RESUME FILE (last checkpoint 2026-10-18 ~15:00 IST: Phase 5 COMPLETE, P6 next; lab host still in use)
+# V14 state — RESUME FILE (last checkpoint 2026-10-18 ~15:00 IST: Phase 5 COMPLETE; P6 IN PROGRESS (workstream A done, B running); lab host still in use)
 
 Governing scope: the founder's V14 MASTER DIRECTIVE (copy: `docs/V14_MASTER_DIRECTIVE_2026-10-18.md`) — the complete
 storage platform (Rust control plane, real Linux block device, media adapters, Pi portability, P0–P13). The earlier
@@ -96,6 +96,17 @@ Phases 1-5 DONE (cargo test 141 + seal_worker via pytest, in src/vnxdna/native/r
 - Physical random access: primer/address design so one file can be PCR-amplified out of a pool (the software index
   `.vxidx` already exists; the primer side does not). Needs the bioinformatics specialist and literature review.
 - PCR/chimera and decay-aware channel models in the simulator.
+
+## P6 progress (2026-10-18)
+- Workstream A (linear-time shuffled-pool decode) DONE + reviewed: local commits 2dc694c + b69e70f on build/v14
+  (PUSHED, not tagged). PoolDecoder in pipeline/decode.py; decode_stream pool path partitions one pass-1 spill by
+  archive tag, per-extent fallback to legacy; Spill.view in recovery/spill.py; tests/v14/test_pool_linear.py (14
+  differential tests). Bench experiments/v14/bench/p6a-pool/: v13-vs-v14 pool decode 3.3/6.6/13/25x at E=4/8/16/32,
+  RSS ~100 MiB flat (SIMULATED). Suite 4584/4/0. Review: no blocking; fixed (wall-time budget -> legacy path;
+  quality-weighting test). Diagnostic-only divergence documented: linear path's consensus/snap counters are an upper
+  bound; recovered BYTES are identical (fail-closed, verified).
+- Remaining P6: B (native pass 2 - running), C (safe recovery scheduler, correctness-sensitive), E (channel bench
+  suite), F (config/SDK/CLI/web-console-node hardening). Tag v14-p6 only when the whole phase is done.
 
 ## Open items / cautions
 - The old host's main checkout had someone else's uncommitted edits in `tests/v2/` (never touched; not part of V14).
