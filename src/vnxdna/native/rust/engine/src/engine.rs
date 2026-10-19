@@ -142,14 +142,8 @@ where
     let mut scanner = Scanner::new(fastq);
     let mut recs: Vec<Rec> = Vec::new();
     let cancelled = || cfg.map_or(false, |c| c.cancelled());
-    if use_map && cfg.map_or(false, |c| c.threads > 1) {
-        if let Some(map) = Map::open(&f) {
-            *bytes = map.len() as u64;
-            return scan_map_ahead(&map, fastq, block, cfg, ns_scan, sink);
-        }
-    }
     if use_map {
-        if let Some(map) = Map::open(&f) {
+        if let Some(mut map) = Map::open(&f) {
             let len = map.len();
             *bytes = len as u64;
             let mut pos = 0usize;
@@ -213,80 +207,6 @@ where
             return Ok(());
         }
     }
-}
-
-/// One scanned window of the mapped input (see `scan_map_ahead`).
-struct Window {
-    pos: usize,
-    end: usize,
-    used: usize,
-    recs: Vec<Rec>,
-    side: Vec<u8>,
-    ns: i64,
-}
-
-/// The memory-mapped path of `scan_file` with the scanner one window ahead on a helper thread (decodes with two or
-/// more threads): while the caller's `sink` processes window k, window k + 1 is scanned. The windows, their records
-/// and the order in which `sink` sees them are exactly those of the serial path (the scanner is the same sequential
-/// state machine, run over the same window boundaries), so pass 1 is unchanged; only the scan time overlaps. Errors
-/// are reported in input order: a scan error of a later window surfaces after every earlier window has been sunk.
-fn scan_map_ahead<F>(map: &Map, fastq: bool, block: usize, cfg: Option<&Cfg>, ns_scan: &mut i64, mut sink: F)
-                     -> Result<(), EngErr>
-where
-    F: FnMut(&[u8], &[u8], &[Rec]) -> Result<(), EngErr>,
-{
-    let cancelled = || cfg.map_or(false, |c| c.cancelled());
-    let len = map.len();
-    std::thread::scope(|s| {
-        let (tx, rx) = std::sync::mpsc::sync_channel::<Result<Window, EngErr>>(1);
-        s.spawn(move || {
-            let mut scanner = Scanner::new(fastq);
-            let mut pos = 0usize;
-            let mut win = block;
-            while pos < len {
-                if cancelled() {
-                    let _ = tx.send(Err(EngErr::Cancelled));
-                    return;
-                }
-                let end = (pos + win).min(len);
-                let eof = end == len;
-                map.will_need(end, win);
-                let ts = Instant::now();
-                let mut recs: Vec<Rec> = Vec::new();
-                let used = match scanner.scan(&map.bytes()[pos..end], eof, &mut recs) {
-                    Ok(u) => u,
-                    Err(e) => {
-                        let _ = tx.send(Err(EngErr::Unsupported(e)));
-                        return;
-                    }
-                };
-                let ns = ns(ts);
-                if used == 0 && !eof {
-                    win *= 2; // one record longer than the window
-                    continue;
-                }
-                let side = std::mem::take(&mut scanner.side);
-                if tx.send(Ok(Window { pos, end, used, recs, side, ns })).is_err() {
-                    return; // the consumer stopped (an error in sink)
-                }
-                pos += used;
-            }
-        });
-        while let Ok(w) = rx.recv() {
-            let w = w?;
-            if cancelled() {
-                return Err(EngErr::Cancelled);
-            }
-            *ns_scan += w.ns;
-            let data = &map.bytes()[w.pos..w.end];
-            sink(data, &w.side, &w.recs)?;
-            if w.end == len && w.used < data.len() {
-                return Err(EngErr::Unsupported("unparsed trailing input".into()));
-            }
-            map.release(w.pos + w.used);
-        }
-        Ok(())
-    })
 }
 
 /// A raw pointer that may cross threads; every use writes a range no other thread writes.

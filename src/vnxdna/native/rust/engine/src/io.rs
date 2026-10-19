@@ -23,7 +23,7 @@ const PAGE: usize = 4096;
 pub struct Map {
     ptr: *mut u8,
     len: usize,
-    released: std::sync::atomic::AtomicUsize,
+    released: usize,
 }
 
 // SAFETY: the mapping is read-only and owned; it is only read through &[u8] slices.
@@ -47,7 +47,7 @@ impl Map {
         unsafe {
             madvise(p, len, MADV_SEQUENTIAL);
         }
-        Some(Map { ptr: p as *mut u8, len, released: std::sync::atomic::AtomicUsize::new(0) })
+        Some(Map { ptr: p as *mut u8, len, released: 0 })
     }
 
     pub fn bytes(&self) -> &[u8] {
@@ -71,18 +71,15 @@ impl Map {
         }
     }
 
-    /// Drop the pages wholly before `upto` from the resident set (no slice into them may be used afterwards). Called
-    /// by one thread (the consumer of the scanned windows); the read-ahead scanner only reads at or after `upto`.
-    pub fn release(&self, upto: usize) {
-        use std::sync::atomic::Ordering;
+    /// Drop the pages wholly before `upto` from the resident set (no slice into them may be used afterwards).
+    pub fn release(&mut self, upto: usize) {
         let end = upto.min(self.len) / PAGE * PAGE;
-        let done = self.released.load(Ordering::Relaxed);
-        if end > done {
+        if end > self.released {
             // SAFETY: page-aligned range inside the mapping, not referenced by any live slice (caller contract).
             unsafe {
-                madvise(self.ptr.add(done) as *mut c_void, end - done, MADV_DONTNEED);
+                madvise(self.ptr.add(self.released) as *mut c_void, end - self.released, MADV_DONTNEED);
             }
-            self.released.store(end, Ordering::Relaxed);
+            self.released = end;
         }
     }
 }
