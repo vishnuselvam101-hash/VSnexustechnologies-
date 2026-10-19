@@ -1,0 +1,262 @@
+{
+ "T-A-indel-4m-w1": {
+  "n_rows": 27,
+  "configs": {
+   "base": {
+    "median_s": 3.1235,
+    "min_s": 2.9717,
+    "max_s": 3.4602,
+    "n": 9,
+    "outcomes": [
+     "SUCCESS"
+    ],
+    "all_match_input": true,
+    "commit": "c7906ea133a712c320c0da02bbba023529055ff6"
+   },
+   "new": {
+    "median_s": 3.1205,
+    "min_s": 3.0468,
+    "max_s": 3.4146,
+    "n": 9,
+    "outcomes": [
+     "SUCCESS"
+    ],
+    "all_match_input": true,
+    "commit": "7ddd8a7755ce8799270a8c8759123ae5c5dd52d2"
+   },
+   "newaa": {
+    "median_s": 3.1271,
+    "min_s": 3.0798,
+    "max_s": 3.4251,
+    "n": 9,
+    "outcomes": [
+     "SUCCESS"
+    ],
+    "all_match_input": true,
+    "commit": "7ddd8a7755ce8799270a8c8759123ae5c5dd52d2"
+   }
+  },
+  "identical_outcome_and_output": true,
+  "pairs": {
+   "base/new": {
+    "median": 0.964,
+    "ci95": [
+     0.916,
+     1.04
+    ],
+    "n": 9,
+    "per_seed": [
+     0.958,
+     0.964,
+     0.885,
+     1.04,
+     1.136,
+     0.916,
+     1.039,
+     0.955,
+     1.006
+    ],
+    "rel_ci_width": 0.129
+   },
+   "new/newaa": {
+    "median": 0.997,
+    "ci95": [
+     0.972,
+     1.013
+    ],
+    "n": 9,
+    "per_seed": [
+     1.012,
+     0.999,
+     1.097,
+     0.974,
+     0.972,
+     0.996,
+     0.997,
+     0.942,
+     1.013
+    ],
+    "rel_ci_width": 0.041
+   }
+  },
+  "components": {
+   "pass1_reads": {
+    "median_s": {
+     "base": 2.7874,
+     "new": 2.7986,
+     "newaa": 2.7945
+    },
+    "base/new": {
+     "median": 0.964,
+     "ci95": [
+      0.917,
+      1.043
+     ],
+     "n": 9,
+     "per_seed": [
+      0.952,
+      0.964,
+      0.884,
+      1.025,
+      1.135,
+      0.917,
+      1.043,
+      0.95,
+      0.996
+     ],
+     "rel_ci_width": 0.131
+    },
+    "new/newaa": {
+     "median": 0.996,
+     "ci95": [
+      0.974,
+      1.016
+     ],
+     "n": 9,
+     "per_seed": [
+      1.015,
+      0.999,
+      1.094,
+      0.974,
+      0.975,
+      0.982,
+      0.996,
+      0.939,
+      1.016
+     ],
+     "rel_ci_width": 0.042
+    }
+   }
+  }
+ },
+ "T-B-clean-4m-w4": {
+  "n_rows": 27,
+  "configs": {
+   "base": {
+    "median_s": 0.5135,
+    "min_s": 0.484,
+    "max_s": 0.6244,
+    "n": 9,
+    "outcomes": [
+     "SUCCESS"
+    ],
+    "all_match_input": true,
+    "commit": "c7906ea133a712c320c0da02bbba023529055ff6"
+   },
+   "new": {
+    "median_s": 0.4645,
+    "min_s": 0.4468,
+    "max_s": 0.4921,
+    "n": 9,
+    "outcomes": [
+     "SUCCESS"
+    ],
+    "all_match_input": true,
+    "commit": "7ddd8a7755ce8799270a8c8759123ae5c5dd52d2"
+   },
+   "newaa": {
+    "median_s": 0.4513,
+    "min_s": 0.449,
+    "max_s": 0.4715,
+    "n": 9,
+    "outcomes": [
+     "SUCCESS"
+    ],
+    "all_match_input": true,
+    "commit": "7ddd8a7755ce8799270a8c8759123ae5c5dd52d2"
+   }
+  },
+  "identical_outcome_and_output": true,
+  "pairs": {
+   "base/new": {
+    "median": 1.104,
+    "ci95": [
+     1.04,
+     1.294
+    ],
+    "n": 9,
+    "per_seed": [
+     1.04,
+     1.066,
+     1.181,
+     1.118,
+     1.294,
+     1.082,
+     1.104,
+     1.028,
+     1.335
+    ],
+    "rel_ci_width": 0.23
+   },
+   "new/newaa": {
+    "median": 1.005,
+    "ci95": [
+     0.993,
+     1.074
+    ],
+    "n": 9,
+    "per_seed": [
+     1.074,
+     1.0,
+     1.005,
+     1.012,
+     0.993,
+     1.001,
+     1.051,
+     1.096,
+     0.992
+    ],
+    "rel_ci_width": 0.081
+   }
+  },
+  "components": {
+   "pass1_reads": {
+    "median_s": {
+     "base": 0.3305,
+     "new": 0.2801,
+     "newaa": 0.2675
+    },
+    "base/new": {
+     "median": 1.185,
+     "ci95": [
+      1.083,
+      1.425
+     ],
+     "n": 9,
+     "per_seed": [
+      1.078,
+      1.122,
+      1.298,
+      1.185,
+      1.425,
+      1.123,
+      1.217,
+      1.083,
+      1.498
+     ],
+     "rel_ci_width": 0.289
+    },
+    "new/newaa": {
+     "median": 1.033,
+     "ci95": [
+      1.004,
+      1.107
+     ],
+     "n": 9,
+     "per_seed": [
+      1.127,
+      1.006,
+      1.011,
+      1.056,
+      1.004,
+      1.033,
+      1.035,
+      1.107,
+      0.986
+     ],
+     "rel_ci_width": 0.1
+    }
+   }
+  }
+ }
+}
