@@ -193,6 +193,7 @@ class CodecWorker(Worker):
             reads.write_bytes(body)
             try:
                 if channel is not None:
+                    assert model is not None  # set together with channel above
                     seq = tmp / "reads.fastq"
                     engine.simulate_file(reads, seq, model, channel[1], fmt="fastq")
                     reads = seq
