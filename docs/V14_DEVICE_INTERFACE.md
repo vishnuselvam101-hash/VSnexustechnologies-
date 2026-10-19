@@ -45,7 +45,8 @@ options: --cache none|write-through|write-back (default write-through)   --ram N
 
 `create` refuses an existing journal and a non-empty backend. `attach` prints one JSON line `{"event":"attached",
 "device":"/dev/nbdN",...}` on stdout once the kernel reports the device as served by this process
-(`/sys/block/nbdN/pid`); `serve` prints `{"event":"serving",...}`. Every event (volume opened with its recovery report,
+(`/sys/block/nbdN/pid`) **and** with the volume's full size (`/sys/block/nbdN/size` x 512 = capacity; §4); if that does
+not happen within 30 s it logs `attach_not_ready`, detaches and exits 1; `serve` prints `{"event":"serving",...}`. Every event (volume opened with its recovery report,
 signals, detach steps, errors, the final health and counters) is one canonical-JSON line on stderr. Exit status: 0
 only after a requested stop (signal or management `shutdown`) in which everything succeeded; 1 on any error, including
 a failed final flush, a failed fsync of the device at detach (the kernel could not write its dirty buffers), an
@@ -94,7 +95,25 @@ Attach sequence (all on the main thread; the kernel ties a device's setup to the
 3. `NBD_SET_SOCK` first: it is the claim, refused (EBUSY) for a device another task set up, and `auto` moves on;
 4. `NBD_SET_BLKSIZE` (512..=4096), `NBD_SET_SIZE_BLOCKS`, `NBD_SET_FLAGS` (the negotiated transmission flags),
    `NBD_SET_TIMEOUT` (kernel timeout, default 120 s);
-5. `NBD_DO_IT` blocks while the device runs; a helper thread announces `attached` when sysfs shows this pid.
+5. `NBD_DO_IT` blocks while the device runs; a helper thread announces `attached` when sysfs shows this pid **and**
+   the configured size. The pid alone is not readiness: the kernel's `nbd_start_device` creates the `pid` attribute
+   and only then applies the size (`nbd_set_size`), so for a moment the running device has capacity 0. On 6.8 the
+   window is microseconds; since 6.11 `nbd_set_size` commits the queue limits with the queue frozen
+   (`queue_limits_commit_update_frozen`), which made it milliseconds on 7.0, where announcing on the pid alone handed
+   out a device of size 0 (`mkfs.ext4`: "Device size reported to be zero"). Fixed in V15 by the size condition
+   (`nbdsys::device_ready`); the ioctl sequence itself is unchanged.
+
+Kernel matrix (the ioctl path above; the kernel keeps it on 7.0 next to the netlink interface):
+
+| kernel | host | result |
+|---|---|---|
+| 6.8.0-146-generic (Ubuntu 24.04), x86_64 | P8 host | all kernel tests pass (V14); re-test with the V15 readiness fix **pending** (host retired) |
+| 7.0.0-38-generic (Ubuntu 26.04), x86_64, 8-core EPYC | V15 host | before V15: every kernel test failed (size 0 at `attached`); with the fix: the kernel tests of `test_device_nbd.py` and B01-B09 pass, 5 consecutive runs |
+
+The netlink interface (`NBD_CMD_CONNECT` with size, block size, flags and sockets) was considered and not adopted: the
+ioctls are not deprecated on 7.0, the race was in our readiness check, not in the ioctl path, and netlink would replace
+the blocking `NBD_DO_IT` lifecycle (and its tested detach) with a new one. It stays the route if a kernel drops the
+ioctls.
 
 Detach (SIGINT/SIGTERM, a management `shutdown`, or the connection ending; SIGHUP is blocked and only logged, so a
 dropped terminal never detaches a device a filesystem may be using): a controller thread, holding the
@@ -199,8 +218,9 @@ Things deliberately not used: the netlink interface (not needed), `mmap`, raw `s
   (a stop signal must stop). Unmount first.
 * Tests and drills only ever touch an `/dev/nbdN` that their own `vnxd` attached, over disposable files: before every
   `mkfs`, `sfdisk`, `blockdev`, `mount`, `e2fsck` or raw I/O the harness (`tests/v14/nbd_support.py`) checks the path
-  pattern `/dev/nbdN[pM]`, that `/sys/block/nbdN/pid` is the pid of the `vnxd` it started, and that nothing of the device
-  is mounted; teardown (unmount, stop, wait for the device to be free) runs in `finally` blocks; only exact PIDs are
+  pattern `/dev/nbdN[pM]`, that `/sys/block/nbdN/pid` is the pid of the `vnxd` it started, that the kernel reports a
+  non-zero size for the target, and that nothing of the device is mounted (on `attached` it also asserts the sysfs
+  size equals the volume capacity); teardown (unmount, stop, wait for the device to be free) runs in `finally` blocks; only exact PIDs are
   signalled. `vnxd` itself refuses any device path that is not `/dev/nbdN` and any device that is running or configured.
 * The backend directory is locked (`.lock` with the owner's pid; a stale lock of a dead process is taken over).
 
