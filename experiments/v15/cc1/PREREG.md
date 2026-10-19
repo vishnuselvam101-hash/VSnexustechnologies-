@@ -68,3 +68,16 @@ the A/A band is about +-4 %, wider than the gains the remaining candidates can g
 A/B uses n = 18 seeds per primary workload (T-A 95500-95517, T-B 95100-95117), same configurations, order rule,
 statistic and keep rule. The final measurement stays as registered (n = 9 seeds 95500-95508 / 95100-95108, plus the
 same configurations on the 9 extension seeds, reported separately).
+
+## Amendment 2 (protocol fix, written after change 4 was measured and before it was re-measured)
+
+The change-4 run showed an A/A ratio new/newaa of 0.956 (T-B) and 0.971 (T-A) with identical code: with three
+configurations and only the forward/reversed orders, `new` always runs second, and the first configuration of a seed
+is the first to read that seed's 250-420 MB input after other seeds' inputs went through the page cache. From change 4
+on (change 4 is re-measured under this amendment; its first run is kept in the repository as superseded):
+- before the timed runs of a seed, the driver reads the seed's input file once (page-cache warm-up, untimed);
+- the configuration order cycles through all six permutations of (base, new, newaa) by (seed + rep) mod 6;
+- the keep rule is unchanged (base/new CI lower bound > 1 and above the new/newaa CI upper bound); base/newaa is
+  reported as well.
+Changes 1-3 were measured with the original order rule; their A/A medians were 0.98-1.005. The final measurement uses
+this amended protocol for every configuration.

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import itertools
 import json
 import os
 import statistics
@@ -79,14 +80,24 @@ def run(a) -> None:
             if i == 0 and rep == 0 and not a.no_warm:
                 for c, t in trees.items():
                     S.step(c, t, w["kind"], work, workers, 1800, f"warm-{c}")
-            order = list(trees) if (seed + rep) % 2 == 0 else list(trees)[::-1]
+            if a.order_scheme == "rot6":
+                perms = list(itertools.permutations(trees))
+                order = list(perms[(seed + rep) % len(perms)])
+            else:
+                order = list(trees) if (seed + rep) % 2 == 0 else list(trees)[::-1]
+            if a.warm_input:
+                # load this seed's input into the page cache before the timed runs, so that no configuration pays the
+                # first read of the file (amendment 2)
+                with open(work / ("r.fastq" if w["kind"] == "decode" else "a.vnx"), "rb") as f:
+                    while f.read(1 << 24):
+                        pass
             rows = []
             for c in order:
                 r = S.step(c, trees[c], w["kind"], work, workers, 1800)
                 if r.get("stale_libraries") or any(v != "native" for v in (r.get("native") or {}).values()):
                     raise SystemExit(f"{c}: native kernels missing or stale ({r.get('stale_libraries')}): run refused")
                 r.update(workload=a.workload, seed=seed, rep=rep, workers=workers, commit=commits[c], order=order,
-                         label=a.label)
+                         label=a.label, order_scheme=a.order_scheme, warm_input=a.warm_input)
                 rows.append(r)
             with open(a.out, "a") as f:
                 for r in rows:
@@ -166,6 +177,10 @@ def main(argv=None) -> int:
     p.add_argument("--workers", type=int)
     p.add_argument("--label", default="")
     p.add_argument("--no-warm", action="store_true")
+    p.add_argument("--order-scheme", choices=("reverse", "rot6"), default="reverse",
+                   help="reverse: list order on even (seed + rep), reversed on odd (preregistration); rot6: the six "
+                        "permutations of three configurations in turn (amendment 2)")
+    p.add_argument("--warm-input", action="store_true", help="read the seed's input once before its timed runs")
     p = sub.add_parser("summary")
     p.add_argument("rows")
     p.add_argument("--pair", action="append", default=[])
