@@ -84,6 +84,10 @@ def _bucket_consensus(spill_dir: str, b: int, acc_dtype: np.dtype, pend_dtype: n
     return keys, pay, conflicts, delta
 
 
+#: the ``known`` argument of _consensus_symbols on the vectorised pass-2 path (see _fast_bucket)
+_NOTHING_KNOWN: frozenset = frozenset()
+
+
 def _resolve_vectorised(acc: np.ndarray):
     """:func:`resolve_duplicates` for the data records of one archive tag, as arrays: (groups, symbols, payloads) of
     the addresses whose verified copies all agree, sorted by (group, symbol), plus the dict and conflict count that
@@ -246,8 +250,10 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
             targets = [g for g in range(b, total, spill.B) if g not in done]
             lo = np.searchsorted(ug, targets, side="left")
             hi = np.searchsorted(ug, targets, side="right")
-            known: set = set(zip([KIND_DATA] * ug.size, [tag] * ug.size, ug.tolist(), us.tolist()))
-            known.update(extra.keys())
+            # _consensus_symbols consults its ``known`` argument only for addresses in ``missing`` (it drops every other
+            # pending key first), and ``missing`` below never holds a known address: a verified (group, symbol) is in
+            # ``have`` and an address with disagreeing copies is in ``extra``. So the set of known addresses the serial
+            # loop builds (one tuple per verified symbol) cannot change any result here, and is not built (V15 CC-1).
             missing = set()
             for g, a, e in zip(targets, lo.tolist(), hi.tolist()):
                 n_sym = codec.symbols_for(row_k(g))
@@ -257,7 +263,7 @@ def _pass2(spill: Spill, lay: Layout, opt: DecodeOptions, stats: Counter, stage:
                 missing.update((KIND_DATA, tag, g, s_) for s_ in range(n_sym)
                                if s_ not in have and (KIND_DATA, tag, g, s_) not in extra)
             more = dict(extra)
-            more.update(_consensus_symbols(pend, known, lay, opt, stats, missing, None))
+            more.update(_consensus_symbols(pend, _NOTHING_KNOWN, lay, opt, stats, missing, None))
             extra_by: dict[int, dict[int, np.ndarray]] = {}
             for (kd, tg, g, s_), v in more.items():
                 if kd == KIND_DATA and tg == tag:

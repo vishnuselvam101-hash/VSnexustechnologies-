@@ -1,0 +1,331 @@
+{
+ "indel-16m-w4": {
+  "n_rows": 9,
+  "configs": {
+   "finalaa": {
+    "median_s": 6.0597,
+    "min_s": 5.6829,
+    "max_s": 6.3047,
+    "n": 3,
+    "outcomes": [
+     "SUCCESS"
+    ],
+    "all_match_input": true,
+    "commit": "3570a074e470edcec27bd3afa1f184924c601f1d"
+   },
+   "v14": {
+    "median_s": 6.3724,
+    "min_s": 6.2167,
+    "max_s": 6.7437,
+    "n": 3,
+    "outcomes": [
+     "SUCCESS"
+    ],
+    "all_match_input": true,
+    "commit": "7369e096ef1a8b5bf660e97a208b4592858dc9e8"
+   },
+   "final": {
+    "median_s": 5.9402,
+    "min_s": 5.8961,
+    "max_s": 6.0373,
+    "n": 3,
+    "outcomes": [
+     "SUCCESS"
+    ],
+    "all_match_input": true,
+    "commit": "3570a074e470edcec27bd3afa1f184924c601f1d"
+   }
+  },
+  "identical_outcome_and_output": true,
+  "pairs": {
+   "v14/final": {
+    "median": 1.056,
+    "ci95": [
+     1.047,
+     1.144
+    ],
+    "n": 3,
+    "per_seed": [
+     1.144,
+     1.056,
+     1.047
+    ],
+    "rel_ci_width": 0.092
+   },
+   "final/finalaa": {
+    "median": 0.996,
+    "ci95": [
+     0.935,
+     1.045
+    ],
+    "n": 3,
+    "per_seed": [
+     0.935,
+     0.996,
+     1.045
+    ],
+    "rel_ci_width": 0.11
+   }
+  },
+  "components": {
+   "pass1_reads": {
+    "median_s": {
+     "finalaa": 5.0799,
+     "v14": 5.2459,
+     "final": 5.0654
+    },
+    "v14/final": {
+     "median": 1.031,
+     "ci95": [
+      1.003,
+      1.111
+     ],
+     "n": 3,
+     "per_seed": [
+      1.111,
+      1.031,
+      1.003
+     ],
+     "rel_ci_width": 0.105
+    },
+    "final/finalaa": {
+     "median": 1.002,
+     "ci95": [
+      0.928,
+      1.045
+     ],
+     "n": 3,
+     "per_seed": [
+      0.928,
+      1.002,
+      1.045
+     ],
+     "rel_ci_width": 0.117
+    }
+   }
+  }
+ },
+ "mixed-4m-w4": {
+  "n_rows": 15,
+  "configs": {
+   "final": {
+    "median_s": 17.8629,
+    "min_s": 5.538,
+    "max_s": 18.3751,
+    "n": 5,
+    "outcomes": [
+     "FAILURE",
+     "SUCCESS"
+    ],
+    "all_match_input": false,
+    "commit": "3570a074e470edcec27bd3afa1f184924c601f1d"
+   },
+   "v14": {
+    "median_s": 17.8503,
+    "min_s": 5.5679,
+    "max_s": 18.5665,
+    "n": 5,
+    "outcomes": [
+     "FAILURE",
+     "SUCCESS"
+    ],
+    "all_match_input": false,
+    "commit": "7369e096ef1a8b5bf660e97a208b4592858dc9e8"
+   },
+   "finalaa": {
+    "median_s": 17.6218,
+    "min_s": 5.3829,
+    "max_s": 18.2547,
+    "n": 5,
+    "outcomes": [
+     "FAILURE",
+     "SUCCESS"
+    ],
+    "all_match_input": false,
+    "commit": "3570a074e470edcec27bd3afa1f184924c601f1d"
+   }
+  },
+  "identical_outcome_and_output": true,
+  "pairs": {
+   "v14/final": {
+    "median": 1.005,
+    "ci95": [
+     0.999,
+     1.016
+    ],
+    "n": 5,
+    "per_seed": [
+     1.005,
+     0.999,
+     1.002,
+     1.009,
+     1.016
+    ],
+    "rel_ci_width": 0.017
+   },
+   "final/finalaa": {
+    "median": 1.014,
+    "ci95": [
+     1.007,
+     1.053
+    ],
+    "n": 5,
+    "per_seed": [
+     1.026,
+     1.014,
+     1.007,
+     1.053,
+     1.012
+    ],
+    "rel_ci_width": 0.045
+   }
+  },
+  "components": {
+   "pass1_reads": {
+    "median_s": {
+     "final": 2.4175,
+     "v14": 2.4643,
+     "finalaa": 2.4457
+    },
+    "v14/final": {
+     "median": 0.993,
+     "ci95": [
+      0.966,
+      1.029
+     ],
+     "n": 5,
+     "per_seed": [
+      0.993,
+      0.991,
+      1.012,
+      0.966,
+      1.029
+     ],
+     "rel_ci_width": 0.063
+    },
+    "final/finalaa": {
+     "median": 1.018,
+     "ci95": [
+      0.979,
+      1.084
+     ],
+     "n": 5,
+     "per_seed": [
+      1.023,
+      1.017,
+      1.018,
+      1.084,
+      0.979
+     ],
+     "rel_ci_width": 0.103
+    }
+   }
+  }
+ },
+ "sub-64m-w4": {
+  "n_rows": 9,
+  "configs": {
+   "v14": {
+    "median_s": 12.6575,
+    "min_s": 12.4519,
+    "max_s": 12.9534,
+    "n": 3,
+    "outcomes": [
+     "SUCCESS"
+    ],
+    "all_match_input": true,
+    "commit": "7369e096ef1a8b5bf660e97a208b4592858dc9e8"
+   },
+   "final": {
+    "median_s": 10.9099,
+    "min_s": 10.8907,
+    "max_s": 11.1724,
+    "n": 3,
+    "outcomes": [
+     "SUCCESS"
+    ],
+    "all_match_input": true,
+    "commit": "3570a074e470edcec27bd3afa1f184924c601f1d"
+   },
+   "finalaa": {
+    "median_s": 11.0717,
+    "min_s": 10.9603,
+    "max_s": 11.2916,
+    "n": 3,
+    "outcomes": [
+     "SUCCESS"
+    ],
+    "all_match_input": true,
+    "commit": "3570a074e470edcec27bd3afa1f184924c601f1d"
+   }
+  },
+  "identical_outcome_and_output": true,
+  "pairs": {
+   "v14/final": {
+    "median": 1.141,
+    "ci95": [
+     1.133,
+     1.189
+    ],
+    "n": 3,
+    "per_seed": [
+     1.189,
+     1.141,
+     1.133
+    ],
+    "rel_ci_width": 0.049
+   },
+   "final/finalaa": {
+    "median": 0.984,
+    "ci95": [
+     0.966,
+     1.019
+    ],
+    "n": 3,
+    "per_seed": [
+     0.984,
+     0.966,
+     1.019
+    ],
+    "rel_ci_width": 0.054
+   }
+  },
+  "components": {
+   "pass1_reads": {
+    "median_s": {
+     "v14": 10.4522,
+     "final": 9.508,
+     "finalaa": 9.7153
+    },
+    "v14/final": {
+     "median": 1.075,
+     "ci95": [
+      1.067,
+      1.136
+     ],
+     "n": 3,
+     "per_seed": [
+      1.136,
+      1.067,
+      1.075
+     ],
+     "rel_ci_width": 0.064
+    },
+    "final/finalaa": {
+     "median": 0.971,
+     "ci95": [
+      0.967,
+      1.018
+     ],
+     "n": 3,
+     "per_seed": [
+      0.971,
+      0.967,
+      1.018
+     ],
+     "rel_ci_width": 0.053
+    }
+   }
+  }
+ }
+}

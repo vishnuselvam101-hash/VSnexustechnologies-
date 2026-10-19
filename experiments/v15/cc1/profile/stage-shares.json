@@ -1,0 +1,102 @@
+{
+ "T-A-indel-4m-w1 v14": {
+  "stages_s": {
+   "wall": 3.1085,
+   "pass1": 2.7073,
+   "pass2_decode": 0.2379,
+   "verify": 0.0122,
+   "probe_setup_output": 0.1511
+  },
+  "stages_pct": {
+   "pass1": 87.1,
+   "pass2_decode": 7.7,
+   "verify": 0.4,
+   "probe_setup_output": 4.9
+  },
+  "engine_s": {
+   "ns_scan": 0.0769,
+   "ns_prep": 0.314,
+   "ns_group": 0.2335,
+   "ns_cheap": 1.061,
+   "ns_full": 0.733,
+   "ns_attempt": 2.2435,
+   "ns_spill": 0.0538,
+   "ns_attempt_other": 0.216
+  }
+ },
+ "T-A-indel-4m-w1 final": {
+  "stages_s": {
+   "wall": 2.9858,
+   "pass1": 2.6722,
+   "pass2_decode": 0.1755,
+   "verify": 0.0121,
+   "probe_setup_output": 0.126
+  },
+  "stages_pct": {
+   "pass1": 89.5,
+   "pass2_decode": 5.9,
+   "verify": 0.4,
+   "probe_setup_output": 4.2
+  },
+  "engine_s": {
+   "ns_scan": 0.0757,
+   "ns_prep": 0.3078,
+   "ns_group": 0.2326,
+   "ns_cheap": 1.0465,
+   "ns_full": 0.7301,
+   "ns_attempt": 2.2056,
+   "ns_spill": 0.0541,
+   "ns_attempt_other": 0.1965
+  }
+ },
+ "T-B-clean-4m-w4 v14": {
+  "stages_s": {
+   "wall": 0.5926,
+   "pass1": 0.3469,
+   "pass2_decode": 0.0991,
+   "verify": 0.0208,
+   "probe_setup_output": 0.1257
+  },
+  "stages_pct": {
+   "pass1": 58.5,
+   "pass2_decode": 16.7,
+   "verify": 3.5,
+   "probe_setup_output": 21.2
+  },
+  "engine_s": {
+   "ns_scan": 0.049,
+   "ns_prep": 0.0604,
+   "ns_group": 0.0671,
+   "ns_cheap": 0.044,
+   "ns_full": 0.0,
+   "ns_attempt": 0.2107,
+   "ns_spill": 0.011,
+   "ns_attempt_other": 0.0995
+  }
+ },
+ "T-B-clean-4m-w4 final": {
+  "stages_s": {
+   "wall": 0.4804,
+   "pass1": 0.3145,
+   "pass2_decode": 0.0438,
+   "verify": 0.0196,
+   "probe_setup_output": 0.1024
+  },
+  "stages_pct": {
+   "pass1": 65.5,
+   "pass2_decode": 9.1,
+   "verify": 4.1,
+   "probe_setup_output": 21.3
+  },
+  "engine_s": {
+   "ns_scan": 0.0491,
+   "ns_prep": 0.0566,
+   "ns_group": 0.0678,
+   "ns_cheap": 0.0418,
+   "ns_full": 0.0,
+   "ns_attempt": 0.1825,
+   "ns_spill": 0.0111,
+   "ns_attempt_other": 0.0728
+  }
+ }
+}
