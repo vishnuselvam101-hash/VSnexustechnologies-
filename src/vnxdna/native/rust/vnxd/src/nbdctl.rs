@@ -553,11 +553,12 @@ pub fn attach(o: &Opts, stop: Arc<Stop>) -> Result<()> {
         claim.nbd.configure(info.block_size, info.size, info.flags, o.kernel_timeout_s)?;
         let index = claim.nbd.index();
         let (claim_ref, running_ref) = (claim, &running);
-        // readiness: the kernel publishes the serving pid once NBD_DO_IT runs
+        // readiness: NBD_DO_IT runs (the kernel publishes our pid) AND the kernel applied the size; it publishes the
+        // pid before it sets the capacity (nbdsys::device_ready), so the pid alone is not enough
         sc.spawn(move || {
             let t0 = Instant::now();
             while running_ref.load(Ordering::SeqCst) && t0.elapsed() < Duration::from_secs(30) {
-                if nbdsys::device_pid(index) == Some(pid) {
+                if nbdsys::device_ready(index, pid, info.size) {
                     announce(
                         "attached",
                         vec![
@@ -570,6 +571,19 @@ pub fn attach(o: &Opts, stop: Arc<Stop>) -> Result<()> {
                     return;
                 }
                 std::thread::sleep(Duration::from_millis(20));
+            }
+            if running_ref.load(Ordering::SeqCst) {
+                // never announce a device that is not up as configured: detach instead (a failed attach)
+                log(
+                    "attach_not_ready",
+                    vec![
+                        ("device", Value::Str(claim_ref.nbd.path().display().to_string())),
+                        ("pid", Value::Str(format!("{:?}", nbdsys::device_pid(index)))),
+                        ("sectors", Value::Str(format!("{:?}", nbdsys::device_sectors(index)))),
+                        ("size", Value::Int(info.size as i64)),
+                    ],
+                );
+                stop_ref.request("the device did not come up with the configured size");
             }
         });
         // the controller: waits for a stop reason, then detaches cleanly

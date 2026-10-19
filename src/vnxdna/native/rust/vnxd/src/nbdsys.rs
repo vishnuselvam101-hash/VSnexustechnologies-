@@ -125,6 +125,23 @@ pub fn device_sectors(index: u32) -> Option<u64> {
     std::fs::read_to_string(sys_dir(index).join("size")).ok()?.trim().parse().ok()
 }
 
+/// Is `/dev/nbdN` up as configured: served by process `pid` AND sized to `size_bytes`?
+///
+/// The serving pid alone is not readiness. The kernel's `nbd_start_device` (the work of `NBD_DO_IT`) creates the
+/// sysfs `pid` attribute first and only then applies the configured size (`nbd_set_size`: queue limits, then
+/// `set_capacity_and_notify`). Between the two the device exists with a capacity of 0. On Linux 6.8 that window is
+/// a few microseconds; since Linux 6.11 `nbd_set_size` commits the queue limits with the queue frozen
+/// (`queue_limits_commit_update_frozen`, which waits for an RCU grace period), so on Linux 7.0 the window is
+/// milliseconds and a caller that acted on the pid alone ran `mkfs` on a device of size 0.
+pub fn device_ready(index: u32, pid: u32, size_bytes: u64) -> bool {
+    ready_state(device_pid(index), device_sectors(index), pid, size_bytes)
+}
+
+/// The pure readiness rule of [`device_ready`] (sysfs `size` counts 512-byte sectors whatever the block size).
+pub fn ready_state(seen_pid: Option<u32>, seen_sectors: Option<u64>, pid: u32, size_bytes: u64) -> bool {
+    seen_pid == Some(pid) && size_bytes > 0 && size_bytes % 512 == 0 && seen_sectors == Some(size_bytes / 512)
+}
+
 /// Is the NBD driver loaded (`/sys/module/nbd`)?
 pub fn driver_loaded() -> bool {
     Path::new("/sys/module/nbd").exists()
@@ -273,6 +290,19 @@ mod tests {
             let e = NbdDevice::open(Path::new(p)).err().unwrap();
             assert_eq!(e.code, ErrorCode::InvalidArgument, "{p}");
         }
+    }
+
+    #[test]
+    fn ready_needs_our_pid_and_the_full_size() {
+        let (pid, size) = (4242, 128u64 << 20);
+        // the window seen on Linux 7.0: pid published, capacity still 0 -> not ready
+        assert!(!ready_state(Some(pid), Some(0), pid, size));
+        assert!(!ready_state(None, Some(size / 512), pid, size));
+        assert!(!ready_state(Some(pid + 1), Some(size / 512), pid, size));
+        assert!(!ready_state(Some(pid), Some(size / 512 - 1), pid, size));
+        assert!(!ready_state(Some(pid), None, pid, size));
+        assert!(!ready_state(Some(pid), Some(0), pid, 0));
+        assert!(ready_state(Some(pid), Some(size / 512), pid, size));
     }
 
     #[test]

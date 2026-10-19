@@ -99,11 +99,27 @@ def assert_own_device(dev: str, pid: int, *, may_be_mounted: bool = False) -> No
         _require(not mounted, f"refusing {dev}: {sorted(mounted)} mounted")
 
 
+def device_size_bytes(dev: str) -> int | None:
+    """The size the kernel reports for ``/dev/nbdN[pM]`` (sysfs, 512-byte sectors), None when it has no entry."""
+    m = _DEV_RE.match(dev)
+    if m is None:
+        return None
+    whole = f"nbd{m.group(1)}"
+    name = whole if dev == f"/dev/{whole}" else dev.removeprefix("/dev/")
+    p = Path(f"/sys/block/{whole}/size") if name == whole else Path(f"/sys/block/{whole}/{name}/size")
+    try:
+        return int(p.read_text().strip()) * 512
+    except (OSError, ValueError):
+        return None
+
+
 def run_tool(argv: list[str], dev: str, pid: int, *, timeout: float = 300, check: bool = True,
              may_be_mounted: bool = False, input: str | None = None) -> subprocess.CompletedProcess[str]:
     """Run a destructive tool on ``dev`` after the ownership check (``dev`` must be an argument of ``argv``)."""
     _require(dev in argv, "the checked device must be the tool's target")
     assert_own_device(dev, pid, may_be_mounted=may_be_mounted)
+    size = device_size_bytes(dev)
+    _require(bool(size), f"refusing {dev}: the kernel reports size {size} (not up as configured)")
     r = subprocess.run(argv, capture_output=True, text=True, timeout=timeout, input=input)
     if check and r.returncode != 0:
         raise AssertionError(f"{argv} failed ({r.returncode}): {r.stdout[-2000:]} {r.stderr[-2000:]}")
@@ -239,6 +255,12 @@ class Service:
                 ev = json.loads(line)
                 if ev.get("event") == want:
                     self.ready = ev
+                    if mode == "attach":
+                        # regression (Linux 7.0): "attached" was announced while the kernel still reported size 0
+                        got = device_size_bytes(str(ev["device"]))
+                        if got != ev["size"]:
+                            self.kill()
+                            raise AssertionError(f"{ev['device']} attached with sysfs size {got}, expected {ev['size']}")
                     return
 
     @property
