@@ -820,6 +820,15 @@ controller board and reported per tier (acceptance target set at M0 from the fir
 lives only in the DNA tier is reported with its retrieval status and expected time; no microsecond claim is made for
 the molecular tier.
 
+**Two drive modes (founder decision, 2026-10-19), one VNX stack:**
+- **DNA-native mode (flagship).** No SSD, flash or disk: DNA is the only persistent store. The controller keeps only
+  volatile working memory (an unavoidable property of any processor). VNX-RAM is pursued toward the molecular-memory
+  interface (`docs/V14_MOLECULAR_MEMORY.md`). Writes are committed archives at DNA speed; a write is acknowledged only
+  when its DNA copy is committed (or held in a power-loss-protected buffer whose limits are stated). Configured as
+  the F8 tiering policy with electronic tier capacity = 0.
+- **Hybrid mode.** RAM + SSD tiers in front of DNA for the microsecond-class commitment above.
+- Both modes share the codec, volume, security and media adapters, and are tested as separate device profiles.
+
 **Research track RT-1: reducing molecular-tier latency** (pursued continuously, never promised): predictive
 pre-retrieval of likely-needed data into the electronic tiers; read parallelism (many pores/sensors) and parallel
 electrode synthesis; in-situ reading without library preparation; each integrated through the AP-11 plugin SDK when
