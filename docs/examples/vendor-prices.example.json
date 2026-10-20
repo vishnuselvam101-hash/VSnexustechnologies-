@@ -1,0 +1,21 @@
+{
+  "format": "vnx.vendor-prices/1",
+  "vendors": [
+    {
+      "vendor": "TestVendor1",
+      "currency": "USD",
+      "per_base": "0.005",
+      "per_strand": "0.25",
+      "per_order": "50.00",
+      "max_strand_nt": 300,
+      "min_strands": 10
+    },
+    {
+      "vendor": "TestVendor2", 
+      "currency": "EUR",
+      "per_base": "0.006",
+      "per_strand": "0.30",
+      "per_order": "45.00"
+    }
+  ]
+}
