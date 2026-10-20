@@ -45,6 +45,7 @@ from pathlib import Path
 import numpy as np
 
 from vnxdna import _native_build as _nb
+from vnxdna.core.errors import VNXConfigurationError
 
 ABI_VERSION = 5
 BACKENDS = ("auto", "native", "reference")
@@ -207,9 +208,12 @@ def threads() -> int:
     env = os.environ.get("VNXDNA_CLUSTER_THREADS")
     if env:
         try:
-            return max(1, min(64, int(env)))
+            n = int(env)
+            if n < 1:
+                raise VNXConfigurationError(f"VNXDNA_CLUSTER_THREADS must be a positive integer, got {env!r}")
+            return max(1, min(64, n))
         except ValueError:
-            return 1
+            raise VNXConfigurationError(f"VNXDNA_CLUSTER_THREADS must be a positive integer, got {env!r}")
     scoped = _scope_threads.get()
     return 1 if scoped is None else max(1, min(64, int(scoped)))
 
