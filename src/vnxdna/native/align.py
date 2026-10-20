@@ -335,7 +335,7 @@ def _flat_in_domain(codes, starts, lengths, qflat) -> bool:
                               or qflat.size != codes.size):
         return False
     if starts.size and (int(starts.min()) < 0 or int(lengths.min()) < 0
-                        or int((starts.astype(np.int64) + lengths.astype(np.int64)).max()) > codes.size):
+                        or max((int(starts[i]) + int(lengths[i])) for i in range(len(starts))) > codes.size):
         return False
     return True
 
