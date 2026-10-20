@@ -524,3 +524,25 @@ def test_fsync_dir_never_leaks_its_descriptor(tmp_path: Path, monkeypatch: pytes
     monkeypatch.undo()
     assert len(os.listdir("/proc/self/fd")) == before
     ns.fsync_dir(tmp_path)  # and it works when fsync does
+
+
+def test_kernel_attached_means_sized(kernel: Path, tmp_path: Path) -> None:
+    """Regression (Linux 7.0): ``attached`` must mean the kernel reports the volume's full capacity.
+
+    The kernel publishes the serving pid before it applies the size; on 7.0 that window is milliseconds and
+    ``attached`` came while /sys/block/nbdN/size was 0 (mkfs.ext4: "Device size reported to be zero"). Several
+    attach cycles, each read straight after the event, before any tool touches the device.
+    """
+    vol, be = _volume(tmp_path, "64M")
+    for _ in range(8):
+        svc = ns.Service("attach", vol, be)
+        try:
+            dev = svc.device
+            name = dev.removeprefix("/dev/")
+            sectors = int(Path(f"/sys/block/{name}/size").read_text())
+            assert sectors * 512 == svc.ready["size"] == 64 << 20, (dev, sectors)
+            assert Path(f"/sys/block/{name}/pid").read_text().strip() == str(svc.pid)
+            assert svc.stop() == 0, svc.log()[-3000:]
+            ns.wait_device_free(dev)
+        finally:
+            svc.stop()
