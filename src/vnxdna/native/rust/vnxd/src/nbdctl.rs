@@ -559,6 +559,10 @@ pub fn attach(o: &Opts, stop: Arc<Stop>) -> Result<()> {
             let t0 = Instant::now();
             while running_ref.load(Ordering::SeqCst) && t0.elapsed() < Duration::from_secs(30) {
                 if nbdsys::device_ready(index, pid, info.size) {
+                    // a stop requested while sysfs was being read: never announce a device that is being detached
+                    if stop_ref.requested().is_some() {
+                        return;
+                    }
                     announce(
                         "attached",
                         vec![

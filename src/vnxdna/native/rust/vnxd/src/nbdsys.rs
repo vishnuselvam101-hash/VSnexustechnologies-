@@ -306,6 +306,25 @@ mod tests {
     }
 
     #[test]
+    fn ready_rejects_unaligned_sizes_and_any_sector_mismatch() {
+        let pid = 4242u32;
+        let size = 64u64 << 20;
+        let sectors = size / 512;
+        // smallest and a typical exact match
+        assert!(ready_state(Some(pid), Some(1), pid, 512));
+        assert!(ready_state(Some(pid), Some(sectors), pid, size));
+        // a size that is not a whole number of sectors is never ready, even when the rounded-down count matches
+        for bad in [1u64, 511, 513, 1023, 4097, size + 1, size + 511] {
+            assert!(!ready_state(Some(pid), Some(bad / 512), pid, bad), "unaligned size {bad}");
+        }
+        // one sector too many is as wrong as one too few
+        assert!(!ready_state(Some(pid), Some(sectors + 1), pid, size));
+        assert!(!ready_state(Some(pid), Some(sectors - 1), pid, size));
+        // a stale pid with the right size is not ours
+        assert!(!ready_state(Some(pid + 1), Some(sectors), pid, size));
+    }
+
+    #[test]
     fn signal_set_is_buildable() {
         let s = stop_signals();
         // glibc stores signal n at bit n-1 of the first word
