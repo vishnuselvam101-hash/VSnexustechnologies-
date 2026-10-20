@@ -227,6 +227,7 @@ def test_candidate_pair_budget_stops_the_stage_and_is_reported(pools, tmp_path):
                          cluster_config=ClusterConfig(max_candidate_pairs=10, max_candidate_pairs_per_read=0))
     cl = rep["clustering"]
     assert cl["status"] == "budget_exceeded" and cl["budget_exceeded"][0]["limit"] == "max_candidate_pairs"
+    assert cl["budget_limited"] is False
     assert cl["frames_verified"] == 0 and data is None and st == "FAILURE"
 
 
@@ -240,6 +241,7 @@ def test_candidate_pair_budget_lowers_the_bucket_cap_and_keeps_clustering(pools,
     cl = rep["clustering"]
     (rec,) = cl["budget_exceeded"]
     assert cl["status"] == "ran" and rec["limit"] == "max_candidate_pairs" and rec["stopped"] is False
+    assert cl["budget_limited"] is True
     assert rec["used"] <= rec["allowed"] == 10_000 < rec["requested"] and 2 <= rec["bucket_cap"] < 256
     assert cl["clustering"]["candidate_bucket_cap"] == rec["bucket_cap"] and cl["frames_verified"] > 0
     assert _outcome(p, tmp_path / "x.vnx", pools["container"], read_clustering="fallback", cluster_config=cfg)["outcome"] == EXACT

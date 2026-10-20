@@ -52,7 +52,7 @@ class ClusterConfig:
     # and every cluster frame is still verified (inner RS + CRC-32, container SHA-256), so a lower cap can only add
     # verified frames compared with stopping: default 2 (any cap). At 10 MB D13-F1 (SIMULATED, ~10 reads per strand)
     # the slot pairs come from buckets of <= 64 reads, so a floor of 64 still stopped. A floor >= bucket_cap disables it.
-    bucket_cap_floor: int = 2
+    bucket_cap_floor: int = 2                   # also applies to plain --read-clustering fallback, not only presets
     # §5.2 verification: accept an edge iff distance <= theta * max(La, Lb); band |dL| + band_slack
     theta: float = 0.30
     band_slack: int = 32
@@ -97,6 +97,10 @@ class ClusterConfig:
     list_max_subsets: int = 20_000              # f-subsets of candidate positions per column (deterministic)
     list_max_hypotheses: int = 2_000_000        # (frame, address) trials per round
     list_rounds: int = 4
+    # Tail symbols: the last 20 bytes of a frame (CRC-32 + inner RS parity). A list-decoding repair of a candidate
+    # frame is accepted only if at least list_min_tail_matches of those 20 bytes match the bytes the repaired row
+    # predicts: a random (wrong) candidate matches that many only with tiny probability (~7e-15 per trial at 8), and
+    # the repaired frame must still pass inner RS + CRC-32 at its address.
     list_repair_bytes: int = 3                  # payload columns a tail-verified repair may change
     list_max_repairs: int = 4096                # repair variants per candidate
     list_min_tail_matches: int = 8              # of the 20 CRC-32 + inner parity bytes (random: ~7e-15 per trial)
@@ -173,6 +177,8 @@ CLUSTER_PRESETS: dict[str, dict] = {
 
 def cluster_preset(name: str) -> ClusterConfig:
     """The validated :class:`ClusterConfig` of a named preset (:data:`CLUSTER_PRESETS`)."""
+    if not isinstance(name, str):
+        raise VNXConfigurationError(f"cluster preset must be a string, got {type(name).__name__}")
     if name not in CLUSTER_PRESETS:
         raise VNXConfigurationError(f"unknown cluster preset {name!r}; known: {', '.join(CLUSTER_PRESETS)}")
     return ClusterConfig(**CLUSTER_PRESETS[name]).validate()

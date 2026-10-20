@@ -91,6 +91,8 @@ between those three is a typing-only edit in `sdk/config.py`, which the harness 
 - The default decoder gives the same status on base and new for every row.
 - The p6e benchmark workloads use the default decode path, which executes none of the changed code.
 
+ASan/UBSan: the ABI 6 native change (outer-list kernel) was run clean by the reviewer on 2026-10-19 (CC-3 review).
+
 ## Recommendation
 For nanopore-like reads:
 - Encode with `--stripe-depth 128 --column-parity 4`.

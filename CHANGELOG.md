@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased (V15, branch `build/v15`)
+
+### Changed: read clustering (CC-3; SIMULATED)
+- **Opt-in `--cluster-preset nanopore`** (implies `--read-clustering fallback`): full-template consensus, template fill
+  and outer-code list decoding of short rows. SIMULATED evaluation only (`experiments/v15/cc3/`).
+- **`bucket_cap_floor` default 2 also changes the plain `--read-clustering fallback`**, not only the preset: over the
+  candidate-pair budget the bucket cap is lowered and clustering continues (the stage stops only if no cap >= the
+  floor fits). The cluster report adds `budget_limited` (true when a budget was hit without stopping).
+
 ## 14.0.0 (branch `build/v14`, release candidate, not tagged; docs/V14_IMPLEMENTATION_REPORT.md)
 
 All channel results are SIMULATED; no DNA was synthesised, stored or sequenced (evidence categories A-D only; nothing

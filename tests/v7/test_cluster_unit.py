@@ -221,6 +221,29 @@ def test_candidate_pair_budget_stops_and_is_named():
     assert budget is None and a.size == 0
 
 
+def test_report_flags_a_budget_hit_that_did_not_stop(tmp_path):
+    from collections import Counter
+
+    from vnxdna.recovery.cluster.graph import _lowered, _stop_record, is_stop
+    from vnxdna.recovery.cluster.stage import ClusterStage
+
+    def report(budget):
+        d = tmp_path / f"s{len(budget)}{budget[0]['limit'] if budget else ''}{len(budget and budget[0])}"
+        d.mkdir()
+        st = ClusterStage(d, LAY, ClusterConfig(), 16, np.uint16)
+        st.budget = list(budget)
+        return st.report()
+
+    lowered = _lowered(Counter(), 256, 10_000, 4, 3, 9_000, 120_000)
+    stop = _stop_record(10, 50)
+    assert not is_stop(lowered) and is_stop(stop)
+    assert report([])["budget_limited"] is False
+    rep = report([lowered])
+    assert rep["budget_limited"] is True and rep["budget_exceeded"] == [lowered]       # existing key unchanged
+    assert report([stop])["budget_limited"] is False                                   # stopped, not limited
+    assert report([{"limit": "max_unplaced_reads", "allowed": 1, "used": 2}])["budget_limited"] is False
+
+
 # ------------------------------------------------------------------------------------------------------ store
 def test_store_selects_unverified_reads_raw_and_counts_lengths(tmp_path):
     T = LAY.strand_nt

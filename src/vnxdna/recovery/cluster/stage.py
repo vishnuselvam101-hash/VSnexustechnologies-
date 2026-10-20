@@ -366,7 +366,9 @@ class ClusterStage:
                "consensus": {k[len("cluster_"):]: int(v) for k, v in sorted(self.cons.items())},
                "native_threads": self.native_threads, "consensus_processes": self.consensus_processes,
                "frames_verified": self.frames, "fill": {k: int(v) for k, v in sorted(self.fill.items())},
-               "budget_exceeded": list(self.budget)}
+               "budget_exceeded": list(self.budget),
+               # over a budget without stopping (the bucket cap was lowered): the stage ran but was limited
+               "budget_limited": any(not r.get("stopped", True) for r in self.budget)}
         if self.cfg.outer_list == "on":
             out["outer_list"] = {"candidates_kept": len(self.rejects), "candidates_dropped": self.rejects_dropped,
                                  **self.list_counts}

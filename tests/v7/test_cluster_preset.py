@@ -46,6 +46,16 @@ def test_preset_turns_clustering_on_and_rejects_off():
         decode_options({}, cluster_preset="nope")
 
 
+@pytest.mark.parametrize("bad", [5, 1.5, True, ["nanopore"], {"name": "nanopore"}, b"nanopore"])
+def test_non_string_preset_is_a_configuration_error(bad):
+    with pytest.raises(VNXConfigurationError, match="cluster preset must be a string"):
+        cluster_preset(bad)
+    with pytest.raises(VNXConfigurationError):
+        decode_options({}, cluster_preset=bad)
+    with pytest.raises(VNXConfigurationError):
+        decode_options(validate_config({"decode": {"cluster_preset": bad}}))
+
+
 @pytest.fixture(scope="module")
 def pool(tmp_path_factory):
     d = tmp_path_factory.mktemp("preset_pool")
