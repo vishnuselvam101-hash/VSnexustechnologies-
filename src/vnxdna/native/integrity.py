@@ -55,9 +55,26 @@ def crc32_rows_native(rows: np.ndarray, threads: int = 1) -> np.ndarray:
     """CRC-32 of every row of a (N, W) uint8 array with the Rust kernel; rows may be a strided view (no copy when
     the rows are C-contiguous in their last axis)."""
     lib = KERNEL.lib()
+    
+    # Validate input for list types - check for out-of-range or boolean values
+    # We do this before np.asarray() to catch list inputs specifically
+    if isinstance(rows, (list, tuple)):
+        # Check each element for invalid values (only apply to list inputs)
+        for i, row in enumerate(rows):
+            if not isinstance(row, (list, tuple)):
+                raise ValueError('Each row must be a list or tuple')
+            for j, val in enumerate(row):
+                # Check for boolean values
+                if type(val) is bool:
+                    raise ValueError(f'crc32_rows input contains boolean values')
+                # Check for out-of-range values  
+                if not isinstance(val, int) or val < 0 or val > 255:
+                    raise ValueError(f'crc32_rows input contains values outside the range 0..255')
+    
     rows = np.asarray(rows)
     if rows.ndim != 2:
         raise ValueError("crc32_rows expects a 2-D array")
+    
     if rows.dtype != np.uint8:
         rows = rows.astype(np.uint8)
     n, w = rows.shape

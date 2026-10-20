@@ -26,6 +26,34 @@ TABLE = _table()
 
 def crc32_rows(rows: np.ndarray) -> np.ndarray:
     """CRC-32 of every row of a (N, W) uint8 array. Returns (N,) uint32."""
+    # Validate input values before conversion to ensure we catch boolean types correctly
+    if isinstance(rows, list):
+        # Check for boolean values in the original list structure
+        def has_bool_values(lst):
+            for item in lst:
+                if isinstance(item, list):
+                    if has_bool_values(item):
+                        return True
+                elif type(item) is bool:
+                    return True
+            return False
+        
+        if has_bool_values(rows):
+            raise ValueError("crc32_rows input contains boolean values")
+        
+        # Check for out-of-range values in the original list structure
+        def check_range(lst):
+            for item in lst:
+                if isinstance(item, list):
+                    if not check_range(item):
+                        return False
+                elif not (0 <= item <= 255 and type(item) is int):
+                    return False
+            return True
+        
+        if not check_range(rows):
+            raise ValueError("crc32_rows input contains values outside the range 0..255")
+    
     rows = np.asarray(rows, dtype=np.uint8)
     if rows.ndim != 2:
         raise ValueError("crc32_rows expects a 2-D array")
