@@ -301,7 +301,7 @@ def load_manifest(path: str | os.PathLike) -> dict:
 
     def count(rec: dict, k: str, i: int) -> int:
         v = rec[k]
-        if isinstance(v, bool) or not isinstance(v, int) or v < 0:
+        if type(v) is not int or v < 0:
             raise bad(f"extent {i}: {k!r} must be a non-negative integer")
         return v
 
