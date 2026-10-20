@@ -614,9 +614,11 @@ int vnx_cl_verify(int64_t n, const uint8_t *buf, int64_t nbuf, const int64_t *of
                   const int64_t *pa, const int64_t *pb, const uint8_t *prel, const int64_t *pmax, double theta,
                   int64_t slack, int64_t chunk, int64_t *root_out, uint8_t *orient_out, double *best,
                   int64_t *counters) {
-    if (n < 0 || npairs < 0 || slack < 0 || slack > (1 << 20) || chunk < 1 || !counters) return CL_EARG;
+    if (n < 0 || npairs < 0 || slack < 0 || slack > (1 << 20) || !counters) return CL_EARG;
     if (n > 0 && (!buf || !off || !len || !root_out || !orient_out || !best)) return CL_EARG;
     if (npairs > 0 && (!pa || !pb || !prel || !pmax)) return CL_EARG;
+    if (chunk < 1) return CL_EARG; /* chunk must be positive */
+    if (chunk > SIZE_MAX / 8) return CL_ENOMEM; /* avoid malloc wrap */
     int64_t maxlen;
     if (check_seqs(n, nbuf, off, len, (int64_t)1 << 24, &maxlen)) return CL_EARG;
     for (int64_t p = 0; p < npairs; p++)
