@@ -272,6 +272,20 @@ impl Volume {
                     continue;
                 }
                 Record::Superblock(_) => return corrupt("second superblock in the journal"),
+                Record::Snapshot(s) => {
+                    if s.txid <= last_txid {
+                        return corrupt(format!("journal txid {} not after {last_txid}", s.txid));
+                    }
+                    last_txid = s.txid;
+                    continue;
+                }
+                Record::Retention(r) => {
+                    if r.txid <= last_txid {
+                        return corrupt(format!("journal txid {} not after {last_txid}", r.txid));
+                    }
+                    last_txid = r.txid;
+                    continue;
+                }
             };
             if txid <= last_txid {
                 return corrupt(format!("journal txid {txid} not after {last_txid}"));
