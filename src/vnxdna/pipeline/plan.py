@@ -45,6 +45,12 @@ def load_prices(path: str | os.PathLike) -> list[VendorPrice]:
     if not isinstance(data, dict):
         raise VNXConfigurationError("Vendor prices must be a JSON object")
     
+    # Validate top-level keys (only "format" and "vendors" allowed)
+    allowed_top_level = {"format", "vendors"}
+    for key in data.keys():
+        if key not in allowed_top_level:
+            raise VNXConfigurationError(f"Unknown top-level key: {key}")
+    
     if "format" not in data or data["format"] != PRICE_FORMAT:
         raise VNXConfigurationError(f"Unsupported vendor price format {data.get('format', 'unknown')}; expected {PRICE_FORMAT}")
         
@@ -56,21 +62,36 @@ def load_prices(path: str | os.PathLike) -> list[VendorPrice]:
         if not isinstance(item, dict):
             raise VNXConfigurationError("Each vendor must be a JSON object")
             
+        # Validate vendor keys (only known keys allowed)
+        allowed_vendor_keys = {"vendor", "currency", "per_base", "per_strand", "per_order", "max_strand_nt", "min_strands"}
+        for key in item.keys():
+            if key not in allowed_vendor_keys:
+                raise VNXConfigurationError(f"Unknown vendor key: {key}")
+            
         # Validate required fields
         if "vendor" not in item:
             raise VNXConfigurationError("Each vendor must have a 'vendor' field")
         if "currency" not in item:
             raise VNXConfigurationError("Each vendor must have a 'currency' field")
             
-        # Convert price fields to Decimal
+        # Validate currency is uppercase ISO 4217 (3 uppercase letters)
+        currency = item["currency"]
+        if not isinstance(currency, str) or len(currency) != 3 or not currency.isupper() or not currency.isalpha():
+            raise VNXConfigurationError(f"Currency must be a 3-letter uppercase ISO 4217 code: {currency}")
+            
+        # Validate price fields are strings (not floats) and convert to Decimal
         for field_name in ["per_base", "per_strand", "per_order"]:
             if field_name in item:
+                value = item[field_name]
+                # Must be a string to preserve precision
+                if not isinstance(value, str):
+                    raise VNXConfigurationError(f"Price {field_name} must be a string, not {type(value).__name__}")
                 try:
-                    item[field_name] = Decimal(str(item[field_name]))
+                    item[field_name] = Decimal(value)
                     if item[field_name] < 0:
                         raise VNXConfigurationError(f"Price {field_name} cannot be negative")
                 except Exception:
-                    raise VNXConfigurationError(f"Invalid price value for {field_name}: {item.get(field_name)}")
+                    raise VNXConfigurationError(f"Invalid price value for {field_name}: {value}")
                     
         # Validate max_strand_nt
         if "max_strand_nt" in item:
@@ -90,7 +111,9 @@ def load_prices(path: str | os.PathLike) -> list[VendorPrice]:
             except Exception:
                 raise VNXConfigurationError(f"Invalid min_strands value: {item.get('min_strands')}")
                 
-        vendors.append(VendorPrice(**item))
+        # Extract only the allowed fields for VendorPrice
+        vendor_kwargs = {k: v for k, v in item.items() if k in allowed_vendor_keys}
+        vendors.append(VendorPrice(**vendor_kwargs))
     
     return vendors
 
@@ -197,6 +220,10 @@ def plan_encode(input_bytes: int, options: DNAOptions | None = None, prices: lis
             if vendor_price.max_strand_nt is not None and lay.strand_nt > vendor_price.max_strand_nt:
                 cost_dict["fits"] = False
                 cost_dict["reason"] = f"strand_nt {lay.strand_nt} exceeds maximum {vendor_price.max_strand_nt}"
+            # Check min_strands constraint
+            elif vendor_price.min_strands > 0 and total_strands < vendor_price.min_strands:
+                cost_dict["fits"] = False
+                cost_dict["reason"] = f"min_strands {vendor_price.min_strands} not met (have {total_strands})"
             else:
                 # Calculate total cost
                 total_cost = vendor_price.per_order
