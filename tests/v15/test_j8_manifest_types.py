@@ -26,6 +26,7 @@ def test_valid_manifest_still_loads():
         
         # Encode a stream to get a valid manifest - use valid extent_bytes (at least 4096)
         doc = encode_stream(src, sink, options=StreamOptions(extent_bytes=4096), manifest=manifest)
+        assert doc["format"] == "vnx.stream/1"
         
         # Load the manifest - this should work fine
         loaded_doc = load_manifest(manifest)
@@ -52,8 +53,8 @@ def test_bool_values_in_index_raise_format_error():
             "sha256": "a" * 64,
             "extents": [
                 {
-                    "index": 0,  # This should be correct for the order check
-                    "length": True,  # This should raise an error (boolean, not int)
+                    "index": True,  # This should raise an error (boolean, not int)
+                    "length": 50,
                     "sha256": "b" * 64,
                     "archive_id": "test-id",
                     "archive_tag": "abcd",
@@ -67,15 +68,66 @@ def test_bool_values_in_index_raise_format_error():
             "dna": {"profile": "test", "outer_code": "test"},
             "encrypted": False
         }
-        
+
         manifest_path = Path(tmp) / "manifest.json"
         manifest_path.write_bytes(canonical_json(manifest_data))
-        
+
         # This should raise VNXFormatError
         with pytest.raises(VNXFormatError) as exc_info:
             load_manifest(manifest_path)
-        
+
         assert "must be a non-negative integer" in str(exc_info.value)
+
+
+def test_bool_index_on_extent_one_raises_format_error():
+    """A boolean index on extent 1 is refused (O-9).
+
+    ``True == 1`` in Python, so the order check alone (``rec["index"] != i``) accepts a boolean on extent 1; the
+    loader must refuse it with the same error it raises for any other bad extent field.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        manifest_data = {
+            "format": "vnx.stream/1",
+            "extent_bytes": 4096,
+            "strands_format": "fasta",
+            "total_bytes": 100,
+            "sha256": "a" * 64,
+            "extents": [
+                {
+                    "index": 0,
+                    "length": 50,
+                    "sha256": "b" * 64,
+                    "archive_id": "test-id",
+                    "archive_tag": "abcd",
+                    "strands_offset": 0,
+                    "strands_bytes": 50,
+                    "strands_sha256": "c" * 64
+                },
+                {
+                    "index": True,   # True == 1, so the order check alone would accept this
+                    "length": 50,
+                    "sha256": "d" * 64,
+                    "archive_id": "test-id-2",
+                    "archive_tag": "efgh",
+                    "strands_offset": 50,
+                    "strands_bytes": 50,
+                    "strands_sha256": "f" * 64
+                }
+            ],
+            "strands_sha256": "e" * 64,
+            "strands_bytes": 100,
+            "dna": {"profile": "test", "outer_code": "test"},
+            "encrypted": False
+        }
+
+        manifest_path = Path(tmp) / "manifest.json"
+        manifest_path.write_bytes(canonical_json(manifest_data))
+
+        with pytest.raises(VNXFormatError) as exc_info:
+            load_manifest(manifest_path)
+
+        assert "must be a non-negative integer" in str(exc_info.value)
+        assert "'index'" in str(exc_info.value)
 
 
 def test_bool_values_in_length_raise_format_error():
