@@ -16,6 +16,7 @@ import ctypes
 import numpy as np
 
 from vnxdna.core.crc import crc32_rows as crc32_rows_reference
+from vnxdna.core.crc_rows import byte_rows_array
 from vnxdna.native._loader import NativeKernelError, RustKernel, module_contract
 
 ABI_VERSION = 1
@@ -53,11 +54,16 @@ def build(output=None, extra_flags=None, strict=None):
 
 def crc32_rows_native(rows: np.ndarray, threads: int = 1) -> np.ndarray:
     """CRC-32 of every row of a (N, W) uint8 array with the Rust kernel; rows may be a strided view (no copy when
-    the rows are C-contiguous in their last axis)."""
+    the rows are C-contiguous in their last axis).
+
+    A table of rows is validated by the shared validator (:mod:`vnxdna.core.crc_rows`) that the reference backend
+    uses as well, so both backends accept the same inputs and refuse the same ones with the same error type."""
     lib = KERNEL.lib()
-    rows = np.asarray(rows)
+
+    rows = byte_rows_array(rows)
     if rows.ndim != 2:
         raise ValueError("crc32_rows expects a 2-D array")
+
     if rows.dtype != np.uint8:
         rows = rows.astype(np.uint8)
     n, w = rows.shape

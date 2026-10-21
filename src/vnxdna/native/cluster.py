@@ -45,6 +45,7 @@ from pathlib import Path
 import numpy as np
 
 from vnxdna import _native_build as _nb
+from vnxdna.core.errors import VNXConfigurationError
 
 ABI_VERSION = 5
 BACKENDS = ("auto", "native", "reference")
@@ -202,14 +203,21 @@ _scope_threads: contextvars.ContextVar[int | None] = contextvars.ContextVar("vnx
 
 
 def threads() -> int:
-    """Threads of :func:`fb` and :func:`edit_costs`: ``VNXDNA_CLUSTER_THREADS`` if set, else the :func:`thread_scope`
-    value, else 1; at most 64. Results do not depend on it."""
+    """Threads of :func:`fb` and :func:`edit_costs``: ``VNXDNA_CLUSTER_THREADS`` if set, else the :func:`thread_scope`
+    value, else 1; at most 64. Results do not depend on it.
+
+    A set but unusable value is a configuration error, not a silent fallback to one thread: the value must be a plain
+    decimal count (``"4"``), and an empty, blank, padded or otherwise decorated one is as unusable as a non-numeric
+    one.
+    """
     env = os.environ.get("VNXDNA_CLUSTER_THREADS")
-    if env:
-        try:
-            return max(1, min(64, int(env)))
-        except ValueError:
-            return 1
+    if env is not None:
+        if not env.isascii() or not env.isdecimal():
+            raise VNXConfigurationError(f"VNXDNA_CLUSTER_THREADS must be a positive integer, got {env!r}")
+        n = int(env)
+        if n < 1:
+            raise VNXConfigurationError(f"VNXDNA_CLUSTER_THREADS must be a positive integer, got {env!r}")
+        return max(1, min(64, n))
     scoped = _scope_threads.get()
     return 1 if scoped is None else max(1, min(64, int(scoped)))
 

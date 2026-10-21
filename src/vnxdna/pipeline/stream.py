@@ -301,7 +301,7 @@ def load_manifest(path: str | os.PathLike) -> dict:
 
     def count(rec: dict, k: str, i: int) -> int:
         v = rec[k]
-        if isinstance(v, bool) or not isinstance(v, int) or v < 0:
+        if type(v) is not int or v < 0:
             raise bad(f"extent {i}: {k!r} must be a non-negative integer")
         return v
 
@@ -318,7 +318,10 @@ def load_manifest(path: str | os.PathLike) -> dict:
         for k in ("index", "length", "sha256", "archive_id", "archive_tag", "strands_offset", "strands_bytes", "strands_sha256"):
             if k not in rec:
                 raise bad(f"extent {i} lacks {k!r}")
-        if rec["index"] != i:
+        # the index is type-checked before the order check: True == 1 in Python, so an order check alone would accept
+        # a boolean on extent 1
+        index = count(rec, "index", i)
+        if index != i:
             raise bad("extents out of order")
         total += count(rec, "length", i)
         # V14 F (H-6): a range beyond any file is a format error, not a raw ValueError from seek()

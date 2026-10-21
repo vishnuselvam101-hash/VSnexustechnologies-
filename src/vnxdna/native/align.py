@@ -44,6 +44,7 @@ MAX_TEMPLATE = 8192
 MAX_COST = 65536
 MAX_GUARD = 1024
 INF = 1 << 28
+_INT64_MAX = (1 << 63) - 1
 BACKENDS = ("auto", "native", "avx512", "avx2", "scalar", "reference")
 LEVELS = {"scalar": 4, "avx2": 8, "avx512": 16}     # level name -> lanes (the C level argument)
 QUARANTINE_ENV = "VNXDNA_ALIGN_QUARANTINED_LEVELS"   # comma-separated level names auto must skip (set by dispatch)
@@ -263,11 +264,59 @@ def _int_in(v, lo: int, hi: int) -> bool:
     return isinstance(v, (int, np.integer)) and not isinstance(v, bool) and lo <= int(v) <= hi
 
 
+def geometry_in_domain(aligner) -> bool:
+    """The geometry arrays must have the sizes and ranges the kernel indexes them with (contract §1, §9).
+
+    The kernel reads ``tpl[p]``, ``seg_of[p]``, ``prev_seg[p]`` and ``next_seg[p]`` for every template position
+    ``p < T``, and ``frame_pos[f]`` and ``seg_frame[f]`` for every frame position ``f < frame_nt``; it also marks the
+    segment ids in ``hit[0..n_segments)``. An array shorter than that is an over-read, and a segment id that does
+    not fit ``n_segments`` is a write outside ``hit``. A malformed internal :class:`TemplateAligner` (a truncated
+    array, or a segment id from a different geometry) is therefore refused here: the caller then takes the
+    documented ``None`` path and runs the reference aligner.
+
+    The arrays checked are the ones the kernel receives: :func:`geometry` caches them on the aligner, and the
+    kernel is called with that cache.
+    """
+    try:
+        g = geometry(aligner)
+        T = aligner.T
+        frame_nt = aligner.layout.frame_nt
+        n_segments = aligner.n_segments
+    except (AttributeError, TypeError, ValueError):
+        return False
+    if not _int_in(T, 1, MAX_TEMPLATE) or not _int_in(frame_nt, 1, T) or not _int_in(n_segments, 1, frame_nt):
+        return False
+    sizes = {
+        "tpl": T, "seg_of": T, "prev_seg": T, "next_seg": T,
+        "frame_pos": frame_nt, "seg_frame": frame_nt,
+    }
+    for name, want in sizes.items():
+        arr = g.get(name)
+        if not isinstance(arr, np.ndarray) or arr.ndim != 1 or arr.size != want:
+            return False
+    # the values the kernel indexes with must address the template and the segment table
+    tpl = g["tpl"]
+    if tpl.size and (int(tpl.min()) < -1 or int(tpl.max()) > 255):
+        return False
+    frame_pos = g["frame_pos"]
+    if frame_pos.size and (int(frame_pos.min()) < 0 or int(frame_pos.max()) >= T):
+        return False
+    for name in ("seg_of", "prev_seg", "next_seg"):
+        arr = g[name]
+        if arr.size and (int(arr.min()) < -1 or int(arr.max()) >= n_segments):
+            return False
+    seg_frame = g["seg_frame"]
+    if seg_frame.size and (int(seg_frame.min()) < 0 or int(seg_frame.max()) >= n_segments):
+        return False
+    return True
+
+
 def config_in_domain(aligner, min_quality) -> bool:
     c = aligner.costs
     return (_int_in(aligner.band, 0, MAX_BAND) and 1 <= aligner.T <= MAX_TEMPLATE
             and all(_int_in(v, 0, MAX_COST) for v in (c.marker_mismatch, c.insertion, c.deletion, c.marker_deletion_extra))
-            and _int_in(c.guard_segments, 0, MAX_GUARD) and _int_in(min_quality, -(1 << 31), (1 << 31) - 1))
+            and _int_in(c.guard_segments, 0, MAX_GUARD) and _int_in(min_quality, -(1 << 31), (1 << 31) - 1)
+            and geometry_in_domain(aligner))
 
 
 def _reads_in_domain(reads: list, quals: list | None) -> bool:
@@ -334,10 +383,36 @@ def _flat_in_domain(codes, starts, lengths, qflat) -> bool:
     if qflat is not None and (not isinstance(qflat, np.ndarray) or qflat.dtype != np.uint8 or qflat.ndim != 1
                               or qflat.size != codes.size):
         return False
-    if starts.size and (int(starts.min()) < 0 or int(lengths.min()) < 0
-                        or int((starts.astype(np.int64) + lengths.astype(np.int64)).max()) > codes.size):
+    if starts.size and not _flat_ranges_in_domain(starts, lengths, codes.size):
         return False
     return True
+
+
+def _flat_ranges_in_domain(starts, lengths, limit: int) -> bool:
+    """Every read ``[starts[k], starts[k] + lengths[k])`` lies inside ``limit`` entries, exactly.
+
+    The sum must be computed without wrapping: an int64 ``starts + lengths`` can overflow (O-5) and a read that
+    wraps to a small number would pass a naive bound. The check is exact and vectorised:
+
+    * a read whose start is beyond ``limit`` is out of bounds, and so is a read longer than ``limit`` -- both are
+      refused before any sum is computed;
+    * with every start and every length inside ``limit``, the largest possible sum is ``max(starts) + max(lengths)``;
+      when that fits an int64 the exact per-read maximum is one vectorised add and one reduction, and the int64
+      sum cannot wrap;
+    * when it does not fit an int64 (only reachable for a buffer of more than 2**62 entries), the sums are computed
+      as Python integers, where they cannot wrap at all.
+    """
+    s_min, s_max = int(starts.min()), int(starts.max())
+    l_min, l_max = int(lengths.min()), int(lengths.max())
+    if s_min < 0 or l_min < 0:
+        return False
+    if s_max > limit or l_max > limit:
+        return False
+    if s_max + l_max <= _INT64_MAX:
+        exact = int(np.add(starts.astype(np.int64, copy=False), lengths.astype(np.int64, copy=False)).max())
+    else:
+        exact = int(np.add(starts, lengths, dtype=object).max())
+    return exact <= limit
 
 
 def align_usable_flat(aligner, codes: np.ndarray, starts: np.ndarray, lengths: np.ndarray, qflat: np.ndarray | None,
