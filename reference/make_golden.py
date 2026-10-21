@@ -15,7 +15,17 @@ WHAT THIS DOES
     bytes of payload, so the whole corpus is a few tens of kilobytes.
 
     The payload of each archive is a literal byte string, so the corpus is
-    reproducible: running this script again produces byte-identical files.
+    reproducible.  Three of the four archives regenerate byte for byte.  The
+    encrypted one does not: the container builder draws a fresh random
+    archive id per archive, and the AEAD key and the nonces are derived from
+    it, so its container and its strand pool differ on every run while
+    still decoding to the same payload.  Its *payload* digest is therefore
+    the stable part of that entry; the container and FASTA digests pin the
+    committed files, not the generator.
+
+    ``--check`` verifies the committed corpus against the digests in
+    index.json.  It does not regenerate, because regeneration of the
+    encrypted entry is not byte-stable.
 
 USAGE
     python3 reference/make_golden.py            # write the corpus

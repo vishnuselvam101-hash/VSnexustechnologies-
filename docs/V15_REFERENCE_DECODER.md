@@ -225,8 +225,16 @@ python3 reference/make_golden.py            # write the corpus
 python3 reference/make_golden.py --check    # verify the committed corpus without writing
 ```
 
-The script is deterministic: the same production encoder and the same fixed payloads
-produce byte-identical files. Regenerating the corpus is **not** part of a normal change.
+The script is deterministic for three of the four archives: the same production encoder and the
+same fixed payloads produce byte-identical files. The encrypted entry is the exception —
+the container builder draws a fresh random archive id per archive, and the AEAD key and
+the nonces are derived from it, so `encrypted-2bit` regenerates to different bytes every
+run while still decoding to the same payload. Its **payload** digest is the stable part
+of that entry; the container and FASTA digests pin the committed files, not the generator.
+This is why `--check` verifies the committed corpus against the recorded digests rather
+than regenerating and comparing.
+
+Regenerating the corpus is **not** part of a normal change.
 If a change to the encoder alters a golden archive, the format has changed and the
 freeze (C-2) applies: the format version must change with the corpus, in the same commit
 that changes the digests.
