@@ -742,8 +742,29 @@ mod tests {
     }
 
     #[test]
-    fn version_mismatch_is_its_own_error() {
-        let mut b = samples()[1].encode().unwrap();
+    fn every_known_superblock_flag_is_accepted() {
+        // the known set is FLAG_SEALED | FLAG_WORM; each one and their combination must decode
+        for flags in [FLAG_SEALED, FLAG_WORM, FLAG_SEALED | FLAG_WORM] {
+            let g = Geometry::new(4096, 256, 262_144).unwrap();
+            let sb = Record::Superblock(Superblock { device_id: [0; 16], geometry: g, flags });
+            let bytes = sb.encode().expect("a known flag must encode");
+            match Record::decode(&bytes).expect("a known flag must decode").0 {
+                Record::Superblock(s) => assert_eq!(s.flags, flags),
+                _ => panic!("not a superblock"),
+            }
+        }
+        // and the first value above the mask must not
+        let g = Geometry::new(4096, 256, 262_144).unwrap();
+        let bad = Record::Superblock(Superblock {
+            device_id: [0; 16],
+            geometry: g,
+            flags: (FLAG_SEALED | FLAG_WORM) << 1,
+        });
+        assert_eq!(bad.encode().unwrap_err().code, ErrorCode::Corruption);
+    }
+
+    #[test]
+    fn version_mismatch_is_its_own_error() {        let mut b = samples()[1].encode().unwrap();
         b[4] = 2;
         let n = b.len();
         let crc = crc32(&b[..n - 4]);

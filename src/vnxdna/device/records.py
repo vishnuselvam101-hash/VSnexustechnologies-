@@ -20,7 +20,9 @@ HEADER = struct.Struct("<4sHHI")
 KIND_SUPERBLOCK, KIND_MAP_UPDATE, KIND_GENERATION_RELEASED, KIND_MAP_BATCH = 1, 2, 3, 4
 MAX_BATCH_EXTENTS = 1024
 FLAG_SEALED = 1
-_KNOWN_FLAGS = FLAG_SEALED
+#: Superblock flag: the volume is WORM (write-once-read-many).
+FLAG_WORM = 2
+_KNOWN_FLAGS = FLAG_SEALED | FLAG_WORM
 _SUPERBLOCK = struct.Struct("<16sIIQI")
 _MAP_UPDATE = struct.Struct("<QQQQQ32s")
 _RELEASED = struct.Struct("<QQQ")
