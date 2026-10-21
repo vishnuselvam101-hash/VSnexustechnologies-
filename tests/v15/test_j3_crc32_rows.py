@@ -63,5 +63,64 @@ def test_backend_consistency():
         np.testing.assert_array_equal(ref_result, native_result)
 
 
+def _outcome(fn, rows):
+    """What a backend does with an input: the result, or the exception type and message."""
+    try:
+        return ("ok", tuple(int(v) for v in fn(rows)))
+    except Exception as error:                        # noqa: BLE001 - the type is the thing under test
+        return (type(error).__name__, str(error))
+
+
+#: the inputs both backends must treat identically
+AGREEMENT_CASES = [
+    ("list of lists", [[1, 2, 3], [4, 5, 6]]),
+    ("list of tuples", [(1, 2, 3), (4, 5, 6)]),
+    ("tuple of lists", ((1, 2, 3), (4, 5, 6))),
+    ("tuple of tuples", ((1, 2), (3, 4))),
+    ("numpy uint8 array", np.array([[1, 2, 3], [4, 5, 6]], dtype=np.uint8)),
+    ("numpy uint8 scalars in a list", [[np.uint8(1), np.uint8(2)], [np.uint8(3), np.uint8(4)]]),
+    ("numpy int64 scalars in a list", [[np.int64(1), np.int64(2)]]),
+    ("bool in a list", [[1, 2, True]]),
+    ("bool in a tuple", [(1, 2, False)]),
+    ("value above 255", [[1, 2, 256]]),
+    ("negative value", [[1, 2, -1]]),
+    ("non-integer value", [[1.5, 2.5]]),
+    ("string value", [["a", "b"]]),
+    ("ragged rows", [[1, 2], [3]]),
+    ("a row that is not a list", [1, 2, 3]),
+]
+
+
+@pytest.mark.parametrize("name,rows", AGREEMENT_CASES, ids=[name for name, _ in AGREEMENT_CASES])
+def test_both_backends_agree(name, rows):
+    """The reference and the native kernel accept the same inputs and refuse the same ones the same way.
+
+    They share one validator (:mod:`vnxdna.core.crc_rows`), so they cannot drift apart again: this is the test that
+    would catch a drift.
+    """
+    reference = _outcome(reference_crc32_rows, rows)
+    native = _outcome(ni.crc32_rows_native, rows)
+    assert reference == native, f"{name}: reference {reference} vs native {native}"
+
+
+def test_both_backends_refuse_a_bool_with_the_same_error():
+    """A boolean is not a byte value: both backends refuse it with the same error.
+
+    This is the one intentional behaviour change against the previous release, which accepted ``True`` as the byte
+    1 (and the reference of that release rejected it while the native kernel accepted it).
+    """
+    for rows in ([[1, 2, True]], [(1, 2, False)]):
+        with pytest.raises(ValueError, match="boolean values"):
+            reference_crc32_rows(rows)
+        with pytest.raises(ValueError, match="boolean values"):
+            ni.crc32_rows_native(rows)
+
+
+def test_both_backends_accept_numpy_uint8_scalars():
+    """A ``np.uint8`` scalar is a byte: both backends accept it (the previous release accepted it too)."""
+    rows = [[np.uint8(0), np.uint8(128), np.uint8(255)]]
+    np.testing.assert_array_equal(reference_crc32_rows(rows), ni.crc32_rows_native(rows))
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
