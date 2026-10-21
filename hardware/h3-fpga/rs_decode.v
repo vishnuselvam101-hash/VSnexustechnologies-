@@ -51,7 +51,7 @@
 // result is a correct decoder with a large (unoptimised) area, chosen so that
 // the arithmetic can be checked line by line against the Python reference.  A
 // pipelined, area-optimised version is future work; the cycle counts quoted in
-// docs/HARDWARE_DESIGN.md are the counts of THIS implementation.
+// hardware/h3-fpga/DESIGN.md are the counts of THIS implementation.
 //
 // CODING STYLE: the state-carrying registers (nsym_q, n_q, f_q, big_l_q,
 // nroots_q, degree_q, dezero_q, feasible_q, use_cand_q, corrected_q, the
