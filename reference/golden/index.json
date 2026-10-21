@@ -1,0 +1,96 @@
+{
+  "description": "LR-1 golden corpus: the archives that pin the format-4 byte layout.",
+  "entries": [
+    {
+      "container": "plain-2bit.vxdna",
+      "container_bytes": 1769,
+      "container_sha256": "5e9ce645b27a8a524cfe7b931a26e534e1b596563126789a2946d7c73bda62ab",
+      "encrypted": false,
+      "fasta": "plain-2bit.fasta",
+      "fasta_bytes": 28790,
+      "fasta_sha256": "2df42a0c344a27fbdd197bd97b0384f43c3581d910bfb6b3d304b2bf55541e09",
+      "options": {
+        "chunk_size": 1024,
+        "compression": "none",
+        "compression_level": 0,
+        "data_shards": 8,
+        "inner_parity_bytes": 4,
+        "mapping": "2bit",
+        "parity_shards": 4,
+        "payload_bytes": 20
+      },
+      "payload_bytes": 132,
+      "payload_sha256": "92801f656d2a3e382de4b517fad2f398a32dfe6c07b0d0a25ac317657cfffff8",
+      "profile": "plain-2bit"
+    },
+    {
+      "container": "zlib-rotation3.vxdna",
+      "container_bytes": 1933,
+      "container_sha256": "8e9d706f282bc4acdb80d2106f405273c6faf00ea6e1a0cc18919b16fab39d85",
+      "encrypted": false,
+      "fasta": "zlib-rotation3.fasta",
+      "fasta_bytes": 43648,
+      "fasta_sha256": "27f77974aca552c3e98cfbb359a243cd024265ac8dcdb32e5c8e126ac5e98d57",
+      "options": {
+        "chunk_size": 1024,
+        "compression": "zlib",
+        "compression_level": 9,
+        "data_shards": 8,
+        "inner_parity_bytes": 8,
+        "mapping": "rotation3",
+        "parity_shards": 4,
+        "payload_bytes": 32
+      },
+      "payload_bytes": 512,
+      "payload_sha256": "110009dcee21620b166f3abfecb5eff7a873be729d1c2d53822e7acc5f34eb9b",
+      "profile": "zlib-rotation3"
+    },
+    {
+      "container": "codebook8-plain.vxdna",
+      "container_bytes": 2052,
+      "container_sha256": "c69c6d8e38fafdbbab49b8dd9106769a1dae3e35f60435e79ceae8013d49ffc5",
+      "encrypted": false,
+      "fasta": "codebook8-plain.fasta",
+      "fasta_bytes": 74834,
+      "fasta_sha256": "033ed4193cd10e86ebdf21454dd0b23e7a3f9a4e2947f36b77e8c8a77bf65d07",
+      "options": {
+        "chunk_size": 4096,
+        "compression": "none",
+        "compression_level": 0,
+        "data_shards": 8,
+        "inner_parity_bytes": 6,
+        "mapping": "codebook8",
+        "parity_shards": 4,
+        "payload_bytes": 16
+      },
+      "payload_bytes": 400,
+      "payload_sha256": "358dece80234759cc7cceb5771b653fc80b6c0374757c3d6d1511eef6e40742b",
+      "profile": "codebook8-plain"
+    },
+    {
+      "container": "encrypted-2bit.vxdna",
+      "container_bytes": 2038,
+      "container_sha256": "66df3508491cdf71920c1659425872993f1d2756049b533088f293e3dc49025e",
+      "encrypted": true,
+      "fasta": "encrypted-2bit.fasta",
+      "fasta_bytes": 34378,
+      "fasta_sha256": "c697e56a6d5d0992d6ceca6fd557e91df88036ce39c127213121005501e664a8",
+      "options": {
+        "chunk_size": 1024,
+        "compression": "none",
+        "compression_level": 0,
+        "data_shards": 8,
+        "inner_parity_bytes": 4,
+        "mapping": "2bit",
+        "parity_shards": 4,
+        "payload_bytes": 20
+      },
+      "payload_bytes": 132,
+      "payload_sha256": "92801f656d2a3e382de4b517fad2f398a32dfe6c07b0d0a25ac317657cfffff8",
+      "profile": "encrypted-2bit"
+    }
+  ],
+  "format": "VNX-DNA",
+  "format_version": 4,
+  "generated_by": "reference/make_golden.py"
+}
