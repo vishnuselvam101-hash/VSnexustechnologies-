@@ -35,6 +35,7 @@ from __future__ import annotations
 import ast
 import hashlib
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -398,6 +399,46 @@ def test_reference_decoder_has_a_documented_size():
     count = len(REF_DECODER.read_text(encoding="utf-8").splitlines())
     assert f"{count:,}".replace(",", " ") in text or str(count) in text, (
         f"the contract does not state the reference decoder's line count ({count})")
+
+
+def test_the_documented_runtime_is_still_the_measured_runtime():
+    """The contract's runtime table must match a measurement, not a remembered number.
+
+    LR-3 requires the runtime to be documented.  A documented number that has
+    drifted from the code is worse than no number, so the table is checked
+    against a live measurement: each per-archive strand time in the contract
+    must be within a factor of two of the time measured here.
+    """
+    import time  # noqa: PLC0415
+
+    sys.path.insert(0, str(REPO / "reference"))
+    import vnx_ref_decoder as ref  # noqa: PLC0415
+
+    text = CONTRACT.read_text(encoding="utf-8")
+    names = ("plain-2bit", "zlib-rotation3", "codebook8-plain", "encrypted-2bit")
+    for name in names:
+        seqs = ref.read_sequences(str(GOLDEN / f"{name}.fasta"))
+        best = None
+        for _ in range(3):
+            t0 = time.perf_counter()
+            ref.decode_reads(seqs)
+            elapsed = time.perf_counter() - t0
+            best = elapsed if best is None else min(best, elapsed)
+        measured_ms = best * 1000.0
+        # the contract states the per-archive time in a table row:
+        # | `name` | <strands> | <n> ms |
+        stated = re.search(rf"^\|\s*`{re.escape(name)}`\s*\|\s*(\d+)\s*\|\s*(\d+)\s*ms\s*\|",
+                           text, re.MULTILINE)
+        assert stated is not None, f"the contract does not state a runtime for {name}"
+        stated_strands = int(stated.group(1))
+        stated_ms = float(stated.group(2))
+        assert stated_strands == len(seqs), (
+            f"the contract states {stated_strands} strands for {name} but the "
+            f"corpus has {len(seqs)}")
+        assert 0.5 * stated_ms <= measured_ms <= 2.0 * stated_ms, (
+            f"the contract states {stated_ms:.0f} ms for {name} but the measured "
+            f"time is {measured_ms:.1f} ms; the table must be updated in the "
+            f"same commit that changes the number")
 
 
 # --------------------------------------------------------------------------------------

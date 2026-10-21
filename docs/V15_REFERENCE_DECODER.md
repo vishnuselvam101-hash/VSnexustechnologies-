@@ -33,16 +33,24 @@ statements and fails if any of them names a module that is not in `sys.stdlib_mo
 ### Measured runtime
 
 Measured on the lab machine (Python 3.12.15, single core), decoding the whole committed
-golden corpus (`reference/golden/`, four archives):
+golden corpus (`reference/golden/`, four archives). The time is the best of five runs after a
+warm-up, so the numbers are free of first-call import cost:
 
 | path | work | time |
 |---|---|---|
-| container (`.vxdna` → original bytes) | 4 archives | **0.004 s** total (≈ 1 ms each) |
-| strands (FASTA → original bytes) | 4 archives, 753 strands | **0.105 s** total (≈ 26 ms each) |
+| container (`.vxdna` → original bytes) | 4 archives | **0.0002 s** total (≈ 0.05 ms each) |
+| strands (FASTA → original bytes) | 4 archives, 753 strands | **0.099 s** total (≈ 25 ms each) |
 
-Per archive, the strand path costs 12 ms (`plain-2bit`, 171 strands), 35 ms
-(`zlib-rotation3`, 129 strands), 43 ms (`codebook8-plain`, 249 strands) and 16 ms
-(`encrypted-2bit`, 204 strands). The reference decoder is roughly two to three orders of
+Per archive, the strand path costs:
+
+| archive | strands | time |
+|---|---|---|
+| `plain-2bit` | 171 | 11 ms |
+| `zlib-rotation3` | 129 | 31 ms |
+| `codebook8-plain` | 249 | 44 ms |
+| `encrypted-2bit` | 204 | 12 ms |
+
+The reference decoder is roughly two to three orders of
 magnitude slower than the production decoder; that is expected and accepted (LR-3 "risks":
 it is slow on large pools, acceptable, documented). The runtime is a property of the
 corpus, not a performance claim about any pool size.
