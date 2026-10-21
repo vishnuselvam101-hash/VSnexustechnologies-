@@ -62,3 +62,9 @@ hardware/h3-fpga/*.vvp
 hardware/h3-fpga/stimulus.txt
 hardware/h3-fpga/stimulus.expected
 hardware/h3-fpga/__pycache__/
+
+# test-run scratch: the base directory pytest is told to use, and the logs a
+# full-suite run writes.  A log can be tens of megabytes, so it must never be
+# staged by accident.
+.pytest-tmp/
+/.fullsuite*.log

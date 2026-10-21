@@ -47,7 +47,6 @@ references:
 from __future__ import annotations
 
 import argparse
-import os
 import random
 import re
 import shutil
@@ -224,7 +223,6 @@ def main() -> int:
     args = ap.parse_args()
 
     rng = random.Random(args.seed)
-    np_rng = np.random.default_rng(args.seed)
 
     cases = []
     for i in range(args.vectors):
