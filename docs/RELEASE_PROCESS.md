@@ -25,3 +25,8 @@
    force-push.** Verify that the remote branch and tag point at the release commit.
 10. **Fallback:** if the push fails (authentication or permissions), keep the local release intact and report the exact
     error and the command to run next.
+11. **Format compatibility (normative).** Every later VNX-DNA version MUST decode every V15 archive to the same bytes.
+    Extensions are allowed only through the declared `required_features`/extension fields. A reader MUST refuse, never
+    ignore, a required feature it does not know. A V15 reader is archived with every later release. The rule, the archive
+    corpus it binds and the reader it is checked against are in `docs/V15_REFERENCE_DECODER.md`; the golden corpus is in
+    `reference/golden/` and is checked by `tests/v15/test_hardware_lane.py`.
