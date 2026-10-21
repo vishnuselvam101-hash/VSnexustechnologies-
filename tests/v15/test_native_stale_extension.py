@@ -182,8 +182,12 @@ def test_the_shared_kernel_contract_orders_its_candidates(tmp_path, monkeypatch)
     assert candidates.index(inplace) < candidates.index(ext), candidates
 
 
-def test_two_libraries_of_the_same_age_keep_the_extension_first(tmp_path):
-    """An equal age is not a reason to change the order (the extension stays the packaged default)."""
+def test_two_libraries_of_the_same_age_put_the_in_place_build_first(tmp_path):
+    """An equal age counts as "the in-place build is not older", so it comes first.
+
+    The comparison is ``>=`` and not ``>``: the in-place build is compiled from the source in the tree, so when
+    the two dates are the same the in-place build is the one that matches the tree, and it is the one to run.
+    """
     ext = tmp_path / "ext.so"
     inplace = tmp_path / "libvnx.so"
     ext.write_bytes(b"")
@@ -191,8 +195,7 @@ def test_two_libraries_of_the_same_age_keep_the_extension_first(tmp_path):
     stamp = time.time()
     os.utime(ext, (stamp, stamp))
     os.utime(inplace, (stamp, stamp))
-    # equal dates: the order is the packaged one (the in-place build is not "newer")
-    assert _freshest_first([ext, inplace], inplace)[0] in (ext, inplace)
+    assert _freshest_first([ext, inplace], inplace) == [inplace, ext]
 
 
 @pytest.mark.parametrize("kernel", sorted(MODULES))

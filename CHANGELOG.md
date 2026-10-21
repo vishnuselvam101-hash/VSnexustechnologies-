@@ -57,6 +57,16 @@ Governing scope: docs/V14_MASTER_DIRECTIVE_2026-10-18.md (P0-P13); benchmarks: d
 - **P11 hardware + boot design documents** (docs/V14_BOOT_ARCHITECTURE.md, docs/V14_EXTERNAL_CONTROLLER.md,
   docs/V14_PHYSICAL_DNA_DEVICE.md): designs only; no device exists. **P13** V15 plan: docs/V15_FINALIZATION_PLAN.md.
 
+### Fixed: the native loader (V15)
+- **A stale packaged extension no longer shadows a newer in-place build.** The loaders tried the extension `pip
+  install` produced (`vnxdna[_vnx_<name><EXT_SUFFIX>]`) before the in-place development build
+  (`python -m vnxdna.native.<name> build`), so a packaged extension built from older source won and the newer build
+  was never exercised. The in-place build is compiled from the source in the tree and the extension from the source as
+  it was at install time, so the newer of the two is the one that matches the tree: the in-place build now comes first
+  when it is at least as new as the extension, the extension keeps priority when it is the newer of the two (the case
+  right after an install), and an explicit `<PREFIX>_LIB` override is never reordered
+  (`tests/v15/test_native_stale_extension.py`).
+
 ### Missed targets and limitations (stated plainly)
 - Both primary speed targets are **MISSED**: 4 MiB indel w1 v12/v14 2.848 [2.627, 2.899] (target >= 5x); 4 MiB clean
   w4 2.209 [2.111, 2.326] (target >= 3x). On single-archive decode V14 equals V13; it is ~5 % slower than V13 on
