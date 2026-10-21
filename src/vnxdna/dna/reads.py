@@ -10,6 +10,7 @@ import os
 from collections.abc import Iterable, Iterator
 from pathlib import Path
 
+from ..core.fsio import private_output
 from ..errors import InvalidInputError
 
 MAX_READ_NT = 100_000
@@ -91,8 +92,13 @@ def _fastq(lines: list[str], path: Path) -> list[str]:
 
 
 def write_fasta(path: Path, sequences: Iterable[str], labels: Iterable[str]) -> None:
-    tmp = path.with_name(path.name + ".tmp")
-    with tmp.open("w", encoding="ascii", newline="\n") as handle:
+    """Write ``sequences`` as FASTA to ``path`` through a private temporary file.
+
+    The temporary file has a unique name and is created with ``O_EXCL`` and mode 0600: a fixed name such as
+    ``<name>.tmp`` can be planted as a symlink by anyone who may write in the output directory, and the write would
+    go through it. The result is published with a rename, which replaces the name that is there (a symlink included)
+    instead of writing through it.
+    """
+    with private_output(path) as handle:
         for label, sequence in zip(labels, sequences):
-            handle.write(f">{label}\n{sequence}\n")
-    os.replace(tmp, path)
+            handle.write(f">{label}\n{sequence}\n".encode("ascii"))
