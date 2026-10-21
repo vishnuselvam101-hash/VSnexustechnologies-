@@ -22,11 +22,13 @@ import hmac
 import json
 import os
 import shutil
+import stat
 import threading
 from functools import wraps
 from collections import OrderedDict, deque
 from pathlib import Path
 
+from ..core.fsio import private_output
 from . import integrity as integ
 from .audit import AuditIntegrityError, AuditLog
 from .contain import LOGIN_LOCK_SECONDS, PLAYBOOK, ActionRecord, ContainmentState, RecordingIsolator
@@ -69,15 +71,31 @@ def subkey(master: bytes, label: str) -> bytes:
     return hmac.new(master, b"vnx-secure/" + label.encode(), hashlib.sha256).digest()
 
 
-def _write_private(path: Path, data: bytes, mode: int = 0o600) -> None:
-    tmp = path.with_name(path.name + ".tmp")
-    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, mode)
+def _refuse_symlink(path: Path) -> None:
+    """Refuse to write onto a symlink: the path must be a regular file or absent, never a link."""
     try:
-        os.write(fd, data)
-        os.fsync(fd)
-    finally:
-        os.close(fd)
-    os.replace(tmp, path)
+        st = os.lstat(path)
+    except FileNotFoundError:
+        return
+    except OSError as error:
+        raise FileExistsError(f"cannot inspect {path}: {error.strerror or error}") from None
+    if stat.S_ISLNK(st.st_mode):
+        raise FileExistsError(f"{path} is a symlink; refusing to write through it")
+
+
+def _write_private(path: Path, data: bytes, mode: int = 0o600) -> None:
+    """Write ``data`` to ``path`` through a private temporary file and publish it with a rename.
+
+    The temporary file has a unique name and is created with ``O_EXCL`` and mode 0600. A fixed name such as
+    ``secure.key.tmp`` could be planted as a symlink by anyone who may write in the home directory: the write would go
+    through it, putting the master key in a file of their choosing and leaving the control plane holding a symlink
+    instead of its own key file. The published path must be a regular file, so a symlink there is refused.
+    """
+    _refuse_symlink(path)
+    with private_output(path, mode=mode) as handle:
+        handle.write(data)
+    if not stat.S_ISREG(os.lstat(path).st_mode):
+        raise FileExistsError(f"{path} is not a regular file after the write")
 
 
 class ControlPlane:
