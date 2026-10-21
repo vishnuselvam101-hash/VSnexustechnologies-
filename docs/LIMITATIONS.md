@@ -3,6 +3,22 @@
 This page lists **V4** limitations first. The **V3** list follows unchanged below the divider and still applies to
 `vnx-dna`.
 
+## V15: hardware (H3 codec accelerator)
+
+* **NOT SYNTHESISED, NOT TIMED, NOT BUILT, NOT RUN ON HARDWARE.** The H3 GF(256) Reed-Solomon decoder
+  (`hardware/h3-fpga/rs_decode.v`) is a *design*. It was verified by **simulation only**: Icarus Verilog and
+  Verilator independently reproduce the project's own Python encoder and decoder byte for byte on 400/400 test
+  vectors, and the lint gate is clean. No synthesis tool has been run over it to a netlist, there is no timing
+  report, no area estimate, no bitstream, no FPGA, and no board was ever powered. Nothing in this repository is
+  evidence about real hardware. See `hardware/h3-fpga/DESIGN.md`.
+* **Yosys does not elaborate the H3 design in a useful budget.** The V15 finalization plan names Yosys in the H3
+  acceptance wording; the Verilator and Icarus Verilog halves are met, the Yosys half is **not**. The cause is
+  understood: the decoder calls the GF(256) ROM from inside loops that unroll to tens of thousands of call sites,
+  and a tool that inlines a function body at every call site copies the whole table into each one, so the
+  elaborated design grows to millions of nodes. The committed design is unchanged by the experiments that
+  established this. Closing the gap is a piece of work in its own right — restructure the ROM access and make the
+  unrolled loop bounds constant — before the design can be handed to a synthesis flow at all.
+
 ## V4: scientific scope
 
 * **NOT PHYSICALLY VALIDATED.** No DNA was synthesised, stored, amplified or sequenced. Every V4 result is SIMULATED:

@@ -51,6 +51,7 @@ CONTRACT = REPO / "docs" / "V15_REFERENCE_DECODER.md"
 
 #: the H-series documents, by their place in the tree
 H1 = HARDWARE / "h1-carrier" / "netlist.md"
+H3 = HARDWARE / "h3-fpga" / "DESIGN.md"
 H3_FILES = ("rs_decode.v", "tb_rs_decode.v", "differential_check.py", "Makefile")
 H5 = HARDWARE / "h5-dna-io" / "DNA_IO_SPEC.md"
 
@@ -147,8 +148,8 @@ def test_h_documents_state_their_evidence_rung(path: Path):
         f"{path.name} does not state that nothing was measured")
 
 
-@pytest.mark.parametrize("path", [H1, H5, HARDWARE / "h3-fpga" / "differential_check.py"],
-                         ids=["h1-netlist", "h5-dna-io", "h3-differential-check"])
+@pytest.mark.parametrize("path", [H1, H5, H3, HARDWARE / "h3-fpga" / "differential_check.py"],
+                         ids=["h1-netlist", "h5-dna-io", "h3-design", "h3-differential-check"])
 def test_h_documents_never_claim_a_physical_result(path: Path):
     """No document may claim that DNA was synthesised, stored or sequenced, or that
     hardware was measured.
@@ -173,6 +174,43 @@ def test_h5_spec_covers_the_required_sections():
     for heading in ("Oligo plate format", "Strand addressing", "Barcode scheme",
                     "synthesis / sequencing round trip"):
         assert heading.lower() in text.lower(), f"the DNA I/O spec does not cover {heading!r}"
+
+
+def test_h3_design_states_what_is_and_is_not_verified():
+    """The H3 design document says plainly what was verified and what was not.
+
+    The design is simulated, not built.  A future revision that quietly drops the
+    "no synthesis, no timing, no FPGA image" statements would turn a design into
+    an implied hardware result, so the statements themselves are the test.
+    """
+    text = H3.read_text(encoding="utf-8")
+    lowered = text.lower()
+    for phrase in ("not synthesised", "not built", "no synthesis",
+                   "no timing closure", "no fpga image", "no bring-up"):
+        assert phrase in lowered, f"the H3 design document does not say {phrase!r}"
+    # the verification that WAS done must be named, so the document cannot be
+    # read as "nothing at all was checked" either
+    for phrase in ("iverilog", "verilator", "differential"):
+        assert phrase in lowered, f"the H3 design document does not mention {phrase!r}"
+
+
+def test_h3_design_records_the_yosys_limitation():
+    """The Yosys elaboration limitation is recorded, and recorded as a limitation.
+
+    The V15 plan names Yosys in the H3 acceptance wording, and the Yosys half is
+    not met.  That has to be written down where a reader will find it, and it has
+    to be written as a limitation rather than as a result.
+    """
+    text = H3.read_text(encoding="utf-8")
+    lowered = text.lower()
+    assert "yosys" in lowered, "the H3 design document does not mention Yosys at all"
+    # it must be a limitation, not a success
+    assert "limitation" in lowered, "the Yosys note is not called a limitation"
+    # the Yosys half of the acceptance wording is not met, and the document says so
+    assert "not met" in lowered, "the H3 design document does not say the Yosys half is unmet"
+    # ... and the evidence that IS offered is the simulation
+    for phrase in ("simulation", "byte for byte"):
+        assert phrase in lowered, f"the Yosys note does not name the {phrase!r} evidence"
 
 
 def test_h5_spec_labels_every_physical_quantity():

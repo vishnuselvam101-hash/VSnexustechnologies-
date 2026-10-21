@@ -341,7 +341,7 @@ Revision A provides the *logic* side only: the connector carries the logic
 level and the actual MOSFET drivers are on the instrument module's board,
 because the driver topology depends on the pump and valve that are chosen and
 those are not yet decided. This is recorded as an open item in
-`power-bus.md` and in `../../docs/HARDWARE_DESIGN.md`.
+`power-bus.md` and in `../h3-fpga/DESIGN.md`.
 
 ### 2.8 Indicators and test points
 
