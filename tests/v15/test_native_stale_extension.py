@@ -23,7 +23,6 @@ import sys
 import sysconfig
 import time
 import types
-from pathlib import Path
 
 import pytest
 
