@@ -1,75 +1,78 @@
 """Tests for the AP-8 cost planner (V15 Task E part 1)."""
 import os
 import tempfile
-from decimal import Decimal
 
 import pytest
 
-from vnxdna.pipeline.plan import Plan, plan_encode, plan_file, load_prices
+from vnxdna.pipeline.plan import plan_encode, plan_file, load_prices
 from vnxdna.pipeline.profiles import dna_options
 from vnxdna.codec.profiles import REDUNDANCY_PROFILES
 
 
-def test_plan_encode_counts_match_encode_container():
-    """Test that plan_encode produces the same strand and base counts as encode_container."""
-    # Create a temporary file for testing
-    with tempfile.NamedTemporaryFile(delete=False) as tmp:
-        tmp.write(b"x" * 1000)
-        tmp_path = tmp.name
-    
-    try:
-        # Test with different profiles and sizes
-        profiles = list(REDUNDANCY_PROFILES.keys())
-        test_sizes = [1, 100, 1000, 10000, 100000]  # Various sizes including edge cases
-        
-        for profile in profiles:
-            options = dna_options(profile)
-            
-            for size in test_sizes:
-                # Create a plan
-                plan = plan_encode(size, options=options)
-                
-                # For small sizes, also test with larger sizes that would involve column parity
-                if size >= 10000:  # Larger size to potentially trigger column parity
-                    # Also test with different stripe depths and column parities
-                    try:
-                        options_with_colparity = dna_options(profile, stripe_depth=8, column_parity=2)
-                        plan_with_colparity = plan_encode(size, options=options_with_colparity)
-                    except Exception:
-                        # Some profiles might not support these options, that's fine
-                        pass
-
-        # Test with zero size (edge case)
-        plan_zero = plan_encode(0, options=options)
-        assert plan_zero.groups == 0
-        assert plan_zero.strands >= 0
-        assert plan_zero.bases >= 0
-        
-    finally:
-        os.unlink(tmp_path)
+def _container(tmp_path, size, name="a"):
+    """A real container of ``size`` payload bytes, built the way the encoder consumes it."""
+    from vnxdna.v4 import archive as ar
+    from vnxdna.v4 import datagen
+    datagen.generate(tmp_path / f"in-{name}.bin", size, "random", 15401)
+    ar.build_archive([tmp_path / f"in-{name}.bin"], tmp_path / f"{name}.vnx", ar.ArchiveOptions())
+    return tmp_path / f"{name}.vnx"
 
 
-def test_plan_file_counts_match_encode_container():
+def test_plan_encode_counts_match_encode_container(tmp_path):
+    """The plan's strand and base counts must equal the encoder's own report (AP-8 acceptance)."""
+    from vnxdna.pipeline.encode import DNAOptions, encode_container
+    from vnxdna.archive import container as ct
+
+    sizes = (500, 12_000, 60_000)
+    for size in sizes:
+        container = _container(tmp_path, size, name=f"c{size}")
+        size_bytes = ct.open_container(container).size
+        for profile in ("v4-balanced", "v4-dense", "v4-indel", "v4-archival"):
+            options = DNAOptions(profile=profile)
+            plan = plan_encode(size_bytes, options=options)
+            report = encode_container(container, tmp_path / f"{profile}-{size}.fasta", options)
+            assert plan.strands == report["strands"], f"{profile}@{size_bytes}: strands"
+            assert plan.bases == report["bases"], f"{profile}@{size_bytes}: bases"
+            assert plan.groups == report["groups"], f"{profile}@{size_bytes}: groups"
+            assert plan.metadata_strands == report["superblock_strands"], f"{profile}@{size_bytes}: superblock strands"
+
+
+def test_plan_encode_counts_match_encode_container_with_column_parity(tmp_path):
+    """Column parity changes the strand count; the plan must follow the encoder there too."""
+    from vnxdna.pipeline.encode import DNAOptions, encode_container
+    from vnxdna.archive import container as ct
+
+    container = _container(tmp_path, 40_000)
+    size_bytes = ct.open_container(container).size
+    for stripe_depth, column_parity in ((8, 2), (16, 4), (0, 2)):
+        options = DNAOptions(profile="v4-balanced", stripe_depth=stripe_depth, column_parity=column_parity)
+        plan = plan_encode(size_bytes, options=options)
+        report = encode_container(container, tmp_path / f"cp-{stripe_depth}-{column_parity}.fasta", options)
+        assert plan.strands == report["strands"], f"depth={stripe_depth} parity={column_parity}: strands"
+        assert plan.bases == report["bases"], f"depth={stripe_depth} parity={column_parity}: bases"
+
+
+def test_plan_file_counts_match_encode_container(tmp_path):
     """Test that plan_file produces the same strand and base counts as encode_container."""
     # Create a temporary file for testing
     with tempfile.NamedTemporaryFile(delete=False) as tmp:
         tmp.write(b"x" * 1000)
         tmp_path = tmp.name
-    
+
     try:
         # Test with different profiles
         profiles = list(REDUNDANCY_PROFILES.keys())
-        
+
         for profile in profiles:
             options = dna_options(profile)
             plan = plan_file(tmp_path, options=options)
-            
+
             # Verify that we get valid counts
             assert plan.input_bytes == 1000
             assert plan.groups >= 0
             assert plan.strands >= 0
             assert plan.bases >= 0
-            
+
     finally:
         os.unlink(tmp_path)
 

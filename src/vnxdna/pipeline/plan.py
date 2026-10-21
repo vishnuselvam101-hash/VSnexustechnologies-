@@ -11,13 +11,14 @@ from decimal import Decimal
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from vnxdna.codec.profiles import REDUNDANCY_PROFILES
 from vnxdna.core.errors import VNXConfigurationError
-from vnxdna.dnaenc.layout import PROFILES
+from vnxdna.codec.codecs import make_outer
+from vnxdna.dnaenc.superblock import Superblock, group_k
 from vnxdna.pipeline.encode import DNAOptions
+from vnxdna.pipeline.encode_v6 import resolve_geometry
 
 if TYPE_CHECKING:
-    from vnxdna.pipeline.encode import Layout
+    pass
 
 
 PRICE_FORMAT = "vnx.vendor-prices/1"
@@ -131,8 +132,8 @@ class Plan:
     column_parity_strands: int
     metadata_strands: int
     costs: list[dict] = field(default_factory=list)
-    evidence: str = "MEASURED (software count)"
-    
+    evidence: str = "THEORETICAL (encoder count)"
+
     def to_dict(self) -> dict:
         """Convert the plan to a dictionary."""
         return {
@@ -151,45 +152,68 @@ class Plan:
         }
 
 
+def _count_v4(size: int, lay, K: int, M: int, options: DNAOptions) -> tuple[int, int, int, int, int]:
+    """Strand counts of the V4 encoder for a container of ``size`` bytes.
+
+    Returns ``(groups, data_strands, parity_strands, column_parity_strands, metadata_strands)``.
+
+    The counts come from the encoder's own primitives, not from a re-derivation: ``group_k`` gives the number of
+    source symbols of each row (the last data row may be short), the outer codec's ``symbols_for`` gives the number
+    of transmitted symbols of a row, and ``Superblock.symbols`` gives the superblock strand count. Re-deriving these
+    here is what made the first version of this planner wrong.
+    """
+    P = lay.payload_bytes
+    groups = -(-size // (K * P))
+    if groups == 0:
+        return 0, 0, 0, 0, 0
+
+    codec = make_outer(options.outer_code, K, M, options.lt_seed, options.lt_distribution)
+    data_strands = 0
+    parity_strands = 0
+    for g in range(groups):
+        k = group_k(size, K, P, g)
+        n = codec.symbols_for(k)
+        data_strands += k
+        parity_strands += n - k
+
+    ks, ms = Superblock.symbols(P)
+    return groups, data_strands, parity_strands, 0, ks + ms
+
+
+def _count_v6(size: int, lay, K: int, M: int, options: DNAOptions) -> tuple[int, int, int, int, int]:
+    """Strand counts of the V6 encoder for a container of ``size`` bytes.
+
+    Returns ``(groups, data_strands, parity_strands, column_parity_strands, metadata_strands)``.
+    """
+    P = lay.payload_bytes
+    geo, _ = resolve_geometry(options, lay, K, M, size)
+    ks, ms = Superblock.symbols(P)
+    return (geo.G, geo.data_strands(), geo.G * geo.M, geo.parity_groups * geo.n, ks + ms)
+
+
 def plan_encode(input_bytes: int, options: DNAOptions | None = None, prices: list[VendorPrice] | None = None) -> Plan:
     """Plan an encoding operation for a given input size."""
     if options is None:
         options = DNAOptions()
-    
+    if type(input_bytes) is not int or input_bytes < 0:
+        raise VNXConfigurationError(f"input_bytes must be a non-negative integer, got {input_bytes!r}")
+
     # Get the layout profile
     lay, K, M = options.resolve()
-    
-    # Calculate number of groups (similar to encode_container)
-    P = lay.payload_bytes
-    groups = -(-input_bytes // (K * P))
-    
-    # Calculate strand counts using the same logic as in encode_container
-    data_symbols = -(-input_bytes // P)  # This is how data symbols are calculated
-    
-    # Calculate data strands, parity strands and column parity strands
-    data_strands = groups * K
-    parity_strands = groups * M
-    column_parity_strands = 0
-    
-    # If we have column parity, add it to the count
-    if options.column_parity and options.stripe_depth:
-        col_parity_per_stripe = options.column_parity
-        stripes = -(-groups // options.stripe_depth) if options.stripe_depth else 0
-        column_parity_strands = stripes * col_parity_per_stripe
-    
-    # For now, we'll simplify the metadata strands calculation to match what we can compute easily
-    # In reality, this would need to include superblock strands and potentially other metadata
-    # For this implementation, let's estimate based on typical counts
-    if groups > 0:
-        # Include at least one superblock strand (which is typically 1)
-        metadata_strands = 1
+
+    # The counts come from the encoder itself: the V6 geometry when the V6 outer options are on, the V4 row counts
+    # otherwise. The superblock strands are counted in both.
+    if options.v6:
+        groups, data_strands, parity_strands, column_parity_strands, metadata_strands = _count_v6(
+            input_bytes, lay, K, M, options)
     else:
-        metadata_strands = 0
-    
+        groups, data_strands, parity_strands, column_parity_strands, metadata_strands = _count_v4(
+            input_bytes, lay, K, M, options)
+
     # Total strands and bases
     total_strands = data_strands + parity_strands + column_parity_strands + metadata_strands
     total_bases = total_strands * lay.strand_nt
-    
+
     # Create the plan
     plan = Plan(
         profile=options.profile,
@@ -203,7 +227,7 @@ def plan_encode(input_bytes: int, options: DNAOptions | None = None, prices: lis
         column_parity_strands=column_parity_strands,
         metadata_strands=metadata_strands
     )
-    
+
     # Calculate costs if prices are provided
     if prices is not None:
         costs = []
