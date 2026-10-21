@@ -618,7 +618,9 @@ int vnx_cl_verify(int64_t n, const uint8_t *buf, int64_t nbuf, const int64_t *of
     if (n > 0 && (!buf || !off || !len || !root_out || !orient_out || !best)) return CL_EARG;
     if (npairs > 0 && (!pa || !pb || !prel || !pmax)) return CL_EARG;
     if (chunk < 1) return CL_EARG; /* chunk must be positive */
-    if (chunk > SIZE_MAX / 8) return CL_ENOMEM; /* avoid malloc wrap */
+    /* the bound is cast to the signed type so the comparison stays signed: chunk is >= 1 here (checked above) and
+       chunk * 8 must not wrap size_t, which it does at chunk > SIZE_MAX / 8 */
+    if (chunk > (int64_t)(SIZE_MAX / 8)) return CL_ENOMEM; /* avoid malloc wrap */
     int64_t maxlen;
     if (check_seqs(n, nbuf, off, len, (int64_t)1 << 24, &maxlen)) return CL_EARG;
     for (int64_t p = 0; p < npairs; p++)

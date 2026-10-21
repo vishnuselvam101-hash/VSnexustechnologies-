@@ -1,4 +1,3 @@
-import os
 import pytest
 
 from vnxdna.native.cluster import threads
@@ -60,11 +59,26 @@ def test_threads_unset():
 
 
 def test_threads_empty():
-    """Test that empty VNXDNA_CLUSTER_THREADS uses thread_scope."""
-    
+    """An empty VNXDNA_CLUSTER_THREADS is a configuration error, not a silent one thread.
+
+    The variable is set, so it is read; an empty (or blank) value cannot name a thread count, and falling back to
+    one thread would hide the misconfiguration. A set-but-unusable value is refused like any other unusable one.
+    """
     with pytest.MonkeyPatch().context() as mp:
-        # Set empty value
         mp.setenv("VNXDNA_CLUSTER_THREADS", "")
-        
-        # Should return 1 when thread scope is None (default)
-        assert threads() == 1
+        with pytest.raises(VNXConfigurationError, match="VNXDNA_CLUSTER_THREADS"):
+            threads()
+
+        # a blank value is refused the same way
+        mp.setenv("VNXDNA_CLUSTER_THREADS", "   ")
+        with pytest.raises(VNXConfigurationError, match="VNXDNA_CLUSTER_THREADS"):
+            threads()
+
+
+def test_threads_padded_and_signed_values_are_refused():
+    """A padded or signed value does not name a plain thread count and is refused."""
+    with pytest.MonkeyPatch().context() as mp:
+        for value in (" 4 ", "+4", "4 ", " 4", "0x10", "٤"):
+            mp.setenv("VNXDNA_CLUSTER_THREADS", value)
+            with pytest.raises(VNXConfigurationError, match="VNXDNA_CLUSTER_THREADS"):
+                threads()
