@@ -2,6 +2,13 @@
 
 ## 14.0.0 (branch `build/v14`, release candidate, not tagged; docs/V14_IMPLEMENTATION_REPORT.md)
 
+### Changed: read clustering (V15, CC-3; SIMULATED)
+- **Opt-in `--cluster-preset nanopore`** (implies `--read-clustering fallback`): full-template consensus, template fill
+  and outer-code list decoding of short rows. SIMULATED evaluation only (`experiments/v15/cc3/`).
+- **`bucket_cap_floor` default 2 also changes the plain `--read-clustering fallback`**, not only the preset: over the
+  candidate-pair budget the bucket cap is lowered and clustering continues (the stage stops only if no cap >= the
+  floor fits). The cluster report adds `budget_limited` (true when a budget was hit without stopping).
+
 All channel results are SIMULATED; no DNA was synthesised, stored or sequenced (evidence categories A-D only; nothing
 is E or F). Archive, container, strand, stream (`vnx.stream/1`) and volume (`vnx.volume/1`) formats are unchanged from
 13.0.0; a V13 volume fixture opens, reads, scrubs and accepts new commits. Only the Python package version and
@@ -49,6 +56,16 @@ Governing scope: docs/V14_MASTER_DIRECTIVE_2026-10-18.md (P0-P13); benchmarks: d
   hardware).
 - **P11 hardware + boot design documents** (docs/V14_BOOT_ARCHITECTURE.md, docs/V14_EXTERNAL_CONTROLLER.md,
   docs/V14_PHYSICAL_DNA_DEVICE.md): designs only; no device exists. **P13** V15 plan: docs/V15_FINALIZATION_PLAN.md.
+
+### Fixed: the native loader (V15)
+- **A stale packaged extension no longer shadows a newer in-place build.** The loaders tried the extension `pip
+  install` produced (`vnxdna[_vnx_<name><EXT_SUFFIX>]`) before the in-place development build
+  (`python -m vnxdna.native.<name> build`), so a packaged extension built from older source won and the newer build
+  was never exercised. The in-place build is compiled from the source in the tree and the extension from the source as
+  it was at install time, so the newer of the two is the one that matches the tree: the in-place build now comes first
+  when it is at least as new as the extension, the extension keeps priority when it is the newer of the two (the case
+  right after an install), and an explicit `<PREFIX>_LIB` override is never reordered
+  (`tests/v15/test_native_stale_extension.py`).
 
 ### Missed targets and limitations (stated plainly)
 - Both primary speed targets are **MISSED**: 4 MiB indel w1 v12/v14 2.848 [2.627, 2.899] (target >= 5x); 4 MiB clean

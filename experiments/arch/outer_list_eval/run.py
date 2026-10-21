@@ -101,7 +101,7 @@ def summary() -> dict:
     both = [v for v in pairs.values() if v["E"]["status"] == "SUCCESS" and v["F"]["status"] == "SUCCESS"]
     out = {"label": LABEL, "seeds": sorted(pairs), "n": len(pairs), "success_exact": ok,
            "false_success": sum(r["false_success"] for r in rows), "E_only": b, "F_only": c,
-           "mcnemar_exact_p": round(p_mcnemar, 4),
+           "mcnemar_exact_p": float(f"{p_mcnemar:.3g}"),
            "identical_where_both_succeed": all(v["E"]["output_sha256"] == v["F"]["output_sha256"] for v in both),
            "seconds_median": {p: sorted(v[p]["seconds"] for v in pairs.values())[len(pairs) // 2] for p in ("E", "F")},
            "commit": sorted({r["commit"] for r in rows}),

@@ -425,7 +425,9 @@ int vnx_ol_decode_row(int64_t k, int64_t m, int64_t P, const uint8_t* parity, co
 
 // Frame-level hypothesis selection for one short row (same inputs as vnx_ol_decode_row for the code and the known
 // symbols). nh hypotheses: position hpos (unknown), payload hval (nh x P). Every f-tuple of hypotheses at distinct
-// positions (lexicographic over the given order, at most max_tuples) determines a codeword per column; each hypothesis
+// positions determines a codeword per column. Tuples are tried best first: by their largest index, then
+// lexicographic, so that every tuple within the first m hypotheses precedes any tuple using hypothesis m + 1 (the
+// caller ranks the hypotheses); at most max_tuples tuples with distinct positions are tried. Each hypothesis
 // scores the number of columns where it agrees with that codeword. The tuple supported by the most hypotheses with at
 // least tau agreeing columns wins (first in order on ties). Outputs: agree (nh) = the winning codeword's agreement per
 // hypothesis (0 if no tuple). Returns the winning support count (0 if none) or an error code.
@@ -456,19 +458,24 @@ int vnx_ol_ransac(int64_t k, int64_t m, int64_t P, const uint8_t* parity, const 
         }
         std::vector<int> hu(static_cast<size_t>(H));
         for (int i = 0; i < H; i++) hu[static_cast<size_t>(i)] = sp.uidx[static_cast<size_t>(hpos[i])];
-        std::vector<int> S(static_cast<size_t>(f)), bestS;
-        for (int i = 0; i < f; i++) S[static_cast<size_t>(i)] = i;
+        std::vector<int> S(static_cast<size_t>(f)), head(static_cast<size_t>(f - 1));
         std::vector<uint8_t> sub(static_cast<size_t>(f * f)), y(static_cast<size_t>(f)), z(static_cast<size_t>(f));
         std::vector<int32_t> cnt(static_cast<size_t>(H)), bestcnt(static_cast<size_t>(H), 0);
         int best = 0;
         int64_t tried = 0;
-        do {
+        bool capped = false;
+        // tuple = (f - 1)-combination "head" of {0..top-1} followed by top, for top = f-1 .. H-1 (best-first order)
+        for (int top = f - 1; top < H && !capped; top++) {
+          for (int i = 0; i < f - 1; i++) head[static_cast<size_t>(i)] = i;
+          do {
+            for (int i = 0; i < f - 1; i++) S[static_cast<size_t>(i)] = head[static_cast<size_t>(i)];
+            S[static_cast<size_t>(f - 1)] = top;
             bool distinct = true;
             for (int i = 0; i < f && distinct; i++)
                 for (int j = 0; j < i && distinct; j++)
                     distinct = hu[static_cast<size_t>(S[static_cast<size_t>(i)])] != hu[static_cast<size_t>(S[static_cast<size_t>(j)])];
             if (!distinct) continue;
-            if (tried++ >= max_tuples) break;
+            if (tried++ >= max_tuples) { capped = true; break; }
             for (int i = 0; i < f; i++)
                 for (int j = 0; j < f; j++)
                     sub[static_cast<size_t>(i * f + j)] = sp.R[static_cast<size_t>(hu[static_cast<size_t>(S[static_cast<size_t>(i)])] * f + j)];
@@ -498,7 +505,8 @@ int vnx_ol_ransac(int64_t k, int64_t m, int64_t P, const uint8_t* parity, const 
                 best = support;
                 bestcnt = cnt;
             }
-        } while (next_comb(S, H));
+          } while (next_comb(head, top));
+        }
         for (int h = 0; h < H; h++) agree[h] = bestcnt[static_cast<size_t>(h)];
         return best;
     } catch (const std::bad_alloc&) {

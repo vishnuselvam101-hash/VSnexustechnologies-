@@ -45,6 +45,24 @@ def test_short_buffers_are_refused_before_the_call(fn, make, index, cut):
         getattr(nol, fn)(*args)
 
 
+@pytest.mark.parametrize("fn, make, ref", [("decode_row", _row_args, ol.decode_row_reference),
+                                           ("ransac", _ransac_args, ol.ransac_reference)])
+@pytest.mark.parametrize("extra_known", [0, 1])
+def test_no_missing_data_symbol_is_refused_like_the_reference(fn, make, ref, extra_known):
+    """f = k - known must be >= 1 (OL_EARG in the kernel): both paths raise ValueError, never a crash."""
+    args = make()
+    known = np.ones_like(np.asarray(args[3]))                       # every position known: f = k - n = -m < 1
+    if extra_known:
+        m, k = np.asarray(args[0]).shape
+        known[:] = 0
+        known[:k] = 1                                                # exactly k known: f = 0
+    args[3] = known
+    with pytest.raises(ValueError, match="k - known"):
+        getattr(nol, fn)(*args)
+    with pytest.raises(ValueError, match="k - known"):
+        ref(*args)
+
+
 def test_candidate_payload_rows_must_match_positions():
     args = _row_args()
     args[6] = args[6][:-1]                      # cval: one row fewer than cpos

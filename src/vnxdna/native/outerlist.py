@@ -56,6 +56,13 @@ def build(output=None, extra_flags=None, strict=None):
     return KERNEL.build(output, extra_flags, strict)
 
 
+def _free(k: int, known: np.ndarray, what: str) -> None:
+    """The kernels need 1 <= f = k - (known positions) <= MAX_F (OL_EARG otherwise); refuse it as the reference does."""
+    f = int(k) - int(np.count_nonzero(known))
+    if not 1 <= f <= MAX_F:
+        raise ValueError(f"{what} needs 1 <= k - known <= {MAX_F} (got {f})")
+
+
 def _check(rc: int, what: str) -> int:
     if rc < 0:
         raise NativeOuterListError(f"native {what} failed ({rc}: {_ERRORS.get(rc, 'unknown')})")
@@ -114,6 +121,7 @@ def decode_row(parity: np.ndarray, mul: np.ndarray, inv: np.ndarray, known: np.n
     mul = np.ascontiguousarray(mul, dtype=np.uint8)
     inv = np.ascontiguousarray(inv, dtype=np.uint8)
     _sizes(parity, mul, inv, known, sym, (cpos, cval, cok), "cval and cok")
+    _free(k, known, "decode_row")
     best = np.empty(P, np.int32)
     second = np.empty(P, np.int32)
     nc = cpos.size
@@ -138,6 +146,7 @@ def ransac(parity: np.ndarray, mul: np.ndarray, inv: np.ndarray, known: np.ndarr
     mul = np.ascontiguousarray(mul, dtype=np.uint8)
     inv = np.ascontiguousarray(inv, dtype=np.uint8)
     _sizes(parity, mul, inv, known, sym, (hpos, hval), "hval")
+    _free(k, known, "ransac")
     agree = np.zeros(hpos.size, np.int32)
     nh = hpos.size
     best = _check(lib.vnx_ol_ransac(k, m, P, parity.ctypes.data, mul.ctypes.data, inv.ctypes.data, known.ctypes.data,

@@ -338,3 +338,297 @@ def test_rounds_continue_when_a_round_only_finds_candidates(monkeypatch):
     out = dec.recover({7: (16, syms)}, np.zeros((1, lay.frame_bytes), np.uint8), np.zeros((1, lay.frame_bytes), bool))
     assert len(calls) == 2 and 7 in out
     np.testing.assert_array_equal(out[7], data)
+
+
+# ---------------------------------------------------------------------- hypothesis selection (development seeds 9305x)
+def _tuple_order(n, f):
+    return [tuple(S) for S in ol._tuples(n, f)]
+
+
+def test_ransac_tuples_are_enumerated_best_first():
+    """Every f-tuple within the first m hypotheses precedes any tuple that uses hypothesis m + 1, so the tuple cap is
+    spent on the best-ranked hypotheses instead of on every partner of hypothesis 0."""
+    order = _tuple_order(6, 3)
+    assert len(order) == 20 and len(set(order)) == 20
+    assert all(max(t) <= max(u) for t, u in zip(order, order[1:]))
+    assert order[:4] == [(0, 1, 2), (0, 1, 3), (0, 2, 3), (1, 2, 3)]
+    assert _tuple_order(4, 1) == [(0,), (1,), (2,), (3,)]
+    assert _tuple_order(2, 3) == []
+
+
+def test_ransac_cap_is_spent_best_first_in_both_backends():
+    """f = 3: hypothesis 0 is junk, 1..4 are true. With a cap of 10 tuples the first-index-fixed order never leaves
+    junk 0 behind; best-first order tries (1, 2, 3) within the cap, so the true frames support each other."""
+    rng = np.random.default_rng(7)
+    K, M, P, f = 12, 6, 24, 3
+    cw, parity = _codeword(rng, K, M, P)
+    unknown = rng.choice(K + M, size=M + f, replace=False)
+    known = np.ones(K + M, bool)
+    known[unknown] = False
+    sym = np.where(known[:, None], cw, 0).astype(np.uint8)
+    pos = list(unknown[:5])
+    hpos = np.array(pos + [int(rng.choice(unknown)) for _ in range(8)], np.int32)
+    hval = np.stack([rng.integers(0, 256, P, dtype=np.uint8)] + [cw[p] for p in pos[1:]] +
+                    [rng.integers(0, 256, P, dtype=np.uint8) for _ in range(8)])
+    args = (parity, gf256.MUL, ol.INV, known.astype(np.uint8), sym, hpos, hval, 8, 10)
+    nat, ref = nol.ransac(*args), ol.ransac_reference(*args)
+    assert nat[0] == ref[0] == 4 and (nat[1][1:5] == P).all()
+    np.testing.assert_array_equal(nat[1], ref[1])
+
+
+def test_group_ambiguity_counts_rows_that_explain_the_header_as_well():
+    lay = Layout(20, 8, 0, 0)
+    dec = ol.OuterListDecoder(lay, ClusterConfig(outer_list="on").validate(), CauchyRSCodec(16, 6), 0x1234, n_groups=300)
+    g = 290                                                           # bytes (0, 0, 1, 34)
+    gb = np.array([[0, 0, 1, 34],                                     # exact: only this row
+                   [9, 0, 1, 34],                                     # byte 3 wrong: only row 290 is one byte away
+                   [0, 0, 1, 60],                                     # byte 6 wrong (316 does not exist): 256..299 + 60
+                   [0, 0, 0, 34]], np.uint8)                          # row 34 itself: 0..255 and 290 within one byte
+    np.testing.assert_array_equal(dec._group_ambiguity(gb, g), [1, 1, 45, 257])
+    huge = ol.OuterListDecoder(lay, ClusterConfig(outer_list="on").validate(), CauchyRSCodec(16, 6), 0x1234)
+    assert huge._group_ambiguity(gb, g).tolist() == [1, 1 << 32, 1 << 32, 1 << 32]
+
+
+def _corrupt_body(rng, frame, n_err):
+    """``n_err`` byte errors outside the variant byte and the header (bytes 0..9)."""
+    f = frame.copy()
+    where = rng.choice(np.arange(10, f.size), size=n_err, replace=False)
+    f[where] ^= rng.integers(1, 256, n_err).astype(np.uint8)
+    return f
+
+
+def _ransac_setup(seed, n_groups=300, g=290, k=16, M=6, f=2):
+    lay = Layout(20, 8, 0, 0)
+    tag = 0x1234
+    codec, data, cw, frames = _archive_row(seed, lay, tag, g, k, M)
+    rng = np.random.default_rng(seed + 1)
+    missing = sorted(rng.choice(k + M, size=M + f, replace=False).tolist())
+    syms = {s: cw[s] for s in range(k + M) if s not in missing}
+    return lay, tag, codec, data, cw, frames, rng, missing, syms
+
+
+def test_ransac_hypotheses_include_header_candidates_with_their_variant():
+    """Two true frames whose variant byte is wrong are header-assigned candidates (the assignment tries every variant)
+    but, descrambled with their own variant byte, are nowhere near the row: without them the RANSAC has only the two
+    frames with a damaged symbol byte (tied between every missing symbol), exactly f true placements, and can verify
+    nothing."""
+    lay, tag, codec, data, cw, frames, rng, missing, syms = _ransac_setup(21)
+    F = []
+    for s in missing[:2]:                                             # variant byte wrong, 4 body errors
+        x = _corrupt_body(rng, frames[s], 4)
+        x[0] ^= 1
+        F.append(x)
+    for s in missing[2:4]:                                            # low symbol byte wrong (tied), 4 errors
+        x = _corrupt_body(rng, frames[s], 4)
+        x[9] ^= 0x55
+        F.append(x)
+    F = np.stack(F + [rng.integers(0, 256, (30, lay.frame_bytes), dtype=np.uint8)[i] for i in range(30)])
+    cfg = ClusterConfig(outer_list="on").validate()
+    dec = ol.OuterListDecoder(lay, cfg, codec, tag, n_groups=300)
+    ks = keystreams(9 + lay.payload_bytes + 4)
+    variants = np.arange(cfg.list_variants, dtype=np.int16)
+    T = np.stack([ol.header_bytes(tag, 290, s) for s in missing])
+    tgt, var, _, _ = ol.assign(F, ks, variants, T, cfg.list_max_header_distance, ol.EXACT_MASK)
+    cands = {290: {(missing[int(tgt[i])], i): int(var[i]) for i in np.flatnonzero(tgt >= 0).tolist()}}
+    assert set(cands[290]) == {(missing[0], 0), (missing[1], 1)} and all(v != F[i, 0] for (_, i), v in cands[290].items())
+    dec._ransac_assign({290: (16, syms)}, F, ks, cands)
+    assert {(missing[2], 2), (missing[3], 3)} <= set(cands[290]), dict(dec.counts)
+    assert dec.counts["ransac_candidates"] == 2
+
+
+@pytest.mark.parametrize("scan", [8, 0])
+def test_ransac_scan_places_frames_whose_header_is_unusable(scan):
+    """Three header-assigned frames determine the codeword (f = 2, support 3). Two more true frames have a damaged
+    group byte and both symbol bytes damaged, so no header test places them; the scan of every failed frame against
+    the winning codeword finds them by payload (and only with the scan on). Junk frames stay out."""
+    lay, tag, codec, data, cw, frames, rng, missing, syms = _ransac_setup(33)
+    F = [_corrupt_body(rng, frames[s], 3) for s in missing[:3]]
+    for s in missing[3:5]:
+        x = _corrupt_body(rng, frames[s], 3)
+        x[4] ^= 0x40
+        x[8] ^= 0x21
+        x[9] ^= 0x12
+        F.append(x)
+    F = np.stack(F + [rng.integers(0, 256, (40, lay.frame_bytes), dtype=np.uint8)[i] for i in range(40)])
+    cfg = ClusterConfig(outer_list="on", list_ransac_scan_variants=scan).validate()
+    dec = ol.OuterListDecoder(lay, cfg, codec, tag, n_groups=300)
+    ks = keystreams(9 + lay.payload_bytes + 4)
+    cands = {290: {(s, i): int(F[i, 0]) for i, s in enumerate(missing[:3])}}
+    dec._ransac_assign({290: (16, syms)}, F, ks, cands)
+    found = {(missing[3], 3), (missing[4], 4)} <= set(cands[290])
+    assert found == bool(scan), dict(dec.counts)
+    assert all(i < 5 for _, i in cands[290])
+    assert dec.counts["ransac_scan_candidates"] == (2 if scan else 0)
+    assert dec.counts["ransac_scan_mismatch"] == 0
+
+
+def test_ransac_ranks_unambiguous_headers_before_ambiguous_ones():
+    """70 frames of neighbouring rows whose low group byte is damaged (an invalid row number one byte from row 290 and
+    from 43 others) used to fill the 64-hypothesis budget before the row's own frames, whose damaged header only row
+    290 explains."""
+    lay, tag, codec, data, cw, frames, rng, missing, syms = _ransac_setup(22)
+    ks = keystreams(9 + lay.payload_bytes + 4)
+    junk = []
+    for j in range(70):                                               # row 256 + j % 30, byte 6 -> 60 (row 316: none)
+        _, _, cw2, fr2 = _archive_row(500 + j, lay, tag, 256 + j % 30, 16, 6)
+        x = fr2[missing[j % 4]].copy()
+        v = int(x[0])
+        x[7] = 60 ^ ks[v][6]
+        junk.append(x)
+    good = []
+    for s in missing[:4]:                                             # byte 3 damaged: unique fix, 4 body errors
+        x = _corrupt_body(rng, frames[s], 4)
+        x[4] ^= 0x55
+        good.append(x)
+    F = np.stack(junk + good)
+    cfg = ClusterConfig(outer_list="on").validate()
+    dec = ol.OuterListDecoder(lay, cfg, codec, tag, n_groups=300)
+    cands: dict = {}
+    dec._ransac_assign({290: (16, syms)}, F, ks, cands)
+    assert set(cands.get(290, {})) == {(s, 70 + j) for j, s in enumerate(missing[:4])}, dict(dec.counts)
+
+
+def test_rs_hypotheses_try_header_candidates_with_their_variant():
+    """A header-assigned candidate whose variant byte is wrong is inner-decoded with the assigned variant (its own byte
+    would descramble the payload with the wrong keystream)."""
+    lay, tag, codec, data, cw, frames, rng, missing, syms = _ransac_setup(23, f=1)
+    s = missing[0]
+    x = _corrupt_body(rng, frames[s], 2)
+    x[0] ^= 2
+    F = x[None, :]
+    cfg = ClusterConfig(outer_list="on").validate()
+    dec = ol.OuterListDecoder(lay, cfg, codec, tag, n_groups=300)
+    ks = keystreams(9 + lay.payload_bytes + 4)
+    T = np.stack([ol.header_bytes(tag, 290, m) for m in missing])
+    owner = [(290, m) for m in missing]
+    rows = {290: (16, dict(syms))}
+    cands = {290: {(s, 0): int(frames[s, 0])}}
+    added = dec._rs_hypotheses(rows, {}, F, np.zeros(F.shape, bool), ks, T, owner, cands)
+    assert added == 1 and s in rows[290][1]
+    np.testing.assert_array_equal(rows[290][1][s], cw[s])
+
+
+@pytest.mark.parametrize("seed", range(4))
+def test_short_row_recovered_when_variant_bytes_are_wrong(seed):
+    """End to end: every candidate frame of the row carries a wrong scrambler-variant byte, half of them also a damaged
+    group byte; the row is recovered exactly."""
+    lay, tag, codec, data, cw, frames, rng, missing, syms = _ransac_setup(30 + seed)
+    cand = []
+    for j, s in enumerate(missing):
+        x = _corrupt_body(rng, frames[s], int(rng.integers(4, 7)))
+        x[0] ^= 1 + int(rng.integers(0, 3))
+        if j % 2:
+            x[4] ^= 0x55
+        cand.append(x)
+    F = np.concatenate([np.stack(cand), rng.integers(0, 256, (40, lay.frame_bytes), dtype=np.uint8)])
+    dec = ol.OuterListDecoder(lay, ClusterConfig(outer_list="on").validate(), codec, tag, n_groups=300)
+    out = dec.recover({290: (16, syms)}, F, np.zeros(F.shape, bool))
+    assert 290 in out, dict(dec.counts)
+    np.testing.assert_array_equal(out[290], data)
+
+
+def test_rs_hypotheses_try_the_errors_only_variant():
+    """A candidate with 9 wrong payload bytes (inner code: 4 errors, or e + 2f <= 8) and a right proposal confirmed
+    in 5 of its columns: writing them leaves 4 errors, which decode only when nothing is erased. Erasing the 4
+    disagreeing unconfirmed columns plus the consensus's 2 flags (6 erasures, 12 > 8) fails."""
+    lay, tag, codec, data, cw, frames, rng, missing, syms = _ransac_setup(24, f=1)
+    s = missing[0]
+    P = lay.payload_bytes
+    x = frames[s].copy()
+    for c in range(10, 19):                                           # payload columns 0..8 wrong
+        x[c] ^= 0x5A
+    F = x[None, :]
+    E = np.zeros(F.shape, bool)
+    E[0, [20, 21]] = True                                             # consensus flags on right bytes
+    pos = ol._pos(16, 16)
+    res = np.zeros((22, P), np.uint8)
+    res[pos(s)] = cw[s]                                               # proposal right everywhere
+    ok = np.zeros(P, bool)
+    ok[:5] = True                                                     # columns 0..4 confirmed (fixes 5 of 9 errors)
+    proposal = {290: (res, ok, np.ones(P, bool), pos)}
+    dec = ol.OuterListDecoder(lay, ClusterConfig(outer_list="on").validate(), codec, tag, n_groups=300)
+    ks = keystreams(9 + P + 4)
+    T = np.stack([ol.header_bytes(tag, 290, m) for m in missing])
+    owner = [(290, m) for m in missing]
+    rows = {290: (16, dict(syms))}
+    added = dec._rs_hypotheses(rows, proposal, F, E, ks, T, owner, {})
+    assert added == 1 and s in rows[290][1]
+    np.testing.assert_array_equal(rows[290][1][s], cw[s])
+
+
+def test_unique_header_fix_frames_become_candidates_without_ransac_support():
+    """f = 3 and exactly three header-assigned candidates: the RANSAC can verify nothing (a tuple always agrees with
+    itself). Two more frames whose damaged group byte only this row explains, each naming one missing symbol, are
+    candidates on the strength of their header, like a candidate with a damaged tag byte."""
+    lay, tag, codec, data, cw, frames, rng, missing, syms = _ransac_setup(25, f=3)
+    F = [_corrupt_body(rng, frames[s], 4) for s in missing[:3]]
+    for s in missing[3:5]:
+        x = _corrupt_body(rng, frames[s], 4)
+        x[4] ^= 0x55
+        F.append(x)
+    F = np.stack(F + [rng.integers(0, 256, lay.frame_bytes, dtype=np.uint8) for _ in range(30)])
+    cfg = ClusterConfig(outer_list="on").validate()
+    dec = ol.OuterListDecoder(lay, cfg, codec, tag, n_groups=300)
+    ks = keystreams(9 + lay.payload_bytes + 4)
+    cands = {290: {(missing[j], j): int(F[j, 0]) for j in range(3)}}
+    dec._ransac_assign({290: (16, syms)}, F, ks, cands)
+    assert {(missing[3], 3), (missing[4], 4)} <= set(cands[290]), dict(dec.counts)
+    assert dec.counts["unique_candidates"] == 2 and not dec.counts["ransac_candidates"]
+
+
+def test_consistency_assignment_tries_the_common_variants():
+    """A failed frame with a garbage header and a wrong variant byte agrees with the row's proposal only when
+    descrambled with its true variant; it is assigned with that variant."""
+    lay, tag, codec, data, cw, frames, rng, missing, syms = _ransac_setup(26, f=1)
+    P = lay.payload_bytes
+    s = missing[0]
+    x = _corrupt_body(rng, frames[s], 2)
+    x[1:10] = rng.integers(0, 256, 9)                                 # header garbage
+    x[0] = 7                                                          # variant byte wrong (true variant < 4)
+    F = np.stack([x] + [rng.integers(0, 256, lay.frame_bytes, dtype=np.uint8) for _ in range(20)])
+    F[1:, 0] = rng.integers(0, 4, 20)                                 # the archive's variants
+    pos = ol._pos(16, 16)
+    res = np.zeros((22, P), np.uint8)
+    res[pos(s)] = cw[s]
+    proposal = {290: (res, np.ones(P, bool), np.ones(P, bool), pos)}
+    dec = ol.OuterListDecoder(lay, ClusterConfig(outer_list="on").validate(), codec, tag, n_groups=300)
+    ks = keystreams(9 + P + 4)
+    owner = [(290, m) for m in missing]
+    dec._consistency_assign({290: (16, dict(syms))}, proposal, F, ks, owner)
+    assert dec._extra == {290: {(s, 0): int(frames[s, 0])}}, dict(dec.counts)
+
+
+def test_rs_hypotheses_try_proposal_disagreements_without_the_consensus_flags():
+    """A candidate with 10 wrong payload bytes (inner code: 2e + f <= 16), 5 consensus flags on right bytes and an
+    unconfirmed proposal that is right in 4 of the wrong columns: with the flags 6 errors + 9 erasures (21) fail,
+    errors only (20) fail, and the 4 disagreeing columns erased on their own (12 + 4) decode."""
+    lay = Layout(40, 16, 0, 0)
+    tag, g, k, M = 0x1234, 7, 16, 6
+    codec, data, cw, frames = _archive_row(44, lay, tag, g, k, M)
+    rng = np.random.default_rng(45)
+    missing = sorted(rng.choice(k + M, size=M + 1, replace=False).tolist())
+    syms = {s: cw[s] for s in range(k + M) if s not in missing}
+    s = missing[0]
+    P = lay.payload_bytes
+    x = frames[s].copy()
+    for c in range(10, 20):                                           # payload columns 0..9 wrong
+        x[c] ^= 0x5A
+    F = x[None, :]
+    E = np.zeros(F.shape, bool)
+    E[0, 30:35] = True                                                # flags on right payload bytes
+    pos = ol._pos(k, k)
+    res = np.zeros((k + M, P), np.uint8)
+    res[pos(s)] = cw[s] ^ 1                                           # proposal wrong everywhere ...
+    res[pos(s), 0:4] = cw[s][0:4]                                     # ... except in four of the wrong columns
+    ok = np.zeros(P, bool)
+    has = np.zeros(P, bool)
+    has[0:4] = True                                                   # the only columns with a solution
+    proposal = {g: (res, ok, has, pos)}
+    dec = ol.OuterListDecoder(lay, ClusterConfig(outer_list="on").validate(), codec, tag, n_groups=20)
+    ks = keystreams(9 + P + 4)
+    T = np.stack([ol.header_bytes(tag, g, m) for m in missing])
+    owner = [(g, m) for m in missing]
+    rows = {g: (k, dict(syms))}
+    added = dec._rs_hypotheses(rows, proposal, F, E, ks, T, owner, {})
+    assert added == 1 and s in rows[g][1]
+    np.testing.assert_array_equal(rows[g][1][s], cw[s])

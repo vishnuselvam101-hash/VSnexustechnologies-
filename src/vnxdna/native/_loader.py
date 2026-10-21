@@ -38,6 +38,48 @@ _PKG = Path(__file__).resolve().parents[1]          # vnxdna/
 log = logging.getLogger(__name__)
 
 
+def freshest_first(candidates: list[Path], inplace: Path, pinned: Path | None = None) -> list[Path]:
+    """Order the library candidates so the in-place build wins when it is newer than the packaged extension.
+
+    Two builds of the same kernel can sit in the tree: the extension ``pip install`` produced
+    (``vnxdna/_vnx_<name><EXT_SUFFIX>``) and the in-place development build
+    (``python -m vnxdna.native.<name> build`` writes ``libvnx_<name>.so``). The extension is built from the
+    source *at install time*; the in-place build is built from the source *as it is now*. When the source has
+    moved on and the in-place build is newer, the extension is stale: loading it would run the old kernel and
+    silently ignore the change (the V15 CC-3 outer-list fix was invisible this way, because the extension built
+    on 2026-10-19 shadowed the in-place build of 2026-10-21).
+
+    So the in-place build comes first when it is at least as new as the extension, and the extension keeps
+    priority when it is the newer of the two (the usual case after ``pip install``, where no in-place build
+    exists at all).
+
+    ``pinned`` is the explicit ``<PREFIX>_LIB`` override: it is never reordered and never compared by date. It
+    stays where the caller put it (first), and the freshness comparison runs over the remaining candidates.
+
+    Files that do not exist are left where they are, and the order of the candidates is otherwise preserved.
+    """
+    def mtime(path: Path) -> float:
+        try:
+            return path.stat().st_mtime
+        except OSError:                      # missing file: no date, so it never wins on freshness
+            return -1.0
+
+    candidates = list(candidates)
+    if inplace not in candidates:
+        return candidates
+    pinned_set = {pinned} if pinned is not None else set()
+    rest = [p for p in candidates if p != inplace and p not in pinned_set]
+    others = [p for p in rest if p.is_file()]
+    if not others:
+        return candidates                     # no extension beside it: nothing to compare against
+    if mtime(inplace) >= max(mtime(p) for p in others):
+        # the in-place build moves in front of the extensions, but never in front of an explicit override
+        head = [p for p in candidates if p in pinned_set]
+        tail = [p for p in candidates if p not in pinned_set and p != inplace]
+        return [*head, inplace, *tail]
+    return candidates
+
+
 def open_library(path: Path):
     """``dlopen`` exactly the file that was checked (V11-RT-08). A relative path is refused: ``dlopen`` resolves a name
     without a slash through the library search path, not the file ``is_file()`` saw, and a relative override would
@@ -89,14 +131,15 @@ class Kernel:
         here = sys.modules[self.module]._HERE
         out = []
         env = os.environ.get(self.env_lib)
-        if env:
-            out.append(Path(env))
+        pinned = Path(env) if env else None
+        if pinned is not None:
+            out.append(pinned)
         ext = here / f"_vnx_{self.name}{sysconfig.get_config_var('EXT_SUFFIX') or '.so'}"
         if ext.is_file():
             out.append(ext)
         out.extend(p for p in sorted(here.glob(f"_vnx_{self.name}*.so")) if p != ext)
         out.append(self.inplace)
-        return out
+        return freshest_first(out, self.inplace, pinned)
 
     def load(self):
         with self._lock:

@@ -1,0 +1,362 @@
+{
+ "cells": {
+  "clean-1m|base|E": {
+   "exact": 3,
+   "failures": {},
+   "false_success": 0,
+   "median_decode_seconds": 0.92,
+   "n": 3,
+   "seeds": [
+    93140,
+    93141,
+    93142
+   ]
+  },
+  "clean-1m|base|F": {
+   "exact": 3,
+   "failures": {},
+   "false_success": 0,
+   "median_decode_seconds": 0.93,
+   "n": 3,
+   "seeds": [
+    93140,
+    93141,
+    93142
+   ]
+  },
+  "clean-1m|base|default": {
+   "exact": 3,
+   "failures": {},
+   "false_success": 0,
+   "median_decode_seconds": 0.9,
+   "n": 3,
+   "seeds": [
+    93140,
+    93141,
+    93142
+   ]
+  },
+  "clean-1m|new|E": {
+   "exact": 3,
+   "failures": {},
+   "false_success": 0,
+   "median_decode_seconds": 0.92,
+   "n": 3,
+   "seeds": [
+    93140,
+    93141,
+    93142
+   ]
+  },
+  "clean-1m|new|F": {
+   "exact": 3,
+   "failures": {},
+   "false_success": 0,
+   "median_decode_seconds": 0.92,
+   "n": 3,
+   "seeds": [
+    93140,
+    93141,
+    93142
+   ]
+  },
+  "clean-1m|new|default": {
+   "exact": 3,
+   "failures": {},
+   "false_success": 0,
+   "median_decode_seconds": 0.9,
+   "n": 3,
+   "seeds": [
+    93140,
+    93141,
+    93142
+   ]
+  },
+  "illumina-like-1m|base|E": {
+   "exact": 3,
+   "failures": {},
+   "false_success": 0,
+   "median_decode_seconds": 1.61,
+   "n": 3,
+   "seeds": [
+    93140,
+    93141,
+    93142
+   ]
+  },
+  "illumina-like-1m|base|F": {
+   "exact": 3,
+   "failures": {},
+   "false_success": 0,
+   "median_decode_seconds": 1.52,
+   "n": 3,
+   "seeds": [
+    93140,
+    93141,
+    93142
+   ]
+  },
+  "illumina-like-1m|base|default": {
+   "exact": 3,
+   "failures": {},
+   "false_success": 0,
+   "median_decode_seconds": 1.64,
+   "n": 3,
+   "seeds": [
+    93140,
+    93141,
+    93142
+   ]
+  },
+  "illumina-like-1m|new|E": {
+   "exact": 3,
+   "failures": {},
+   "false_success": 0,
+   "median_decode_seconds": 1.61,
+   "n": 3,
+   "seeds": [
+    93140,
+    93141,
+    93142
+   ]
+  },
+  "illumina-like-1m|new|F": {
+   "exact": 3,
+   "failures": {},
+   "false_success": 0,
+   "median_decode_seconds": 1.6,
+   "n": 3,
+   "seeds": [
+    93140,
+    93141,
+    93142
+   ]
+  },
+  "illumina-like-1m|new|default": {
+   "exact": 3,
+   "failures": {},
+   "false_success": 0,
+   "median_decode_seconds": 1.67,
+   "n": 3,
+   "seeds": [
+    93140,
+    93141,
+    93142
+   ]
+  },
+  "indel-1m|base|E": {
+   "exact": 3,
+   "failures": {},
+   "false_success": 0,
+   "median_decode_seconds": 1.36,
+   "n": 3,
+   "seeds": [
+    93140,
+    93141,
+    93142
+   ]
+  },
+  "indel-1m|base|F": {
+   "exact": 3,
+   "failures": {},
+   "false_success": 0,
+   "median_decode_seconds": 1.39,
+   "n": 3,
+   "seeds": [
+    93140,
+    93141,
+    93142
+   ]
+  },
+  "indel-1m|base|default": {
+   "exact": 3,
+   "failures": {},
+   "false_success": 0,
+   "median_decode_seconds": 1.3,
+   "n": 3,
+   "seeds": [
+    93140,
+    93141,
+    93142
+   ]
+  },
+  "indel-1m|new|E": {
+   "exact": 3,
+   "failures": {},
+   "false_success": 0,
+   "median_decode_seconds": 1.35,
+   "n": 3,
+   "seeds": [
+    93140,
+    93141,
+    93142
+   ]
+  },
+  "indel-1m|new|F": {
+   "exact": 3,
+   "failures": {},
+   "false_success": 0,
+   "median_decode_seconds": 1.34,
+   "n": 3,
+   "seeds": [
+    93140,
+    93141,
+    93142
+   ]
+  },
+  "indel-1m|new|default": {
+   "exact": 3,
+   "failures": {},
+   "false_success": 0,
+   "median_decode_seconds": 1.27,
+   "n": 3,
+   "seeds": [
+    93140,
+    93141,
+    93142
+   ]
+  },
+  "nanopore-like-1m|base|E": {
+   "exact": 0,
+   "failures": {
+    "93140": [
+     "FAILURE",
+     [
+      303
+     ]
+    ],
+    "93141": [
+     "FAILURE",
+     [
+      139
+     ]
+    ],
+    "93142": [
+     "FAILURE",
+     [
+      313
+     ]
+    ]
+   },
+   "false_success": 0,
+   "median_decode_seconds": 288.94,
+   "n": 3,
+   "seeds": [
+    93140,
+    93141,
+    93142
+   ]
+  },
+  "nanopore-like-1m|base|F": {
+   "exact": 3,
+   "failures": {},
+   "false_success": 0,
+   "median_decode_seconds": 291.02,
+   "n": 3,
+   "seeds": [
+    93140,
+    93141,
+    93142
+   ]
+  },
+  "nanopore-like-1m|base|default": {
+   "exact": 0,
+   "failures": {
+    "93140": [
+     "ERROR:VNXDecodeError",
+     null
+    ],
+    "93141": [
+     "ERROR:VNXDecodeError",
+     null
+    ],
+    "93142": [
+     "ERROR:VNXDecodeError",
+     null
+    ]
+   },
+   "false_success": 0,
+   "median_decode_seconds": 3.67,
+   "n": 3,
+   "seeds": [
+    93140,
+    93141,
+    93142
+   ]
+  },
+  "nanopore-like-1m|new|E": {
+   "exact": 0,
+   "failures": {
+    "93140": [
+     "FAILURE",
+     [
+      303
+     ]
+    ],
+    "93141": [
+     "FAILURE",
+     [
+      139
+     ]
+    ],
+    "93142": [
+     "FAILURE",
+     [
+      313
+     ]
+    ]
+   },
+   "false_success": 0,
+   "median_decode_seconds": 284.94,
+   "n": 3,
+   "seeds": [
+    93140,
+    93141,
+    93142
+   ]
+  },
+  "nanopore-like-1m|new|F": {
+   "exact": 3,
+   "failures": {},
+   "false_success": 0,
+   "median_decode_seconds": 284.3,
+   "n": 3,
+   "seeds": [
+    93140,
+    93141,
+    93142
+   ]
+  },
+  "nanopore-like-1m|new|default": {
+   "exact": 0,
+   "failures": {
+    "93140": [
+     "ERROR:VNXDecodeError",
+     null
+    ],
+    "93141": [
+     "ERROR:VNXDecodeError",
+     null
+    ],
+    "93142": [
+     "ERROR:VNXDecodeError",
+     null
+    ]
+   },
+   "false_success": 0,
+   "median_decode_seconds": 3.75,
+   "n": 3,
+   "seeds": [
+    93140,
+    93141,
+    93142
+   ]
+  }
+ },
+ "commits": [
+  "base:cfd6ee0733c70bbe4f1cd576668700d2fbb8631b",
+  "new:074f6dd7eee3e2d9672ad9e401afc427aacaa8ad"
+ ],
+ "false_success_total": 0,
+ "label": "SIMULATED: reads from a software channel model; no DNA was synthesised, stored or sequenced"
+}
