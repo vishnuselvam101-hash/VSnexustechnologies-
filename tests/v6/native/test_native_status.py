@@ -231,7 +231,11 @@ def test_setup_builds_all_kernels_as_optional_extensions(monkeypatch):
 @pytest.mark.parametrize("kernel", sorted(MODULES))
 def test_loaders_find_the_packaged_extension_name(kernel, monkeypatch, tmp_path):
     """setup.py's module name ``vnxdna.vX._vnx_<k>`` lands at ``vnxdna/vX/_vnx_<k><EXT_SUFFIX>``: the loader must try it,
-    after an explicit *_LIB path and before the in-place library."""
+    after an explicit *_LIB path and before the in-place library.
+
+    The in-place library is only tried first when it is the newer of the two builds (V15: a stale packaged
+    extension must not shadow a newer in-place build); here the in-place path does not exist, so the packaged
+    extension keeps its place. See ``tests/v15/test_native_stale_extension.py``."""
     m, env, _ = MODULES[kernel]
     ext_name = {"align": "vnxdna.v5._vnx_align", "reads": "vnxdna.v6._vnx_reads", "rs": "vnxdna.v6._vnx_rs",
                 "cluster": "vnxdna._vnx_cluster", "strand": "vnxdna._vnx_strand", "orient": "vnxdna._vnx_orient",

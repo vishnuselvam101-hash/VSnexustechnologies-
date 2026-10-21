@@ -93,17 +93,19 @@ _pool_lock = threading.Lock()
 
 
 def _candidates() -> list[Path]:
+    from vnxdna.native._loader import freshest_first
     out = []
     env = os.environ.get(ENV_LIB)
-    if env:
-        out.append(Path(env))
+    pinned = Path(env) if env else None
+    if pinned is not None:
+        out.append(pinned)
     suffix = sysconfig.get_config_var("EXT_SUFFIX") or ".so"
     ext = _HERE / f"_vnx_cluster{suffix}"
     if ext.is_file():
         out.append(ext)
     out.extend(p for p in sorted(_HERE.glob("_vnx_cluster*.so")) if p != ext)
     out.append(_INPLACE)
-    return out
+    return freshest_first(out, _INPLACE, pinned)
 
 
 def _bind(lib) -> None:
