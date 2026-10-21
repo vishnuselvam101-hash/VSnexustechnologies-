@@ -31,7 +31,7 @@ use crate::digest::sha256;
 use crate::error::{err, ErrorCode, Result, VnxError};
 use crate::journal::Journal;
 use crate::media::MediaAdapter;
-use crate::record::{BatchEntry, GenerationReleased, MapBatch, MapUpdate, Record, Superblock, FLAG_SEALED, MAX_BATCH_EXTENTS};
+use crate::record::{BatchEntry, GenerationReleased, MapBatch, MapUpdate, Record, Snapshot, Superblock, FLAG_SEALED, MAX_BATCH_EXTENTS};
 use crate::state::WriteState;
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
@@ -88,6 +88,34 @@ struct Entry {
     sha256: [u8; 32],
 }
 
+/// Snapshot metadata and its pinned extents.
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct SnapshotData {
+    id: u64,
+    name: String,
+    created_ms: i64,
+    pins: BTreeMap<ExtentId, Generation>,
+    /// SHA-256 of each pinned extent's bytes at snapshot time, so a snapshot read can be verified even after the
+    /// extent has been overwritten and the map no longer holds that generation's digest.
+    sha256: BTreeMap<ExtentId, [u8; 32]>,
+}
+
+/// Retention policy for an extent (or whole volume if extent is None).
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct RetentionPolicy {
+    until_ms: i64,
+    worm: bool,
+}
+
+/// Public snapshot information.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SnapshotInfo {
+    pub id: u64,
+    pub name: String,
+    pub created_ms: i64,
+    pub extents: u64,
+}
+
 struct State {
     journal: Journal,
     map: BTreeMap<ExtentId, Entry>,
@@ -96,6 +124,15 @@ struct State {
     next_txid: u64,
     stored_bytes: u64,
     damaged: BTreeSet<ExtentId>,
+    /// Active snapshots by id.
+    snapshots: BTreeMap<u64, SnapshotData>,
+    /// Retention policies: extent -> policy. None key means whole volume.
+    retention: BTreeMap<Option<ExtentId>, RetentionPolicy>,
+    /// Retention policies by snapshot id. A policy recorded for a snapshot id holds that snapshot, whatever
+    /// extents it pins, so it is consulted on its own and not through the extent-keyed map.
+    retention_by_snapshot: BTreeMap<u64, RetentionPolicy>,
+    /// Next snapshot id to assign.
+    next_snapshot_id: u64,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
@@ -209,6 +246,10 @@ impl Volume {
             next_txid: 1,
             stored_bytes: 0,
             damaged: BTreeSet::new(),
+            snapshots: BTreeMap::new(),
+            retention: BTreeMap::new(),
+            retention_by_snapshot: BTreeMap::new(),
+            next_snapshot_id: 1,
         };
         Ok(Volume::assemble(dir, geometry, device_id, flags, media, cfg, state))
     }
@@ -249,6 +290,9 @@ impl Volume {
         check_sealing(flags, media.as_ref())?;
         let mut map: BTreeMap<ExtentId, Entry> = BTreeMap::new();
         let mut last_gen: BTreeMap<ExtentId, Generation> = BTreeMap::new();
+        let mut snapshots: BTreeMap<u64, SnapshotData> = BTreeMap::new();
+        let mut retention: BTreeMap<Option<ExtentId>, RetentionPolicy> = BTreeMap::new();
+        let mut retention_by_snapshot: BTreeMap<u64, RetentionPolicy> = BTreeMap::new();
         let mut last_txid = 0u64;
         for r in recs {
             let (txid, entries): (u64, Vec<BatchEntry>) = match r {
@@ -272,6 +316,47 @@ impl Volume {
                     continue;
                 }
                 Record::Superblock(_) => return corrupt("second superblock in the journal"),
+                Record::Snapshot(s) => {
+                    if s.txid <= last_txid {
+                        return corrupt(format!("journal txid {} not after {last_txid}", s.txid));
+                    }
+                    if s.at.extent.0 >= geometry.extent_count() {
+                        return corrupt(format!("journal names extent {} beyond the device", s.at.extent.0));
+                    }
+                    // a snapshot pins the generation it names: that generation is live data and must not be released
+                    let snap = snapshots.entry(s.id).or_insert_with(|| SnapshotData {
+                        id: s.id,
+                        name: format!("snapshot-{}", s.id),
+                        created_ms: s.timestamp_ms,
+                        pins: BTreeMap::new(),
+                        sha256: BTreeMap::new(),
+                    });
+                    snap.pins.insert(s.at.extent, s.at.generation);
+                    // the digest of the pinned bytes, when the map still knows it
+                    if let Some(e) = map.get(&s.at.extent) {
+                        if e.generation == s.at.generation {
+                            snap.sha256.insert(s.at.extent, e.sha256);
+                        }
+                    }
+                    last_txid = s.txid;
+                    continue;
+                }
+                Record::Retention(r) => {
+                    if r.txid <= last_txid {
+                        return corrupt(format!("journal txid {} not after {last_txid}", r.txid));
+                    }
+                    // A retention policy is recorded for a snapshot id; the whole-volume policy uses id 0. The
+                    // policy of a snapshot id holds that snapshot and is looked up by snapshot id, never through the
+                    // extent-keyed map: a snapshot's policy holds the snapshot whatever extents it pins, so it
+                    // must not be applied to an extent.
+                    if r.id == 0 {
+                        retention.insert(None, RetentionPolicy { until_ms: r.until_ms, worm: r.worm });
+                    } else {
+                        retention_by_snapshot.insert(r.id, RetentionPolicy { until_ms: r.until_ms, worm: r.worm });
+                    }
+                    last_txid = r.txid;
+                    continue;
+                }
             };
             if txid <= last_txid {
                 return corrupt(format!("journal txid {txid} not after {last_txid}"));
@@ -299,6 +384,7 @@ impl Volume {
                 map.insert(m.at.extent, Entry { generation: m.at.generation, length: m.length, sha256: m.sha256 });
             }
         }
+        let next_snapshot_id = snapshots.keys().max().map_or(1, |m| m.saturating_add(1));
         let state = State {
             journal: opened.journal,
             map,
@@ -306,6 +392,10 @@ impl Volume {
             next_txid: last_txid + 1,
             stored_bytes: 0,
             damaged: BTreeSet::new(),
+            snapshots,
+            retention,
+            retention_by_snapshot,
+            next_snapshot_id,
         };
         let vol = Volume::assemble(dir, geometry, device_id, flags, media, cfg, state);
         vol.recover(&mut report)?;
@@ -343,6 +433,10 @@ impl Volume {
             *lg = (*lg).max(at.generation);
             let live = st.map.get(&at.extent).map(|e| e.generation) == Some(at.generation);
             if live {
+                continue;
+            }
+            // a generation pinned by a snapshot is live data, not an orphan: it must not be collected
+            if st.snapshots.values().any(|s| s.pins.get(&at.extent) == Some(&at.generation)) {
                 continue;
             }
             match self.media.remove(at) {
@@ -409,6 +503,168 @@ impl Volume {
     /// The generation currently serving `extent`, if any.
     pub fn mapping(&self, extent: ExtentId) -> Result<Option<Generation>> {
         Ok(self.lock_state()?.map.get(&extent).map(|e| e.generation))
+    }
+
+    /// Create a snapshot of the current volume state.
+    pub fn snapshot(&self, name: &str, now_ms: i64) -> Result<SnapshotInfo> {
+        let mut st = self.lock_state()?;
+        
+        // Validate name
+        if name.is_empty() || name.len() > 64 {
+            return err(ErrorCode::InvalidArgument, "snapshot name must be 1..=64 bytes");
+        }
+        if !name.bytes().all(|b| matches!(b, b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'.' | b'_' | b'-')) {
+            return err(ErrorCode::InvalidArgument, "snapshot name must be [A-Za-z0-9._-]");
+        }
+        
+        let snap_id = st.next_snapshot_id;
+        st.next_snapshot_id = st.next_snapshot_id.saturating_add(1);
+
+        // Collect current mapping as pins, with the digest of each pinned extent's bytes
+        let mut pins = BTreeMap::new();
+        let mut digests = BTreeMap::new();
+        for (extent, entry) in &st.map {
+            pins.insert(*extent, entry.generation);
+            digests.insert(*extent, entry.sha256);
+        }
+
+        let extents = pins.len() as u64;
+
+        let snap_data = SnapshotData {
+            id: snap_id,
+            name: name.to_string(),
+            created_ms: now_ms,
+            pins,
+            sha256: digests,
+        };
+        
+        // Write snapshot records to journal (one per pinned extent)
+        for (extent, generation) in &snap_data.pins {
+            let at = GenerationRef { extent: *extent, generation: *generation };
+            let record = Record::Snapshot(Snapshot {
+                txid: st.next_txid,
+                id: snap_id,
+                at,
+                timestamp_ms: now_ms,
+            });
+            record.validate()?;
+            st.journal.append(&record)?;
+            st.next_txid += 1;
+        }
+        
+        st.snapshots.insert(snap_id, snap_data);
+        
+        Ok(SnapshotInfo {
+            id: snap_id,
+            name: name.to_string(),
+            created_ms: now_ms,
+            extents,
+        })
+    }
+
+    /// List all active snapshots.
+    pub fn snapshots(&self) -> Result<Vec<SnapshotInfo>> {
+        let st = self.lock_state()?;
+        let mut snaps: Vec<SnapshotInfo> = st.snapshots.values()
+            .map(|s| SnapshotInfo {
+                id: s.id,
+                name: s.name.clone(),
+                created_ms: s.created_ms,
+                extents: s.pins.len() as u64,
+            })
+            .collect();
+        snaps.sort_by_key(|s| s.id);
+        Ok(snaps)
+    }
+
+    /// Read an extent from a snapshot.
+    pub fn read_snapshot_extent(&self, snapshot: u64, extent: ExtentId) -> Result<Vec<u8>> {
+        let st = self.lock_state()?;
+        let snap = st.snapshots.get(&snapshot).ok_or_else(|| VnxError::new(ErrorCode::NotFound, "snapshot not found"))?;
+        
+        let generation = snap.pins.get(&extent).ok_or_else(|| VnxError::new(ErrorCode::NotFound, "extent not in snapshot"))?;
+        
+        // Read the generation data from backend
+        let gref = GenerationRef { extent, generation: *generation };
+        let data = self.media.get(gref)?;
+
+        // Verify SHA-256. The map holds the digest of the CURRENT generation, so after an overwrite the snapshot's
+        // own generation is no longer in the map: keep the snapshot's digest instead of skipping the check.
+        let expected_sha = st
+            .map
+            .get(&extent)
+            .filter(|e| e.generation == *generation)
+            .map(|e| e.sha256)
+            .or_else(|| snap.sha256.get(&extent).copied());
+        if let Some(expected) = expected_sha {
+            let actual = sha256(&data);
+            if actual != expected {
+                return err(ErrorCode::Corruption, format!("snapshot extent {} generation {} SHA-256 mismatch", extent.0, generation.get()));
+            }
+        }
+
+        Ok(data)
+    }
+
+    /// Release a snapshot, removing its pins.
+    pub fn release_snapshot(&self, snapshot: u64, now_ms: i64) -> Result<()> {
+        let mut st = self.lock_state()?;
+        let snap = st.snapshots.get(&snapshot).cloned().ok_or_else(|| VnxError::new(ErrorCode::NotFound, "snapshot not found"))?;
+
+        // A policy recorded for this snapshot holds the snapshot itself, whatever extents it pins. It is checked
+        // before the extent policies and before anything is released: a refused release must leave the snapshot in
+        // place.
+        if let Some(ret) = st.retention_by_snapshot.get(&snapshot) {
+            if ret.until_ms > now_ms {
+                return err(ErrorCode::Retained, format!("snapshot {snapshot} is under retention until {}", ret.until_ms));
+            }
+        }
+        // Check if any pinned extent is under retention BEFORE releasing anything: a refused release must leave the
+        // snapshot in place.
+        for (extent, _generation) in &snap.pins {
+            if let Some(ret) = self.check_retention_for_extent(&st, *extent, now_ms) {
+                if ret.until_ms > now_ms {
+                    return err(ErrorCode::Retained, format!("extent {} is under retention until {}", extent.0, ret.until_ms));
+                }
+            }
+        }
+
+        // Write GenerationReleased records for each pinned extent. A generation the map still points at is live
+        // data: releasing it would make the next open refuse the journal, so it is left alone.
+        for (extent, generation) in &snap.pins {
+            if st.map.get(extent).map(|e| e.generation) == Some(*generation) {
+                continue;
+            }
+            let at = GenerationRef { extent: *extent, generation: *generation };
+            let record = Record::GenerationReleased(GenerationReleased {
+                txid: st.next_txid,
+                at,
+            });
+            record.validate()?;
+            st.journal.append(&record)?;
+            st.next_txid += 1;
+        }
+
+        // the snapshot is released only once its records are durable
+        st.snapshots.remove(&snapshot);
+
+        Ok(())
+    }
+
+    fn check_retention_for_extent(&self, st: &State, extent: ExtentId, _now_ms: i64) -> Option<RetentionPolicy> {
+        // Check extent-specific retention first
+        if let Some(ret) = st.retention.get(&Some(extent)) {
+            return Some(ret.clone());
+        }
+        // Fall back to volume-wide retention
+        st.retention.get(&None).cloned()
+    }
+
+    /// Is `generation` of `extent` pinned by a live snapshot? A pinned generation is still live data: it must not be
+    /// released and must not be removed by the orphan collector.
+    fn generation_is_pinned(&self, extent: ExtentId, generation: Generation) -> bool {
+        let Ok(st) = self.lock_state() else { return false };
+        st.snapshots.values().any(|s| s.pins.get(&extent) == Some(&generation))
     }
 
     fn lock_state(&self) -> Result<MutexGuard<'_, State>> {
@@ -666,6 +922,10 @@ impl Volume {
         self.fault(Stage::AfterMapRecord, first)?;
         for (i, old) in previous.into_iter().enumerate() {
             if let Some(old) = old {
+                // a generation pinned by a snapshot is still live data: it must not be released
+                if self.generation_is_pinned(items[i].0, old.generation) {
+                    continue;
+                }
                 self.release(GenerationRef { extent: items[i].0, generation: old.generation }, old.length)?;
             }
         }

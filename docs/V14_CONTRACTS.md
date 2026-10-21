@@ -98,6 +98,7 @@ authenticity of stored data comes from the AES-256-GCM seal applied by the exist
 | VERSION_MISMATCH | permanent | ENOTSUP | FEATURE_UNSUPPORTED |
 | OVERFLOW | permanent | EOVERFLOW | FORMAT_ERROR |
 | INTERNAL | permanent | EIO | INTERNAL_ERROR |
+| RETAINED | permanent | EPERM | INTERNAL_ERROR |
 
 The errno set is the one the Linux NBD driver passes to the block layer. In Python every code is a
 `vnxdna.device.DeviceError` (a `VNXError`, stage `device`, with `device_code`, `error_class`, `errno` and the

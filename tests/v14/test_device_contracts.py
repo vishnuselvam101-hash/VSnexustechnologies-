@@ -78,8 +78,28 @@ def test_error_table_matches_the_rust_source():
     rust = {name: (cls.lower(), errno) for name, cls, errno in
             re.findall(r'^\s+\w+ => "([A-Z_]+)", (Retryable|Permanent), (E[A-Z]+);', src, re.M)}
     errnos = dict(re.findall(r"pub const (E[A-Z]+): u32 = (\d+);", src))
-    assert len(rust) == 17
+    assert len(rust) == 18
     assert {k: (c, int(errnos[e])) for k, (c, e) in rust.items()} == {k: v[:2] for k, v in ERROR_CODES.items()}
+
+
+def test_superblock_flags_match_the_rust_source():
+    """The known superblock flags are the same set on both sides of the contract.
+
+    The Rust ``KNOWN_FLAGS`` mask and the Python mirror must agree, or one language would accept a superblock
+    the other refuses to decode.
+    """
+    src = (RUST / "record.rs").read_text()
+    values = {name: int(value) for name, value in re.findall(r"pub const (FLAG_\w+): u32 = (\d+);", src)}
+    mask = re.search(r"const KNOWN_FLAGS: u32 = ([^;]+);", src).group(1)
+    rust_known = 0
+    for name in re.findall(r"FLAG_\w+", mask):
+        rust_known |= values[name]
+    assert rust_known == rc._KNOWN_FLAGS
+    # every single known flag, and their combination, is accepted; anything above the mask is not
+    for flags in sorted(values.values()) + [rust_known]:
+        rc.validate(rc.Superblock(bytes(16), Geometry(4096, 1, 1), flags))
+    with pytest.raises(DeviceError):
+        rc.validate(rc.Superblock(bytes(16), Geometry(4096, 1, 1), rust_known << 1))
 
 
 def test_error_codes_map_onto_the_library_registry():
@@ -145,7 +165,7 @@ def test_invalid_records_are_never_encoded():
         rc.encode(rc.MapUpdate(1, 1 << 64, 1, 0, 0, bytes(32)))
     assert e.value.device_code == "OVERFLOW"
     with pytest.raises(DeviceError):
-        rc.encode(rc.Superblock(bytes(16), Geometry(4096, 1, 1), 2))
+        rc.encode(rc.Superblock(bytes(16), Geometry(4096, 1, 1), 4))   # 4 is not a known flag (SEALED 1 | WORM 2)
 
 
 def test_record_descriptions_are_validated_like_rust():

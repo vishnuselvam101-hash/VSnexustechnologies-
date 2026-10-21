@@ -31,13 +31,19 @@ pub const KIND_SUPERBLOCK: u16 = 1;
 pub const KIND_MAP_UPDATE: u16 = 2;
 pub const KIND_GENERATION_RELEASED: u16 = 3;
 pub const KIND_MAP_BATCH: u16 = 4;
+/// Journal record: a snapshot of an extent at a point in time.
+pub const KIND_SNAPSHOT: u16 = 5;
+/// Journal record: a retention policy (retention deadline and optional WORM flag).
+pub const KIND_RETENTION: u16 = 6;
 
 /// Most extents one `map_batch` record (one atomic multi-extent transaction) may remap.
 pub const MAX_BATCH_EXTENTS: usize = 1024;
 
 /// Superblock flag: extents are sealed (AES-256-GCM by the security layer) before they reach a backend.
 pub const FLAG_SEALED: u32 = 1;
-const KNOWN_FLAGS: u32 = FLAG_SEALED;
+/// Superblock flag: volume is WORM (write-once-read-many) - no extent may be rewritten after retention deadline.
+pub const FLAG_WORM: u32 = 2;
+const KNOWN_FLAGS: u32 = FLAG_SEALED | FLAG_WORM;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Superblock {
@@ -81,12 +87,34 @@ pub struct MapBatch {
     pub entries: Vec<BatchEntry>,
 }
 
+/// Journal record: a snapshot of extent `at` taken at transaction `txid` with snapshot id `id`.
+/// `timestamp_ms` is the time the snapshot was created (for ordering and retention checks).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Snapshot {
+    pub txid: u64,
+    pub id: u64,
+    pub at: GenerationRef,
+    pub timestamp_ms: i64,
+}
+
+/// Journal record: a retention policy for snapshot `id` created at transaction `txid`.
+/// `until_ms` is the retention deadline; `worm` indicates WORM (write-once-read-many) mode.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Retention {
+    pub txid: u64,
+    pub id: u64,
+    pub until_ms: i64,
+    pub worm: bool,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Record {
     Superblock(Superblock),
     MapUpdate(MapUpdate),
     GenerationReleased(GenerationReleased),
     MapBatch(MapBatch),
+    Snapshot(Snapshot),
+    Retention(Retention),
 }
 
 const SUPERBLOCK_LEN: usize = 16 + 4 + 4 + 8 + 4;
@@ -94,6 +122,10 @@ const MAP_UPDATE_LEN: usize = 8 * 5 + 32;
 const RELEASED_LEN: usize = 8 * 3;
 const BATCH_HEAD_LEN: usize = 8 + 4 + 4;
 const BATCH_ENTRY_LEN: usize = 8 * 4 + 32;
+/// Snapshot payload: txid(8) + id(8) + extent(8) + generation(8) + timestamp_ms(8) = 40
+const SNAPSHOT_LEN: usize = 8 * 5;
+/// Retention payload: txid(8) + id(8) + until_ms(8) + worm(1) + padding(7) = 32
+const RETENTION_LEN: usize = 8 * 3 + 1 + 7;
 /// Largest encoded record (a full map batch).
 pub const MAX_RECORD_LEN: usize = HEADER_LEN + BATCH_HEAD_LEN + BATCH_ENTRY_LEN * MAX_BATCH_EXTENTS + TRAILER_LEN;
 
@@ -119,6 +151,14 @@ impl<'a> Reader<'a> {
     fn u64(&mut self) -> u64 {
         u64::from_le_bytes(self.take())
     }
+    fn i64(&mut self) -> i64 {
+        i64::from_le_bytes(self.take())
+    }
+    fn u8(&mut self) -> u8 {
+        let b = self.b[self.pos];
+        self.pos += 1;
+        b
+    }
 }
 
 fn generation(n: u64, what: &str) -> Result<Generation> {
@@ -132,6 +172,8 @@ impl Record {
             Record::MapUpdate(_) => KIND_MAP_UPDATE,
             Record::GenerationReleased(_) => KIND_GENERATION_RELEASED,
             Record::MapBatch(_) => KIND_MAP_BATCH,
+            Record::Snapshot(_) => KIND_SNAPSHOT,
+            Record::Retention(_) => KIND_RETENTION,
         }
     }
 
@@ -167,6 +209,20 @@ impl Record {
                     p.extend_from_slice(&e.sha256);
                 }
             }
+            Record::Snapshot(s) => {
+                p.extend_from_slice(&s.txid.to_le_bytes());
+                p.extend_from_slice(&s.id.to_le_bytes());
+                p.extend_from_slice(&s.at.extent.0.to_le_bytes());
+                p.extend_from_slice(&s.at.generation.get().to_le_bytes());
+                p.extend_from_slice(&s.timestamp_ms.to_le_bytes());
+            }
+            Record::Retention(r) => {
+                p.extend_from_slice(&r.txid.to_le_bytes());
+                p.extend_from_slice(&r.id.to_le_bytes());
+                p.extend_from_slice(&r.until_ms.to_le_bytes());
+                p.extend_from_slice(&(r.worm as u8).to_le_bytes());
+                p.extend_from_slice(&[0u8; 7]); // padding to 32 bytes
+            }
         }
         p
     }
@@ -197,6 +253,10 @@ impl Record {
                 }
                 Ok(())
             }
+            Record::Snapshot(s) if s.txid == 0 => corrupt("snapshot with txid 0"),
+            Record::Snapshot(s) if s.id == 0 => corrupt("snapshot with id 0"),
+            Record::Retention(r) if r.txid == 0 => corrupt("retention with txid 0"),
+            Record::Retention(r) if r.id == 0 => corrupt("retention with id 0"),
             _ => Ok(()),
         }
     }
@@ -233,6 +293,8 @@ impl Record {
             KIND_SUPERBLOCK => Some(SUPERBLOCK_LEN),
             KIND_MAP_UPDATE => Some(MAP_UPDATE_LEN),
             KIND_GENERATION_RELEASED => Some(RELEASED_LEN),
+            KIND_SNAPSHOT => Some(SNAPSHOT_LEN),
+            KIND_RETENTION => Some(RETENTION_LEN),
             KIND_MAP_BATCH => None,
             _ => return corrupt(format!("unknown record kind {kind}")),
         };
@@ -274,6 +336,17 @@ impl Record {
                 let (txid, extent, gen) = (r.u64(), r.u64(), r.u64());
                 let at = GenerationRef { extent: ExtentId(extent), generation: generation(gen, "release")? };
                 Record::GenerationReleased(GenerationReleased { txid, at })
+            }
+            KIND_SNAPSHOT => {
+                let (txid, id, extent, gen, timestamp_ms) = (r.u64(), r.u64(), r.u64(), r.u64(), r.i64());
+                let at = GenerationRef { extent: ExtentId(extent), generation: generation(gen, "snapshot")? };
+                Record::Snapshot(Snapshot { txid, id, at, timestamp_ms })
+            }
+            KIND_RETENTION => {
+                let (txid, id, until_ms) = (r.u64(), r.u64(), r.i64());
+                let worm = r.u8() != 0;
+                let _padding = r.take::<7>(); // skip padding
+                Record::Retention(Retention { txid, id, until_ms, worm })
             }
             _ => {
                 let (txid, count, reserved) = (r.u64(), r.u32() as usize, r.u32());
@@ -369,6 +442,21 @@ pub fn to_json(rec: &Record) -> Result<Value> {
             }
             obj([("kind", Value::Str("map_batch".into())), ("txid", int(b.txid)?), ("entries", Value::Arr(entries))])
         }
+        Record::Snapshot(s) => obj([
+            ("kind", Value::Str("snapshot".into())),
+            ("txid", int(s.txid)?),
+            ("id", int(s.id)?),
+            ("extent", int(s.at.extent.0)?),
+            ("generation", int(s.at.generation.get())?),
+            ("timestamp_ms", int(s.timestamp_ms as u64)?),
+        ]),
+        Record::Retention(r) => obj([
+            ("kind", Value::Str("retention".into())),
+            ("txid", int(r.txid)?),
+            ("id", int(r.id)?),
+            ("until_ms", int(r.until_ms as u64)?),
+            ("worm", Value::Bool(r.worm)),
+        ]),
     })
 }
 
@@ -381,6 +469,8 @@ pub fn from_json(v: &Value) -> Result<Record> {
         "map_update" => &["kind", "txid", "extent", "generation", "previous", "length", "sha256"],
         "generation_released" => &["kind", "txid", "extent", "generation"],
         "map_batch" => &["kind", "txid", "entries"],
+        "snapshot" => &["kind", "txid", "id", "extent", "generation", "timestamp_ms"],
+        "retention" => &["kind", "txid", "id", "until_ms", "worm"],
         _ => return err(ErrorCode::InvalidArgument, format!("unknown record kind {kind:?}")),
     };
     if o.len() != keys.len() || keys.iter().any(|k| !o.contains_key(*k)) {
@@ -416,6 +506,18 @@ pub fn from_json(v: &Value) -> Result<Record> {
         "generation_released" => Record::GenerationReleased(GenerationReleased {
             txid: u("txid")?,
             at: GenerationRef { extent: ExtentId(u("extent")?), generation: gen("generation")? },
+        }),
+        "snapshot" => Record::Snapshot(Snapshot {
+            txid: u("txid")?,
+            id: u("id")?,
+            at: GenerationRef { extent: ExtentId(u("extent")?), generation: gen("generation")? },
+            timestamp_ms: u("timestamp_ms")? as i64,
+        }),
+        "retention" => Record::Retention(Retention {
+            txid: u("txid")?,
+            id: u("id")?,
+            until_ms: u("until_ms")? as i64,
+            worm: match o["worm"] { Value::Bool(b) => b, _ => return err(ErrorCode::InvalidArgument, "retention.worm must be a boolean") },
         }),
         _ => {
             let items = match &o["entries"] {
@@ -454,6 +556,55 @@ pub fn from_json(v: &Value) -> Result<Record> {
 mod tests {
     use super::*;
     use crate::digest::sha256;
+
+    // Failing tests for new record kinds (D1)
+    #[test]
+    fn snapshot_record_encode_decode_round_trip() {
+        let snap = Record::Snapshot(Snapshot {
+            txid: 42,
+            id: 1,
+            at: GenerationRef { extent: ExtentId(7), generation: Generation::FIRST },
+            timestamp_ms: 1_700_000_000_000,
+        });
+        let bytes = snap.encode().unwrap();
+        let (back, used) = Record::decode(&bytes).unwrap();
+        assert_eq!((back, used), (snap, bytes.len()));
+    }
+
+    #[test]
+    fn retention_record_encode_decode_round_trip() {
+        let ret = Record::Retention(Retention {
+            txid: 43,
+            id: 1,
+            until_ms: 1_800_000_000_000,
+            worm: true,
+        });
+        let bytes = ret.encode().unwrap();
+        let (back, used) = Record::decode(&bytes).unwrap();
+        assert_eq!((back, used), (ret, bytes.len()));
+    }
+
+    #[test]
+    fn snapshot_record_invalid_tx_zero_rejected() {
+        let snap = Record::Snapshot(Snapshot {
+            txid: 0,
+            id: 1,
+            at: GenerationRef { extent: ExtentId(7), generation: Generation::FIRST },
+            timestamp_ms: 1_700_000_000_000,
+        });
+        assert_eq!(snap.encode().unwrap_err().code, ErrorCode::Corruption);
+    }
+
+    #[test]
+    fn retention_record_invalid_tx_zero_rejected() {
+        let ret = Record::Retention(Retention {
+            txid: 0,
+            id: 1,
+            until_ms: 1_800_000_000_000,
+            worm: false,
+        });
+        assert_eq!(ret.encode().unwrap_err().code, ErrorCode::Corruption);
+    }
 
     pub(crate) fn samples() -> Vec<Record> {
         let g = Geometry::new(4096, 256, 262_144).unwrap();
@@ -585,14 +736,35 @@ mod tests {
         }
         assert_eq!(s[2].encode().unwrap_err().code, ErrorCode::Corruption);
         if let Record::Superblock(sb) = &mut s[0] {
-            sb.flags = 2;
+            sb.flags = 4; // 4 is not a known flag (KNOWN_FLAGS = FLAG_SEALED(1) | FLAG_WORM(2) = 3)
         }
         assert_eq!(s[0].encode().unwrap_err().code, ErrorCode::Corruption);
     }
 
     #[test]
-    fn version_mismatch_is_its_own_error() {
-        let mut b = samples()[1].encode().unwrap();
+    fn every_known_superblock_flag_is_accepted() {
+        // the known set is FLAG_SEALED | FLAG_WORM; each one and their combination must decode
+        for flags in [FLAG_SEALED, FLAG_WORM, FLAG_SEALED | FLAG_WORM] {
+            let g = Geometry::new(4096, 256, 262_144).unwrap();
+            let sb = Record::Superblock(Superblock { device_id: [0; 16], geometry: g, flags });
+            let bytes = sb.encode().expect("a known flag must encode");
+            match Record::decode(&bytes).expect("a known flag must decode").0 {
+                Record::Superblock(s) => assert_eq!(s.flags, flags),
+                _ => panic!("not a superblock"),
+            }
+        }
+        // and the first value above the mask must not
+        let g = Geometry::new(4096, 256, 262_144).unwrap();
+        let bad = Record::Superblock(Superblock {
+            device_id: [0; 16],
+            geometry: g,
+            flags: (FLAG_SEALED | FLAG_WORM) << 1,
+        });
+        assert_eq!(bad.encode().unwrap_err().code, ErrorCode::Corruption);
+    }
+
+    #[test]
+    fn version_mismatch_is_its_own_error() {        let mut b = samples()[1].encode().unwrap();
         b[4] = 2;
         let n = b.len();
         let crc = crc32(&b[..n - 4]);
