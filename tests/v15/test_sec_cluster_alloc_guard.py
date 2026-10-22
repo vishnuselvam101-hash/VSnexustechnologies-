@@ -103,3 +103,25 @@ def test_a_trial_count_whose_byte_size_does_not_fit_is_refused():
     assert call(np.array([0, 0, 1], np.int64)) == 0
     # 2^61 trials are 2^64 bytes: the size does not fit size_t, so the count is refused
     assert call(np.array([0, 0, 1 << 61], np.int64)) == -2
+
+
+def test_a_verify_chunk_whose_byte_size_does_not_fit_is_refused():
+    """A chunk whose byte size does not fit ``size_t`` is refused, not allocated.
+
+    The verification loop sizes two of its buffers by the chunk (``chunk * sizeof(int64_t)`` and ``chunk``), so a
+    chunk above ``SIZE_MAX / 8`` would wrap the size and the kernel would write the full size into a buffer it
+    believes is larger. The bound is checked before anything is allocated, so the call is refused as out of memory.
+    """
+    buf = np.zeros(8, np.uint8)
+    off = np.array([0], np.int64)
+    lens = np.array([8], np.int64)
+    pa = np.array([0], np.int64)
+    pb = np.array([0], np.int64)
+    prel = np.array([0], np.uint8)
+    pmax = np.array([5], np.int64)
+
+    # a chunk that fits: the verification runs as before
+    nc.verify(buf, off, lens, pa, pb, prel, pmax, 0.3, 4, 512)
+    # 2^61 chunks are 2^64 bytes: the size does not fit size_t, so the chunk is refused
+    with pytest.raises(nc.NativeClusterMemoryError):
+        nc.verify(buf, off, lens, pa, pb, prel, pmax, 0.3, 4, 1 << 61)
