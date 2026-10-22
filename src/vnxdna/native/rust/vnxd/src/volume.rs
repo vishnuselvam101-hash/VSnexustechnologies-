@@ -31,7 +31,7 @@ use crate::digest::sha256;
 use crate::error::{err, ErrorCode, Result, VnxError};
 use crate::journal::Journal;
 use crate::media::MediaAdapter;
-use crate::record::{BatchEntry, GenerationReleased, MapBatch, MapUpdate, Record, Snapshot, Superblock, FLAG_SEALED, MAX_BATCH_EXTENTS};
+use crate::record::{BatchEntry, GenerationReleased, MapBatch, MapUpdate, Record, Retention, Snapshot, Superblock, FLAG_SEALED, MAX_BATCH_EXTENTS};
 use crate::state::WriteState;
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
@@ -651,13 +651,75 @@ impl Volume {
         Ok(())
     }
 
-    fn check_retention_for_extent(&self, st: &State, extent: ExtentId, _now_ms: i64) -> Option<RetentionPolicy> {
+    /// Set a retention policy for an extent or the whole volume. `extent = None` means volume-wide.
+    /// The retention deadline can only be EXTENDED while the existing retention is active (until_ms > now_ms).
+    /// Once expired (until_ms <= now_ms), a new deadline can be set freely.
+    /// A `now_ms` timestamp is required for the active-check (must be caller-supplied, not system clock).
+    pub fn set_retention(&self, extent: Option<ExtentId>, until_ms: i64, now_ms: i64) -> Result<()> {
+        let mut st = self.lock_state()?;
+
+        // Check existing retention for this extent (or volume-wide)
+        let existing = st.retention.get(&extent);
+        if let Some(ret) = existing {
+            // If the existing retention is still active, we can only extend it
+            if ret.until_ms > now_ms {
+                if until_ms < ret.until_ms {
+                    return err(ErrorCode::Retained, format!("retention for {:?} cannot be shortened from {} to {}", extent, ret.until_ms, until_ms));
+                }
+                // If until_ms == ret.until_ms, it's a no-op (allowed)
+                if until_ms == ret.until_ms {
+                    return Ok(());
+                }
+            }
+            // If existing retention has expired (ret.until_ms <= now_ms), any new deadline is allowed
+        }
+
+        // Also check the other level: if setting extent-specific, check volume-wide; if setting volume-wide, check extent-specific
+        // The rule is: extent-specific wins over volume-wide. But we only prevent shortening at the same level.
+        // Volume-wide shortening is prevented by the check above when extent == None.
+        // Extent-specific shortening is prevented by the check above when extent == Some(...).
+        // A volume-wide extension doesn't need to check extent-specific policies (they win anyway).
+        // An extent-specific extension doesn't need to check volume-wide (it wins anyway).
+
+        let txid = st.next_txid;
+        let rec = Record::Retention(Retention {
+            txid,
+            id: extent.map_or(0, |e| e.0), // 0 means volume-wide
+            until_ms,
+            worm: true, // WORM flag as per the plan
+        });
+        rec.validate()?;
+        st.journal.append(&rec)?;
+        st.next_txid += 1;
+
+        // Update in-memory state
+        st.retention.insert(extent, RetentionPolicy { until_ms, worm: true });
+
+        Ok(())
+    }
+
+    /// Get the current retention deadline for an extent (considering both extent-specific and volume-wide policies).
+    /// Returns the effective `until_ms` if the extent is currently retained (until_ms > now_ms), or None if not retained.
+    /// The `now_ms` parameter is caller-supplied (not system clock).
+    pub fn retention(&self, extent: ExtentId, now_ms: i64) -> Option<i64> {
+        let st = self.lock_state().ok()?;
+        self.check_retention_for_extent(&st, extent, now_ms).map(|r| r.until_ms)
+    }
+
+    fn check_retention_for_extent(&self, st: &State, extent: ExtentId, now_ms: i64) -> Option<RetentionPolicy> {
         // Check extent-specific retention first
         if let Some(ret) = st.retention.get(&Some(extent)) {
-            return Some(ret.clone());
+            if ret.until_ms > now_ms {
+                return Some(ret.clone());
+            }
         }
         // Fall back to volume-wide retention
-        st.retention.get(&None).cloned()
+        if let Some(ret) = st.retention.get(&None) {
+            if ret.until_ms > now_ms {
+                return Some(ret.clone());
+            }
+        }
+        None
     }
 
     /// Is `generation` of `extent` pinned by a live snapshot? A pinned generation is still live data: it must not be
@@ -730,24 +792,24 @@ impl Volume {
     }
 
     /// Replace one whole extent with `data` (its exact length).
-    pub fn write_extent(&self, extent: ExtentId, data: &[u8]) -> Result<CommitOutcome> {
+    pub fn write_extent(&self, extent: ExtentId, data: &[u8], now_ms: i64) -> Result<CommitOutcome> {
         let _g = self.stripe(extent)?;
-        self.commit_locked(extent, data)
+        self.commit_locked(extent, data, now_ms)
     }
 
     /// Read-modify-write of one extent under its lock: `patch` edits the current content (zeros if unwritten).
-    pub fn modify_extent(&self, extent: ExtentId, patch: impl FnOnce(&mut [u8])) -> Result<CommitOutcome> {
+    pub fn modify_extent(&self, extent: ExtentId, patch: impl FnOnce(&mut [u8]), now_ms: i64) -> Result<CommitOutcome> {
         let _g = self.stripe(extent)?;
         let mut data = self.read_locked(extent)?;
         patch(&mut data);
-        self.commit_locked(extent, &data)
+        self.commit_locked(extent, &data, now_ms)
     }
 
     /// Replace several extents in ONE transaction: after a crash or an error either every extent of `patches` has its
     /// new content or none has (one `map_batch` record is the commit point). Extents must be strictly increasing,
     /// 1..=[`MAX_BATCH_EXTENTS`] of them; partial patches are read-modify-writes inside the transaction. Returns the
     /// write state reached (the same for every extent).
-    pub fn write_extents(&self, patches: &[Patch<'_>]) -> Result<WriteState> {
+    pub fn write_extents(&self, patches: &[Patch<'_>], now_ms: i64) -> Result<WriteState> {
         if patches.is_empty() || patches.len() > MAX_BATCH_EXTENTS {
             return err(ErrorCode::InvalidArgument, format!("an atomic write covers 1..={MAX_BATCH_EXTENTS} extents, got {}", patches.len()));
         }
@@ -782,17 +844,17 @@ impl Volume {
             }
         }
         let items: Vec<(ExtentId, &[u8])> = contents.iter().map(|(e, c)| (*e, c.as_ref())).collect();
-        self.commit_many_locked(&items).map(|(_, ws)| ws)
+        self.commit_many_locked(&items, now_ms).map(|(_, ws)| ws)
     }
 
-    fn commit_locked(&self, extent: ExtentId, data: &[u8]) -> Result<CommitOutcome> {
-        let (gens, state) = self.commit_many_locked(&[(extent, data)])?;
+    fn commit_locked(&self, extent: ExtentId, data: &[u8], now_ms: i64) -> Result<CommitOutcome> {
+        let (gens, state) = self.commit_many_locked(&[(extent, data)], now_ms)?;
         Ok(CommitOutcome { generation: gens[0], state })
     }
 
     /// The commit procedure for one extent (a `map_update` record) or several (a `map_batch` record); the caller
     /// holds every extent's stripe.
-    fn commit_many_locked(&self, items: &[(ExtentId, &[u8])]) -> Result<(Vec<Generation>, WriteState)> {
+    fn commit_many_locked(&self, items: &[(ExtentId, &[u8])], now_ms: i64) -> Result<(Vec<Generation>, WriteState)> {
         let mut lens = Vec::with_capacity(items.len());
         for (extent, data) in items {
             let len = self.geometry.extent_len(*extent)?;
@@ -806,6 +868,12 @@ impl Volume {
         let mut ws = WriteState::Received;
         let gens: Vec<Generation> = {
             let mut st = self.lock_state()?;
+            // Check retention for each extent being written
+            for (extent, _) in items {
+                if let Some(ret) = self.check_retention_for_extent(&st, *extent, now_ms) {
+                    return err(ErrorCode::Retained, format!("extent {} is under retention until {}", extent.0, ret.until_ms));
+                }
+            }
             let max = self.cfg.max_stored_bytes;
             if max > 0 && st.stored_bytes.saturating_add(total) > max {
                 return err(ErrorCode::NoSpace, format!("backend budget {max} bytes: {} stored, {total} more needed", st.stored_bytes));
@@ -1043,11 +1111,11 @@ mod tests {
         let m: Arc<dyn MediaAdapter> = Arc::new(MemoryMedia::new());
         let v = new_vol(&d, m.clone());
         assert_eq!(v.read_extent(ExtentId(1)).unwrap(), vec![0; 2048], "unwritten extents read as zeros");
-        let o = v.write_extent(ExtentId(1), &fill(1, 7)).unwrap();
+        let o = v.write_extent(ExtentId(1), &fill(1, 7), 1000).unwrap();
         assert_eq!(o, CommitOutcome { generation: Generation::FIRST, state: WriteState::Verified });
-        let o = v.write_extent(ExtentId(1), &fill(1, 8)).unwrap();
+        let o = v.write_extent(ExtentId(1), &fill(1, 8), 1001).unwrap();
         assert_eq!(o.generation.get(), 2);
-        v.write_extent(ExtentId(2), &fill(2, 9)).unwrap();
+        v.write_extent(ExtentId(2), &fill(2, 9), 1002).unwrap();
         assert_eq!(m.list().unwrap().len(), 2 + 1, "the replaced generation was released (+ the marker)");
         assert_eq!(v.stored_bytes().unwrap(), 2048 + 1024);
         drop(v);
@@ -1055,8 +1123,8 @@ mod tests {
         assert!(r.orphans_removed.is_empty() && r.damaged.is_empty() && r.torn_tail.is_none());
         assert_eq!(v.read_extent(ExtentId(1)).unwrap(), fill(1, 8));
         assert_eq!(v.read_extent(ExtentId(2)).unwrap(), fill(2, 9));
-        assert_eq!(v.write_extent(ExtentId(1), &fill(1, 1)).unwrap().generation.get(), 3, "generations never reused");
-        assert_eq!(v.write_extent(ExtentId(1), &[0; 5]).unwrap_err().code, ErrorCode::InvalidArgument);
+        assert_eq!(v.write_extent(ExtentId(1), &fill(1, 1), 1003).unwrap().generation.get(), 3, "generations never reused");
+        assert_eq!(v.write_extent(ExtentId(1), &[0; 5], 1004).unwrap_err().code, ErrorCode::InvalidArgument);
         assert_eq!(v.read_extent(ExtentId(3)).unwrap_err().code, ErrorCode::OutOfRange);
     }
 
@@ -1072,7 +1140,7 @@ mod tests {
         assert!(!d.0.join(JOURNAL_FILE).exists(), "no journal of a device that was never created");
         assert!(m.list().unwrap().is_empty());
         let v = Volume::create(&d.0, geo(), [1; 16], 0, m.clone(), VolumeConfig::default()).unwrap();
-        v.write_extent(ExtentId(0), &fill(0, 1)).unwrap();
+        v.write_extent(ExtentId(0), &fill(0, 1), 1000).unwrap();
         drop(v);
         assert_eq!(Volume::open(&d.0, m, VolumeConfig::default()).unwrap().0.read_extent(ExtentId(0)).unwrap(), fill(0, 1));
     }
@@ -1082,7 +1150,7 @@ mod tests {
         let d = TempDir::new("vol");
         let cfg = VolumeConfig { verify_readback: false, ..Default::default() };
         let v = Volume::create(&d.0, geo(), [1; 16], 0, Arc::new(MemoryMedia::new()), cfg).unwrap();
-        assert_eq!(v.write_extent(ExtentId(0), &fill(0, 1)).unwrap().state, WriteState::BackendCommitted);
+        assert_eq!(v.write_extent(ExtentId(0), &fill(0, 1), 1000).unwrap().state, WriteState::BackendCommitted);
     }
 
     #[test]
@@ -1091,10 +1159,10 @@ mod tests {
         let m: Arc<dyn MediaAdapter> = Arc::new(MemoryMedia::new());
         let cfg = VolumeConfig { max_stored_bytes: 4096, ..Default::default() };
         let v = Volume::create(&d.0, geo(), [1; 16], 0, m.clone(), cfg).unwrap();
-        v.write_extent(ExtentId(0), &fill(0, 1)).unwrap();
-        v.write_extent(ExtentId(1), &fill(1, 2)).unwrap();
+        v.write_extent(ExtentId(0), &fill(0, 1), 1000).unwrap();
+        v.write_extent(ExtentId(1), &fill(1, 2), 1001).unwrap();
         // overwriting needs room for the new generation before the old one is released
-        assert_eq!(v.write_extent(ExtentId(0), &fill(0, 3)).unwrap_err().code, ErrorCode::NoSpace);
+        assert_eq!(v.write_extent(ExtentId(0), &fill(0, 3), 1002).unwrap_err().code, ErrorCode::NoSpace);
         assert_eq!(v.read_extent(ExtentId(0)).unwrap(), fill(0, 1));
         assert_eq!(m.list().unwrap().len(), 2 + 1);
         assert_eq!(v.stored_bytes().unwrap(), 4096);
@@ -1134,7 +1202,7 @@ mod tests {
         let rot: Arc<dyn MediaAdapter> = Arc::new(Rot(MemoryMedia::new()));
         let v = new_vol(&d, rot.clone());
         // readback catches it at write time: the write fails and the mapping is unchanged
-        assert_eq!(v.write_extent(ExtentId(0), &fill(0, 5)).unwrap_err().code, ErrorCode::Corruption);
+        assert_eq!(v.write_extent(ExtentId(0), &fill(0, 5), 1000).unwrap_err().code, ErrorCode::Corruption);
         assert_eq!(v.mapping(ExtentId(0)).unwrap(), None);
         assert_eq!(rot.list().unwrap(), vec![marker_ref()], "the bad generation was removed");
         drop(v);
@@ -1142,7 +1210,7 @@ mod tests {
         let d2 = TempDir::new("vol");
         let cfg = VolumeConfig { verify_readback: false, ..Default::default() };
         let v = Volume::create(&d2.0, geo(), [1; 16], 0, Arc::new(Rot(MemoryMedia::new())), cfg).unwrap();
-        v.write_extent(ExtentId(0), &fill(0, 5)).unwrap();
+        v.write_extent(ExtentId(0), &fill(0, 5), 1000).unwrap();
         assert_eq!(v.read_extent(ExtentId(0)).unwrap_err().code, ErrorCode::Corruption);
         assert_eq!(v.stats.integrity_failures.load(Ordering::Relaxed), 1);
     }
@@ -1163,10 +1231,10 @@ mod tests {
             let d = TempDir::new("crash");
             let m: Arc<dyn MediaAdapter> = Arc::new(MemoryMedia::new());
             let v = new_vol(&d, m.clone());
-            v.write_extent(ExtentId(0), &fill(0, 1)).unwrap();
-            v.write_extent(ExtentId(2), &fill(2, 2)).unwrap();
+            v.write_extent(ExtentId(0), &fill(0, 1), 1000).unwrap();
+            v.write_extent(ExtentId(2), &fill(2, 2), 1001).unwrap();
             let v = v.with_fault_hook(crash_at(stage));
-            assert!(v.write_extent(ExtentId(0), &fill(0, 3)).is_err(), "{stage:?}");
+            assert!(v.write_extent(ExtentId(0), &fill(0, 3), 1002).is_err(), "{stage:?}");
             assert_eq!(v.read_extent(ExtentId(2)).unwrap_err().code, ErrorCode::ShuttingDown, "a crashed volume is dead");
             drop(v);
             let (v, r) = Volume::open(&d.0, m.clone(), VolumeConfig::default()).unwrap();
@@ -1179,7 +1247,7 @@ mod tests {
             assert_eq!(m.list().unwrap().len(), 2 + 1, "{stage:?}: exactly the live generations (+ the marker) remain");
             assert_eq!(v.stored_bytes().unwrap(), 2048 + 1024);
             // the volume keeps working after recovery, and generation numbers are not reused
-            let o = v.write_extent(ExtentId(0), &fill(0, 4)).unwrap();
+            let o = v.write_extent(ExtentId(0), &fill(0, 4), 1003).unwrap();
             assert!(o.generation.get() >= 3, "{stage:?}");
             drop(v);
             let (v, r) = Volume::open(&d.0, m.clone(), VolumeConfig::default()).unwrap();
@@ -1193,14 +1261,14 @@ mod tests {
         let d = TempDir::new("vol");
         let m: Arc<dyn MediaAdapter> = Arc::new(MemoryMedia::new());
         let v = new_vol(&d, m.clone());
-        let g = v.write_extent(ExtentId(1), &fill(1, 6)).unwrap().generation;
+        let g = v.write_extent(ExtentId(1), &fill(1, 6), 1000).unwrap().generation;
         drop(v);
         m.remove(GenerationRef { extent: ExtentId(1), generation: g }).unwrap();
         let (v, r) = Volume::open(&d.0, m.clone(), VolumeConfig::default()).unwrap();
         assert_eq!(r.damaged, vec![ExtentId(1)]);
         assert_eq!(v.read_extent(ExtentId(1)).unwrap_err().code, ErrorCode::Corruption);
         // rewriting the extent repairs it
-        v.write_extent(ExtentId(1), &fill(1, 7)).unwrap();
+        v.write_extent(ExtentId(1), &fill(1, 7), 1001).unwrap();
         assert_eq!(v.read_extent(ExtentId(1)).unwrap(), fill(1, 7));
         assert!(v.damaged().unwrap().is_empty());
     }
@@ -1210,7 +1278,7 @@ mod tests {
         let d = TempDir::new("vol");
         let m: Arc<dyn MediaAdapter> = Arc::new(MemoryMedia::new());
         let v = new_vol(&d, m.clone());
-        v.write_extent(ExtentId(0), &fill(0, 1)).unwrap();
+        v.write_extent(ExtentId(0), &fill(0, 1), 1000).unwrap();
         drop(v);
         // a map update claiming a previous generation the map does not have
         let mut j = Journal::open(&d.0.join(JOURNAL_FILE)).unwrap().journal;
@@ -1227,11 +1295,11 @@ mod tests {
         let m: Arc<dyn MediaAdapter> = Arc::new(MemoryMedia::new());
         let v = new_vol(&d, m.clone());
         for i in 0..20u8 {
-            v.write_extent(ExtentId(u64::from(i % 3)), &fill(u64::from(i % 3), i)).unwrap();
+            v.write_extent(ExtentId(u64::from(i % 3)), &fill(u64::from(i % 3), i), 1000 + i as i64).unwrap();
         }
         let saved = v.compact().unwrap();
         assert!(saved > 0);
-        v.write_extent(ExtentId(2), &fill(2, 99)).unwrap();
+        v.write_extent(ExtentId(2), &fill(2, 99), 1100).unwrap();
         drop(v);
         let (v, r) = Volume::open(&d.0, m, VolumeConfig::default()).unwrap();
         assert_eq!(r.records_replayed, 1 + 3 + 2);
@@ -1245,9 +1313,9 @@ mod tests {
         let (da, db) = (TempDir::new("vol"), TempDir::new("vol"));
         let (ma, mb): (Arc<dyn MediaAdapter>, Arc<dyn MediaAdapter>) = (Arc::new(MemoryMedia::new()), Arc::new(MemoryMedia::new()));
         let a = new_vol(&da, ma.clone());
-        a.write_extent(ExtentId(0), &fill(0, 1)).unwrap();
+        a.write_extent(ExtentId(0), &fill(0, 1), 1000).unwrap();
         let b = Volume::create(&db.0, geo(), [9; 16], 0, mb.clone(), VolumeConfig::default()).unwrap();
-        b.write_extent(ExtentId(1), &fill(1, 2)).unwrap();
+        b.write_extent(ExtentId(1), &fill(1, 2), 1001).unwrap();
         drop((a, b));
         let before = mb.list().unwrap();
         assert_eq!(Volume::open(&da.0, mb.clone(), VolumeConfig::default()).err().unwrap().code, ErrorCode::InvalidArgument);
@@ -1261,7 +1329,7 @@ mod tests {
         let d = TempDir::new("vol");
         let m: Arc<dyn MediaAdapter> = Arc::new(MemoryMedia::new());
         let v = new_vol(&d, m.clone());
-        v.write_extent(ExtentId(0), &fill(0, 1)).unwrap();
+        v.write_extent(ExtentId(0), &fill(0, 1), 1000).unwrap();
         drop(v);
         let stray = GenerationRef { extent: ExtentId(50), generation: Generation::FIRST };
         m.put(stray, b"not ours").unwrap();
@@ -1280,7 +1348,7 @@ mod tests {
         let m: Arc<dyn MediaAdapter> = Arc::new(MemoryMedia::new());
         let v = new_vol(&d, m.clone());
         for e in 0..3 {
-            v.write_extent(ExtentId(e), &fill(e, 4)).unwrap();
+            v.write_extent(ExtentId(e), &fill(e, 4), 1000 + e as i64).unwrap();
         }
         drop(v);
         let p = d.0.join(JOURNAL_FILE);
@@ -1322,8 +1390,8 @@ mod tests {
         let d = TempDir::new("vol");
         let m: Arc<dyn MediaAdapter> = Arc::new(MemoryMedia::new());
         let v = new_vol(&d, m.clone());
-        v.write_extent(ExtentId(0), &fill(0, 1)).unwrap();
-        v.write_extent(ExtentId(0), &fill(0, 2)).unwrap(); // generation 2 live, 1 released
+        v.write_extent(ExtentId(0), &fill(0, 1), 1000).unwrap();
+        v.write_extent(ExtentId(0), &fill(0, 2), 1001).unwrap(); // generation 2 live, 1 released
         drop(v);
         let live = GenerationRef { extent: ExtentId(0), generation: Generation::new(2).unwrap() };
         append(&d, Record::GenerationReleased(GenerationReleased { txid: 100, at: live }));
@@ -1332,8 +1400,8 @@ mod tests {
         let d2 = TempDir::new("vol");
         let m2: Arc<dyn MediaAdapter> = Arc::new(MemoryMedia::new());
         let v = new_vol(&d2, m2.clone());
-        v.write_extent(ExtentId(0), &fill(0, 1)).unwrap();
-        v.write_extent(ExtentId(0), &fill(0, 2)).unwrap();
+        v.write_extent(ExtentId(0), &fill(0, 1), 1000).unwrap();
+        v.write_extent(ExtentId(0), &fill(0, 2), 1001).unwrap();
         drop(v);
         // remap from 2 back to the already-used generation 1... expressed as previous=2 -> generation 1 is invalid
         // at the record level, so reuse is a map update of a NEW extent-local number not above the last one
@@ -1407,7 +1475,7 @@ mod tests {
         let m: Arc<dyn MediaAdapter> = Arc::new(MemoryMedia::new());
         let v = new_vol(&d, m.clone());
         for e in 0..3 {
-            v.write_extent(ExtentId(e), &fill(e, 1)).unwrap();
+            v.write_extent(ExtentId(e), &fill(e, 1), 1000 + e as i64).unwrap();
         }
         let (a, b, c) = patches(9);
         let ps = [
@@ -1415,7 +1483,7 @@ mod tests {
             Patch { extent: ExtentId(1), offset: 0, data: &b },
             Patch { extent: ExtentId(2), offset: 0, data: &c },
         ];
-        assert_eq!(v.write_extents(&ps).unwrap(), WriteState::Verified);
+        assert_eq!(v.write_extents(&ps, 1100).unwrap(), WriteState::Verified);
         expect_all(&v, 1, Some(9));
         assert_eq!(m.list().unwrap().len(), 3 + 1, "the three old generations were released");
         drop(v);
@@ -1430,7 +1498,7 @@ mod tests {
             vec![Patch { extent: ExtentId(2), offset: 1020, data: &a }],
             vec![Patch { extent: ExtentId(5), offset: 0, data: &c }],
         ] {
-            assert!(v.write_extents(&bad).is_err());
+            assert!(v.write_extents(&bad, 1101).is_err());
         }
         expect_all(&v, 1, Some(9));
     }
@@ -1448,7 +1516,7 @@ mod tests {
             let m: Arc<dyn MediaAdapter> = Arc::new(MemoryMedia::new());
             let v = new_vol(&d, m.clone());
             for e in 0..3 {
-                v.write_extent(ExtentId(e), &fill(e, 1)).unwrap();
+                v.write_extent(ExtentId(e), &fill(e, 1), 1000 + e as i64).unwrap();
             }
             let v = v.with_fault_hook(crash_at(stage));
             let (a, b, c) = patches(9);
@@ -1457,7 +1525,7 @@ mod tests {
                 Patch { extent: ExtentId(1), offset: 0, data: &b },
                 Patch { extent: ExtentId(2), offset: 0, data: &c },
             ];
-            assert!(v.write_extents(&ps).is_err(), "{stage:?}");
+            assert!(v.write_extents(&ps, 1100).is_err(), "{stage:?}");
             drop(v);
             let (v, r) = Volume::open(&d.0, m.clone(), VolumeConfig::default()).unwrap();
             expect_all(&v, 1, expect_new.then_some(9));
@@ -1475,7 +1543,7 @@ mod tests {
             let m: Arc<dyn MediaAdapter> = fm.clone();
             let v = new_vol(&d, m.clone());
             for e in 0..3 {
-                v.write_extent(ExtentId(e), &fill(e, 1)).unwrap();
+                v.write_extent(ExtentId(e), &fill(e, 1), 1000 + e as i64).unwrap();
             }
             let before = (m.list().unwrap(), v.stored_bytes().unwrap());
             fm.fail_in(nth);
@@ -1485,10 +1553,10 @@ mod tests {
                 Patch { extent: ExtentId(1), offset: 0, data: &b },
                 Patch { extent: ExtentId(2), offset: 0, data: &c },
             ];
-            assert_eq!(v.write_extents(&ps).unwrap_err().code, ErrorCode::BackendUnavailable, "put {nth}");
+            assert_eq!(v.write_extents(&ps, 1100).unwrap_err().code, ErrorCode::BackendUnavailable, "put {nth}");
             expect_all(&v, 1, None);
             assert_eq!((m.list().unwrap(), v.stored_bytes().unwrap()), before, "put {nth}: no trace");
-            assert_eq!(v.write_extents(&ps).unwrap(), WriteState::Verified, "the volume keeps working");
+            assert_eq!(v.write_extents(&ps, 1101).unwrap(), WriteState::Verified, "the volume keeps working");
             expect_all(&v, 1, Some(9));
         }
     }
@@ -1500,7 +1568,7 @@ mod tests {
         let m: Arc<dyn MediaAdapter> = Arc::new(MemoryMedia::new());
         let v = Volume::create(&d.0, geo(), [1; 16], 0, m.clone(), cfg).unwrap();
         for e in 0..3 {
-            v.write_extent(ExtentId(e), &fill(e, 1)).unwrap();
+            v.write_extent(ExtentId(e), &fill(e, 1), 1000 + e as i64).unwrap();
         }
         let (a, b, c) = patches(9);
         let ps = [
@@ -1508,7 +1576,7 @@ mod tests {
             Patch { extent: ExtentId(1), offset: 0, data: &b },
             Patch { extent: ExtentId(2), offset: 0, data: &c },
         ];
-        assert_eq!(v.write_extents(&ps).unwrap_err().code, ErrorCode::NoSpace);
+        assert_eq!(v.write_extents(&ps, 1100).unwrap_err().code, ErrorCode::NoSpace);
         expect_all(&v, 1, None);
         assert_eq!(m.list().unwrap().len(), 3 + 1);
     }
@@ -1518,7 +1586,7 @@ mod tests {
         let d = TempDir::new("batch-replay");
         let m: Arc<dyn MediaAdapter> = Arc::new(MemoryMedia::new());
         let v = new_vol(&d, m.clone());
-        v.write_extent(ExtentId(0), &fill(0, 1)).unwrap();
+        v.write_extent(ExtentId(0), &fill(0, 1), 1000).unwrap();
         drop(v);
         // the second entry claims a previous generation extent 1 never had: the whole journal is refused
         let e = |x: u64, g: u64, p: u64| BatchEntry {
@@ -1538,21 +1606,21 @@ mod tests {
         let m: Arc<dyn MediaAdapter> = fm.clone();
         let v = new_vol(&d, m.clone());
         for i in 0..5u8 {
-            v.write_extent(ExtentId(0), &fill(0, i)).unwrap(); // generations 1..=5, 5 live
+            v.write_extent(ExtentId(0), &fill(0, i), 1000 + i as i64).unwrap(); // generations 1..=5, 5 live
         }
         // extent 1: a write that never committed (generation 1 used, nothing mapped)
         fm.fail_in(1);
-        assert!(v.write_extent(ExtentId(1), &fill(1, 1)).is_err());
+        assert!(v.write_extent(ExtentId(1), &fill(1, 1), 1100).is_err());
         v.compact().unwrap();
         // a later write between compaction and reopen, and one after
-        assert_eq!(v.write_extent(ExtentId(0), &fill(0, 6)).unwrap().generation.get(), 6);
+        assert_eq!(v.write_extent(ExtentId(0), &fill(0, 6), 1101).unwrap().generation.get(), 6);
         drop(v);
         let (v, _) = Volume::open(&d.0, m.clone(), VolumeConfig::default()).unwrap();
         v.compact().unwrap();
         drop(v);
         let (v, _) = Volume::open(&d.0, m.clone(), VolumeConfig::default()).unwrap();
-        assert_eq!(v.write_extent(ExtentId(0), &fill(0, 7)).unwrap().generation.get(), 7);
-        assert_eq!(v.write_extent(ExtentId(1), &fill(1, 2)).unwrap().generation.get(), 2, "generation 1 of extent 1 was used");
+        assert_eq!(v.write_extent(ExtentId(0), &fill(0, 7), 1102).unwrap().generation.get(), 7);
+        assert_eq!(v.write_extent(ExtentId(1), &fill(1, 2), 1103).unwrap().generation.get(), 2, "generation 1 of extent 1 was used");
         assert_eq!(v.read_extent(ExtentId(0)).unwrap(), fill(0, 7));
     }
 
@@ -1561,7 +1629,7 @@ mod tests {
         let d = TempDir::new("vol-p3");
         let m: Arc<dyn MediaAdapter> = Arc::new(MemoryMedia::new());
         let v = new_vol(&d, m.clone());
-        v.write_extent(ExtentId(1), &fill(1, 5)).unwrap();
+        v.write_extent(ExtentId(1), &fill(1, 5), 1000).unwrap();
         drop(v);
         // rewrite the journal in the old layout: every record once
         let p = d.0.join(JOURNAL_FILE);

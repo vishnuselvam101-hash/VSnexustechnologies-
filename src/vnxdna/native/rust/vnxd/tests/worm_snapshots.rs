@@ -81,8 +81,8 @@ fn snapshot_pins_current_mapping() {
     // Write some data
     let data1 = data_for_extent(1, 1);
     let data2 = data_for_extent(2, 1);
-    vol.write_extent(ExtentId(1), &data1).unwrap();
-    vol.write_extent(ExtentId(2), &data2).unwrap();
+    vol.write_extent(ExtentId(1), &data1, 1000).unwrap();
+    vol.write_extent(ExtentId(2), &data2, 1000).unwrap();
 
     // Create a snapshot
     let snap_info = vol.snapshot("snap1", 1000).unwrap();
@@ -96,8 +96,8 @@ fn snapshot_pins_current_mapping() {
     // Overwrite the extents
     let new_data1 = data_for_extent(1, 2);
     let new_data2 = data_for_extent(2, 2);
-    vol.write_extent(ExtentId(1), &new_data1).unwrap();
-    vol.write_extent(ExtentId(2), &new_data2).unwrap();
+    vol.write_extent(ExtentId(1), &new_data1, 1000).unwrap();
+    vol.write_extent(ExtentId(2), &new_data2, 1000).unwrap();
 
     // Read from snapshot - should get old data
     let snap_data1 = vol.read_snapshot_extent(snap_info.id, ExtentId(1)).unwrap();
@@ -118,7 +118,7 @@ fn snapshot_not_found_for_unpinned_extent() {
 
     // Write extent 1 only
     let data1 = data_for_extent(1, 1);
-    vol.write_extent(ExtentId(1), &data1).unwrap();
+    vol.write_extent(ExtentId(1), &data1, 1000).unwrap();
 
     // Create snapshot
     let snap_info = vol.snapshot("snap1", 1000).unwrap();
@@ -133,7 +133,7 @@ fn snapshots_list() {
     let (vol, _media) = create_volume(3);
 
     let data1 = data_for_extent(1, 1);
-    vol.write_extent(ExtentId(1), &data1).unwrap();
+    vol.write_extent(ExtentId(1), &data1, 1000).unwrap();
 
     // Create multiple snapshots
     let snap1 = vol.snapshot("snap1", 1000).unwrap();
@@ -157,13 +157,13 @@ fn release_snapshot_removes_pins() {
     let (vol, _media) = create_volume(4);
 
     let data1 = data_for_extent(1, 1);
-    vol.write_extent(ExtentId(1), &data1).unwrap();
+    vol.write_extent(ExtentId(1), &data1, 1000).unwrap();
 
     let snap_info = vol.snapshot("snap1", 1000).unwrap();
 
     // Overwrite extent
     let new_data = data_for_extent(1, 2);
-    vol.write_extent(ExtentId(1), &new_data).unwrap();
+    vol.write_extent(ExtentId(1), &new_data, 1000).unwrap();
 
     // Verify snapshot still works
     let snap_data = vol.read_snapshot_extent(snap_info.id, ExtentId(1)).unwrap();
@@ -191,12 +191,12 @@ fn snapshot_read_returns_pre_overwrite_bytes() {
     let replacement = data_for_extent(0, 2);
     assert_ne!(original, replacement, "the overwrite must really change the bytes");
 
-    vol.write_extent(ExtentId(0), &original).unwrap();
+    vol.write_extent(ExtentId(0), &original, 1000).unwrap();
     let snap_info = vol.snapshot("snap1", 1000).unwrap();
     assert_eq!(snap_info.extents, 1);
 
     // The overwrite writes a NEW generation; the pinned one is still live data
-    let outcome = vol.write_extent(ExtentId(0), &replacement).unwrap();
+    let outcome = vol.write_extent(ExtentId(0), &replacement, 1000).unwrap();
     assert_eq!(outcome.generation.get(), 2);
     let pinned = GenerationRef { extent: ExtentId(0), generation: Generation::FIRST };
     assert!(media.list().unwrap().contains(&pinned), "the overwrite must not release the pinned generation");
@@ -216,7 +216,7 @@ fn snapshot_survives_reopen() {
     let (vol, media) = create_volume(6);
 
     let data = data_for_extent(0, 1);
-    vol.write_extent(ExtentId(0), &data).unwrap();
+    vol.write_extent(ExtentId(0), &data, 1000).unwrap();
     let snap_info = vol.snapshot("snap1", 1000).unwrap();
     drop(vol);
 
@@ -246,11 +246,11 @@ fn pinned_generation_is_not_collected_as_orphan() {
 
     let original = data_for_extent(0, 1);
     let replacement = data_for_extent(0, 2);
-    vol.write_extent(ExtentId(0), &original).unwrap();
+    vol.write_extent(ExtentId(0), &original, 1000).unwrap();
     let snap_info = vol.snapshot("snap1", 1000).unwrap();
 
     // The overwrite leaves the pinned generation in the backend, unreferenced by the map
-    vol.write_extent(ExtentId(0), &replacement).unwrap();
+    vol.write_extent(ExtentId(0), &replacement, 1000).unwrap();
     drop(vol);
 
     let (vol, report) = Volume::open(&dir.0, media.clone(), VolumeConfig::default()).unwrap();
@@ -272,11 +272,11 @@ fn release_snapshot_under_retention_is_refused_and_keeps_snapshot() {
     let (vol, media) = create_volume(8);
 
     let original = data_for_extent(0, 1);
-    vol.write_extent(ExtentId(0), &original).unwrap();
+    vol.write_extent(ExtentId(0), &original, 1000).unwrap();
     let snap_info = vol.snapshot("snap1", 1000).unwrap();
     // The extent is overwritten afterwards: the pinned generation is no longer the live one, so a release that
     // removed before it checked the policy would drop it from the backend
-    vol.write_extent(ExtentId(0), &data_for_extent(0, 2)).unwrap();
+    vol.write_extent(ExtentId(0), &data_for_extent(0, 2), 1000).unwrap();
     drop(vol);
 
     // A retention policy for the snapshot, not yet expired
@@ -304,10 +304,10 @@ fn release_snapshot_after_retention_expires_succeeds() {
     let (vol, media) = create_volume(9);
 
     let data = data_for_extent(0, 1);
-    vol.write_extent(ExtentId(0), &data).unwrap();
+    vol.write_extent(ExtentId(0), &data, 1000).unwrap();
     let snap_info = vol.snapshot("snap1", 1000).unwrap();
     // The extent is overwritten, so the pinned generation is no longer the live one
-    vol.write_extent(ExtentId(0), &data_for_extent(0, 2)).unwrap();
+    vol.write_extent(ExtentId(0), &data_for_extent(0, 2), 1000).unwrap();
     drop(vol);
 
     // A retention policy that has expired
@@ -341,10 +341,10 @@ fn snapshot_read_of_a_tampered_extent_is_refused() {
     // The device marker was already put, so the next put is the extent: the backend stores other bytes than it
     // was given, with an honest receipt
     media.add(Rule { op: MediaOp::Put, fault: Fault::SilentCorruptWrite, skip: 0, times: 1 });
-    vol.write_extent(ExtentId(0), &original).unwrap();
+    vol.write_extent(ExtentId(0), &original, 1000).unwrap();
     let snap_info = vol.snapshot("snap1", 1000).unwrap();
     // The extent is overwritten, so the map no longer holds the digest of the pinned generation
-    vol.write_extent(ExtentId(0), &data_for_extent(0, 2)).unwrap();
+    vol.write_extent(ExtentId(0), &data_for_extent(0, 2), 1000).unwrap();
 
     // The stored bytes are not the ones the snapshot pinned: the read must refuse them, never return them
     let err = vol.read_snapshot_extent(snap_info.id, ExtentId(0)).unwrap_err();
@@ -360,9 +360,9 @@ fn snapshot_read_of_rotted_bytes_is_refused() {
     let vol = Volume::create(&dir.0, geo, [11; 16], 0, media.clone(), VolumeConfig::default()).unwrap();
 
     let original = data_for_extent(0, 1);
-    vol.write_extent(ExtentId(0), &original).unwrap();
+    vol.write_extent(ExtentId(0), &original, 1000).unwrap();
     let snap_info = vol.snapshot("snap1", 1000).unwrap();
-    vol.write_extent(ExtentId(0), &data_for_extent(0, 2)).unwrap();
+    vol.write_extent(ExtentId(0), &data_for_extent(0, 2), 1001).unwrap();
 
     // The next read of the backend comes back with one bit flipped
     media.add(Rule { op: MediaOp::Get, fault: Fault::BitRot, skip: 0, times: 1 });
@@ -385,7 +385,7 @@ fn release_snapshot_under_retention_is_refused_for_every_pinned_extent() {
     let (vol, media) = create_volume(12);
 
     let data = data_for_extent(1, 1);
-    vol.write_extent(ExtentId(1), &data).unwrap();
+    vol.write_extent(ExtentId(1), &data, 1000).unwrap();
     let snap_info = vol.snapshot("snap1", 1000).unwrap();
     drop(vol);
 
@@ -411,7 +411,7 @@ fn releasing_a_snapshot_of_the_live_generation_keeps_the_volume_openable() {
     let (vol, media) = create_volume(13);
 
     let data = data_for_extent(1, 1);
-    vol.write_extent(ExtentId(1), &data).unwrap();
+    vol.write_extent(ExtentId(1), &data, 1000).unwrap();
     let snap_info = vol.snapshot("snap1", 1000).unwrap();
 
     // The extent is not overwritten: the snapshot pins the generation the map still points at

@@ -236,7 +236,9 @@ impl ExtentCache {
                 if !copy.intact() {
                     continue; // a dirty copy failing its checksum is never written back; the next flush handles it
                 }
-                if self.vol.write_extent(victim, copy.buf.as_slice()).is_err() {
+                // Cache writeback uses i64::MAX as now_ms: retention only blocks writes when now_ms < until_ms.
+                // Since writeback persists already-committed data, it must not be blocked by retention.
+                if self.vol.write_extent(victim, copy.buf.as_slice(), i64::MAX).is_err() {
                     self.stats.writeback_failures.fetch_add(1, Ordering::Relaxed);
                     continue; // keep it dirty; try another victim
                 }
@@ -384,7 +386,7 @@ impl ExtentCache {
         }
     }
 
-    fn write_locked(&self, e: ExtentId, data: &[u8], held: &Held<'_>) -> Result<WriteState> {
+    fn write_locked(&self, e: ExtentId, data: &[u8], now_ms: i64, held: &Held<'_>) -> Result<WriteState> {
         let len = self.vol.geometry().extent_len(e)?;
         if data.len() as u64 != len {
             return err(ErrorCode::InvalidArgument, format!("extent {} holds {len} bytes, got {}", e.0, data.len()));
@@ -394,7 +396,7 @@ impl ExtentCache {
             return Ok(WriteState::Staged);
         }
         // write-through, or write-back without room (then no copy of `e` exists: install overwrites in place)
-        match self.vol.write_extent(e, data) {
+        match self.vol.write_extent(e, data, now_ms) {
             Ok(o) => {
                 self.inner().lost.remove(&e);
                 self.install(e, data, false, held);
@@ -415,7 +417,7 @@ impl ExtentCache {
     /// Several extents in one volume transaction (both modes): the new contents are built from the cached view (so
     /// a dirty copy's data is part of what becomes durable), committed by `Volume::write_extents`, then installed as
     /// clean copies. On failure the volume is unchanged; clean copies are dropped and dirty copies kept.
-    fn write_many_locked(&self, patches: &[Patch<'_>], held: &Held<'_>) -> Result<WriteState> {
+    fn write_many_locked(&self, patches: &[Patch<'_>], now_ms: i64, held: &Held<'_>) -> Result<WriteState> {
         let geometry = self.vol.geometry();
         let mut contents: Vec<Vec<u8>> = Vec::with_capacity(patches.len());
         for p in patches {
@@ -434,7 +436,7 @@ impl ExtentCache {
         }
         let whole: Vec<Patch<'_>> =
             patches.iter().zip(&contents).map(|(p, c)| Patch { extent: p.extent, offset: 0, data: c }).collect();
-        match self.vol.write_extents(&whole) {
+        match self.vol.write_extents(&whole, now_ms) {
             Ok(ws) => {
                 for (p, c) in patches.iter().zip(&contents) {
                     self.inner().lost.remove(&p.extent);
@@ -472,7 +474,8 @@ impl ExtentCache {
                 self.lose(&mut inner, e);
                 continue;
             }
-            if let Err(x) = self.vol.write_extent(e, copy.buf.as_slice()) {
+            // Flush is internal writeback: use i64::MAX to allow writes past retention deadlines.
+            if let Err(x) = self.vol.write_extent(e, copy.buf.as_slice(), i64::MAX) {
                 self.stats.writeback_failures.fetch_add(1, Ordering::Relaxed);
                 return Err(x);
             }
@@ -502,7 +505,8 @@ impl ExtentCache {
                 self.lose(&mut inner, e);
                 return Self::lost_error(e);
             }
-            self.vol.write_extent(e, copy.buf.as_slice())?;
+            // Invalidate writeback is internal: use i64::MAX to allow writes past retention deadlines.
+            self.vol.write_extent(e, copy.buf.as_slice(), i64::MAX)?;
         }
         self.inner().remove(e);
         Ok(())
@@ -537,30 +541,30 @@ impl ExtentStore for ExtentCache {
         self.read_locked(extent, &Held { stripes: &[Self::stripe_of(extent)], extents: &[extent] })
     }
 
-    fn write_extent(&self, extent: ExtentId, data: &[u8]) -> Result<WriteState> {
+    fn write_extent(&self, extent: ExtentId, data: &[u8], now_ms: i64) -> Result<WriteState> {
         let _g = self.lock(extent)?;
-        self.write_locked(extent, data, &Held { stripes: &[Self::stripe_of(extent)], extents: &[extent] })
+        self.write_locked(extent, data, now_ms, &Held { stripes: &[Self::stripe_of(extent)], extents: &[extent] })
     }
 
-    fn modify_extent(&self, extent: ExtentId, patch: &mut dyn FnMut(&mut [u8])) -> Result<WriteState> {
+    fn modify_extent(&self, extent: ExtentId, patch: &mut dyn FnMut(&mut [u8]), now_ms: i64) -> Result<WriteState> {
         let _g = self.lock(extent)?;
         let held = Held { stripes: &[Self::stripe_of(extent)], extents: &[extent] };
         let mut data = self.read_locked(extent, &held)?;
         patch(&mut data);
-        self.write_locked(extent, &data, &held)
+        self.write_locked(extent, &data, now_ms, &held)
     }
 
-    fn write_extents(&self, patches: &[Patch<'_>]) -> Result<WriteState> {
+    fn write_extents(&self, patches: &[Patch<'_>], now_ms: i64) -> Result<WriteState> {
         if let [p] = patches {
             let len = self.vol.geometry().extent_len(p.extent)?;
             if p.offset == 0 && p.data.len() as u64 == len {
-                return self.write_extent(p.extent, p.data);
+                return self.write_extent(p.extent, p.data, now_ms);
             }
             if p.data.is_empty() || p.offset.checked_add(p.data.len() as u64).map_or(true, |end| end > len) {
                 return err(ErrorCode::InvalidArgument, format!("patch of extent {} outside its {len} bytes", p.extent.0));
             }
             let at = p.offset as usize;
-            return self.modify_extent(p.extent, &mut |b: &mut [u8]| b[at..at + p.data.len()].copy_from_slice(p.data));
+            return self.modify_extent(p.extent, &mut |b: &mut [u8]| b[at..at + p.data.len()].copy_from_slice(p.data), now_ms);
         }
         if patches.is_empty() || patches.windows(2).any(|w| w[0].extent >= w[1].extent) {
             return err(ErrorCode::InvalidArgument, "patched extents must be non-empty and strictly increasing");
@@ -574,7 +578,7 @@ impl ExtentStore for ExtentCache {
             guards.push(self.stripes[*i].lock().or_else(|_| err(ErrorCode::Internal, "cache lock poisoned"))?);
         }
         let extents: Vec<ExtentId> = patches.iter().map(|p| p.extent).collect();
-        let r = self.write_many_locked(patches, &Held { stripes: &idx, extents: &extents });
+        let r = self.write_many_locked(patches, now_ms, &Held { stripes: &idx, extents: &extents });
         drop(guards);
         r
     }
@@ -652,7 +656,7 @@ mod tests {
     fn read_through_hits_and_lru_eviction_within_the_quota() {
         let r = rig(CacheMode::WriteThrough, 8); // room for two extents (each leases a 4 KiB allocation)
         for e in 0..3 {
-            r.cache.write_extent(ExtentId(e), &ext(e, e as u8 + 1)).unwrap();
+            r.cache.write_extent(ExtentId(e), &ext(e, e as u8 + 1), 1000).unwrap();
         }
         assert_eq!(r.cache.cached_extents(), 2, "the quota holds two extents");
         assert!(r.ram.usage(Subsystem::Cache).peak <= 8 << 10);
@@ -668,9 +672,9 @@ mod tests {
     #[test]
     fn write_through_is_durable_and_a_failed_write_never_leaves_a_stale_copy() {
         let r = rig(CacheMode::WriteThrough, 64);
-        assert_eq!(r.cache.write_extent(ExtentId(1), &ext(1, 7)).unwrap(), WriteState::Verified);
+        assert_eq!(r.cache.write_extent(ExtentId(1), &ext(1, 7), 1000).unwrap(), WriteState::Verified);
         r.media.down.store(true, Ordering::SeqCst);
-        assert_eq!(r.cache.write_extent(ExtentId(1), &ext(1, 8)).unwrap_err().code, ErrorCode::BackendUnavailable);
+        assert_eq!(r.cache.write_extent(ExtentId(1), &ext(1, 8), 1000).unwrap_err().code, ErrorCode::BackendUnavailable);
         assert_eq!(r.cache.cached_extents(), 0, "the copy was invalidated");
         assert_eq!(r.cache.read_extent(ExtentId(1)).unwrap(), ext(1, 7), "the volume's content, not the failed write");
     }
@@ -678,11 +682,11 @@ mod tests {
     #[test]
     fn checksum_failure_refetches_clean_and_refuses_dirty() {
         let r = rig(CacheMode::WriteBack, 64);
-        r.cache.volume().write_extent(ExtentId(0), &ext(0, 1)).unwrap();
+        r.cache.volume().write_extent(ExtentId(0), &ext(0, 1), 1000).unwrap();
         assert_eq!(r.cache.read_extent(ExtentId(0)).unwrap(), ext(0, 1));
         r.cache.corrupt_copy(ExtentId(0));
         assert_eq!(r.cache.read_extent(ExtentId(0)).unwrap(), ext(0, 1), "a clean copy is re-read from the volume");
-        r.cache.write_extent(ExtentId(2), &ext(2, 9)).unwrap();
+        r.cache.write_extent(ExtentId(2), &ext(2, 9), 1000).unwrap();
         r.cache.corrupt_copy(ExtentId(2));
         assert_eq!(r.cache.read_extent(ExtentId(2)).unwrap_err().code, ErrorCode::Corruption);
         assert_eq!(r.cache.stats.checksum_failures.load(Ordering::Relaxed), 2);
@@ -691,7 +695,7 @@ mod tests {
     #[test]
     fn write_back_acks_staged_and_flush_makes_it_durable() {
         let r = rig(CacheMode::WriteBack, 64);
-        assert_eq!(r.cache.write_extent(ExtentId(3), &ext(3, 5)).unwrap(), WriteState::Staged);
+        assert_eq!(r.cache.write_extent(ExtentId(3), &ext(3, 5), 1000).unwrap(), WriteState::Staged);
         assert_eq!(r.cache.volume().read_extent(ExtentId(3)).unwrap(), ext(3, 0), "not on the volume yet");
         assert_eq!(r.cache.read_extent(ExtentId(3)).unwrap(), ext(3, 5), "but read back from the cache");
         assert_eq!(r.cache.dirty_extents(), vec![ExtentId(3)]);
@@ -704,7 +708,7 @@ mod tests {
     fn interrupted_writeback_keeps_dirty_data_and_a_retry_completes_it() {
         let r = rig(CacheMode::WriteBack, 64);
         for e in 0..4 {
-            r.cache.write_extent(ExtentId(e), &ext(e, 10 + e as u8)).unwrap();
+            r.cache.write_extent(ExtentId(e), &ext(e, 10 + e as u8), 1000).unwrap();
         }
         r.media.down.store(true, Ordering::SeqCst);
         assert_eq!(r.cache.flush().unwrap_err().code, ErrorCode::BackendUnavailable);
@@ -722,15 +726,15 @@ mod tests {
     #[test]
     fn dirty_eviction_writes_back_first_and_full_cache_degrades_to_write_through() {
         let r = rig(CacheMode::WriteBack, 8); // two extents
-        r.cache.write_extent(ExtentId(0), &ext(0, 1)).unwrap();
-        r.cache.write_extent(ExtentId(1), &ext(1, 2)).unwrap();
-        r.cache.write_extent(ExtentId(2), &ext(2, 3)).unwrap(); // evicts extent 0 after writing it back
+        r.cache.write_extent(ExtentId(0), &ext(0, 1), 1000).unwrap();
+        r.cache.write_extent(ExtentId(1), &ext(1, 2), 1000).unwrap();
+        r.cache.write_extent(ExtentId(2), &ext(2, 3), 1000).unwrap(); // evicts extent 0 after writing it back
         assert_eq!(r.cache.volume().read_extent(ExtentId(0)).unwrap(), ext(0, 1));
         assert!(r.cache.stats.writebacks.load(Ordering::Relaxed) >= 1);
         // backend down: dirty victims cannot be written back, so the new write cannot be cached -> write-through,
         // which fails visibly instead of silently dropping data
         r.media.down.store(true, Ordering::SeqCst);
-        assert_eq!(r.cache.write_extent(ExtentId(4), &ext(4, 4)).unwrap_err().code, ErrorCode::BackendUnavailable);
+        assert_eq!(r.cache.write_extent(ExtentId(4), &ext(4, 4), 1000).unwrap_err().code, ErrorCode::BackendUnavailable);
         assert_eq!(r.cache.dirty_extents(), vec![ExtentId(1), ExtentId(2)], "dirty data kept");
         r.media.down.store(false, Ordering::SeqCst);
         r.cache.flush().unwrap();
@@ -751,17 +755,17 @@ mod tests {
     #[test]
     fn acknowledged_write_back_data_survives_an_outage_under_memory_pressure() {
         let r = tight(CacheMode::WriteBack);
-        r.cache.write_extent(ExtentId(0), &ext(0, 1)).unwrap();
-        r.cache.write_extent(ExtentId(1), &ext(1, 2)).unwrap();
+        r.cache.write_extent(ExtentId(0), &ext(0, 1), 1000).unwrap();
+        r.cache.write_extent(ExtentId(1), &ext(1, 2), 1000).unwrap();
         r.media.down.store(true, Ordering::SeqCst);
         // another subsystem cannot take the copies' memory: rewriting e0 updates its copy in place
-        assert_eq!(r.cache.write_extent(ExtentId(0), &ext(0, 3)).unwrap(), WriteState::Staged);
+        assert_eq!(r.cache.write_extent(ExtentId(0), &ext(0, 3), 1000).unwrap(), WriteState::Staged);
         assert_eq!(r.ram.reserve(Subsystem::Io, 1, Wait::No).err().unwrap().code, ErrorCode::ResourceExhausted,
             "the total is fully used by the two copies");
         // a new extent finds no room (both victims dirty, backend down): it fails visibly and drops nothing
-        assert_eq!(r.cache.write_extent(ExtentId(2), &ext(2, 4)).unwrap_err().code, ErrorCode::BackendUnavailable);
+        assert_eq!(r.cache.write_extent(ExtentId(2), &ext(2, 4), 1000).unwrap_err().code, ErrorCode::BackendUnavailable);
         let mut patch = |b: &mut [u8]| b[0] = 9;
-        assert_eq!(r.cache.modify_extent(ExtentId(1), &mut patch).unwrap(), WriteState::Staged);
+        assert_eq!(r.cache.modify_extent(ExtentId(1), &mut patch, 1000).unwrap(), WriteState::Staged);
         assert_eq!(r.cache.read_extent(ExtentId(0)).unwrap(), ext(0, 3));
         assert_eq!(r.cache.read_extent(ExtentId(1)).unwrap()[..2], [9, 2]);
         assert_eq!(r.cache.dirty_extents(), vec![ExtentId(0), ExtentId(1)]);
@@ -775,8 +779,8 @@ mod tests {
     fn a_corrupt_dirty_copy_is_never_written_back() {
         // flush
         let r = rig(CacheMode::WriteBack, 64);
-        r.cache.write_extent(ExtentId(2), &ext(2, 9)).unwrap();
-        r.cache.write_extent(ExtentId(3), &ext(3, 7)).unwrap();
+        r.cache.write_extent(ExtentId(2), &ext(2, 9), 1000).unwrap();
+        r.cache.write_extent(ExtentId(3), &ext(3, 7), 1000).unwrap();
         r.cache.corrupt_copy(ExtentId(2));
         assert_eq!(r.cache.flush().unwrap_err().code, ErrorCode::Corruption);
         assert_eq!(r.cache.volume().read_extent(ExtentId(2)).unwrap(), ext(2, 0), "the corrupt bytes never reached the volume");
@@ -785,15 +789,15 @@ mod tests {
         r.cache.flush().unwrap(); // reported once
         assert_eq!(r.cache.read_extent(ExtentId(2)).unwrap_err().code, ErrorCode::Corruption);
         let mut patch = |b: &mut [u8]| b[0] = 1;
-        assert_eq!(r.cache.modify_extent(ExtentId(2), &mut patch).unwrap_err().code, ErrorCode::Corruption);
-        r.cache.write_extent(ExtentId(2), &ext(2, 5)).unwrap(); // a whole-extent write replaces it
+        assert_eq!(r.cache.modify_extent(ExtentId(2), &mut patch, 1000).unwrap_err().code, ErrorCode::Corruption);
+        r.cache.write_extent(ExtentId(2), &ext(2, 5), 1000).unwrap(); // a whole-extent write replaces it
         assert_eq!(r.cache.read_extent(ExtentId(2)).unwrap(), ext(2, 5));
         // eviction skips it, invalidate refuses it
         let r = tight(CacheMode::WriteBack);
-        r.cache.write_extent(ExtentId(0), &ext(0, 1)).unwrap();
-        r.cache.write_extent(ExtentId(1), &ext(1, 2)).unwrap();
+        r.cache.write_extent(ExtentId(0), &ext(0, 1), 1000).unwrap();
+        r.cache.write_extent(ExtentId(1), &ext(1, 2), 1000).unwrap();
         r.cache.corrupt_copy(ExtentId(0));
-        r.cache.write_extent(ExtentId(2), &ext(2, 3)).unwrap(); // evicts e1 (written back), never e0
+        r.cache.write_extent(ExtentId(2), &ext(2, 3), 1000).unwrap(); // evicts e1 (written back), never e0
         assert_eq!(r.cache.volume().read_extent(ExtentId(0)).unwrap(), ext(0, 0));
         assert_eq!(r.cache.volume().read_extent(ExtentId(1)).unwrap(), ext(1, 2));
         assert_eq!(r.cache.invalidate(ExtentId(0)).unwrap_err().code, ErrorCode::Corruption);
@@ -810,7 +814,7 @@ mod tests {
         cfg.quotas.insert(Subsystem::Cache, 8192);
         let cache = ExtentCache::new(vol, MemoryManager::new(cfg).unwrap(), CacheMode::WriteThrough);
         for e in [0u64, 64, 128] {
-            cache.write_extent(ExtentId(e), &[e as u8; 512]).unwrap();
+            cache.write_extent(ExtentId(e), &[e as u8; 512], 1000).unwrap();
         }
         assert_eq!(cache.cached_extents(), 2);
         assert_eq!(cache.stats.bypasses.load(Ordering::Relaxed), 0);
@@ -836,7 +840,7 @@ mod tests {
                     let (c, done) = (r.cache.clone(), &done);
                     sc.spawn(move || {
                         for v in 1..=40u8 {
-                            c.write_extent(ExtentId(e), &ext(e, v)).unwrap();
+                            c.write_extent(ExtentId(e), &ext(e, v), 1000).unwrap();
                             done[e as usize].store(v as u64, Ordering::SeqCst);
                         }
                     });
@@ -880,7 +884,7 @@ mod tests {
                     assert_eq!(io.read(off, len).unwrap(), &model[off as usize..(off + len) as usize], "{mode:?} {step}");
                 } else {
                     let data: Vec<u8> = (0..len).map(|i| (step + i) as u8).collect();
-                    io.write(off, &data).unwrap();
+                    io.write(off, &data, 1000).unwrap();
                     model[off as usize..(off + len) as usize].copy_from_slice(&data);
                 }
             }
@@ -894,14 +898,14 @@ mod tests {
     fn a_multi_extent_write_through_the_cache_is_one_volume_transaction() {
         for mode in [CacheMode::WriteThrough, CacheMode::WriteBack] {
             let r = rig(mode, 64);
-            r.cache.write_extent(ExtentId(1), &ext(1, 3)).unwrap(); // dirty in write-back mode
+            r.cache.write_extent(ExtentId(1), &ext(1, 3), 1000).unwrap(); // dirty in write-back mode
             let mid = vec![7u8; 2048];
             let ps = [
                 Patch { extent: ExtentId(1), offset: 2000, data: &[7u8; 48] },
                 Patch { extent: ExtentId(2), offset: 0, data: &mid },
                 Patch { extent: ExtentId(3), offset: 0, data: &[7u8; 10] },
             ];
-            let ws = r.cache.write_extents(&ps).unwrap();
+            let ws = r.cache.write_extents(&ps, 1000).unwrap();
             assert_eq!(ws, WriteState::Verified, "{mode:?}: always durable, never only staged");
             assert!(r.cache.dirty_extents().is_empty(), "{mode:?}: the dirty data became durable with the batch");
             let mut e1 = ext(1, 3);
@@ -915,11 +919,11 @@ mod tests {
             // a failing batch leaves the volume and the cached view unchanged
             r.media.down.store(true, Ordering::SeqCst);
             let ps2 = [Patch { extent: ExtentId(2), offset: 0, data: &[9u8; 2048] }, Patch { extent: ExtentId(4), offset: 5, data: &[9u8; 5] }];
-            assert_eq!(r.cache.write_extents(&ps2).unwrap_err().code, ErrorCode::BackendUnavailable);
+            assert_eq!(r.cache.write_extents(&ps2, 1000).unwrap_err().code, ErrorCode::BackendUnavailable);
             r.media.down.store(false, Ordering::SeqCst);
             assert_eq!(r.cache.read_extent(ExtentId(2)).unwrap(), mid, "{mode:?}");
             assert_eq!(r.cache.read_extent(ExtentId(4)).unwrap(), ext(4, 0), "{mode:?}");
-            assert_eq!(r.cache.write_extents(&[ps[1], ps[0]]).unwrap_err().code, ErrorCode::InvalidArgument);
+            assert_eq!(r.cache.write_extents(&[ps[1], ps[0]], 1000).unwrap_err().code, ErrorCode::InvalidArgument);
         }
     }
 
@@ -929,7 +933,7 @@ mod tests {
         let g = Geometry::new(512, 1, 40).unwrap();
         let vol = Arc::new(Volume::create(&d.0, g, [4; 16], 0, Arc::new(MemoryMedia::new()), VolumeConfig::default()).unwrap());
         for e in 0..40 {
-            vol.write_extent(ExtentId(e), &[e as u8; 512]).unwrap();
+            vol.write_extent(ExtentId(e), &[e as u8; 512], 1000).unwrap();
         }
         let mut cfg = RamConfig::split(1 << 20);
         cfg.quotas.insert(Subsystem::Cache, 64 << 10);

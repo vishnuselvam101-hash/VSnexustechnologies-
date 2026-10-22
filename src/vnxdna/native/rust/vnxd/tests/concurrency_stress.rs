@@ -114,7 +114,7 @@ fn run(mode: CacheMode, seed: u64) {
                             }
                         } else {
                             let data: Vec<u8> = (0..len).map(|i| (step * 7 + c * 31 + i) as u8).collect();
-                            q.submit(Op::Write { offset: base + off, data: data.clone() }, None).unwrap().wait().unwrap();
+                            q.submit(Op::Write { offset: base + off, data: data.clone(), now_ms: 1000 }, None).unwrap().wait().unwrap();
                             model[off as usize..(off + len) as usize].copy_from_slice(&data);
                         }
                         if step % 50 == 49 {
