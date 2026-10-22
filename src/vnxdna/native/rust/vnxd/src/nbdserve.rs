@@ -31,7 +31,7 @@ use crate::json::{obj, Value};
 use crate::media::{CommitReceipt, MediaAdapter, MediaInfo};
 use crate::nbd::{self, ExportInfo, Negotiated, Request};
 use crate::ram::{MemoryManager, RamConfig, Subsystem};
-use crate::volume::{RecoveryReport, Volume, VolumeConfig};
+use crate::volume::{RecoveryReport, ScrubReport, Volume, VolumeConfig};
 use std::collections::{HashMap, HashSet};
 use std::io::{Read, Write};
 use std::os::unix::net::UnixStream;
@@ -282,6 +282,9 @@ pub struct Device {
     last_error: Mutex<Option<String>>,
     /// the space the device's store holds (tracked only when the store has a bound)
     space: Mutex<StoreSpace>,
+    /// the report of the last scrub of the volume and the time it ran (the caller gives the time: the service never
+    /// reads the wall clock itself)
+    last_scrub: Mutex<Option<(ScrubReport, i64)>>,
     /// set when the request path failed in a way that needs an operator (a panicked server thread)
     failed: AtomicBool,
     recovery: RecoveryReport,
@@ -342,6 +345,7 @@ impl Device {
             stats: DeviceStats::default(),
             last_error: Mutex::new(None),
             space: Mutex::new(StoreSpace::default()),
+            last_scrub: Mutex::new(None),
             failed: AtomicBool::new(false),
             recovery,
         })
@@ -357,6 +361,25 @@ impl Device {
 
     pub fn gate(&self) -> Option<&Arc<FaultGate>> {
         self.gate.as_ref()
+    }
+
+    /// The health of the backend the volume writes to (a snapshot; the counters move on their own).
+    pub fn backend_health(&self) -> crate::fallback::Health {
+        self.media.health()
+    }
+
+    /// Scrub the volume now: every extent of the map is read back and checked. The report is remembered with the
+    /// time of the run (`unix_ms`, given by the caller: the service never reads the wall clock itself), so the
+    /// metrics can report the last scrub.
+    pub fn run_scrub(&self, unix_ms: i64) -> Result<ScrubReport> {
+        let report = self.volume.scrub()?;
+        *self.last_scrub.lock().unwrap_or_else(|p| p.into_inner()) = Some((report.clone(), unix_ms));
+        Ok(report)
+    }
+
+    /// The report of the last scrub and the time it ran, if a scrub ran.
+    pub fn last_scrub(&self) -> Option<(ScrubReport, i64)> {
+        self.last_scrub.lock().unwrap_or_else(|p| p.into_inner()).clone()
     }
 
     pub fn mark_failed(&self, why: &str) {
@@ -918,6 +941,28 @@ impl crate::authz::MgmtBackend for DeviceMgmt<'_> {
     fn stats(&self) -> Result<Value> {
         Ok(self.dev.stats_json())
     }
+    /// The metrics of the device in the Prometheus text exposition format (0.0.4).
+    ///
+    /// Every sample is derived from the structures the device already holds: the counters of the stats view, the
+    /// health view, the health of the backend, the counters of the cache, the report of the last scrub and the
+    /// capacity of the volume. Nothing is counted twice and nothing is lost between two scrapes. The DNA simulator
+    /// counters are not part of it: the service writes to a real backend, never to the simulator.
+    fn metrics(&self) -> Result<String> {
+        let dev = self.dev;
+        let mut samples = crate::metrics::from_stats(&dev.stats_json());
+        samples.extend(crate::metrics::from_health(&dev.health_json()));
+        samples.extend(crate::metrics::from_backend(&dev.backend_health()));
+        samples.extend(crate::metrics::from_capacity(&dev.capacity_json()));
+        if let Some(c) = &dev.cache {
+            samples.extend(crate::metrics::from_cache(&c.stats, c.cached_extents(), c.dirty_extents().len()));
+        }
+        // the last scrub, or zeros when no scrub ran yet (the time of the last run is 0, never the epoch of a run)
+        let (report, unix_ms) = dev
+            .last_scrub()
+            .unwrap_or((ScrubReport { checked: 0, failed: Vec::new() }, 0));
+        samples.extend(crate::metrics::from_scrub(&report, unix_ms));
+        Ok(crate::metrics::render(&samples))
+    }
     fn shutdown(&self) -> Result<Value> {
         (self.on_shutdown)();
         Ok(obj([]))
@@ -933,6 +978,7 @@ pub struct DeviceMgmt<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::authz::MgmtBackend;
     use crate::journal::tests::TempDir;
     use crate::media::MemoryMedia;
     use crate::nbd::*;
@@ -1190,6 +1236,41 @@ mod tests {
         crate::nbdctl::apply_low_memory(&mut low);
         assert!(ram_config(low.ram_bytes, geo).is_ok());
         assert!(ram_config(2 * u64::from(MAX_PAYLOAD), geo).is_err());
+    }
+
+    #[test]
+    fn the_device_exposes_its_metrics_in_the_prometheus_text_format() {
+        let t = TempDir::new("nbd-metrics");
+        let dev = make(&t, DeviceConfig::default(), Arc::new(MemoryMedia::new()));
+        let backend = DeviceMgmt { dev: &dev, on_shutdown: &|| {} };
+        let text = backend.metrics().unwrap();
+        // the health of the device, the capacity of the volume and the state of the backend
+        assert!(text.contains("vnxd_health_state{state=\"ok\"} 1\n"), "{text}");
+        assert!(text.contains("vnxd_health_state{state=\"degraded\"} 0\n"), "{text}");
+        assert!(text.contains("vnxd_backend_state{state=\"healthy\"} 1\n"), "{text}");
+        assert!(text.contains("vnxd_read_only 0\n"), "{text}");
+        assert!(text.contains("vnxd_capacity_bytes "), "{text}");
+        assert!(text.contains("vnxd_extent_count "), "{text}");
+        // no scrub ran yet: the time of the last run is 0, not the time of a run that never happened
+        assert!(text.contains("vnxd_scrub_last_run_unix_ms 0\n"), "{text}");
+        // the exposition is longer than a `Ty::Str` field of the protocol (1024 bytes): the result of the `metrics`
+        // operation is a `Ty::Text` field for that reason
+        assert!(text.len() > 1024, "the exposition is {} bytes", text.len());
+        // every line is a comment or a series: a name, optionally labels, and an integer
+        for line in text.lines() {
+            if line.starts_with('#') {
+                continue;
+            }
+            let (series, value) = line.rsplit_once(' ').expect("a series and a value");
+            assert!(value.parse::<i64>().is_ok(), "{line}");
+            let name = series.split('{').next().unwrap();
+            assert!(crate::metrics::is_valid_name(name), "{line}");
+        }
+        // a scrub of the volume is reported by the metrics
+        dev.run_scrub(1_700_000_000_000).unwrap();
+        let text = backend.metrics().unwrap();
+        assert!(text.contains("vnxd_scrub_last_run_unix_ms 1700000000000\n"), "{text}");
+        assert!(text.contains("vnxd_scrub_checked_extents "), "{text}");
     }
 
     #[test]
