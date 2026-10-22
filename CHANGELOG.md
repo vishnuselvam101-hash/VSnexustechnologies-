@@ -43,7 +43,8 @@ are deliberately left unchanged, as in V14.
   Every sample is derived from the structures the service already holds - the stats and health views, the backend
   health, the cache counters, the scrub report, the capacity view and the DNA simulator counters; the simulator
   counters are SIMULATED counts of the software model, not measurements of a medium. The alert rules of the plan are
-  not in this tree.
+  in this tree: `deploy/monitoring/vnxd-alerts.yml` holds 13 Prometheus rules, and `tests/v15/test_ap6_alert_rules.py`
+  checks them against the metric names the exporter renders so the two cannot drift apart.
 - **AP-8 synthesis-cost planner** (Python, `src/vnxdna/pipeline/plan.py`): the strands and bases an encode will
   produce, and the cost per vendor price profile that the operator supplies (`vnx.vendor-prices/1`, example in
   `docs/examples/vendor-prices.example.json`). No price is hard-coded, the arithmetic is exact (`Decimal`), and the
@@ -133,7 +134,7 @@ are deliberately left unchanged, as in V14.
   not rounded up.
 - **No physical validation of any kind.** No DNA was synthesised, stored, amplified or sequenced; every channel result
   is SIMULATED and every read set in the corpus is software-produced. The hardware documents are designs.
-- The alert rules of AP-6, the external validation run of LR-5, the physical-preservation guidance of LR-4 and the
+- The external validation run of LR-5, the physical-preservation guidance of LR-4 and the
   multi-site replication of AP-2 are not in this tree.
 - The strand retry rung still roughly doubles the time to report FAILURE on undecodable inputs.
 
