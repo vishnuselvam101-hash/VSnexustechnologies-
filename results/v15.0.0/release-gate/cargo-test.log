@@ -1,0 +1,482 @@
+=== V15 release gate: cargo test --release --locked (RUSTFLAGS=-D warnings)
+commit: 5e44b201b1646ae6bdd10eb701e3ea0bec22389e
+rustc: rustc 1.93.1 (01f6ddf75 2026-02-11) (built from a source tarball) | cargo: cargo 1.93.1 (083ac5135 2025-12-15) (built from a source tarball)
+started: 2026-10-22T12:47:41Z
+
+--- crate: vnxd
+    Finished `release` profile [optimized] target(s) in 0.02s
+     Running unittests src/lib.rs (target/release/deps/vnxd-0738df4c4c1c9ee2)
+
+running 200 tests
+test addr::tests::geometry_validation ... ok
+test addr::tests::generations ... ok
+test addr::tests::extent_lengths_and_count ... ok
+test addr::tests::range_checks_never_wrap ... ok
+test addr::tests::spans_cover_the_request_exactly ... ok
+test audit::tests::records_chain_and_survive_reopen ... ok
+test audit::tests::any_edit_removal_or_reordering_is_detected ... ok
+test authz::tests::failed_authentication_is_audited_and_locks_the_session ... ok
+test authz::tests::policies_are_strict_and_must_be_private ... ok
+test audit::tests::a_torn_last_line_is_cut_and_the_chain_continues ... ok
+test authz::tests::the_metrics_op_carries_the_exposition_of_the_backend ... ok
+test authz::tests::a_session_flooding_denied_requests_is_cut_off ... ok
+test authz::tests::roles_gate_every_operation_and_denials_are_audited ... ok
+test balance::tests::a_task_may_drop_the_last_handle_and_no_drain_shutdown_does_not_wait_for_workers ... ok
+test balance::tests::backpressure_cancellation_and_deadlines ... ok
+test balance::tests::tasks_cannot_wait_for_tasks_but_may_submit_them_and_panics_are_contained ... ok
+test balance::tests::under_saturation_classes_share_starts_by_weight_and_none_starves ... ok
+test cache::tests::a_corrupt_dirty_copy_is_never_written_back ... ok
+test cache::tests::a_multi_extent_write_through_the_cache_is_one_volume_transaction ... ok
+test cache::tests::acknowledged_write_back_data_survives_an_outage_under_memory_pressure ... ok
+test cache::tests::block_io_refuses_a_store_with_another_geometry ... ok
+test balance::tests::a_class_blocked_on_a_resource_banks_no_credit ... ok
+test cache::tests::checksum_failure_refetches_clean_and_refuses_dirty ... ok
+test balance::tests::an_idle_class_banks_no_credit ... ok
+test cache::tests::dirty_eviction_writes_back_first_and_full_cache_degrades_to_write_through ... ok
+test cache::tests::extents_sharing_the_callers_lock_stripe_can_be_evicted ... ok
+test cache::tests::interrupted_writeback_keeps_dirty_data_and_a_retry_completes_it ... ok
+test balance::tests::failures_are_counted_as_failures_and_ready_results_can_be_taken_by_workers ... ok
+test cache::tests::read_ahead_stays_within_the_quota_and_never_evicts_the_request_extent ... ok
+test cache::tests::read_through_hits_and_lru_eviction_within_the_quota ... ok
+test cache::tests::sequential_misses_trigger_read_ahead_random_ones_do_not ... ok
+test cache::tests::write_back_acks_staged_and_flush_makes_it_durable ... ok
+test cache::tests::write_through_is_durable_and_a_failed_write_never_leaves_a_stale_copy ... ok
+test codec::tests::frame_round_trip_and_refusals ... ok
+test codec::tests::envelopes_round_trip_and_detect_damage ... ok
+test codec::tests::simple_channel_is_seeded ... ok
+test codec::tests::only_option_refusals_and_data_verdicts_pass_through_as_permanent ... ok
+test digest::tests::crc32_check_values ... ok
+test codec::tests::toy_codec_round_trip_channel_and_refusal ... ok
+test digest::tests::hex_round_trip_and_rejects_bad_input ... ok
+test digest::tests::sha256_incremental_equals_one_shot_at_every_split ... ok
+test dirmedia::tests::names_round_trip_and_reject_garbage ... ok
+test dirmedia::tests::passes_the_media_conformance_suite ... ok
+test dirmedia::tests::persists_across_reopen_and_locks_the_backend ... ok
+test dnasim::tests::a_pool_moved_to_another_generation_or_damaged_is_never_returned ... ok
+test dnasim::tests::an_unrecoverable_channel_is_corruption_after_every_attempt ... ok
+test digest::tests::sha256_fips_vectors ... ok
+test dnasim::tests::modelled_latency_is_accounted_not_measured ... ok
+test balance::tests::resource_limits_hold_and_do_not_block_other_tasks ... ok
+test error::tests::codes_round_trip_and_are_unique ... ok
+test error::tests::display_names_the_code ... ok
+test error::tests::retryable_codes_are_exactly_the_transient_ones ... ok
+test dnasim::tests::seeded_run_failures_are_deterministic_and_retryable ... ok
+test fallback::tests::a_put_whose_acknowledgement_was_lost_is_never_stored_twice ... ok
+test cache::tests::block_io_through_the_cache_matches_a_byte_model ... ok
+test fallback::tests::a_retried_put_finding_other_bytes_is_corruption ... ok
+test fallback::tests::a_volume_over_an_unavailable_backend_refuses_writes_and_keeps_serving_reads ... ok
+test cache::tests::concurrent_readers_never_see_older_data_than_a_completed_write ... ok
+test fallback::tests::retryable_errors_are_retried_with_backoff_permanent_ones_never ... ok
+test balance::tests::shutdown_drains_or_fails_queued_tasks ... ok
+test image::tests::a_failed_open_releases_the_lock_and_the_object_limit_is_configurable ... ok
+test image::tests::a_second_process_cannot_open_a_locked_image_and_a_stale_lock_is_taken_over ... ok
+test image::tests::image_media_passes_conformance ... ok
+test image::tests::names_round_trip_and_foreign_names_are_ignored ... ok
+test balance::tests::a_blocked_submitter_is_woken_when_its_own_queue_has_room ... ok
+test io::tests::a_failed_multi_extent_write_leaves_every_extent_unchanged ... ok
+test io::tests::a_panicking_request_fails_alone_and_the_queue_keeps_going ... ok
+test fallback::tests::a_panicking_probe_does_not_keep_the_device_read_only ... ok
+test io::tests::concurrent_writers_on_disjoint_ranges_and_readers ... ok
+test io::tests::invalid_requests_fail_before_any_effect ... ok
+test io::tests::oversized_requests_are_refused ... ok
+test io::tests::cancel_and_deadline_resolve_while_blocked_behind_a_stuck_write ... ok
+test balance::tests::limited_media_never_exceeds_its_limit ... ok
+test io::tests::backpressure_cancellation_timeout_and_barrier ... ok
+test io::tests::queued_overlapping_writes_apply_in_submission_order ... ok
+test io::tests::shutdown_without_drain_fails_queued_requests_and_refuses_new_ones ... ok
+test io::tests::submit_after_shutdown_and_bad_config ... ok
+test dnasim::tests::dna_sim_passes_conformance_with_and_without_a_channel ... ok
+test io::tests::the_default_worker_count_follows_cpus_and_the_backend_limit ... ok
+test journal::tests::an_unmirrored_journal_is_a_version_mismatch ... ok
+test journal::tests::create_append_reopen ... ok
+test journal::tests::a_damaged_tail_longer_than_one_append_is_refused ... ok
+test journal::tests::missing_journal_is_not_found ... ok
+test journal::tests::damage_to_both_copies_is_refused_not_truncated ... ok
+test journal::tests::rewrite_is_atomic_replacement ... ok
+test io::tests::random_unaligned_workload_matches_a_byte_model_across_reopen ... ok
+test journal::tests::torn_tail_is_truncated_and_appends_continue ... ok
+test journal::tests::unmirrored_journals_are_refused_never_truncated ... ok
+test json::tests::canonical_matches_python_rules ... ok
+test json::tests::integer_range ... ok
+test json::tests::rejects_non_contract_json ... ok
+test journal::tests::torn_pairs_are_cut ... ok
+test lab::tests::a_job_walks_the_lifecycle_and_records_its_history ... ok
+test lab::tests::a_failed_catalogue_put_destroys_the_pool_only_when_no_entry_was_stored ... ok
+test lab::tests::a_lossy_run_or_tampered_delivery_never_returns_other_bytes_and_an_offline_lab_is_retryable ... ok
+test lab::tests::a_real_lab_cannot_back_a_device_under_contract_v1 ... ok
+test lab::tests::aliquots_deplete_and_a_depleted_pool_is_reported_not_faked ... ok
+test lab::tests::cancel_retry_and_equipment_errors ... ok
+test lab::tests::job_state_machine ... ok
+test lab::tests::orders_outside_the_lab_limits_are_refused_before_submission ... ok
+test lab::tests::quality_metrics_come_from_the_delivered_reads ... ok
+test lab::tests::the_adapters_verify_decoded_bytes_themselves ... ok
+test media::tests::conformance_detects_a_remove_that_takes_too_much ... ok
+test journal::tests::one_damaged_copy_is_repaired_anywhere_including_the_last_record ... ok
+test io::tests::requests_lease_their_working_memory_from_the_io_quota ... ok
+test media::tests::conformance_detects_wrong_bytes ... ok
+test nbd::tests::abort_closes_cleanly ... ok
+test fallback::tests::a_recovered_backend_leaves_read_only_mode_whatever_kind_failed ... ok
+test nbd::tests::go_negotiation_round_trip ... ok
+test media::tests::memory_media_passes_conformance ... ok
+test nbd::tests::request_encoding_round_trip_and_bad_magic ... ok
+test nbd::tests::unknown_export_is_refused_and_negotiation_continues ... ok
+test nbd::tests::list_unsupported_and_export_name ... ok
+test nbdctl::tests::backend_on_an_exported_device_is_refused_and_others_pass ... ok
+test nbdctl::tests::options_parse_and_validate ... ok
+test nbd::tests::hostile_negotiation_is_a_protocol_error ... ok
+{"block_size":4096,"capacity_bytes":1048576,"device_id":"a4669dc300eac435a4b31485d92a68b0","event":"created","extent_bytes":65536,"pid":1885867,"volume":"/tmp/vnxd-nbdctl-serve-1885867-54/vol"}
+{"block_size":4096,"capacity_bytes":1048576,"device_id":"a4669dc300eac435a4b31485d92a68b0","event":"created","extent_bytes":65536,"pid":1885867,"volume":"/tmp/vnxd-nbdctl-serve-1885867-54/vol"}
+test nbdctl::tests::stop_keeps_the_first_reason ... ok
+test nbdctl::tests::low_memory_preset_and_concurrency_limits ... ok
+test nbdserve::tests::fault_words_parse ... ok
+test io::tests::random_crashes_never_lose_committed_extents_or_mix_contents ... ok
+{"capacity_bytes":1048576,"damaged":0,"event":"volume_opened","orphans_removed":0,"pid":1885867,"records_replayed":1,"torn_tail":false}
+{"event":"serving","pid":1885867,"socket":"/tmp/vnxd-nbdctl-serve-1885867-54/nbd.sock"}
+{"event":"serving","pid":1885867,"socket":"/tmp/vnxd-nbdctl-serve-1885867-54/nbd.sock"}
+test fallback::tests::an_unavailable_backend_makes_the_device_read_only_until_a_probe_succeeds ... ok
+test nbdserve::tests::oversized_write_is_refused_without_buffering ... ok
+test nbdserve::tests::ram_budget_holds_one_largest_request ... ok
+test nbdserve::tests::protocol_violation_closes_the_connection ... ok
+test nbdserve::tests::read_only_device_refuses_writes_and_trims ... ok
+test nbdserve::tests::many_requests_in_flight_complete_out_of_order_with_correct_handles ... ok
+test nbdserve::tests::the_device_exposes_its_metrics_in_the_prometheus_text_format ... ok
+test nbdserve::tests::read_write_flush_trim_fua_and_disc ... ok
+test nbdserve::tests::unknown_flags_are_refused_and_the_inflight_gauge_returns_to_zero ... ok
+test nbdsys::tests::mount_check_matches_partitions_only ... ok
+test nbdsys::tests::only_whole_nbd_devices_are_accepted ... ok
+test nbdsys::tests::open_refuses_other_devices ... ok
+test nbdsys::tests::ready_needs_our_pid_and_the_full_size ... ok
+test nbdsys::tests::ready_rejects_unaligned_sizes_and_any_sector_mismatch ... ok
+test nbdsys::tests::signal_set_is_buildable ... ok
+test proto::tests::build_and_validate_round_trip ... ok
+test proto::tests::error_class_must_match_code ... ok
+test proto::tests::staging_names_are_never_paths ... ok
+test proto::tests::validation_order_and_codes ... ok
+test nbdserve::tests::the_low_memory_preset_runs_a_device_round_trip ... ok
+test ram::tests::buffers_are_zeroed_before_reuse_and_return_their_lease ... ok
+test nbdserve::tests::writes_survive_a_reopen_and_close_flushes_write_back ... ok
+test ram::tests::config_validation ... ok
+test ram::tests::concurrent_stress_never_exceeds_the_budget ... ok
+test ram::tests::quotas_and_total_are_enforced ... ok
+test record::tests::every_known_superblock_flag_is_accepted ... ok
+test record::tests::every_single_bit_flip_is_rejected ... ok
+test record::tests::every_truncation_is_rejected ... ok
+test record::tests::invalid_records_are_never_encoded ... ok
+test record::tests::map_batches_are_strict ... ok
+test record::tests::retention_record_encode_decode_round_trip ... ok
+test record::tests::retention_record_invalid_tx_zero_rejected ... ok
+test record::tests::round_trip ... ok
+test record::tests::scan_stops_at_a_torn_tail ... ok
+test record::tests::snapshot_record_encode_decode_round_trip ... ok
+test record::tests::snapshot_record_invalid_tx_zero_rejected ... ok
+test record::tests::version_mismatch_is_its_own_error ... ok
+test seal::tests::a_sealed_volume_never_hands_plaintext_to_the_backend ... ok
+test seal::tests::moved_replayed_or_tampered_objects_are_corruption_never_data ... ok
+test seal::tests::per_object_key_or_version_mismatches_are_damage_and_scrub_lists_them ... ok
+test seal::tests::the_wrong_key_or_a_mismatched_adapter_is_refused_at_open ... ok
+test state::tests::durability_and_names ... ok
+test state::tests::transition_table_is_exact ... ok
+test twin::tests::a_fault_reaches_one_replica_only ... ok
+test twin::tests::a_lost_replica_is_offline_and_can_come_back ... ok
+test twin::tests::a_mirror_puts_to_every_replica_and_gets_from_a_matching_one ... ok
+test twin::tests::a_mirror_with_one_damaged_replica_never_serves_wrong_bytes ... ok
+test twin::tests::a_pool_refuses_more_than_three_replicas ... ok
+test twin::tests::a_twin_needs_exactly_one_spec_per_role ... ok
+test twin::tests::a_twin_refuses_two_specs_for_the_same_role ... ok
+test twin::tests::every_role_has_a_pool_and_a_media_adapter ... ok
+test twin::tests::the_report_is_labelled_simulated ... ok
+test volume::tests::a_crash_at_any_stage_of_a_multi_extent_write_leaves_all_old_or_all_new ... ok
+test volume::tests::a_failed_create_leaves_nothing_behind_and_can_be_retried ... ok
+test volume::tests::a_failed_put_inside_a_multi_extent_write_changes_nothing ... ok
+test volume::tests::a_multi_extent_write_is_one_transaction ... {"closed":"ok","event":"stopped","health":{"detail":{"backend":{"backend":"healthy","consecutive_failures":0,"failures":0,"operations":4,"refused_read_only":0,"retries":0,"score_milli":1000,"writes":"accepted"},"backend_last_error":null,"damaged_extents":[],"inflight":0,"last_error":null,"read_only":false},"state":"ok"},"pid":1885867,"stats":{"counters":{"cache_hits":0,"cache_misses":1,"cache_writeback_failures":0,"cache_writebacks":0,"io_cancelled":0,"io_completed":1,"io_failed":0,"io_max_queue_depth":1,"io_submitted":1,"io_timed_out":0,"nbd_bytes_read":0,"nbd_bytes_written":4096,"nbd_cancelled_on_close":0,"nbd_connections":1,"nbd_disconnects":0,"nbd_eio":0,"nbd_errors":0,"nbd_flushes":0,"nbd_fua_writes":0,"nbd_max_inflight":1,"nbd_protocol_errors":0,"nbd_reads":0,"nbd_requests":1,"nbd_trims":0,"nbd_writes":1,"ram_in_use":65536,"ram_peak":270336,"volume_commits":1,"volume_integrity_failures":0,"volume_reads":1}}}ok
+
+test nbdctl::tests::create_and_serve_over_a_socket ... ok
+test volume::tests::a_multi_extent_write_that_does_not_fit_is_refused_whole ... ok
+test volume::tests::a_p3_unmirrored_journal_is_refused_and_its_backend_untouched ... ok
+test volume::tests::another_volumes_backend_is_refused_and_untouched ... ok
+test volume::tests::corrupted_media_is_never_returned ... ok
+test volume::tests::compaction_keeps_the_mapping ... ok
+test volume::tests::create_refuses_a_used_backend_or_directory ... ok
+test volume::tests::crash_at_every_stage_recovers_to_old_or_new ... ok
+test volume::tests::damage_inside_the_journal_never_turns_committed_data_into_zeros ... ok
+test volume::tests::foreign_backend_objects_are_left_alone ... ok
+test volume::tests::generations_are_never_reused_across_compaction ... ok
+test volume::tests::inconsistent_journal_is_refused ... ok
+test volume::tests::missing_generation_is_damage_not_zeros ... ok
+test volume::tests::no_space_is_typed_and_leaves_no_trace ... ok
+test volume::tests::replay_checks_a_batch_whole ... ok
+test volume::tests::without_readback_the_state_is_backend_committed ... ok
+test volume::tests::replay_refuses_a_released_live_generation_or_a_reused_generation ... ok
+test volume::tests::write_read_reopen ... ok
+test ram::tests::backpressure_waits_then_proceeds ... ok
+test ram::tests::deadline_and_cancellation ... ok
+test nbdserve::tests::backend_failures_are_eio_and_never_success ... ok
+test lab::tests::lab_media_over_the_simulated_lab_passes_conformance ... ok
+test fallback::tests::steady_reads_never_postpone_the_write_probe ... ok
+test nbdserve::tests::a_client_that_never_negotiates_is_dropped ... ok
+
+test result: ok. 200 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 10.60s
+
+     Running unittests src/bin/vnxd.rs (target/release/deps/vnxd-dcd4ee85a9b8a2dc)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/bin/vnxd-lb-bench.rs (target/release/deps/vnxd_lb_bench-523ab71f96c29000)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/cli.rs (target/release/deps/cli-37b3c4126017b7f8)
+
+running 2 tests
+test version_names_the_contracts ... ok
+test inspect_journal_reports_records_and_the_torn_tail ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/concurrency_stress.rs (target/release/deps/concurrency_stress-d0cbb55b082a3b35)
+
+running 2 tests
+test no_deadlock_and_no_lost_write_under_contention_write_back ... ok
+test no_deadlock_and_no_lost_write_under_contention_write_through ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.88s
+
+     Running tests/digital_twin.rs (target/release/deps/digital_twin-1f7becfea7199067)
+
+running 9 tests
+test losing_every_metadata_replica_gives_a_typed_error ... ok
+test losing_one_metadata_replica_keeps_everything_readable ... ok
+test a_bit_rot_in_one_bootstrap_replica_is_recovered_from_the_others ... ok
+test damage_in_the_ram_pool_does_not_change_a_storage_read ... ok
+test a_bit_rot_in_the_storage_pool_is_never_served ... ok
+test a_sealed_volume_refuses_to_open_without_the_security_pool ... ok
+test a_torn_write_ahead_copy_leaves_the_old_or_the_new_data ... ok
+test the_campaign_is_deterministic ... ok
+test a_crash_at_every_stage_reopens_with_no_wrong_bytes ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/e2e_matrix.rs (target/release/deps/e2e_matrix-db44172efc6481bf)
+
+running 32 tests
+test m02_dna_simulator_adapter_real_codec ... ignored, needs the real codec worker: VNXD_REAL_CODEC=1 and VNXD_TEST_PYTHON (a Python with the vnxdna package)
+test m04_simulated_lab_interface_adapter_real_codec ... ignored, needs the real codec worker: VNXD_REAL_CODEC=1 and VNXD_TEST_PYTHON (a Python with the vnxdna package)
+test m01_file_image_adapter ... ok
+test m03_fault_injection_adapter ... ok
+test r01_sequential_rw ... ok
+test r03_small_writes ... ok
+test r07_cache_hit_miss ... ok
+test r05_partial_overwrites ... ok
+test r09_flush_and_durability ... ok
+test r08_dirty_eviction_and_failed_writeback ... ok
+test r10_device_restart ... ok
+test r11b_sigkill_during_writes_keeps_acknowledged_data ... ok
+test r12_journal_recovery ... ok
+test r06_concurrent_readers_writers ... ok
+test r14_duplicate_and_reordered_reads ... ok
+test r15_out_of_space ... ok
+test r13_missing_and_corrupt_extents ... ok
+test m02_dna_simulator_adapter ... ok
+test r18_unauthorized_requests ... ok
+test r19_memory_exhaustion ... ok
+test r16_backend_timeouts_and_deadlines ... ok
+test r20_saturation_backpressure ... ok
+test r06b_concurrent_io_under_backend_faults ... ok
+test r23_config_corruption ... ok
+test r02_random_rw ... ok
+test r21_cancellation ... ok
+test r17_failed_verification_is_refused_atomically ... ok
+test r11a_crash_at_every_commit_stage_is_atomic ... ok
+test r04_large_requests_and_limits ... ok
+test m04_simulated_lab_interface_adapter ... ok
+test r22_sealing_worker_failure ... ok
+test r24_pi_class_memory_budget ... ok
+
+test result: ok. 30 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 5.88s
+
+     Running tests/fault_matrix.rs (target/release/deps/fault_matrix-5455366c62459eca)
+
+running 8 tests
+test failed_garbage_collection_and_sync_are_recovered ... ok
+test without_readback_corrupt_media_is_refused_at_read_and_found_by_scrub ... ok
+test a_persistently_unavailable_backend_turns_the_device_read_only ... ok
+test corrupt_metadata_is_repaired_or_refused ... ok
+test bad_reads_are_corruption_never_data ... ok
+test lying_or_corrupting_writes_are_caught_by_readback ... ok
+test transient_backend_errors_are_absorbed_by_retries ... ok
+test crash_at_every_stage_gives_the_recorded_state ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/golden.rs (target/release/deps/golden-2ff037df9faacb63)
+
+running 4 tests
+test every_error_code_and_op_is_known_to_both_languages ... ok
+test bad_records_fail_with_the_same_code ... ok
+test records_encode_and_decode_byte_for_byte ... ok
+test messages_validate_and_canonicalise_identically ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/media_adapters.rs (target/release/deps/media_adapters-0fb260f0c5c68bf1)
+
+running 12 tests
+test image_backend_sweeps_unfinished_writes_and_refuses_damaged_objects ... ok
+test a_volume_over_a_damaged_image_reports_the_damage ... ok
+test the_faulty_wrapper_forwards_sealing ... ok
+test faulty_wrapper_keeps_conformance_when_no_fault_fires_and_takes_the_inner_durability ... ok
+test image_backend_volume_survives_restarts ... ok
+test dna_sim_pools_kept_in_an_image_survive_restarts ... ok
+test a_volume_runs_over_the_simulated_lab ... ok
+test dna_sim_failures_reach_the_volume_as_typed_errors ... ok
+test seeded_faults_are_deterministic ... ok
+test volume_and_block_io_survive_seeded_honest_faults ... ok
+test volume_and_block_io_never_return_wrong_bytes_under_lying_faults ... ok
+test an_offline_medium_turns_the_device_read_only_and_it_recovers ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.51s
+
+     Running tests/media_worker.rs (target/release/deps/media_worker-a597274194c4beb7)
+
+running 2 tests
+test dna_sim_over_the_vnxdna_codec ... ignored
+test lab_interface_over_the_vnxdna_codec ... ignored
+
+test result: ok. 0 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/metrics.rs (target/release/deps/metrics-82060a9a641721d2)
+
+running 9 tests
+test every_metric_the_service_knows_has_a_valid_and_unique_name ... ok
+test the_exposition_is_the_same_whatever_the_order_of_the_samples ... ok
+test the_exposition_follows_the_text_format_grammar ... ok
+test every_counter_of_the_stats_view_becomes_a_metric ... ok
+test the_cache_the_capacity_and_the_simulator_become_metrics ... ok
+test the_health_view_becomes_metrics ... ok
+test the_backend_state_walks_from_healthy_to_degraded_to_unavailable ... ok
+test a_scrub_after_a_silent_corrupt_write_reports_one_failed_extent ... ok
+test every_counter_of_a_real_stats_view_becomes_a_metric ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/nbd_no_space.rs (target/release/deps/nbd_no_space-db1c9550b0ecdd5d)
+
+running 4 tests
+test a_read_needs_no_space_and_is_not_refused_by_the_bound ... ok
+test an_overwrite_at_the_bound_still_succeeds ... ok
+test a_device_without_a_bound_has_no_limit ... ok
+test a_write_past_the_bound_is_refused_with_enospc_and_nothing_changes ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/seal_key_check.rs (target/release/deps/seal_key_check-9872210a12530331)
+
+running 2 tests
+test the_key_check_is_compared_in_constant_time ... ok
+test a_marker_written_with_another_key_is_refused ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/seal_worker.rs (target/release/deps/seal_worker-21d67ba4eeed7405)
+
+running 1 test
+test sealed_volume_over_the_python_worker ... ignored
+
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/worm_snapshots.rs (target/release/deps/worm_snapshots-d45f8dfa6b1f22a6)
+
+running 13 tests
+test snapshot_pins_current_mapping ... ok
+test snapshot_not_found_for_unpinned_extent ... ok
+test release_snapshot_removes_pins ... ok
+test pinned_generation_is_not_collected_as_orphan ... ok
+test release_snapshot_after_retention_expires_succeeds ... ok
+test release_snapshot_under_retention_is_refused_for_every_pinned_extent ... ok
+test release_snapshot_under_retention_is_refused_and_keeps_snapshot ... ok
+test releasing_a_snapshot_of_the_live_generation_keeps_the_volume_openable ... ok
+test snapshot_read_returns_pre_overwrite_bytes ... ok
+test snapshots_list ... ok
+test snapshot_read_of_rotted_bytes_is_refused ... ok
+test snapshot_read_of_a_tampered_extent_is_refused ... ok
+test snapshot_survives_reopen ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+   Doc-tests vnxd
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+--- crate vnxd exit code: 0
+
+--- crate: engine
+    Finished `release` profile [optimized] target(s) in 0.01s
+     Running unittests src/lib.rs (target/release/deps/vnx_engine-a886083011ff0e5c)
+
+running 26 tests
+test frame::tests::crc32_check_value ... ok
+test frame::tests::pack4_packs_first_base_highest ... ok
+test scan::tests::convert_and_newline_search ... ok
+test scan::tests::fasta_wrapped_records_and_whitespace ... ok
+test config::tests::null_and_out_of_range_configs_are_refused ... ok
+test io::tests::zero_table_is_zeroed_writable_and_sized ... ok
+test scan::tests::fastq_malformed_records_are_refused ... ok
+test sched::tests::bloom_never_rejects_an_inserted_fingerprint ... ok
+test scan::tests::fastq_records_blank_lines_and_cr ... ok
+test sched::tests::fmix_is_odd_and_spreads ... ok
+test sched::tests::fpmap_first_value_wins ... ok
+test scan::tests::fastq_incomplete_record_is_carried_over_until_eof ... ok
+test sched::tests::a_channel_indel_absorbs_at_most_its_own_segment ... ok
+test sched::tests::frame_store_and_window_map_are_bounded_and_lossy ... ok
+test sched::tests::indel_variant_of_a_verified_frame_is_not_confirmed ... ok
+test sched::tests::lossy_table_inserts_finds_and_evicts ... ok
+test sched::tests::header_distance_counts_bases ... ok
+test sched::tests::geometry_follows_marker_periods ... ok
+test sched::tests::exact_length_fast_path_equals_the_general_projection ... ok
+test pool::tests::every_worker_runs_the_job_once ... ok
+test sched::tests::strand_budget_keeps_the_margin ... ok
+test sched::tests::windows_forward_and_reverse_complement_agree ... ok
+test sched::tests::near_minimum_distance_pairs_need_margin_channel_errors ... ok
+test sched::tests::strand_check_confirms_noisy_copies_and_charges_indels ... ok
+test pool::tests::a_panicking_job_is_reported_and_the_pool_survives ... ok
+test sched::tests::review_probe_shifted_frame_far_in_hamming_is_not_confirmed ... ok
+
+test result: ok. 26 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+   Doc-tests vnx_engine
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+--- crate engine exit code: 0
+
+--- crate: integrity
+    Finished `release` profile [optimized] target(s) in 0.01s
+     Running unittests src/lib.rs (target/release/deps/vnx_integrity-72bd8bd522bf1d11)
+
+running 5 tests
+test tests::ffi_rejects_bad_arguments ... ok
+test tests::rows_geometry_is_checked ... ok
+test tests::slicing_equals_bitwise_for_every_length ... ok
+test tests::known_vectors ... ok
+test tests::threads_do_not_change_results ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+   Doc-tests vnx_integrity
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+--- crate integrity exit code: 0
+
+finished: 2026-10-22T12:48:05Z
+all crates exit zero: yes

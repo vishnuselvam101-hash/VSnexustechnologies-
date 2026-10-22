@@ -50,13 +50,15 @@
     "channel-sweep",
     "stream-encode",
     "stream-decode",
+    "stream-read-range",
     "volume-create",
     "volume-write",
     "volume-read",
     "volume-stat",
     "volume-scrub",
     "cache-stats",
-    "cache-clear"
+    "cache-clear",
+    "plan"
    ]
   },
   "status": {

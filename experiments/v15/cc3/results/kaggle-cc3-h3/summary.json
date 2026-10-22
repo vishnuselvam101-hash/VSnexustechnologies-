@@ -1,0 +1,154 @@
+{
+ "cells": {
+  "d13f1-1m|base|E": {
+   "exact": 1,
+   "failures": {
+    "93130": [
+     "FAILURE",
+     [
+      327,
+      402
+     ]
+    ],
+    "93131": [
+     "FAILURE",
+     [
+      255,
+      260,
+      313
+     ]
+    ],
+    "93132": [
+     "FAILURE",
+     [
+      36
+     ]
+    ],
+    "93133": [
+     "FAILURE",
+     [
+      222,
+      261,
+      390
+     ]
+    ]
+   },
+   "false_success": 0,
+   "median_decode_seconds": 159.49,
+   "n": 5,
+   "seeds": [
+    93130,
+    93131,
+    93132,
+    93133,
+    93134
+   ]
+  },
+  "d13f1-1m|base|F": {
+   "exact": 3,
+   "failures": {
+    "93130": [
+     "FAILURE",
+     [
+      327,
+      402
+     ]
+    ],
+    "93131": [
+     "FAILURE",
+     [
+      255,
+      313
+     ]
+    ]
+   },
+   "false_success": 0,
+   "median_decode_seconds": 169.51,
+   "n": 5,
+   "seeds": [
+    93130,
+    93131,
+    93132,
+    93133,
+    93134
+   ]
+  },
+  "d13f1-1m|new|E": {
+   "exact": 1,
+   "failures": {
+    "93130": [
+     "FAILURE",
+     [
+      327,
+      402
+     ]
+    ],
+    "93131": [
+     "FAILURE",
+     [
+      255,
+      260,
+      313
+     ]
+    ],
+    "93132": [
+     "FAILURE",
+     [
+      36
+     ]
+    ],
+    "93133": [
+     "FAILURE",
+     [
+      222,
+      261,
+      390
+     ]
+    ]
+   },
+   "false_success": 0,
+   "median_decode_seconds": 158.18,
+   "n": 5,
+   "seeds": [
+    93130,
+    93131,
+    93132,
+    93133,
+    93134
+   ]
+  },
+  "d13f1-1m|new|F": {
+   "exact": 3,
+   "failures": {
+    "93130": [
+     "FAILURE",
+     [
+      327
+     ]
+    ],
+    "93131": [
+     "FAILURE",
+     [
+      313
+     ]
+    ]
+   },
+   "false_success": 0,
+   "median_decode_seconds": 164.08,
+   "n": 5,
+   "seeds": [
+    93130,
+    93131,
+    93132,
+    93133,
+    93134
+   ]
+  }
+ },
+ "commits": [
+  "base:cfd6ee0733c70bbe4f1cd576668700d2fbb8631b",
+  "new:c416349be0e0044a6858e44f1547ca1b303de968"
+ ],
+ "false_success_total": 0,
+ "label": "SIMULATED: reads from a software channel model; no DNA was synthesised, stored or sequenced"
+}

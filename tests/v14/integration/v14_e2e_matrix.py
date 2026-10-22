@@ -8,8 +8,9 @@ the phase whose deliverable it needs, and where it is implemented:
 * ``py:<file>::<fn>``: a test in this directory.
 
 ``status`` is ``run`` (runs now and must pass) or ``pending`` (written against the documented interface, skipped or
-ignored with a reason starting "needs P7/P8 integration" or "needs P10/P11 hardware" until the lead turns it on).
-A pending row is never counted as a pass. test_v14_e2e_registry.py keeps this table, the plan and the code in step.
+ignored with a reason starting "needs P7/P8 integration", "needs P10/P11 hardware" or "needs the real codec worker"
+until the lead turns it on). A pending row is never counted as a pass. test_v14_e2e_registry.py keeps this table, the
+plan and the code in step.
 """
 from __future__ import annotations
 
@@ -136,6 +137,17 @@ ROWS: tuple[Row, ...] = (
     Row("M04", "physical-lab interface adapter (SIMULATED lab)", IOQ + " over the P7 LabMedia + SimulatedLab",
         "seeded synthesis/sequencing failures (retried)", "oracle bytes on every read, after restart too; nothing damaged",
         "P7", "rust:m04_simulated_lab_interface_adapter", "run"),
+    Row("M05", "DNA-simulator media adapter over the real codec worker (SIMULATED channel)",
+        IOQ + " over the P7 DnaSimMedia driven by the production VNX-DNA codec worker (vnxdna.device.dnasim)",
+        "SIMULATED illumina-like substitution channel; conformance + workload + restart + reopen",
+        "oracle bytes on every read (the SIMULATED channel's errors are corrected or retried), never other bytes; "
+        "nothing damaged; a fresh adapter over the same store still matches the oracle", "P7",
+        "rust:m02_dna_simulator_adapter_real_codec", "pending"),
+    Row("M06", "physical-lab interface adapter over the real codec worker (SIMULATED lab)",
+        IOQ + " over the P7 LabMedia + SimulatedLab driven by the production VNX-DNA codec worker (vnxdna.device.dnasim)",
+        "seeded synthesis/sequencing failures (retried) in the SIMULATED lab; conformance + workload + restart + reopen",
+        "oracle bytes on every read, after restart too; nothing damaged; a fresh adapter over the same lab and "
+        "catalogue still matches the oracle", "P7", "rust:m04_simulated_lab_interface_adapter_real_codec", "pending"),
     Row("B01", "sequential + random R/W on the block device", BLK, "O_DIRECT I/O, seeded; detach + attach",
         "a new device reads zeros; every read equals the oracle, also after re-attach", "P8",
         "py:test_v14_e2e_blockdev.py::test_b01_block_device_rw", "run"),
@@ -164,4 +176,4 @@ ROWS: tuple[Row, ...] = (
         "py:test_v14_e2e_blockdev.py::test_b09_queue_depth_saturation", "run"),
 )
 
-PENDING_PREFIXES = ("needs P7/P8 integration", "needs P10/P11 hardware")
+PENDING_PREFIXES = ("needs P7/P8 integration", "needs P10/P11 hardware", "needs the real codec worker")

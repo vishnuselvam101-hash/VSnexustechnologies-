@@ -301,7 +301,7 @@ def load_manifest(path: str | os.PathLike) -> dict:
 
     def count(rec: dict, k: str, i: int) -> int:
         v = rec[k]
-        if isinstance(v, bool) or not isinstance(v, int) or v < 0:
+        if type(v) is not int or v < 0:
             raise bad(f"extent {i}: {k!r} must be a non-negative integer")
         return v
 
@@ -318,7 +318,10 @@ def load_manifest(path: str | os.PathLike) -> dict:
         for k in ("index", "length", "sha256", "archive_id", "archive_tag", "strands_offset", "strands_bytes", "strands_sha256"):
             if k not in rec:
                 raise bad(f"extent {i} lacks {k!r}")
-        if rec["index"] != i:
+        # the index is type-checked before the order check: True == 1 in Python, so an order check alone would accept
+        # a boolean on extent 1
+        index = count(rec, "index", i)
+        if index != i:
             raise bad("extents out of order")
         total += count(rec, "length", i)
         # V14 F (H-6): a range beyond any file is a format error, not a raw ValueError from seek()
@@ -336,6 +339,19 @@ def load_manifest(path: str | os.PathLike) -> dict:
     if doc.get("strands_format", "fasta") not in ("fasta", "fastq"):        # V14 F (H-6): it names work files
         raise bad("'strands_format' must be 'fasta' or 'fastq'")
     return doc
+
+
+def _pool_path_separates(extents: list[dict]) -> None:
+    """The pool path separates extents by their 16-bit archive tag: refuse when one tag covers several archives (the
+    extents could not be told apart, so the pool path must not be used)."""
+    by_tag: dict[str, set[str]] = {}
+    for e in extents:
+        by_tag.setdefault(e["archive_tag"], set()).add(e["archive_id"])
+    dup = sorted(t for t, ids in by_tag.items() if len(ids) > 1)        # one tag, several different archives
+    if dup:
+        raise VNXFormatError(f"the pool path cannot separate extents sharing an archive tag ({', '.join(dup)}); decode "
+                             "from the encoder's strand file (by range) or keep extents in separate files",
+                             stage="stream", details={"archive_tags": dup})
 
 
 def _range_matches(strands: Path, rec: dict) -> bool:
@@ -529,14 +545,7 @@ def decode_stream(strands: str | os.PathLike, manifest: str | os.PathLike, outpu
         if tags_checked:
             return
         tags_checked = True
-        by_tag: dict[str, set[str]] = {}
-        for e in doc["extents"]:
-            by_tag.setdefault(e["archive_tag"], set()).add(e["archive_id"])
-        dup = sorted(t for t, ids in by_tag.items() if len(ids) > 1)        # one tag, several different archives
-        if dup:
-            raise VNXFormatError(f"the pool path cannot separate extents sharing an archive tag ({', '.join(dup)}); decode "
-                                 "from the encoder's strand file (by range) or keep extents in separate files",
-                                 stage="stream", details={"archive_tags": dup})
+        _pool_path_separates(doc["extents"])
 
     # One use-range decision per extent up front, so the pooled extents can share a single layout probe + pass 1.
     use_ranges = [(_range_matches(strands, rec) if by_range is None else by_range) for rec in doc["extents"]]
@@ -650,5 +659,112 @@ def decode_stream(strands: str | os.PathLike, manifest: str | os.PathLike, outpu
             shutil.rmtree(work, ignore_errors=True)
 
 
+# ============================================================================ partial retrieval (AP-14)
+def read_range(strands: str | os.PathLike, manifest: str | os.PathLike, start: int, length: int, *,
+               options: DecodeOptions | None = None, key: bytes | None = None, passphrase: str | None = None,
+               workdir: str | os.PathLike | None = None) -> tuple[bytes, dict]:
+    """The bytes ``[start, start + length)`` of the stream described by ``manifest``.
+
+    Only the extents that overlap the range are decoded, each one through :func:`decode_extent` (the same per-extent
+    decode :func:`decode_stream` uses), which verifies the extent's manifest SHA-256 before a byte of it is returned.
+    A range is therefore either returned complete and verified, or the typed error is raised: a partial or an
+    unverified slice is never returned.
+
+    The extents are decoded the way :func:`decode_stream` decodes them: from their own strand byte range while the
+    sink still holds it (the range is checked against the manifest's strand hash first), else from the whole pool by
+    archive ID (a SIMULATED sequenced pool). Encrypted streams are decrypted per extent, exactly as in
+    :func:`decode_stream`.
+
+    Returns the bytes and the report: ``range`` (``[start, end)``), ``extents`` (the indices touched),
+    ``strands_bytes_read`` (the strand bytes the request had to touch: an extent decoded from its own strand range
+    contributes that range's size, an extent decoded from the whole pool contributes the pool's size, since the pool
+    path reads the file), ``strands_total_bytes`` (the stream's strand bytes) and the ``evidence`` of the per-extent
+    verification. A negative ``start`` or ``length``, and a range past the end of the stream, are configuration errors.
+    """
+    if isinstance(start, bool) or not isinstance(start, int):
+        raise VNXConfigurationError("start must be an integer")
+    if isinstance(length, bool) or not isinstance(length, int):
+        raise VNXConfigurationError("length must be an integer")
+    if start < 0:
+        raise VNXConfigurationError("start must not be negative")
+    if length < 0:
+        raise VNXConfigurationError("length must not be negative")
+    doc = load_manifest(manifest)
+    opt = options or DecodeOptions()
+    opt.validate()
+    extents = doc["extents"]
+    total = doc["total_bytes"]
+    end = start + length
+    if start > total or end > total:
+        raise VNXConfigurationError(f"range [{start}, {end}) is past the end of the stream ({total} bytes)")
+    strands_path = Path(strands)
+    if not strands_path.is_file():
+        raise VNXConfigurationError(f"strand file not found: {strands}")
+    # the offset of an extent in the output: the sum of the lengths of the extents before it, in index order
+    offsets: list[int] = []
+    off = 0
+    for rec in extents:
+        offsets.append(off)
+        off += rec["length"]
+    # the extents the range overlaps (an empty range overlaps none)
+    touched = [i for i, rec in enumerate(extents)
+               if length > 0 and offsets[i] < end and start < offsets[i] + rec["length"]]
+    fmt = doc.get("strands_format", "fasta")
+    pool_bytes = strands_path.stat().st_size
+    by_range: list[int] = []
+    by_pool: list[int] = []
+    strands_read = 0
+    out = bytearray()
+    work = Path(tempfile.mkdtemp(prefix="vnx-range-", dir=workdir))
+    try:
+        # the by-range / pool decision is made per extent, exactly as in decode_stream
+        use_range = {i: _range_matches(strands_path, extents[i]) for i in touched}
+        if any(not use_range[i] for i in touched):
+            _pool_path_separates(extents)          # the pool path must be able to tell the extents apart
+        for i in touched:
+            rec = extents[i]
+            o = offsets[i]
+            if use_range[i]:
+                part = work / f"r{rec['index']}.{fmt}"
+                with open(strands_path, "rb") as f, open(part, "wb") as g:
+                    f.seek(rec["strands_offset"])
+                    left = rec["strands_bytes"]
+                    while left > 0:
+                        block = f.read(min(1 << 20, left))
+                        if not block:
+                            raise VNXFormatError(f"strand file shorter than the manifest's range of extent {rec['index']}",
+                                                 stage="stream")
+                        g.write(block)
+                        left -= len(block)
+                data = decode_extent(part, rec, opt, key=key, passphrase=passphrase, work=work)
+                part.unlink(missing_ok=True)
+                strands_read += rec["strands_bytes"]
+                by_range.append(rec["index"])
+            else:
+                data = decode_extent(strands_path, rec, opt, key=key, passphrase=passphrase, work=work)
+                strands_read += pool_bytes            # the pool path reads the whole strand file
+                by_pool.append(rec["index"])
+            a = max(start, o) - o
+            b = min(end, o + rec["length"]) - o
+            out += data[a:b]
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+    report = {
+        "range": [start, end],
+        "extents": [extents[i]["index"] for i in touched],
+        "strands_bytes_read": strands_read,
+        "strands_total_bytes": sum(rec["strands_bytes"] for rec in extents),
+        "bytes": len(out),
+        "sha256": hashlib.sha256(out).hexdigest(),
+        "evidence": {
+            "by_range": by_range,
+            "by_pool": by_pool,
+            "extent_sha256": [extents[i]["sha256"] for i in touched],
+            "verified_extents": len(touched),
+        },
+    }
+    return bytes(out), report
+
+
 __all__ = ["STREAM_FORMAT", "EXTENT_NAME", "StreamOptions", "encode_extent", "decode_extent", "encode_stream", "decode_stream",
-           "load_manifest"]
+           "load_manifest", "read_range"]

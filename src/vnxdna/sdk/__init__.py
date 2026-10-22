@@ -18,9 +18,9 @@ from vnxdna.recovery.planner import RecoveryBudget
 from vnxdna.sdk.api import (archive, benchmark, benchmark_markdown, channel_convert, channel_model, channel_models,
                             channel_sweep, codec_compare, conformance, decode, encode, experiment_reproduce, experiment_run,
                             extract, generate, inspect, is_container, keygen,
-                            list_entries, load_keys, locate, native, parse_size, profiles, simulate, sweep, sweep_table,
-                            validate_strands, verify, version, stream_encode, stream_decode, volume_create, volume_write,
-                            volume_read, volume_stat, volume_scrub, cache_stats, cache_clear)
+                            list_entries, load_keys, locate, native, parse_size, plan, profiles, simulate, sweep, sweep_table,
+                            validate_strands, verify, version, stream_encode, stream_decode, stream_read_range,
+                            volume_create, volume_write, volume_read, volume_stat, volume_scrub, cache_stats, cache_clear)
 from vnxdna.sdk.envelope import (ArchiveResult, BenchmarkResult, ConformanceResult, DecodeResult, EncodeResult,
                                  ExtractResult, InspectResult, ListResult, Result, SimulateResult, VerifyResult, error_json,
                                  provenance)
@@ -32,5 +32,5 @@ __all__ = ["ArchiveOptions", "DNAOptions", "DecodeOptions", "RecoveryBudget", "V
            "benchmark", "benchmark_markdown", "codec_compare", "sweep", "sweep_table",
            "experiment_run", "experiment_reproduce", "generate", "validate_strands", "profiles", "native", "keygen",
            "load_keys", "parse_size", "is_container", "version", "conformance", "error_json", "provenance",
-           "stream_encode", "stream_decode", "volume_create", "volume_write", "volume_read", "volume_stat", "volume_scrub",
-           "cache_stats", "cache_clear"]
+           "stream_encode", "stream_decode", "stream_read_range", "volume_create", "volume_write", "volume_read",
+           "volume_stat", "volume_scrub", "cache_stats", "cache_clear", "plan"]

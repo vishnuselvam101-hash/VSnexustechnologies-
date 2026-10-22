@@ -77,7 +77,7 @@ fn dna_sim_over_the_vnxdna_codec() {
         let m: Arc<dyn MediaAdapter> = Arc::new(DnaSimMedia::new(Arc::new(ImageMedia::create(&r.join("pools")).unwrap()), c.clone(), cfg.clone()).unwrap());
         let v = Volume::create(&r.join("vol"), geo, [8; 16], 0, m, VolumeConfig::default()).unwrap();
         for e in 0..4u64 {
-            v.write_extent(ExtentId(e), &bytes(e, 4096)).unwrap();
+            v.write_extent(ExtentId(e), &bytes(e, 4096), 1000).unwrap();
         }
     }
     let m: Arc<dyn MediaAdapter> = Arc::new(DnaSimMedia::new(Arc::new(ImageMedia::open(&r.join("pools")).unwrap()), c.clone(), cfg).unwrap());

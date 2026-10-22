@@ -1,0 +1,169 @@
+{
+ "cells": {
+  "d13f1-1m|base|E": {
+   "exact": 0,
+   "failures": {
+    "93120": [
+     "FAILURE",
+     [
+      318,
+      329,
+      403
+     ]
+    ],
+    "93121": [
+     "FAILURE",
+     [
+      104,
+      118,
+      340
+     ]
+    ],
+    "93122": [
+     "FAILURE",
+     [
+      396,
+      401
+     ]
+    ],
+    "93123": [
+     "FAILURE",
+     [
+      3,
+      174,
+      223,
+      307,
+      407
+     ]
+    ],
+    "93124": [
+     "FAILURE",
+     [
+      43,
+      399
+     ]
+    ]
+   },
+   "false_success": 0,
+   "median_decode_seconds": 307.28,
+   "n": 5,
+   "seeds": [
+    93120,
+    93121,
+    93122,
+    93123,
+    93124
+   ]
+  },
+  "d13f1-1m|base|F": {
+   "exact": 3,
+   "failures": {
+    "93123": [
+     "FAILURE",
+     [
+      223,
+      307
+     ]
+    ],
+    "93124": [
+     "FAILURE",
+     [
+      399
+     ]
+    ]
+   },
+   "false_success": 0,
+   "median_decode_seconds": 323.83,
+   "n": 5,
+   "seeds": [
+    93120,
+    93121,
+    93122,
+    93123,
+    93124
+   ]
+  },
+  "d13f1-1m|new|E": {
+   "exact": 0,
+   "failures": {
+    "93120": [
+     "FAILURE",
+     [
+      318,
+      329,
+      403
+     ]
+    ],
+    "93121": [
+     "FAILURE",
+     [
+      104,
+      118,
+      340
+     ]
+    ],
+    "93122": [
+     "FAILURE",
+     [
+      396,
+      401
+     ]
+    ],
+    "93123": [
+     "FAILURE",
+     [
+      3,
+      174,
+      223,
+      307,
+      407
+     ]
+    ],
+    "93124": [
+     "FAILURE",
+     [
+      43,
+      399
+     ]
+    ]
+   },
+   "false_success": 0,
+   "median_decode_seconds": 304.39,
+   "n": 5,
+   "seeds": [
+    93120,
+    93121,
+    93122,
+    93123,
+    93124
+   ]
+  },
+  "d13f1-1m|new|F": {
+   "exact": 4,
+   "failures": {
+    "93124": [
+     "FAILURE",
+     [
+      399
+     ]
+    ]
+   },
+   "false_success": 0,
+   "median_decode_seconds": 312.32,
+   "n": 5,
+   "seeds": [
+    93120,
+    93121,
+    93122,
+    93123,
+    93124
+   ]
+  }
+ },
+ "commits": [
+  "base:cfd6ee0733c70bbe4f1cd576668700d2fbb8631b",
+  "new:c416349be0e0044a6858e44f1547ca1b303de968"
+ ],
+ "false_success_total": 0,
+ "label": "SIMULATED: reads from a software channel model; no DNA was synthesised, stored or sequenced"
+}

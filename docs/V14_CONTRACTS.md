@@ -98,6 +98,7 @@ authenticity of stored data comes from the AES-256-GCM seal applied by the exist
 | VERSION_MISMATCH | permanent | ENOTSUP | FEATURE_UNSUPPORTED |
 | OVERFLOW | permanent | EOVERFLOW | FORMAT_ERROR |
 | INTERNAL | permanent | EIO | INTERNAL_ERROR |
+| RETAINED | permanent | EPERM | INTERNAL_ERROR |
 
 The errno set is the one the Linux NBD driver passes to the block layer. In Python every code is a
 `vnxdna.device.DeviceError` (a `VNXError`, stage `device`, with `device_code`, `error_class`, `errno` and the
@@ -128,7 +129,8 @@ first exchange on a connection is `hello`. A well-formed error response is a val
 carried error (Rust `Ok(Err(e))`, Python a returned `DeviceError`) instead of reporting it as invalid, so an error
 response carrying PROTOCOL is never confused with a malformed message.
 
-Field types: `str` 1–1024 UTF-8 bytes; `count` integer >= 0; `positive` integer >= 1; `sha256` 64 lowercase hex
+Field types: `str` 1–1024 UTF-8 bytes; `text` 0–1 MiB UTF-8 bytes (the metrics exposition of the service); `count`
+integer >= 0; `positive` integer >= 1; `sha256` 64 lowercase hex
 digits; `name` a staging file name, 1–255 bytes of `[A-Za-z0-9._-]` not starting with `.` (never a path); `object`
 any object (validated by the receiver); `versions` non-empty list of integers >= 1; `health` one of
 `ok`, `degraded`, `failed`; `hex128` 32 lowercase hex digits (a device id).
@@ -139,6 +141,7 @@ any object (validated by the receiver); `versions` non-empty list of integers >=
 | vnx.mgmt | capacity | — | block_size, blocks_per_extent, capacity_blocks, capacity_bytes, extent_count (positive) |
 | vnx.mgmt | health | — | state health, detail object |
 | vnx.mgmt | stats | — | counters object |
+| vnx.mgmt | metrics (P15) | — | text text |
 | vnx.mgmt | shutdown | — | — |
 | vnx.mgmt | authenticate (P4) | token str | role str |
 | vnx.codec-ipc | encode_extent | job count, extent count, generation positive, input name, input_sha256 sha256, output name, options object | job count, output_sha256 sha256, output_bytes positive |

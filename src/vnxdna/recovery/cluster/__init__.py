@@ -47,6 +47,12 @@ class ClusterConfig:
     max_candidate_pairs_per_read: int = 200
     max_candidate_pairs_ceiling: int = 1_000_000_000
     candidate_chunk_pairs: int = 1 << 25        # slot pairs held in memory at once (8 B each); results do not depend on it
+    # V12: over the budget, lower the bucket cap (largest buckets first: the least specific k-mers) down to this floor
+    # instead of stopping; the stage stops only if no cap >= the floor fits. The budget, not the cap, bounds the work,
+    # and every cluster frame is still verified (inner RS + CRC-32, container SHA-256), so a lower cap can only add
+    # verified frames compared with stopping: default 2 (any cap). At 10 MB D13-F1 (SIMULATED, ~10 reads per strand)
+    # the slot pairs come from buckets of <= 64 reads, so a floor of 64 still stopped. A floor >= bucket_cap disables it.
+    bucket_cap_floor: int = 2                   # also applies to plain --read-clustering fallback, not only presets
     # §5.2 verification: accept an edge iff distance <= theta * max(La, Lb); band |dL| + band_slack
     theta: float = 0.30
     band_slack: int = 32
@@ -91,6 +97,10 @@ class ClusterConfig:
     list_max_subsets: int = 20_000              # f-subsets of candidate positions per column (deterministic)
     list_max_hypotheses: int = 2_000_000        # (frame, address) trials per round
     list_rounds: int = 4
+    # Tail symbols: the last 20 bytes of a frame (CRC-32 + inner RS parity). A list-decoding repair of a candidate
+    # frame is accepted only if at least list_min_tail_matches of those 20 bytes match the bytes the repaired row
+    # predicts: a random (wrong) candidate matches that many only with tiny probability (~7e-15 per trial at 8), and
+    # the repaired frame must still pass inner RS + CRC-32 at its address.
     list_repair_bytes: int = 3                  # payload columns a tail-verified repair may change
     list_max_repairs: int = 4096                # repair variants per candidate
     list_min_tail_matches: int = 8              # of the 20 CRC-32 + inner parity bytes (random: ~7e-15 per trial)
@@ -100,11 +110,13 @@ class ClusterConfig:
     list_ransac_header_distance: int = 4        # header bytes a hypothesis frame may differ in
     list_ransac_tau: int = 8                    # agreeing payload columns of a supporter (random: ~1e-11 for 40 B)
     list_ransac_max_tuples: int = 50_000
+    list_ransac_scan_variants: int = 8          # scrambler variants per failed frame scanned against the RANSAC codeword
     list_min_frame_match_percent: int = 50      # or: % of a failed frame's bytes matching a predicted missing frame
 
     def validate(self) -> ClusterConfig:
         ints = {"max_unplaced_reads": 0, "k": 4, "sketch_size": 1, "bucket_cap": 2, "min_shared_slots": 1, "max_candidate_pairs": 0,
                 "max_candidate_pairs_per_read": 0, "max_candidate_pairs_ceiling": 0, "candidate_chunk_pairs": 1,
+                "bucket_cap_floor": 0,
                 "band_slack": 0, "max_cluster_reads": 2, "max_refine_pairs": 0, "consensus_band": 1, "c_sub": 1,
                 "c_indel": 1, "slack": 0, "min_votes": 1, "rounds": 0, "max_peels": 1, "max_trials": 1, "gmd_step": 1,
                 "gmd_steps": 0, "medoid_members": 1, "fill_trials": 1, "max_list_candidates": 0, "list_variants": 1,
@@ -112,7 +124,7 @@ class ClusterConfig:
                 "list_max_hypotheses": 0, "list_rounds": 1, "list_repair_bytes": 0, "list_max_repairs": 1,
                 "list_min_tail_matches": 1, "list_min_consistent": 1, "list_check_symbols": 1,
                 "list_ransac_hypotheses": 0, "list_ransac_header_distance": 0, "list_ransac_tau": 1,
-                "list_ransac_max_tuples": 1,
+                "list_ransac_max_tuples": 1, "list_ransac_scan_variants": 0,
                 "list_min_frame_match_percent": 1}
         for name, lo in ints.items():
             v = getattr(self, name)
@@ -150,6 +162,26 @@ class ClusterConfig:
 
     def to_dict(self) -> dict:
         return asdict(self)
+
+
+# Named decoder presets of the clustering stage (opt-in; used only with read_clustering="fallback"). "default" is
+# ClusterConfig(). "nanopore" is decoder preset F of the V9/V10 evaluations (experiments/v9/consensus/candidates.py):
+# full-template consensus, indel cost 4, template fill, and outer-code list decoding of rows still short after the
+# fill (vnxdna.recovery.outer_list). Every frame it adds is still verified (inner RS + CRC-32), and the container
+# SHA-256 still decides publication. Evidence: experiments/arch/outer_list_eval, experiments/v15/cc3 (SIMULATED).
+CLUSTER_PRESETS: dict[str, dict] = {
+    "default": {},
+    "nanopore": {"consensus_template": "full", "c_indel": 4, "fill": "template", "outer_list": "on"},
+}
+
+
+def cluster_preset(name: str) -> ClusterConfig:
+    """The validated :class:`ClusterConfig` of a named preset (:data:`CLUSTER_PRESETS`)."""
+    if not isinstance(name, str):
+        raise VNXConfigurationError(f"cluster preset must be a string, got {type(name).__name__}")
+    if name not in CLUSTER_PRESETS:
+        raise VNXConfigurationError(f"unknown cluster preset {name!r}; known: {', '.join(CLUSTER_PRESETS)}")
+    return ClusterConfig(**CLUSTER_PRESETS[name]).validate()
 
 
 def validate_mode(mode, config) -> ClusterConfig | None:

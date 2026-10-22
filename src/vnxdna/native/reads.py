@@ -86,13 +86,15 @@ def _ext_candidates() -> list[Path]:
 
 
 def _candidates() -> list[Path]:
+    from vnxdna.native._loader import freshest_first
     out = []
     env = os.environ.get("VNXDNA_READS_LIB")
-    if env:
-        out.append(Path(env))
+    pinned = Path(env) if env else None
+    if pinned is not None:
+        out.append(pinned)
     out.extend(_ext_candidates())
     out.append(_INPLACE)
-    return out
+    return freshest_first(out, _INPLACE, pinned)
 
 
 def _bind(lib) -> None:

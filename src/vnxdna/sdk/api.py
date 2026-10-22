@@ -20,7 +20,8 @@ from vnxdna.core import guard as _guard
 from vnxdna.archive import container as _ct
 from vnxdna.archive import operations as _ar
 from vnxdna.archive.operations import ArchiveOptions
-from vnxdna.core.errors import (VNXConfigurationError, VNXDecodeError, VNXIntegrityError, VNXOutputError)
+from vnxdna.core.errors import (VNXConfigurationError, VNXDecodeError, VNXIntegrityError, VNXOutputError,
+                                 VNXResourceError)
 from vnxdna.core.version import FORMAT_VERSION, FRAME_VERSION, codec_id
 from vnxdna.pipeline import decode as _de
 from vnxdna.pipeline import encode as _en
@@ -37,7 +38,8 @@ __all__ = ["archive", "encode", "decode", "inspect", "verify", "extract", "list_
            "codec_compare", "parse_size", "sweep", "channel_models", "channel_model", "channel_convert",
            "channel_sweep", "experiment_run", "experiment_reproduce", "generate", "validate_strands", "profiles",
            "native", "keygen", "load_keys", "version", "conformance", "is_container", "stream_encode", "stream_decode",
-           "volume_create", "volume_write", "volume_read", "volume_stat", "volume_scrub", "cache_stats", "cache_clear"]
+           "stream_read_range", "volume_create", "volume_write", "volume_read", "volume_stat", "volume_scrub",
+           "cache_stats", "cache_clear", "plan"]
 
 CONTAINER = [FORMAT_VERSION[0], FORMAT_VERSION[1]]
 
@@ -258,12 +260,13 @@ def decode(reads: PathLike, output: PathLike | None = None, *, options: DecodeOp
         opts = replace(opts, **expect)
     if output is None and extract_to is None and not select:
         raise VNXConfigurationError("give an output container, an extraction directory, or files to select")
-    cache = cache_key = None
+    cache = cache_key = cache_state = None
     cdir = _cache.configured_dir(cache_dir)
     if cdir is not None and not select:
         cache = _cache.ResultCache(cdir)
-        cache_key = _cache.key_for(reads, opts, has_key=key is not None or passphrase is not None,
-                                   key_material=_cache.key_fingerprint(key, passphrase), allow_unencrypted=allow_unencrypted)
+        cache_key, cache_state = _cache.key_and_state(reads, opts, has_key=key is not None or passphrase is not None,
+                                                      key_material=_cache.key_fingerprint(key, passphrase),
+                                                      allow_unencrypted=allow_unencrypted)
     hasher = InputHasher("reads", [reads], enabled=input_hash)
     target, tmp = output, None
     ok = False
@@ -300,8 +303,15 @@ def decode(reads: PathLike, output: PathLike | None = None, *, options: DecodeOp
                                    allow_unencrypted=allow_unencrypted)
             if res.status == "SUCCESS" and cache is not None and cache_key is not None and target is not None:
                 try:
-                    cache.store(cache_key, target, {k: v for k, v in res.report.items() if k != "extract"})
-                    res.report["cache"] = {"hit": False, "key": cache_key, "dir": str(cdir), "stored": True}
+                    # V15 J2 (O-3): the key was built from the bytes of the read file as they were before the decode,
+                    # and the decode read the file again: if the file changed in between, the result may belong to
+                    # other bytes, so it is not cached (nothing is stored under the key of the old content)
+                    if _cache.input_state(reads) == cache_state:
+                        cache.store(cache_key, target, {k: v for k, v in res.report.items() if k != "extract"})
+                        res.report["cache"] = {"hit": False, "key": cache_key, "dir": str(cdir), "stored": True}
+                    else:
+                        res.report["cache"] = {"hit": False, "key": cache_key, "dir": str(cdir), "stored": False,
+                                               "reason": "the read file changed during the decode; nothing was cached"}
                 except OSError as exc:
                     res.report["cache"] = {"hit": False, "key": cache_key, "dir": str(cdir), "stored": False,
                                            "error": str(exc)[:200]}
@@ -381,6 +391,33 @@ def stream_decode(strands: PathLike, manifest: PathLike, output: PathLike, *, op
     return DecodeResult("stream-decode", "SUCCESS", rep, inputs=(file_ref("strands", strands), file_ref("manifest", manifest)),
                         outputs=outputs, formats={"stream": _st.STREAM_FORMAT, "container": CONTAINER},
                         seconds=time.perf_counter() - t0, workers=opts.workers, config=_resolved(opts))
+
+
+def stream_read_range(strands: PathLike, manifest: PathLike, start: int, length: int, output: PathLike | None = None, *,
+                      options: DecodeOptions | None = None, key: bytes | None = None, passphrase: str | None = None,
+                      overwrite: bool = False, secure=None) -> Result:
+    """The bytes ``[start, start + length)`` of a streamed archive: only the extents the range covers are decoded, each
+    verified against its manifest SHA-256 before a byte is returned. Writes them to ``output`` (``"-"`` = stdout; None =
+    returned in ``body["data"]`` as bytes)."""
+    from vnxdna.pipeline import stream as _st
+    _guard.enforce("extract", strands, secure)
+    t0 = time.perf_counter()
+    opts = options or DecodeOptions()
+    data, rep = _st.read_range(strands, manifest, start, length, options=opts, key=key, passphrase=passphrase)
+    body: dict[str, Any] = dict(rep)
+    outputs: tuple = ()
+    if output == "-":
+        sys.stdout.buffer.write(data)
+        sys.stdout.buffer.flush()
+    elif output is not None:
+        from vnxdna.core.util import atomic_output
+        with atomic_output(output, overwrite=overwrite) as t:
+            t.write_bytes(data)
+        outputs = (file_ref("data", output, body["sha256"]),)
+    else:
+        body["data"] = data
+    return Result("stream-read-range", "SUCCESS", body, inputs=(file_ref("strands", strands), file_ref("manifest", manifest)),
+                  outputs=outputs, formats={"stream": _st.STREAM_FORMAT}, seconds=time.perf_counter() - t0, workers=opts.workers)
 
 
 def _volume_options(extent_bytes, workers, dna, decode_options, key, passphrase, cache_bytes=None, write_back_bytes=None):
@@ -739,6 +776,33 @@ def validate_strands(sequences: PathLike, *, constraints: PathLike | None = None
     cfg.validate()
     rep = validate_file(sequences, cfg, max_reported=max_reported)
     return Result("validate", "SUCCESS" if rep["valid"] else "FAILURE", rep, inputs=(file_ref("strands", sequences),))
+
+
+def plan(path: PathLike, *, profile: str = "v4-balanced", prices: PathLike | None = None) -> Result:
+    """The AP-8 cost plan for a file: the encoder's own strand and base counts, and the per-vendor costs.
+
+    ``prices`` is an optional operator-supplied price file (``vnx.vendor-prices/1``); without it the plan carries no
+    costs. The result body is the plan document (the field set of :meth:`vnxdna.pipeline.plan.Plan.to_dict`).
+
+    The plan is a COST ESTIMATE, not an order: nothing is synthesised, ordered, stored or sequenced here, the counts
+    are the software's own encoder counts and the prices are the operator's own numbers.
+    """
+    from vnxdna.pipeline.plan import load_prices, plan_file
+    vendor_prices = None
+    inputs: tuple = (file_ref("input", Path(path)),)
+    if prices is not None:
+        try:
+            vendor_prices = load_prices(prices)
+        except OSError as error:
+            raise VNXResourceError(f"cannot read the vendor price file {prices}: {error}") from None
+        except ValueError as error:
+            raise VNXConfigurationError(f"the vendor price file {prices} is not valid JSON: {error}") from None
+        inputs += (file_ref("prices", Path(prices)),)
+    try:
+        planned = plan_file(path, options=DNAOptions(profile=profile), prices=vendor_prices)
+    except OSError as error:
+        raise VNXResourceError(f"cannot plan {path}: {error}") from None
+    return Result("plan", "SUCCESS", planned.to_dict(), inputs=inputs)
 
 
 def profiles() -> Result:

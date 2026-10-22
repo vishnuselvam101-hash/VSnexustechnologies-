@@ -1,0 +1,12 @@
+=== V15 release gate: ruff
+commit: 5e44b201b1646ae6bdd10eb701e3ea0bec22389e
+ruff: ruff 0.16.10
+command: ruff check src tests research
+started: 2026-10-22T12:48:05Z
+
+All checks passed!
+
+--- ruff check . (whole tree)
+All checks passed!
+
+finished: 2026-10-22T12:48:05Z

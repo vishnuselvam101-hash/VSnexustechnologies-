@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from vnxdna.core.crc_rows import byte_rows_array
+
 
 def _table() -> np.ndarray:
     table = np.zeros(256, dtype=np.uint32)
@@ -25,8 +27,13 @@ TABLE = _table()
 
 
 def crc32_rows(rows: np.ndarray) -> np.ndarray:
-    """CRC-32 of every row of a (N, W) uint8 array. Returns (N,) uint32."""
-    rows = np.asarray(rows, dtype=np.uint8)
+    """CRC-32 of every row of a (N, W) uint8 array. Returns (N,) uint32.
+
+    A table of rows (``list`` or ``tuple``) is validated by the shared validator
+    (:mod:`vnxdna.core.crc_rows`), which the native kernel uses as well: a boolean or a value outside 0..255 is
+    refused here too, so the two backends never disagree about what a byte is.
+    """
+    rows = byte_rows_array(rows)
     if rows.ndim != 2:
         raise ValueError("crc32_rows expects a 2-D array")
     crc = np.full(rows.shape[0], 0xFFFFFFFF, dtype=np.uint32)

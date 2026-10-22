@@ -1,0 +1,154 @@
+{
+ "cells": {
+  "d13f1-1m|base|E": {
+   "exact": 0,
+   "failures": {
+    "93135": [
+     "FAILURE",
+     [
+      127,
+      341
+     ]
+    ],
+    "93136": [
+     "FAILURE",
+     [
+      288
+     ]
+    ],
+    "93137": [
+     "FAILURE",
+     [
+      62,
+      323
+     ]
+    ],
+    "93138": [
+     "FAILURE",
+     [
+      86
+     ]
+    ],
+    "93139": [
+     "FAILURE",
+     [
+      191,
+      379
+     ]
+    ]
+   },
+   "false_success": 0,
+   "median_decode_seconds": 248.65,
+   "n": 5,
+   "seeds": [
+    93135,
+    93136,
+    93137,
+    93138,
+    93139
+   ]
+  },
+  "d13f1-1m|base|F": {
+   "exact": 3,
+   "failures": {
+    "93135": [
+     "FAILURE",
+     [
+      127
+     ]
+    ],
+    "93136": [
+     "FAILURE",
+     [
+      288
+     ]
+    ]
+   },
+   "false_success": 0,
+   "median_decode_seconds": 254.84,
+   "n": 5,
+   "seeds": [
+    93135,
+    93136,
+    93137,
+    93138,
+    93139
+   ]
+  },
+  "d13f1-1m|new|E": {
+   "exact": 0,
+   "failures": {
+    "93135": [
+     "FAILURE",
+     [
+      127,
+      341
+     ]
+    ],
+    "93136": [
+     "FAILURE",
+     [
+      288
+     ]
+    ],
+    "93137": [
+     "FAILURE",
+     [
+      62,
+      323
+     ]
+    ],
+    "93138": [
+     "FAILURE",
+     [
+      86
+     ]
+    ],
+    "93139": [
+     "FAILURE",
+     [
+      191,
+      379
+     ]
+    ]
+   },
+   "false_success": 0,
+   "median_decode_seconds": 258.34,
+   "n": 5,
+   "seeds": [
+    93135,
+    93136,
+    93137,
+    93138,
+    93139
+   ]
+  },
+  "d13f1-1m|new|F": {
+   "exact": 4,
+   "failures": {
+    "93135": [
+     "FAILURE",
+     [
+      127
+     ]
+    ]
+   },
+   "false_success": 0,
+   "median_decode_seconds": 263.05,
+   "n": 5,
+   "seeds": [
+    93135,
+    93136,
+    93137,
+    93138,
+    93139
+   ]
+  }
+ },
+ "commits": [
+  "base:cfd6ee0733c70bbe4f1cd576668700d2fbb8631b",
+  "new:c416349be0e0044a6858e44f1547ca1b303de968"
+ ],
+ "false_success_total": 0,
+ "label": "SIMULATED: reads from a software channel model; no DNA was synthesised, stored or sequenced"
+}

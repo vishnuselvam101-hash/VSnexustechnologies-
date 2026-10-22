@@ -33,6 +33,7 @@ ERROR_CODES: dict[str, tuple[str, int, str]] = {
     "VERSION_MISMATCH": ("permanent", ENOTSUP, "FEATURE_UNSUPPORTED"),
     "OVERFLOW": ("permanent", EOVERFLOW, "FORMAT_ERROR"),
     "INTERNAL": ("permanent", EIO, "INTERNAL_ERROR"),
+    "RETAINED": ("permanent", EPERM, "INTERNAL_ERROR"),
 }
 
 

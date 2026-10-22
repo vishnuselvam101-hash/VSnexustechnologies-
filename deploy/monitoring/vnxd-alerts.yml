@@ -1,0 +1,128 @@
+# Prometheus alerting rules for the VNX storage service (`vnxd`), AP-6.
+#
+# The service exposes its metrics in the Prometheus text exposition format (0.0.4) on the management socket:
+# the `metrics` operation of `vnx.mgmt/1` answers with the whole exposition as one text. The socket is a Unix
+# socket, so the exposition is read over it and pushed to Prometheus by an exporter on the monitoring host
+# (see README.md in this directory); the service itself never opens a network port.
+#
+# Every metric name used below is produced by src/vnxdna/native/rust/vnxd/src/metrics.rs; the test
+# tests/v15/test_ap6_alert_rules.py checks that the two never drift apart.
+#
+# The DNA simulator counters are SIMULATED measurements of the software model, never of synthesised DNA.
+groups:
+  - name: vnxd
+    rules:
+      # --- the device -------------------------------------------------------------------------------------------
+      - alert: VnxdHealthDegraded
+        expr: 'vnxd_health_state{state="degraded"} == 1'
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "the vnxd device is degraded"
+          description: "The device reports the state 'degraded' for 5 minutes: the backend is not healthy or extents are damaged. Read the health view of the management socket for the detail."
+
+      - alert: VnxdHealthFailed
+        expr: 'vnxd_health_state{state="failed"} == 1'
+        labels:
+          severity: critical
+        annotations:
+          summary: "the vnxd device has failed"
+          description: "The device reports the state 'failed': the request path failed in a way that needs an operator. The volume is not served until the service is restarted."
+
+      - alert: VnxdReadOnly
+        expr: 'vnxd_read_only == 1'
+        labels:
+          severity: warning
+        annotations:
+          summary: "the vnxd device is read-only"
+          description: "The device refuses every write: it was opened read-only, or the backend is unavailable and the writes are refused instead of lost."
+
+      - alert: VnxdDamagedExtents
+        expr: 'vnxd_damaged_extents > 0'
+        labels:
+          severity: critical
+        annotations:
+          summary: "the vnxd volume has damaged extents"
+          description: "{{ $value }} extents of the map do not match their stored bytes. The data of those extents is lost: run a scrub and restore the affected extents."
+
+      # --- the backend ------------------------------------------------------------------------------------------
+      - alert: VnxdBackendUnavailable
+        expr: 'vnxd_backend_state{state="unavailable"} == 1'
+        labels:
+          severity: critical
+        annotations:
+          summary: "the backend of the vnxd device is unavailable"
+          description: "The backend that holds the volume does not answer: the device serves reads from the cache at most and refuses every write."
+
+      - alert: VnxdBackendDegraded
+        expr: 'vnxd_backend_state{state="degraded"} == 1'
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "the backend of the vnxd device is degraded"
+          description: "The backend of the volume fails often enough to be degraded for 5 minutes. The device still serves the volume, but the writes are slow."
+
+      # --- the scrub --------------------------------------------------------------------------------------------
+      - alert: VnxdScrubFailures
+        expr: 'vnxd_scrub_failed_extents > 0'
+        labels:
+          severity: critical
+        annotations:
+          summary: "the last scrub of the vnxd volume found failed extents"
+          description: "{{ $value }} extents failed the last scrub: their stored bytes do not match the map. The per-code counts are in the vnxd_scrub_failure series."
+
+      - alert: VnxdScrubStale
+        expr: 'vnxd_scrub_last_run_unix_ms < (time() * 1000 - 604800000)'
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "the vnxd volume has not been scrubbed for 7 days"
+          description: "The last scrub of the volume is older than 7 days. The value 0 means that no scrub ever ran on this volume."
+
+      # --- the cache ---------------------------------------------------------------------------------------------
+      - alert: VnxdCacheWritebackFailures
+        expr: 'vnxd_cache_writeback_failures_total > 0'
+        labels:
+          severity: warning
+        annotations:
+          summary: "a cache write-back of the vnxd device failed"
+          description: "A dirty extent could not be written back to the backend. The extent stays dirty until a later flush succeeds: the data is not lost, but it is not durable either."
+
+      - alert: VnxdCacheHitRateLow
+        expr: 'rate(vnxd_cache_hits_total[5m]) / (rate(vnxd_cache_hits_total[5m]) + rate(vnxd_cache_misses_total[5m])) < 0.5'
+        for: 30m
+        labels:
+          severity: info
+        annotations:
+          summary: "the cache hit rate of the vnxd device is below 50%"
+          description: "Less than half of the reads were served from the cache for 30 minutes. The reads go to the backend instead, which is slower and wears the backend out faster."
+
+      # --- the integrity -----------------------------------------------------------------------------------------
+      - alert: VnxdIntegrityFailures
+        expr: 'increase(vnxd_volume_integrity_failures_total[10m]) > 0'
+        labels:
+          severity: critical
+        annotations:
+          summary: "the vnxd volume found an integrity failure"
+          description: "The volume found data that does not match its digest in the last 10 minutes. The read is refused, never answered with wrong bytes."
+
+      # --- the I/O -----------------------------------------------------------------------------------------------
+      - alert: VnxdIoTimeouts
+        expr: 'vnxd_io_timed_out_total > 0'
+        labels:
+          severity: warning
+        annotations:
+          summary: "an I/O of the vnxd device timed out"
+          description: "A request did not complete before its deadline and was answered with a timeout. The kernel timeout is longer, so the connection survives."
+
+      # --- the DNA simulator (SIMULATED) -------------------------------------------------------------------------
+      - alert: VnxdDnaSimDecodeFailures
+        expr: 'vnxd_decode_failures_total > 0'
+        labels:
+          severity: warning
+        annotations:
+          summary: "the DNA simulator failed to decode an extent"
+          description: "A simulated decoding failed. The counter describes the software model of the channel (SIMULATED), never synthesised DNA: the simulator is not attached to the service by default, so the series is absent until it is."

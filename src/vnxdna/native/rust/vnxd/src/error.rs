@@ -79,6 +79,7 @@ codes! {
     VersionMismatch => "VERSION_MISMATCH", Permanent, ENOTSUP;
     Overflow => "OVERFLOW", Permanent, EOVERFLOW;
     Internal => "INTERNAL", Permanent, EIO;
+    Retained => "RETAINED", Permanent, EPERM;
 }
 
 /// A typed failure with its diagnostic message.

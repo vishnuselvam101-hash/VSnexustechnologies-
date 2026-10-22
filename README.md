@@ -1,6 +1,19 @@
 # VNX-DNA
 
-**Release candidate: 14.0.0 on `build/v14` (not tagged).** V14 turns the codec into a storage platform: a Rust
+**Release candidate: 15.0.0 on `build/v15` (not tagged).** V15 is a software-and-simulation release. Its objective is
+long-term readability: the format is frozen, a golden corpus with pinned digests is committed, and an independent
+standard-library-only reference decoder is in the tree, so that a party who has the spec and the strand files can
+recover the data without this software (no lifetime is claimed for anything). V15 also adds write-once retention and
+snapshots, Prometheus metrics, a synthesis-cost planner, partial range retrieval, an offline security monitor, an
+offline-only check, a SIMULATED drive digital twin and a hardening sweep. Decode speed is 1.236x over 14.0.0 on the
+clean 4 MiB workload and 1.042x on the indel 4 MiB workload, output byte-identical, 0 false successes (SIMULATED, one
+host); both registered speed targets (3x / 5x over v12) are **missed**. No DNA was synthesised, stored or sequenced, and
+every channel number is SIMULATED
+([docs/V15_FINALIZATION_PLAN.md](docs/V15_FINALIZATION_PLAN.md),
+[docs/V15_REFERENCE_DECODER.md](docs/V15_REFERENCE_DECODER.md),
+[docs/V15_DIGITAL_TWIN.md](docs/V15_DIGITAL_TWIN.md)).
+
+**Previous release: 14.0.0 (tag `v14.0.0`).** V14 turns the codec into a storage platform: a Rust
 control plane (`vnxd`: block volume + journal, VNX-IO queue, VNX-RAM, cache, fallback, security, load balancer), media
 adapters (file image, DNA software simulator, fault injection, simulated lab), and a real Linux software block device
 (`/dev/nbdN`, tested with ext4 on this host only). Codec: shuffled-pool decode is linear in the number of extents
@@ -11,7 +24,7 @@ hardware and physical DNA device are designs, not devices. All channel numbers a
 ([docs/V14_IMPLEMENTATION_REPORT.md](docs/V14_IMPLEMENTATION_REPORT.md),
 [docs/V14_BENCHMARK_REPORT.md](docs/V14_BENCHMARK_REPORT.md)).
 
-**Previous release: 13.0.0 (tag `v13.0.0`).** A streaming decode engine (Rust core with the fuzzed
+**Earlier release: 13.0.0 (tag `v13.0.0`).** A streaming decode engine (Rust core with the fuzzed
 C kernels linked in, address scheduler, thread pool) behind a fallback ladder, streaming encode/decode of byte
 streams with bounded memory, a crash-consistent volume with an extent cache, and a decode result cache. Measured
 against v12.0.0 code (6bf7749) on the pre-declared workloads, output byte-identical, 0 false successes: 4 MiB indel
@@ -19,14 +32,14 @@ decode 2.89× faster at 1 worker, 1.70× at 4, 1.37× at 8; clean decode 2.20×;
 encode unchanged; decode RSS ~100 MiB at every worker count. The 10× target of the V13 directive is **not** reached (SIMULATED, one host,
 [docs/V13_BENCHMARK_REPORT.md](docs/V13_BENCHMARK_REPORT.md), [docs/V13_COMPLETION_REPORT.md](docs/V13_COMPLETION_REPORT.md)).
 
-**Current release: v12.0.0 (performance release: parallel pass 2, shift-tolerant orientation pre-pass with a native
+**Earlier release: v12.0.0 (performance release: parallel pass 2, shift-tolerant orientation pre-pass with a native
 kernel, flat pass-1 bookkeeping, exact statistics across worker counts; tag `v12.0.0`).** Status: 4142 tests pass
 (0 failed); 4 MiB indel decode 1.23x (4 workers), 1.11x (1 worker) and 1.34x (8 workers) faster than v11.0.0, output
 byte-identical, no scenario slower beyond the A/A noise band (SIMULATED, one host,
 [docs/V12_BENCHMARK_REPORT.md](docs/V12_BENCHMARK_REPORT.md)). The pre-registered targets T1 (w4 >= 1.25) and T2
 (w1 >= 1.15) are not met (1.23 and 1.11); peak RSS at 4 workers is up to 1.23x v11 (T5 not met). The low-coverage
 and real-data scope of the V12 brief is not in this release. The 10 MB nanopore-like case is still an explicit
-failure (deferred). Released versions are the git tags `v4.0.0` … `v12.0.0`. The package version is
+failure (deferred). Released versions are the git tags `v4.0.0` … `v14.0.0`. The package version of that release was
 `12.0.0` (`vnx-dna --version`). Archive manifests carry a separate, frozen format stamp (`6.0.0.dev0`), so archive byte
 identity across V6–V12 is unchanged and pinned by the compatibility tests.
 Release notes per version: [CHANGELOG.md](CHANGELOG.md) and `docs/V<N>_COMPLETION_REPORT.md`.

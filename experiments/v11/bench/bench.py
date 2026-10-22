@@ -17,7 +17,6 @@ import json
 import os
 import random
 import statistics
-import subprocess
 import sys
 import tempfile
 import time

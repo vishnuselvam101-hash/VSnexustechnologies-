@@ -1,0 +1,26 @@
+# AP-17 network allow-list for the VNX-DNA library.
+#
+# Format: one entry per line
+#   <path relative to the repository root> | <one-line reason>
+#
+# A file under src/ may import the `socket` module only when it is listed in the
+# enforced part of this file. The list was produced from the real tree with
+#   grep -rln '^import socket|^from socket' src
+# and, at the time of writing, no file under src/ imports `socket`, so the
+# enforced part is empty. A new socket import under src/ fails the AP-17 test
+# until it is listed here with a reason.
+#
+# section: enforced
+#
+# (no file under src/ imports `socket` today)
+#
+# section: informational
+#
+# The entries below are the test-tree users of `socket`. They are recorded for
+# reviewers and are outside the enforced scope of the src/ scan.
+tests/secure/test_simulator_cli_interfaces.py | simulator CLI test blocks the socket API to prove the sandbox refuses network calls
+tests/v14/integration/test_v14_e2e_blockdev.py | block-device test drives the local NBD service over a Unix socket
+tests/v14/nbd_support.py | NBD test helper talks to the local vnxd service over a Unix socket
+tests/v14/test_device_nbd.py | NBD device test drives the local NBD service over a Unix socket
+tests/v15/test_ap16_monitor.py | AP-16 monitor test blocks the socket API to prove the monitor works offline
+tests/v15/test_ap17_offline.py | AP-17 offline guard blocks the socket API for this test module

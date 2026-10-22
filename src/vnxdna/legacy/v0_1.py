@@ -31,9 +31,10 @@ import hashlib
 import io
 import itertools
 import json
+import re
 import zlib
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 import zstandard
 
@@ -44,6 +45,19 @@ from ..errors import (AuthenticationError, InsufficientRedundancyError, Integrit
 V01_DATASET = "v0.1-dataset"
 RD1_ARCHIVE = "rd1-archive"
 MAX_LEGACY_DECOMPRESSED = 1 << 34
+#: the manifest is untrusted input: every count it declares is capped before it can size an allocation
+MAX_LEGACY_STRANDS = 1 << 22
+MAX_LEGACY_STRIPES = 1 << 16
+MAX_LEGACY_MANIFEST_BYTES = 1 << 20
+MAX_LEGACY_ARCHIVE_BYTES = 1 << 30
+MAX_LEGACY_LINE_CHARS = 1 << 20
+#: the strands file is read line by line, but every record is kept: its size is bounded too
+MAX_LEGACY_STRANDS_BYTES = 1 << 30
+#: the block size used to read the strands file
+_LEGACY_BLOCK = 1 << 20
+#: the line breaks ``str.splitlines`` knows, once the universal newline translation has turned ``\r`` and ``\r\n``
+#: into ``\n`` (``\x85`` and the unicode ones are not ASCII, so the file cannot hold them)
+_LEGACY_BREAK = re.compile(r"[\n\v\f\x1c\x1d\x1e]")
 
 
 def detect(path: str | Path) -> str | None:
@@ -51,11 +65,13 @@ def detect(path: str | Path) -> str | None:
     p = Path(path)
     try:
         if p.is_dir() and (p / "manifest.json").is_file():
+            if (p / "manifest.json").stat().st_size > MAX_LEGACY_MANIFEST_BYTES:
+                return None
             raw = json.loads((p / "manifest.json").read_text(encoding="utf-8"))
             if isinstance(raw, dict) and raw.get("format") == "VNX-DNA" and raw.get("format_version") in (1, 2, 3) \
                     and not isinstance(raw.get("format_version"), bool):
                 return V01_DATASET
-        elif p.is_file() and p.stat().st_size < 1 << 30:
+        elif p.is_file() and p.stat().st_size < MAX_LEGACY_ARCHIVE_BYTES:
             with p.open("rb") as handle:
                 start = handle.read(64).lstrip()
             if start.startswith(b"{"):
@@ -66,6 +82,39 @@ def detect(path: str | Path) -> str | None:
     except (OSError, UnicodeDecodeError, json.JSONDecodeError):
         return None
     return None
+
+
+def _read_bounded(path: Path, limit: int, what: str) -> bytes:
+    """Read a file, refusing one larger than ``limit``: the file is untrusted input, never read whole."""
+    try:
+        with path.open("rb") as handle:
+            data = handle.read(limit + 1)
+    except OSError as error:
+        raise MetadataError(f"{what} unreadable: {error}") from error
+    if len(data) > limit:
+        raise MetadataError(f"{what} is larger than {limit} bytes")
+    return data
+
+
+def _read_json(path: Path, limit: int, what: str) -> Any:
+    """Read a JSON document of at most ``limit`` bytes (never read whole)."""
+    data = _read_bounded(path, limit, what)
+    try:
+        return json.loads(data.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise MetadataError(f"{what} unreadable: {error}") from error
+
+
+def _missing_indices(total: int, present: dict) -> tuple[int, list[int]]:
+    """Count the absent indices of ``range(total)`` and list the first 50 (the list itself stays bounded)."""
+    count = 0
+    head: list[int] = []
+    for i in range(total):
+        if i not in present:
+            count += 1
+            if len(head) < 50:
+                head.append(i)
+    return count, head
 
 
 # ------------------------------------------------------------------ shared helpers
@@ -178,25 +227,57 @@ class _LegacyVandermonde:
         raise InsufficientRedundancyError("legacy stripe unrecoverable: every surviving K-subset is singular under the V0.1 (non-MDS) generator")
 
 
+def _iter_lines(handle, limit: int, total: int) -> Iterator[str]:
+    """Yield the lines of a text handle, in bounded memory.
+
+    The breaks are the ones ``str.splitlines`` knows (the file is read with the universal newline translation, so
+    only ``\\n``, ``\\v``, ``\\f`` and ``\\x1c``..``\\x1e`` can end a line). A line longer than ``limit`` characters
+    is refused instead of being held whole, and the file may not hold more than ``total`` characters.
+    """
+    buffer = ""
+    read = 0
+    while True:
+        block = handle.read(_LEGACY_BLOCK)
+        if not block:
+            break
+        read += len(block)
+        if read > total:
+            raise MetadataError(f"legacy strands: the file is larger than {total} characters")
+        parts = _LEGACY_BREAK.split(buffer + block)
+        buffer = parts.pop()
+        if len(buffer) > limit:
+            raise MetadataError(f"legacy strands: a line is longer than {limit} characters")
+        for part in parts:
+            if len(part) > limit:
+                raise MetadataError(f"legacy strands: a line is longer than {limit} characters")
+            yield part
+    if buffer:
+        if len(buffer) > limit:
+            raise MetadataError(f"legacy strands: a line is longer than {limit} characters")
+        yield buffer
+
+
 def _read_v01_fasta(path: Path) -> list[tuple[list[str], str]]:
+    """Read the legacy strands file one line at a time: it is never held in memory as a whole."""
     records: list[tuple[list[str], str]] = []
     header: list[str] | None = None
     seq: list[str] = []
     try:
-        text = path.read_text(encoding="ascii")
+        with path.open("r", encoding="ascii", newline=None) as handle:
+            for line in _iter_lines(handle, MAX_LEGACY_LINE_CHARS, MAX_LEGACY_STRANDS_BYTES):
+                if not line:
+                    continue
+                if line.startswith(">"):
+                    if header is not None:
+                        records.append((header, "".join(seq).upper()))
+                        _require(len(records) <= MAX_LEGACY_STRANDS, f"more than {MAX_LEGACY_STRANDS} strands")
+                    header, seq = line[1:].split("|"), []
+                elif header is None:
+                    raise MetadataError("legacy FASTA sequence before header")
+                else:
+                    seq.append(line.strip())
     except (OSError, UnicodeDecodeError) as error:
         raise InvalidInputError(f"cannot read legacy strands: {error}") from error
-    for line in text.splitlines():
-        if not line:
-            continue
-        if line.startswith(">"):
-            if header is not None:
-                records.append((header, "".join(seq).upper()))
-            header, seq = line[1:].split("|"), []
-        elif header is None:
-            raise MetadataError("legacy FASTA sequence before header")
-        else:
-            seq.append(line.strip())
     if header is not None:
         records.append((header, "".join(seq).upper()))
     return records
@@ -204,10 +285,7 @@ def _read_v01_fasta(path: Path) -> list[tuple[list[str], str]]:
 
 def decode_v01_dataset(directory: str | Path, key: bytes | None = None) -> tuple[bytes, dict[str, Any]]:
     root = Path(directory)
-    try:
-        m = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
-        raise MetadataError(f"legacy manifest unreadable: {error}") from error
+    m = _read_json(root / "manifest.json", MAX_LEGACY_MANIFEST_BYTES, "legacy manifest")
     _require(isinstance(m, dict), "not an object")
     version = m.get("format_version")
     if m.get("format") != "VNX-DNA" or version not in (1, 2, 3) or isinstance(version, bool):
@@ -215,6 +293,8 @@ def decode_v01_dataset(directory: str | Path, key: bytes | None = None) -> tuple
     for name, kind in (("dataset_id", str), ("original_sha256", str), ("original_size", int), ("transformed_size", int),
                        ("strand_count", int), ("config", dict)):
         _require(isinstance(m.get(name), kind) and not isinstance(m.get(name), bool), f"field {name!r} missing or not {kind.__name__}")
+    _require(0 <= m["strand_count"] <= MAX_LEGACY_STRANDS,
+             f"strand_count {m['strand_count']} exceeds the limit of {MAX_LEGACY_STRANDS}")
     cfg = m["config"]
     for name, kind in (("compression", str), ("encryption", bool), ("ecc", str), ("encoding", str), ("constraints", dict)):
         _require(isinstance(cfg.get(name), kind), f"config.{name} missing or not {kind.__name__}")
@@ -267,15 +347,17 @@ def decode_v01_dataset(directory: str | Path, key: bytes | None = None) -> tuple
                 stats["invalid_copies"] += 1
                 continue
             chosen[index] = payload
-        missing = [i for i in range(total) if i not in chosen]
-        if missing:
-            raise InsufficientRedundancyError(f"legacy dataset: {len(missing)} strand(s) missing or invalid (no redundancy in V0.1 ecc=none)",
-                                              details={"missing": missing[:50]})
+        missing_count, missing_head = _missing_indices(total, chosen)
+        if missing_count:
+            raise InsufficientRedundancyError(f"legacy dataset: {missing_count} strand(s) missing or invalid (no redundancy in V0.1 ecc=none)",
+                                              details={"missing": missing_head})
         transformed = b"".join(chosen[i] for i in range(total))
     else:
         _require(cfg["ecc"] == "reed_solomon" and version in (2, 3), "unknown legacy ECC")
         ecc = m.get("ecc")
         _require(isinstance(ecc, dict) and isinstance(m.get("stripe_count"), int), "missing ecc/stripe_count")
+        _require(0 <= m["stripe_count"] <= MAX_LEGACY_STRIPES,
+                 f"stripe_count {m['stripe_count']} exceeds the limit of {MAX_LEGACY_STRIPES}")
         k, parity = ecc.get("data_shards"), ecc.get("parity_shards")
         _require(isinstance(k, int) and isinstance(parity, int) and 1 <= k and 1 <= parity and k + parity <= 255, "invalid K/M")
         code = _LegacyVandermonde(k, parity)
@@ -317,10 +399,7 @@ def decode_v01_dataset(directory: str | Path, key: bytes | None = None) -> tuple
 
 # ------------------------------------------------------------------ RD-1 JSON archive
 def decode_rd1_archive(path: str | Path, key: bytes | None = None, file_id: str | None = None) -> tuple[bytes, dict[str, Any]]:
-    try:
-        archive = json.loads(Path(path).read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
-        raise MetadataError(f"RD-1 archive unreadable: {error}") from error
+    archive = _read_json(Path(path), MAX_LEGACY_ARCHIVE_BYTES, "RD-1 archive")
     _require(isinstance(archive, dict) and isinstance(archive.get("manifest"), dict) and isinstance(archive.get("files"), list), "RD-1 structure")
     m = archive["manifest"]
     if m.get("format") != "VNXDNA" or m.get("format_version") != "0.1":
@@ -336,6 +415,8 @@ def decode_rd1_archive(path: str | Path, key: bytes | None = None, file_id: str 
     fm = entry["manifest"]
     for name, kind in (("chunks", int), ("sha256", str), ("original_size", int)):
         _require(isinstance(fm.get(name), kind), f"file manifest {name!r}")
+    _require(0 <= fm["chunks"] <= MAX_LEGACY_STRANDS,
+             f"file manifest chunks {fm['chunks']} exceeds the limit of {MAX_LEGACY_STRANDS}")
     ecc = m.get("ecc") or {}
     codec = None
     if ecc.get("name") == "reed_solomon":
@@ -364,9 +445,9 @@ def decode_rd1_archive(path: str | Path, key: bytes | None = None, file_id: str 
             continue
         if len(raw) == chunk.get("payload_length") and hashlib.sha256(raw).hexdigest() == chunk.get("checksum"):
             by_id[chunk["chunk_id"]] = raw
-    missing = [i for i in range(fm["chunks"]) if i not in by_id]
-    if missing:
-        raise InsufficientRedundancyError(f"RD-1 archive: {len(missing)} chunk(s) missing or unrecoverable", details={"missing": missing[:50]})
+    missing_count, missing_head = _missing_indices(fm["chunks"], by_id)
+    if missing_count:
+        raise InsufficientRedundancyError(f"RD-1 archive: {missing_count} chunk(s) missing or unrecoverable", details={"missing": missing_head})
     data = b"".join(by_id[i] for i in range(fm["chunks"]))
     enc = m.get("encryption") or {}
     if enc.get("enabled"):

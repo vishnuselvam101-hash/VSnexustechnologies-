@@ -36,6 +36,7 @@ OPS: dict[str, dict[str, tuple[dict[str, str], dict[str, str]]]] = {
                           "capacity_bytes": "positive", "extent_count": "positive"}),
         "health": ({}, {"state": "health", "detail": "object"}),
         "stats": ({}, {"counters": "object"}),
+        "metrics": ({}, {"text": "text"}),
         "shutdown": ({}, {}),
         "authenticate": ({"token": "str"}, {"role": "str"}),
     },
@@ -77,9 +78,18 @@ def _utf8_len(s: str) -> int | None:
         return None
 
 
+def _is_text(v: Any) -> bool:
+    """A text of at most 1 MiB (the metrics exposition of the service); a lone surrogate is not encodable."""
+    if not isinstance(v, str):
+        return False
+    n = _utf8_len(v)
+    return n is not None and n <= (1 << 20)
+
+
 def _check_ty(key: str, ty: str, v: Any) -> None:
     ok = {
         "str": lambda: isinstance(v, str) and 1 <= (_utf8_len(v) or 0) <= 1024,
+        "text": lambda: _is_text(v),
         "count": lambda: _is_int(v) and v >= 0,
         "positive": lambda: _is_int(v) and v >= 1,
         "sha256": lambda: isinstance(v, str) and _SHA.fullmatch(v) is not None,

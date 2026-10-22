@@ -16,6 +16,7 @@
 
 use crate::config::{Cfg, HEADER_BYTES};
 use crate::frame::{pack4, tentative};
+use crate::io::ZeroTable;
 
 pub const WIN: usize = 24;
 pub const WIN_POS: [usize; 4] = [44, 70, 96, 122];
@@ -39,14 +40,14 @@ pub fn fmix(mut k: u64) -> u64 {
 /// Fixed-size Bloom prefilter (2 bits per fingerprint) in front of the lossy tables: small enough to stay in the
 /// CPU caches, so a fingerprint that was never inserted is rejected without touching the large table.
 pub struct Bloom {
-    bits: Vec<u64>,
+    bits: ZeroTable<u64>,
     mask: u64,
 }
 
 impl Bloom {
     pub fn new(bits_log2: u32) -> Bloom {
         let n = 1usize << bits_log2.max(9);
-        Bloom { bits: vec![0; n / 64], mask: n as u64 - 1 }
+        Bloom { bits: ZeroTable::new(n / 64), mask: n as u64 - 1 }
     }
 
     #[inline]
@@ -63,6 +64,23 @@ impl Bloom {
         self.bits[b / 64] |= 1 << (b % 64);
     }
 
+    /// Prefetch the two lines `insert` / `maybe` of `fp` touch (a hint, never faults).
+    #[inline]
+    pub fn prefetch(&self, fp: u64) {
+        #[cfg(target_arch = "x86_64")]
+        {
+            let (a, b) = self.idx(fp);
+            // SAFETY: prefetch of addresses inside the bits vector (a hint, never faults)
+            unsafe {
+                use std::arch::x86_64::*;
+                _mm_prefetch(self.bits.as_ptr().add(a / 64) as *const i8, _MM_HINT_T0);
+                _mm_prefetch(self.bits.as_ptr().add(b / 64) as *const i8, _MM_HINT_T0);
+            }
+        }
+        #[cfg(not(target_arch = "x86_64"))]
+        let _ = fp;
+    }
+
     #[inline]
     pub fn maybe(&self, fp: u64) -> bool {
         let (a, b) = self.idx(fp);
@@ -76,7 +94,7 @@ impl Bloom {
 
 /// Fixed-size set-associative fingerprint set (8 x u64 per bucket = one cache line).
 pub struct Lossy {
-    slots: Vec<u64>,
+    slots: ZeroTable<u64>,
     mask: usize,
     pub inserts: u64,
     pub evictions: u64,
@@ -85,7 +103,7 @@ pub struct Lossy {
 impl Lossy {
     pub fn new(bits: u32) -> Lossy {
         let buckets = 1usize << bits.saturating_sub(3).max(1);
-        Lossy { slots: vec![0; buckets * 8], mask: buckets - 1, inserts: 0, evictions: 0 }
+        Lossy { slots: ZeroTable::new(buckets * 8), mask: buckets - 1, inserts: 0, evictions: 0 }
     }
 
     #[inline]
@@ -677,8 +695,8 @@ pub fn oriented<'a>(codes: &'a [u8], rc: bool, buf: &'a mut Vec<u8>) -> &'a [u8]
 /// Fixed-size, 4-way set-associative store of verified frames keyed by the address fingerprint (lossy: an insert into
 /// a full set replaces one entry; a lost frame only means a later copy is attempted).
 pub struct FrameStore {
-    keys: Vec<u64>,
-    frames: Vec<u8>,
+    keys: ZeroTable<u64>,
+    frames: ZeroTable<u8>,
     fb: usize,
     mask: usize,
     pub inserts: u64,
@@ -688,7 +706,7 @@ pub struct FrameStore {
 impl FrameStore {
     pub fn new(slots_log2: u32, fb: usize) -> FrameStore {
         let slots = 1usize << slots_log2.max(2);
-        FrameStore { keys: vec![0; slots], frames: vec![0; slots * fb], fb, mask: slots / 4 - 1, inserts: 0, evictions: 0 }
+        FrameStore { keys: ZeroTable::new(slots), frames: ZeroTable::new(slots * fb), fb, mask: slots / 4 - 1, inserts: 0, evictions: 0 }
     }
 
     #[inline]
@@ -724,8 +742,8 @@ impl FrameStore {
 /// Fixed-size, 4-way set-associative map window fingerprint -> address fingerprint of a verified strand holding that
 /// window (candidates for the strand check only: a hit is never evidence). The last insert wins.
 pub struct WinMap {
-    keys: Vec<u64>,
-    vals: Vec<u64>,
+    keys: ZeroTable<u64>,
+    vals: ZeroTable<u64>,
     mask: usize,
     pub evictions: u64,
 }
@@ -733,7 +751,7 @@ pub struct WinMap {
 impl WinMap {
     pub fn new(slots_log2: u32) -> WinMap {
         let slots = 1usize << slots_log2.max(2);
-        WinMap { keys: vec![0; slots], vals: vec![0; slots], mask: slots / 4 - 1, evictions: 0 }
+        WinMap { keys: ZeroTable::new(slots), vals: ZeroTable::new(slots), mask: slots / 4 - 1, evictions: 0 }
     }
 
     #[inline]

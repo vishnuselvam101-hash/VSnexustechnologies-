@@ -3,19 +3,30 @@ import hashlib
 import json
 import random
 
+import pytest
+
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 from v2_support import FAST, KEY, mixed_bytes, write
-from vnxdna.errors import VNXDNAError
+from vnxdna.errors import InsufficientRedundancyError, VNXDNAError
 from vnxdna.v2 import api
 from vnxdna.v2 import manifest as mf
 from vnxdna.v2.archive import restore_file, store_file
 from vnxdna.v2.container import ContainerFileV2, header_bytes
 from vnxdna.v2.encoder import encode_file
+from vnxdna.v2.profiles import options_for
 from vnxdna.v2.sequencing import SequencingConfig, sequence_file
 
 SETTINGS = settings(max_examples=25, deadline=None, suppress_health_check=[HealthCheck.function_scoped_fixture])
+
+# The shipped "balanced" profile: 64 data + 16 parity shards per ECC group, so the outer code recovers any 16 of the
+# 80 strands of a group, and 8 KiB chunks - the geometry of the committed coverage table of docs/CHANNEL_MODEL.md.
+SUPPORTED = options_for("balanced", chunk_size=8192)
+# The channel of the end-to-end property test: 2 % of the strands are lost by the channel, the reads carry
+# substitutions and indels, and half of them arrive reverse-complemented.
+LOSSY_CHANNEL = dict(substitution_rate=0.001, insertion_rate=0.0003, deletion_rate=0.0003, dropout_rate=0.02,
+                      reverse_complement_rate=0.5)
 
 
 @SETTINGS
@@ -41,13 +52,57 @@ def test_decode_encode_is_identity_on_containers(tmp_path, size, seed):
 @settings(max_examples=6, deadline=None, suppress_health_check=[HealthCheck.function_scoped_fixture])
 @given(seed=st.integers(0, 10_000), coverage=st.sampled_from([5, 6, 10]))  # 5x+ recovers 40/40 in CHANNEL_MODEL.md; 3x fails ~8 %
 def test_full_chain_restores_the_original_under_a_supported_channel(tmp_path, seed, coverage):
+    """The full chain restores the original under the shipped profile and a lossy channel.
+
+    The archive geometry is the shipped "balanced" profile (any 16 of 80 strands per ECC group), the geometry of
+    the committed coverage table of docs/CHANNEL_MODEL.md. The smaller 8+4 group of the `FAST` fixture is not used
+    here, and the reason is measured rather than cosmetic: a group of 12 shards recovers only 4 lost strands, and
+    the channel above loses 2-3 strands per group of 80 but can lose 5 or more in a group of 12 (seed 788 at
+    coverage 6 loses 5 strands in one group of 12, and the outer code of that group recovers at most 4). With the
+    shipped profile the same seed and the same channel lose 2 strands in the worst group, so the property below
+    holds for every seed instead of failing on a few. The 8+4 geometry is covered by the two tests that follow.
+    """
     data = mixed_bytes(15_000, seed)
     write(tmp_path / "in.bin", data)
-    report = api.pipeline(tmp_path / "in.bin", tmp_path / "out.bin", work_dir=tmp_path / f"w{seed}", options=FAST,
-                          channel=SequencingConfig(seed=seed, coverage=coverage, substitution_rate=0.001, insertion_rate=0.0003,
-                                                   deletion_rate=0.0003, dropout_rate=0.02, reverse_complement_rate=0.5),
+    report = api.pipeline(tmp_path / "in.bin", tmp_path / "out.bin", work_dir=tmp_path / f"w{seed}", options=SUPPORTED,
+                          channel=SequencingConfig(seed=seed, coverage=coverage, **LOSSY_CHANNEL),
                           workers=1, overwrite=True)
     assert report["bytes_identical"] and (tmp_path / "out.bin").read_bytes() == data
+
+
+@settings(max_examples=6, deadline=None, suppress_health_check=[HealthCheck.function_scoped_fixture])
+@given(seed=st.integers(0, 10_000))
+def test_full_chain_restores_the_original_on_the_small_group_geometry_without_strand_dropout(tmp_path, seed):
+    """The same full chain on the small 8+4 group geometry, with a channel that stays inside its 4-strand tolerance.
+
+    The 8+4 geometry of the `FAST` fixture recovers any 4 of the 12 strands of a group, so the channel must not
+    lose whole strands for the property to hold: this test keeps the per-read errors and the reverse complements
+    and drops no strand, and the coverage is high enough that a strand with no read is very unlikely.
+    """
+    data = mixed_bytes(15_000, seed)
+    write(tmp_path / "in.bin", data)
+    channel = dict(substitution_rate=0.001, insertion_rate=0.0003, deletion_rate=0.0003, dropout_rate=0.0,
+                   reverse_complement_rate=0.5)
+    report = api.pipeline(tmp_path / "in.bin", tmp_path / "out.bin", work_dir=tmp_path / f"w{seed}", options=FAST,
+                          channel=SequencingConfig(seed=seed, coverage=10, **channel), workers=1, overwrite=True)
+    assert report["bytes_identical"] and (tmp_path / "out.bin").read_bytes() == data
+
+
+def test_a_channel_that_loses_more_strands_than_the_outer_code_can_recover_is_refused(tmp_path):
+    """A group that loses more strands than the outer code can recover is refused, and nothing is written.
+
+    The 8+4 geometry recovers any 4 of the 12 strands of a group. A channel that loses half of the strands loses
+    more than that, so the decoder must refuse with the typed error and leave no output file behind: it must
+    never return bytes that are not the input.
+    """
+    data = mixed_bytes(15_000, 7)
+    write(tmp_path / "in.bin", data)
+    channel = dict(substitution_rate=0.001, insertion_rate=0.0003, deletion_rate=0.0003, dropout_rate=0.5,
+                   reverse_complement_rate=0.5)
+    with pytest.raises(InsufficientRedundancyError):
+        api.pipeline(tmp_path / "in.bin", tmp_path / "out.bin", work_dir=tmp_path / "w", options=FAST,
+                     channel=SequencingConfig(seed=7, coverage=1, **channel), workers=1, overwrite=True)
+    assert not (tmp_path / "out.bin").exists()
 
 
 def _reseal(path, mutate):

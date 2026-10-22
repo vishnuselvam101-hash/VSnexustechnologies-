@@ -14,7 +14,8 @@ import ctypes
 
 import numpy as np
 
-from vnxdna.native._loader import Kernel, NativeKernelError, module_contract
+from vnxdna.native._loader import (INT64_MAX, INT64_MIN, Kernel, NativeArgumentError, NativeKernelError,
+                                   checked_array, checked_int, module_contract)
 
 ABI_VERSION = 4            # 2 (V13 D1): vnx_or_rc_bound; 3 (V13 B1): vnx_or_spec_project; 4 (V13 S3): vnx_or_pack_*
 _ERRORS = {-1: "invalid argument", -2: "out of memory"}
@@ -61,12 +62,16 @@ def scan(codes: np.ndarray, lengths: np.ndarray, mpos: np.ndarray, want: np.ndar
 
     ``codes``: flat uint8 codes of the batch; ``lengths``: per-read lengths; ``mpos``/``want``: marker positions and
     codes of the layout template; ``starts``: index into ``mpos`` of the first marker of each block."""
-    lib = KERNEL.lib()
-    codes = np.ascontiguousarray(codes, dtype=np.uint8)
-    lengths = np.ascontiguousarray(lengths, dtype=np.int64)
-    mpos = np.ascontiguousarray(mpos, dtype=np.int64)
-    want = np.ascontiguousarray(want, dtype=np.uint8)
-    starts = np.ascontiguousarray(starts, dtype=np.int64)
+    # the arguments are checked before the call: a ctypes int64 argument narrows an out-of-range Python int without
+    # a word and a uint8 cast wraps the codes that do not fit, so the kernel would work on different values than the
+    # caller passed.
+    margin = checked_int("margin", margin, INT64_MIN, INT64_MAX, error=NativeArgumentError)
+    max_shift = checked_int("max_shift", max_shift, INT64_MIN, INT64_MAX, error=NativeArgumentError)
+    codes = checked_array("codes", codes, np.uint8, error=NativeArgumentError)
+    lengths = checked_array("lengths", lengths, np.int64, error=NativeArgumentError)
+    mpos = checked_array("mpos", mpos, np.int64, error=NativeArgumentError)
+    want = checked_array("want", want, np.uint8, error=NativeArgumentError)
+    starts = checked_array("starts", starts, np.int64, error=NativeArgumentError)
     if codes.ndim != 1 or lengths.ndim != 1 or mpos.ndim != 1 or want.ndim != 1 or starts.ndim != 1:
         raise ValueError("codes, lengths, mpos, want and starts must be one-dimensional")
     if want.size != mpos.size:
@@ -85,6 +90,7 @@ def scan(codes: np.ndarray, lengths: np.ndarray, mpos: np.ndarray, want: np.ndar
             raise ValueError("starts must begin at 0 and index mpos")
         block[starts[1:]] = 1
         np.cumsum(block, out=block)
+    lib = KERNEL.lib()
     flip = np.zeros(n, dtype=np.uint8)
     rc = lib.vnx_or_scan(n, codes.ctypes.data, codes.size, lengths.ctypes.data, offs.ctypes.data, mpos.size,
                          mpos.ctypes.data, want.ctypes.data, block.ctypes.data, starts.size if mpos.size else 0,
@@ -97,11 +103,11 @@ def scan(codes: np.ndarray, lengths: np.ndarray, mpos: np.ndarray, want: np.ndar
 def _template_args(codes, lengths, mpos, want, starts):
     """Validated, contiguous copies of the batch and template arguments shared by :func:`scan` and :func:`rc_bound`
     plus the per-marker block index."""
-    codes = np.ascontiguousarray(codes, dtype=np.uint8)
-    lengths = np.ascontiguousarray(lengths, dtype=np.int64)
-    mpos = np.ascontiguousarray(mpos, dtype=np.int64)
-    want = np.ascontiguousarray(want, dtype=np.uint8)
-    starts = np.ascontiguousarray(starts, dtype=np.int64)
+    codes = checked_array("codes", codes, np.uint8, error=NativeArgumentError)
+    lengths = checked_array("lengths", lengths, np.int64, error=NativeArgumentError)
+    mpos = checked_array("mpos", mpos, np.int64, error=NativeArgumentError)
+    want = checked_array("want", want, np.uint8, error=NativeArgumentError)
+    starts = checked_array("starts", starts, np.int64, error=NativeArgumentError)
     if codes.ndim != 1 or lengths.ndim != 1 or mpos.ndim != 1 or want.ndim != 1 or starts.ndim != 1:
         raise ValueError("codes, lengths, mpos, want and starts must be one-dimensional")
     if want.size != mpos.size:
@@ -119,15 +125,19 @@ def rc_bound(codes: np.ndarray, lengths: np.ndarray, offs: np.ndarray, mpos: np.
              starts: np.ndarray, band: int, c_mm: int, c_ins: int, c_del: int) -> np.ndarray:
     """(n,) int64: a lower bound on the band-``band`` marker-template alignment cost of each selected read taken as a
     reverse complement (``pass1._rc_bound_reference``; ABI 2). ``offs``/``lengths`` select any reads of ``codes``."""
-    lib = KERNEL.lib()
+    band = checked_int("band", band, INT64_MIN, INT64_MAX, error=NativeArgumentError)
+    c_mm = checked_int("c_mm", c_mm, INT64_MIN, INT64_MAX, error=NativeArgumentError)
+    c_ins = checked_int("c_ins", c_ins, INT64_MIN, INT64_MAX, error=NativeArgumentError)
+    c_del = checked_int("c_del", c_del, INT64_MIN, INT64_MAX, error=NativeArgumentError)
     codes, lengths, mpos, want, starts, block = _template_args(codes, lengths, mpos, want, starts)
-    offs = np.ascontiguousarray(offs, dtype=np.int64)
+    offs = checked_array("offs", offs, np.int64, error=NativeArgumentError)
     if offs.ndim != 1 or offs.size != lengths.size:
         raise ValueError("offs must give one start per selected read")
     if lengths.size and (lengths.min() < 0 or offs.min() < 0 or (offs + lengths).max() > codes.size):
         raise ValueError("every selected read must lie inside codes")
     if min(band, c_mm, c_ins, c_del) < 0:
         raise ValueError("band and costs must be non-negative")
+    lib = KERNEL.lib()
     out = np.zeros(lengths.size, dtype=np.int64)
     rc = lib.vnx_or_rc_bound(lengths.size, codes.ctypes.data, codes.size, lengths.ctypes.data, offs.ctypes.data,
                              mpos.size, mpos.ctypes.data, want.ctypes.data, block.ctypes.data,
@@ -144,16 +154,18 @@ def spec_project(codes: np.ndarray, lengths: np.ndarray, offs: np.ndarray, qflat
     """Marker-anchored speculative projection of the selected reads (``pass1._spec_project_reference``; ABI 3):
     (ok, bases, erased, mm, indels) — ok (n,) bool, bases/erased (n, frame_nt) uint8/bool, mm/indels (n,) int64.
     ``offs``/``lengths`` select any reads of ``codes``; ``qflat`` (same size as ``codes``) or None."""
-    lib = KERNEL.lib()
+    min_q = checked_int("min_q", min_q, INT64_MIN, INT64_MAX, error=NativeArgumentError)
+    T = checked_int("T", T, INT64_MIN, INT64_MAX, error=NativeArgumentError)
+    band = checked_int("band", band, INT64_MIN, INT64_MAX, error=NativeArgumentError)
     codes, lengths, mpos, want, starts, block = _template_args(codes, lengths, mpos, want, starts)
-    offs = np.ascontiguousarray(offs, dtype=np.int64)
-    frame_pos = np.ascontiguousarray(frame_pos, dtype=np.int64)
+    offs = checked_array("offs", offs, np.int64, error=NativeArgumentError)
+    frame_pos = checked_array("frame_pos", frame_pos, np.int64, error=NativeArgumentError)
     if offs.ndim != 1 or offs.size != lengths.size:
         raise ValueError("offs must give one start per selected read")
     if lengths.size and (lengths.min() < 0 or offs.min() < 0 or (offs + lengths).max() > codes.size):
         raise ValueError("every selected read must lie inside codes")
     if qflat is not None:
-        qflat = np.ascontiguousarray(qflat, dtype=np.uint8)
+        qflat = checked_array("qflat", qflat, np.uint8, error=NativeArgumentError)
         if qflat.shape != codes.shape:
             raise ValueError("qflat must have one quality per code")
     if band < 0 or T < 1 or frame_pos.ndim != 1 or frame_pos.size > T:
@@ -163,6 +175,7 @@ def spec_project(codes: np.ndarray, lengths: np.ndarray, offs: np.ndarray, qflat
     if mpos.size and (mpos.min() < 0 or mpos.max() >= T):
         raise ValueError("mpos must index the template")
     n, F = lengths.size, frame_pos.size
+    lib = KERNEL.lib()
     ok = np.zeros(n, dtype=np.uint8)
     bases = np.full((n, F), 4, dtype=np.uint8)
     erased = np.ones((n, F), dtype=np.uint8)
@@ -181,12 +194,12 @@ def spec_project(codes: np.ndarray, lengths: np.ndarray, offs: np.ndarray, qflat
 def pack_projection(bases: np.ndarray, erased: np.ndarray) -> tuple:
     """Frame packing of (n, F) projected bases and erasure flags (``pass1._pack_projection_reference``; ABI 4):
     (hard (n, F) uint8, proj (n, F) uint8, frames (n, F/4) uint8, erased_bytes (n, F/4) bool)."""
-    lib = KERNEL.lib()
-    bases = np.ascontiguousarray(bases, dtype=np.uint8)
-    erased = np.ascontiguousarray(erased, dtype=np.uint8)
+    bases = checked_array("bases", bases, np.uint8, error=NativeArgumentError)
+    erased = checked_array("erased", erased, np.uint8, error=NativeArgumentError)
     if bases.ndim != 2 or erased.shape != bases.shape or bases.shape[1] % 4:
         raise ValueError("bases and erased must be (n, F) with F a multiple of 4")
     n, F = bases.shape
+    lib = KERNEL.lib()
     hard = np.empty((n, F), dtype=np.uint8)
     proj = np.empty((n, F), dtype=np.uint8)
     frames = np.empty((n, F // 4), dtype=np.uint8)
@@ -202,12 +215,13 @@ def pack_exact(codes: np.ndarray, offs: np.ndarray, qflat: np.ndarray | None, mi
                want: np.ndarray, frame_pos: np.ndarray) -> tuple:
     """Frame packing of the exact-length reads at ``offs`` (``pass1._pack_exact_reference``; ABI 4):
     (hard, proj, frames, erased_bytes, marker mismatches (n,) int64)."""
-    lib = KERNEL.lib()
-    codes = np.ascontiguousarray(codes, dtype=np.uint8)
-    offs = np.ascontiguousarray(offs, dtype=np.int64)
-    mpos = np.ascontiguousarray(mpos, dtype=np.int64)
-    want = np.ascontiguousarray(want, dtype=np.uint8)
-    frame_pos = np.ascontiguousarray(frame_pos, dtype=np.int64)
+    min_q = checked_int("min_q", min_q, INT64_MIN, INT64_MAX, error=NativeArgumentError)
+    T = checked_int("T", T, INT64_MIN, INT64_MAX, error=NativeArgumentError)
+    codes = checked_array("codes", codes, np.uint8, error=NativeArgumentError)
+    offs = checked_array("offs", offs, np.int64, error=NativeArgumentError)
+    mpos = checked_array("mpos", mpos, np.int64, error=NativeArgumentError)
+    want = checked_array("want", want, np.uint8, error=NativeArgumentError)
+    frame_pos = checked_array("frame_pos", frame_pos, np.int64, error=NativeArgumentError)
     if codes.ndim != 1 or offs.ndim != 1 or mpos.ndim != 1 or want.shape != mpos.shape or frame_pos.ndim != 1:
         raise ValueError("codes, offs, mpos, want and frame_pos must be one-dimensional (want one code per marker)")
     if T < 1 or frame_pos.size % 4 or frame_pos.size > T:
@@ -217,10 +231,11 @@ def pack_exact(codes: np.ndarray, offs: np.ndarray, qflat: np.ndarray | None, mi
     if offs.size and (offs.min() < 0 or offs.max() > codes.size - T):
         raise ValueError("every read must lie inside codes")
     if qflat is not None:
-        qflat = np.ascontiguousarray(qflat, dtype=np.uint8)
+        qflat = checked_array("qflat", qflat, np.uint8, error=NativeArgumentError)
         if qflat.shape != codes.shape:
             raise ValueError("qflat must have one quality per code")
     n, F = offs.size, frame_pos.size
+    lib = KERNEL.lib()
     hard = np.empty((n, F), dtype=np.uint8)
     proj = np.empty((n, F), dtype=np.uint8)
     frames = np.empty((n, F // 4), dtype=np.uint8)

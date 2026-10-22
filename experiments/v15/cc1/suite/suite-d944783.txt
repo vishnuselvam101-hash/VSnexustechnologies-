@@ -1,0 +1,2 @@
+full suite at 3570a07 (src = d944783), 2026-10-19, systemd-run --scope -p MemoryMax=24G -p TasksMax=8192, pytest -n 8
+4867 passed, 5 skipped in 443.24s (0:07:23)

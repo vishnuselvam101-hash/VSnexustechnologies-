@@ -9,9 +9,9 @@
 //! ```
 //!
 //! * every request gets exactly one reply; a failure is the errno of its [`ErrorCode`] (backend failures EIO, a
-//!   read-only device EPERM, a request outside the device EINVAL/ENOSPC as the protocol asks), never a silent
-//!   success. The one accepted no-op is TRIM (the protocol leaves trimmed data undefined): it is bound-checked,
-//!   refused on a read-only device and counted, and releases no space (documented);
+//!   read-only device EPERM, a request outside the device EINVAL/ENOSPC as the protocol asks, a full store
+//!   NO_SPACE/ENOSPC), never a silent success. The one accepted no-op is TRIM (the protocol leaves trimmed data
+//!   undefined): it is bound-checked, refused on a read-only device and counted, and releases no space (documented);
 //! * a write with the FUA flag is answered only after the write and a following flush both succeeded;
 //! * memory: the payloads of the requests in flight are bounded by `max_inflight_bytes` and their number by
 //!   `max_inflight`; the reader waits (and so stops reading the socket) when either is reached: backpressure to
@@ -31,7 +31,8 @@ use crate::json::{obj, Value};
 use crate::media::{CommitReceipt, MediaAdapter, MediaInfo};
 use crate::nbd::{self, ExportInfo, Negotiated, Request};
 use crate::ram::{MemoryManager, RamConfig, Subsystem};
-use crate::volume::{RecoveryReport, Volume, VolumeConfig};
+use crate::volume::{RecoveryReport, ScrubReport, Volume, VolumeConfig};
+use std::collections::{HashMap, HashSet};
 use std::io::{Read, Write};
 use std::os::unix::net::UnixStream;
 use std::path::{Path, PathBuf};
@@ -151,6 +152,9 @@ pub struct DeviceConfig {
     pub volume: VolumeConfig,
     pub fault_control: Option<PathBuf>,
     pub read_only: bool,
+    /// upper bound on the bytes the device's store may hold (the extents that carry data); `None` = no bound, the
+    /// store grows as the device is written
+    pub max_stored_bytes: Option<u64>,
     /// a request not started within this time completes with TIMEOUT
     pub request_timeout: Duration,
     pub max_inflight: usize,
@@ -170,10 +174,75 @@ impl Default for DeviceConfig {
             volume: VolumeConfig::default(),
             fault_control: None,
             read_only: false,
+            max_stored_bytes: None,
             request_timeout: Duration::from_secs(30),
             max_inflight: 128,
             max_inflight_bytes: 64 << 20,
             repliers: 8,
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// the space the device's store holds
+
+/// The space the device's store holds: the extents that carry data, the reservations of the writes in flight and
+/// the bytes they add up to. The bound is a bound of the *store* (the bytes of the extents it holds), not a size of
+/// the device: a write that needs no new extent (an overwrite of an extent that carries data) is always allowed, a
+/// write that needs a new extent beyond the bound is refused with NO_SPACE, which the host sees as ENOSPC.
+#[derive(Debug, Default)]
+struct StoreSpace {
+    /// the extents that carry data
+    stored: HashSet<u64>,
+    /// the extents the writes in flight have reserved (the number is the number of such writes)
+    claims: HashMap<u64, u32>,
+    /// the bytes of the extents that carry data or are reserved
+    used: u64,
+}
+
+impl StoreSpace {
+    /// Reserve the space a write over `touched` needs: the extents that carry no data yet. `Err` (NO_SPACE) when
+    /// the bound would be exceeded; nothing is changed then.
+    fn reserve(&mut self, touched: &[u64], extent_bytes: u64, bound: u64) -> Result<()> {
+        let mut need = 0u64;
+        for &e in touched {
+            if self.stored.contains(&e) || self.claims.get(&e).copied().unwrap_or(0) > 0 {
+                continue; // the extent is paid for already
+            }
+            need += extent_bytes;
+        }
+        if self.used.saturating_add(need) > bound {
+            return err(
+                ErrorCode::NoSpace,
+                format!("the store holds {} bytes, {need} more are needed, its bound is {bound} bytes", self.used),
+            );
+        }
+        self.used += need;
+        for &e in touched {
+            *self.claims.entry(e).or_insert(0) += 1;
+        }
+        Ok(())
+    }
+
+    /// The outcome of a write over `touched`: `written` = the data is stored (the extents carry data now), `false` =
+    /// the write failed (its reservation is given back).
+    fn settle(&mut self, touched: &[u64], written: bool, extent_bytes: u64) {
+        for &e in touched {
+            if written {
+                self.stored.insert(e);
+            }
+            let c = self.claims.get(&e).copied().unwrap_or(0);
+            if c == 0 {
+                continue;
+            }
+            if c == 1 {
+                self.claims.remove(&e);
+                if !self.stored.contains(&e) {
+                    self.used = self.used.saturating_sub(extent_bytes);
+                }
+            } else {
+                self.claims.insert(e, c - 1);
+            }
         }
     }
 }
@@ -211,6 +280,11 @@ pub struct Device {
     gate: Option<Arc<FaultGate>>,
     pub stats: DeviceStats,
     last_error: Mutex<Option<String>>,
+    /// the space the device's store holds (tracked only when the store has a bound)
+    space: Mutex<StoreSpace>,
+    /// the report of the last scrub of the volume and the time it ran (the caller gives the time: the service never
+    /// reads the wall clock itself)
+    last_scrub: Mutex<Option<(ScrubReport, i64)>>,
     /// set when the request path failed in a way that needs an operator (a panicked server thread)
     failed: AtomicBool,
     recovery: RecoveryReport,
@@ -270,6 +344,8 @@ impl Device {
             gate,
             stats: DeviceStats::default(),
             last_error: Mutex::new(None),
+            space: Mutex::new(StoreSpace::default()),
+            last_scrub: Mutex::new(None),
             failed: AtomicBool::new(false),
             recovery,
         })
@@ -285,6 +361,25 @@ impl Device {
 
     pub fn gate(&self) -> Option<&Arc<FaultGate>> {
         self.gate.as_ref()
+    }
+
+    /// The health of the backend the volume writes to (a snapshot; the counters move on their own).
+    pub fn backend_health(&self) -> crate::fallback::Health {
+        self.media.health()
+    }
+
+    /// Scrub the volume now: every extent of the map is read back and checked. The report is remembered with the
+    /// time of the run (`unix_ms`, given by the caller: the service never reads the wall clock itself), so the
+    /// metrics can report the last scrub.
+    pub fn run_scrub(&self, unix_ms: i64) -> Result<ScrubReport> {
+        let report = self.volume.scrub()?;
+        *self.last_scrub.lock().unwrap_or_else(|p| p.into_inner()) = Some((report.clone(), unix_ms));
+        Ok(report)
+    }
+
+    /// The report of the last scrub and the time it ran, if a scrub ran.
+    pub fn last_scrub(&self) -> Option<(ScrubReport, i64)> {
+        self.last_scrub.lock().unwrap_or_else(|p| p.into_inner()).clone()
     }
 
     pub fn mark_failed(&self, why: &str) {
@@ -313,6 +408,38 @@ impl Device {
             block_size: self.geometry.block_size(),
             max_payload: MAX_PAYLOAD,
         }
+    }
+
+    /// The extents a write of `len` bytes at `offset` touches (the device stores whole extents). Empty when the
+    /// store has no bound: then the space of the store is not tracked at all and the device behaves as before.
+    fn touched_extents(&self, offset: u64, len: u64) -> Vec<u64> {
+        if self.cfg.max_stored_bytes.is_none() || len == 0 {
+            return Vec::new();
+        }
+        let eb = self.geometry.extent_bytes();
+        let first = offset / eb;
+        let last = (offset + len - 1) / eb; // len >= 1 and the request is inside the device
+        (first..=last).collect()
+    }
+
+    /// Reserve the space a write over `touched` needs; `Err` (NO_SPACE) when the store's bound would be exceeded.
+    /// Nothing is changed then: the caller refuses the write and the store keeps what it holds.
+    fn reserve_space(&self, touched: &[u64]) -> Result<()> {
+        let bound = match self.cfg.max_stored_bytes {
+            Some(b) => b,
+            None => return Ok(()),
+        };
+        let mut space = self.space.lock().unwrap_or_else(|p| p.into_inner());
+        space.reserve(touched, self.geometry.extent_bytes(), bound)
+    }
+
+    /// The outcome of a write over `touched` extents: `written` = the data is stored, `false` = the write failed.
+    fn settle_space(&self, touched: &[u64], written: bool) {
+        if touched.is_empty() {
+            return;
+        }
+        let mut space = self.space.lock().unwrap_or_else(|p| p.into_inner());
+        space.settle(touched, written, self.geometry.extent_bytes());
     }
 
     /// Flush everything acknowledged so far to the backend's commit point (through the queue: a barrier).
@@ -465,8 +592,9 @@ impl Drop for Grant {
 }
 
 enum Work {
-    /// `deadline`: the request's one deadline, which also bounds the flush of a FUA write
-    Io { ticket: Ticket, fua: bool, deadline: Option<Instant> },
+    /// `deadline`: the request's one deadline, which also bounds the flush of a FUA write.
+    /// `space`: the extents a write reserved in the store; they carry data when the write succeeds.
+    Io { ticket: Ticket, fua: bool, deadline: Option<Instant>, space: Option<Vec<u64>> },
     Done(u32),
 }
 
@@ -616,7 +744,7 @@ impl Device {
             let n = self.stats.inflight.fetch_add(1, Ordering::Relaxed) + 1; // decremented once the reply is sent
             self.stats.max_inflight_seen.fetch_max(n, Ordering::Relaxed);
             let submit = |op: Op| match self.queue.submit(op, deadline) {
-                Ok(t) => Work::Io { ticket: t, fua: false, deadline },
+                Ok(t) => Work::Io { ticket: t, fua: false, deadline, space: None },
                 Err(e) => {
                     self.note_error(&e.to_string());
                     Work::Done(errno_of(&e).max(1))
@@ -657,12 +785,27 @@ impl Device {
                         } else if !in_range {
                             Work::Done(crate::error::ENOSPC)
                         } else {
-                            if fua {
-                                self.stats.fua_writes.fetch_add(1, Ordering::Relaxed);
-                            }
-                            match submit(Op::Write { offset: req.offset, data }) {
-                                Work::Io { ticket, deadline, .. } => Work::Io { ticket, fua, deadline },
-                                w => w,
+                            // the space of the store: a write that needs no new extent (an overwrite of an extent
+                            // that carries data) is always allowed
+                            let touched = self.touched_extents(req.offset, len);
+                            if let Err(e) = self.reserve_space(&touched) {
+                                // the store is full: the host sees ENOSPC, nothing is written
+                                self.note_error(&e.to_string());
+                                Work::Done(errno_of(&e))
+                            } else {
+                                if fua {
+                                    self.stats.fua_writes.fetch_add(1, Ordering::Relaxed);
+                                }
+                                // NBD has no clock; use a fixed timestamp for deterministic retention checks
+                                match submit(Op::Write { offset: req.offset, data, now_ms: 1000 }) {
+                                    Work::Io { ticket, deadline, .. } => {
+                                        Work::Io { ticket, fua, deadline, space: Some(touched) }
+                                    }
+                                    w => {
+                                        self.settle_space(&touched, false); // the write never started
+                                        w
+                                    }
+                                }
                             }
                         }
                     }
@@ -734,9 +877,9 @@ impl Device {
 
     /// Wait for a request's outcome: (errno, read data).
     fn complete(&self, w: &Work, req: Request, dead: &AtomicBool) -> (u32, Option<Vec<u8>>) {
-        let (ticket, fua, deadline) = match w {
+        let (ticket, fua, deadline, space) = match w {
             Work::Done(e) => return (*e, None),
-            Work::Io { ticket, fua, deadline } => (ticket, *fua, *deadline),
+            Work::Io { ticket, fua, deadline, space } => (ticket, *fua, *deadline, space),
         };
         let wait = |t: &Ticket| loop {
             if dead.load(Ordering::SeqCst) {
@@ -757,18 +900,32 @@ impl Device {
             // a reply's data is exactly the length asked for, or the reply stream would be out of step
             Ok(Reply::Data(d)) if d.len() == req.len as usize => (0, Some(d)),
             Ok(Reply::Data(d)) => fail(VnxError::new(ErrorCode::Internal, format!("read returned {} of {} bytes", d.len(), req.len))),
-            Ok(Reply::Written(_)) if fua => {
-                let flushed = self
-                    .queue
-                    .submit(Op::Flush, deadline)
-                    .and_then(|t| wait(&t));
-                match flushed {
-                    Ok(_) => (0, None),
-                    Err(e) => fail(e),
+            Ok(Reply::Written(_)) => {
+                // the data is stored: the extents the write touched carry data now
+                if let Some(t) = space {
+                    self.settle_space(t, true);
+                }
+                if fua {
+                    let flushed = self
+                        .queue
+                        .submit(Op::Flush, deadline)
+                        .and_then(|t| wait(&t));
+                    match flushed {
+                        Ok(_) => (0, None),
+                        Err(e) => fail(e),
+                    }
+                } else {
+                    (0, None)
                 }
             }
             Ok(_) => (0, None),
-            Err(e) => fail(e),
+            Err(e) => {
+                // the write failed: its reservation is given back, the store keeps what it holds
+                if let Some(t) = space {
+                    self.settle_space(t, false);
+                }
+                fail(e)
+            }
         }
     }
 }
@@ -783,6 +940,28 @@ impl crate::authz::MgmtBackend for DeviceMgmt<'_> {
     }
     fn stats(&self) -> Result<Value> {
         Ok(self.dev.stats_json())
+    }
+    /// The metrics of the device in the Prometheus text exposition format (0.0.4).
+    ///
+    /// Every sample is derived from the structures the device already holds: the counters of the stats view, the
+    /// health view, the health of the backend, the counters of the cache, the report of the last scrub and the
+    /// capacity of the volume. Nothing is counted twice and nothing is lost between two scrapes. The DNA simulator
+    /// counters are not part of it: the service writes to a real backend, never to the simulator.
+    fn metrics(&self) -> Result<String> {
+        let dev = self.dev;
+        let mut samples = crate::metrics::from_stats(&dev.stats_json());
+        samples.extend(crate::metrics::from_health(&dev.health_json()));
+        samples.extend(crate::metrics::from_backend(&dev.backend_health()));
+        samples.extend(crate::metrics::from_capacity(&dev.capacity_json()));
+        if let Some(c) = &dev.cache {
+            samples.extend(crate::metrics::from_cache(&c.stats, c.cached_extents(), c.dirty_extents().len()));
+        }
+        // the last scrub, or zeros when no scrub ran yet (the time of the last run is 0, never the epoch of a run)
+        let (report, unix_ms) = dev
+            .last_scrub()
+            .unwrap_or((ScrubReport { checked: 0, failed: Vec::new() }, 0));
+        samples.extend(crate::metrics::from_scrub(&report, unix_ms));
+        Ok(crate::metrics::render(&samples))
     }
     fn shutdown(&self) -> Result<Value> {
         (self.on_shutdown)();
@@ -799,6 +978,7 @@ pub struct DeviceMgmt<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::authz::MgmtBackend;
     use crate::journal::tests::TempDir;
     use crate::media::MemoryMedia;
     use crate::nbd::*;
@@ -1056,6 +1236,41 @@ mod tests {
         crate::nbdctl::apply_low_memory(&mut low);
         assert!(ram_config(low.ram_bytes, geo).is_ok());
         assert!(ram_config(2 * u64::from(MAX_PAYLOAD), geo).is_err());
+    }
+
+    #[test]
+    fn the_device_exposes_its_metrics_in_the_prometheus_text_format() {
+        let t = TempDir::new("nbd-metrics");
+        let dev = make(&t, DeviceConfig::default(), Arc::new(MemoryMedia::new()));
+        let backend = DeviceMgmt { dev: &dev, on_shutdown: &|| {} };
+        let text = backend.metrics().unwrap();
+        // the health of the device, the capacity of the volume and the state of the backend
+        assert!(text.contains("vnxd_health_state{state=\"ok\"} 1\n"), "{text}");
+        assert!(text.contains("vnxd_health_state{state=\"degraded\"} 0\n"), "{text}");
+        assert!(text.contains("vnxd_backend_state{state=\"healthy\"} 1\n"), "{text}");
+        assert!(text.contains("vnxd_read_only 0\n"), "{text}");
+        assert!(text.contains("vnxd_capacity_bytes "), "{text}");
+        assert!(text.contains("vnxd_extent_count "), "{text}");
+        // no scrub ran yet: the time of the last run is 0, not the time of a run that never happened
+        assert!(text.contains("vnxd_scrub_last_run_unix_ms 0\n"), "{text}");
+        // the exposition is longer than a `Ty::Str` field of the protocol (1024 bytes): the result of the `metrics`
+        // operation is a `Ty::Text` field for that reason
+        assert!(text.len() > 1024, "the exposition is {} bytes", text.len());
+        // every line is a comment or a series: a name, optionally labels, and an integer
+        for line in text.lines() {
+            if line.starts_with('#') {
+                continue;
+            }
+            let (series, value) = line.rsplit_once(' ').expect("a series and a value");
+            assert!(value.parse::<i64>().is_ok(), "{line}");
+            let name = series.split('{').next().unwrap();
+            assert!(crate::metrics::is_valid_name(name), "{line}");
+        }
+        // a scrub of the volume is reported by the metrics
+        dev.run_scrub(1_700_000_000_000).unwrap();
+        let text = backend.metrics().unwrap();
+        assert!(text.contains("vnxd_scrub_last_run_unix_ms 1700000000000\n"), "{text}");
+        assert!(text.contains("vnxd_scrub_checked_extents "), "{text}");
     }
 
     #[test]
