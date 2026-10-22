@@ -1,7 +1,17 @@
 # Limitations
 
-This page lists **V4** limitations first. The **V3** list follows unchanged below the divider and still applies to
-`vnx-dna`.
+This page lists the **V15** open items first, then the **V4** limitations. The **V3** list follows unchanged below the
+divider and still applies to `vnx-dna`.
+
+## V15: open items
+
+- **OPEN (should-fix, recorded by the CC-3 review): the cap selection can pick a bucket size that has no buckets.**
+  When the candidate-pair budget is exceeded, the stage lowers the bucket cap to the largest bucket size whose slot
+  pairs fit, and it takes that size from the bucket-size histogram without checking that the histogram has an entry
+  for it. If the selected size has no bucket, the kept set is empty, the stage ends with zero candidate pairs and no
+  cluster frame, and the report still says "clustering continued" (`stopped: false`) - a silent drop, not a crash.
+  Locations: `src/vnxdna/recovery/cluster/graph.py:150-162` (reference) and `src/vnxdna/native/c/cluster.c:236-248`
+  (C kernel). This is not fixed in this branch; the codec change is left to a later decision.
 
 ## V4: scientific scope
 
