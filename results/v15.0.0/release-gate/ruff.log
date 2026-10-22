@@ -1,6 +1,12 @@
-# commit d2a23ffde431e02009f3b907334b640a97593784 (clean tree) 2026-10-22 /root/vnx-dna-lab/.venv/bin/ruff check .
+=== V15 release gate: ruff
+commit: 281d28388b97eeb9a40cbdb25aeb4494f71246ee
+ruff: ruff 0.16.10
+command: ruff check src tests research
+started: 2026-10-22T08:47:53Z
+
 All checks passed!
-ruff exit=0
-# the same check over the V14 gate scope (ruff check src tests research):
+
+--- ruff check . (whole tree)
 All checks passed!
-exit=0
+
+finished: 2026-10-22T08:47:54Z
