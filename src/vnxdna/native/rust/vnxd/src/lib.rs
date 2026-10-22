@@ -45,6 +45,7 @@ pub mod ram;
 pub mod record;
 pub mod seal;
 pub mod state;
+pub mod twin;
 pub mod volume;
 pub mod worker;
 
