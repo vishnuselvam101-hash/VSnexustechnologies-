@@ -10,6 +10,10 @@
 //! backend ([`image`]), the DNA software simulator ([`dnasim`]) over the codec boundary ([`codec`], worker pool
 //! [`worker`]), the extended fault-injection backend ([`fault`]) and the future physical-DNA lab interface with its
 //! simulator ([`lab`]).
+//!
+//! Phase 15 adds the observability of the service ([`metrics`]): the health, backend, cache, scrub, capacity and
+//! simulator counters exported in the Prometheus text exposition format (0.0.4), derived from the structures the
+//! service already holds.
 
 #![deny(unsafe_code)] // a later module that needs an OS interface allows it locally and documents the boundary
 
@@ -31,6 +35,7 @@ pub mod journal;
 pub mod json;
 pub mod lab;
 pub mod media;
+pub mod metrics;
 pub mod nbd;
 pub mod nbdctl;
 pub mod nbdserve;
