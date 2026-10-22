@@ -65,7 +65,7 @@ pub struct Policy {
     entries: Vec<(Role, [u8; 32])>,
 }
 
-fn ct_eq(a: &[u8; 32], b: &[u8; 32]) -> bool {
+pub(crate) fn ct_eq(a: &[u8; 32], b: &[u8; 32]) -> bool {
     a.iter().zip(b).fold(0u8, |acc, (x, y)| acc | (x ^ y)) == 0
 }
 
