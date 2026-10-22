@@ -31,6 +31,8 @@ import threading
 from pathlib import Path
 from typing import Callable
 
+import numpy as np
+
 from vnxdna import _native_build as _nb
 
 BACKENDS = ("auto", "native", "reference")
@@ -91,6 +93,55 @@ def open_library(path: Path):
 
 class NativeKernelError(RuntimeError):
     pass
+
+
+class NativeArgumentError(NativeKernelError, ValueError):
+    """An argument the native kernel cannot take: an integer outside the range of the ctypes argument, or an array
+    whose values do not fit the dtype the kernel reads.
+
+    Both a :class:`NativeKernelError` (the error type of the native modules) and a :class:`ValueError` (the standard
+    refusal of a value outside its domain), so a caller may catch either.
+    """
+
+
+#: the range of the ctypes integer arguments the native kernels take
+INT32_MIN, INT32_MAX = -(1 << 31), (1 << 31) - 1
+INT64_MIN, INT64_MAX = -(1 << 63), (1 << 63) - 1
+
+
+def checked_int(name: str, value, lo: int, hi: int, error: type[Exception] = ValueError) -> int:
+    """The integer as the kernel takes it, refusing a value that does not fit ``[lo, hi]``.
+
+    ctypes narrows a Python int to the width of the argument type without a word: a ``c_int32`` argument takes
+    ``2 ** 32 + 4`` as ``4`` and a ``c_int64`` argument takes ``2 ** 64 + 1`` as ``1``, so the kernel would answer for
+    a different value than the caller asked for. The value is refused here instead, in the style of
+    :func:`vnxdna.native.engine._checked_arrays`, which refuses an array the engine cannot read.
+    """
+    number = int(value)
+    if number < lo or number > hi:
+        raise error(f"{name}={number} does not fit the range [{lo}, {hi}]")
+    return number
+
+
+def checked_array(name: str, array, dtype, error: type[Exception] = ValueError) -> np.ndarray:
+    """The array as a contiguous array of exactly ``dtype``, refusing values that do not fit it.
+
+    ``np.ascontiguousarray(a, dtype=narrower)`` wraps the values that do not fit (a code of 256 becomes 0, a
+    mismatch cost of 40000 becomes -25536), so the kernel would work on a different array than the caller passed.
+    The values are checked first here, as :func:`vnxdna.native.engine._checked_arrays` does for the engine's
+    parameter arrays.
+    """
+    a = np.asarray(array)
+    dt = np.dtype(dtype)
+    if a.dtype != dt:
+        try:
+            cast = a.astype(dt)
+        except (OverflowError, ValueError, TypeError) as problem:
+            raise error(f"{name} does not fit {dt.name}") from problem
+        if not np.array_equal(cast, a, equal_nan=True):
+            raise error(f"{name} does not fit {dt.name}")
+        a = cast
+    return np.ascontiguousarray(a)
 
 
 class Kernel:

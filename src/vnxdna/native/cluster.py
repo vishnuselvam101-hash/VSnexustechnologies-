@@ -46,6 +46,7 @@ import numpy as np
 
 from vnxdna import _native_build as _nb
 from vnxdna.core.errors import VNXConfigurationError
+from vnxdna.native._loader import (INT32_MAX, INT32_MIN, INT64_MAX, INT64_MIN, checked_array, checked_int)
 
 ABI_VERSION = 6
 BACKENDS = ("auto", "native", "reference")
@@ -78,15 +79,25 @@ class NativeClusterError(RuntimeError):
     pass
 
 
+class NativeClusterArgumentError(NativeClusterError, ValueError):
+    """An argument the cluster kernel cannot take: an integer outside the range of the ctypes argument, or an array
+    whose values do not fit the dtype the kernel reads.
+
+    Both a :class:`NativeClusterError` (the error type of this module) and a :class:`ValueError` (the standard refusal
+    of a value outside its domain), so a caller may catch either.
+    """
+
+
 class NativeClusterMemoryError(NativeClusterError, MemoryError):
     """A kernel could not allocate its working memory (nothing was returned)."""
 
 
 #: slot pairs materialised at once by the candidate step (8 bytes each: 256 MiB); results do not depend on it
 DEFAULT_CHUNK_PAIRS = 1 << 25
-_INT64_MAX = (1 << 63) - 1
-_INT32_MIN = -(1 << 31)
-_INT32_MAX = (1 << 31) - 1
+_INT64_MAX = INT64_MAX
+_INT64_MIN = INT64_MIN
+_INT32_MIN = INT32_MIN
+_INT32_MAX = INT32_MAX
 
 
 _lib = None
@@ -296,10 +307,12 @@ def _i32(value, name: str) -> int:
     ``2 ** 32 + 5`` would reach the kernel as ``5`` and the kernel would answer for a different value than the
     caller asked for. Such a value is refused here instead, with the same error the kernel's own refusal raises.
     """
-    number = int(value)
-    if number < _INT32_MIN or number > _INT32_MAX:
-        raise NativeClusterError(f"native cluster: {name}={number} does not fit the kernel's int32 argument")
-    return number
+    return checked_int(name, value, _INT32_MIN, _INT32_MAX, error=NativeClusterArgumentError)
+
+
+def _i64(value, name: str) -> int:
+    """Return ``value`` as the int64 the kernel takes, refusing a value that does not fit (as :func:`_i32`)."""
+    return checked_int(name, value, _INT64_MIN, _INT64_MAX, error=NativeClusterArgumentError)
 
 
 def _lib_or_raise():
@@ -312,9 +325,9 @@ def _lib_or_raise():
 def _seqs(buf: np.ndarray, off: np.ndarray, lens: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Contiguous uint8 buffer and int64 offsets/lengths of equal size (the kernels check every [off, off + len)
     against the buffer size)."""
-    buf = np.ascontiguousarray(buf, dtype=np.uint8)
-    off = np.ascontiguousarray(off, dtype=np.int64)
-    lens = np.ascontiguousarray(lens, dtype=np.int64)
+    buf = checked_array("buf", buf, np.uint8, error=NativeClusterArgumentError)
+    off = checked_array("off", off, np.int64, error=NativeClusterArgumentError)
+    lens = checked_array("lens", lens, np.int64, error=NativeClusterArgumentError)
     if off.ndim != 1 or off.shape != lens.shape:
         raise ValueError("offsets and lengths must be 1-D of equal size")
     if buf.size == 0:
@@ -323,14 +336,17 @@ def _seqs(buf: np.ndarray, off: np.ndarray, lens: np.ndarray) -> tuple[np.ndarra
 
 
 def pack(seqs: list) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Concatenate uint8 code arrays: (buffer, offsets, lengths)."""
+    """Concatenate uint8 code arrays: (buffer, offsets, lengths).
+
+    A code that does not fit a uint8 is refused: the cast would narrow it (a code of 300 becomes 44) and the kernel
+    would read a different read than the caller passed."""
     n = len(seqs)
     lens = np.fromiter((s.size for s in seqs), dtype=np.int64, count=n)
     off = np.zeros(n, dtype=np.int64)
     if n:
         np.cumsum(lens[:-1], out=off[1:])
-    buf = np.concatenate([np.asarray(s, dtype=np.uint8).ravel() for s in seqs]) if n and lens.sum() else \
-        np.zeros(1, dtype=np.uint8)
+    buf = np.concatenate([checked_array("read", s, np.uint8, error=NativeClusterArgumentError).ravel() for s in seqs]) \
+        if n and lens.sum() else np.zeros(1, dtype=np.uint8)
     return np.ascontiguousarray(buf, dtype=np.uint8), off, lens
 
 
@@ -345,7 +361,6 @@ def lengths_in_domain(lens: np.ndarray) -> bool:
 
 # ============================================================================ kernels
 def sketch(raw: np.ndarray, lengths: np.ndarray, k: int, s: int) -> tuple[np.ndarray, np.ndarray]:
-    lib = _lib_or_raise()
     # the arguments are checked before anything is allocated: the sketch arrays are sized by s, and an int32 argument
     # is narrowed by ctypes, so both must be refused here rather than by the kernel (too late) or by ctypes (silently)
     k = _i32(k, "k")
@@ -354,12 +369,13 @@ def sketch(raw: np.ndarray, lengths: np.ndarray, k: int, s: int) -> tuple[np.nda
         raise NativeClusterError(f"native cluster: k must be in 1..{MAX_SKETCH_K}, got {k}")
     if not 1 <= s <= MAX_SKETCH_S:
         raise NativeClusterError(f"native cluster: s must be in 1..{MAX_SKETCH_S}, got {s}")
-    raw = np.ascontiguousarray(raw, dtype=np.uint8)
+    raw = checked_array("raw", raw, np.uint8, error=NativeClusterArgumentError)
     n = raw.shape[0]
     width = raw.shape[1] if raw.ndim == 2 else 0
-    lengths = np.ascontiguousarray(lengths, dtype=np.int64)
+    lengths = checked_array("lengths", lengths, np.int64, error=NativeClusterArgumentError)
     if lengths.shape != (n,):
         raise ValueError(f"lengths must have shape ({n},), got {lengths.shape}")
+    lib = _lib_or_raise()
     hashes = np.empty((n, s), dtype=np.uint32)
     orient = np.empty((n, s), dtype=np.uint8)
     _check(lib.vnx_cl_sketch(n, width, _ptr(raw), raw.size, _ptr(lengths), k, s, _ptr(hashes), _ptr(orient)), "sketch")
@@ -465,18 +481,19 @@ def fb(tpl: np.ndarray, mc: np.ndarray, buf: np.ndarray, off: np.ndarray, lens: 
        width: int = 0) -> tuple[np.ndarray, np.ndarray]:
     """Forward-backward certain calls of one chunk with shared band ``B`` (as consensus._fb). ``level``: 0 best, 1 scalar,
     2 AVX2; ``width``: 0 auto (int16 lanes when the cost bound allows), 16, 32. Results do not depend on either."""
-    lib = _lib_or_raise()
     c_indel = _i32(c_indel, "c_indel")
     slack = _i32(slack, "slack")
     level = _i32(level, "level")
     width = _i32(width, "width")
+    B = _i64(B, "B")
     n, T = tpl.shape
-    tpl = np.ascontiguousarray(tpl, dtype=np.int16)
-    mc = np.ascontiguousarray(mc, dtype=np.int32)
-    band = np.ascontiguousarray(band, dtype=np.int64)
+    tpl = checked_array("tpl", tpl, np.int16, error=NativeClusterArgumentError)
+    mc = checked_array("mc", mc, np.int32, error=NativeClusterArgumentError)
+    band = checked_array("band", band, np.int64, error=NativeClusterArgumentError)
     buf, off, lens = _seqs(buf, off, lens)
     if mc.shape != (n, T) or off.shape != (n,) or band.shape != (n,):
         raise ValueError("tpl and mc must be (n, T); off, lens and band (n,)")
+    lib = _lib_or_raise()
     calls = np.empty((n, T), dtype=np.uint8)
     opt = np.empty(n, dtype=np.int64)
     nt = threads() if nthreads is None else max(1, int(nthreads))
@@ -510,16 +527,17 @@ def edit_costs(tpl: np.ndarray, mc: np.ndarray, buf: np.ndarray, off: np.ndarray
                nthreads: int | None = None) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Polish edit costs of one batch with shared band ``B`` (as polish.edit_costs_reference): (opt (n,), sub (n, T, 4),
     dele (n, T), ins (n, T, 4)), int64. Every read's result depends only on that read, so threads do not change it."""
-    lib = _lib_or_raise()
     c_indel = _i32(c_indel, "c_indel")
     c_sub = _i32(c_sub, "c_sub")
+    B = _i64(B, "B")
     n, T = tpl.shape
-    tpl = np.ascontiguousarray(tpl, dtype=np.int16)
-    mc = np.ascontiguousarray(mc, dtype=np.int32)
-    band = np.ascontiguousarray(band, dtype=np.int64)
+    tpl = checked_array("tpl", tpl, np.int16, error=NativeClusterArgumentError)
+    mc = checked_array("mc", mc, np.int32, error=NativeClusterArgumentError)
+    band = checked_array("band", band, np.int64, error=NativeClusterArgumentError)
     buf, off, lens = _seqs(buf, off, lens)
     if mc.shape != (n, T) or off.shape != (n,) or band.shape != (n,):
         raise ValueError("tpl and mc must be (n, T); off, lens and band (n,)")
+    lib = _lib_or_raise()
     opt = np.empty(n, dtype=np.int64)
     sub = np.empty((n, T, 4), dtype=np.int64)
     dele = np.empty((n, T), dtype=np.int64)
@@ -624,24 +642,25 @@ def trial_costs(base_tpl: np.ndarray, mc: np.ndarray, buf: np.ndarray, off: np.n
     """Polish trial costs (as consensus.trial_costs_reference, V10 W2): (summed clipped cost per trial, per candidate
     base). Reads and trials are grouped by candidate (``read_start``/``trial_start``, CSR); ``trial_row[x]`` is the
     offset of trial x's rows in ``trial_dip``. Candidates are independent, so threads do not change the result."""
-    lib = _lib_or_raise()
     c_indel = _i32(c_indel, "c_indel")
+    pen = _i64(pen, "pen")
     ncand, T = base_tpl.shape
-    base_tpl = np.ascontiguousarray(base_tpl, dtype=np.int16)
-    trial_tpl = np.ascontiguousarray(trial_tpl, dtype=np.int16).reshape(-1, T)
-    mc = np.ascontiguousarray(mc, dtype=np.int32)
-    band = np.ascontiguousarray(band, dtype=np.int64)
-    read_start = np.ascontiguousarray(read_start, dtype=np.int64)
-    trial_start = np.ascontiguousarray(trial_start, dtype=np.int64)
-    trial_row = np.ascontiguousarray(trial_row, dtype=np.int64)
-    base_dip = np.ascontiguousarray(base_dip, dtype=np.uint8)
-    trial_dip = np.ascontiguousarray(trial_dip, dtype=np.uint8)
+    base_tpl = checked_array("base_tpl", base_tpl, np.int16, error=NativeClusterArgumentError)
+    trial_tpl = checked_array("trial_tpl", trial_tpl, np.int16, error=NativeClusterArgumentError).reshape(-1, T)
+    mc = checked_array("mc", mc, np.int32, error=NativeClusterArgumentError)
+    band = checked_array("band", band, np.int64, error=NativeClusterArgumentError)
+    read_start = checked_array("read_start", read_start, np.int64, error=NativeClusterArgumentError)
+    trial_start = checked_array("trial_start", trial_start, np.int64, error=NativeClusterArgumentError)
+    trial_row = checked_array("trial_row", trial_row, np.int64, error=NativeClusterArgumentError)
+    base_dip = checked_array("base_dip", base_dip, np.uint8, error=NativeClusterArgumentError)
+    trial_dip = checked_array("trial_dip", trial_dip, np.uint8, error=NativeClusterArgumentError)
     buf, off, lens = _seqs(buf, off, lens)
     ntrial = trial_tpl.shape[0]
     if mc.shape != (T,) or read_start.shape != (ncand + 1,) or trial_start.shape != (ncand + 1,) \
             or trial_row.shape != (ntrial,) or int(trial_start[-1]) != ntrial or band.shape != off.shape \
             or base_dip.shape != off.shape or int(read_start[-1]) != off.size:
         raise ValueError("inconsistent trial-cost arrays")
+    lib = _lib_or_raise()
     cost = np.zeros(ntrial, dtype=np.int64)
     basec = np.zeros(ncand, dtype=np.int64)
     nt = threads() if nthreads is None else max(1, int(nthreads))

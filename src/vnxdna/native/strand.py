@@ -14,7 +14,8 @@ import ctypes
 
 import numpy as np
 
-from vnxdna.native._loader import Kernel, NativeKernelError, module_contract
+from vnxdna.native._loader import (INT64_MAX, INT64_MIN, Kernel, NativeArgumentError, NativeKernelError,
+                                   checked_array, checked_int, module_contract)
 
 ABI_VERSION = 1
 MAX_SPAN = 4096
@@ -54,12 +55,16 @@ def build_rows(plain: np.ndarray, ks: np.ndarray, matrix: np.ndarray, mul: np.nd
                motifs: list[np.ndarray], nthreads: int = 1) -> tuple[np.ndarray, np.ndarray]:
     """(N, strand_nt) codes and (N,) chosen variant (-1 = no variant passes), as frame4.build_strands before its error.
     ``rules``: gc_min, gc_max, win, wmin, wmax, hmax, tandem (ints)."""
-    lib = KERNEL.lib()
-    plain = np.ascontiguousarray(plain, dtype=np.uint8)
-    ks = np.ascontiguousarray(ks, dtype=np.uint8)
-    matrix = np.ascontiguousarray(matrix, dtype=np.uint8)
-    mul = np.ascontiguousarray(mul, dtype=np.uint8)
-    tpl = np.ascontiguousarray(tpl, dtype=np.int16)
+    # the rule values and the array dtypes are checked before the call: a ctypes int64 argument narrows an
+    # out-of-range Python int without a word, and a uint8 cast wraps the codes that do not fit, so the kernel would
+    # work on a different input than the caller passed.
+    rules = {name: checked_int(name, value, INT64_MIN, INT64_MAX, error=NativeArgumentError)
+             for name, value in rules.items()}
+    plain = checked_array("plain", plain, np.uint8, error=NativeArgumentError)
+    ks = checked_array("ks", ks, np.uint8, error=NativeArgumentError)
+    matrix = checked_array("matrix", matrix, np.uint8, error=NativeArgumentError)
+    mul = checked_array("mul", mul, np.uint8, error=NativeArgumentError)
+    tpl = checked_array("tpl", tpl, np.int16, error=NativeArgumentError)
     n, span = plain.shape
     nvar = ks.shape[0]
     r = matrix.shape[1] if matrix.ndim == 2 else 0
@@ -68,6 +73,7 @@ def build_rows(plain: np.ndarray, ks: np.ndarray, matrix: np.ndarray, mul: np.nd
     mbuf = np.ascontiguousarray(np.concatenate(motifs) if motifs else np.zeros(1), dtype=np.uint8)
     mlen = np.array([m.size for m in motifs], dtype=np.int64)
     moff = np.concatenate([[0], np.cumsum(mlen)[:-1]]).astype(np.int64) if motifs else np.zeros(0, np.int64)
+    lib = KERNEL.lib()
     out = np.empty((n, tpl.size), dtype=np.uint8)
     chosen = np.empty(n, dtype=np.int16)
     parts = max(1, min(int(nthreads), n))
