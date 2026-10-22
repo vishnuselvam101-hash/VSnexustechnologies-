@@ -46,6 +46,21 @@ enum { CL_OK = 0, CL_EARG = -1, CL_ENOMEM = -2 };
 
 int vnx_cl_abi_version(void) { return VNX_CL_ABI; }
 
+/* ---------------------------------------------------------------------------------------- allocation limits */
+/* The byte size of an allocation must not wrap size_t: a count of elements and the width of one element are checked
+ * before the product is formed, so a size that does not fit is refused instead of allocating a buffer that is smaller
+ * than the kernel believes it has (the same limit the verification path applies to its chunk). */
+static int cl_fits(uint64_t count, size_t esize) {
+    return esize != 0 && count <= (uint64_t)(SIZE_MAX / esize);
+}
+
+/* The same for a product of two counts: neither factor may push the byte size past the limit. */
+static int cl_fits2(uint64_t a, uint64_t b, size_t esize) {
+    if (esize == 0) return 0;
+    if (a == 0 || b == 0) return 1; /* nothing is allocated */
+    return b <= (uint64_t)(SIZE_MAX / esize) / a;
+}
+
 /* ------------------------------------------------------------------------------------------------ sketch */
 static inline uint64_t splitmix64(uint64_t x) {
     uint64_t z = x + 0x9E3779B97F4A7C15ULL;
@@ -161,6 +176,11 @@ static int cand_core(int64_t n, int32_t s, const uint32_t *hashes, const uint8_t
     for (int i = 0; i < 5; i++) extra[i] = 0;
     const int64_t lo_cap = cap_floor > 2 ? cap_floor : 2;
     const int lowerable = lo_cap < bucket_cap; /* a cap c in [lo_cap, bucket_cap) may fit the budget */
+    /* the buffers below are sized by n and s: their byte size must not wrap size_t */
+    const int64_t hmax = bucket_cap < n ? bucket_cap : n;
+    if (!cl_fits((uint64_t)n, sizeof(hent_t)) || !cl_fits((uint64_t)n, sizeof(int64_t)) ||
+        !cl_fits2((uint64_t)n, (uint64_t)s, sizeof(uint32_t)) || !cl_fits((uint64_t)hmax + 1, sizeof(int64_t)))
+        return CL_ENOMEM; /* avoid malloc wrap */
     cand_res_t *res = calloc(1, sizeof(cand_res_t));
     if (!res) return CL_ENOMEM;
     if (n < 2) {
@@ -178,7 +198,6 @@ static int cand_core(int64_t n, int32_t s, const uint32_t *hashes, const uint8_t
     pent_t *pe = NULL;
     size_t pecap = 0;
     /* histogram of retained bucket sizes (only when the cap may be lowered); a bucket holds at most n reads */
-    const int64_t hmax = bucket_cap < n ? bucket_cap : n;
     int64_t *hist = lowerable ? calloc((size_t)hmax + 1, sizeof(int64_t)) : NULL;
     if (!ent || !cnt || !mem || !bsz || (lowerable && !hist)) goto out;
     int64_t total = 0, first_over = -1, snap[3] = {0, 0, 0};
@@ -289,6 +308,10 @@ static int cand_core(int64_t n, int32_t s, const uint32_t *hashes, const uint8_t
         if (acc > bufn) bufn = acc;
         lo = hi;
     }
+    if (!cl_fits((uint64_t)bufn, sizeof(uint64_t))) { /* the range buffer is sized by the slot pairs of a range */
+        rc = CL_ENOMEM;
+        goto out; /* avoid malloc wrap */
+    }
     pairs = malloc((size_t)bufn * sizeof(uint64_t));
     if (!pairs) goto out;
     extra[1] = bufn;
@@ -324,7 +347,17 @@ static int cand_core(int64_t n, int32_t s, const uint32_t *hashes, const uint8_t
             }
             if ((size_t)(kept + k) > pecap) {
                 size_t nc = pecap ? pecap : 1024;
-                while ((size_t)(kept + k) > nc) nc *= 2;
+                while ((size_t)(kept + k) > nc) {
+                    if (nc > SIZE_MAX / 2) { /* the doubling would wrap */
+                        rc = CL_ENOMEM;
+                        goto out;
+                    }
+                    nc *= 2;
+                }
+                if (!cl_fits((uint64_t)nc, sizeof(pent_t))) {
+                    rc = CL_ENOMEM;
+                    goto out; /* avoid malloc wrap */
+                }
                 pent_t *t = realloc(pe, nc * sizeof(pent_t));
                 if (!t) goto out;
                 pe = t;
@@ -355,8 +388,10 @@ static int cand_core(int64_t n, int32_t s, const uint32_t *hashes, const uint8_t
     free(cnt);
     cnt = NULL;
     if (kept && (size_t)kept < pecap) { /* return the doubling slack before the sort */
-        pent_t *t = realloc(pe, (size_t)kept * sizeof(pent_t));
-        if (t) pe = t;
+        if (cl_fits((uint64_t)kept, sizeof(pent_t))) { /* the shrink must not wrap */
+            pent_t *t = realloc(pe, (size_t)kept * sizeof(pent_t));
+            if (t) pe = t;
+        }
     }
     if (kept) qsort(pe, (size_t)kept, sizeof(pent_t), cmp_pent); /* pe is NULL when nothing was kept */
     stats[3] = kept;
@@ -489,6 +524,8 @@ static void ws_free(ws_t *w) {
 
 static int ws_words(ws_t *w, int64_t words) {
     if (words <= w->words_cap) return 0;
+    if (!cl_fits((uint64_t)words, 5 * sizeof(uint64_t)) || !cl_fits((uint64_t)words, sizeof(uint64_t)))
+        return -1; /* avoid malloc wrap */
     free(w->peq);
     free(w->pv);
     free(w->mv);
@@ -501,6 +538,7 @@ static int ws_words(ws_t *w, int64_t words) {
 
 static int ws_rows(ws_t *w, int64_t width) {
     if (width <= w->row_cap) return 0;
+    if (!cl_fits((uint64_t)width, sizeof(int32_t))) return -1; /* avoid malloc wrap */
     free(w->row0);
     free(w->row1);
     w->row0 = malloc((size_t)width * sizeof(int32_t));
@@ -511,6 +549,7 @@ static int ws_rows(ws_t *w, int64_t width) {
 
 static int ws_tmp(ws_t *w, int64_t len) {
     if (len <= w->tmp_cap) return 0;
+    if (!cl_fits((uint64_t)(len > 0 ? len : 1), 1)) return -1; /* avoid malloc wrap */
     free(w->tmp);
     w->tmp = malloc((size_t)(len ? len : 1));
     w->tmp_cap = w->tmp ? len : 0;
@@ -700,6 +739,8 @@ int vnx_cl_verify(int64_t n, const uint8_t *buf, int64_t nbuf, const int64_t *of
     /* the bound is cast to the signed type so the comparison stays signed: chunk is >= 1 here (checked above) and
        chunk * 8 must not wrap size_t, which it does at chunk > SIZE_MAX / 8 */
     if (chunk > (int64_t)(SIZE_MAX / 8)) return CL_ENOMEM; /* avoid malloc wrap */
+    /* the union-find arrays are sized by n: n * 8 must not wrap size_t either */
+    if (!cl_fits((uint64_t)n, sizeof(int64_t))) return CL_ENOMEM; /* avoid malloc wrap */
     int64_t maxlen;
     if (check_seqs(n, nbuf, off, len, (int64_t)1 << 24, &maxlen)) return CL_EARG;
     for (int64_t p = 0; p < npairs; p++)
@@ -998,6 +1039,12 @@ int vnx_cl_fb(int64_t n, int64_t T, int64_t B, const int16_t *tpl, const int32_t
     g.c_indel = c_indel;
     g.slack = slack;
     const size_t Tn = (size_t)(T ? T : 1);
+    /* the working arrays are sized by T, the band and the lane count: their byte size must not wrap size_t */
+    if (!cl_fits2((uint64_t)(T + 1), (uint64_t)(g.W + 1), (size_t)FLn * es) ||
+        !cl_fits((uint64_t)(g.W + 1), (size_t)FLn * es) || !cl_fits((uint64_t)g.W, (size_t)FLn * es) ||
+        !cl_fits((uint64_t)g.ncols, (size_t)FLn * es) || !cl_fits((uint64_t)Tn, (size_t)FLn * es) ||
+        !cl_fits((uint64_t)Tn, (size_t)FLn))
+        return CL_ENOMEM; /* avoid malloc wrap */
     g.F = malloc((size_t)(T + 1) * (size_t)(g.W + 1) * (size_t)FLn * es);
     g.G = malloc((size_t)(g.W + 1) * (size_t)FLn * es);
     g.G2 = malloc((size_t)(g.W + 1) * (size_t)FLn * es);
@@ -1194,6 +1241,10 @@ int vnx_cl_edit_costs(int64_t n, int64_t T, int64_t B, const int16_t *tpl, const
     }
     if (n == 0) return CL_OK;
     const int64_t W = 2 * B + 1, rplen = T + 4 * B + 3;
+    /* the DP rows are sized by T and the band: their byte size must not wrap size_t */
+    if (!cl_fits2((uint64_t)(T + 1), (uint64_t)W, sizeof(int32_t)) || !cl_fits((uint64_t)W, sizeof(int32_t)) ||
+        !cl_fits((uint64_t)rplen, sizeof(int16_t)))
+        return CL_ENOMEM; /* avoid malloc wrap */
     int32_t *F = malloc(sizeof(int32_t) * (size_t)((T + 1) * W));
     int32_t *G = malloc(sizeof(int32_t) * (size_t)((T + 1) * W));
     int32_t *tmp = malloc(sizeof(int32_t) * (size_t)W);
@@ -1318,6 +1369,10 @@ int vnx_cl_trial_costs(int64_t c0, int64_t c1, int64_t ncand, int64_t T, const i
         for (int64_t x = trial_start[k]; x < trial_start[k + 1]; x++)
             if (trial_row[x] < 0 || trial_row[x] > ntrialrows - (read_start[k + 1] - read_start[k])) return CL_EARG;
     const int64_t Wm = 2 * maxb + 1, cells = (T + 1) * Wm;
+    /* the cost arrays are sized by the trial count and the band: their byte size must not wrap size_t */
+    if (!cl_fits((uint64_t)(4 * cells + 2 * Wm), sizeof(int32_t)) ||
+        !cl_fits((uint64_t)(ntrial > 0 ? ntrial : 1), sizeof(int64_t)))
+        return CL_ENOMEM; /* avoid malloc wrap */
     int32_t *M = malloc(sizeof(int32_t) * (size_t)(4 * cells + 2 * Wm)); /* F, G for dip 0 and 1; two scratch rows */
     int64_t *lo = malloc(sizeof(int64_t) * (size_t)(ntrial > 0 ? ntrial : 1));
     int64_t *hi = malloc(sizeof(int64_t) * (size_t)(ntrial > 0 ? ntrial : 1));
@@ -1552,6 +1607,9 @@ static inline __attribute__((always_inline)) int64_t pd_one(int64_t T, int64_t b
 static int pd_ws_reserve(pd_ws_t *ws, int64_t T, int64_t W) {
     if (T + 1 > ws->cap_rows || W > ws->cap_w) {
         const int64_t rows = T + 1 > ws->cap_rows ? T + 1 : ws->cap_rows, w = W > ws->cap_w ? W : ws->cap_w;
+        /* the DP rows are sized by the template and the band: their byte size must not wrap size_t */
+        if (!cl_fits2((uint64_t)rows, (uint64_t)w, sizeof(int32_t)) || !cl_fits((uint64_t)w, sizeof(int32_t)))
+            return CL_ENOMEM; /* avoid malloc wrap */
         int32_t *F = malloc(sizeof(int32_t) * (size_t)(rows * w)), *G = malloc(sizeof(int32_t) * (size_t)(rows * w));
         int32_t *tmp = malloc(sizeof(int32_t) * (size_t)w);
         if (!F || !G || !tmp) {
