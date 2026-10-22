@@ -84,6 +84,7 @@ codes! {
 
 /// A typed failure with its diagnostic message.
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Debug)]
 pub struct VnxError {
     pub code: ErrorCode,
     pub message: String,
