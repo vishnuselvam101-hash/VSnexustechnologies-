@@ -55,6 +55,9 @@ MAX_BAND = 512
 MAX_TEMPLATE = 8192
 MAX_SLACK = 1 << 20
 MAX_READ = 1 << 20
+#: the sketch arguments the kernel accepts (native/c/cluster.c: vnx_cl_sketch)
+MAX_SKETCH_K = 31
+MAX_SKETCH_S = 256
 LEVELS = {0: "best", 1: "scalar", 2: "avx2"}
 
 # the pip-built extension (setup.py: vnxdna._vnx_cluster) lands in the package root; the C source and the in-place
@@ -82,6 +85,8 @@ class NativeClusterMemoryError(NativeClusterError, MemoryError):
 #: slot pairs materialised at once by the candidate step (8 bytes each: 256 MiB); results do not depend on it
 DEFAULT_CHUNK_PAIRS = 1 << 25
 _INT64_MAX = (1 << 63) - 1
+_INT32_MIN = -(1 << 31)
+_INT32_MAX = (1 << 31) - 1
 
 
 _lib = None
@@ -284,6 +289,19 @@ def _check(rc: int, what: str) -> None:
         raise NativeClusterError(f"native {what} failed ({rc}: {_ERRORS.get(rc, 'unknown')})")
 
 
+def _i32(value, name: str) -> int:
+    """Return ``value`` as the int32 the kernel takes, refusing a value that does not fit.
+
+    ctypes narrows an out-of-range Python int to the width of the argument type without a word, so a value of
+    ``2 ** 32 + 5`` would reach the kernel as ``5`` and the kernel would answer for a different value than the
+    caller asked for. Such a value is refused here instead, with the same error the kernel's own refusal raises.
+    """
+    number = int(value)
+    if number < _INT32_MIN or number > _INT32_MAX:
+        raise NativeClusterError(f"native cluster: {name}={number} does not fit the kernel's int32 argument")
+    return number
+
+
 def _lib_or_raise():
     lib = _load()
     if lib is None:
@@ -328,16 +346,23 @@ def lengths_in_domain(lens: np.ndarray) -> bool:
 # ============================================================================ kernels
 def sketch(raw: np.ndarray, lengths: np.ndarray, k: int, s: int) -> tuple[np.ndarray, np.ndarray]:
     lib = _lib_or_raise()
+    # the arguments are checked before anything is allocated: the sketch arrays are sized by s, and an int32 argument
+    # is narrowed by ctypes, so both must be refused here rather than by the kernel (too late) or by ctypes (silently)
+    k = _i32(k, "k")
+    s = _i32(s, "s")
+    if not 1 <= k <= MAX_SKETCH_K:
+        raise NativeClusterError(f"native cluster: k must be in 1..{MAX_SKETCH_K}, got {k}")
+    if not 1 <= s <= MAX_SKETCH_S:
+        raise NativeClusterError(f"native cluster: s must be in 1..{MAX_SKETCH_S}, got {s}")
     raw = np.ascontiguousarray(raw, dtype=np.uint8)
     n = raw.shape[0]
     width = raw.shape[1] if raw.ndim == 2 else 0
     lengths = np.ascontiguousarray(lengths, dtype=np.int64)
-    hashes = np.empty((n, s), dtype=np.uint32)
-    orient = np.empty((n, s), dtype=np.uint8)
     if lengths.shape != (n,):
         raise ValueError(f"lengths must have shape ({n},), got {lengths.shape}")
-    _check(lib.vnx_cl_sketch(n, width, _ptr(raw), raw.size, _ptr(lengths), int(k), int(s), _ptr(hashes), _ptr(orient)),
-           "sketch")
+    hashes = np.empty((n, s), dtype=np.uint32)
+    orient = np.empty((n, s), dtype=np.uint8)
+    _check(lib.vnx_cl_sketch(n, width, _ptr(raw), raw.size, _ptr(lengths), k, s, _ptr(hashes), _ptr(orient)), "sketch")
     return hashes, orient
 
 
@@ -355,6 +380,7 @@ def candidates(hashes: np.ndarray, orient: np.ndarray, bucket_cap: int, max_pair
     if hashes.ndim != 2 or orient.shape != hashes.shape:
         raise ValueError(f"hashes must be 2-D and orient the same shape, got {hashes.shape} and {orient.shape}")
     n, s = hashes.shape
+    s = _i32(s, "s")
     stats = np.zeros(12, dtype=np.int64)
     handle = ctypes.c_void_p()
     floor = _INT64_MAX if cap_floor is None else min(int(cap_floor), _INT64_MAX)
@@ -440,6 +466,10 @@ def fb(tpl: np.ndarray, mc: np.ndarray, buf: np.ndarray, off: np.ndarray, lens: 
     """Forward-backward certain calls of one chunk with shared band ``B`` (as consensus._fb). ``level``: 0 best, 1 scalar,
     2 AVX2; ``width``: 0 auto (int16 lanes when the cost bound allows), 16, 32. Results do not depend on either."""
     lib = _lib_or_raise()
+    c_indel = _i32(c_indel, "c_indel")
+    slack = _i32(slack, "slack")
+    level = _i32(level, "level")
+    width = _i32(width, "width")
     n, T = tpl.shape
     tpl = np.ascontiguousarray(tpl, dtype=np.int16)
     mc = np.ascontiguousarray(mc, dtype=np.int32)
@@ -459,8 +489,8 @@ def fb(tpl: np.ndarray, mc: np.ndarray, buf: np.ndarray, off: np.ndarray, lens: 
         if r1 <= r0:
             return 0
         return lib.vnx_cl_fb(r1 - r0, T, int(B), tpl[r0:].ctypes.data, mc[r0:].ctypes.data, _ptr(buf), buf.size,
-                             off[r0:].ctypes.data, lens[r0:].ctypes.data, band[r0:].ctypes.data, int(c_indel),
-                             int(slack), calls[r0:].ctypes.data, opt[r0:].ctypes.data, int(level), int(width))
+                             off[r0:].ctypes.data, lens[r0:].ctypes.data, band[r0:].ctypes.data, c_indel,
+                             slack, calls[r0:].ctypes.data, opt[r0:].ctypes.data, level, width)
 
     if parts == 1:
         rcs = [run(0)]
@@ -481,6 +511,8 @@ def edit_costs(tpl: np.ndarray, mc: np.ndarray, buf: np.ndarray, off: np.ndarray
     """Polish edit costs of one batch with shared band ``B`` (as polish.edit_costs_reference): (opt (n,), sub (n, T, 4),
     dele (n, T), ins (n, T, 4)), int64. Every read's result depends only on that read, so threads do not change it."""
     lib = _lib_or_raise()
+    c_indel = _i32(c_indel, "c_indel")
+    c_sub = _i32(c_sub, "c_sub")
     n, T = tpl.shape
     tpl = np.ascontiguousarray(tpl, dtype=np.int16)
     mc = np.ascontiguousarray(mc, dtype=np.int32)
@@ -502,7 +534,7 @@ def edit_costs(tpl: np.ndarray, mc: np.ndarray, buf: np.ndarray, off: np.ndarray
             return 0
         return lib.vnx_cl_edit_costs(r1 - r0, T, int(B), tpl[r0:].ctypes.data, mc[r0:].ctypes.data, _ptr(buf),
                                      buf.size, off[r0:].ctypes.data, lens[r0:].ctypes.data, band[r0:].ctypes.data,
-                                     int(c_indel), int(c_sub), opt[r0:].ctypes.data, sub[r0:].ctypes.data,
+                                     c_indel, c_sub, opt[r0:].ctypes.data, sub[r0:].ctypes.data,
                                      dele[r0:].ctypes.data, ins[r0:].ctypes.data)
 
     rcs = [run(0)] if parts == 1 else list(_get_pool(nt).map(run, range(parts)))
@@ -524,6 +556,9 @@ def polish_deltas(tpls: np.ndarray, mc: np.ndarray, buf: np.ndarray, off: np.nda
     partitioned into contiguous ranges over threads; each range writes only its own rows, so the result does not
     depend on the thread count. ``level``: 0 best available SIMD, 1 baseline, 2 AVX2."""
     lib = _lib_or_raise()
+    c_indel = _i32(c_indel, "c_indel")
+    c_sub = _i32(c_sub, "c_sub")
+    level = _i32(level, "level")
     tpls = np.ascontiguousarray(tpls, dtype=np.int16)
     ncand, T = tpls.shape
     mc = np.ascontiguousarray(mc, dtype=np.int32)
@@ -550,9 +585,9 @@ def polish_deltas(tpls: np.ndarray, mc: np.ndarray, buf: np.ndarray, off: np.nda
     def run(k: int) -> int:
         return lib.vnx_cl_polish_deltas(ncand, bounds[k], bounds[k + 1], T, tpls.ctypes.data, mc.ctypes.data,
                                         _ptr(buf), buf.size, off.ctypes.data, lens.ctypes.data, read_start.ctypes.data,
-                                        band.ctypes.data, dip.ctypes.data, int(c_indel), int(c_sub), int(pen),
+                                        band.ctypes.data, dip.ctypes.data, c_indel, c_sub, int(pen),
                                         dsub.ctypes.data, ddel.ctypes.data, dins.ctypes.data, live.ctypes.data,
-                                        int(level))
+                                        level)
 
     ranges = len(bounds) - 1
     rcs = [run(k) for k in range(ranges)] if ranges <= 1 else list(_get_pool(nt).map(run, range(ranges)))
@@ -590,6 +625,7 @@ def trial_costs(base_tpl: np.ndarray, mc: np.ndarray, buf: np.ndarray, off: np.n
     base). Reads and trials are grouped by candidate (``read_start``/``trial_start``, CSR); ``trial_row[x]`` is the
     offset of trial x's rows in ``trial_dip``. Candidates are independent, so threads do not change the result."""
     lib = _lib_or_raise()
+    c_indel = _i32(c_indel, "c_indel")
     ncand, T = base_tpl.shape
     base_tpl = np.ascontiguousarray(base_tpl, dtype=np.int16)
     trial_tpl = np.ascontiguousarray(trial_tpl, dtype=np.int16).reshape(-1, T)
@@ -621,7 +657,7 @@ def trial_costs(base_tpl: np.ndarray, mc: np.ndarray, buf: np.ndarray, off: np.n
             return 0
         return lib.vnx_cl_trial_costs(c0, c1, ncand, T, base_tpl.ctypes.data, mc.ctypes.data, _ptr(buf), buf.size,
                                       off.ctypes.data, lens.ctypes.data, band.ctypes.data, read_start.ctypes.data,
-                                      base_dip.ctypes.data, int(c_indel), int(pen), _ptr(trial_tpl),
+                                      base_dip.ctypes.data, c_indel, int(pen), _ptr(trial_tpl),
                                       trial_start.ctypes.data, _ptr(trial_row), trial_dip.size, _ptr(trial_dip),
                                       _ptr(cost), basec.ctypes.data)
 

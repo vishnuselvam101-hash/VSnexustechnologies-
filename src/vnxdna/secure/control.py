@@ -22,11 +22,13 @@ import hmac
 import json
 import os
 import shutil
+import stat
 import threading
 from functools import wraps
 from collections import OrderedDict, deque
 from pathlib import Path
 
+from ..core.fsio import private_output
 from . import integrity as integ
 from .audit import AuditIntegrityError, AuditLog
 from .contain import LOGIN_LOCK_SECONDS, PLAYBOOK, ActionRecord, ContainmentState, RecordingIsolator
@@ -69,15 +71,41 @@ def subkey(master: bytes, label: str) -> bytes:
     return hmac.new(master, b"vnx-secure/" + label.encode(), hashlib.sha256).digest()
 
 
-def _write_private(path: Path, data: bytes, mode: int = 0o600) -> None:
-    tmp = path.with_name(path.name + ".tmp")
-    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, mode)
+def mac_eq(a: str, b: str) -> bool:
+    """Compare two MACs in constant time.
+
+    The bytes are compared, not the strings, so a value that is not ASCII is a mismatch instead of an exception. The
+    policy's known-good MAC is read back from the state file, and a comparison that stops at the first byte that
+    differs would tell an observer how much of it matched.
+    """
+    return hmac.compare_digest(a.encode("utf-8", "surrogatepass"), b.encode("utf-8", "surrogatepass"))
+
+
+def _refuse_symlink(path: Path) -> None:
+    """Refuse to write onto a symlink: the path must be a regular file or absent, never a link."""
     try:
-        os.write(fd, data)
-        os.fsync(fd)
-    finally:
-        os.close(fd)
-    os.replace(tmp, path)
+        st = os.lstat(path)
+    except FileNotFoundError:
+        return
+    except OSError as error:
+        raise FileExistsError(f"cannot inspect {path}: {error.strerror or error}") from None
+    if stat.S_ISLNK(st.st_mode):
+        raise FileExistsError(f"{path} is a symlink; refusing to write through it")
+
+
+def _write_private(path: Path, data: bytes, mode: int = 0o600) -> None:
+    """Write ``data`` to ``path`` through a private temporary file and publish it with a rename.
+
+    The temporary file has a unique name and is created with ``O_EXCL`` and mode 0600. A fixed name such as
+    ``secure.key.tmp`` could be planted as a symlink by anyone who may write in the home directory: the write would go
+    through it, putting the master key in a file of their choosing and leaving the control plane holding a symlink
+    instead of its own key file. The published path must be a regular file, so a symlink there is refused.
+    """
+    _refuse_symlink(path)
+    with private_output(path, mode=mode) as handle:
+        handle.write(data)
+    if not stat.S_ISREG(os.lstat(path).st_mode):
+        raise FileExistsError(f"{path} is not a regular file after the write")
 
 
 class ControlPlane:
@@ -416,7 +444,7 @@ class ControlPlane:
     def check_integrity(self) -> dict:
         audit = self.audit.verify() if self.audit_trusted else None
         snap = integ.check(self.baseline, self.k_integ)
-        pol_ok = self._mac_policy(self.policy.to_dict()) == self.good_policy_mac if self.good_policy_mac else False
+        pol_ok = mac_eq(self._mac_policy(self.policy.to_dict()), self.good_policy_mac) if self.good_policy_mac else False
         status = snap["status"]
         if audit is None or audit.status != "VERIFIED":
             status = "FAILED"
@@ -456,9 +484,9 @@ class ControlPlane:
         else:
             steps.append({"step": "audit", "result": "VERIFIED", "count": v.count})
         # 2. policy: restore the known-good policy if the current one differs
-        if self.good_policy_mac and self._mac_policy(self.policy.to_dict()) != self.good_policy_mac:
+        if self.good_policy_mac and not mac_eq(self._mac_policy(self.policy.to_dict()), self.good_policy_mac):
             good = json.loads((self.home / "policy.good.json").read_text()) if self.home else self.good_policy
-            if self._mac_policy(good) != self.good_policy_mac:
+            if not mac_eq(self._mac_policy(good), self.good_policy_mac):
                 steps.append({"step": "policy", "result": "FAILED", "reason": "known-good policy copy does not authenticate"})
                 return self._recovery_failed(steps, "known-good policy copy does not authenticate")
             self.policy = Policy.from_dict(good)

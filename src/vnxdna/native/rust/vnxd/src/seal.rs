@@ -17,6 +17,7 @@
 //!   boundary); the backend only ever sees sealed bytes.
 
 use crate::addr::GenerationRef;
+use crate::authz::ct_eq;
 use crate::digest::{hex, parse_hex, sha256};
 use crate::error::{err, ErrorCode, Result, VnxError};
 use crate::json::{obj, Value};
@@ -84,7 +85,12 @@ impl MediaAdapter for SealedMedia {
                 return err(ErrorCode::Unauthorized, "the backend was not created sealed (its marker carries no key check)");
             }
             let (marker, kcv) = stored.split_at(stored.len() - 32);
-            if kcv != self.sealer.key_check(&self.device_id)? {
+            let kcv: &[u8; 32] = match kcv.try_into() {
+                Ok(kcv) => kcv,
+                Err(_) => return err(ErrorCode::Corruption, "the marker's key check is not 32 bytes"),
+            };
+            // the key check is compared in constant time: a plain comparison would leak how much of it matched
+            if !ct_eq(kcv, &self.sealer.key_check(&self.device_id)?) {
                 return err(ErrorCode::Unauthorized, "the key does not match the key this device was sealed with");
             }
             return Ok(marker.to_vec());
