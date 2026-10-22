@@ -20,7 +20,8 @@ from vnxdna.core import guard as _guard
 from vnxdna.archive import container as _ct
 from vnxdna.archive import operations as _ar
 from vnxdna.archive.operations import ArchiveOptions
-from vnxdna.core.errors import (VNXConfigurationError, VNXDecodeError, VNXIntegrityError, VNXOutputError)
+from vnxdna.core.errors import (VNXConfigurationError, VNXDecodeError, VNXIntegrityError, VNXOutputError,
+                                 VNXResourceError)
 from vnxdna.core.version import FORMAT_VERSION, FRAME_VERSION, codec_id
 from vnxdna.pipeline import decode as _de
 from vnxdna.pipeline import encode as _en
@@ -38,7 +39,7 @@ __all__ = ["archive", "encode", "decode", "inspect", "verify", "extract", "list_
            "channel_sweep", "experiment_run", "experiment_reproduce", "generate", "validate_strands", "profiles",
            "native", "keygen", "load_keys", "version", "conformance", "is_container", "stream_encode", "stream_decode",
            "stream_read_range", "volume_create", "volume_write", "volume_read", "volume_stat", "volume_scrub",
-           "cache_stats", "cache_clear"]
+           "cache_stats", "cache_clear", "plan"]
 
 CONTAINER = [FORMAT_VERSION[0], FORMAT_VERSION[1]]
 
@@ -775,6 +776,33 @@ def validate_strands(sequences: PathLike, *, constraints: PathLike | None = None
     cfg.validate()
     rep = validate_file(sequences, cfg, max_reported=max_reported)
     return Result("validate", "SUCCESS" if rep["valid"] else "FAILURE", rep, inputs=(file_ref("strands", sequences),))
+
+
+def plan(path: PathLike, *, profile: str = "v4-balanced", prices: PathLike | None = None) -> Result:
+    """The AP-8 cost plan for a file: the encoder's own strand and base counts, and the per-vendor costs.
+
+    ``prices`` is an optional operator-supplied price file (``vnx.vendor-prices/1``); without it the plan carries no
+    costs. The result body is the plan document (the field set of :meth:`vnxdna.pipeline.plan.Plan.to_dict`).
+
+    The plan is a COST ESTIMATE, not an order: nothing is synthesised, ordered, stored or sequenced here, the counts
+    are the software's own encoder counts and the prices are the operator's own numbers.
+    """
+    from vnxdna.pipeline.plan import load_prices, plan_file
+    vendor_prices = None
+    inputs = (file_ref("input", Path(path)),)
+    if prices is not None:
+        try:
+            vendor_prices = load_prices(prices)
+        except OSError as error:
+            raise VNXResourceError(f"cannot read the vendor price file {prices}: {error}") from None
+        except ValueError as error:
+            raise VNXConfigurationError(f"the vendor price file {prices} is not valid JSON: {error}") from None
+        inputs += (file_ref("prices", Path(prices)),)
+    try:
+        planned = plan_file(path, options=DNAOptions(profile=profile), prices=vendor_prices)
+    except OSError as error:
+        raise VNXResourceError(f"cannot plan {path}: {error}") from None
+    return Result("plan", "SUCCESS", planned.to_dict(), inputs=inputs)
 
 
 def profiles() -> Result:

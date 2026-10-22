@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
@@ -194,6 +195,23 @@ def test_v13_stream_volume_cache_commands_print_json(ws, tmp_path):
     err_json(cli("cache", "clear", code=7))                                            # no cache configured
 
 
+def test_plan_command_prints_the_plan_document(tmp_path):
+    """vnx plan prints the vnx.result/1 envelope (kind "plan") whose result is the plan document."""
+    payload = tmp_path / "payload.bin"
+    payload.write_bytes(b"\x00" * 4096)
+    doc = out_json(cli("plan", payload))
+    assert doc["kind"] == "plan"
+    assert {"profile", "input_bytes", "strands", "bases", "strand_nt", "costs", "evidence"} <= doc["result"].keys()
+    assert doc["result"]["profile"] == "v4-balanced" and doc["result"]["strands"] > 0
+    assert doc["result"]["bases"] > 0 and doc["result"]["costs"] == []
+    prices = Path(__file__).resolve().parents[2] / "docs" / "examples" / "vendor-prices.example.json"
+    doc = out_json(cli("plan", payload, "--prices", prices))
+    assert len(doc["result"]["costs"]) == 2
+    assert {c["vendor"] for c in doc["result"]["costs"]} == {"example-vendor-a", "example-vendor-b"}
+    e = err_json(cli("plan", payload, "--profile", "no-such-profile", code=7))
+    assert e["category"] == "CONFIGURATION_ERROR"
+
+
 def test_every_command_is_covered():
     """A new command must get a JSON-validation case here (sweep, codec-compare and benchmark --human print tables)."""
     covered = {"version", "native", "keygen", "archive", "inspect", "list", "verify", "locate", "extract", "encode", "decode",
@@ -201,7 +219,8 @@ def test_every_command_is_covered():
                "codec-compare", "models", "show", "convert",
                "init", "status", "integrity", "sessions", "policy", "recover", "crypto",  # vnx security (own JSON shapes)
                "write", "read", "stat", "scrub", "stats", "clear",                      # vnx stream/volume/cache (V13)
-               "read-range"}                                                           # vnx read-range (AP-14)
+               "read-range",                                                           # vnx read-range (AP-14)
+               "plan"}                                                                 # vnx plan (own JSON shape)
     names = set()
     for group in [app] + [g.typer_instance for g in app.registered_groups]:
         for c in group.registered_commands:
