@@ -172,6 +172,10 @@ def test_v13_stream_volume_cache_commands_print_json(ws, tmp_path):
     assert doc["kind"] == "stream-decode" and (tmp_path / "st.bin").read_bytes() == (ws / "ds" / "a.bin").read_bytes()
     e = err_json(cli("stream", "decode", tmp_path / "st.fasta", tmp_path / "none.json", tmp_path / "x.bin", code=3))
     assert e["code"] == "FORMAT_ERROR" and e["category"] == "INVALID_INPUT" and not (tmp_path / "x.bin").exists()
+    doc = out_json(cli("read-range", tmp_path / "st.fasta", tmp_path / "st.fasta.stream.json", "--start", "10",
+                       "--length", "20", "-o", tmp_path / "slice.bin"))
+    assert doc["kind"] == "stream-read-range" and doc["result"]["range"] == [10, 30]
+    assert (tmp_path / "slice.bin").read_bytes() == (ws / "ds" / "a.bin").read_bytes()[10:30]
     v = tmp_path / "vol"
     assert out_json(cli("volume", "init", v, "--extent-bytes", "8192"))["kind"] == "volume-create"
     doc = out_json(cli("volume", "write", v, ws / "ds" / "b.txt"))
@@ -196,7 +200,8 @@ def test_every_command_is_covered():
                "validate", "simulate", "benchmark", "sweep", "run", "reproduce", "generate", "profiles", "conformance",
                "codec-compare", "models", "show", "convert",
                "init", "status", "integrity", "sessions", "policy", "recover", "crypto",  # vnx security (own JSON shapes)
-               "write", "read", "stat", "scrub", "stats", "clear"}                      # vnx stream/volume/cache (V13)
+               "write", "read", "stat", "scrub", "stats", "clear",                      # vnx stream/volume/cache (V13)
+               "read-range"}                                                           # vnx read-range (AP-14)
     names = set()
     for group in [app] + [g.typer_instance for g in app.registered_groups]:
         for c in group.registered_commands:
