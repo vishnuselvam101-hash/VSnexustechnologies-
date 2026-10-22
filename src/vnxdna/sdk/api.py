@@ -258,12 +258,13 @@ def decode(reads: PathLike, output: PathLike | None = None, *, options: DecodeOp
         opts = replace(opts, **expect)
     if output is None and extract_to is None and not select:
         raise VNXConfigurationError("give an output container, an extraction directory, or files to select")
-    cache = cache_key = None
+    cache = cache_key = cache_state = None
     cdir = _cache.configured_dir(cache_dir)
     if cdir is not None and not select:
         cache = _cache.ResultCache(cdir)
-        cache_key = _cache.key_for(reads, opts, has_key=key is not None or passphrase is not None,
-                                   key_material=_cache.key_fingerprint(key, passphrase), allow_unencrypted=allow_unencrypted)
+        cache_key, cache_state = _cache.key_and_state(reads, opts, has_key=key is not None or passphrase is not None,
+                                                      key_material=_cache.key_fingerprint(key, passphrase),
+                                                      allow_unencrypted=allow_unencrypted)
     hasher = InputHasher("reads", [reads], enabled=input_hash)
     target, tmp = output, None
     ok = False
@@ -300,8 +301,15 @@ def decode(reads: PathLike, output: PathLike | None = None, *, options: DecodeOp
                                    allow_unencrypted=allow_unencrypted)
             if res.status == "SUCCESS" and cache is not None and cache_key is not None and target is not None:
                 try:
-                    cache.store(cache_key, target, {k: v for k, v in res.report.items() if k != "extract"})
-                    res.report["cache"] = {"hit": False, "key": cache_key, "dir": str(cdir), "stored": True}
+                    # V15 J2 (O-3): the key was built from the bytes of the read file as they were before the decode,
+                    # and the decode read the file again: if the file changed in between, the result may belong to
+                    # other bytes, so it is not cached (nothing is stored under the key of the old content)
+                    if _cache.input_state(reads) == cache_state:
+                        cache.store(cache_key, target, {k: v for k, v in res.report.items() if k != "extract"})
+                        res.report["cache"] = {"hit": False, "key": cache_key, "dir": str(cdir), "stored": True}
+                    else:
+                        res.report["cache"] = {"hit": False, "key": cache_key, "dir": str(cdir), "stored": False,
+                                               "reason": "the read file changed during the decode; nothing was cached"}
                 except OSError as exc:
                     res.report["cache"] = {"hit": False, "key": cache_key, "dir": str(cdir), "stored": False,
                                            "error": str(exc)[:200]}
