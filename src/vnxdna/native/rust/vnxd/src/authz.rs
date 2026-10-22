@@ -4,7 +4,7 @@
 //! group. On top of that every session must authenticate before anything but `hello`:
 //!
 //! * a **policy** file lists `<role> <sha256-hex of a token>` lines (`#` comments). Roles: `reader` (`capacity`,
-//!   `health`, `stats`) and `admin` (those and `shutdown`). Tokens are random secrets of at least 32 bytes handed to
+//!   `health`, `stats`, `metrics`) and `admin` (those and `shutdown`). Tokens are random secrets of at least 32 bytes handed to
 //!   the operator; the policy stores only their SHA-256, so reading the policy file does not reveal a token. The
 //!   policy file must not be writable by group or others nor readable by others (refused otherwise);
 //! * `authenticate {token}` compares the token's SHA-256 with every entry in constant time (no early exit);
@@ -54,7 +54,7 @@ impl Role {
 pub fn allowed(role: Option<Role>, op: &str) -> bool {
     match op {
         "hello" | "authenticate" => true,
-        "capacity" | "health" | "stats" => role.is_some(),
+        "capacity" | "health" | "stats" | "metrics" => role.is_some(),
         "shutdown" => role == Some(Role::Admin),
         _ => false,
     }
@@ -132,6 +132,13 @@ pub trait MgmtBackend {
     fn capacity(&self) -> Result<Value>;
     fn health(&self) -> Result<Value>;
     fn stats(&self) -> Result<Value>;
+    /// The metrics of the service in the Prometheus text exposition format (0.0.4).
+    ///
+    /// The default is an empty text: a backend that holds no metrics to expose answers with nothing. The service
+    /// derives every sample from the structures it already holds, so the exposition costs no state of its own.
+    fn metrics(&self) -> Result<String> {
+        Ok(String::new())
+    }
     fn shutdown(&self) -> Result<Value>;
 }
 
@@ -243,6 +250,10 @@ impl<'a> MgmtSession<'a> {
             "capacity" => self.backend.capacity(),
             "health" => self.backend.health(),
             "stats" => self.backend.stats(),
+            "metrics" => {
+                let text = self.backend.metrics()?;
+                Ok(obj([("text", Value::Str(text))]))
+            }
             "shutdown" => {
                 self.audit("mgmt_shutdown", op, None);
                 self.backend.shutdown()
@@ -258,7 +269,7 @@ mod tests {
     use crate::audit::MemorySink;
     use crate::digest::hex;
     use crate::journal::tests::TempDir;
-    use std::cell::Cell;
+    use std::cell::{Cell, RefCell};
 
     const READER: &str = "reader-token-0123456789abcdef0123456789";
     const ADMIN: &str = "admin-token-0123456789abcdef0123456789ab";
@@ -274,6 +285,7 @@ mod tests {
 
     struct Dev {
         shut: Cell<bool>,
+        text: RefCell<String>,
     }
     impl MgmtBackend for Dev {
         fn capacity(&self) -> Result<Value> {
@@ -290,6 +302,9 @@ mod tests {
         }
         fn stats(&self) -> Result<Value> {
             Ok(obj([("counters", obj([]))]))
+        }
+        fn metrics(&self) -> Result<String> {
+            Ok(self.text.borrow().clone())
         }
         fn shutdown(&self) -> Result<Value> {
             self.shut.set(true);
@@ -321,16 +336,16 @@ mod tests {
 
     #[test]
     fn roles_gate_every_operation_and_denials_are_audited() {
-        let (p, dev, audit) = (policy(), Dev { shut: Cell::new(false) }, MemorySink::new());
+        let (p, dev, audit) = (policy(), Dev { shut: Cell::new(false), text: RefCell::new(String::new()) }, MemorySink::new());
         let mut s = MgmtSession::new(&p, &dev, Some(&audit), "uid 1000");
         assert_eq!(code(&s.handle(&req(1, "stats", obj([])))).as_deref(), Some("PROTOCOL"), "hello first");
         assert_eq!(code(&s.handle(&hello())), None);
-        for op in ["capacity", "health", "stats", "shutdown"] {
+        for op in ["capacity", "health", "stats", "metrics", "shutdown"] {
             assert_eq!(code(&s.handle(&req(3, op, obj([])))).as_deref(), Some("UNAUTHORIZED"), "{op} before authenticate");
         }
         assert_eq!(code(&s.handle(&auth(READER))), None);
         assert_eq!(s.role(), Some(Role::Reader));
-        for op in ["capacity", "health", "stats"] {
+        for op in ["capacity", "health", "stats", "metrics"] {
             assert_eq!(code(&s.handle(&req(4, op, obj([])))), None, "{op} as reader");
         }
         assert_eq!(code(&s.handle(&req(5, "shutdown", obj([])))).as_deref(), Some("UNAUTHORIZED"));
@@ -342,7 +357,7 @@ mod tests {
         assert_eq!(code(&s.handle(&auth("not-the-token-0123456789abcdef0123456789"))).as_deref(), Some("UNAUTHORIZED"));
         assert_eq!((s.role(), code(&s.handle(&req(7, "stats", obj([])))).as_deref()), (None, Some("UNAUTHORIZED")));
         let names = audit.names();
-        assert_eq!(names.iter().filter(|n| *n == "mgmt_denied").count(), 6);
+        assert_eq!(names.iter().filter(|n| *n == "mgmt_denied").count(), 7);
         assert_eq!(names.iter().filter(|n| *n == "mgmt_auth_granted").count(), 2);
         assert!(names.contains(&"mgmt_shutdown".to_string()));
         // malformed requests: a typed error, never a crash
@@ -350,8 +365,26 @@ mod tests {
     }
 
     #[test]
+    fn the_metrics_op_carries_the_exposition_of_the_backend() {
+        const TEXT: &str = "# TYPE vnxd_read_only gauge\nvnxd_read_only 0\n";
+        let (p, dev, audit) = (policy(), Dev { shut: Cell::new(false), text: RefCell::new(TEXT.to_string()) }, MemorySink::new());
+        let mut s = MgmtSession::new(&p, &dev, Some(&audit), "uid 1003");
+        s.handle(&hello());
+        // an unauthenticated session never reaches the exposition
+        assert_eq!(code(&s.handle(&req(3, "metrics", obj([])))).as_deref(), Some("UNAUTHORIZED"));
+        assert_eq!(code(&s.handle(&auth(READER))), None);
+        let resp = s.handle(&req(4, "metrics", obj([])));
+        let v = Value::parse(&resp).unwrap();
+        let o = v.as_obj().unwrap();
+        assert_eq!(o["ok"], Value::Bool(true), "{resp}");
+        assert_eq!(o["result"].as_obj().unwrap()["text"], Value::Str(TEXT.to_string()), "{resp}");
+        // the exposition is a text, so it survives the round trip of the protocol unchanged
+        assert!(proto::validate_response(Proto::Mgmt, "metrics", &v).unwrap().is_ok());
+    }
+
+    #[test]
     fn failed_authentication_is_audited_and_locks_the_session() {
-        let (p, dev, audit) = (policy(), Dev { shut: Cell::new(false) }, MemorySink::new());
+        let (p, dev, audit) = (policy(), Dev { shut: Cell::new(false), text: RefCell::new(String::new()) }, MemorySink::new());
         let mut s = MgmtSession::new(&p, &dev, Some(&audit), "uid 1001");
         s.handle(&hello());
         assert_eq!(code(&s.handle(&auth("wrong-token-0123456789abcdef0123456789"))).as_deref(), Some("UNAUTHORIZED"));
@@ -389,7 +422,7 @@ mod tests {
 
     #[test]
     fn a_session_flooding_denied_requests_is_cut_off() {
-        let (p, dev, audit) = (policy(), Dev { shut: Cell::new(false) }, MemorySink::new());
+        let (p, dev, audit) = (policy(), Dev { shut: Cell::new(false), text: RefCell::new(String::new()) }, MemorySink::new());
         let mut s = MgmtSession::new(&p, &dev, Some(&audit), "uid 1002");
         s.handle(&hello());
         for i in 0..100 {

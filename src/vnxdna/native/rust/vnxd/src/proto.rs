@@ -39,6 +39,9 @@ impl Proto {
 pub enum Ty {
     /// any string of 1..=1024 bytes
     Str,
+    /// a text of 0..=1_048_576 bytes: the metrics exposition of the service, which is longer than a [`Ty::Str`]
+    /// (one line of the Prometheus text format per series). An empty text means the backend has no metrics.
+    Text,
     /// integer >= 0
     Count,
     /// integer >= 1
@@ -89,6 +92,8 @@ fn ops(proto: Proto) -> &'static [(&'static str, Schema, Schema)] {
             ),
             ("health", &[], &[("state", Ty::Health), ("detail", Ty::Object)]),
             ("stats", &[], &[("counters", Ty::Object)]),
+            // the metrics of the service in the Prometheus text exposition format (0.0.4)
+            ("metrics", &[], &[("text", Ty::Text)]),
             ("shutdown", &[], &[]),
             ("authenticate", &[("token", Ty::Str)], &[("role", Ty::Str)]),
         ],
@@ -137,6 +142,7 @@ fn bad<T>(msg: impl Into<String>) -> Result<T> {
 fn check_ty(key: &str, ty: Ty, v: &Value) -> Result<()> {
     let ok = match (ty, v) {
         (Ty::Str, Value::Str(s)) => !s.is_empty() && s.len() <= 1024,
+        (Ty::Text, Value::Str(s)) => s.len() <= 1_048_576,
         (Ty::Count, Value::Int(i)) => *i >= 0,
         (Ty::Positive, Value::Int(i)) => *i >= 1,
         (Ty::Sha256, Value::Str(s)) => parse_hex::<32>(s).is_some(),

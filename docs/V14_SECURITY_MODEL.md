@@ -112,7 +112,7 @@ connect is decided by the file system. Every session then authenticates:
 | role | operations |
 |---|---|
 | (none) | `hello`, `authenticate` |
-| `reader` | + `capacity`, `health`, `stats` |
+| `reader` | + `capacity`, `health`, `stats`, `metrics` |
 | `admin` | + `shutdown` |
 
 * the policy file lists `<role> <SHA-256 hex of a token>` lines; it must not be writable by group or others nor
