@@ -609,12 +609,12 @@ mod tests {
         let r = rig(HealthConfig { degrade_after: 1, unavailable_after: 1, probe_interval: Duration::from_secs(3600), score_alpha: 0.5 });
         let g = Geometry::new(512, 4, 16).unwrap();
         let v = Volume::create(&d.0, g, [3; 16], 0, r.rm.clone(), VolumeConfig::default()).unwrap();
-        v.write_extent(ExtentId(0), &[7u8; 2048]).unwrap();
+        v.write_extent(ExtentId(0), &[7u8; 2048], 1000).unwrap();
         r.fm.add(Rule::always(MediaOp::Put, Fault::Unavailable));
-        assert_eq!(v.write_extent(ExtentId(1), &[8u8; 2048]).unwrap_err().code, ErrorCode::BackendUnavailable);
+        assert_eq!(v.write_extent(ExtentId(1), &[8u8; 2048], 1000).unwrap_err().code, ErrorCode::BackendUnavailable);
         let stored = v.stored_bytes().unwrap();
         for _ in 0..3 {
-            assert_eq!(v.write_extent(ExtentId(1), &[8u8; 2048]).unwrap_err().code, ErrorCode::ReadOnly);
+            assert_eq!(v.write_extent(ExtentId(1), &[8u8; 2048], 1000).unwrap_err().code, ErrorCode::ReadOnly);
             assert_eq!(v.read_extent(ExtentId(0)).unwrap(), vec![7u8; 2048]);
         }
         assert_eq!(v.stored_bytes().unwrap(), stored, "refused writes leave no trace");

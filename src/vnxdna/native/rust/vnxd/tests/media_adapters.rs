@@ -59,9 +59,9 @@ fn image_backend_volume_survives_restarts() {
         let m: Arc<dyn MediaAdapter> = Arc::new(ImageMedia::create(&img).unwrap());
         let v = Volume::create(&vol, geo(), dev, 0, m, VolumeConfig::default()).unwrap();
         for e in 0..8u64 {
-            v.write_extent(ExtentId(e), &data(e, 2048)).unwrap();
+            v.write_extent(ExtentId(e), &data(e, 2048), 1000).unwrap();
         }
-        v.write_extent(ExtentId(3), &data(103, 2048)).unwrap(); // an overwrite: a new generation
+        v.write_extent(ExtentId(3), &data(103, 2048), 1000).unwrap(); // an overwrite: a new generation
     } // process "exits": volume and image dropped
     for round in 0..3u64 {
         let m: Arc<dyn MediaAdapter> = Arc::new(ImageMedia::open(&img).unwrap());
@@ -71,7 +71,7 @@ fn image_backend_volume_survives_restarts() {
             let want = if e == 3 { data(103 + round * 1000, 2048) } else { data(e, 2048) };
             assert_eq!(v.read_extent(ExtentId(e)).unwrap(), want, "round {round} extent {e}");
         }
-        v.write_extent(ExtentId(3), &data(103 + (round + 1) * 1000, 2048)).unwrap();
+        v.write_extent(ExtentId(3), &data(103 + (round + 1) * 1000, 2048), 1000).unwrap();
         // one live generation per extent + the marker: the overwritten generations were collected
         assert_eq!(m.list().unwrap().len(), 9);
     }
@@ -116,8 +116,8 @@ fn a_volume_over_a_damaged_image_reports_the_damage() {
     {
         let m: Arc<dyn MediaAdapter> = Arc::new(ImageMedia::create(&img).unwrap());
         let v = Volume::create(&vol, geo(), [1; 16], 0, m, VolumeConfig::default()).unwrap();
-        v.write_extent(ExtentId(0), &data(1, 2048)).unwrap();
-        v.write_extent(ExtentId(1), &data(2, 2048)).unwrap();
+        v.write_extent(ExtentId(0), &data(1, 2048), 1000).unwrap();
+        v.write_extent(ExtentId(1), &data(2, 2048), 1000).unwrap();
     }
     let obj = std::fs::read_dir(img.join("objects")).unwrap().flatten().map(|e| e.path()).find(|p| p.to_string_lossy().contains("0000000000000000-")).unwrap();
     let mut b = std::fs::read(&obj).unwrap();
@@ -214,7 +214,7 @@ fn chaos(seed: u64, plan: FaultPlan, inner: Arc<dyn MediaAdapter>) -> (u64, u64,
             let off = (rng.next_u64() % 2048) as usize;
             let len = 1 + (rng.next_u64() % (2048 - off) as u64) as usize;
             let buf = data(seed ^ step, len);
-            match io.write((e * 2048 + off) as u64, &buf) {
+            match io.write((e * 2048 + off) as u64, &buf, 1000) {
                 Ok(_) => {
                     model[e][off..off + len].copy_from_slice(&buf);
                     ok += 1;
@@ -295,11 +295,11 @@ fn an_offline_medium_turns_the_device_read_only_and_it_recovers() {
     let retry = RetryPolicy { max_attempts: 2, base_delay: Duration::ZERO, max_delay: Duration::ZERO };
     let rm = Arc::new(ResilientMedia::new(fm.clone(), retry, health).unwrap());
     let v = Volume::create(&d.0.join("v"), geo(), [3; 16], 0, rm.clone(), VolumeConfig::default()).unwrap();
-    v.write_extent(ExtentId(0), &data(1, 2048)).unwrap();
+    v.write_extent(ExtentId(0), &data(1, 2048), 1000).unwrap();
     fm.set_offline(true);
     let mut codes = Vec::new();
     for _ in 0..4 {
-        codes.push(v.write_extent(ExtentId(0), &data(2, 2048)).unwrap_err().code);
+        codes.push(v.write_extent(ExtentId(0), &data(2, 2048), 1000).unwrap_err().code);
     }
     assert_eq!(rm.health().state, BackendState::Unavailable);
     assert!(codes.contains(&ErrorCode::ReadOnly), "{codes:?}");
@@ -308,7 +308,7 @@ fn an_offline_medium_turns_the_device_read_only_and_it_recovers() {
     std::thread::sleep(probe + Duration::from_millis(5));
     let mut recovered = false;
     for _ in 0..10 {
-        if v.write_extent(ExtentId(0), &data(3, 2048)).is_ok() {
+        if v.write_extent(ExtentId(0), &data(3, 2048), 1000).is_ok() {
             recovered = true;
             break;
         }
@@ -334,7 +334,7 @@ fn dna_sim_pools_kept_in_an_image_survive_restarts() {
         let m = sim_over(Arc::new(ImageMedia::create(&img).unwrap()), cfg.clone());
         let v = Volume::create(&vol, geo(), [4; 16], 0, m, VolumeConfig::default()).unwrap();
         for e in 0..8u64 {
-            v.write_extent(ExtentId(e), &data(50 + e, 2048)).unwrap();
+            v.write_extent(ExtentId(e), &data(50 + e, 2048), 1000).unwrap();
         }
     }
     let m = sim_over(Arc::new(ImageMedia::open(&img).unwrap()), cfg);
@@ -357,7 +357,7 @@ fn dna_sim_failures_reach_the_volume_as_typed_errors() {
     for round in 0..4u64 {
         for e in 0..8u64 {
             let b = data(round * 100 + e, 2048);
-            if v.write_extent(ExtentId(e), &b).is_ok() {
+            if v.write_extent(ExtentId(e), &b, 1000).is_ok() {
                 model[e as usize] = Some(b);
             }
         }
@@ -380,9 +380,9 @@ fn a_volume_runs_over_the_simulated_lab() {
     let m: Arc<dyn MediaAdapter> = Arc::new(LabMedia::new(lab.clone(), Arc::new(ToyCodec), Arc::new(MemoryMedia::new()), cfg).unwrap());
     let v = Volume::create(&d.0, geo(), [6; 16], 0, m, VolumeConfig::default()).unwrap();
     for e in 0..4u64 {
-        v.write_extent(ExtentId(e), &data(70 + e, 2048)).unwrap();
+        v.write_extent(ExtentId(e), &data(70 + e, 2048), 1000).unwrap();
     }
-    v.write_extent(ExtentId(1), &data(99, 2048)).unwrap();
+    v.write_extent(ExtentId(1), &data(99, 2048), 1000).unwrap();
     for e in 0..4u64 {
         assert_eq!(v.read_extent(ExtentId(e)).unwrap(), if e == 1 { data(99, 2048) } else { data(70 + e, 2048) });
     }

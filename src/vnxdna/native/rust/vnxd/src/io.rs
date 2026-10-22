@@ -55,12 +55,15 @@ pub trait ExtentStore: Send + Sync {
     fn geometry(&self) -> Geometry;
     fn read_extent(&self, extent: ExtentId) -> Result<Vec<u8>>;
     /// Replace one whole extent; returns the write state reached.
-    fn write_extent(&self, extent: ExtentId, data: &[u8]) -> Result<WriteState>;
+    /// `now_ms` is the caller-supplied current time for retention checks (deterministic clock).
+    fn write_extent(&self, extent: ExtentId, data: &[u8], now_ms: i64) -> Result<WriteState>;
     /// Read-modify-write of one extent, atomic with respect to other operations on it.
-    fn modify_extent(&self, extent: ExtentId, patch: &mut dyn FnMut(&mut [u8])) -> Result<WriteState>;
+    /// `now_ms` is the caller-supplied current time for retention checks (deterministic clock).
+    fn modify_extent(&self, extent: ExtentId, patch: &mut dyn FnMut(&mut [u8]), now_ms: i64) -> Result<WriteState>;
     /// Apply several extent patches as ONE transaction (all or none); extents strictly increasing, at most
     /// [`MAX_BATCH_EXTENTS`].
-    fn write_extents(&self, patches: &[Patch<'_>]) -> Result<WriteState>;
+    /// `now_ms` is the caller-supplied current time for retention checks (deterministic clock).
+    fn write_extents(&self, patches: &[Patch<'_>], now_ms: i64) -> Result<WriteState>;
     fn flush(&self) -> Result<()>;
 }
 
@@ -71,14 +74,14 @@ impl ExtentStore for Volume {
     fn read_extent(&self, extent: ExtentId) -> Result<Vec<u8>> {
         Volume::read_extent(self, extent)
     }
-    fn write_extent(&self, extent: ExtentId, data: &[u8]) -> Result<WriteState> {
-        Volume::write_extent(self, extent, data).map(|o| o.state)
+    fn write_extent(&self, extent: ExtentId, data: &[u8], now_ms: i64) -> Result<WriteState> {
+        Volume::write_extent(self, extent, data, now_ms).map(|o| o.state)
     }
-    fn modify_extent(&self, extent: ExtentId, patch: &mut dyn FnMut(&mut [u8])) -> Result<WriteState> {
-        Volume::modify_extent(self, extent, |b| patch(b)).map(|o| o.state)
+    fn modify_extent(&self, extent: ExtentId, patch: &mut dyn FnMut(&mut [u8]), now_ms: i64) -> Result<WriteState> {
+        Volume::modify_extent(self, extent, |b| patch(b), now_ms).map(|o| o.state)
     }
-    fn write_extents(&self, patches: &[Patch<'_>]) -> Result<WriteState> {
-        Volume::write_extents(self, patches)
+    fn write_extents(&self, patches: &[Patch<'_>], now_ms: i64) -> Result<WriteState> {
+        Volume::write_extents(self, patches, now_ms)
     }
     fn flush(&self) -> Result<()> {
         Volume::flush(self)
@@ -152,8 +155,8 @@ impl BlockIo {
     }
 
     /// Write `data` at `offset` as one transaction (see the module documentation); returns the weakest write state
-    /// reached.
-    pub fn write(&self, offset: u64, data: &[u8]) -> Result<WriteState> {
+    /// reached. `now_ms` is the caller-supplied current time for retention checks (deterministic clock).
+    pub fn write(&self, offset: u64, data: &[u8], now_ms: i64) -> Result<WriteState> {
         check_size(data.len() as u64)?;
         let spans = self.vol.geometry().spans(offset, data.len() as u64)?;
         let _lease = self.lease(data.len() as u64, true)?;
@@ -163,7 +166,7 @@ impl BlockIo {
             .collect();
         let mut weakest = WriteState::Verified;
         for chunk in patches.chunks(MAX_BATCH_EXTENTS) {
-            weakest = weakest.min(self.store.write_extents(chunk)?);
+            weakest = weakest.min(self.store.write_extents(chunk, now_ms)?);
         }
         Ok(weakest)
     }
@@ -177,7 +180,7 @@ impl BlockIo {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Op {
     Read { offset: u64, len: u64 },
-    Write { offset: u64, data: Vec<u8> },
+    Write { offset: u64, data: Vec<u8>, now_ms: i64 },
     Flush,
 }
 
@@ -352,7 +355,7 @@ impl IoQueue {
         let (offset, len, write) = match op {
             Op::Flush => return Ok(Footprint::Barrier),
             Op::Read { offset, len } => (*offset, *len, false),
-            Op::Write { offset, data } => (*offset, data.len() as u64, true),
+            Op::Write { offset, data, now_ms: _ } => (*offset, data.len() as u64, true),
         };
         check_size(len)?;
         g.check_range(offset, len)?;
@@ -519,7 +522,7 @@ fn worker(sh: &Shared) {
         } else {
             let run = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| match job.op {
                 Op::Read { offset, len } => sh.io.read(offset, len).map(Reply::Data),
-                Op::Write { offset, ref data } => sh.io.write(offset, data).map(Reply::Written),
+                Op::Write { offset, ref data, now_ms } => sh.io.write(offset, data, now_ms).map(Reply::Written),
                 Op::Flush => sh.io.flush().map(|_| Reply::Flushed),
             }));
             let r = run.unwrap_or_else(|_| err(ErrorCode::Internal, format!("request {} panicked", job.seq)));
@@ -608,7 +611,7 @@ mod tests {
                 assert_eq!(io.read(off, len).unwrap(), &model[off as usize..(off + len) as usize], "step {step}");
             } else {
                 let data: Vec<u8> = (0..len).map(|i| (step * 31 + i * 7) as u8).collect();
-                assert_eq!(io.write(off, &data).unwrap(), WriteState::Verified);
+                assert_eq!(io.write(off, &data, 1000).unwrap(), WriteState::Verified);
                 model[off as usize..(off + len) as usize].copy_from_slice(&data);
             }
         }
@@ -652,7 +655,7 @@ mod tests {
                 let off = rng.below(cap);
                 let len = 1 + rng.below((cap - off).min(3 * eb));
                 let data = vec![(round as u8).wrapping_mul(7).wrapping_add(1); len as usize];
-                match io.write(off, &data) {
+                match io.write(off, &data, 1000) {
                     Ok(_) => model[off as usize..(off + len) as usize].copy_from_slice(&data),
                     Err(_) => {
                         crashes += 1;
@@ -709,13 +712,13 @@ mod tests {
         let m = Arc::new(NthPutFails(MemoryMedia::new(), AtomicU64::new(u64::MAX / 2)));
         let io = setup(&d, m.clone());
         let cap = io.volume().geometry().capacity_bytes();
-        io.write(0, &vec![1u8; cap as usize]).unwrap();
+        io.write(0, &vec![1u8; cap as usize], 1000).unwrap();
         let before = (io.read(0, cap).unwrap(), m.list().unwrap());
         m.1.store(0, Ordering::SeqCst);
         // 100 bytes into extent 0 .. 100 bytes into extent 4: five extents, two of them partial
-        assert_eq!(io.write(100, &vec![2u8; 4 * 2048]).unwrap_err().code, ErrorCode::BackendUnavailable);
+        assert_eq!(io.write(100, &vec![2u8; 4 * 2048], 1000).unwrap_err().code, ErrorCode::BackendUnavailable);
         assert_eq!((io.read(0, cap).unwrap(), m.list().unwrap()), before);
-        io.write(100, &vec![2u8; 4 * 2048]).unwrap();
+        io.write(100, &vec![2u8; 4 * 2048], 1000).unwrap();
         let mut want = vec![1u8; cap as usize];
         want[100..100 + 4 * 2048].fill(2);
         assert_eq!(io.read(0, cap).unwrap(), want);
@@ -737,7 +740,7 @@ mod tests {
                 sc.spawn(move || {
                     for i in 0..40u64 {
                         let off = (t * 977 + i * 131) % (cap - 4096);
-                        io.write(off, &vec![t as u8; 1 + (i * 37 % 4096) as usize]).unwrap();
+                        io.write(off, &vec![t as u8; 1 + (i * 37 % 4096) as usize], 1000).unwrap();
                         io.read(off, 1 + (i * 53 % 4096)).unwrap();
                     }
                 });
@@ -752,7 +755,7 @@ mod tests {
         small.quotas.insert(Subsystem::Io, 4096);
         let d2 = TempDir::new("io-ram2");
         let io2 = setup(&d2, Arc::new(MemoryMedia::new())).with_ram(MemoryManager::new(small).unwrap());
-        assert_eq!(io2.write(0, &[1u8; 10]).unwrap_err().code, ErrorCode::InvalidArgument);
+        assert_eq!(io2.write(0, &[1u8; 10], 1000).unwrap_err().code, ErrorCode::InvalidArgument);
     }
 
     #[test]
@@ -761,8 +764,8 @@ mod tests {
         let io = setup(&d, Arc::new(MemoryMedia::new()));
         let cap = io.volume().geometry().capacity_bytes();
         assert_eq!(io.read(cap - 1, 2).unwrap_err().code, ErrorCode::OutOfRange);
-        assert_eq!(io.write(cap, &[1]).unwrap_err().code, ErrorCode::OutOfRange);
-        assert_eq!(io.write(0, &[]).unwrap_err().code, ErrorCode::InvalidArgument);
+        assert_eq!(io.write(cap, &[1], 1000).unwrap_err().code, ErrorCode::OutOfRange);
+        assert_eq!(io.write(0, &[], 1000).unwrap_err().code, ErrorCode::InvalidArgument);
         assert_eq!(io.read(u64::MAX, 1).unwrap_err().code, ErrorCode::OutOfRange);
         assert_eq!(io.volume().stats.commits.load(Ordering::Relaxed), 0);
     }
@@ -779,7 +782,7 @@ mod tests {
                 sc.spawn(move || {
                     for round in 0..30u64 {
                         let data = vec![(w * 40 + round) as u8; 1000];
-                        io.write(w * 1900 + 300, &data).unwrap();
+                        io.write(w * 1900 + 300, &data, 1000).unwrap();
                         assert_eq!(io.read(w * 1900 + 300, 1000).unwrap(), data);
                     }
                 });
@@ -810,7 +813,7 @@ mod tests {
             let len = 1 + rng.below((cap - off).min(3000));
             let data = vec![(i % 251) as u8 + 1; len as usize];
             model[off as usize..(off + len) as usize].copy_from_slice(&data);
-            tickets.push(q.submit(Op::Write { offset: off, data }, None).unwrap());
+            tickets.push(q.submit(Op::Write { offset: off, data, now_ms: 1000 }, None).unwrap());
             if i % 50 == 49 {
                 // a read in the stream sees exactly the writes submitted before it
                 let snapshot = model.clone();
@@ -901,21 +904,21 @@ mod tests {
         let q = IoQueue::start(io.clone(), QueueConfig { workers: 2, depth: 3 }).unwrap();
         let _open = OpenOnDrop(gate.clone());
         // two writes to extent 0 and 1 start and block in the backend
-        let w0 = q.submit(Op::Write { offset: 0, data: vec![1; 2048] }, None).unwrap();
-        let w1 = q.submit(Op::Write { offset: 2048, data: vec![2; 2048] }, None).unwrap();
+        let w0 = q.submit(Op::Write { offset: 0, data: vec![1; 2048], now_ms: 1000 }, None).unwrap();
+        let w1 = q.submit(Op::Write { offset: 2048, data: vec![2; 2048], now_ms: 1000 }, None).unwrap();
         gate.wait_blocked(2);
         // a flush (barrier), a write that will be cancelled and a plain write fill the queue. (No request with an
         // expired deadline is used to fill it: the reaper may resolve that one before the next submission, which
         // made the fullness check depend on thread timing; it failed under qemu-user emulation.)
         let fl = q.submit(Op::Flush, None).unwrap();
-        let wc = q.submit(Op::Write { offset: 4096, data: vec![3; 10] }, None).unwrap();
-        let wx = q.submit(Op::Write { offset: 8192, data: vec![5; 10] }, None).unwrap();
+        let wc = q.submit(Op::Write { offset: 4096, data: vec![3; 10], now_ms: 1000 }, None).unwrap();
+        let wx = q.submit(Op::Write { offset: 8192, data: vec![5; 10], now_ms: 1000 }, None).unwrap();
         assert_eq!(q.try_submit(Op::Read { offset: 0, len: 1 }, None).err().unwrap().code, ErrorCode::ResourceExhausted);
         assert!(fl.wait_timeout(Duration::from_millis(50)).is_none(), "the barrier waits for earlier writes");
         // cancelling frees a slot (resolved by the reaper while every worker is blocked); a write whose deadline has
         // already passed takes it and times out without running
         wc.cancel();
-        let wt = q.submit(Op::Write { offset: 6144, data: vec![4; 10] }, Some(Instant::now())).unwrap();
+        let wt = q.submit(Op::Write { offset: 6144, data: vec![4; 10], now_ms: 1000 }, Some(Instant::now())).unwrap();
         assert_eq!(wc.wait_timeout(Duration::from_secs(30)).unwrap().unwrap_err().code, ErrorCode::Cancelled);
         assert_eq!(wt.wait_timeout(Duration::from_secs(30)).unwrap().unwrap_err().code, ErrorCode::Timeout);
         gate.release();
@@ -940,10 +943,10 @@ mod tests {
         let io = setup(&d, gate.clone());
         let q = IoQueue::start(io.clone(), QueueConfig { workers: 1, depth: 8 }).unwrap();
         let _open = OpenOnDrop(gate.clone());
-        let running = q.submit(Op::Write { offset: 0, data: vec![5; 100] }, None).unwrap();
+        let running = q.submit(Op::Write { offset: 0, data: vec![5; 100], now_ms: 1000 }, None).unwrap();
         gate.wait_blocked(1);
         let queued: Vec<Ticket> =
-            (0..4).map(|i| q.submit(Op::Write { offset: 2048 * (i + 1), data: vec![6; 100] }, None).unwrap()).collect();
+            (0..4).map(|i| q.submit(Op::Write { offset: 2048 * (i + 1), data: vec![6; 100], now_ms: 1000 }, None).unwrap()).collect();
         let shared = q.shared.clone();
         let stopper = std::thread::spawn(move || q.shutdown(false));
         let end = Instant::now() + Duration::from_secs(60);
@@ -969,9 +972,9 @@ mod tests {
         let io = setup(&d, gate.clone());
         let q = IoQueue::start(io.clone(), QueueConfig { workers: 1, depth: 8 }).unwrap(); // the only worker is stuck
         let _open = OpenOnDrop(gate.clone());
-        let stuck = q.submit(Op::Write { offset: 0, data: vec![1; 100] }, None).unwrap();
+        let stuck = q.submit(Op::Write { offset: 0, data: vec![1; 100], now_ms: 1000 }, None).unwrap();
         gate.wait_blocked(1);
-        let c = q.submit(Op::Write { offset: 10, data: vec![2; 10] }, None).unwrap();
+        let c = q.submit(Op::Write { offset: 10, data: vec![2; 10], now_ms: 1000 }, None).unwrap();
         let t = q.submit(Op::Read { offset: 0, len: 10 }, Some(Instant::now() + Duration::from_millis(40))).unwrap();
         c.cancel();
         assert_eq!(c.wait_timeout(Duration::from_secs(2)).unwrap().unwrap_err().code, ErrorCode::Cancelled);
@@ -1016,9 +1019,9 @@ mod tests {
         let v = Volume::create(&d.0, g, [2; 16], 0, Arc::new(Bomb(MemoryMedia::new())), cfg).unwrap();
         let io = BlockIo::new(Arc::new(v));
         let q = IoQueue::start(io, QueueConfig { workers: 1, depth: 8 }).unwrap();
-        q.submit(Op::Write { offset: 2048, data: vec![1; 2048] }, None).unwrap().wait().unwrap();
+        q.submit(Op::Write { offset: 2048, data: vec![1; 2048], now_ms: 1000 }, None).unwrap().wait().unwrap();
         let boom = q.submit(Op::Read { offset: 2048, len: 10 }, None).unwrap();
-        let after = q.submit(Op::Write { offset: 2048, data: vec![2; 10] }, None).unwrap(); // conflicts with the read
+        let after = q.submit(Op::Write { offset: 2048, data: vec![2; 10], now_ms: 1000 }, None).unwrap(); // conflicts with the read
         assert_eq!(boom.wait().unwrap_err().code, ErrorCode::Internal);
         assert_eq!(after.wait().unwrap_err().code, ErrorCode::Internal, "RMW of extent 1 reads it: it panics too");
         assert_eq!(q.submit(Op::Read { offset: 0, len: 10 }, None).unwrap().wait().unwrap(), Reply::Data(vec![0; 10]));
