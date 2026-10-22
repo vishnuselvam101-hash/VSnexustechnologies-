@@ -71,6 +71,16 @@ def subkey(master: bytes, label: str) -> bytes:
     return hmac.new(master, b"vnx-secure/" + label.encode(), hashlib.sha256).digest()
 
 
+def mac_eq(a: str, b: str) -> bool:
+    """Compare two MACs in constant time.
+
+    The bytes are compared, not the strings, so a value that is not ASCII is a mismatch instead of an exception. The
+    policy's known-good MAC is read back from the state file, and a comparison that stops at the first byte that
+    differs would tell an observer how much of it matched.
+    """
+    return hmac.compare_digest(a.encode("utf-8", "surrogatepass"), b.encode("utf-8", "surrogatepass"))
+
+
 def _refuse_symlink(path: Path) -> None:
     """Refuse to write onto a symlink: the path must be a regular file or absent, never a link."""
     try:
@@ -434,7 +444,7 @@ class ControlPlane:
     def check_integrity(self) -> dict:
         audit = self.audit.verify() if self.audit_trusted else None
         snap = integ.check(self.baseline, self.k_integ)
-        pol_ok = self._mac_policy(self.policy.to_dict()) == self.good_policy_mac if self.good_policy_mac else False
+        pol_ok = mac_eq(self._mac_policy(self.policy.to_dict()), self.good_policy_mac) if self.good_policy_mac else False
         status = snap["status"]
         if audit is None or audit.status != "VERIFIED":
             status = "FAILED"
@@ -474,9 +484,9 @@ class ControlPlane:
         else:
             steps.append({"step": "audit", "result": "VERIFIED", "count": v.count})
         # 2. policy: restore the known-good policy if the current one differs
-        if self.good_policy_mac and self._mac_policy(self.policy.to_dict()) != self.good_policy_mac:
+        if self.good_policy_mac and not mac_eq(self._mac_policy(self.policy.to_dict()), self.good_policy_mac):
             good = json.loads((self.home / "policy.good.json").read_text()) if self.home else self.good_policy
-            if self._mac_policy(good) != self.good_policy_mac:
+            if not mac_eq(self._mac_policy(good), self.good_policy_mac):
                 steps.append({"step": "policy", "result": "FAILED", "reason": "known-good policy copy does not authenticate"})
                 return self._recovery_failed(steps, "known-good policy copy does not authenticate")
             self.policy = Policy.from_dict(good)
