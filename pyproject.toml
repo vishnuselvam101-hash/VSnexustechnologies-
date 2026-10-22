@@ -49,6 +49,9 @@ pythonpath = ["src", "tests"]
 testpaths = ["tests"]
 addopts = "-q"
 markers = ["slow: long-running exhaustive/statistical tests (run by default; deselect with -m 'not slow')"]
+# One session of tmp_path directories is kept, not the pytest default of three: a full run leaves a few gigabytes of
+# fixture data behind, and the default fills a small /tmp before the next run can start.
+tmp_path_retention_count = 1
 
 [tool.coverage.run]
 source = ["vnxdna"]
