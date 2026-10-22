@@ -108,7 +108,7 @@ fn main() {
                     // 4 KiB .. 256 KiB, 2/3 reads
                     let len = 4096u64 << (next() % 7);
                     let off = (next() % (cap - len)) & !4095;
-                    let op = if next() % 3 == 0 { Op::Write { offset: off, data: vec![c as u8; len as usize] } } else { Op::Read { offset: off, len } };
+                    let op = if next() % 3 == 0 { Op::Write { offset: off, data: vec![c as u8; len as usize], now_ms: 1000 } } else { Op::Read { offset: off, len } };
                     let t = Instant::now();
                     q.submit(op, None).unwrap().wait().unwrap();
                     mine.push(t.elapsed().as_micros() as u64);
