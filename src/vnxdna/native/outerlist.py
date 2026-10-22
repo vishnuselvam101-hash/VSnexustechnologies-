@@ -16,7 +16,8 @@ import ctypes
 
 import numpy as np
 
-from vnxdna.native._loader import CppKernel, NativeKernelError, module_contract
+from vnxdna.native._loader import (INT64_MAX, INT64_MIN, CppKernel, NativeArgumentError, NativeKernelError,
+                                   checked_array, checked_int, module_contract)
 
 ABI_VERSION = 1
 MAX_PER_POS = 4
@@ -72,12 +73,17 @@ def _check(rc: int, what: str) -> int:
 def assign(frames: np.ndarray, ks: np.ndarray, variants: np.ndarray, targets: np.ndarray, max_dist: int,
            exact_mask: int = 0):
     """See vnxdna.recovery.outer_list.assign_reference."""
-    lib = KERNEL.lib()
-    frames = np.ascontiguousarray(frames, dtype=np.uint8)
-    ks = np.ascontiguousarray(ks, dtype=np.uint8)
-    variants = np.ascontiguousarray(variants, dtype=np.int16)
-    targets = np.ascontiguousarray(targets, dtype=np.uint8).reshape(-1, 9)
+    # the arguments are checked before the call: a ctypes int64 argument narrows an out-of-range Python int without
+    # a word and a uint8 cast wraps the codes that do not fit, so the kernel would work on different values than the
+    # caller passed.
+    max_dist = checked_int("max_dist", max_dist, INT64_MIN, INT64_MAX, error=NativeArgumentError)
+    exact_mask = checked_int("exact_mask", exact_mask, INT64_MIN, INT64_MAX, error=NativeArgumentError)
+    frames = checked_array("frames", frames, np.uint8, error=NativeArgumentError)
+    ks = checked_array("ks", ks, np.uint8, error=NativeArgumentError)
+    variants = checked_array("variants", variants, np.int16, error=NativeArgumentError)
+    targets = checked_array("targets", targets, np.uint8, error=NativeArgumentError).reshape(-1, 9)
     n = frames.shape[0]
+    lib = KERNEL.lib()
     tgt = np.empty(n, np.int32)
     var = np.empty(n, np.int16)
     dist = np.empty(n, np.int8)
@@ -109,19 +115,23 @@ def _sizes(parity, mul, inv, known, sym, rows=None, rows_name="") -> None:
 def decode_row(parity: np.ndarray, mul: np.ndarray, inv: np.ndarray, known: np.ndarray, sym: np.ndarray,
                cpos: np.ndarray, cval: np.ndarray, cok: np.ndarray, min_extra: int, margin: int, max_subsets: int):
     """See vnxdna.recovery.outer_list.decode_row_reference. Returns (sym, accepted columns, best, second)."""
-    lib = KERNEL.lib()
-    parity = np.ascontiguousarray(parity, dtype=np.uint8)
+    min_extra = checked_int("min_extra", min_extra, INT64_MIN, INT64_MAX, error=NativeArgumentError)
+    margin = checked_int("margin", margin, INT64_MIN, INT64_MAX, error=NativeArgumentError)
+    max_subsets = checked_int("max_subsets", max_subsets, INT64_MIN, INT64_MAX, error=NativeArgumentError)
+    parity = checked_array("parity", parity, np.uint8, error=NativeArgumentError)
     m, k = parity.shape
-    sym = np.array(sym, dtype=np.uint8, order="C", copy=True)
+    # the kernel writes the recovered row into sym, so it keeps its own copy
+    sym = np.array(checked_array("sym", sym, np.uint8, error=NativeArgumentError), dtype=np.uint8, order="C", copy=True)
     P = sym.shape[1]
-    known = np.ascontiguousarray(known, dtype=np.uint8)
-    cpos = np.ascontiguousarray(cpos, dtype=np.int32)
-    cval = np.ascontiguousarray(cval, dtype=np.uint8).reshape(-1, P)
-    cok = np.ascontiguousarray(cok, dtype=np.uint8).reshape(-1, P)
-    mul = np.ascontiguousarray(mul, dtype=np.uint8)
-    inv = np.ascontiguousarray(inv, dtype=np.uint8)
+    known = checked_array("known", known, np.uint8, error=NativeArgumentError)
+    cpos = checked_array("cpos", cpos, np.int32, error=NativeArgumentError)
+    cval = checked_array("cval", cval, np.uint8, error=NativeArgumentError).reshape(-1, P)
+    cok = checked_array("cok", cok, np.uint8, error=NativeArgumentError).reshape(-1, P)
+    mul = checked_array("mul", mul, np.uint8, error=NativeArgumentError)
+    inv = checked_array("inv", inv, np.uint8, error=NativeArgumentError)
     _sizes(parity, mul, inv, known, sym, (cpos, cval, cok), "cval and cok")
     _free(k, known, "decode_row")
+    lib = KERNEL.lib()
     best = np.empty(P, np.int32)
     second = np.empty(P, np.int32)
     nc = cpos.size
@@ -135,18 +145,20 @@ def decode_row(parity: np.ndarray, mul: np.ndarray, inv: np.ndarray, known: np.n
 def ransac(parity: np.ndarray, mul: np.ndarray, inv: np.ndarray, known: np.ndarray, sym: np.ndarray,
            hpos: np.ndarray, hval: np.ndarray, tau: int, max_tuples: int):
     """See vnxdna.recovery.outer_list.ransac_reference. Returns (support, per-hypothesis agreeing columns)."""
-    lib = KERNEL.lib()
-    parity = np.ascontiguousarray(parity, dtype=np.uint8)
+    tau = checked_int("tau", tau, INT64_MIN, INT64_MAX, error=NativeArgumentError)
+    max_tuples = checked_int("max_tuples", max_tuples, INT64_MIN, INT64_MAX, error=NativeArgumentError)
+    parity = checked_array("parity", parity, np.uint8, error=NativeArgumentError)
     m, k = parity.shape
-    sym = np.ascontiguousarray(sym, dtype=np.uint8)
+    sym = checked_array("sym", sym, np.uint8, error=NativeArgumentError)
     P = sym.shape[1]
-    known = np.ascontiguousarray(known, dtype=np.uint8)
-    hpos = np.ascontiguousarray(hpos, dtype=np.int32)
-    hval = np.ascontiguousarray(hval, dtype=np.uint8).reshape(-1, P)
-    mul = np.ascontiguousarray(mul, dtype=np.uint8)
-    inv = np.ascontiguousarray(inv, dtype=np.uint8)
+    known = checked_array("known", known, np.uint8, error=NativeArgumentError)
+    hpos = checked_array("hpos", hpos, np.int32, error=NativeArgumentError)
+    hval = checked_array("hval", hval, np.uint8, error=NativeArgumentError).reshape(-1, P)
+    mul = checked_array("mul", mul, np.uint8, error=NativeArgumentError)
+    inv = checked_array("inv", inv, np.uint8, error=NativeArgumentError)
     _sizes(parity, mul, inv, known, sym, (hpos, hval), "hval")
     _free(k, known, "ransac")
+    lib = KERNEL.lib()
     agree = np.zeros(hpos.size, np.int32)
     nh = hpos.size
     best = _check(lib.vnx_ol_ransac(k, m, P, parity.ctypes.data, mul.ctypes.data, inv.ctypes.data, known.ctypes.data,
