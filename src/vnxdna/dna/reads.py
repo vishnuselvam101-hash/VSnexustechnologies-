@@ -15,12 +15,37 @@ from ..errors import InvalidInputError
 
 MAX_READ_NT = 100_000
 MAX_READ_FILE_BYTES = 8 * 1024 ** 3
+#: a line is cut at this many characters and the rest of it is skipped in bounded blocks (the bound of
+#: ``dnaenc/strandio.py``: a cut line is longer than any read VNX-DNA accepts, so the cut never changes a decodable
+#: read)
+MAX_LINE_BYTES = MAX_READ_NT + 2
+_SKIP_BLOCK = 1 << 20
+#: the number of records one read file may hold (the list of records is returned whole, so it must be bounded)
+MAX_READ_RECORDS = 1 << 24
+
+
+def _skip_line(handle) -> None:
+    """Skip the rest of an over-long line, in bounded blocks."""
+    while True:
+        block = handle.readline(_SKIP_BLOCK)
+        if not block or block.endswith("\n"):
+            return
 
 
 def _lines(path: Path) -> Iterator[str]:
+    """Lines of a read file, each cut to ``MAX_LINE_BYTES`` (memory bounded whatever the line length).
+
+    VNX-DNA 1.0 iterated the file object directly, which reads a whole line into memory before any length check: one
+    unwrapped multi-gigabyte line (or junk without newlines) could exhaust RAM.
+    """
     try:
         with path.open("r", encoding="ascii", newline=None) as handle:
-            for line in handle:
+            while True:
+                line = handle.readline(MAX_LINE_BYTES)
+                if not line:
+                    return
+                if len(line) == MAX_LINE_BYTES and not line.endswith("\n"):
+                    _skip_line(handle)        # the rest of an over-long line
                 yield line.strip()
     except UnicodeDecodeError as error:
         raise InvalidInputError(f"{path}: read file must be ASCII text") from error
@@ -28,11 +53,17 @@ def _lines(path: Path) -> Iterator[str]:
         raise InvalidInputError(f"cannot read {path}: {error.strerror or error}") from error
 
 
+def _check_records(count: int, path: Path) -> None:
+    if count > MAX_READ_RECORDS:
+        raise InvalidInputError(f"{path}: read file holds more than {MAX_READ_RECORDS} records")
+
+
 def read_sequences(path: str | os.PathLike) -> list[str]:
     """Return the raw sequences in ``path`` (upper-cased, whitespace removed).
 
     Over-long records are kept but truncated to ``MAX_READ_NT + 1`` so that the
     decoder rejects them by length instead of holding unbounded data in memory.
+    The number of records is bounded too, and a line longer than ``MAX_LINE_BYTES`` is cut.
     """
     path = Path(path)
     if not path.is_file():
@@ -51,7 +82,7 @@ def read_sequences(path: str | os.PathLike) -> list[str]:
     if first is None:
         return sequences
     if first.startswith("@"):
-        return _fastq(buffered + list(lines), path)
+        return _fastq(_chain(buffered, lines), path)
     current: list[str] | None = None
     length = 0
     fasta = first.startswith(">")
@@ -62,6 +93,7 @@ def read_sequences(path: str | os.PathLike) -> list[str]:
             if line.startswith(">"):
                 if current is not None:
                     sequences.append("".join(current).upper())
+                    _check_records(len(sequences), path)
                 current, length = [], 0
                 continue
             if length <= MAX_READ_NT:
@@ -69,8 +101,10 @@ def read_sequences(path: str | os.PathLike) -> list[str]:
                 length += len(line)
         else:
             sequences.append(line[: MAX_READ_NT + 1].upper())
+            _check_records(len(sequences), path)
     if fasta and current is not None:
         sequences.append("".join(current)[: MAX_READ_NT + 1].upper())
+        _check_records(len(sequences), path)
     return sequences
 
 
@@ -79,15 +113,22 @@ def _chain(first: Iterable[str], rest: Iterable[str]) -> Iterator[str]:
     yield from rest
 
 
-def _fastq(lines: list[str], path: Path) -> list[str]:
-    records = [line for line in lines if line != ""]
-    if len(records) % 4:
-        raise InvalidInputError(f"{path}: FASTQ record count is not a multiple of 4 lines")
+def _fastq(lines: Iterable[str], path: Path) -> list[str]:
     sequences = []
-    for i in range(0, len(records), 4):
-        if not records[i].startswith("@") or not records[i + 2].startswith("+"):
-            raise InvalidInputError(f"{path}: malformed FASTQ record at line {i + 1}")
-        sequences.append(records[i + 1][: MAX_READ_NT + 1].upper())
+    record: list[str] = []
+    for line in lines:
+        if not line:
+            continue
+        record.append(line)
+        if len(record) < 4:
+            continue
+        if not record[0].startswith("@") or not record[2].startswith("+"):
+            raise InvalidInputError(f"{path}: malformed FASTQ record at line {len(sequences) * 4 + 1}")
+        sequences.append(record[1][: MAX_READ_NT + 1].upper())
+        _check_records(len(sequences), path)
+        record = []
+    if record:
+        raise InvalidInputError(f"{path}: FASTQ record count is not a multiple of 4 lines")
     return sequences
 
 
