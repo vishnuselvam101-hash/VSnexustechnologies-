@@ -193,7 +193,10 @@ slower than the production decoder, which is expected and accepted.
   software model, not measurements of a medium.
 - **The security monitor's signer is a placeholder** (HMAC-SHA256) until AP-4; the journal MAC of FZ-1 is not in
   this tree.
-- **The web console's node tests were not run** in the lab.
+- **The web console is not part of this gate.** Its type check, build and node contract tests run in CI, not in the lab
+  release gate. That contract test found and fixed a drift between the TypeScript bindings and the normative JSON
+  schema (the schema had gained `stream-read-range` and `plan` in V15 while the TypeScript list had not), so the
+  bindings now match the schema in both directions.
 
 ## Next
 
@@ -202,5 +205,6 @@ slower than the production decoder, which is expected and accepted.
 2. The CC-1 floor: a native pass 2 and a native layout probe, and grouping inside the thread pool, are the structural
    levers for the missed targets.
 3. Close CC-3's 10 MB case and the review's cap-selection note.
-4. The website (`vsnexus-web`) still carries the V13 wording and needs the V14 and V15 entries; it is outward-facing
-   and needs the founder's confirmation.
+4. The website (`vsnexus-web`) carried the V13 wording and needed the V14 and V15 entries. The founder ordered that
+   update on 2026-10-22, and it is under way in the site repository; it is outward-facing, so it lands through the
+   site's own review and deploy timer.
