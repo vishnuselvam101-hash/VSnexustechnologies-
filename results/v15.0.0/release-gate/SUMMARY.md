@@ -1,13 +1,13 @@
 # VNX-DNA 15.0.0 release gate
 
-Gated commit: `281d28388b97eeb9a40cbdb25aeb4494f71246ee` (clean tree; all source and test changes of the release).
+Gated commit: `5e44b201b1646ae6bdd10eb701e3ea0bec22389e` (clean tree; all source and test changes of the release).
 Run 2026-10-22 on the lab host (x86_64, 8 vCPU, 31 GB RAM) on an otherwise idle host. The commit that follows the
 gated commit only adds these logs and the completion report `docs/V15_COMPLETION_REPORT.md`; it changes no source and
 no test file.
 
 | check | result | log |
 |---|---|---|
-| full Python suite, 8 workers | **5,177 passed, 7 skipped, 0 failed**, 209.14 s | pytest-full-suite.log |
+| full Python suite, 8 workers | **5,177 passed, 7 skipped, 0 failed**, 205.31 s | pytest-full-suite.log |
 | `cargo test --release --locked`, RUSTFLAGS=-D warnings, `vnxd` | **295 passed, 0 failed, 5 ignored** (lib 200, cli 2, concurrency stress 2, digital twin 9, e2e matrix 30 (2 ignored), fault matrix 8, golden 4, media adapters 12, media worker 0 (2 ignored), metrics 9, nbd no-space 4, seal key check 2, seal worker 0 (1 ignored), worm snapshots 13) | cargo-test.log |
 | same, `engine` | **26 passed, 0 failed** | cargo-test.log |
 | same, `integrity` | **5 passed, 0 failed** | cargo-test.log |

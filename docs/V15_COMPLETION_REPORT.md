@@ -1,6 +1,6 @@
 # VNX-DNA V15 — completion report (long-term readability, archive platform, decode speed; release candidate)
 
-Version 15.0.0 on branch `build/v15` at the gated commit `281d28388b97eeb9a40cbdb25aeb4494f71246ee` (release
+Version 15.0.0 on branch `build/v15` at the gated commit `5e44b201b1646ae6bdd10eb701e3ea0bec22389e` (release
 candidate: the tag, the merge into `main` and the push are the founder's). The commit that follows the gated commit
 adds this report and the release-gate logs of that commit; it changes no source and no test file. Every channel
 result in this report is
@@ -82,8 +82,8 @@ number below comes from a committed file named next to it.
 
 ## Validation
 
-- **The release gate is green on the gated commit** `281d28388b97eeb9a40cbdb25aeb4494f71246ee`
-  (`results/v15.0.0/release-gate/`): the full Python suite **5,177 passed, 7 skipped, 0 failed** in 209.14 s on 8
+- **The release gate is green on the gated commit** `5e44b201b1646ae6bdd10eb701e3ea0bec22389e`
+  (`results/v15.0.0/release-gate/`): the full Python suite **5,177 passed, 7 skipped, 0 failed** in 205.31 s on 8
   workers, with the nine native kernels built first so the ctypes bindings load this tree's libraries and not a stale
   one; `cargo test --release --locked` with `RUSTFLAGS=-D warnings` gives `vnxd` **295 passed, 0 failed, 5 ignored**,
   `engine` **26 passed** and `integrity` **5 passed**, every crate exiting 0; `ruff check src tests research` and
