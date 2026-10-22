@@ -37,7 +37,8 @@ __all__ = ["archive", "encode", "decode", "inspect", "verify", "extract", "list_
            "codec_compare", "parse_size", "sweep", "channel_models", "channel_model", "channel_convert",
            "channel_sweep", "experiment_run", "experiment_reproduce", "generate", "validate_strands", "profiles",
            "native", "keygen", "load_keys", "version", "conformance", "is_container", "stream_encode", "stream_decode",
-           "volume_create", "volume_write", "volume_read", "volume_stat", "volume_scrub", "cache_stats", "cache_clear"]
+           "stream_read_range", "volume_create", "volume_write", "volume_read", "volume_stat", "volume_scrub",
+           "cache_stats", "cache_clear"]
 
 CONTAINER = [FORMAT_VERSION[0], FORMAT_VERSION[1]]
 
@@ -381,6 +382,33 @@ def stream_decode(strands: PathLike, manifest: PathLike, output: PathLike, *, op
     return DecodeResult("stream-decode", "SUCCESS", rep, inputs=(file_ref("strands", strands), file_ref("manifest", manifest)),
                         outputs=outputs, formats={"stream": _st.STREAM_FORMAT, "container": CONTAINER},
                         seconds=time.perf_counter() - t0, workers=opts.workers, config=_resolved(opts))
+
+
+def stream_read_range(strands: PathLike, manifest: PathLike, start: int, length: int, output: PathLike | None = None, *,
+                      options: DecodeOptions | None = None, key: bytes | None = None, passphrase: str | None = None,
+                      overwrite: bool = False, secure=None) -> Result:
+    """The bytes ``[start, start + length)`` of a streamed archive: only the extents the range covers are decoded, each
+    verified against its manifest SHA-256 before a byte is returned. Writes them to ``output`` (``"-"`` = stdout; None =
+    returned in ``body["data"]`` as bytes)."""
+    from vnxdna.pipeline import stream as _st
+    _guard.enforce("extract", strands, secure)
+    t0 = time.perf_counter()
+    opts = options or DecodeOptions()
+    data, rep = _st.read_range(strands, manifest, start, length, options=opts, key=key, passphrase=passphrase)
+    body: dict[str, Any] = dict(rep)
+    outputs: tuple = ()
+    if output == "-":
+        sys.stdout.buffer.write(data)
+        sys.stdout.buffer.flush()
+    elif output is not None:
+        from vnxdna.core.util import atomic_output
+        with atomic_output(output, overwrite=overwrite) as t:
+            t.write_bytes(data)
+        outputs = (file_ref("data", output, body["sha256"]),)
+    else:
+        body["data"] = data
+    return Result("stream-read-range", "SUCCESS", body, inputs=(file_ref("strands", strands), file_ref("manifest", manifest)),
+                  outputs=outputs, formats={"stream": _st.STREAM_FORMAT}, seconds=time.perf_counter() - t0, workers=opts.workers)
 
 
 def _volume_options(extent_bytes, workers, dna, decode_options, key, passphrase, cache_bytes=None, write_back_bytes=None):

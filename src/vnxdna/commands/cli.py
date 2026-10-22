@@ -14,6 +14,7 @@
     vnx experimental ...                         experimental features (clearly separated)
     vnx stream encode FILE strands.fasta         V13: a byte stream of any length -> strands with bounded memory
     vnx stream decode strands.fasta strands.fasta.stream.json out.bin
+    vnx read-range strands.fasta strands.fasta.stream.json --start 0 --length 4096 -o part.bin
     vnx volume init|write|read|stat|scrub DIR    V13: a disk-like volume (write/append/read/flush/scrub) on the codec
     vnx cache stats|clear                        V13: the decode result cache (VNXDNA_CACHE_DIR)
 
@@ -734,6 +735,28 @@ def stream_decode_cmd(strands: Path = typer.Argument(..., help="Strand file, or 
         res = sdk.stream_decode(strands, manifest, "-" if str(output) == "-" else output, options=opts, key=key, passphrase=pw,
                                 overwrite=force, progress=_progress_cb(), by_range=by_range)
         if str(output) == "-":
+            typer.echo(json.dumps(res.to_cli(), indent=2, default=str), err=True)
+        else:
+            _out(res)
+    _run(go)
+
+
+@app.command("read-range")
+def read_range_cmd(strands: Path = typer.Argument(..., help="Strand file, or a read pool of it (FASTA/FASTQ)."),
+                   manifest: Path = typer.Argument(..., help="The vnx.stream/1 manifest."),
+                   start: int = typer.Option(..., "--start", help="First byte of the range."),
+                   length: int = typer.Option(..., "--length", help="Number of bytes to read."),
+                   output: Optional[Path] = typer.Option(None, "--output", "-o", help="Output file, or - for stdout."),
+                   workers: int = WORKERS_OPT, key_file: Optional[Path] = KEY_OPT, passphrase_env: Optional[str] = PW_OPT,
+                   force: bool = FORCE_OPT) -> None:
+    """Read a byte range of a streamed archive: only the extents the range covers are decoded (AP-14)."""
+    def go():
+        key, pw = sdk.load_keys(key_file, passphrase_env)
+        opts = sdk.DecodeOptions(workers=workers)
+        res = sdk.stream_read_range(strands, manifest, start, length,
+                                    "-" if output is not None and str(output) == "-" else output,
+                                    options=opts, key=key, passphrase=pw, overwrite=force)
+        if output is not None and str(output) == "-":
             typer.echo(json.dumps(res.to_cli(), indent=2, default=str), err=True)
         else:
             _out(res)

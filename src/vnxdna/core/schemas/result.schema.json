@@ -50,6 +50,7 @@
     "channel-sweep",
     "stream-encode",
     "stream-decode",
+    "stream-read-range",
     "volume-create",
     "volume-write",
     "volume-read",
