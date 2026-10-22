@@ -1,5 +1,142 @@
 # Changelog
 
+## 15.0.0
+
+Branch `build/v15`, release candidate, not tagged. Governing scope: `docs/V15_FINALIZATION_PLAN.md` (LR-1..LR-6,
+CC-1..CC-5, AP-1..AP-18, DA-1..DA-14) with the scope lock of `docs/V15_M0_DECISIONS.md`; the release notes of the parts
+are `docs/V15_REFERENCE_DECODER.md`, `docs/V15_DIGITAL_TWIN.md` and `docs/V15_SECURITY_MONITOR.md`.
+
+V15 is a software-and-simulation release. All channel results are SIMULATED; no DNA was synthesised, stored or
+sequenced, and the evidence claims of this release are categories A-D only (software codec, software storage device,
+electronic-backend persistence, simulated DNA channel) - nothing is E (physical synthesis) or F (physical sequencing).
+The headline is the long-term readability of the software: a frozen format, a golden corpus with pinned digests and an
+independent standard-library-only reference decoder, so that a party who has the spec and the strand files can recover
+the data without this software. The decode speed improved, and both registered speed targets were missed; both are
+stated plainly below.
+
+The Python package version and `CITATION.cff` move to 15.0.0; the Rust crate versions (`vnxd`, `vnx_engine`, integrity)
+are deliberately left unchanged, as in V14.
+
+### Added: long-term readability (LR-1, LR-3)
+- **A frozen format with a golden corpus.** `reference/golden/` holds four archives (plain-2bit, zlib-rotation3,
+  codebook8-plain, encrypted-2bit) whose digests are pinned in `reference/golden/index.json`. Every archive still
+  decodes to exactly the bytes it was made from, and `tests/v15/test_hardware_lane.py` fails if an artefact is
+  altered, a recorded digest does not match, or the two decoders disagree.
+- **An independent reference decoder.** `reference/vnx_ref_decoder.py` is a second implementation of the format-4 read
+  path that imports nothing outside the Python standard library, so a future party can port it to another language
+  without reading the production code. The version-compatibility contract and the compatibility rule are in
+  `docs/V15_REFERENCE_DECODER.md`.
+- **Hardware and OS design documents** (`hardware/h1-carrier`, `hardware/h3-fpga`, `hardware/h5-dna-io`). These are
+  designs and specifications only: no board, no FPGA and no instrument exists, no bitstream was generated and no
+  synthesis flow was run. The H3 decoder reproduces the software reference in simulation; it has never been through
+  synthesis, placement, routing or timing.
+
+### Added: the archive platform (AP-1, AP-6, AP-8, AP-14, AP-16, AP-17, DA-14)
+- **AP-1 write-once (WORM) retention and snapshots** in the Rust volume (`src/vnxdna/native/rust/vnxd/src/volume.rs`).
+  `set_retention` / `retention` set a deadline for one extent or for the whole volume; an active deadline can only be
+  extended, never shortened, and every write, release and truncate path on a retained extent is refused with the typed
+  error `RETAINED` (`ErrorCode::Retained`). A snapshot pins the mapping of a generation, so the live data may be
+  rewritten while the snapshot still reads the old bytes (`src/vnxdna/native/rust/vnxd/tests/worm_snapshots.rs`).
+- **AP-6 observability**: a Prometheus text exporter in `src/vnxdna/native/rust/vnxd/src/metrics.rs`. It renders 63
+  metric names in the text exposition format 0.0.4 (one `# HELP` and one `# TYPE` line per name, integer values,
+  escaped label values, sorted so that two scrapes of the same samples render to the same bytes and can be diffed).
+  Every sample is derived from the structures the service already holds - the stats and health views, the backend
+  health, the cache counters, the scrub report, the capacity view and the DNA simulator counters; the simulator
+  counters are SIMULATED counts of the software model, not measurements of a medium. The alert rules of the plan are
+  not in this tree.
+- **AP-8 synthesis-cost planner** (Python, `src/vnxdna/pipeline/plan.py`): the strands and bases an encode will
+  produce, and the cost per vendor price profile that the operator supplies (`vnx.vendor-prices/1`, example in
+  `docs/examples/vendor-prices.example.json`). No price is hard-coded, the arithmetic is exact (`Decimal`), and the
+  planner's strand count is the encoder's own count (`tests/v15/test_ap8_cost_planner.py`,
+  `tests/v15/test_ap8_prices.py`).
+- **AP-14 partial retrieval**: `stream.read_range`, `sdk.stream_read_range` and `vnx read-range` decode only the
+  extents a byte range overlaps and verify each extent's manifest SHA-256 before a byte of it is returned. The report
+  names the extents the range overlaps and the strand bytes the request had to touch, and it does not depend on the
+  number of workers (`tests/v15/test_ap14_partial_retrieval.py`).
+- **AP-16 offline security monitor** (Python, `src/vnxdna/secure/monitor.py`): it checks the tree against a signed
+  manifest, audits every access, applies anomaly rules and a configurable lockdown, and appends every finding to the
+  tamper-evident hash-chained audit log. It needs no network (`docs/V15_SECURITY_MONITOR.md`,
+  `tests/v15/test_ap16_monitor.py`). The signer is a placeholder HMAC-SHA256 until AP-4.
+- **AP-17 offline-only check**: `tools/offline-check.sh` runs the suite inside a network namespace that has no route
+  off the machine, and `tests/v15/test_ap17_offline.py` blocks the socket API at runtime and scans `src/vnxdna` for
+  network-capable imports against the enforced part of `tests/v15/ap17_network_allowlist.txt`.
+- **DA-14 drive digital twin** (Rust, SIMULATED): `src/vnxdna/native/rust/vnxd/src/twin.rs` models a whole drive as six
+  pools (storage, RAM, IO-journal, metadata, security, bootstrap) with per-pool, per-replica fault injection, and
+  checks one property: the device never answers a read with bytes other than the bytes of the last completed write of
+  that extent (`docs/V15_DIGITAL_TWIN.md`).
+
+### Added: the NBD device
+- **A configurable bound on the space the device's store may hold** (`DeviceConfig.max_stored_bytes`, the `StoreSpace`
+  tracker in `src/vnxdna/native/rust/vnxd/src/nbdserve.rs`): a write that needs a new extent beyond the bound is
+  refused with `NO_SPACE`, which the host block layer sees as `ENOSPC`. Nothing already written changes, an overwrite
+  of an extent that carries data needs no new space and still succeeds, and a device without the bound behaves as
+  before (`src/vnxdna/native/rust/vnxd/tests/nbd_no_space.rs`).
+
+### Fixed: the device, the parsers and the hardening sweep
+- **The NBD attach announces a device only once the kernel has sized it.** The readiness rule requires the sysfs pid to
+  be the server's own and the reported sector count to be the device's size in 512-byte sectors; the pid alone is not
+  enough, because the kernel publishes the pid before it applies the capacity. If the device is not ready within 30 s
+  the watcher logs `attach_not_ready`, detaches and the command fails (exit 1) instead of announcing a device that is
+  not up as configured (`src/vnxdna/native/rust/vnxd/src/nbdsys.rs`, `src/vnxdna/native/rust/vnxd/src/nbdctl.rs`).
+- **O-2: the ctypes wrappers bound their kernel arguments before they allocate or narrow them.** An out-of-range
+  Python int was narrowed into the int32 the kernel takes without a word, and the sketch arrays were sized with the
+  caller's `s` before the kernel had refused the value. The arguments are checked before anything is allocated now
+  (`tests/v15/test_sec_cluster_bounds.py`).
+- **O-3: the result-cache key race is closed.** The cache key is the SHA-256 of the read file and the decode then read
+  the same file again, so a file written in between stored the new result under the key of the old content. The file is
+  re-hashed after the decode and the result is cached only when it did not change
+  (`tests/v15/test_j2_cache_race.py`).
+- **O-4..O-9 (the V14 hardening rows) are closed** and each is held by a test: the CRC-32 row input has one shared
+  validator on both backends (`tests/v15/test_j3_crc32_rows.py`), the alignment range check cannot wrap and a malformed
+  geometry is refused (`tests/v15/test_j4_align_overflow.py`), the cluster kernel refuses an allocation size that does
+  not fit `size_t` (`tests/v15/test_sec_cluster_alloc_guard.py`), an unusable thread count is a configuration error
+  rather than a silent one (`tests/v15/test_j7_cluster_threads.py`), and a stream manifest extent index is
+  type-checked before the order check (`tests/v15/test_j8_manifest_types.py`).
+- **The security review findings F1..F8 are closed**: the control-plane files and the FASTA output are written through
+  a private temporary file instead of a fixed name that a symlink could redirect
+  (`tests/v15/test_sec_control_private_write.py`, `tests/v15/test_sec_reads_write_fasta.py`), the V1 read parser bounds
+  the line length and the record count (`tests/v15/test_sec_reads_bounds.py`), the legacy V0.1 decoder caps the counts a
+  manifest declares (`tests/v15/test_sec_legacy_caps.py`), and the policy's known-good MAC and the sealed volume's key
+  check are compared in constant time (`tests/v15/test_sec_policy_mac.py`,
+  `src/vnxdna/native/rust/vnxd/tests/seal_key_check.rs`).
+- **The synthesis planner counts the strands the way the encoder counts them**, and the WORM superblock flag is known to
+  both sides of the contract.
+
+### Changed: decode speed (CC-1; SIMULATED)
+- **The measured result against 14.0.0 is 1.236x on the clean 4 MiB workload and 1.042x on the indel 4 MiB workload.**
+  Clean 4 MiB, 4 workers: 0.593 s for 14.0.0 and 0.480 s for this release, ratio 1.236 [1.216, 1.274] (n = 18 seeds).
+  Indel 4 MiB, 1 worker: 3.109 s for 14.0.0 and 2.986 s for this release, ratio 1.042 [1.035, 1.046]. The secondary
+  workloads: indel 16 MiB w4 1.056 [1.047, 1.144] and substitution 64 MiB w4 1.141 [1.133, 1.189] (n = 3).
+  (`experiments/v15/cc1/final/primary-summary.json`, `experiments/v15/cc1/README.md`; protocol
+  `experiments/v15/cc1/PREREG.md` with its two amendments.)
+- **The output is byte-identical to 14.0.0 and there are 0 false successes.** The committed differential rows
+  (`experiments/v15/cc1/diff/`) hold 374 rows against 14.0.0; every row is identical (output bytes and report) and no
+  row is a false success. The golden decode digests and the probe-equivalence cases are in
+  `tests/v15/test_cc1_golden.py` and `tests/v15/test_cc1_probe.py`.
+- **The changes that were kept**: pass 2 no longer builds the unused known-address set, the engine tables use a
+  fixed-distance prefetch for the V13-rule inserts with 2 MiB pages, and the layout probe keeps its sample flat,
+  computes the frame heads on demand and shares the exact-length matrices. A third change (a scan-ahead on a helper
+  thread) was measured and **reverted**: its lower bound did not clear the A/A band.
+- **The CC-3 held-out evaluation is now committed** (`experiments/v15/cc3/results/`, 0 false successes over 271 rows,
+  SIMULATED). The `--cluster-preset nanopore` preset and the `bucket_cap_floor` default 2 are the V14 baseline
+  described in the 14.0.0 section below; they are not repeated here.
+
+### Compatibility
+- The archive, container, strand, stream (`vnx.stream/1`) and volume (`vnx.volume/1`) formats are unchanged from
+  14.0.0. The V4 and V5 archives still decode, and the V13 volume fixture still opens, reads, scrubs and accepts new
+  commits. Only the Python package version and `CITATION.cff` move to 15.0.0; the Rust crate versions are deliberately
+  left unchanged.
+
+### Missed targets and limitations (stated plainly)
+- **Both registered speed targets are MISSED**: the clean 4 MiB workload reached 1.236x over 14.0.0 (2.774x over the v12
+  tier denominator, target >= 3x) and the indel 4 MiB workload 1.042x (2.956x over v12, target >= 5x). The numbers are
+  not rounded up.
+- **No physical validation of any kind.** No DNA was synthesised, stored, amplified or sequenced; every channel result
+  is SIMULATED and every read set in the corpus is software-produced. The hardware documents are designs.
+- The alert rules of AP-6, the external validation run of LR-5, the physical-preservation guidance of LR-4 and the
+  multi-site replication of AP-2 are not in this tree.
+- The strand retry rung still roughly doubles the time to report FAILURE on undecodable inputs.
+
 ## 14.0.0 (branch `build/v14`, release candidate, not tagged; docs/V14_IMPLEMENTATION_REPORT.md)
 
 ### Changed: read clustering (V15, CC-3; SIMULATED)

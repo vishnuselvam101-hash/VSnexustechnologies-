@@ -7,20 +7,17 @@ from __future__ import annotations
 
 import json
 import socket
-import tempfile
 from pathlib import Path
 
 import pytest
 
-from vnxdna.secure.audit import AuditLog, AuditIntegrityError
+from vnxdna.secure.audit import AuditLog
 from vnxdna.secure.events import ManualClock, SecurityEvent
 from vnxdna.secure.monitor import (
     HmacSigner,
-    Manifest,
     Policy,
     Monitor,
     build_manifest,
-    Finding,
 )
 
 KEY = b"k" * 32

@@ -1,0 +1,21 @@
+# PLACEHOLDER - this file does not hold a test run.
+#
+# The authoritative full-suite log for VNX-DNA 15.0.0 is produced by the lead engineer's release gate on the release
+# commit, and it is written over this file. This lane did not run the full suite: the host is loaded and the gate is
+# the lead engineer's job, so no output was captured here.
+#
+# Nothing in this file is a count, a result or a claim about the suite. The suite counts of the 15.0.0 release are not
+# known to this lane and are deliberately not written down: when the real run happens, its captured output replaces
+# this placeholder, so that the log can never carry a number that no run produced.
+#
+# The command the gate runs, for reference:
+#
+#   cd <worktree> && for k in align reads rs cluster strand orient integrity outerlist engine; do \
+#     PYTHONPATH=src python -m vnxdna.native.$k build >/dev/null 2>&1 || true; done && \
+#     PYTHONPATH=src OPENBLAS_NUM_THREADS=1 python -m pytest -o addopts="" -q -n 8 -p no:cacheprovider \
+#     -W ignore::DeprecationWarning --deselect tests/v14/test_device_nbd.py \
+#     --deselect tests/v14/integration/test_v14_e2e_blockdev.py
+#
+# The native kernels must be built first, or about 21 tests fail spuriously. On a loaded host the timing-sensitive
+# test tests/v15/test_hardware_lane.py::test_the_documented_runtime_is_still_the_measured_runtime can fail
+# spuriously; that test is never to be changed to make a run green.
