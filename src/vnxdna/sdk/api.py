@@ -789,7 +789,7 @@ def plan(path: PathLike, *, profile: str = "v4-balanced", prices: PathLike | Non
     """
     from vnxdna.pipeline.plan import load_prices, plan_file
     vendor_prices = None
-    inputs = (file_ref("input", Path(path)),)
+    inputs: tuple = (file_ref("input", Path(path)),)
     if prices is not None:
         try:
             vendor_prices = load_prices(prices)
