@@ -64,21 +64,40 @@ def key_fingerprint(key: bytes | None, passphrase: str | None) -> str | None:
     return hashlib.sha256(b"vnx-dna result cache key fingerprint\0" + material).hexdigest()
 
 
-def key_for(reads: str | os.PathLike, options, *, has_key: bool, key_material: str | None = None,
-            allow_unencrypted: bool = False) -> str:
-    """The cache key (hex) of a decode of ``reads`` with ``options``: computed before the decode (one pass over the
-    read file for its SHA-256). ``key_material`` (:func:`key_fingerprint`) and ``allow_unencrypted`` are part of the
-    key: a hit never bypasses the key or the V6-SEC-02 check the uncached decode would apply."""
+def input_state(reads: str | os.PathLike) -> tuple[str, int, int]:
+    """The identity of the read file as it is now: (SHA-256, size, mtime in ns). The digest and the size describe the
+    same bytes (one pass over the file), so the pair can never mix two versions of the file."""
+    p = Path(reads)
+    st = p.stat()
+    return sha256_file(p), st.st_size, st.st_mtime_ns
+
+
+def key_and_state(reads: str | os.PathLike, options, *, has_key: bool, key_material: str | None = None,
+                  allow_unencrypted: bool = False) -> tuple[str, tuple[str, int, int]]:
+    """The cache key (hex) of a decode of ``reads`` with ``options`` and the identity of the read file
+    (:func:`input_state`) as it was when the key was built. The key format is unchanged (the same canonical record),
+    so entries written by earlier versions keep working."""
     from vnxdna.sdk.envelope import backends, provenance
     opts = _plain(options)
     for k in _VOLATILE:
         opts.pop(k, None)
     p = Path(reads)
     st = p.stat()
+    digest = sha256_file(p)
     record = {"software": __version__, "git": provenance().get("git_commit"), "backends": backends(),
-              "input_sha256": sha256_file(p), "input_bytes": st.st_size, "options": opts, "has_key": bool(has_key),
+              "input_sha256": digest, "input_bytes": st.st_size, "options": opts, "has_key": bool(has_key),
               "key_material": key_material, "allow_unencrypted": bool(allow_unencrypted)}
-    return hashlib.sha256(json.dumps(record, sort_keys=True, separators=(",", ":"), default=str).encode()).hexdigest()
+    key = hashlib.sha256(json.dumps(record, sort_keys=True, separators=(",", ":"), default=str).encode()).hexdigest()
+    return key, (digest, st.st_size, st.st_mtime_ns)
+
+
+def key_for(reads: str | os.PathLike, options, *, has_key: bool, key_material: str | None = None,
+            allow_unencrypted: bool = False) -> str:
+    """The cache key (hex) of a decode of ``reads`` with ``options``: computed before the decode (one pass over the
+    read file for its SHA-256). ``key_material`` (:func:`key_fingerprint`) and ``allow_unencrypted`` are part of the
+    key: a hit never bypasses the key or the V6-SEC-02 check the uncached decode would apply."""
+    return key_and_state(reads, options, has_key=has_key, key_material=key_material,
+                          allow_unencrypted=allow_unencrypted)[0]
 
 
 class ResultCache:
@@ -172,4 +191,5 @@ class ResultCache:
         return {"dir": str(self.root), "removed": n}
 
 
-__all__ = ["ENV_DIR", "ENV_BYTES", "DEFAULT_BYTES", "ResultCache", "configured_dir", "key_for", "limit_bytes"]
+__all__ = ["ENV_DIR", "ENV_BYTES", "DEFAULT_BYTES", "ResultCache", "configured_dir", "input_state", "key_and_state",
+           "key_for", "limit_bytes"]
