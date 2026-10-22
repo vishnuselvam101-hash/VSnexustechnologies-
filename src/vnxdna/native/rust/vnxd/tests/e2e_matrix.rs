@@ -13,6 +13,10 @@
 //! Rows that need the P7 media adapters are `#[ignore = "needs P7/P8 integration: ..."]`: they run the same workload
 //! over the adapter returned by [`p7_adapter`], which the integration lead fills in after merging P7. The
 //! block-device rows (P8) are in tests/v14/integration/test_e2e_blockdev.py. An ignored row is never a pass.
+//!
+//! The M-rows that drive the REAL codec worker (the production Python codec, `python -m vnxdna.device.dnasim`) are
+//! opt-in twice over: they are `#[ignore]`d, and they skip with a printed reason unless `VNXD_REAL_CODEC=1` (and a
+//! Python that can import `vnxdna.device.dnasim`) is there. A plain run stays fast and offline.
 
 use std::collections::BTreeMap;
 use std::io::{BufRead, BufReader};
@@ -26,7 +30,7 @@ use vnxd::cache::{CacheMode, ExtentCache};
 use vnxd::digest::{hex, sha256};
 use vnxd::error::{err, ErrorCode, Result, VnxError};
 use vnxd::fallback::{HealthConfig, ResilientMedia, RetryPolicy};
-use vnxd::codec::ToyCodec;
+use vnxd::codec::{ToyCodec, WorkerCodec};
 use vnxd::dnasim::{DnaSimConfig, DnaSimMedia};
 use vnxd::fault::{Fault, FaultMedia, FaultPlan, LatencyMedia, MediaOp, Rule};
 use vnxd::image::ImageMedia;
@@ -1615,4 +1619,130 @@ fn m03_fault_injection_adapter() {
 #[test]
 fn m04_simulated_lab_interface_adapter() {
     adapter_workload("lab", 100);
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// M-rows with the REAL codec worker (opt-in: VNXD_REAL_CODEC=1)
+
+/// The Python interpreter that runs the REAL codec worker, when this environment can run it: `VNXD_REAL_CODEC=1`
+/// switches the real worker on, `VNXD_TEST_PYTHON` names the interpreter (the default is `python3`), and that
+/// interpreter must be able to import the codec worker `vnxdna.device.dnasim` from the staging directory (the
+/// working directory the worker processes are started in). None, with the reason printed, when it cannot: the test
+/// then skips instead of failing, and stays ignored in a plain run either way.
+fn real_codec_python(staging: &Path) -> Option<String> {
+    if std::env::var("VNXD_REAL_CODEC").ok().as_deref() != Some("1") {
+        println!("SKIP: VNXD_REAL_CODEC is not 1: the real codec worker is opt-in");
+        return None;
+    }
+    let python = std::env::var("VNXD_TEST_PYTHON").unwrap_or_else(|_| "python3".to_string());
+    // the probe runs where the workers run: the staging directory
+    let probe = std::process::Command::new(&python).args(["-c", "import vnxdna.device.dnasim"]).current_dir(staging).output();
+    match probe {
+        Ok(o) if o.status.success() => Some(python),
+        Ok(o) => {
+            println!(
+                "SKIP: {python} cannot import the codec worker vnxdna.device.dnasim: {}",
+                String::from_utf8_lossy(&o.stderr).trim()
+            );
+            None
+        }
+        Err(e) => {
+            println!("SKIP: the Python interpreter {python} of the real codec worker cannot be started: {e}");
+            None
+        }
+    }
+}
+
+/// The REAL VNX-DNA codec worker over that interpreter: a private staging directory and a pool of Python worker
+/// processes running the production archive container, encoder, inner/outer ECC and decoder (the pattern of
+/// tests/media_worker.rs). Everything the codec worker does is SIMULATED.
+fn real_codec(staging: &Path, python: &str) -> Arc<WorkerCodec> {
+    let command = vec![python.to_string(), "-m".into(), "vnxdna.device.dnasim".into(), "--staging".into(), staging.display().to_string()];
+    let cfg = WorkerConfig { command, staging: staging.to_path_buf(), workers: 2, timeout: Duration::from_secs(120) };
+    Arc::new(WorkerCodec::new(cfg).expect("the real codec worker"))
+}
+
+/// M02 variant over the REAL codec worker: the M02 workload with the PRODUCTION VNX-DNA codec (the archive container,
+/// the encoder, the inner/outer ECC and the decoder) and the shipped SIMULATED channel, instead of the TEST-ONLY toy
+/// codec. Opt-in: ignored in a plain run, and skipped (with the reason printed) when the environment cannot run the
+/// worker. Expected: every read is the oracle's bytes (the SIMULATED channel's errors are corrected or retried),
+/// nothing damaged, and a restart plus a reopen by a fresh adapter still matches the oracle.
+#[test]
+#[ignore = "needs the real codec worker: VNXD_REAL_CODEC=1 and VNXD_TEST_PYTHON (a Python with the vnxdna package)"]
+fn m02_dna_simulator_adapter_real_codec() {
+    let d = Dir::new("m02-real");
+    let staging = private_dir(&d.0);
+    let Some(python) = real_codec_python(&staging) else { return };
+    let dcfg = DnaSimConfig { channel: Some("illumina-like".into()), seed: 72, ..Default::default() };
+    // the pools live in an image store: they survive a restart and a fresh adapter over the same store
+    let sim = |dir: &Path, codec: Arc<WorkerCodec>| {
+        let store = Arc::new(ImageMedia::open_or_create(dir).unwrap());
+        Arc::new(DnaSimMedia::new(store, codec, dcfg.clone()).unwrap())
+    };
+    // conformance over the real codec
+    vnxd::media::conformance(sim(&d.0.join("conf"), real_codec(&staging, &python)).as_ref()).unwrap();
+    let cfg = Cfg { blocks: 512, ..Cfg::cached(CacheMode::WriteThrough) }; // 64 extents
+    let m = sim(&d.0.join("media"), real_codec(&staging, &python));
+    let s = Stack::create_over(cfg.clone(), 70, m.clone(), d.0.clone(), None);
+    let mut o = Oracle::new(s.cap());
+    random_workload(&s, &mut o, &mut Rng(70), 150, 2);
+    s.flush().unwrap();
+    let (s, rep) = s.restart();
+    assert!(rep.torn_tail.is_none() && rep.damaged.is_empty() && rep.orphans_removed.is_empty(), "{rep:?}");
+    s.check_all(&o, 64 * 1024);
+    s.check_clean();
+    assert!(m.stats.sequencing_runs.load(Ordering::Relaxed) > 0, "the SIMULATED channel ran");
+    drop(s);
+    drop(m); // the image store is closed: a fresh adapter can take its lock
+    // a new process: a fresh worker pool and a fresh adapter over the same stored pools
+    let base: Arc<dyn MediaAdapter> = sim(&d.0.join("media"), real_codec(&staging, &python));
+    let (v, rep) = Volume::open(&d.0.join("vol"), resilient(base.clone()), VolumeConfig::default()).unwrap();
+    assert!(rep.damaged.is_empty() && rep.orphans_removed.is_empty(), "{rep:?}");
+    let s = Stack::assemble(cfg, Arc::new(v), resilient(base.clone()), base, d.0.clone());
+    s.check_all(&o, 64 * 1024);
+    s.check_clean();
+}
+
+/// M04 variant over the REAL codec worker: the M04 workload with the PRODUCTION VNX-DNA codec over the SIMULATED lab
+/// interface (no equipment exists), instead of the TEST-ONLY toy codec. Opt-in: ignored in a plain run, and skipped
+/// (with the reason printed) when the environment cannot run the worker. Expected: every read is the oracle's bytes
+/// (the SIMULATED sequencing errors are corrected), nothing damaged, and a restart plus a reopen by a fresh adapter
+/// still matches the oracle.
+#[test]
+#[ignore = "needs the real codec worker: VNXD_REAL_CODEC=1 and VNXD_TEST_PYTHON (a Python with the vnxdna package)"]
+fn m04_simulated_lab_interface_adapter_real_codec() {
+    let d = Dir::new("m04-real");
+    let staging = private_dir(&d.0);
+    let Some(python) = real_codec_python(&staging) else { return };
+    // the SIMULATED lab (no equipment exists) with seeded equipment failures, and the electronic catalogue of the pools
+    let lab = Arc::new(SimulatedLab::new(SimLabConfig {
+        seed: 74, substitution_ppm: 2_000, dropout_ppm: 10_000, synthesis_failure_ppm: 50_000, sequencing_failure_ppm: 50_000,
+        aliquots: 100_000, ..Default::default()
+    }));
+    let lcfg = LabMediaConfig { job_retries: 8, ..Default::default() };
+    let media = |catalogue: Arc<dyn MediaAdapter>, codec: Arc<WorkerCodec>| {
+        Arc::new(LabMedia::new(lab.clone(), codec, catalogue, lcfg.clone()).unwrap())
+    };
+    // conformance over the real codec
+    let conf = media(Arc::new(MemoryMedia::new()), real_codec(&staging, &python));
+    vnxd::media::conformance(conf.as_ref()).unwrap();
+    let cfg = Cfg { blocks: 512, ..Cfg::cached(CacheMode::WriteThrough) }; // 64 extents
+    let catalogue: Arc<dyn MediaAdapter> = Arc::new(MemoryMedia::new());
+    let m = media(catalogue.clone(), real_codec(&staging, &python));
+    let s = Stack::create_over(cfg.clone(), 71, m.clone(), d.0.clone(), None);
+    let mut o = Oracle::new(s.cap());
+    random_workload(&s, &mut o, &mut Rng(71), 100, 2);
+    s.flush().unwrap();
+    let (s, rep) = s.restart();
+    assert!(rep.torn_tail.is_none() && rep.damaged.is_empty() && rep.orphans_removed.is_empty(), "{rep:?}");
+    s.check_all(&o, 64 * 1024);
+    s.check_clean();
+    drop(s);
+    // a new process: a fresh worker pool and a fresh adapter over the same lab and catalogue
+    let base = media(catalogue, real_codec(&staging, &python));
+    let (v, rep) = Volume::open(&d.0.join("vol"), resilient(base.clone()), VolumeConfig::default()).unwrap();
+    assert!(rep.damaged.is_empty() && rep.orphans_removed.is_empty(), "{rep:?}");
+    let s = Stack::assemble(cfg, Arc::new(v), resilient(base.clone()), base, d.0.clone());
+    s.check_all(&o, 64 * 1024);
+    s.check_clean();
 }

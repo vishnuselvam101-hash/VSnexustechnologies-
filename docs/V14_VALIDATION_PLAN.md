@@ -39,10 +39,11 @@ The R-rows use the media adapters that exist at b69e70f: `FaultMedia` (in-memory
 
 Expected outcomes were written into the tests and this table before the rows were first run (one exception, R08,
 §7). `status`: **run** = runs now and must pass; **pending (phase)** = written against the documented interface and
-skipped/ignored with a reason starting "needs P7/P8 integration" (or "needs P10/P11 hardware") until the lead turns
-it on (§5). A pending row is never a pass. The registry `tests/v14/integration/v14_e2e_matrix.py` holds the same rows
-with their implementation; `tests/v14/integration/test_v14_e2e_registry.py` fails if the registry, this table and the
-code disagree, or if a run row is skipped or a pending row lacks its reason.
+skipped/ignored with a reason starting "needs P7/P8 integration" (or "needs P10/P11 hardware", or "needs the real
+codec worker") until the lead turns it on (§5). A pending row is never a pass. The registry
+`tests/v14/integration/v14_e2e_matrix.py` holds the same rows with their implementation;
+`tests/v14/integration/test_v14_e2e_registry.py` fails if the registry, this table and the code disagree, or if a run
+row is skipped or a pending row lacks its reason.
 
 | id | row | interface | fault injection | expected outcome (preregistered) | depends on | status |
 |---|---|---|---|---|---|---|
@@ -81,6 +82,8 @@ code disagree, or if a run row is skipped or a pending row lacks its reason.
 | M02 | DNA-simulator media adapter | vnxd I/O queue (IoQueue/BlockIo over cache, volume, fallback, media) over the P7 DnaSimMedia (TEST-ONLY codec) | SIMULATED substitution channel; restart + reopen | oracle bytes on every read (channel errors corrected or retried), never other bytes | P7 | run |
 | M03 | fault-injection media adapter | vnxd I/O queue (IoQueue/BlockIo over cache, volume, fallback, media) over the P7 seeded FaultMedia | FaultPlan::lying, 2 % per op kind | successful reads equal the oracle; failed writes no effect; no INTERNAL; clean after the plan is cleared | P7 | run |
 | M04 | physical-lab interface adapter (SIMULATED lab) | vnxd I/O queue (IoQueue/BlockIo over cache, volume, fallback, media) over the P7 LabMedia + SimulatedLab | seeded synthesis/sequencing failures (retried) | oracle bytes on every read, after restart too; nothing damaged | P7 | run |
+| M05 | DNA-simulator media adapter over the real codec worker (SIMULATED channel) | vnxd I/O queue (IoQueue/BlockIo over cache, volume, fallback, media) over the P7 DnaSimMedia driven by the production VNX-DNA codec worker (vnxdna.device.dnasim) | SIMULATED illumina-like substitution channel; conformance + workload + restart + reopen | oracle bytes on every read (the SIMULATED channel's errors are corrected or retried), never other bytes; nothing damaged; a fresh adapter over the same store still matches the oracle | P7 | pending (real codec worker: opt-in) |
+| M06 | physical-lab interface adapter over the real codec worker (SIMULATED lab) | vnxd I/O queue (IoQueue/BlockIo over cache, volume, fallback, media) over the P7 LabMedia + SimulatedLab driven by the production VNX-DNA codec worker (vnxdna.device.dnasim) | seeded synthesis/sequencing failures (retried) in the SIMULATED lab; conformance + workload + restart + reopen | oracle bytes on every read, after restart too; nothing damaged; a fresh adapter over the same lab and catalogue still matches the oracle | P7 | pending (real codec worker: opt-in) |
 | B01 | sequential + random R/W on the block device | public block device (/dev/nbdN exported by vnxd, P8) | O_DIRECT I/O, seeded; detach + attach | a new device reads zeros; every read equals the oracle, also after re-attach | P8 | run |
 | B02 | filesystem: small/large files, partial overwrite | public block device (/dev/nbdN exported by vnxd, P8) + ext4 (write-back cache) | mkfs, mount, files, umount, detach, attach, e2fsck -n | fsck clean; every file's SHA-256 equal after re-attach | P8 | run |
 | B03 | flush/sync through the host | public block device (/dev/nbdN exported by vnxd, P8) (write-back cache) | fsync, then SIGKILL of vnxd (no final flush) | fsynced data survives | P8 | run |
@@ -91,8 +94,16 @@ code disagree, or if a run row is skipped or a pending row lacks its reason.
 | B08 | unauthorized management over the socket | vnx.mgmt Unix socket of the attached service | no token, reader token, 3 wrong tokens, admin | UNAUTHORIZED; reader cannot shut down; cut off after 3 failures; admin shutdown detaches cleanly (exit 0) | P8 | run |
 | B09 | queue-depth saturation on the block device | public block device (/dev/nbdN exported by vnxd, P8) | 1-32 concurrent O_DIRECT writers | no errors, no data mismatch, no NBD errors counted | P8 | run |
 
-Totals: 44 rows; 43 run (30 in Rust, 13 in Python: 4 SDK/CLI/worker rows and 9 block-device rows), 1 pending (R24-hw,
-needs Pi hardware).
+Totals: 46 rows; 43 run (30 in Rust, 13 in Python: 4 SDK/CLI/worker rows and 9 block-device rows), 3 pending (R24-hw,
+needs Pi hardware; M05 and M06, need the real codec worker: opt-in).
+
+**V15 note (M05 and M06).** M05 and M06 are the V15 real-codec variants of the M02 and M04 rows: the same DNA-simulator
+and simulated-lab workloads, but driven by the production VNX-DNA codec worker (`vnxdna.device.dnasim`) instead of the
+TEST-ONLY toy codec. They are opt-in rows: they need `VNXD_REAL_CODEC=1` and `VNXD_TEST_PYTHON` pointing at a Python
+that can import `vnxdna.device.dnasim`; without that environment the test prints its reason and returns. Everything they
+do is SIMULATED: no DNA is synthesised, stored or sequenced. They are pending because they need that opt-in environment,
+and they have NOT been run: in a plain run they are ignored, and a pending row is never counted as a pass. The §7.2
+results below are the 2026-10-19 run of the then 44-row matrix and are not re-measured for M05/M06.
 
 ## 4. Determinism
 
@@ -161,7 +172,8 @@ data MUST be durable). R22 was strengthened with the D2 fix (no journal left). N
 `--integration --soak 20` (R06 and R06b over 20 seeds each; `/root/vnx-dna-lab/results/v14-p9-e2e-soak20/`): 30 Rust
 rows passed (194 s), Python rows 22 passed / 1 skipped, teardown clean.
 
-**Matrix: 44 rows: 43 pass, 0 fail, 1 skipped (R24-hw, needs Pi hardware).** No fault run returned bytes other than
+**Matrix (as of that run): 44 rows: 43 pass, 0 fail, 1 skipped (R24-hw, needs Pi hardware).** M05 and M06 were added
+after this run and are pending (see the V15 note in §3). No fault run returned bytes other than
 the last completed write (no silent corruption), and no failure was reported as success.
 
 ### 7.3 Defects found
