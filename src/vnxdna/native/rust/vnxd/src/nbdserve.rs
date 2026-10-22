@@ -660,7 +660,8 @@ impl Device {
                             if fua {
                                 self.stats.fua_writes.fetch_add(1, Ordering::Relaxed);
                             }
-                            match submit(Op::Write { offset: req.offset, data }) {
+                            // NBD has no clock; use a fixed timestamp for deterministic retention checks
+                            match submit(Op::Write { offset: req.offset, data, now_ms: 1000 }) {
                                 Work::Io { ticket, deadline, .. } => Work::Io { ticket, fua, deadline },
                                 w => w,
                             }

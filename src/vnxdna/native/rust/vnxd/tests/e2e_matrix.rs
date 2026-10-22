@@ -355,7 +355,7 @@ impl Stack {
         }
     }
     fn write(&self, off: u64, data: &[u8]) -> Result<WriteState> {
-        match self.q().submit(Op::Write { offset: off, data: data.to_vec() }, None)?.wait()? {
+        match self.q().submit(Op::Write { offset: off, data: data.to_vec(), now_ms: 1000 }, None)?.wait()? {
             Reply::Written(s) => Ok(s),
             r => panic!("write answered {r:?}"),
         }
@@ -509,7 +509,7 @@ fn r04_large_requests_and_limits() {
         }
         let e = s.q().submit(Op::Read { offset: 0, len: MAX_REQUEST_BYTES + 1 }, None).err().unwrap();
         assert_eq!(e.code, ErrorCode::InvalidArgument);
-        let e = s.q().submit(Op::Write { offset: s.cap() - 10, data: vec![1; 11] }, None).err().unwrap();
+        let e = s.q().submit(Op::Write { offset: s.cap() - 10, data: vec![1; 11], now_ms: 1000 }, None).err().unwrap();
         assert_eq!(e.code, ErrorCode::OutOfRange);
         s.check_all(&o, 1 << 20);
     }
@@ -567,7 +567,7 @@ fn r06_concurrent_readers_writers() {
                             let op = match r.below(10) {
                                 0..=2 => Op::Read { offset: off, len },
                                 3 => Op::Flush,
-                                _ => Op::Write { offset: off, data: r.bytes(len as usize) },
+                                _ => Op::Write { offset: off, data: r.bytes(len as usize), now_ms: 1000 },
                             };
                             let tk = s.q().submit(op.clone(), None).unwrap();
                             tickets.push((tk.seq, op, tk));
@@ -585,7 +585,7 @@ fn r06_concurrent_readers_writers() {
         let mut o = Oracle::new(s.cap());
         for (seq, op, rep) in &log {
             match (op, rep) {
-                (Op::Write { offset, data }, Reply::Written(_)) => o.apply(*offset, data),
+                (Op::Write { offset, data, now_ms: _ }, Reply::Written(_)) => o.apply(*offset, data),
                 (Op::Read { offset, len }, Reply::Data(d)) => assert!(d == o.get(*offset, *len), "read #{seq} saw bytes of another order"),
                 (Op::Flush, Reply::Flushed) => {}
                 x => panic!("unexpected {x:?}"),
@@ -636,7 +636,7 @@ fn r06b_concurrent_io_under_backend_faults() {
                                 let op = match r.below(10) {
                                     0..=2 => Op::Read { offset: off, len },
                                     3 => Op::Flush,
-                                    _ => Op::Write { offset: off, data: r.bytes(len as usize) },
+                                    _ => Op::Write { offset: off, data: r.bytes(len as usize), now_ms: 1000 },
                                 };
                                 let tk = s.q().submit(op.clone(), None).unwrap();
                                 tickets.push((tk.seq, op, tk));
@@ -654,7 +654,7 @@ fn r06b_concurrent_io_under_backend_faults() {
             let mut errors = 0;
             for (seq, op, rep) in &log {
                 match (op, rep) {
-                    (Op::Write { offset, data }, Ok(Reply::Written(_))) => o.apply(*offset, data),
+                    (Op::Write { offset, data, now_ms: _ }, Ok(Reply::Written(_))) => o.apply(*offset, data),
                     (Op::Read { offset, len }, Ok(Reply::Data(d))) => {
                         assert!(d == o.get(*offset, *len), "seed {seed} mode {mode:?}: read #{seq} returned other bytes")
                     }
@@ -796,7 +796,7 @@ fn r10_device_restart() {
     for i in 0..12u64 {
         let d = r.bytes(1000);
         let off = i * 4096 + 7;
-        tickets.push((off, d.clone(), s.q().submit(Op::Write { offset: off, data: d }, None).unwrap()));
+        tickets.push((off, d.clone(), s.q().submit(Op::Write { offset: off, data: d, now_ms: 1000 }, None).unwrap()));
     }
     std::thread::sleep(Duration::from_millis(20));
     s.q.take().unwrap().shutdown(false).unwrap();
@@ -1182,8 +1182,8 @@ fn r16_backend_timeouts_and_deadlines() {
     // deadlines in the queue
     let cfg = Cfg { workers: 1, latency: Some((Duration::from_millis(40), Duration::ZERO)), ..Cfg::default() };
     let s = Stack::new(cfg, 17);
-    let slow = s.q().submit(Op::Write { offset: 0, data: vec![1; 4096] }, None).unwrap();
-    let late = s.q().submit(Op::Write { offset: 0, data: vec![2; 4096] }, Some(Instant::now() + Duration::from_millis(5))).unwrap();
+    let slow = s.q().submit(Op::Write { offset: 0, data: vec![1; 4096], now_ms: 1000 }, None).unwrap();
+    let late = s.q().submit(Op::Write { offset: 0, data: vec![2; 4096], now_ms: 1000 }, Some(Instant::now() + Duration::from_millis(5))).unwrap();
     assert!(matches!(slow.wait(), Ok(Reply::Written(_))));
     assert_eq!(late.wait().unwrap_err().code, ErrorCode::Timeout);
     assert!(s.read(0, 4096).unwrap() == vec![1; 4096], "the timed-out write had no effect");
@@ -1310,7 +1310,7 @@ fn r18_unauthorized_requests() {
     let v = Volume::create(&d.0.join("vol"), geo, dev_id, 1, sealed(1), VolumeConfig::default()).unwrap();
     let data = Rng(18).bytes(4 * 4096);
     let io = BlockIo::new(Arc::new(v));
-    io.write(0, &data).unwrap();
+    io.write(0, &data, 1000).unwrap();
     drop(io);
     let e = Volume::open(&d.0.join("vol"), sealed(2), VolumeConfig::default()).err().unwrap();
     assert_eq!(e.code, ErrorCode::Unauthorized, "{e:?}");
@@ -1335,7 +1335,7 @@ fn r18_unauthorized_requests() {
 fn r19_memory_exhaustion() {
     let cfg = Cfg { cache: Some(CacheMode::WriteBack), ram_total: 512 * 1024, workers: 4, ..Cfg::default() };
     let s = Arc::new(Stack::new(cfg, 19));
-    let e = s.q().submit(Op::Write { offset: 0, data: vec![1; 100 * 1024] }, None).unwrap().wait().unwrap_err();
+    let e = s.q().submit(Op::Write { offset: 0, data: vec![1; 100 * 1024], now_ms: 1000 }, None).unwrap().wait().unwrap_err();
     assert_eq!(e.code, ErrorCode::InvalidArgument, "{e:?}");
     let mut o = Oracle::new(s.cap());
     let mut r = Rng(19);
@@ -1344,7 +1344,7 @@ fn r19_memory_exhaustion() {
         let d = r.bytes(30 * 1024);
         let off = i * 64 * 1024;
         o.apply(off, &d);
-        ts.push(s.q().submit(Op::Write { offset: off, data: d }, None).unwrap());
+        ts.push(s.q().submit(Op::Write { offset: off, data: d, now_ms: 1000 }, None).unwrap());
     }
     for t in ts {
         t.wait().unwrap();
@@ -1372,7 +1372,7 @@ fn r20_saturation_backpressure() {
     let mut refused = 0u64;
     for i in 0..40u64 {
         let d = r.bytes(512);
-        match s.q().try_submit(Op::Write { offset: i * 4096, data: d.clone() }, None) {
+        match s.q().try_submit(Op::Write { offset: i * 4096, data: d.clone(), now_ms: 1000 }, None) {
             Ok(t) => acc.push((i * 4096, d, t)),
             Err(e) => {
                 assert_eq!(e.code, ErrorCode::ResourceExhausted);
@@ -1397,8 +1397,8 @@ fn r20_saturation_backpressure() {
 fn r21_cancellation() {
     let cfg = Cfg { workers: 1, latency: Some((Duration::from_millis(50), Duration::ZERO)), ..Cfg::default() };
     let s = Stack::new(cfg, 21);
-    let first = s.q().submit(Op::Write { offset: 0, data: vec![7; 4096] }, None).unwrap();
-    let queued: Vec<_> = (1..10u64).map(|i| s.q().submit(Op::Write { offset: i * 4096, data: vec![i as u8; 4096] }, None).unwrap()).collect();
+    let first = s.q().submit(Op::Write { offset: 0, data: vec![7; 4096], now_ms: 1000 }, None).unwrap();
+    let queued: Vec<_> = (1..10u64).map(|i| s.q().submit(Op::Write { offset: i * 4096, data: vec![i as u8; 4096], now_ms: 1000 }, None).unwrap()).collect();
     let t0 = Instant::now();
     for t in &queued {
         t.cancel();

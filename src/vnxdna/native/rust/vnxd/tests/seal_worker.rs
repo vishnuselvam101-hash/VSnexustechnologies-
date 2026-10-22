@@ -53,7 +53,7 @@ fn sealed_volume_over_the_python_worker() {
     let v = Volume::create(&root.join("vol"), geo, dev, FLAG_SEALED, mk(&env("VNXD_TEST_KEY")), VolumeConfig::default()).unwrap();
     let secret = b"VNX sealed extent secret payload. ".repeat(200);
     for e in 0..8u64 {
-        v.write_extent(ExtentId(e), &secret[e as usize..e as usize + 4096]).unwrap();
+        v.write_extent(ExtentId(e), &secret[e as usize..e as usize + 4096], 1000).unwrap();
     }
     for e in 0..8u64 {
         assert_eq!(v.read_extent(ExtentId(e)).unwrap(), &secret[e as usize..e as usize + 4096]);

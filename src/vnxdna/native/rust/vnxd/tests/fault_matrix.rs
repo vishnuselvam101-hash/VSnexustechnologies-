@@ -50,8 +50,8 @@ fn rig(run: u64, cfg: VolumeConfig) -> Rig {
     let v = Volume::create(&d.0, Geometry::new(512, 4, 16).unwrap(), [run as u8; 16], 0, rm.clone(), cfg).unwrap();
     let old: Vec<u8> = (0..EXT).map(|i| (i as u64 * 7 + run) as u8).collect();
     let new: Vec<u8> = (0..EXT).map(|i| (i as u64 * 13 + run * 3 + 1) as u8).collect();
-    v.write_extent(ExtentId(1), &old).unwrap();
-    v.write_extent(ExtentId(2), &old).unwrap();
+    v.write_extent(ExtentId(1), &old, 1000).unwrap();
+    v.write_extent(ExtentId(2), &old, 1000).unwrap();
     Rig { d, fm, rm, v, old, new }
 }
 
@@ -75,7 +75,7 @@ fn crash_at_every_stage_gives_the_recorded_state() {
             let hook: FaultHook = Arc::new(move |s, _| if s == stage { err(ErrorCode::Internal, "crash") } else { Ok(()) });
             let Rig { d, fm, rm, v, old, new } = r;
             let v = v.with_fault_hook(hook);
-            assert!(v.write_extent(ExtentId(1), &new).is_err());
+            assert!(v.write_extent(ExtentId(1), &new, 1000).is_err());
             drop(v);
             let (v, rep) = Volume::open(&d.0, rm.clone(), VolumeConfig::default()).unwrap();
             assert_eq!(&v.read_extent(ExtentId(1)).unwrap(), if new_survives { &new } else { &old }, "{stage:?}");
@@ -92,7 +92,7 @@ fn transient_backend_errors_are_absorbed_by_retries() {
         for run in 0..RUNS {
             let r = rig(run, VolumeConfig::default());
             r.fm.add(Rule { op: MediaOp::Put, fault, skip: 0, times: 2.min(1 + run % 2) });
-            assert_eq!(r.v.write_extent(ExtentId(1), &r.new).unwrap().state, WriteState::Verified, "{fault:?}");
+            assert_eq!(r.v.write_extent(ExtentId(1), &r.new, 1000).unwrap().state, WriteState::Verified, "{fault:?}");
             assert_eq!(r.v.read_extent(ExtentId(1)).unwrap(), r.new);
             no_orphans(&r.v, r.fm.raw());
         }
@@ -104,10 +104,10 @@ fn a_persistently_unavailable_backend_turns_the_device_read_only() {
     for run in 0..RUNS {
         let r = rig(run, VolumeConfig::default());
         r.fm.add(Rule::always(MediaOp::Put, Fault::Unavailable));
-        assert_eq!(r.v.write_extent(ExtentId(1), &r.new).unwrap_err().code, ErrorCode::BackendUnavailable);
+        assert_eq!(r.v.write_extent(ExtentId(1), &r.new, 1000).unwrap_err().code, ErrorCode::BackendUnavailable);
         let mut codes = Vec::new();
         for _ in 0..4 {
-            codes.push(r.v.write_extent(ExtentId(1), &r.new).unwrap_err().code);
+            codes.push(r.v.write_extent(ExtentId(1), &r.new, 1000).unwrap_err().code);
             assert_eq!(r.v.read_extent(ExtentId(1)).unwrap(), r.old, "reads keep working");
         }
         assert_eq!(r.rm.health().state, BackendState::Unavailable);
@@ -121,7 +121,7 @@ fn lying_or_corrupting_writes_are_caught_by_readback() {
         for run in 0..RUNS {
             let r = rig(run, VolumeConfig::default());
             r.fm.add(Rule::once(MediaOp::Put, fault));
-            assert_eq!(r.v.write_extent(ExtentId(1), &r.new).unwrap_err().code, ErrorCode::Corruption, "{fault:?}");
+            assert_eq!(r.v.write_extent(ExtentId(1), &r.new, 1000).unwrap_err().code, ErrorCode::Corruption, "{fault:?}");
             assert_eq!(r.v.read_extent(ExtentId(1)).unwrap(), r.old, "{fault:?}: the mapping is unchanged");
             no_orphans(&r.v, r.fm.raw());
         }
@@ -133,11 +133,11 @@ fn without_readback_corrupt_media_is_refused_at_read_and_found_by_scrub() {
     for run in 0..RUNS {
         let r = rig(run, VolumeConfig { verify_readback: false, ..Default::default() });
         r.fm.add(Rule::once(MediaOp::Put, Fault::SilentCorruptWrite));
-        assert_eq!(r.v.write_extent(ExtentId(1), &r.new).unwrap().state, WriteState::BackendCommitted);
+        assert_eq!(r.v.write_extent(ExtentId(1), &r.new, 1000).unwrap().state, WriteState::BackendCommitted);
         assert_eq!(r.v.read_extent(ExtentId(1)).unwrap_err().code, ErrorCode::Corruption, "never the corrupt bytes");
         let s = r.v.scrub().unwrap();
         assert_eq!((s.checked, s.failed.iter().map(|(e, _)| *e).collect::<Vec<_>>()), (2, vec![ExtentId(1)]));
-        r.v.write_extent(ExtentId(1), &r.new).unwrap();
+        r.v.write_extent(ExtentId(1), &r.new, 1000).unwrap();
         assert!(r.v.scrub().unwrap().failed.is_empty(), "a whole-extent write repairs it");
     }
 }
@@ -159,7 +159,7 @@ fn failed_garbage_collection_and_sync_are_recovered() {
     for run in 0..RUNS {
         let r = rig(run, VolumeConfig::default());
         r.fm.add(Rule::always(MediaOp::Remove, Fault::Unavailable));
-        r.v.write_extent(ExtentId(1), &r.new).unwrap(); // the old generation cannot be released
+        r.v.write_extent(ExtentId(1), &r.new, 1000).unwrap(); // the old generation cannot be released
         r.fm.clear();
         let Rig { d, fm, rm, v, new, .. } = r;
         drop(v);

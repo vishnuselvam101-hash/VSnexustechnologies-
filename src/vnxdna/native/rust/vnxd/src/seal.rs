@@ -246,7 +246,7 @@ pub(crate) mod tests {
         let v = sealed_vol(&d, raw.clone(), 1).unwrap();
         let data = b"top secret extent payload ".repeat(79);
         let data = &data[..2048];
-        v.write_extent(ExtentId(2), data).unwrap();
+        v.write_extent(ExtentId(2), data, 1000).unwrap();
         assert_eq!(v.read_extent(ExtentId(2)).unwrap(), data);
         for at in raw.list().unwrap() {
             let stored = raw.get(at).unwrap();
@@ -261,8 +261,8 @@ pub(crate) mod tests {
         let d = TempDir::new("seal");
         let raw = Arc::new(MemoryMedia::new());
         let v = sealed_vol(&d, raw.clone(), 1).unwrap();
-        v.write_extent(ExtentId(0), &[1u8; 2048]).unwrap();
-        v.write_extent(ExtentId(1), &[2u8; 2048]).unwrap();
+        v.write_extent(ExtentId(0), &[1u8; 2048], 1000).unwrap();
+        v.write_extent(ExtentId(1), &[2u8; 2048], 1000).unwrap();
         let g = |e: u64| GenerationRef { extent: ExtentId(e), generation: v.mapping(ExtentId(e)).unwrap().unwrap() };
         // extent 1's object copied over extent 0's: the sealer refuses it (bound to its extent)
         let one = raw.get(g(1)).unwrap();
@@ -276,9 +276,9 @@ pub(crate) mod tests {
         raw.put(g(1), &t).unwrap();
         assert_eq!(v.read_extent(ExtentId(1)).unwrap_err().code, ErrorCode::Corruption);
         // an older generation's object replayed under the current generation
-        v.write_extent(ExtentId(3), &[3u8; 2048]).unwrap();
+        v.write_extent(ExtentId(3), &[3u8; 2048], 1000).unwrap();
         let old = raw.get(g(3)).unwrap();
-        v.write_extent(ExtentId(3), &[4u8; 2048]).unwrap();
+        v.write_extent(ExtentId(3), &[4u8; 2048], 1000).unwrap();
         raw.remove(g(3)).unwrap();
         raw.put(g(3), &old).unwrap();
         assert_eq!(v.read_extent(ExtentId(3)).unwrap_err().code, ErrorCode::Corruption);
@@ -311,8 +311,8 @@ pub(crate) mod tests {
         let raw = Arc::new(MemoryMedia::new());
         let m: Arc<dyn MediaAdapter> = Arc::new(SealedMedia::new(raw, Arc::new(Failing(ErrorCode::Unauthorized)), DEV, 2048));
         let v = Volume::create(&d.0, Geometry::new(512, 4, 16).unwrap(), DEV, FLAG_SEALED, m, VolumeConfig { verify_readback: false, ..Default::default() }).unwrap();
-        v.write_extent(ExtentId(0), &[1u8; 2048]).unwrap();
-        v.write_extent(ExtentId(1), &[2u8; 2048]).unwrap();
+        v.write_extent(ExtentId(0), &[1u8; 2048], 1000).unwrap();
+        v.write_extent(ExtentId(1), &[2u8; 2048], 1000).unwrap();
         let s = v.scrub().unwrap();
         assert_eq!(s.failed.len(), 2, "both extents listed, the scrub did not stop");
         // an oversized object from the backend is refused before staging
@@ -328,7 +328,7 @@ pub(crate) mod tests {
         let d = TempDir::new("seal");
         let raw = Arc::new(MemoryMedia::new());
         let v = sealed_vol(&d, raw.clone(), 1).unwrap();
-        v.write_extent(ExtentId(0), &[9u8; 2048]).unwrap();
+        v.write_extent(ExtentId(0), &[9u8; 2048], 1000).unwrap();
         drop(v);
         let before = raw.list().unwrap();
         assert_eq!(reopen(&d, raw.clone(), 2).err().unwrap().code, ErrorCode::Unauthorized);
