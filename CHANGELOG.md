@@ -82,7 +82,11 @@ are deliberately left unchanged, as in V14.
 - **O-2: the ctypes wrappers bound their kernel arguments before they allocate or narrow them.** An out-of-range
   Python int was narrowed into the int32 the kernel takes without a word, and the sketch arrays were sized with the
   caller's `s` before the kernel had refused the value. The arguments are checked before anything is allocated now
-  (`tests/v15/test_sec_cluster_bounds.py`).
+  (`tests/v15/test_sec_cluster_bounds.py`). The check was then extended to every loader the row names -
+  `cluster.sketch/fb/edit_costs/trial_costs`, `strand.build_rows`, `outerlist.*` and `orient.*` - in the style of
+  `engine._checked_arrays`: an integer outside the range of the ctypes argument and an array whose values do not fit
+  the dtype the kernel reads are refused with a `ValueError` instead of being narrowed, and the NumPy reference
+  refuses the same values (`src/vnxdna/native/_loader.py`, `tests/v15/test_j1_checked_int.py`).
 - **O-3: the result-cache key race is closed.** The cache key is the SHA-256 of the read file and the decode then read
   the same file again, so a file written in between stored the new result under the key of the old content. The file is
   re-hashed after the decode and the result is cached only when it did not change
