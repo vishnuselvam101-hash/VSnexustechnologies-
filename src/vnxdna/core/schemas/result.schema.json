@@ -57,7 +57,8 @@
     "volume-stat",
     "volume-scrub",
     "cache-stats",
-    "cache-clear"
+    "cache-clear",
+    "plan"
    ]
   },
   "status": {

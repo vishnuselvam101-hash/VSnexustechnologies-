@@ -7,6 +7,7 @@
     vnx channel models | show NAME | convert old.json new.json | sweep strands.fasta --model M --grid P=[..]
     vnx decode reads.fastq -o recovered.vnx      reads → verified container (or --extract DIR)
     vnx validate strands.fasta                   biological constraint diagnostics (JSON)
+    vnx plan FILE --profile v4-balanced [--prices prices.json]   V15: strand/base counts and vendor costs before synthesis
     vnx benchmark --profile balanced             machine-readable benchmark suite
     vnx experiment run experiments/EXP-0001/config.json      (also writes manifest.json, vnx.experiment/1)
     vnx experiment reproduce manifest.json       re-run a vnx.experiment/1 manifest; exit 0 iff result_hash matches
@@ -518,6 +519,23 @@ def validate(sequences: Path, config: Optional[Path] = typer.Option(None, "--con
 
 MODEL_OPT = typer.Option(None, "--model", "-m",
                          help="Channel model: a shipped NAME, NAME@VERSION, or a model JSON (vnx.channel-model/1 or /0).")
+
+
+@app.command("plan")
+def plan_cmd(path: Path = typer.Argument(..., metavar="FILE",
+                                          help="File to plan (only its size is measured; the file is not read)."),
+             profile: str = typer.Option("v4-balanced", "--profile",
+                                         help="Layout profile: v4-balanced (default), v4-dense, v4-indel, v4-archival, "
+                                              "v6-high-dropout or v7-lowcov."),
+             prices: Optional[Path] = typer.Option(None, "--prices",
+                                                    help="Vendor price file (vnx.vendor-prices/1 JSON); the prices are yours.")) -> None:
+    """Estimate strands, bases and vendor costs before synthesis (software counts; no DNA is synthesised).
+
+    The counts are the encoder's own counts for the file's size; the costs are computed from the price file you
+    supply. Prints the plan as JSON (vnx.result/1) and exits 0."""
+    def go():
+        _out(sdk.plan(path, profile=profile, prices=prices))
+    _run(go)
 
 
 @channel_app.command("simulate")

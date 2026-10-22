@@ -2,20 +2,22 @@
   "format": "vnx.vendor-prices/1",
   "vendors": [
     {
-      "vendor": "TestVendor1",
+      "vendor": "example-vendor-a",
       "currency": "USD",
-      "per_base": "0.005",
-      "per_strand": "0.25",
-      "per_order": "50.00",
-      "max_strand_nt": 300,
-      "min_strands": 10
+      "per_base": "0.01",
+      "per_strand": "0.50",
+      "per_order": "100.00",
+      "max_strand_nt": 400,
+      "min_strands": 1
     },
     {
-      "vendor": "TestVendor2", 
+      "vendor": "example-vendor-b",
       "currency": "EUR",
-      "per_base": "0.006",
-      "per_strand": "0.30",
-      "per_order": "45.00"
+      "per_base": "0.02",
+      "per_strand": "0.40",
+      "per_order": "80.00",
+      "max_strand_nt": 400,
+      "min_strands": 200
     }
   ]
 }

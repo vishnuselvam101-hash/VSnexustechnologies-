@@ -1,0 +1,32 @@
+{
+  "note": "example only, not real prices",
+  "input": "a file of 1048576 bytes (the command measures the size only; the file is not read)",
+  "command": "vnx plan FILE --profile v4-balanced --prices docs/examples/vendor-prices.example.json",
+  "bases": 10262331,
+  "column_parity_strands": 0,
+  "costs": [
+    {
+      "currency": "USD",
+      "fits": true,
+      "reason": null,
+      "total": "119116.81",
+      "vendor": "example-vendor-a"
+    },
+    {
+      "currency": "EUR",
+      "fits": true,
+      "reason": null,
+      "total": "218441.42",
+      "vendor": "example-vendor-b"
+    }
+  ],
+  "data_strands": 26215,
+  "evidence": "THEORETICAL (encoder count)",
+  "groups": 410,
+  "input_bytes": 1048576,
+  "metadata_strands": 12,
+  "parity_strands": 6560,
+  "profile": "v4-balanced",
+  "strand_nt": 313,
+  "strands": 32787
+}
