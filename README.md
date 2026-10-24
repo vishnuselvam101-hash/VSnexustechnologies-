@@ -1,6 +1,6 @@
 # VNX-DNA
 
-**Release candidate: 15.0.0 on `build/v15` (not tagged).** V15 is a software-and-simulation release. Its objective is
+**Release 15.0.0 (tag `v15.0.0`, 2026-10-22).** V15 is a software-and-simulation release. Its objective is
 long-term readability: the format is frozen, a golden corpus with pinned digests is committed, and an independent
 standard-library-only reference decoder is in the tree, so that a party who has the spec and the strand files can
 recover the data without this software (no lifetime is claimed for anything). V15 also adds write-once retention and
