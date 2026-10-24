@@ -2,7 +2,7 @@
 
 ## 15.0.0
 
-Branch `build/v15`, release candidate, not tagged. Governing scope: `docs/V15_FINALIZATION_PLAN.md` (LR-1..LR-6,
+Released 2026-10-22 as tag `v15.0.0` (merge commit `ec04bd5` on `main`). Governing scope: `docs/V15_FINALIZATION_PLAN.md` (LR-1..LR-6,
 CC-1..CC-5, AP-1..AP-18, DA-1..DA-14) with the scope lock of `docs/V15_M0_DECISIONS.md`; the release notes of the parts
 are `docs/V15_REFERENCE_DECODER.md`, `docs/V15_DIGITAL_TWIN.md` and `docs/V15_SECURITY_MONITOR.md`.
 

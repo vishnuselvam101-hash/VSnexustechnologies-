@@ -1,7 +1,7 @@
-# VNX-DNA V15 — completion report (long-term readability, archive platform, decode speed; release candidate)
+# VNX-DNA V15 — completion report (long-term readability, archive platform, decode speed)
 
-Version 15.0.0 on branch `build/v15` at the gated commit `5e44b201b1646ae6bdd10eb701e3ea0bec22389e` (release
-candidate: the tag, the merge into `main` and the push are the founder's). The commit that follows the gated commit
+Version 15.0.0 on branch `build/v15` at the gated commit `5e44b201b1646ae6bdd10eb701e3ea0bec22389e` (released
+2026-10-22 as tag `v15.0.0` on the `main` merge commit `ec04bd5`). The commit that follows the gated commit
 adds this report and the release-gate logs of that commit; it changes no source and no test file. Every channel
 result in this report is
 SIMULATED (reads from a software channel model); **no DNA was synthesised, stored, amplified or sequenced**, and the

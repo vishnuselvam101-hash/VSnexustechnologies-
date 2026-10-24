@@ -138,7 +138,7 @@ def _emit(report: dict[str, Any], as_json: bool, report_path: Optional[Path], su
     except BrokenPipeError:
         _stdout_closed()
 
-HELP = """VNX-DNA 3: streaming computational DNA data storage (software simulation; not wet-lab validated).
+HELP = """VNX-DNA: streaming computational DNA data storage (software simulation; not wet-lab validated).
 
 \b
 Canonical workflow:
